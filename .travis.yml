@@ -1,7 +1,6 @@
 language: go
 go:
 - 1.10.x
-- master
 script: go test github.com/platform9/azure-provider -run ^TestParseProviderConfigs$
 notifications:
   slack:
