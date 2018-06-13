@@ -23,8 +23,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/joho/godotenv"
 	azureconfigv1 "github.com/platform9/azure-actuator/azureproviderconfig/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -54,18 +54,25 @@ const (
 
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	scheme, codecFactory, err := azureconfigv1.NewSchemeAndCodecs()
-	authorizer, err := auth.NewAuthorizerFromFile(azure.PublicCloud.ResourceManagerEndpoint)
+	//Parse in environment variables
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatalf("Failed to load environment variables: %v", err)
+		return nil, err
+	}
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		log.Fatalf("Failed to get OAuth config: %v", err)
 		return nil, err
 	}
-	authInfo, err := readJSON(os.Getenv("AZURE_AUTH_LOCATION"))
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	samplePassword := "SamplePassword1" // TODO: change later, use only for testing
 	if err != nil {
 		return nil, err
 	}
 	return &AzureClient{
-		SubscriptionID: (*authInfo)["subscriptionId"].(string),
-		VMPassword:     (*authInfo)["clientSecret"].(string), //Do NOT keep - should not reuse secret here
+		SubscriptionID: subscriptionID,
+		VMPassword:     samplePassword, //Do NOT keep - should not reuse secret here
 		Authorizer:     authorizer,
 		kubeadmToken:   params.KubeadmToken,
 		ctx:            context.Background(),

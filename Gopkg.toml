@@ -24,6 +24,9 @@
 #   go-tests = true
 #   unused-packages = true
 
+[[constraint]]
+  name = "github.com/joho/godotenv"
+  version = "1.2.0"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
