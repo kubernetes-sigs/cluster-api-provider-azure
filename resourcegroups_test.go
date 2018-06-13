@@ -16,6 +16,7 @@ func TestCreateGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
+	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 	group, err := azure.createOrUpdateGroup(cluster)
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
@@ -24,10 +25,8 @@ func TestCreateGroup(t *testing.T) {
 	groupsClient.Authorizer = azure.Authorizer
 	_, err = groupsClient.Get(azure.ctx, *group.Name)
 	if err != nil {
-		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 		t.Fatalf("unable to get created resource group, %v: %v", group.Name, err)
 	}
-	deleteTestResourceGroup(t, azure, *group.Name)
 }
 
 func deleteTestResourceGroup(t *testing.T, azure *AzureClient, resourceGroupName string) {

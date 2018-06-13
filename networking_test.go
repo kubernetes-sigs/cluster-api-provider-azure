@@ -19,16 +19,14 @@ func TestGetIP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
 	}
+	defer deleteTestResourceGroup(t, azure, clusterProviderConfig.ResourceGroup)
 	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
-		deleteTestResourceGroup(t, azure, clusterProviderConfig.ResourceGroup)
 		t.Fatalf("unable to create deployment: %v", err)
 	}
 
 	_, err = azure.GetIP(cluster, machines[0])
 	if err != nil {
-		deleteTestResourceGroup(t, azure, clusterProviderConfig.ResourceGroup)
 		t.Fatalf("unable to get public IP address: %v", err)
 	}
-	deleteTestResourceGroup(t, azure, clusterProviderConfig.ResourceGroup)
 }
