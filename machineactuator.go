@@ -54,11 +54,13 @@ const (
 
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	scheme, codecFactory, err := azureconfigv1.NewSchemeAndCodecs()
-	//Parse in environment variables
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatalf("Failed to load environment variables: %v", err)
-		return nil, err
+	//Parse in environment variables if necessary
+	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+		err = godotenv.Load()
+		if err != nil {
+			log.Fatalf("Failed to load environment variables: %v", err)
+			return nil, err
+		}
 	}
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
