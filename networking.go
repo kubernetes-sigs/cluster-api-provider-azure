@@ -8,7 +8,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, _ *clusterv1.Machine) (string, error) {
+func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	//Parse in configurations
 	/*
 		var machineConfig azureconfigv1.AzureMachineProviderConfig
@@ -26,7 +26,7 @@ func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, _ *clusterv1.Machine
 	publicIPAddressClient := network.NewPublicIPAddressesClient(azure.SubscriptionID)
 	publicIPAddressClient.Authorizer = azure.Authorizer
 
-	publicIP, err := publicIPAddressClient.Get(azure.ctx, clusterConfig.ResourceGroup, "ClusterAPIIP", "")
+	publicIP, err := publicIPAddressClient.Get(azure.ctx, clusterConfig.ResourceGroup, getPublicIPName(machine), "")
 	if err != nil {
 		return "", err
 	}
