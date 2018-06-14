@@ -19,6 +19,8 @@ jobs:
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeploymentWExisting$
     - stage: TestVMIfExists
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestVMIfExists$
+    - stage: TestDeleteSingleVM
+      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDeleteSingleVM$
     - stage: TestCreateGroup
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateGroup$
     - stage: TestGetIP

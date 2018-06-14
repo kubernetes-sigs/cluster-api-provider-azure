@@ -16,6 +16,7 @@ package azureactuator
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -54,9 +55,15 @@ const (
 
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	scheme, codecFactory, err := azureconfigv1.NewSchemeAndCodecs()
+	if err != nil {
+		return nil, err
+	}
 	//Parse in environment variables if necessary
 	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
 		err = godotenv.Load()
+		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
+		}
 		if err != nil {
 			log.Fatalf("Failed to load environment variables: %v", err)
 			return nil, err
@@ -74,7 +81,7 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	}
 	return &AzureClient{
 		SubscriptionID: subscriptionID,
-		VMPassword:     samplePassword, //Do NOT keep - should not reuse secret here
+		VMPassword:     samplePassword,
 		Authorizer:     authorizer,
 		kubeadmToken:   params.KubeadmToken,
 		ctx:            context.Background(),
@@ -119,6 +126,9 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 		return err
 	}
 	_, err = azure.vmIfExists(cluster, goalMachine)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -136,12 +146,20 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	}
 	//Check if the machine exists
 	vm, err := azure.vmIfExists(cluster, machine)
+	if err != nil {
+		return err
+	}
 	if vm == nil {
 		//Skip deleting if we couldn't find anything to delete
 		return nil
 	}
-	//Delete the resource group, which will automatically delete
-	//all associated resources
+
+	/*
+		TODO: See if this is the last remaining machine, and if so,
+		delete the resource group, which will automatically delete
+		all associated resources
+	*/
+
 	groupsClient := resources.NewGroupsClient(azure.SubscriptionID)
 	groupsClient.Authorizer = azure.Authorizer
 	groupsDeleteFuture, err := groupsClient.Delete(azure.ctx, clusterConfig.ResourceGroup)

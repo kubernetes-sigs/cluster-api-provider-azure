@@ -141,6 +141,17 @@ func (azure *AzureClient) getLogin(cluster *clusterv1.Cluster, machine *clusterv
 	return fmt.Sprintf("%s@%s", vmUser["value"].(string), *ipAddress.PublicIPAddressPropertiesFormat.IPAddress), azure.VMPassword, nil
 }
 
+func (azure *AzureClient) deleteVM(deployment *resources.DeploymentExtended, resourceGroupName string) error {
+	deploymentsClient := resources.NewDeploymentsClient(azure.SubscriptionID)
+	deploymentsClient.Authorizer = azure.Authorizer
+	deploymentDeleteFuture, err := deploymentsClient.Delete(azure.ctx, resourceGroupName, *deployment.Name)
+	if err != nil {
+		return err
+	}
+	deploymentDeleteFuture.Future.WaitForCompletion(azure.ctx, deploymentsClient.BaseClient.Client)
+	return nil
+}
+
 func getVMName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPIVM-%s", machine.ObjectMeta.Name)
 }
