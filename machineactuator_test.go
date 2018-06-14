@@ -74,17 +74,18 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to parse machine provider config: %v", err)
 	}
-	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 	_, err = azure.createOrUpdateGroup(cluster)
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
 	}
 	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
+		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 		t.Fatalf("unable to create deployment: %v", err)
 	}
 	err = azure.Delete(cluster, machines[0])
 	if err != nil {
+		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 		t.Fatalf("unable to delete cluster: %v", err)
 	}
 }
