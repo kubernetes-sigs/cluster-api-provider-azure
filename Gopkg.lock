@@ -180,6 +180,12 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/golang/groupcache"
+  packages = ["lru"]
+  revision = "24b0969c4cb722950103eed87108c8d291a8df00"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -263,7 +269,10 @@
 
 [[projects]]
   name = "github.com/kubernetes-incubator/apiserver-builder"
-  packages = ["pkg/builders"]
+  packages = [
+    "pkg/builders",
+    "pkg/controller"
+  ]
   revision = "14201e804a58a140011a0044b15331f477535f91"
   version = "v1.9-alpha.4"
 
@@ -654,6 +663,7 @@
     "pkg/storage/value",
     "pkg/util/feature",
     "pkg/util/flushwriter",
+    "pkg/util/logs",
     "pkg/util/trace",
     "pkg/util/webhook",
     "pkg/util/wsstream",
@@ -770,15 +780,18 @@
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
     "tools/clientcmd/api/v1",
+    "tools/leaderelection/resourcelock",
     "tools/metrics",
     "tools/pager",
+    "tools/record",
     "tools/reference",
     "transport",
     "util/buffer",
     "util/cert",
     "util/flowcontrol",
     "util/homedir",
-    "util/integer"
+    "util/integer",
+    "util/workqueue"
   ]
   revision = "1692bdde78a61f6316cfb6988015bd460067b238"
 
@@ -800,13 +813,27 @@
   packages = [
     "pkg/apis/cluster",
     "pkg/apis/cluster/common",
-    "pkg/apis/cluster/v1alpha1"
+    "pkg/apis/cluster/v1alpha1",
+    "pkg/client/clientset_generated/clientset",
+    "pkg/client/clientset_generated/clientset/scheme",
+    "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
+    "pkg/client/informers_generated/externalversions",
+    "pkg/client/informers_generated/externalversions/cluster",
+    "pkg/client/informers_generated/externalversions/cluster/v1alpha1",
+    "pkg/client/informers_generated/externalversions/internalinterfaces",
+    "pkg/client/listers_generated/cluster/v1alpha1",
+    "pkg/controller/cluster",
+    "pkg/controller/config",
+    "pkg/controller/machine",
+    "pkg/controller/noderefutil",
+    "pkg/controller/sharedinformers",
+    "util"
   ]
   revision = "57efe550e628a67d782bd2de34eb2b02db1f90e9"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3942fde2fe473f5b6cffa4c9f64378690a89dd57d430a47aa2cb9fba296dab28"
+  inputs-digest = "9dc2f1b0d9c19628eb4dde9b6b7d08c090bd281d0595d33923dee8ce66d7a73d"
   solver-name = "gps-cdcl"
   solver-version = 1

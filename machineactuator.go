@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
 type AzureClient struct {
@@ -44,7 +45,8 @@ type AzureClient struct {
 }
 
 type MachineActuatorParams struct {
-	KubeadmToken string
+	V1Alpha1Client client.ClusterV1alpha1Interface
+	KubeadmToken   string
 	//TODO Add more
 }
 
