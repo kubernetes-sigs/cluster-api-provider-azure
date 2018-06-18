@@ -1,4 +1,4 @@
-package azureactuator
+package azure_provider
 
 import (
 	"fmt"

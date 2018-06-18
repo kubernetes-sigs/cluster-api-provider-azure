@@ -780,6 +780,7 @@
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
     "tools/clientcmd/api/v1",
+    "tools/leaderelection",
     "tools/leaderelection/resourcelock",
     "tools/metrics",
     "tools/pager",
@@ -834,6 +835,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9dc2f1b0d9c19628eb4dde9b6b7d08c090bd281d0595d33923dee8ce66d7a73d"
+  inputs-digest = "4759ff4186cbcdd1fafad241902e162a18fc1de675fae95d6743e8e60368aca7"
   solver-name = "gps-cdcl"
   solver-version = 1

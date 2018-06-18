@@ -10,7 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package azureactuator
+package azure_provider
 
 import (
 	"fmt"
@@ -116,6 +116,19 @@ func TestParseProviderConfigs(t *testing.T) {
 			t.Fatalf("unable to parse machine provider config: %v", err)
 		}
 	}
+}
+
+func TestGetKubeConfig(t *testing.T) {
+	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	if err != nil {
+		t.Fatalf("unable to parse config files: %v", err)
+	}
+	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	message := "Enable succeeded: \n[stdout]\nhello world!\n\n[stderr]\n"
+	actualMessage := 
 }
 
 func readConfigs(t *testing.T, clusterConfigPath string, machinesConfigPath string) (*clusterv1.Cluster, []*clusterv1.Machine, error) {

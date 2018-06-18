@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package azureactuator
+package azure_provider
 
 import (
 	"context"
@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 type AzureClient struct {
@@ -172,7 +173,23 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 }
 
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	return "", nil
+	var clusterConfig azureconfigv1.AzureClusterProviderConfig
+	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	if err != nil {
+		return "", err
+	}
+	//az vm run-command invoke --name [vm_name] --resource-group [rg_name] --command-id RunShellScript --scripts 'sudo cat /etc/kubernetes/admin.conf'
+	script := "sudo cat /etc/kubernetes/admin.conf"
+	result := util.ExecCommand(
+		"az", "vm", "run-command", "invoke",
+		"--name", machine.ObjectMeta.Name,
+		"--resource-group", clusterConfig.ResourceGroup,
+		"--command-id", "RunShellScript",
+		"--scripts", script)
+	var parsed map[string]interface{}
+	err = json.Unmarshal([]byte(result), &parsed)
+	message := parsed["output"].([]map[string]interface{})[0]["message"].(string)
+	return message, nil
 }
 
 func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {

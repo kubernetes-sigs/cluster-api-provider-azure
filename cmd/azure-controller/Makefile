@@ -14,19 +14,18 @@
 
 .PHONY: image push dev_image dev_push
 
-GCR_BUCKET = k8s-cluster-api
-PREFIX = platform9
+PREFIX = meegul
 NAME = azure-controller
 TAG = 0.0.1
 
 image:
-	docker build -t "$(PREFIX)/$(NAME):$(TAG)" -f ./Dockerfile .
+	docker build -t "$(PREFIX)/$(NAME):$(TAG)" -f ./Dockerfile ../..
 
 push: image
 	docker push "$(PREFIX)/$(NAME):$(TAG)"
 
 dev_image:
-	docker build -t "$(PREFIX)/$(NAME):$(TAG)-dev" -f ./Dockerfile .
+	docker build -t "$(PREFIX)/$(NAME):$(TAG)-dev" -f ./Dockerfile ../..
 
 dev_push: dev_image
 	docker push "$(PREFIX)/$(NAME):$(TAG)-dev"

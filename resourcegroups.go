@@ -1,4 +1,4 @@
-package azureactuator
+package azure_provider
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"

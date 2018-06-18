@@ -20,7 +20,7 @@ WORKDIR /go/src/github.com/platform9/azure-provider
 # e.g. docker build -t <tag> -f <this_Dockerfile> <path_to_cluster-api>
 COPY . . 
 
-RUN CGO_ENABLED=0 GOOS=linux go install -a -ldflags '-extldflags "-static"' /go/src/github.com/platform9/azure-provider/cmd/azure-controller
+RUN CGO_ENABLED=0 GOOS=linux go install -a -ldflags '-extldflags "-static"' github.com/platform9/azure-provider/cmd/azure-controller
 
 # Final container
 FROM debian:stretch-slim
