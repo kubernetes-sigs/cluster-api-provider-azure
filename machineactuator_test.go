@@ -118,7 +118,7 @@ func TestParseProviderConfigs(t *testing.T) {
 	}
 }
 
-func TestGetKubeConfig(t *testing.T) {
+/*func TestGetKubeConfig(t *testing.T) {
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
@@ -127,9 +127,9 @@ func TestGetKubeConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
+	azure.GetKubeConfig()
 	message := "Enable succeeded: \n[stdout]\nhello world!\n\n[stderr]\n"
-	actualMessage := 
-}
+}*/
 
 func readConfigs(t *testing.T, clusterConfigPath string, machinesConfigPath string) (*clusterv1.Cluster, []*clusterv1.Machine, error) {
 	t.Helper()
