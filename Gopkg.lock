@@ -329,15 +329,6 @@
   version = "v2.0.1"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/platform9/azure-actuator"
-  packages = [
-    "azureproviderconfig",
-    "azureproviderconfig/v1alpha1"
-  ]
-  revision = "ccbb80283cd512a4430c732c722f4750ccd5031e"
-
-[[projects]]
   name = "github.com/prometheus/client_golang"
   packages = ["prometheus"]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
@@ -835,6 +826,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4759ff4186cbcdd1fafad241902e162a18fc1de675fae95d6743e8e60368aca7"
+  inputs-digest = "27b4654c55fbb9f76cf54e2bc111c8dde4b5c19704049e521a3d25530c433b70"
   solver-name = "gps-cdcl"
   solver-version = 1

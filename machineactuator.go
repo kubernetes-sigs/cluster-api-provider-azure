@@ -26,7 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/joho/godotenv"
-	azureconfigv1 "github.com/platform9/azure-actuator/azureproviderconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"

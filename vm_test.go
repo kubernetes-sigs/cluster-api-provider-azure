@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	azureconfigv1 "github.com/platform9/azure-actuator/azureproviderconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 )
 
 func TestCreateOrUpdateDeployment(t *testing.T) {

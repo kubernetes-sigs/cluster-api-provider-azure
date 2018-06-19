@@ -14,7 +14,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/platform9/azure-actuator/azureproviderconfig"
+	"github.com/platform9/azure-provider/azureproviderconfig"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"

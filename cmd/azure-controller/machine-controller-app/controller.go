@@ -22,8 +22,6 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/controller/config"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/controller/sharedinformers"
-	//"github.com/platform9/azure-provider/cmd/azure-controller/machine-controller/options"
-	//"github.com/platform9/azure-provider/machinesetup"
 )
 
 const (

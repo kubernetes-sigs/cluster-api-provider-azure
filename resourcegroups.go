@@ -3,7 +3,7 @@ package azure_provider
 import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
-	azureconfigv1 "github.com/platform9/azure-actuator/azureproviderconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

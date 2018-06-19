@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
-	azureconfigv1 "github.com/platform9/azure-actuator/azureproviderconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

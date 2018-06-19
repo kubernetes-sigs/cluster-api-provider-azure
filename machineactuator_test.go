@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	v1alpha1 "github.com/platform9/azure-actuator/azureproviderconfig/v1alpha1"
+	v1alpha1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/kubernetes-incubator/apiserver-builder/pkg/controller"
-	azure_provider "github.com/platform9/azure-provider"
+	microsoft "github.com/platform9/azure-provider"
 	"github.com/platform9/azure-provider/cmd/azure-controller/cluster-controller-app/options"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,10 +39,10 @@ func StartClusterController(server *options.ClusterControllerServer, shutdown <-
 		glog.Fatalf("Could not create client for talking to the apiserver: %v", err)
 	}
 
-	params := azure_provider.ClusterActuatorParams{
+	params := microsoft.ClusterActuatorParams{
 		ClusterClient: client.ClusterV1alpha1().Clusters(corev1.NamespaceDefault),
 	}
-	actuator, err := azure_provider.NewClusterActuator(params)
+	actuator, err := microsoft.NewClusterActuator(params)
 	if err != nil {
 		glog.Fatalf("Could not create azure cluster actuator: %v", err)
 	}
@@ -57,8 +57,6 @@ func StartClusterController(server *options.ClusterControllerServer, shutdown <-
 }
 
 func RunClusterController(server *options.ClusterControllerServer) error {
-	// TODO refactor to remove duplication of code between this and the machine
-	// controller server. Issue #262
 	kubeConfig, err := controller.GetConfig(server.CommonConfig.Kubeconfig)
 	if err != nil {
 		glog.Errorf("Could not create Config for talking to the apiserver: %v", err)
