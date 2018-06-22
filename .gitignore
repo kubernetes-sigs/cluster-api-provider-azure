@@ -1,3 +1,5 @@
 *.test
 .env
 exampleconfigs/provider-components.yaml
+./clusterctl
+.kubeconfig

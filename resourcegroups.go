@@ -26,3 +26,19 @@ func (azure *AzureClient) createOrUpdateGroup(cluster *clusterv1.Cluster) (*reso
 	}
 	return &group, nil
 }
+
+func (azure *AzureClient) checkResourceGroupExists(cluster *clusterv1.Cluster) (bool, error) {
+	//Parse in provider configs
+	var clusterConfig azureconfigv1.AzureClusterProviderConfig
+	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	if err != nil {
+		return false, err
+	}
+	groupsClient := resources.NewGroupsClient(azure.SubscriptionID)
+	groupsClient.Authorizer = azure.Authorizer
+	response, err := groupsClient.CheckExistence(azure.ctx, clusterConfig.ResourceGroup)
+	if err != nil {
+		return false, err
+	}
+	return response.StatusCode != 404, nil
+}

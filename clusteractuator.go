@@ -34,10 +34,10 @@ func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, erro
 	}, nil
 }
 
-func (gce *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
+func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	return fmt.Errorf("NYI: Cluster Reconciles are not yet supported")
 }
 
-func (gce *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
+func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
 	return fmt.Errorf("NYI: Cluster Deletions are not yet supported")
 }

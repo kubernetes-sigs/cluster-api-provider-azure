@@ -193,6 +193,13 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 }
 
 func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+	rgExists, err := azure.checkResourceGroupExists(cluster)
+	if err != nil {
+		return false, err
+	}
+	if !rgExists {
+		return false, nil
+	}
 	vm, err := azure.vmIfExists(cluster, machine)
 	if err != nil {
 		return false, err

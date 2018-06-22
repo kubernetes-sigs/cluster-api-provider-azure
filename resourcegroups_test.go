@@ -29,6 +29,37 @@ func TestCreateGroup(t *testing.T) {
 	}
 }
 
+func TestCheckResourceGroupExists(t *testing.T) {
+	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	if err != nil {
+		t.Fatalf("unable to parse config files: %v", err)
+	}
+	clusterConfig := mockAzureClusterProviderConfig(t)
+	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	exists, err := azure.checkResourceGroupExists(cluster)
+	if exists {
+		t.Fatalf("got resource group exists that should not have existed")
+	}
+	if err != nil {
+		t.Fatalf("error checking if resource group exists: %v", err)
+	}
+	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
+	_, err = azure.createOrUpdateGroup(cluster)
+	if err != nil {
+		t.Fatalf("unable to create resource group: %v", err)
+	}
+	exists, err = azure.checkResourceGroupExists(cluster)
+	if !exists {
+		t.Fatalf("got resource group does not exist that should have existed")
+	}
+	if err != nil {
+		t.Fatalf("error checking if resource group exists: %v", err)
+	}
+}
+
 func deleteTestResourceGroup(t *testing.T, azure *AzureClient, resourceGroupName string) {
 	t.Helper()
 	//Clean up the mess
