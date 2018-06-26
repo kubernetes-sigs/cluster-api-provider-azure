@@ -24,7 +24,7 @@ import (
 
 const (
 	machineConfigFile = "exampleconfigs/machines.yaml"
-	clusterConfigFile = "exampleconfigs/cluster.yaml"
+	clusterConfigFile = "exampleconfigs/cluster-ci.yaml"
 )
 
 func TestCreate(t *testing.T) {
@@ -189,7 +189,7 @@ func mockAzureMachineProviderConfig(t *testing.T) *v1alpha1.AzureMachineProvider
 func mockAzureClusterProviderConfig(t *testing.T) *v1alpha1.AzureClusterProviderConfig {
 	t.Helper()
 	return &v1alpha1.AzureClusterProviderConfig{
-		ResourceGroup: "ClusterAPI-test",
+		ResourceGroup: "ClusterAPI-test-CI",
 		Location:      "eastus",
 	}
 }
