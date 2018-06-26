@@ -98,12 +98,10 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return err
 	}
-
 	_, err = azure.createOrUpdateDeployment(cluster, machine)
 	if err != nil {
 		return err
 	}
-
 	//Get the Login info from the VMs
 	/*
 		_, _, err = azure.getLogin(cluster, machine)

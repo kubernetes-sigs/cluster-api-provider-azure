@@ -27,4 +27,5 @@ FROM debian:stretch-slim
 RUN apt-get update && apt-get install -y ca-certificates openssh-server && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /go/bin/azure-controller .
+COPY --from=builder /go/src/github.com/platform9/azure-provider/deployment-template.json .
 

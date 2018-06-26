@@ -1,5 +1,5 @@
 *.test
 .env
 exampleconfigs/provider-components.yaml
-./clusterctl
-.kubeconfig
+clusterctl*
+minikube.kubeconfig

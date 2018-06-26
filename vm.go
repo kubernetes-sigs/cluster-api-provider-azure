@@ -48,7 +48,6 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 		},
 	})
 	if res.Error != nil {
-		fmt.Printf("%+v\n", *(*res.Error.Details)[0].Message)
 		return nil, errors.New(*res.Error.Message)
 	}
 	if err != nil {
@@ -74,7 +73,6 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 		return nil, err
 	}
 	deployment, err := deploymentFuture.Result(deploymentsClient)
-
 	// Work around possible bugs or late-stage failures
 	if deployment.Name == nil || err != nil {
 		deployment, _ = deploymentsClient.Get(azure.ctx, clusterConfig.ResourceGroup, deploymentName)
@@ -97,6 +95,14 @@ func (azure *AzureClient) vmIfExists(cluster *clusterv1.Cluster, machine *cluste
 	deploymentName := machine.ObjectMeta.Name
 	deploymentsClient := resources.NewDeploymentsClient(azure.SubscriptionID)
 	deploymentsClient.Authorizer = azure.Authorizer
+	response, err := deploymentsClient.CheckExistence(azure.ctx, clusterConfig.ResourceGroup, deploymentName)
+	if err != nil {
+		return nil, err
+	}
+	exists := response.StatusCode != 404
+	if !exists {
+		return nil, nil
+	}
 	deployment, err := deploymentsClient.Get(azure.ctx, clusterConfig.ResourceGroup, deploymentName)
 	if err != nil {
 		return nil, err
