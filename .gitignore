@@ -3,3 +3,4 @@
 exampleconfigs/provider-components.yaml
 clusterctl*
 minikube.kubeconfig
+vendor/sigs.k8s.io/

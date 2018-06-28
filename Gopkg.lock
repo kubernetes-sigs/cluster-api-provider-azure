@@ -799,33 +799,9 @@
   ]
   revision = "8a9b82f00b3a86eac24681da3f9fe6c34c01cea2"
 
-[[projects]]
-  branch = "master"
-  name = "sigs.k8s.io/cluster-api"
-  packages = [
-    "pkg/apis/cluster",
-    "pkg/apis/cluster/common",
-    "pkg/apis/cluster/v1alpha1",
-    "pkg/client/clientset_generated/clientset",
-    "pkg/client/clientset_generated/clientset/scheme",
-    "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
-    "pkg/client/informers_generated/externalversions",
-    "pkg/client/informers_generated/externalversions/cluster",
-    "pkg/client/informers_generated/externalversions/cluster/v1alpha1",
-    "pkg/client/informers_generated/externalversions/internalinterfaces",
-    "pkg/client/listers_generated/cluster/v1alpha1",
-    "pkg/controller/cluster",
-    "pkg/controller/config",
-    "pkg/controller/machine",
-    "pkg/controller/noderefutil",
-    "pkg/controller/sharedinformers",
-    "util"
-  ]
-  revision = "57efe550e628a67d782bd2de34eb2b02db1f90e9"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "27b4654c55fbb9f76cf54e2bc111c8dde4b5c19704049e521a3d25530c433b70"
+  inputs-digest = "40d17a33f8d24c5f51eb89bc0d3fbe0a237e3da1afea6b93b4137a43b0bedace"
   solver-name = "gps-cdcl"
   solver-version = 1

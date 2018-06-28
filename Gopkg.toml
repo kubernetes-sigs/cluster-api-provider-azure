@@ -22,7 +22,9 @@
 # [prune]
 #   non-go = false
 #   go-tests = true
-#   unused-packages = true
+#   unused-package = true
+
+ignored = ["sigs.k8s.io/cluster-api/*"]
 
 [[constraint]]
   name = "github.com/joho/godotenv"
@@ -43,10 +45,6 @@
 [[constraint]]
   branch = "release-1.9"
   name = "k8s.io/apimachinery"
-
-[[constraint]]
-  branch = "master"
-  name = "sigs.k8s.io/cluster-api"
 
 [prune]
   go-tests = true
