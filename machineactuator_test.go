@@ -27,7 +27,7 @@ const (
 )
 
 func TestCreate(t *testing.T) {
-	clusterConfigFile := "cluster-ci-create.yaml"
+	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files :%v", err)
@@ -56,7 +56,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	clusterConfigFile := "cluster-ci-delete.yaml"
+	clusterConfigFile := "testconfigs/cluster-ci-delete.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files :%v", err)
@@ -97,7 +97,7 @@ func TestExists(t *testing.T) {
 }
 
 func TestParseProviderConfigs(t *testing.T) {
-	clusterConfigFile := "cluster-ci-parse-providers.yaml"
+	clusterConfigFile := "testconfigs/cluster-ci-parse-providers.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)

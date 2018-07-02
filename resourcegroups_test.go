@@ -8,7 +8,7 @@ import (
 
 func TestCreateGroup(t *testing.T) {
 	rg := "ClusterAPI-test-CI-create-rg"
-	clusterConfigFile := "cluster-ci-create-rg.yaml"
+	clusterConfigFile := "testconfigs/cluster-ci-create-rg.yaml"
 	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
@@ -33,7 +33,7 @@ func TestCreateGroup(t *testing.T) {
 
 func TestCheckResourceGroupExists(t *testing.T) {
 	rg := "ClusterAPI-test-CI-rg-exists"
-	clusterConfigFile := "cluster-ci-rg-exists.yaml"
+	clusterConfigFile := "testconfigs/cluster-ci-rg-exists.yaml"
 	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
