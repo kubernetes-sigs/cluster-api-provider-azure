@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	machineConfigFile = "exampleconfigs/machines.yaml"
-	clusterConfigFile = "exampleconfigs/cluster-ci.yaml"
+	machineConfigFile = "testconfigs/machines.yaml"
 )
 
 func TestCreate(t *testing.T) {
+	clusterConfigFile := "cluster-ci-create.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files :%v", err)
@@ -56,6 +56,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	clusterConfigFile := "cluster-ci-delete.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files :%v", err)
@@ -96,6 +97,7 @@ func TestExists(t *testing.T) {
 }
 
 func TestParseProviderConfigs(t *testing.T) {
+	clusterConfigFile := "cluster-ci-parse-providers.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
@@ -186,10 +188,10 @@ func mockAzureMachineProviderConfig(t *testing.T) *v1alpha1.AzureMachineProvider
 	}
 }
 
-func mockAzureClusterProviderConfig(t *testing.T) *v1alpha1.AzureClusterProviderConfig {
+func mockAzureClusterProviderConfig(t *testing.T, rg string) *v1alpha1.AzureClusterProviderConfig {
 	t.Helper()
 	return &v1alpha1.AzureClusterProviderConfig{
-		ResourceGroup: "ClusterAPI-test-CI",
+		ResourceGroup: rg,
 		Location:      "eastus",
 	}
 }

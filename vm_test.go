@@ -8,11 +8,13 @@ import (
 )
 
 func TestCreateOrUpdateDeployment(t *testing.T) {
+	rg := "ClusterAPI-test-CI-create-update"
+	clusterConfigFile := "testconfigs/cluster-ci-create-update.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
 	}
-	clusterConfig := mockAzureClusterProviderConfig(t)
+	clusterConfig := mockAzureClusterProviderConfig(t, rg)
 	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
@@ -39,11 +41,13 @@ func TestCreateOrUpdateDeployment(t *testing.T) {
 
 // Test attempting to create a deployment when it has already been created
 func TestCreateOrUpdateDeploymentWExisting(t *testing.T) {
+	rg := "ClusterAPI-test-CI-create-update-existing"
+	clusterConfigFile := "testconfigs/cluster-ci-create-update-existing.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
 	}
-	clusterConfig := mockAzureClusterProviderConfig(t)
+	clusterConfig := mockAzureClusterProviderConfig(t, rg)
 	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
@@ -75,11 +79,13 @@ func TestCreateOrUpdateDeploymentWExisting(t *testing.T) {
 }
 
 func TestVMIfExists(t *testing.T) {
+	rg := "ClusterAPI-test-CI-vm-exists"
+	clusterConfigFile := "testconfigs/cluster-ci-vm-exists.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
 	}
-	clusterConfig := mockAzureClusterProviderConfig(t)
+	clusterConfig := mockAzureClusterProviderConfig(t, rg)
 	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
@@ -113,6 +119,7 @@ func TestVMIfExists(t *testing.T) {
 }
 
 func TestDeleteSingleVM(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-delete-single.yaml"
 	//Set up
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {

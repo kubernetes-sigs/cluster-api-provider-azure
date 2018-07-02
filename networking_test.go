@@ -5,7 +5,9 @@ import (
 )
 
 func TestGetIP(t *testing.T) {
-	clusterProviderConfig := mockAzureClusterProviderConfig(t)
+	rg := "ClusterAPI-test-CI-get-ip"
+	clusterConfigFile := "cluster-ci-get-ip.yaml"
+	clusterProviderConfig := mockAzureClusterProviderConfig(t, rg)
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse configs: %v", err)

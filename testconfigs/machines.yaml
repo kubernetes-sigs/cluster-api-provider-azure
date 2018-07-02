@@ -1,0 +1,59 @@
+items:
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    name: azure-master-1
+    generateName: azure-master-
+    labels:
+      set: master
+  spec:
+    providerConfig:
+      value:
+        apiVersion: "azureproviderconfig/v1alpha1"
+        kind: "AzureMachineProviderConfig"
+        location: "eastus"
+        vmSize: "Standard_B1s"
+        image: 
+          publisher: "Canonical"
+          offer: "UbuntuServer"
+          sku: "16.04-LTS"
+          version: "latest"
+        osDisk:
+          osType: "Linux"
+          managedDisk:
+            storageAccountType: "Premium_LRS"
+          diskSizeGB: 30
+    versions:
+      kubelet: 1.9.4
+      controlPlane: 1.9.4
+    roles:
+    - Master
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    name: azure-node-1
+    generateName: azure-node-
+    labels:
+      set: node
+  spec:
+    providerConfig:
+      value:
+        apiVersion: "azureproviderconfig/v1alpha1"
+        kind: "AzureMachineProviderConfig"
+        location: "eastus"
+        vmSize: "Standard_B1s"
+        image: 
+          publisher: "Canonical"
+          offer: "UbuntuServer"
+          sku: "16.04-LTS"
+          version: "latest"
+        osDisk:
+          osType: "Linux"
+          managedDisk:
+            storageAccountType: "Premium_LRS"
+          diskSizeGB: 30
+    versions:
+      kubelet: 1.9.4
+      controlPlane: 1.9.4
+    roles:
+    - Node

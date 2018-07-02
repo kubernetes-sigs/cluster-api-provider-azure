@@ -7,11 +7,13 @@ import (
 )
 
 func TestCreateGroup(t *testing.T) {
+	rg := "ClusterAPI-test-CI-create-rg"
+	clusterConfigFile := "cluster-ci-create-rg.yaml"
 	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
 	}
-	clusterConfig := mockAzureClusterProviderConfig(t)
+	clusterConfig := mockAzureClusterProviderConfig(t, rg)
 	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
@@ -30,11 +32,13 @@ func TestCreateGroup(t *testing.T) {
 }
 
 func TestCheckResourceGroupExists(t *testing.T) {
+	rg := "ClusterAPI-test-CI-rg-exists"
+	clusterConfigFile := "cluster-ci-rg-exists.yaml"
 	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
 		t.Fatalf("unable to parse config files: %v", err)
 	}
-	clusterConfig := mockAzureClusterProviderConfig(t)
+	clusterConfig := mockAzureClusterProviderConfig(t, rg)
 	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
