@@ -2,21 +2,26 @@ items:
 - apiVersion: "cluster.k8s.io/v1alpha1"
   kind: Machine
   metadata:
-    generateName: gce-master-
+    generateName: azure-master-
     labels:
       set: master
   spec:
     providerConfig:
       value:
-        apiVersion: "gceproviderconfig/v1alpha1"
-        kind: "GCEMachineProviderConfig"
-        zone: "us-west1"
-        machineType: "n1-standard-2"
-        os: "ubuntu-1604-lts"
-        disks:
-        - initializeParams:
-            diskSizeGb: 30
-            diskType: "pd-standard"
+        apiVersion: "azureproviderconfig/v1alpha1"
+        kind: "AzureMachineProviderConfig"
+        location: "$LOCATION"
+        vmSize: "Standard_B1s"
+        image: 
+          publisher: "Canonical"
+          offer: "UbuntuServer"
+          sku: "16.04-LTS"
+          version: "latest"
+        osDisk:
+          osType: "Linux"
+          managedDisk:
+            storageAccountType: "Premium_LRS"
+          diskSizeGB: 30
     versions:
       kubelet: 1.9.4
       controlPlane: 1.9.4
@@ -25,22 +30,28 @@ items:
 - apiVersion: "cluster.k8s.io/v1alpha1"
   kind: Machine
   metadata:
-    generateName: gce-node-
+    generateName: azure-node-
     labels:
       set: node
   spec:
     providerConfig:
       value:
-        apiVersion: "gceproviderconfig/v1alpha1"
-        kind: "GCEMachineProviderConfig"
-        zone: "us-west1"
-        machineType: "n1-standard-1"
-        os: "ubuntu-1604-lts"
-        disks:
-        - initializeParams:
-            diskSizeGb: 30
-            diskType: "pd-standard"
+        apiVersion: "azureproviderconfig/v1alpha1"
+        kind: "AzureMachineProviderConfig"
+        location: "$LOCATION"
+        vmSize: "Standard_B1s"
+        image: 
+          publisher: "Canonical"
+          offer: "UbuntuServer"
+          sku: "16.04-LTS"
+          version: "latest"
+        osDisk:
+          osType: "Linux"
+          managedDisk:
+            storageAccountType: "Premium_LRS"
+          diskSizeGB: 30
     versions:
       kubelet: 1.9.4
+      controlPlane: 1.9.4
     roles:
     - Node

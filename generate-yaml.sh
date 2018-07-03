@@ -1,19 +1,5 @@
 #!/bin/bash
 
-# Copyright 2018 The Kubernetes Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -25,6 +11,7 @@ RANDOM_STRING=$(head -c5 < <(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom) | tr '[
 # Human friendly cluster name, limited to 6 characters
 HUMAN_FRIENDLY_CLUSTER_NAME=test1
 CLUSTER_NAME=${HUMAN_FRIENDLY_CLUSTER_NAME}-${RANDOM_STRING}
+RESOURCE_GROUP=clusterapi-${RANDOM_STRING}
 
 OUTPUT_DIR=generatedconfigs
 TEMPLATE_DIR=configtemplates
@@ -87,34 +74,52 @@ if [ $OVERWRITE -ne 1 ] && [ -f $ADDON_GENERATED_FILE ]; then
   exit 1
 fi
 
+command -v az >/dev/null 2>&1 || \
+{ echo >&2 "The Azure CLI is required. Please install it to continue."; exit 1; }
+
+echo Creating service principal...
+az ad sp create-for-rbac --name "cluster-api-${RANDOM_STRING}" --sdk-auth 2>/dev/null > tmp.auth
+echo Created service principal "cluster-api-${RANDOM_STRING}"
+
+TMP=$(grep "\"clientId\": " tmp.auth)
+CLIENT_ID=${TMP:15:36}
+TMP=$(grep "\"clientSecret\": " tmp.auth)
+CLIENT_SECRET=${TMP:19:36}
+TMP=$(grep "\"subscriptionId\": " tmp.auth)
+SUBSCRIPTION_ID=${TMP:21:36}
+TMP=$(grep "\"tenantId\": " tmp.auth)
+TENANT_ID=${TMP:15:36}
+
+
+CLIENT_ID_ENC=$(echo -n $CLIENT_ID | base64)
+CLIENT_SECRET_ENC=$(echo -n $CLIENT_SECRET | base64)
+SUBSCRIPTION_ID_ENC=$(echo -n $SUBSCRIPTION_ID | base64)
+TENANT_ID_ENC=$(echo -n $TENANT_ID | base64)
+LOCATION="eastus"
+
+rm tmp.auth
+
 mkdir -p ${OUTPUT_DIR}
 
-cat $MACHINE_TEMPLATE_FILE > $MACHINE_GENERATED_FILE
-cat $CLUSTER_TEMPLATE_FILE > $CLUSTER_GENERATED_FILE
-cat $PROVIDERCOMPONENT_TEMPLATE_FILE > $PROVIDERCOMPONENT_GENERATED_FILE
-cat $ADDON_TEMPLATE_FILE > $ADDON_GENERATED_FILE
+cat $MACHINE_TEMPLATE_FILE \
+  | sed -e "s/\$LOCATION/$LOCATION/" \
+  > $MACHINE_GENERATED_FILE
 
-#cat $MACHINE_TEMPLATE_FILE \
-#  | sed -e "s/\$ZONE/$ZONE/" \
-#  > $MACHINE_GENERATED_FILE
+cat $CLUSTER_TEMPLATE_FILE \
+  | sed -e "s/\$RESOURCE_GROUP/$RESOURCE_GROUP/" \
+  | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
+  | sed -e "s/\$LOCATION/$LOCATION/" \
+  > $CLUSTER_GENERATED_FILE
 
-#cat $CLUSTER_TEMPLATE_FILE \
-#  | sed -e "s/\$GCLOUD_PROJECT/$GCLOUD_PROJECT/" \
-#  | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
-#  > $CLUSTER_GENERATED_FILE
+cat $PROVIDERCOMPONENT_TEMPLATE_FILE \
+  | sed -e "s/\$AZURE_TENANT_ID/$TENANT_ID_ENC/" \
+  | sed -e "s/\$AZURE_CLIENT_ID/$CLIENT_ID_ENC/" \
+  | sed -e "s/\$AZURE_CLIENT_SECRET/$CLIENT_SECRET_ENC/" \
+  | sed -e "s/\$AZURE_SUBSCRIPTION_ID/$SUBSCRIPTION_ID_ENC/" \
+  > $PROVIDERCOMPONENT_GENERATED_FILE
 
-#cat $PROVIDERCOMPONENT_TEMPLATE_FILE \
-#  | sed -e "s/\$MACHINE_CONTROLLER_SA_KEY/$MACHINE_CONTROLLER_SA_KEY/" \
-#  | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
-#  | sed -e "s/\$MACHINE_CONTROLLER_SSH_USER/$MACHINE_CONTROLLER_SSH_USER/" \
-#  | sed -e "s/\$MACHINE_CONTROLLER_SSH_PUBLIC/$MACHINE_CONTROLLER_SSH_PUBLIC/" \
-#  | sed -e "s/\$MACHINE_CONTROLLER_SSH_PRIVATE/$MACHINE_CONTROLLER_SSH_PRIVATE/" \
-#  > $PROVIDERCOMPONENT_GENERATED_FILE
-
-#cat $ADDON_TEMPLATE_FILE \
-#  | sed -e "s/\$GCLOUD_PROJECT/$GCLOUD_PROJECT/" \
-#  | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
-#  | sed "s/\$LOADBALANCER_SA_KEY/$LOADBALANCER_SA_KEY/" \
-#  > $ADDON_GENERATED_FILE
+# TODO: implement addon file
+cat $ADDON_TEMPLATE_FILE \
+  > $ADDON_GENERATED_FILE
 
 echo -e "\nYour cluster name is '${CLUSTER_NAME}'"

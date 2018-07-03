@@ -1,12 +1,7 @@
 apiVersion: "cluster.k8s.io/v1alpha1"
 kind: Cluster
 metadata:
-  name: clusterctl-test
-  annotations:
-    # The default service account used by master machines/vms created for this cluster
-    gce.clusterapi.k8s.io/service-account-k8s-master: "master-clusterctl-test@michael-test-205616.iam.gserviceaccount.com"
-    # The default service account used by worker machines/cms created for this cluster
-    gce.clusterapi.k8s.io/service-account-k8s-worker: "worker-clusterctl-test@michael-test-205616.iam.gserviceaccount.com"
+  name: ClusterAPI-test-cluster
 spec:
     clusterNetwork:
         services:
@@ -16,6 +11,7 @@ spec:
         serviceDomain: "cluster.local"
     providerConfig:
       value:
-        apiVersion: "gceproviderconfig/v1alpha1"
-        kind: "GCEClusterProviderConfig"
-        project: "michael-test-205616"
+        apiVersion: "azureproviderconfig/v1alpha1"
+        kind: "AzureClusterProviderConfig"
+        resourceGroup: "$RESOURCE_GROUP"
+        location: "$LOCATION"
