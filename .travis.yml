@@ -7,15 +7,15 @@ jobs:
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestParseProviderConfig$
     - stage: Integration Tests
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreate$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestUpdate$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDelete$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestExists$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeployment$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeploymentWExisting$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestVMIfExists$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDeleteSingleVM$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateGroup$
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestGetIP$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestUpdate$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDelete$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestExists$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeployment$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeploymentWExisting$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestVMIfExists$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDeleteSingleVM$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateGroup$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestGetIP$
     
 before_install:                                                                 
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
