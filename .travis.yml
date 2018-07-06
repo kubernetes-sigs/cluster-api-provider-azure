@@ -3,28 +3,20 @@ go:
 - 1.10.x
 jobs:
   include:
-    - stage: TestCreate
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreate$
-    - stage: TestUpdate
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestUpdate$
-    - stage: TestDelete
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDelete$
-    - stage: TestExists
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestExists$
-    - stage: TestParseProviderConfig
+    - stage: Unit Tests
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestParseProviderConfig$
-    - stage: TestCreateOrUpdateDeployment
+    - stage: Integration Tests
+      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreate$
+      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestUpdate$
+      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDelete$
+      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestExists$
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeployment$
-    - stage: TestCreateOrUpdateDeploymentWExisting
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateOrUpdateDeploymentWExisting$
-    - stage: TestVMIfExists
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestVMIfExists$
-    - stage: TestDeleteSingleVM
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestDeleteSingleVM$
-    - stage: TestCreateGroup
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreateGroup$
-    - stage: TestGetIP
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestGetIP$
+    
 before_install:                                                                 
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
   - sed -i 's/^ignored/\# ignored/g' Gopkg.toml
