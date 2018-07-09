@@ -120,6 +120,16 @@ func TestParseProviderConfigs(t *testing.T) {
 	}
 }
 
+func TestBase64Encoding(t *testing.T) {
+	baseText := "echo 'Hello world!'"
+	expectedEncoded := "ZWNobyAnSGVsbG8gd29ybGQhJw=="
+	actualEncoded := *base64EncodeCommand(baseText)
+
+	if expectedEncoded != actualEncoded {
+		t.Fatalf("encoded string does not match expected result: %s != %s", actualEncoded, expectedEncoded)
+	}
+}
+
 /*func TestGetKubeConfig(t *testing.T) {
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {

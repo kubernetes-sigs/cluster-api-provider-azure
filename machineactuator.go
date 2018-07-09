@@ -15,6 +15,7 @@ package azure_provider
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -234,6 +235,11 @@ func readJSON(path string) (*map[string]interface{}, error) {
 	}
 
 	return &data, nil
+}
+
+func base64EncodeCommand(command string) *string {
+	encoded := base64.StdEncoding.EncodeToString([]byte(command))
+	return &encoded
 }
 
 func (azure *AzureClient) convertMachineToDeploymentParams(machine *clusterv1.Machine) (*map[string]interface{}, error) {
