@@ -300,6 +300,9 @@ func (azure *AzureClient) convertMachineToDeploymentParams(machine *clusterv1.Ma
 		"location": map[string]interface{}{
 			"value": machineConfig.Location,
 		},
+		"startup_script": map[string]interface{}{
+			"value": "ZWNobyAnaGVsbG8gd29ybGQhJw==",
+		},
 	}
 	return &params, nil
 }

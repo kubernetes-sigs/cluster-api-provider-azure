@@ -77,6 +77,10 @@
     "location": {
       "defaultValue": null,
       "type": "string"
+    },
+    "startup_script": {
+      "defaultValue": null,
+      "type": "string"
     }
   },
   "variables": {},
@@ -383,6 +387,30 @@
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_ClusterAPIVM_vnet_name'))]"
       ]
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('virtualMachines_ClusterAPIVM_name'), '/startup-script')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', parameters('virtualMachines_ClusterAPIVM_name'))]"
+      ],
+      "tags": {
+        "displayName": "config-app"
+      },
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "skipDos2Unix": true
+        },
+        "protectedSettings": {
+          "script": "[parameters('startup_script')]"
+        }
+      }
     }
   ]
 }
