@@ -28,6 +28,8 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/joho/godotenv"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
+	"github.com/platform9/azure-provider/machinesetup"
+	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -42,13 +44,15 @@ type AzureClient struct {
 	kubeadmToken   string
 	ctx            context.Context
 	//	machineClient  client.MachineInterface
-	scheme       *runtime.Scheme
-	codecFactory *serializer.CodecFactory
+	scheme              *runtime.Scheme
+	codecFactory        *serializer.CodecFactory
+	machineSetupConfigs machinesetup.MachineSetup
 }
 
 type MachineActuatorParams struct {
-	V1Alpha1Client client.ClusterV1alpha1Interface
-	KubeadmToken   string
+	V1Alpha1Client         client.ClusterV1alpha1Interface
+	KubeadmToken           string
+	MachineSetupConfigPath string
 	//TODO Add more
 }
 
@@ -66,7 +70,7 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
 		err = godotenv.Load()
 		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
+			err = errors.New("AZURE_SUBSCmRIPTION_ID: \"\"")
 		}
 		if err != nil {
 			log.Fatalf("Failed to load environment variables: %v", err)
@@ -103,15 +107,7 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return err
 	}
-	//Get the Login info from the VMs
-	/*
-		_, _, err = azure.getLogin(cluster, machine)
-		if err != nil {
-			return err
-		}
-	*/
-
-	//Set up Kubernetes
+	// TODO: Set up Kubernetes
 	return nil
 }
 
@@ -248,6 +244,10 @@ func (azure *AzureClient) convertMachineToDeploymentParams(machine *clusterv1.Ma
 	if err != nil {
 		return nil, err
 	}
+	startupScript, err := azure.getStartupScript(machine)
+	if err != nil {
+		return nil, err
+	}
 	params := map[string]interface{}{
 		"virtualNetworks_ClusterAPIVM_vnet_name": map[string]interface{}{
 			"value": "ClusterAPIVnet",
@@ -307,8 +307,36 @@ func (azure *AzureClient) convertMachineToDeploymentParams(machine *clusterv1.Ma
 			"value": machineConfig.Location,
 		},
 		"startup_script": map[string]interface{}{
-			"value": "ZWNobyAnaGVsbG8gd29ybGQhJw==",
+			"value": *base64EncodeCommand(startupScript),
 		},
 	}
 	return &params, nil
+}
+
+func parseMachineSetupConfig(path string) (*machinesetup.MachineSetup, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var machineSetupList *machinesetup.MachineSetup
+	err = yaml.Unmarshal(data, machineSetupList)
+	if err != nil {
+		return nil, err
+	}
+	return machineSetupList, nil
+}
+
+// Get the startup script from the machine_set_configs, taking into account the role of the given machine
+func (azure *AzureClient) getStartupScript(machine *clusterv1.Machine) (string, error) {
+	for _, machineRole := range machine.Spec.Roles {
+		for _, machineSetupItem := range azure.machineSetupConfigs.Items {
+			for _, machineSetupRole := range machineSetupItem.MachineParams.Roles {
+				if string(machineSetupRole) == string(machineRole) {
+					return machineSetupItem.Metadata.StartupScript, nil
+				}
+			}
+		}
+	}
+	return "", errors.New("Machine roles not found in MachineSetup")
 }

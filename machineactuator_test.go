@@ -19,6 +19,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	v1alpha1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
+	"github.com/platform9/azure-provider/machinesetup"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -130,18 +132,39 @@ func TestBase64Encoding(t *testing.T) {
 	}
 }
 
-/*func TestGetKubeConfig(t *testing.T) {
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files: %v", err)
+func TestGetStartupScript(t *testing.T) {
+	expectedStartupScript := "echo 'Hello world!'"
+	azure := AzureClient{
+		machineSetupConfigs: machinesetup.MachineSetup{
+			Items: []machinesetup.Params{
+				{
+					MachineParams: machinesetup.MachineParams{
+						Roles: []v1alpha1.MachineRole{
+							"Master",
+						},
+					},
+					Metadata: machinesetup.Metadata{
+						StartupScript: expectedStartupScript,
+					},
+				},
+			},
+		},
 	}
-	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
+	machine := &clusterv1.Machine{
+		Spec: clusterv1.MachineSpec{
+			Roles: []common.MachineRole{
+				"Master",
+			},
+		},
 	}
-	azure.GetKubeConfig()
-	message := "Enable succeeded: \n[stdout]\nhello world!\n\n[stderr]\n"
-}*/
+	actualStartupScript, err := azure.getStartupScript(machine)
+	if err != nil {
+		t.Fatalf("unable to get startup script: %v", err)
+	}
+	if actualStartupScript != expectedStartupScript {
+		t.Fatalf("got wrong startup script: %v != %v", actualStartupScript, expectedStartupScript)
+	}
+}
 
 func readConfigs(t *testing.T, clusterConfigPath string, machinesConfigPath string) (*clusterv1.Cluster, []*clusterv1.Machine, error) {
 	t.Helper()

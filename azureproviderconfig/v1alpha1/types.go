@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type MachineRole string
+
+const (
+	MasterRole MachineRole = "Master"
+	NodeRole   MachineRole = "Node"
+)
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type AzureMachineProviderConfig struct {
 	metav1.TypeMeta `json:",inline"`
