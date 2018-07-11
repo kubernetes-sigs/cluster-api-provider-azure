@@ -9,14 +9,6 @@ import (
 )
 
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	//Parse in configurations
-	/*
-		var machineConfig azureconfigv1.AzureMachineProviderConfig
-		err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
-		if err != nil {
-			return "", err
-		}
-	*/
 	var clusterConfig azureconfigv1.AzureClusterProviderConfig
 	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
 	if err != nil {

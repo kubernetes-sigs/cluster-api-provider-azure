@@ -38,12 +38,11 @@ import (
 )
 
 type AzureClient struct {
-	SubscriptionID string
-	VMPassword     string
-	Authorizer     autorest.Authorizer
-	kubeadmToken   string
-	ctx            context.Context
-	//	machineClient  client.MachineInterface
+	SubscriptionID      string
+	VMPassword          string
+	Authorizer          autorest.Authorizer
+	kubeadmToken        string
+	ctx                 context.Context
 	scheme              *runtime.Scheme
 	codecFactory        *serializer.CodecFactory
 	machineSetupConfigs machinesetup.MachineSetup
@@ -244,10 +243,13 @@ func (azure *AzureClient) convertMachineToDeploymentParams(machine *clusterv1.Ma
 	if err != nil {
 		return nil, err
 	}
-	startupScript, err := azure.getStartupScript(machine)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		TODO: Use startup script in ARM Template
+		startupScript, err := azure.getStartupScript(machine)
+		if err != nil {
+			return nil, err
+		}
+	*/
 	params := map[string]interface{}{
 		"virtualNetworks_ClusterAPIVM_vnet_name": map[string]interface{}{
 			"value": "ClusterAPIVnet",
@@ -307,8 +309,14 @@ func (azure *AzureClient) convertMachineToDeploymentParams(machine *clusterv1.Ma
 			"value": machineConfig.Location,
 		},
 		"startup_script": map[string]interface{}{
-			"value": *base64EncodeCommand(startupScript),
+			"value": *base64EncodeCommand("echo 'Hello world!'"),
 		},
+		/*
+			TODO: Use startup script in machine_setup_config
+			"startup_script": map[string]interface{}{
+				"value": *base64EncodeCommand(startupScript),
+			},
+		*/
 	}
 	return &params, nil
 }

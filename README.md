@@ -11,5 +11,5 @@
 6. Use the configs generated in `generatedconfigs/` with `clusterctl`
     * Example: `./clusterctl --provider azure -m generatedconfigs/machines.yaml -c generatedconfigs/cluster.yaml -p generatedconfigs/provider-components.yaml -a generatedconfigs/addons.yaml`
 
-## Notes
-cluster-api should be vendored when testing, either in Travis or locally, but should not be versioned in git. This allows the cluster-api to import `azure-provider` while avoiding a circular dependency. To vendor the cluster-api for testing purposes, un-ignore it in `Gopkg.toml` and run `dep ensure -add sigs.k8s.io/cluster-api/pkg -vendor-only`. After adding it, `Gopkg.lock` will reference it. Prior to comitting, this should be manually removed.
+## Notes for testing
+cluster-api should be vendored when testing, either in Travis or locally, but should not be versioned in git. This allows the cluster-api to import `azure-provider` while avoiding a circular dependency. To vendor the cluster-api for testing purposes, un-ignore it in `Gopkg.toml` and run `dep ensure -add sigs.k8s.io/cluster-api/pkg`. After adding it, `Gopkg.lock` and `Gopkg.toml` will reference it. Prior to comitting, these references should be manually removed and the ignore restored.
