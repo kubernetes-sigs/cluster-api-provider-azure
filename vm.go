@@ -11,6 +11,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
+
+
 //Assumes resource group has already been created and has the name found in clusterConfig.ResourceGroup
 func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*resources.DeploymentExtended, error) {
 	//Parse in provider configs

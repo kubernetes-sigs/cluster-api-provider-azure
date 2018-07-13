@@ -31,6 +31,22 @@ func TestCreateGroup(t *testing.T) {
 	}
 }
 
+func TestCreateGroupUnit(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-create-rg.yaml"
+	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	if err != nil {
+		t.Fatalf("unable to parse config files: %v", err)
+	}
+	azure, err := mockAzureClient(t)
+	if err != nil {
+		t.Fatalf("unable to create mock azure client: %v", err)
+	}
+	_, err = azure.createOrUpdateGroup(cluster)
+	if err != nil {
+		t.Fatalf("unable to create resource group: %v", err)
+	}
+}
+
 func TestCheckResourceGroupExists(t *testing.T) {
 	rg := "ClusterAPI-test-CI-rg-exists"
 	clusterConfigFile := "testconfigs/cluster-ci-rg-exists.yaml"
@@ -58,6 +74,25 @@ func TestCheckResourceGroupExists(t *testing.T) {
 	exists, err = azure.checkResourceGroupExists(cluster)
 	if !exists {
 		t.Fatalf("got resource group does not exist that should have existed")
+	}
+	if err != nil {
+		t.Fatalf("error checking if resource group exists: %v", err)
+	}
+}
+
+func TestCheckResourceGroupExistsUnit(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-rg-exists.yaml"
+	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	if err != nil {
+		t.Fatalf("unable to parse config files: %v", err)
+	}
+	azure, err := mockAzureClient(t)
+	if err != nil {
+		t.Fatalf("unable to create mock azure client: %v", err)
+	}
+	exists, err := azure.checkResourceGroupExists(cluster)
+	if !exists {
+		t.Fatalf("did not get resource group that should have existed")
 	}
 	if err != nil {
 		t.Fatalf("error checking if resource group exists: %v", err)

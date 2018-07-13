@@ -13,11 +13,16 @@ limitations under the License.
 package azure_provider
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/ghodss/yaml"
+	"github.com/joho/godotenv"
 	v1alpha1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	"github.com/platform9/azure-provider/machinesetup"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
@@ -27,6 +32,21 @@ import (
 const (
 	machineConfigFile = "testconfigs/machines.yaml"
 )
+
+func TestNewMachineActuator(t *testing.T) {
+	params := MachineActuatorParams{KubeadmToken: "token"}
+	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	if actuator.kubeadmToken != params.KubeadmToken {
+		t.Fatalf("actuator.kubeadmToken != params.KubeadmToken: %v != %v", actuator.kubeadmToken, params.KubeadmToken)
+	}
+	expectedPassword := "SamplePassword1"
+	if actuator.VMPassword != expectedPassword {
+		t.Fatalf("actuator.VMPassword does not match expected: %v != %v", actuator.VMPassword, expectedPassword)
+	}
+}
 
 func TestCreate(t *testing.T) {
 	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
@@ -166,6 +186,22 @@ func TestGetStartupScript(t *testing.T) {
 	}
 }
 
+func TestConvertMachineToDeploymentParams(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-parse-providers.yaml"
+	_, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	azure, err := mockAzureClient(t)
+	if err != nil {
+		t.Fatalf("unable to create mock azure client: %v", err)
+	}
+	params, err := azure.convertMachineToDeploymentParams(machines[0])
+	if err != nil {
+		t.Fatalf("unable to convert machine to deployment params: %v", err)
+	}
+	if (*params)["virtualNetworks_ClusterAPIVM_vnet_name"].(map[string]interface{})["value"].(string) != "ClusterAPIVnet" {
+		t.Fatalf("params are not populated correctly")
+	}
+}
+
 func readConfigs(t *testing.T, clusterConfigPath string, machinesConfigPath string) (*clusterv1.Cluster, []*clusterv1.Machine, error) {
 	t.Helper()
 
@@ -227,4 +263,34 @@ func mockAzureClusterProviderConfig(t *testing.T, rg string) *v1alpha1.AzureClus
 		ResourceGroup: rg,
 		Location:      "eastus",
 	}
+}
+
+func mockAzureClient(t *testing.T) (*AzureClient, error) {
+	t.Helper()
+	scheme, codecFactory, err := v1alpha1.NewSchemeAndCodecs()
+	if err != nil {
+		return nil, err
+	}
+	//Parse in environment variables if necessary
+	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+		err = godotenv.Load()
+		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+			err = errors.New("AZURE_SUBSCmRIPTION_ID: \"\"")
+		}
+		if err != nil {
+			log.Fatalf("Failed to load environment variables: %v", err)
+			return nil, err
+		}
+	}
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	if err != nil {
+		log.Fatalf("Failed to get OAuth config: %v", err)
+		return nil, err
+	}
+	return &AzureClient{
+		SubscriptionID: "test",
+		scheme:         scheme,
+		codecFactory:   codecFactory,
+		Authorizer:     authorizer,
+	}, nil
 }

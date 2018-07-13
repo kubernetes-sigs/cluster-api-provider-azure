@@ -52,7 +52,7 @@ type MachineActuatorParams struct {
 	V1Alpha1Client         client.ClusterV1alpha1Interface
 	KubeadmToken           string
 	MachineSetupConfigPath string
-	//TODO Add more
+	// TODO Add more
 }
 
 const (
@@ -69,7 +69,7 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
 		err = godotenv.Load()
 		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCmRIPTION_ID: \"\"")
+			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
 		}
 		if err != nil {
 			log.Fatalf("Failed to load environment variables: %v", err)
@@ -198,7 +198,7 @@ func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return false, err
 	}
-	return (vm != nil), nil
+	return vm != nil, nil
 }
 
 func (azure *AzureClient) decodeMachineProviderConfig(providerConfig clusterv1.ProviderConfig, out runtime.Object) error {

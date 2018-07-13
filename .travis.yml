@@ -4,7 +4,7 @@ go:
 jobs:
   include:
     - stage: Unit Tests
-      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript$"
+      script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript|TestGetIPUnit|TestCreateGroupUnit|TestNewMachineActuator$"
     - stage: Integration Tests
       script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestCreate$
     - script: travis_wait 50 go test github.com/platform9/azure-provider -test.timeout 0 -x -run ^TestUpdate$
