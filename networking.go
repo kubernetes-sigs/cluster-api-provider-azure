@@ -45,6 +45,7 @@ func (wrapper *IPAddressClientWrapper) SetAuthorizer(Authorizer autorest.Authori
 	}
 }
 
+// Return the ip address of an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	var clusterConfig azureconfigv1.AzureClusterProviderConfig
 	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)

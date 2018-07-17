@@ -12,8 +12,8 @@ import (
 )
 
 
-
-//Assumes resource group has already been created and has the name found in clusterConfig.ResourceGroup
+// Create a machine based on the cluster and machine spec passed.
+// Assumes resource group has already been created and has the name found in clusterConfig.ResourceGroup
 func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*resources.DeploymentExtended, error) {
 	//Parse in provider configs
 	var machineConfig azureconfigv1.AzureMachineProviderConfig

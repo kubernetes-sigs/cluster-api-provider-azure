@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
+// The Azure Client, also used as a machine actuator
 type AzureClient struct {
 	SubscriptionID      string
 	VMPassword          string
@@ -48,6 +49,9 @@ type AzureClient struct {
 	machineSetupConfigs machinesetup.MachineSetup
 }
 
+
+// Parameter object used to create a machine actuator.
+// These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
 type MachineActuatorParams struct {
 	V1Alpha1Client         client.ClusterV1alpha1Interface
 	KubeadmToken           string
@@ -60,6 +64,8 @@ const (
 	parametersFile = "deployment-params.json"
 )
 
+
+// Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	scheme, codecFactory, err := azureconfigv1.NewSchemeAndCodecs()
 	if err != nil {
@@ -97,6 +103,7 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	}, nil
 }
 
+// Create a machine based on the cluster and machine spec passed
 func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	_, err := azure.createOrUpdateGroup(cluster)
 	if err != nil {
@@ -110,6 +117,9 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	return nil
 }
 
+
+// Update an existing machine based on the cluster and machine spec passed.
+// Currently only checks machine existence and does not update anything.
 func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	//Parse in configurations
 	var goalMachineConfig azureconfigv1.AzureMachineProviderConfig
@@ -129,6 +139,9 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 	return nil
 }
 
+
+// Delete an existing machine based on the cluster and machine spec passed.
+// Will block until the machine has been successfully deleted, or an error is returned.
 func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	//Parse in configurations
 	var machineConfig azureconfigv1.AzureMachineProviderConfig
@@ -166,6 +179,8 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	return groupsDeleteFuture.Future.WaitForCompletion(azure.ctx, groupsClient.BaseClient.Client)
 }
 
+// Get the kubeconfig of a machine based on the cluster and machine spec passed.
+// Has not been fully tested as k8s is not yet bootstrapped on created machines.
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	var clusterConfig azureconfigv1.AzureClusterProviderConfig
 	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
@@ -186,6 +201,7 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 	return message, nil
 }
 
+// Determine whether a machine exists based on the cluster and machine spec passed.
 func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
 	rgExists, err := azure.checkResourceGroupExists(cluster)
 	if err != nil {
