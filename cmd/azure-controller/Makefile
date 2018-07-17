@@ -16,7 +16,7 @@
 
 PREFIX = meegul
 NAME = azure-controller
-TAG = 0.0.17
+TAG = 0.0.2
 
 image:
 	docker build -t "$(PREFIX)/$(NAME):$(TAG)" -f ./Dockerfile ../..
