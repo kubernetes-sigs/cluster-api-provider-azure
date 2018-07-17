@@ -250,6 +250,12 @@
   version = "v0.3.4"
 
 [[projects]]
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   name = "github.com/joho/godotenv"
   packages = ["."]
   revision = "a79fa1e548e2c689c241d10173efd51e5d689d5b"
@@ -360,6 +366,12 @@
     "xfs"
   ]
   revision = "94663424ae5ae9856b40a9f170762b4197024661"
+
+[[projects]]
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -780,6 +792,7 @@
     "transport",
     "util/buffer",
     "util/cert",
+    "util/cert/triple",
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
@@ -799,9 +812,39 @@
   ]
   revision = "8a9b82f00b3a86eac24681da3f9fe6c34c01cea2"
 
+[[projects]]
+  branch = "master"
+  name = "sigs.k8s.io/cluster-api"
+  packages = [
+    "clusterctl/clusterdeployer",
+    "clusterctl/clusterdeployer/minikube",
+    "clusterctl/cmd",
+    "clusterctl/providercomponents",
+    "pkg/apis/cluster",
+    "pkg/apis/cluster/common",
+    "pkg/apis/cluster/v1alpha1",
+    "pkg/client/clientset_generated/clientset",
+    "pkg/client/clientset_generated/clientset/scheme",
+    "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
+    "pkg/client/informers_generated/externalversions",
+    "pkg/client/informers_generated/externalversions/cluster",
+    "pkg/client/informers_generated/externalversions/cluster/v1alpha1",
+    "pkg/client/informers_generated/externalversions/internalinterfaces",
+    "pkg/client/listers_generated/cluster/v1alpha1",
+    "pkg/clientcmd",
+    "pkg/controller/cluster",
+    "pkg/controller/config",
+    "pkg/controller/machine",
+    "pkg/controller/noderefutil",
+    "pkg/controller/sharedinformers",
+    "pkg/errors",
+    "pkg/util"
+  ]
+  revision = "012aa2d0bafe135676ba931b61f32cbbe571d1c7"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "40d17a33f8d24c5f51eb89bc0d3fbe0a237e3da1afea6b93b4137a43b0bedace"
+  inputs-digest = "c52b8fed6a7e4cdd11949a293066c7b9684ff778afb8c876956bfe1e15bb1016"
   solver-name = "gps-cdcl"
   solver-version = 1
