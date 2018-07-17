@@ -29,12 +29,14 @@ import (
 	"github.com/joho/godotenv"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	"github.com/platform9/azure-provider/machinesetup"
+	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
+	"github.com/golang/glog"
 )
 
 // The Azure Client, also used as a machine actuator
@@ -62,8 +64,16 @@ type MachineActuatorParams struct {
 const (
 	templateFile   = "deployment-template.json"
 	parametersFile = "deployment-params.json"
+	ProviderName = "azure"
 )
 
+func init() {
+	actuator, err := NewMachineActuator(MachineActuatorParams{})
+	if err != nil {
+		glog.Fatalf("Error creating cluster provisioner for azure : %v", err)
+	}
+	clustercommon.RegisterClusterProvisioner(ProviderName, actuator)
+}
 
 // Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
