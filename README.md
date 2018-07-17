@@ -19,5 +19,5 @@
 
 ## Testing
 Unit tests can be ran with `make unit_test`, and integration tests can be ran with `make integration_test`. However, keep in mind that the integration tests will take a significant amount of time (> 1 hour) and _**will create resources in Azure**_. The integration tests should clean up the created resources, but do not take this as a guarantee.
-### Additional notes for testing
-cluster-api should be vendored when testing, either in Travis or locally, but should not be versioned in git. This allows the cluster-api to import `azure-provider` while avoiding a circular dependency. To vendor the cluster-api for testing purposes, un-ignore it in `Gopkg.toml` and run `dep ensure -add sigs.k8s.io/cluster-api/pkg`. After adding it, `Gopkg.lock` and `Gopkg.toml` will reference it. Prior to comitting, these references should be manually removed and the ignore restored.
+### Integration test notes
+The integration tests require an azure service principal and use [environment based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
