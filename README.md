@@ -5,11 +5,9 @@
 2. Log into the Azure CLI, `az login`
 3. (Optional) Modify the templates found in `configtemplates/` 
 4. Run `generate-yaml.sh`   _Note: `generate-yaml.sh` creates an Azure service principal which will not be deleted automatically._
-5. Obtain `clusterctl` from the [cluster-api repository](https://github.com/kubernetes-sigs/cluster-api). You can either:
-    * Build from source by cloning the repo and running `go build` while in the `cluster-api/clusterctl` directory.
-    * Use one of the pre-built binaries found in the releases of the repository.
-6. Use the configs generated in `generatedconfigs/` with `clusterctl`
-    * Example: `./clusterctl --provider azure -m generatedconfigs/machines.yaml -c generatedconfigs/cluster.yaml -p generatedconfigs/provider-components.yaml -a generatedconfigs/addons.yaml`
+5. (Optional) Build a new version of `clusterctl` by running `cd clusterctl && go build && cd ..`
+5. Use the configs generated in `generatedconfigs/` with `clusterctl`
+    * Example: `./clusterctl/clusterctl --provider azure -m generatedconfigs/machines.yaml -c generatedconfigs/cluster.yaml -p generatedconfigs/provider-components.yaml -a generatedconfigs/addons.yaml`
 
 ## Creating and using controller images
 1. [Install docker](https://docs.docker.com/install/#supported-platforms) and ensure docker works with `docker run hello-world`
