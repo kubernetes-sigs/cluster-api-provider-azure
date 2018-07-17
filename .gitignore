@@ -2,5 +2,4 @@
 .env
 exampleconfigs/provider-components.yaml
 minikube.kubeconfig
-vendor/sigs.k8s.io/
 generatedconfigs/
