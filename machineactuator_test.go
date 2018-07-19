@@ -27,6 +27,7 @@ import (
 	"github.com/platform9/azure-provider/machinesetup"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"github.com/platform9/azure-provider/wrappers"
 )
 
 const (
@@ -72,9 +73,17 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestCreateUnit(t *testing.T) {
+	return
+}
+
 func TestUpdate(t *testing.T) {
 	// TODO: write test
 	return
+}
+
+func TestUpdateUnit(t *testing.T) {
+
 }
 
 func TestDelete(t *testing.T) {
@@ -113,9 +122,17 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestDeleteUnit(t *testing.T) {
+	return
+}
+
 func TestExists(t *testing.T) {
 	// TODO: write test
 	return
+}
+
+func TestExistsUnit(t *testing.T) {
+
 }
 
 func TestParseProviderConfigs(t *testing.T) {
@@ -275,7 +292,7 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
 		err = godotenv.Load()
 		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCmRIPTION_ID: \"\"")
+			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
 		}
 		if err != nil {
 			log.Fatalf("Failed to load environment variables: %v", err)
@@ -288,7 +305,7 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 		return nil, err
 	}
 	return &AzureClient{
-		SubscriptionID: "test",
+		SubscriptionID: wrappers.MockSubscriptionID,
 		scheme:         scheme,
 		codecFactory:   codecFactory,
 		Authorizer:     authorizer,

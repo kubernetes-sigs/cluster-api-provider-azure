@@ -8,7 +8,7 @@ GOGET=$(GOCMD) get
 
 
 unit_test:
-	$(GOTEST) -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript|TestGetIPUnit|TestCreateGroupUnit|TestCheckResourceGroupExistsUnit|TestNewMachineActuator"
+	$(GOTEST) -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript|Test(\w)*Unit|TestNewMachineActuator"
 
 integration_test:
 	$(GOTEST) -run "^TestCreate|TestUpdate|TestDelete|TestExists|TestCreateOrUpdateDeployment|TestCreateOrUpdateDeploymentWExisting|TestVMIfExists|TestDeleteSingleVM|TestCreateGroup|TestGetIP"

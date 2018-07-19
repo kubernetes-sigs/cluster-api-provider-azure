@@ -1,49 +1,12 @@
 package azure_provider
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/Azure/go-autorest/autorest"
-
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"github.com/platform9/azure-provider/wrappers"
 )
 
-type IPAddressClientWrapper struct {
-	client network.PublicIPAddressesClient
-	mock   *IPAddressClientMock
-}
-
-type IPAddressClientMock struct{}
-
-func (wrapper *IPAddressClientWrapper) Get(ctx context.Context, rg string, IPName string, expand string) (network.PublicIPAddress, error) {
-	if wrapper.mock == nil {
-		return wrapper.client.Get(ctx, rg, IPName, expand)
-	} else {
-		ip := "1.1.1.1"
-		return network.PublicIPAddress{PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{IPAddress: &ip}}, nil
-	}
-}
-
-func getPublicIPAddressesClient(SubscriptionID string) *IPAddressClientWrapper {
-	if SubscriptionID == "test" {
-		return &IPAddressClientWrapper{
-			mock: &IPAddressClientMock{},
-		}
-	} else {
-		return &IPAddressClientWrapper{
-			client: network.NewPublicIPAddressesClient(SubscriptionID),
-		}
-	}
-}
-
-func (wrapper *IPAddressClientWrapper) SetAuthorizer(Authorizer autorest.Authorizer) {
-	if wrapper.mock == nil {
-		wrapper.client.Authorizer = Authorizer
-	}
-}
 
 // Return the ip address of an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
@@ -53,7 +16,7 @@ func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.M
 		return "", err
 	}
 
-	publicIPAddressClient := getPublicIPAddressesClient(azure.SubscriptionID)
+	publicIPAddressClient := wrappers.GetPublicIPAddressesClient(azure.SubscriptionID)
 	publicIPAddressClient.SetAuthorizer(azure.Authorizer)
 
 	publicIP, err := publicIPAddressClient.Get(azure.ctx, clusterConfig.ResourceGroup, getPublicIPName(machine), "")
