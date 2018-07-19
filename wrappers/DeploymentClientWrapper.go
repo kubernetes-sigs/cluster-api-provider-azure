@@ -1,10 +1,10 @@
 package wrappers
 
 import (
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	"net/http"
 	"context"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/go-autorest/autorest"
+	"net/http"
 )
 
 const (
@@ -36,7 +36,7 @@ func (wrapper *DeploymentsClientWrapper) SetAuthorizer(Authorizer autorest.Autho
 	}
 }
 
-func (wrapper *DeploymentsClientWrapper) Validate(ctx context.Context, rg string, deploymentName string, deployment resources.Deployment)  (resources.DeploymentValidateResult, error) {
+func (wrapper *DeploymentsClientWrapper) Validate(ctx context.Context, rg string, deploymentName string, deployment resources.Deployment) (resources.DeploymentValidateResult, error) {
 	if wrapper.mock == nil {
 		return wrapper.Client.Validate(ctx, rg, deploymentName, deployment)
 	}
@@ -46,9 +46,9 @@ func (wrapper *DeploymentsClientWrapper) Validate(ctx context.Context, rg string
 func (wrapper *DeploymentsClientWrapper) CreateOrUpdate(ctx context.Context, rgName string, deploymentName string, deployment resources.Deployment) (*DeploymentsCreateOrUpdateFutureWrapper, error) {
 	if wrapper.mock == nil {
 		future, err := wrapper.Client.CreateOrUpdate(ctx, rgName, deploymentName, deployment)
-		return &DeploymentsCreateOrUpdateFutureWrapper{ mock: false, future: future, }, err
+		return &DeploymentsCreateOrUpdateFutureWrapper{mock: false, future: future}, err
 	}
-	return &DeploymentsCreateOrUpdateFutureWrapper{ mock: true }, nil
+	return &DeploymentsCreateOrUpdateFutureWrapper{mock: true}, nil
 }
 
 func (wrapper *DeploymentsClientWrapper) Get(ctx context.Context, rgName string, deploymentName string) (resources.DeploymentExtended, error) {
@@ -62,7 +62,7 @@ func (wrapper *DeploymentsClientWrapper) Get(ctx context.Context, rgName string,
 				StatusCode: 200,
 			},
 		},
-		Name: &mockDeploymentName }, nil
+		Name: &mockDeploymentName}, nil
 }
 
 func (wrapper *DeploymentsClientWrapper) CheckExistence(ctx context.Context, resourceGroupName string, deploymentName string) (autorest.Response, error) {
@@ -75,8 +75,7 @@ func (wrapper *DeploymentsClientWrapper) CheckExistence(ctx context.Context, res
 func (wrapper *DeploymentsClientWrapper) Delete(ctx context.Context, resourceGroupName string, deploymentName string) (*DeploymentsDeleteFutureWrapper, error) {
 	if wrapper.mock == nil {
 		future, err := wrapper.Client.Delete(ctx, resourceGroupName, deploymentName)
-		return &DeploymentsDeleteFutureWrapper { mock: false, future: future }, err
+		return &DeploymentsDeleteFutureWrapper{mock: false, future: future}, err
 	}
-	return &DeploymentsDeleteFutureWrapper { mock: true }, nil
+	return &DeploymentsDeleteFutureWrapper{mock: true}, nil
 }
-

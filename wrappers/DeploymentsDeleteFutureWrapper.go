@@ -1,13 +1,13 @@
 package wrappers
 
 import (
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"context"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/go-autorest/autorest"
 )
 
 type DeploymentsDeleteFutureWrapper struct {
-	mock bool
+	mock   bool
 	future resources.DeploymentsDeleteFuture
 }
 
@@ -17,4 +17,3 @@ func (wrapper *DeploymentsDeleteFutureWrapper) WaitForCompletion(ctx context.Con
 	}
 	return nil
 }
-

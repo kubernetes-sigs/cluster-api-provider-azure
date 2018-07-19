@@ -3,10 +3,9 @@ package azure_provider
 import (
 	"fmt"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"github.com/platform9/azure-provider/wrappers"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
 
 // Return the ip address of an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {

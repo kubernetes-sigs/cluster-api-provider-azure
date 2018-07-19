@@ -26,17 +26,17 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/golang/glog"
 	"github.com/joho/godotenv"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	"github.com/platform9/azure-provider/machinesetup"
-	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
-	"github.com/golang/glog"
 )
 
 // The Azure Client, also used as a machine actuator
@@ -51,7 +51,6 @@ type AzureClient struct {
 	machineSetupConfigs machinesetup.MachineSetup
 }
 
-
 // Parameter object used to create a machine actuator.
 // These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
 type MachineActuatorParams struct {
@@ -64,7 +63,7 @@ type MachineActuatorParams struct {
 const (
 	templateFile   = "deployment-template.json"
 	parametersFile = "deployment-params.json"
-	ProviderName = "azure"
+	ProviderName   = "azure"
 )
 
 func init() {
@@ -127,7 +126,6 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	return nil
 }
 
-
 // Update an existing machine based on the cluster and machine spec passed.
 // Currently only checks machine existence and does not update anything.
 func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
@@ -148,7 +146,6 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 	}
 	return nil
 }
-
 
 // Delete an existing machine based on the cluster and machine spec passed.
 // Will block until the machine has been successfully deleted, or an error is returned.

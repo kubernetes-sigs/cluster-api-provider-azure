@@ -278,7 +278,7 @@ func TestDeleteSingleVMUnit(t *testing.T) {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	deploymentName := wrappers.MockDeploymentName
-	vm := &resources.DeploymentExtended{ Name: &deploymentName }
+	vm := &resources.DeploymentExtended{Name: &deploymentName}
 	err = azure.deleteVM(vm, rg)
 	if err != nil {
 		t.Fatalf("unable to delete created vm 1: %v", err)

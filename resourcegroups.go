@@ -4,8 +4,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"github.com/platform9/azure-provider/wrappers"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (azure *AzureClient) createOrUpdateGroup(cluster *clusterv1.Cluster) (*resources.Group, error) {

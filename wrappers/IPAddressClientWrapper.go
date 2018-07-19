@@ -2,8 +2,8 @@ package wrappers
 
 import (
 	"context"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+	"github.com/Azure/go-autorest/autorest"
 )
 
 type IPAddressClientWrapper struct {
@@ -33,7 +33,6 @@ func (wrapper *IPAddressClientWrapper) Get(ctx context.Context, rg string, IPNam
 		return network.PublicIPAddress{PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{IPAddress: &ip}}, nil
 	}
 }
-
 
 func (wrapper *IPAddressClientWrapper) SetAuthorizer(Authorizer autorest.Authorizer) {
 	if wrapper.mock == nil {
