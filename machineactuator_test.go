@@ -25,6 +25,7 @@ import (
 	"github.com/joho/godotenv"
 	v1alpha1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	"github.com/platform9/azure-provider/machinesetup"
+	"github.com/platform9/azure-provider/wrappers"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -72,8 +73,40 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestCreateUnit(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
+	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	azure, err := mockAzureClient(t)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	for _, machine := range machines {
+		err = azure.Create(cluster, machine)
+		if err != nil {
+			t.Fatalf("unable to create machine: %v", err)
+		}
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	// TODO: write test
+	return
+}
+
+func TestUpdateUnit(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
+	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	azure, err := mockAzureClient(t)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	for _, machine := range machines {
+		err = azure.Create(cluster, machine)
+		if err != nil {
+			t.Fatalf("unable to create machine: %v", err)
+		}
+	}
+	// TODO: Finish test when update functionality is completed
 	return
 }
 
@@ -113,7 +146,43 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestDeleteUnit(t *testing.T) {
+	clusterConfigFile := "testconfigs/cluster-ci-delete.yaml"
+	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
+	if err != nil {
+		t.Fatalf("unable to parse config files :%v", err)
+	}
+	azure, err := mockAzureClient(t)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	_, err = azure.createOrUpdateGroup(cluster)
+	if err != nil {
+		t.Fatalf("unable to create resource group: %v", err)
+	}
+	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
+	if err != nil {
+		t.Fatalf("unable to create deployment: %v", err)
+	}
+	err = azure.Delete(cluster, machines[0])
+	if err != nil {
+		t.Fatalf("unable to delete cluster: %v", err)
+	}
+	exists, err := azure.checkResourceGroupExists(cluster)
+	if err != nil {
+		t.Fatalf("unable to check existence of resource group: %v", err)
+	}
+	if exists {
+		t.Fatalf("got resource group that should've been deleted")
+	}
+}
+
 func TestExists(t *testing.T) {
+	// TODO: write test
+	return
+}
+
+func TestExistsUnit(t *testing.T) {
 	// TODO: write test
 	return
 }
@@ -275,7 +344,7 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
 		err = godotenv.Load()
 		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCmRIPTION_ID: \"\"")
+			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
 		}
 		if err != nil {
 			log.Fatalf("Failed to load environment variables: %v", err)
@@ -288,7 +357,7 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 		return nil, err
 	}
 	return &AzureClient{
-		SubscriptionID: "test",
+		SubscriptionID: wrappers.MockSubscriptionID,
 		scheme:         scheme,
 		codecFactory:   codecFactory,
 		Authorizer:     authorizer,

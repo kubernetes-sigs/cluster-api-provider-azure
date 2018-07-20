@@ -8,9 +8,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
+	"github.com/platform9/azure-provider/wrappers"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
 
 // Create a machine based on the cluster and machine spec passed.
 // Assumes resource group has already been created and has the name found in clusterConfig.ResourceGroup
@@ -40,8 +40,8 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 		"value": azure.VMPassword,
 	}
 	deploymentName := machine.ObjectMeta.Name
-	deploymentsClient := resources.NewDeploymentsClient(azure.SubscriptionID)
-	deploymentsClient.Authorizer = azure.Authorizer
+	deploymentsClient := wrappers.GetDeploymentsClient(azure.SubscriptionID)
+	deploymentsClient.SetAuthorizer(azure.Authorizer)
 	res, err := deploymentsClient.Validate(azure.ctx, clusterConfig.ResourceGroup, deploymentName, resources.Deployment{
 		Properties: &resources.DeploymentProperties{
 			Template:   template,
@@ -70,7 +70,7 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 	if err != nil {
 		return nil, err
 	}
-	err = deploymentFuture.Future.WaitForCompletion(azure.ctx, deploymentsClient.BaseClient.Client)
+	err = deploymentFuture.WaitForCompletion(azure.ctx, deploymentsClient.Client.BaseClient.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +95,8 @@ func (azure *AzureClient) vmIfExists(cluster *clusterv1.Cluster, machine *cluste
 		return nil, err
 	}
 	deploymentName := machine.ObjectMeta.Name
-	deploymentsClient := resources.NewDeploymentsClient(azure.SubscriptionID)
-	deploymentsClient.Authorizer = azure.Authorizer
+	deploymentsClient := wrappers.GetDeploymentsClient(azure.SubscriptionID)
+	deploymentsClient.SetAuthorizer(azure.Authorizer)
 	response, err := deploymentsClient.CheckExistence(azure.ctx, clusterConfig.ResourceGroup, deploymentName)
 	if err != nil {
 		return nil, err
@@ -150,13 +150,13 @@ func (azure *AzureClient) getLogin(cluster *clusterv1.Cluster, machine *clusterv
 }
 
 func (azure *AzureClient) deleteVM(deployment *resources.DeploymentExtended, resourceGroupName string) error {
-	deploymentsClient := resources.NewDeploymentsClient(azure.SubscriptionID)
-	deploymentsClient.Authorizer = azure.Authorizer
+	deploymentsClient := wrappers.GetDeploymentsClient(azure.SubscriptionID)
+	deploymentsClient.SetAuthorizer(azure.Authorizer)
 	deploymentDeleteFuture, err := deploymentsClient.Delete(azure.ctx, resourceGroupName, *deployment.Name)
 	if err != nil {
 		return err
 	}
-	deploymentDeleteFuture.Future.WaitForCompletion(azure.ctx, deploymentsClient.BaseClient.Client)
+	deploymentDeleteFuture.WaitForCompletion(azure.ctx, deploymentsClient.Client.BaseClient.Client)
 	return nil
 }
 
