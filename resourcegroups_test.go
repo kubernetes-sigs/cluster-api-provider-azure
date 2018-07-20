@@ -41,9 +41,12 @@ func TestCreateGroupUnit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create mock azure client: %v", err)
 	}
-	_, err = azure.createOrUpdateGroup(cluster)
+	group, err := azure.createOrUpdateGroup(cluster)
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
+	}
+	if group == nil {
+		t.Fatalf("unable to get created resource group: %v", err)
 	}
 }
 
@@ -89,6 +92,10 @@ func TestCheckResourceGroupExistsUnit(t *testing.T) {
 	azure, err := mockAzureClient(t)
 	if err != nil {
 		t.Fatalf("unable to create mock azure client: %v", err)
+	}
+	_, err = azure.createOrUpdateGroup(cluster)
+	if err != nil {
+		t.Fatalf("could not create new resouce group: %v", err)
 	}
 	exists, err := azure.checkResourceGroupExists(cluster)
 	if !exists {

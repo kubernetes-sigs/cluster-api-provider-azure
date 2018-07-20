@@ -23,14 +23,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
 	"github.com/joho/godotenv"
 	azureconfigv1 "github.com/platform9/azure-provider/azureproviderconfig/v1alpha1"
 	"github.com/platform9/azure-provider/machinesetup"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/platform9/azure-provider/wrappers"
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
@@ -144,6 +144,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 	if err != nil {
 		return err
 	}
+	// TODO: Update objects
 	return nil
 }
 
@@ -177,13 +178,13 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 		all associated resources
 	*/
 
-	groupsClient := resources.NewGroupsClient(azure.SubscriptionID)
-	groupsClient.Authorizer = azure.Authorizer
+	groupsClient := wrappers.GetGroupsClient(azure.SubscriptionID)
+	groupsClient.SetAuthorizer(azure.Authorizer)
 	groupsDeleteFuture, err := groupsClient.Delete(azure.ctx, clusterConfig.ResourceGroup)
 	if err != nil {
 		return err
 	}
-	return groupsDeleteFuture.Future.WaitForCompletion(azure.ctx, groupsClient.BaseClient.Client)
+	return groupsDeleteFuture.WaitForCompletion(azure.ctx, groupsClient.Client.BaseClient.Client)
 }
 
 // Get the kubeconfig of a machine based on the cluster and machine spec passed.
