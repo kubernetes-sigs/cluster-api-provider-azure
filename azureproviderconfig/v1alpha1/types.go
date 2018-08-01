@@ -34,6 +34,8 @@ type AzureMachineProviderConfig struct {
 	VMSize          string `json:"vmSize"`
 	Image           Image  `json:"image"`
 	OSDisk          OSDisk `json:"osDisk"`
+	SSHPublicKey    string `json:"sshPublicKey"`
+	SSHPrivateKey   string `json:"sshPrivateKey"`
 }
 
 type Image struct {

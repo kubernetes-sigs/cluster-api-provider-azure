@@ -114,17 +114,19 @@ func (d *ClusterDeployer) Create(cluster *clusterv1.Cluster, machines []*cluster
 	}
 
 	glog.Info("Creating external cluster")
-	externalClient, cleanupExternalCluster, err := d.createExternalCluster()
-	defer cleanupExternalCluster()
+	externalClient, _, err := d.createExternalCluster()
+	//defer cleanupExternalCluster()
 	if err != nil {
 		return fmt.Errorf("could not create external client: %v", err)
 	}
+	/*
 	defer func() {
 		err := externalClient.Close()
 		if err != nil {
 			glog.Errorf("Could not close external client: %v", err)
 		}
 	}()
+	*/
 
 	glog.Info("Applying Cluster API stack to external cluster")
 	if err := d.applyClusterAPIStack(externalClient); err != nil {

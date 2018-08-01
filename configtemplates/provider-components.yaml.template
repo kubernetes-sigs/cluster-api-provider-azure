@@ -44,7 +44,7 @@ spec:
             cpu: 100m
             memory: 30Mi
       - name: azure-machine-controller
-        image: meegul/azure-controller:0.0.10-dev
+        image: meegul/azure-controller:0.0.28-dev
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes
@@ -89,7 +89,7 @@ spec:
                 name: azure-controller-secrets
                 key: subscription-id
       - name: azure-cluster-controller
-        image: meegul/azure-controller:0.0.10-dev
+        image: meegul/azure-controller:0.0.28-dev
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes

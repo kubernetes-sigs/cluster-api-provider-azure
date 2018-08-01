@@ -20,9 +20,6 @@ WORKDIR /go/src/github.com/platform9/azure-provider
 # e.g. docker build -t <tag> -f <this_Dockerfile> <path_to_cluster-api>
 COPY . . 
 
-RUN go get -u github.com/golang/dep/cmd/dep
-RUN sed -i 's/^ignored/\# ignored/g' Gopkg.toml
-RUN /go/bin/dep ensure -v -add "sigs.k8s.io/cluster-api/pkg"
 RUN CGO_ENABLED=0 GOOS=linux go install -a -ldflags '-extldflags "-static"' github.com/platform9/azure-provider/cmd/azure-controller
 
 # Final container

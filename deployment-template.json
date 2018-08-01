@@ -81,6 +81,10 @@
     "startup_script": {
       "defaultValue": null,
       "type": "string"
+    },
+    "sshKeyData": {
+      "defaultValue": null,
+      "type": "string"
     }
   },
   "variables": {},
@@ -119,7 +123,15 @@
           "adminUsername": "[parameters('vm_user')]",
           "adminPassword": "[parameters('vm_password')]",
           "linuxConfiguration": {
-            "disablePasswordAuthentication": false
+            "disablePasswordAuthentication": false,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[concat('/home/', parameters('vm_user'), '/.ssh/authorized_keys')]",
+                  "keyData": "[parameters('sshKeyData')]"
+                }
+              ]
+            }
           },
           "secrets": []
         },
@@ -367,6 +379,28 @@
         "destinationAddressPrefix": "*",
         "access": "Allow",
         "priority": 1000,
+        "direction": "Inbound",
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ClusterAPIVM_nsg_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "name": "[concat(parameters('networkSecurityGroups_ClusterAPIVM_nsg_name'), '/kubernetes')]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "protocol": "TCP",
+        "sourcePortRange": "*",
+        "destinationPortRange": "6443",
+        "sourceAddressPrefix": "*",
+        "destinationAddressPrefix": "*",
+        "access": "Allow",
+        "priority": 1001,
         "direction": "Inbound",
         "sourceAddressPrefixes": [],
         "destinationAddressPrefixes": []
