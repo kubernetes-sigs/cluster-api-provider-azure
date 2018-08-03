@@ -104,6 +104,9 @@ mkdir -p ${OUTPUT_DIR}
 
 rm -f $SSH_KEY_FILE 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f $SSH_KEY_FILE -N '' 1>/dev/null
+
+echo "Machine SSH key generated in ${SSH_KEY_FILE}"
+
 SSH_PUBLIC_KEY=$(cat $SSH_KEY_FILE.pub | base64 | tr -d '\r\n')
 SSH_PRIVATE_KEY=$(cat $SSH_KEY_FILE | base64 | tr -d '\r\n')
 

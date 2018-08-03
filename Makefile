@@ -1,5 +1,5 @@
 GOCMD=go
-REPO=github.com/platform9/azure-provider
+REPO=github.com/platform9/azure-provider/cloud/azure/actuators/machine
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 TESTFLAGS=-test.timeout 0 -v

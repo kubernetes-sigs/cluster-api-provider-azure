@@ -1,0 +1,41 @@
+{
+    "virtualNetworks_ClusterAPIVM_vnet_name": {
+        "value": "ClusterAPIVnet"
+    },
+    "virtualMachines_ClusterAPIVM_name": {
+        "value": "ClusterAPIVM"
+    },
+    "networkInterfaces_ClusterAPI_name": {
+        "value": "ClusterAPINIC"
+    },
+    "publicIPAddresses_ClusterAPI_ip_name": {
+        "value": "ClusterAPIIP"
+    },
+    "networkSecurityGroups_ClusterAPIVM_nsg_name": {
+        "value": "ClusterAPINSG"
+    },
+    "subnets_default_name": {
+        "value": "ClusterAPISubnet"
+    },
+    "securityRules_default_allow_ssh_name": {
+        "value": "clusterapiuser"
+    },
+    "osDisk_name": {
+        "value": "_OsDisk_1_2e3ae1ad37414eaca81b432401fcdd75"
+    },
+    "vm_user": {
+        "value": "ClusterAPI"
+    },
+    "vm_password": {
+        "value": "_"
+    },
+    "vm_size": {
+        "value": "Standard_B1s"
+    },
+    "location": {
+        "value": "eastus"
+    },
+    "os_type": {
+        "value": "Linux"
+    }
+}

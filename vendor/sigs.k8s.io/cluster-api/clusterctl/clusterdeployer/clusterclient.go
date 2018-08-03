@@ -435,7 +435,6 @@ func waitForMachineReady(cs clientset.Interface, machine *clusterv1.Machine) err
 		if err != nil {
 			return false, nil
 		}
-		glog.V(4).Infof("len(m.Annotations): %v", len(m.Annotations))
 		// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 		// Seeing a node cannot be purely relied upon because the provisioned master will not be registering with
 		// the stack that provisions it.

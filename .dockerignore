@@ -1,0 +1,5 @@
+generatedconfigs/
+.env
+kubeconfig
+minikube.kubeconfig
+.travis.yml
