@@ -424,7 +424,8 @@ func parseMachineSetupConfig(path string) (*machinesetup.MachineSetup, error) {
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
 func (azure *AzureClient) getStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	if machine.Spec.Roles[0] == "Master" {
-		const startupScript = `apt-get update
+		const startupScript = `(
+apt-get update
 apt-get install -y docker.io
 apt-get update && apt-get install -y apt-transport-https curl prips
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -476,10 +477,12 @@ kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/m
 
 mkdir -p /home/ClusterAPI/.kube
 cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
-chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config`
+chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
+) 2>&1 | tee /var/log/startup`
 		return startupScript, nil
 	} else if machine.Spec.Roles[0] == "Node" {
-		const startupScript = `apt-get update
+		const startupScript = `(
+apt-get update
 apt-get install -y docker.io
 apt-get update && apt-get install -y apt-transport-https curl prips
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -500,7 +503,8 @@ EOF
 systemctl daemon-reload
 systemctl restart kubelet.service
 
-kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification`
+kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
+) 2>&1 | tee /var/log/startup`
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")

@@ -222,7 +222,8 @@ func TestBase64Encoding(t *testing.T) {
 }
 
 func TestGetStartupScript(t *testing.T) {
-	expectedStartupScript := `apt-get update
+	expectedStartupScript := `(
+apt-get update
 apt-get install -y docker.io
 apt-get update && apt-get install -y apt-transport-https curl prips
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -274,7 +275,8 @@ kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/m
 
 mkdir -p /home/ClusterAPI/.kube
 cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
-chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config`
+chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
+) 2>&1 | tee /var/log/startup`
 
 	azure := AzureClient{
 		machineSetupConfigs: machinesetup.MachineSetup{
