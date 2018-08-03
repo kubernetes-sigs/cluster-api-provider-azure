@@ -472,13 +472,13 @@ EOF
 modprobe br_netfilter
 
 kubeadm init --config ./kubeadm_config.yaml
-sleep 30
-kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
 
 mkdir -p /home/ClusterAPI/.kube
 cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
-) 2>&1 | tee /var/log/startup`
+
+KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
+) 2>&1 | tee /var/log/startup.log`
 		return startupScript, nil
 	} else if machine.Spec.Roles[0] == "Node" {
 		const startupScript = `(
@@ -504,7 +504,7 @@ systemctl daemon-reload
 systemctl restart kubelet.service
 
 kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
-) 2>&1 | tee /var/log/startup`
+) 2>&1 | tee /var/log/startup.log`
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")

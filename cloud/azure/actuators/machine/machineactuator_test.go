@@ -270,13 +270,13 @@ EOF
 modprobe br_netfilter
 
 kubeadm init --config ./kubeadm_config.yaml
-sleep 30
-kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
 
 mkdir -p /home/ClusterAPI/.kube
 cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
-) 2>&1 | tee /var/log/startup`
+
+KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
+) 2>&1 | tee /var/log/startup.log`
 
 	azure := AzureClient{
 		machineSetupConfigs: machinesetup.MachineSetup{
