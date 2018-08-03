@@ -12,9 +12,9 @@
 ## Creating and using controller images
 1. [Install docker](https://docs.docker.com/install/#supported-platforms) and ensure docker works with `docker run hello-world`
 2. Log into docker with `docker login`
-3. Edit `cmd/azure-controller/Makefile` such that `PREFIX` is the logged in user, and `NAME` is the repository you wish to push your images to.
-4. While in `cmd/azure-controller/`, run `make push` to create an image and push it to your Docker Hub repository.
-5. Edit `generatedconfigs/provider-components.yaml` such that the images for `azure-machine-controller` and `azure-cluster-controller` refer to the images you just pushed, e.g. `meegul/azure-controller:0.0.17-dev`
+3. Edit `cmd/machine-controller/Makefile` such that `PREFIX` is the logged in user, and `NAME` is the repository you wish to push your images to.
+4. While in `cmd/machine-controller/`, run `make push` to create an image and push it to your Docker Hub repository.
+5. Edit `generatedconfigs/provider-components.yaml` such that the images for `azure-machine-controller` and `azure-cluster-controller` refer to the images you just pushed, e.g. `platform9/cluster-api-azure-machine-controller:0.0.17-dev`
 
 
 ## Testing
