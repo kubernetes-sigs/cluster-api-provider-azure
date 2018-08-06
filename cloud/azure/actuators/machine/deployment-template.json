@@ -66,10 +66,6 @@
         "defaultValue": null,
         "type":"string"
     },
-    "vm_password": {
-        "defaultValue": null,
-        "type": "string"
-    },
     "vm_size": {
       "defaultValue": null,
       "type": "string"
@@ -121,9 +117,8 @@
         "osProfile": {
           "computerName": "[parameters('virtualMachines_ClusterAPIVM_name')]",
           "adminUsername": "[parameters('vm_user')]",
-          "adminPassword": "[parameters('vm_password')]",
           "linuxConfiguration": {
-            "disablePasswordAuthentication": false,
+            "disablePasswordAuthentication": true,
             "ssh": {
               "publicKeys": [
                 {

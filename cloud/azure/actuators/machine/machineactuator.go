@@ -45,7 +45,6 @@ import (
 type AzureClient struct {
 	v1Alpha1Client      client.ClusterV1alpha1Interface
 	SubscriptionID      string
-	VMPassword          string
 	Authorizer          autorest.Authorizer
 	kubeadmToken        string
 	ctx                 context.Context
@@ -99,14 +98,12 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 		return nil, err
 	}
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	samplePassword := "SamplePassword1" // TODO: change later, use only for testing
 	if err != nil {
 		return nil, err
 	}
 	return &AzureClient{
 		v1Alpha1Client: params.V1Alpha1Client,
 		SubscriptionID: subscriptionID,
-		VMPassword:     samplePassword,
 		Authorizer:     authorizer,
 		kubeadmToken:   params.KubeadmToken,
 		ctx:            context.Background(),
@@ -387,9 +384,6 @@ func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cl
 		},
 		"vm_user": map[string]interface{}{
 			"value": "ClusterAPI",
-		},
-		"vm_password": map[string]interface{}{
-			"value": "",
 		},
 		"vm_size": map[string]interface{}{
 			"value": machineConfig.VMSize,

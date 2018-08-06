@@ -13,7 +13,7 @@ import (
 // Create a machine based on the cluster and machine spec passed.
 // Assumes resource group has already been created and has the name found in clusterConfig.ResourceGroup
 func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*resources.DeploymentExtended, error) {
-	//Parse in provider configs
+	// Parse in provider configs
 	var machineConfig azureconfigv1.AzureMachineProviderConfig
 	err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
 	if err != nil {
@@ -24,18 +24,15 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 	if err != nil {
 		return nil, err
 	}
-	//Parse the ARM template
+	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
 		return nil, err
 	}
-	//Convert machine provider config to ARM parameters
+	// Convert machine provider config to ARM parameters
 	params, err := azure.convertMachineToDeploymentParams(cluster, machine)
 	if err != nil {
 		return nil, err
-	}
-	(*params)["vm_password"] = map[string]string{
-		"value": azure.VMPassword,
 	}
 	deploymentName := machine.ObjectMeta.Name
 	deploymentsClient := wrappers.GetDeploymentsClient(azure.SubscriptionID)
@@ -44,7 +41,7 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 		Properties: &resources.DeploymentProperties{
 			Template:   template,
 			Parameters: params,
-			Mode:       resources.Incremental,
+			Mode:       resources.Incremental, // Do not delete and re-create matching resources that already exist
 		},
 	})
 	if res.Error != nil {
@@ -81,7 +78,7 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 }
 
 func (azure *AzureClient) vmIfExists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*resources.DeploymentExtended, error) {
-	//Parse in provider configs
+	// Parse in provider configs
 	var machineConfig azureconfigv1.AzureMachineProviderConfig
 	err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
 	if err != nil {

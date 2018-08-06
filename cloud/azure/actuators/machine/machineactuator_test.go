@@ -43,10 +43,6 @@ func TestNewMachineActuator(t *testing.T) {
 	if actuator.kubeadmToken != params.KubeadmToken {
 		t.Fatalf("actuator.kubeadmToken != params.KubeadmToken: %v != %v", actuator.kubeadmToken, params.KubeadmToken)
 	}
-	expectedPassword := "SamplePassword1"
-	if actuator.VMPassword != expectedPassword {
-		t.Fatalf("actuator.VMPassword does not match expected: %v != %v", actuator.VMPassword, expectedPassword)
-	}
 }
 
 func TestCreate(t *testing.T) {
