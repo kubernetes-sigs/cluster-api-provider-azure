@@ -4,18 +4,18 @@ go:
 jobs:
   include:
     - stage: Unit Tests
-      script: go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -v -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript|Test(\w)*Unit|TestNewMachineActuator$"
+      script: go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript|Test(\w)*Unit|TestNewMachineActuator$"
     - stage: Integration Tests
-      script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestCreate$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestUpdate$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestDelete$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestExists$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestCreateOrUpdateDeployment$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestCreateOrUpdateDeploymentWExisting$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestVMIfExists$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestDeleteSingleVM$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestCreateGroup$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -x -run ^TestGetIP$
+      script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreate$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestUpdate$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestDelete$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestExists$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreateOrUpdateDeployment$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreateOrUpdateDeploymentWExisting$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestVMIfExists$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestDeleteSingleVM$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreateGroup$
+    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestGetIP$
 
 notifications:
   slack:
