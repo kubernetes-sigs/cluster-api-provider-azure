@@ -13,7 +13,6 @@ jobs:
     - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreateOrUpdateDeployment$
     - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreateOrUpdateDeploymentWExisting$
     - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestVMIfExists$
-    - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestDeleteSingleVM$
     - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestCreateGroup$
     - script: travis_wait 50 go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v -run ^TestGetIP$
 
