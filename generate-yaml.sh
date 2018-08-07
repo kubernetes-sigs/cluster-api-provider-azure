@@ -15,7 +15,7 @@ RESOURCE_GROUP=clusterapi-${RANDOM_STRING}
 
 OUTPUT_DIR=generatedconfigs
 TEMPLATE_DIR=configtemplates
-SSH_KEY_FILE=${OUTPUT_DIR}/key
+SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
 
 MACHINE_TEMPLATE_FILE=${TEMPLATE_DIR}/machines.yaml.template
 MACHINE_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml

@@ -4,5 +4,5 @@
 exampleconfigs/provider-components.yaml
 minikube.kubeconfig
 generatedconfigs/
-key*
+sshkey*
 kubeconfig

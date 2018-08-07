@@ -41,7 +41,7 @@ const (
 	retryIntervalResourceReady  = 10 * time.Second
 	retryIntervalResourceDelete = 10 * time.Second
 	timeoutKubectlApply         = 15 * time.Minute
-	timeoutResourceReady        = 30 * time.Minute
+	timeoutResourceReady        = 15 * time.Minute
 	timeoutMachineReady         = 30 * time.Minute
 	timeoutResourceDelete       = 15 * time.Minute
 )
@@ -435,6 +435,7 @@ func waitForMachineReady(cs clientset.Interface, machine *clusterv1.Machine) err
 		if err != nil {
 			return false, nil
 		}
+
 		// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 		// Seeing a node cannot be purely relied upon because the provisioned master will not be registering with
 		// the stack that provisions it.
