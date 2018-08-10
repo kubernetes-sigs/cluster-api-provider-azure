@@ -10,7 +10,6 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
-    "profiles/latest/network/mgmt/network",
     "services/network/mgmt/2018-01-01/network",
     "services/resources/mgmt/2018-02-01/resources",
     "version"
@@ -274,6 +273,12 @@
   version = "1.0.1"
 
 [[projects]]
+  name = "github.com/kr/fs"
+  packages = ["."]
+  revision = "1455def202f6e05b95cc7bfc7e8ae67ae5141eba"
+  version = "v0.1.0"
+
+[[projects]]
   name = "github.com/kubernetes-incubator/apiserver-builder"
   packages = [
     "pkg/builders",
@@ -335,6 +340,18 @@
   version = "v2.0.1"
 
 [[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/pkg/sftp"
+  packages = ["."]
+  revision = "57673e38ea946592a59c26592b7e6fbda646975b"
+  version = "v1.8.0"
+
+[[projects]]
   name = "github.com/prometheus/client_golang"
   packages = ["prometheus"]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
@@ -389,8 +406,14 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "internal/chacha20",
     "pkcs12",
     "pkcs12/internal/rc2",
+    "poly1305",
+    "ssh",
     "ssh/terminal"
   ]
   revision = "b47b1587369238182299fe4dad77d05b8b461e06"
@@ -845,6 +868,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c52b8fed6a7e4cdd11949a293066c7b9684ff778afb8c876956bfe1e15bb1016"
+  inputs-digest = "063d23ded5dbed5382e7de8dafe4cf028e7caedb88a918d32e98af317741bf8f"
   solver-name = "gps-cdcl"
   solver-version = 1

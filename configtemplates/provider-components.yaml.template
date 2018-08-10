@@ -44,7 +44,7 @@ spec:
             cpu: 100m
             memory: 30Mi
       - name: azure-machine-controller
-        image: meegul/azure-controller:0.0.10-dev
+        image: platform9/cluster-api-azure-machine-controller:0.0.30-dev
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes
@@ -55,11 +55,10 @@ spec:
           - name: kubeadm
             mountPath: /usr/bin/kubeadm
         command:
-        - "./azure-controller"
+        - "./machine-controller"
         args:
         - --kubeconfig=/etc/kubernetes/admin.conf
         - --machinesetup=/etc/machinesetup/machine_setup_configs.yaml
-        - --controller=machine
         resources:
           requests:
             cpu: 100m
@@ -89,7 +88,7 @@ spec:
                 name: azure-controller-secrets
                 key: subscription-id
       - name: azure-cluster-controller
-        image: meegul/azure-controller:0.0.10-dev
+        image: platform9/cluster-api-azure-cluster-controller:0.0.29-dev
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes
@@ -98,10 +97,9 @@ spec:
           - name: machine-setup
             mountPath: /etc/machinesetup
         command:
-        - "./azure-controller"
+        - "./cluster-controller"
         args:
         - --kubeconfig=/etc/kubernetes/admin.conf
-        - --controller=cluster
         resources:
           requests:
             cpu: 100m

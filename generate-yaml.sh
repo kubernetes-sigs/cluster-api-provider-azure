@@ -15,9 +15,12 @@ RESOURCE_GROUP=clusterapi-${RANDOM_STRING}
 
 OUTPUT_DIR=generatedconfigs
 TEMPLATE_DIR=configtemplates
+SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
 
 MACHINE_TEMPLATE_FILE=${TEMPLATE_DIR}/machines.yaml.template
 MACHINE_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
+MACHINE_NO_NODE_TEMPLATE_FILE=${TEMPLATE_DIR}/machines_no_node.yaml.template
+MACHINE_NO_NODE_GENERATED_FILE=${OUTPUT_DIR}/machines_no_node.yaml
 CLUSTER_TEMPLATE_FILE=${TEMPLATE_DIR}/cluster.yaml.template
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
 PROVIDERCOMPONENT_TEMPLATE_FILE=${TEMPLATE_DIR}/provider-components.yaml.template
@@ -101,15 +104,33 @@ rm tmp.auth
 
 mkdir -p ${OUTPUT_DIR}
 
+rm -f $SSH_KEY_FILE 2>/dev/null
+ssh-keygen -t rsa -b 2048 -f $SSH_KEY_FILE -N '' 1>/dev/null
+
+echo "Machine SSH key generated in ${SSH_KEY_FILE}"
+
+SSH_PUBLIC_KEY=$(cat $SSH_KEY_FILE.pub | base64 | tr -d '\r\n')
+SSH_PRIVATE_KEY=$(cat $SSH_KEY_FILE | base64 | tr -d '\r\n')
+
+
 cat $MACHINE_TEMPLATE_FILE \
   | sed -e "s/\$LOCATION/$LOCATION/" \
+  | sed -e "s/\$SSH_PUBLIC_KEY/$SSH_PUBLIC_KEY/" \
+  | sed -e "s/\$SSH_PRIVATE_KEY/$SSH_PRIVATE_KEY/" \
   > $MACHINE_GENERATED_FILE
+
+cat $MACHINE_NO_NODE_TEMPLATE_FILE \
+  | sed -e "s/\$LOCATION/$LOCATION/" \
+  | sed -e "s/\$SSH_PUBLIC_KEY/$SSH_PUBLIC_KEY/" \
+  | sed -e "s/\$SSH_PRIVATE_KEY/$SSH_PRIVATE_KEY/" \
+  > $MACHINE_NO_NODE_GENERATED_FILE
 
 cat $CLUSTER_TEMPLATE_FILE \
   | sed -e "s/\$RESOURCE_GROUP/$RESOURCE_GROUP/" \
   | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
   | sed -e "s/\$LOCATION/$LOCATION/" \
   > $CLUSTER_GENERATED_FILE
+
 
 cat $PROVIDERCOMPONENT_TEMPLATE_FILE \
   | sed -e "s/\$AZURE_TENANT_ID/$TENANT_ID_ENC/" \
