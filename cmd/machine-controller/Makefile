@@ -16,7 +16,7 @@
 
 PREFIX = platform9
 NAME = cluster-api-azure-machine-controller
-TAG = 0.0.29
+TAG = 0.0.30
 
 image:
 	docker build -t "$(PREFIX)/$(NAME):$(TAG)" -f ./Dockerfile ../..

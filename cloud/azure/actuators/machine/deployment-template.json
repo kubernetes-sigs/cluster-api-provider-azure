@@ -78,7 +78,7 @@
       "defaultValue": null,
       "type": "string"
     },
-    "sshKeyData": {
+    "sshPublicKey": {
       "defaultValue": null,
       "type": "string"
     }
@@ -123,7 +123,7 @@
               "publicKeys": [
                 {
                   "path": "[concat('/home/', parameters('vm_user'), '/.ssh/authorized_keys')]",
-                  "keyData": "[parameters('sshKeyData')]"
+                  "keyData": "[parameters('sshPublicKey')]"
                 }
               ]
             }

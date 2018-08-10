@@ -28,4 +28,3 @@ RUN apt-get update && apt-get install -y ca-certificates openssh-server && rm -r
 
 COPY --from=builder /go/bin/machine-controller .
 COPY --from=builder /go/src/github.com/platform9/azure-provider/cloud/azure/actuators/machine/deployment-template.json .
-

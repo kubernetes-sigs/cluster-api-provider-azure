@@ -65,6 +65,8 @@ const (
 	templateFile   = "deployment-template.json"
 	ProviderName   = "azure"
 	SSHUser        = "ClusterAPI"
+	NameAnnotationKey = "azure-name"
+	RGAnnotationKey = "azure-rg"
 )
 
 func init() {
@@ -114,7 +116,12 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 
 // Create a machine based on the cluster and machine spec passed
 func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	_, err := azure.createOrUpdateGroup(cluster)
+	var clusterConfig azureconfigv1.AzureClusterProviderConfig
+	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	if err != nil {
+		return err
+	}
+	_, err = azure.createOrUpdateGroup(cluster)
 	if err != nil {
 		return err
 	}
@@ -126,7 +133,8 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
 	if azure.v1Alpha1Client != nil {
-		machine.ObjectMeta.Annotations["dummy"] = "dummy"
+		machine.ObjectMeta.Annotations[NameAnnotationKey] = machine.ObjectMeta.Name
+		machine.ObjectMeta.Annotations[RGAnnotationKey] = clusterConfig.ResourceGroup
 		azure.v1Alpha1Client.Machines(machine.Namespace).Update(machine)
 	} else {
 		glog.V(1).Info("ClusterAPI client not found, not updating machine object")
@@ -228,7 +236,7 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 		return "", fmt.Errorf("Error setting sftp client: %s", err)
 	}
 
-	remoteFile := "/home/ClusterAPI/.kube/config"
+	remoteFile := fmt.Sprintf("/home/%s/.kube/config", SSHUser)
 	srcFile, err := sftpClient.Open(remoteFile)
 	if err != nil {
 		return "", fmt.Errorf("Error opening %s: %s", remoteFile, err)
@@ -394,7 +402,7 @@ func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cl
 		"startup_script": map[string]interface{}{
 			"value": *base64EncodeCommand(startupScript),
 		},
-		"sshKeyData": map[string]interface{}{
+		"sshPublicKey": map[string]interface{}{
 			"value": publicKey,
 		},
 	}
@@ -502,16 +510,4 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")
-	/* TODO: Use code to get script from machine_setup_configs
-	for _, machineRole := range machine.Spec.Roles {
-		for _, machineSetupItem := range azure.machineSetupConfigs.Items {
-			for _, machineSetupRole := range machineSetupItem.MachineParams.Roles {
-				if string(machineSetupRole) == string(machineRole) {
-					return machineSetupItem.Metadata.StartupScript, nil
-				}
-			}
-		}
-	}
-	return "", errors.New("Machine roles not found in MachineSetup")
-	*/
 }
