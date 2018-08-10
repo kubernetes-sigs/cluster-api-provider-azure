@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Reproducible builder image
-FROM golang:1.10.0 as builder
+FROM golang:1.10.2 as builder
 WORKDIR /go/src/github.com/platform9/azure-provider/
 # This expects that the context passed to the docker build command is
 # the cluster-api directory.
