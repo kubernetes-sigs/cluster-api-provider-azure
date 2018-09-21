@@ -836,7 +836,6 @@
   revision = "8a9b82f00b3a86eac24681da3f9fe6c34c01cea2"
 
 [[projects]]
-  branch = "master"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "clusterctl/clusterdeployer",
@@ -863,7 +862,7 @@
     "pkg/errors",
     "pkg/util"
   ]
-  revision = "012aa2d0bafe135676ba931b61f32cbbe571d1c7"
+  revision = "7db708b5df567c79e2e46f9c37cdbf001bef1302"
 
 [solve-meta]
   analyzer-name = "dep"
