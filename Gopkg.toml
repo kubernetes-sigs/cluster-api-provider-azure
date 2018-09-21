@@ -23,5 +23,5 @@
   unused-packages = true
 
 [[constraint]]
-  branch = "master"
+  revision = "7db708b5df567c79e2e46f9c37cdbf001bef1302"
   name = "sigs.k8s.io/cluster-api"
