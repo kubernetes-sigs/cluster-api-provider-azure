@@ -19,26 +19,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
+
+	"time"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
 	"github.com/joho/godotenv"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
+	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-	"time"
 )
 
 // The Azure Client, also used as a machine actuator
@@ -62,11 +64,11 @@ type MachineActuatorParams struct {
 }
 
 const (
-	templateFile   = "deployment-template.json"
-	ProviderName   = "azure"
-	SSHUser        = "ClusterAPI"
+	templateFile      = "deployment-template.json"
+	ProviderName      = "azure"
+	SSHUser           = "ClusterAPI"
 	NameAnnotationKey = "azure-name"
-	RGAnnotationKey = "azure-rg"
+	RGAnnotationKey   = "azure-rg"
 )
 
 func init() {
@@ -335,7 +337,7 @@ func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cl
 	if err != nil {
 		return nil, err
 	}
-	startupScript, err := azure.getStartupScript(cluster, machine)
+	startupScript, err := azure.getStartupScript(machineConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -424,8 +426,8 @@ func parseMachineSetupConfig(path string) (*machinesetup.MachineSetup, error) {
 }
 
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func (azure *AzureClient) getStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	if machine.Spec.Roles[0] == "Master" {
+func (azure *AzureClient) getStartupScript(machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
+	if machineConfig.Roles[0] == azureconfigv1.Master {
 		const startupScript = `(
 apt-get update
 apt-get install -y docker.io
@@ -482,7 +484,7 @@ chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
 ) 2>&1 | tee /var/log/startup.log`
 		return startupScript, nil
-	} else if machine.Spec.Roles[0] == "Node" {
+	} else if machineConfig.Roles[0] == azureconfigv1.Node {
 		const startupScript = `(
 apt-get update
 apt-get install -y docker.io

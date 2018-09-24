@@ -23,10 +23,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/ghodss/yaml"
 	"github.com/joho/godotenv"
-	"github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	"github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -278,11 +277,7 @@ KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercon
 		machineSetupConfigs: machinesetup.MachineSetup{
 			Items: []machinesetup.Params{
 				{
-					MachineParams: machinesetup.MachineParams{
-						Roles: []v1alpha1.MachineRole{
-							"Master",
-						},
-					},
+					MachineParams: machinesetup.MachineParams{},
 					Metadata: machinesetup.Metadata{
 						StartupScript: expectedStartupScript,
 					},
@@ -290,14 +285,9 @@ KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercon
 			},
 		},
 	}
-	machine := &clusterv1.Machine{
-		Spec: clusterv1.MachineSpec{
-			Roles: []common.MachineRole{
-				"Master",
-			},
-		},
-	}
-	actualStartupScript, err := azure.getStartupScript(nil, machine)
+	machineConfig := mockAzureMachineProviderConfig(t)
+	machineConfig.Roles = []v1alpha1.MachineRole{"Master"}
+	actualStartupScript, err := azure.getStartupScript(*machineConfig)
 	if err != nil {
 		t.Fatalf("unable to get startup script: %v", err)
 	}
