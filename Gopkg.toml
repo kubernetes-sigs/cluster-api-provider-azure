@@ -1,3 +1,15 @@
+[prune]
+  go-tests = true
+  unused-packages = true
+
+  [[prune.project]]
+    name = "sigs.k8s.io/cluster-api"
+    unused-packages = false
+
+[[constraint]]
+  branch = "7db708b5df567c79e2e46f9c37cdbf001bef1302"
+  name = "sigs.k8s.io/cluster-api"
+
 [[constraint]]
   name = "github.com/joho/godotenv"
   version = "1.2.0"
@@ -18,10 +30,3 @@
   branch = "release-1.9"
   name = "k8s.io/apimachinery"
 
-[prune]
-  go-tests = true
-  unused-packages = true
-
-[[constraint]]
-  branch = "master"
-  name = "sigs.k8s.io/cluster-api"
