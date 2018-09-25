@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 )
 
@@ -209,18 +208,15 @@ func TestDeleteSingleVM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var machineConfig1 azureconfigv1.AzureMachineProviderConfig
-	err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig, &machineConfig1)
+	_, err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse machine provider config 1: %v", err)
 	}
-	var machineConfig2 azureconfigv1.AzureMachineProviderConfig
-	err = azure.decodeMachineProviderConfig(machines[1].Spec.ProviderConfig, &machineConfig2)
+	_, err = azure.decodeMachineProviderConfig(machines[1].Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse machine provider config 2: %v", err)
 	}
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}

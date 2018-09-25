@@ -54,8 +54,7 @@ func TestCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var clusterConfig v1alpha1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
@@ -115,13 +114,11 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var clusterConfig v1alpha1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
-	var machineConfig v1alpha1.AzureMachineProviderConfig
-	err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig, &machineConfig)
+	_, err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse machine provider config: %v", err)
 	}
@@ -192,14 +189,12 @@ func TestParseProviderConfigs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var clusterConfig v1alpha1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	_, err = azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
 	for _, machine := range machines {
-		var machineConfig v1alpha1.AzureMachineProviderConfig
-		err = azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+		_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 		if err != nil {
 			t.Fatalf("unable to parse machine provider config: %v", err)
 		}
@@ -377,7 +372,7 @@ func mockAzureClusterProviderConfig(t *testing.T, rg string) *v1alpha1.AzureClus
 
 func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	t.Helper()
-	scheme, codecFactory, err := v1alpha1.NewSchemeAndCodecs()
+	scheme, codec, err := v1alpha1.NewSchemeAndCodecs()
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +395,7 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	return &AzureClient{
 		SubscriptionID: wrappers.MockSubscriptionID,
 		scheme:         scheme,
-		codecFactory:   codecFactory,
-		Authorizer:     authorizer,
+		azureProviderConfigCodec: codec,
+		Authorizer:               authorizer,
 	}, nil
 }
