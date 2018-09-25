@@ -1,3 +1,7 @@
+required = [
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+]
+
 [prune]
   go-tests = true
   unused-packages = true
@@ -27,6 +31,5 @@
   version = "1.0.0"
 
 [[constraint]]
+  name = "k8s.io/code-generator"
   branch = "release-1.9"
-  name = "k8s.io/apimachinery"
-
