@@ -28,7 +28,7 @@ const GroupName = "azureproviderconfig"
 
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
 
-// AzureProviderConfigCodec is codec for decoding and encoding DigitalOcean ProviderConfig.
+// AzureProviderConfigCodec is codec for decoding and encoding Azure ProviderConfig.
 // +k8s:deepcopy-gen=false
 type AzureProviderConfigCodec struct {
 	encoder runtime.Encoder
