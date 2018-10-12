@@ -23,7 +23,7 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type AzureMachineProviderConfig struct {
 	metav1.TypeMeta `json:",inline"`
-	Roles           []MachineRole `json:"MachineRoles,omitempty"`
+	Roles           []MachineRole `json:"roles,omitempty"`
 	Location        string        `json:"location"`
 	VMSize          string        `json:"vmSize"`
 	Image           Image         `json:"image"`
