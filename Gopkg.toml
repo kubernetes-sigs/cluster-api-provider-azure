@@ -11,7 +11,7 @@ required = [
     unused-packages = false
 
 [[constraint]]
-  branch = "7db708b5df567c79e2e46f9c37cdbf001bef1302"
+  revision = "7db708b5df567c79e2e46f9c37cdbf001bef1302"
   name = "sigs.k8s.io/cluster-api"
 
 [[constraint]]
