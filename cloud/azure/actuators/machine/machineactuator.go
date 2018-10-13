@@ -105,12 +105,12 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 		return nil, err
 	}
 	return &AzureClient{
-		v1Alpha1Client: params.V1Alpha1Client,
-		SubscriptionID: subscriptionID,
-		Authorizer:     authorizer,
-		kubeadmToken:   params.KubeadmToken,
-		ctx:            context.Background(),
-		scheme:         scheme,
+		v1Alpha1Client:           params.V1Alpha1Client,
+		SubscriptionID:           subscriptionID,
+		Authorizer:               authorizer,
+		kubeadmToken:             params.KubeadmToken,
+		ctx:                      context.Background(),
+		scheme:                   scheme,
 		azureProviderConfigCodec: azureProviderConfigCodec,
 	}, nil
 }
