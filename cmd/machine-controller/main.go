@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/golang/glog"
-	machineoptions "github.com/platform9/azure-provider/cloud/azure/controllers/machine/options"
 	"github.com/platform9/azure-provider/cloud/azure/controllers/machine"
+	machineoptions "github.com/platform9/azure-provider/cloud/azure/controllers/machine/options"
 	"github.com/spf13/pflag"
 	"k8s.io/apiserver/pkg/util/logs"
 	"sigs.k8s.io/cluster-api/pkg/controller/config"

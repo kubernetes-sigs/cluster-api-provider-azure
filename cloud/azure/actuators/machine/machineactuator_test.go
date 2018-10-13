@@ -393,8 +393,8 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 		return nil, err
 	}
 	return &AzureClient{
-		SubscriptionID: wrappers.MockSubscriptionID,
-		scheme:         scheme,
+		SubscriptionID:           wrappers.MockSubscriptionID,
+		scheme:                   scheme,
 		azureProviderConfigCodec: codec,
 		Authorizer:               authorizer,
 	}, nil
