@@ -2,15 +2,14 @@ package machine
 
 import (
 	"fmt"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
+
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // Return the ip address of an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return "", err
 	}

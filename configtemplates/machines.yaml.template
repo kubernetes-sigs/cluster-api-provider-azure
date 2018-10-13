@@ -10,6 +10,8 @@ items:
       value:
         apiVersion: "azureproviderconfig/v1alpha1"
         kind: "AzureMachineProviderConfig"
+        roles:
+        - Master
         location: "$LOCATION"
         vmSize: "Standard_B1s"
         image: 
@@ -27,8 +29,6 @@ items:
     versions:
       kubelet: 1.9.4
       controlPlane: 1.9.4
-    roles:
-    - Master
 - apiVersion: "cluster.k8s.io/v1alpha1"
   kind: Machine
   metadata:
@@ -40,6 +40,8 @@ items:
       value:
         apiVersion: "azureproviderconfig/v1alpha1"
         kind: "AzureMachineProviderConfig"
+        roles:
+        - Node
         location: "$LOCATION"
         vmSize: "Standard_B1s"
         image: 
@@ -56,6 +58,3 @@ items:
         sshPrivateKey: $SSH_PRIVATE_KEY
     versions:
       kubelet: 1.9.4
-      controlPlane: 1.9.4
-    roles:
-    - Node

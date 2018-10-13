@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -14,13 +13,11 @@ import (
 // Assumes resource group has already been created and has the name found in clusterConfig.ResourceGroup
 func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*resources.DeploymentExtended, error) {
 	// Parse in provider configs
-	var machineConfig azureconfigv1.AzureMachineProviderConfig
-	err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+	_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +76,11 @@ func (azure *AzureClient) createOrUpdateDeployment(cluster *clusterv1.Cluster, m
 
 func (azure *AzureClient) vmIfExists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*resources.DeploymentExtended, error) {
 	// Parse in provider configs
-	var machineConfig azureconfigv1.AzureMachineProviderConfig
-	err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+	_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}

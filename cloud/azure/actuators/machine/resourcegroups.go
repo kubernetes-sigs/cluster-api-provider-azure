@@ -3,15 +3,13 @@ package machine
 import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (azure *AzureClient) createOrUpdateGroup(cluster *clusterv1.Cluster) (*resources.Group, error) {
 	//Parse in provider configs
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +28,7 @@ func (azure *AzureClient) createOrUpdateGroup(cluster *clusterv1.Cluster) (*reso
 
 func (azure *AzureClient) checkResourceGroupExists(cluster *clusterv1.Cluster) (bool, error) {
 	//Parse in provider configs
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return false, err
 	}

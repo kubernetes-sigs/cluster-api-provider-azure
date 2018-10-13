@@ -23,10 +23,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/ghodss/yaml"
 	"github.com/joho/godotenv"
-	"github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	"github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -55,8 +54,7 @@ func TestCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var clusterConfig v1alpha1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
@@ -116,13 +114,11 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var clusterConfig v1alpha1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
-	var machineConfig v1alpha1.AzureMachineProviderConfig
-	err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig, &machineConfig)
+	_, err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse machine provider config: %v", err)
 	}
@@ -193,14 +189,12 @@ func TestParseProviderConfigs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	var clusterConfig v1alpha1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	_, err = azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
 	for _, machine := range machines {
-		var machineConfig v1alpha1.AzureMachineProviderConfig
-		err = azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+		_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 		if err != nil {
 			t.Fatalf("unable to parse machine provider config: %v", err)
 		}
@@ -278,11 +272,7 @@ KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercon
 		machineSetupConfigs: machinesetup.MachineSetup{
 			Items: []machinesetup.Params{
 				{
-					MachineParams: machinesetup.MachineParams{
-						Roles: []v1alpha1.MachineRole{
-							"Master",
-						},
-					},
+					MachineParams: machinesetup.MachineParams{},
 					Metadata: machinesetup.Metadata{
 						StartupScript: expectedStartupScript,
 					},
@@ -290,14 +280,9 @@ KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercon
 			},
 		},
 	}
-	machine := &clusterv1.Machine{
-		Spec: clusterv1.MachineSpec{
-			Roles: []common.MachineRole{
-				"Master",
-			},
-		},
-	}
-	actualStartupScript, err := azure.getStartupScript(nil, machine)
+	machineConfig := mockAzureMachineProviderConfig(t)
+	machineConfig.Roles = []v1alpha1.MachineRole{"Master"}
+	actualStartupScript, err := azure.getStartupScript(*machineConfig)
 	if err != nil {
 		t.Fatalf("unable to get startup script: %v", err)
 	}
@@ -387,7 +372,7 @@ func mockAzureClusterProviderConfig(t *testing.T, rg string) *v1alpha1.AzureClus
 
 func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	t.Helper()
-	scheme, codecFactory, err := v1alpha1.NewSchemeAndCodecs()
+	scheme, codec, err := v1alpha1.NewSchemeAndCodecs()
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +395,7 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	return &AzureClient{
 		SubscriptionID: wrappers.MockSubscriptionID,
 		scheme:         scheme,
-		codecFactory:   codecFactory,
-		Authorizer:     authorizer,
+		azureProviderConfigCodec: codec,
+		Authorizer:               authorizer,
 	}, nil
 }

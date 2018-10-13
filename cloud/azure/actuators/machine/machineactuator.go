@@ -19,38 +19,39 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
+
+	"time"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
 	"github.com/joho/godotenv"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
+	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-	"time"
 )
 
 // The Azure Client, also used as a machine actuator
 type AzureClient struct {
-	v1Alpha1Client      client.ClusterV1alpha1Interface
-	SubscriptionID      string
-	Authorizer          autorest.Authorizer
-	kubeadmToken        string
-	ctx                 context.Context
-	scheme              *runtime.Scheme
-	codecFactory        *serializer.CodecFactory
-	machineSetupConfigs machinesetup.MachineSetup
+	v1Alpha1Client           client.ClusterV1alpha1Interface
+	SubscriptionID           string
+	Authorizer               autorest.Authorizer
+	kubeadmToken             string
+	ctx                      context.Context
+	scheme                   *runtime.Scheme
+	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
+	machineSetupConfigs      machinesetup.MachineSetup
 }
 
 // Parameter object used to create a machine actuator.
@@ -62,11 +63,11 @@ type MachineActuatorParams struct {
 }
 
 const (
-	templateFile   = "deployment-template.json"
-	ProviderName   = "azure"
-	SSHUser        = "ClusterAPI"
+	templateFile      = "deployment-template.json"
+	ProviderName      = "azure"
+	SSHUser           = "ClusterAPI"
 	NameAnnotationKey = "azure-name"
-	RGAnnotationKey = "azure-rg"
+	RGAnnotationKey   = "azure-rg"
 )
 
 func init() {
@@ -79,7 +80,7 @@ func init() {
 
 // Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
-	scheme, codecFactory, err := azureconfigv1.NewSchemeAndCodecs()
+	scheme, azureProviderConfigCodec, err := azureconfigv1.NewSchemeAndCodecs()
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +111,13 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 		kubeadmToken:   params.KubeadmToken,
 		ctx:            context.Background(),
 		scheme:         scheme,
-		codecFactory:   codecFactory,
+		azureProviderConfigCodec: azureProviderConfigCodec,
 	}, nil
 }
 
 // Create a machine based on the cluster and machine spec passed
 func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return err
 	}
@@ -146,13 +146,11 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 // Currently only checks machine existence and does not update anything.
 func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	//Parse in configurations
-	var goalMachineConfig azureconfigv1.AzureMachineProviderConfig
-	err := azure.decodeMachineProviderConfig(goalMachine.Spec.ProviderConfig, &goalMachineConfig)
+	_, err := azure.decodeMachineProviderConfig(goalMachine.Spec.ProviderConfig)
 	if err != nil {
 		return err
 	}
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	_, err = azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return err
 	}
@@ -168,13 +166,11 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 // Will block until the machine has been successfully deleted, or an error is returned.
 func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	//Parse in configurations
-	var machineConfig azureconfigv1.AzureMachineProviderConfig
-	err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+	_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return err
 	}
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err = azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return err
 	}
@@ -206,13 +202,11 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 // Get the kubeconfig of a machine based on the cluster and machine spec passed.
 // Has not been fully tested as k8s is not yet bootstrapped on created machines.
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	var clusterConfig azureconfigv1.AzureClusterProviderConfig
-	err := azure.decodeClusterProviderConfig(cluster.Spec.ProviderConfig, &clusterConfig)
+	_, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return "", err
 	}
-	var machineConfig azureconfigv1.AzureMachineProviderConfig
-	err = azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return "", err
 	}
@@ -293,20 +287,13 @@ func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.
 	return vm != nil, nil
 }
 
-func (azure *AzureClient) decodeMachineProviderConfig(providerConfig clusterv1.ProviderConfig, out runtime.Object) error {
-	_, _, err := azure.codecFactory.UniversalDecoder().Decode(providerConfig.Value.Raw, nil, out)
+func (azure *AzureClient) decodeMachineProviderConfig(providerConfig clusterv1.ProviderConfig) (*azureconfigv1.AzureMachineProviderConfig, error) {
+	var config azureconfigv1.AzureMachineProviderConfig
+	err := azure.azureProviderConfigCodec.DecodeFromProviderConfig(providerConfig, &config)
 	if err != nil {
-		return fmt.Errorf("machine providerconfig decoding failure: %v", err)
+		return nil, err
 	}
-	return nil
-}
-
-func (azure *AzureClient) decodeClusterProviderConfig(providerConfig clusterv1.ProviderConfig, out runtime.Object) error {
-	_, _, err := azure.codecFactory.UniversalDecoder().Decode(providerConfig.Value.Raw, nil, out)
-	if err != nil {
-		return fmt.Errorf("cluster providerconfig decoding failure: %v", err)
-	}
-	return nil
+	return &config, err
 }
 
 func readJSON(path string) (*map[string]interface{}, error) {
@@ -330,12 +317,11 @@ func base64EncodeCommand(command string) *string {
 }
 
 func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*map[string]interface{}, error) {
-	var machineConfig azureconfigv1.AzureMachineProviderConfig
-	err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig, &machineConfig)
+	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}
-	startupScript, err := azure.getStartupScript(cluster, machine)
+	startupScript, err := azure.getStartupScript(*machineConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -424,8 +410,8 @@ func parseMachineSetupConfig(path string) (*machinesetup.MachineSetup, error) {
 }
 
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func (azure *AzureClient) getStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	if machine.Spec.Roles[0] == "Master" {
+func (azure *AzureClient) getStartupScript(machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
+	if machineConfig.Roles[0] == azureconfigv1.Master {
 		const startupScript = `(
 apt-get update
 apt-get install -y docker.io
@@ -482,7 +468,7 @@ chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
 ) 2>&1 | tee /var/log/startup.log`
 		return startupScript, nil
-	} else if machine.Spec.Roles[0] == "Node" {
+	} else if machineConfig.Roles[0] == azureconfigv1.Node {
 		const startupScript = `(
 apt-get update
 apt-get install -y docker.io

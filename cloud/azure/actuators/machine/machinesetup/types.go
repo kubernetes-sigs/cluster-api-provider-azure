@@ -1,7 +1,6 @@
 package machinesetup
 
 import (
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -18,7 +17,6 @@ type Params struct {
 
 type MachineParams struct {
 	OS       string                       `json:"os"`
-	Roles    []azureconfigv1.MachineRole  `json:"roles"`
 	Versions clusterv1.MachineVersionInfo `json:"versions"`
 }
 

@@ -20,23 +20,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type MachineRole string
-
-const (
-	MasterRole MachineRole = "Master"
-	NodeRole   MachineRole = "Node"
-)
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type AzureMachineProviderConfig struct {
 	metav1.TypeMeta `json:",inline"`
-	Location        string `json:"location"`
-	VMSize          string `json:"vmSize"`
-	Image           Image  `json:"image"`
-	OSDisk          OSDisk `json:"osDisk"`
-	SSHPublicKey    string `json:"sshPublicKey"`
-	SSHPrivateKey   string `json:"sshPrivateKey"`
+	Roles           []MachineRole `json:"roles,omitempty"`
+	Location        string        `json:"location"`
+	VMSize          string        `json:"vmSize"`
+	Image           Image         `json:"image"`
+	OSDisk          OSDisk        `json:"osDisk"`
+	SSHPublicKey    string        `json:"sshPublicKey"`
+	SSHPrivateKey   string        `json:"sshPrivateKey"`
 }
+type MachineRole string
+
+const (
+	Master MachineRole = "Master"
+	Node   MachineRole = "Node"
+)
 
 type Image struct {
 	Publisher string `json:"publisher"`

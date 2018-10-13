@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package azureproviderconfig
+package providerconfig
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,13 +23,20 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type AzureMachineProviderConfig struct {
 	metav1.TypeMeta `json:",inline"`
-	Location        string `json:"location"`
-	VMSize          string `json:"vmSize"`
-	Image           Image  `json:"image"`
-	OSDisk          OSDisk `json:"osDisk"`
-	SSHPublicKey    string `json:"sshPublicKey"`
-	SSHPrivateKey   string `json:"sshPrivateKey"`
+	Roles           []MachineRole `json:"roles,omitempty"`
+	Location        string        `json:"location"`
+	VMSize          string        `json:"vmSize"`
+	Image           Image         `json:"image"`
+	OSDisk          OSDisk        `json:"osDisk"`
+	SSHPublicKey    string        `json:"sshPublicKey"`
+	SSHPrivateKey   string        `json:"sshPrivateKey"`
 }
+type MachineRole string
+
+const (
+	Master MachineRole = "Master"
+	Node   MachineRole = "Node"
+)
 
 type Image struct {
 	Publisher string `json:"publisher"`
