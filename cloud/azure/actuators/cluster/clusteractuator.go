@@ -62,18 +62,17 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 
 	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
 	networkSGFuture, err := azure.network().CreateOrUpdateNetworkSecurityGroup(clusterConfig.ResourceGroup, "ClusterAPINSG", clusterConfig.Location)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating or updating network security group: %v", err)
 	}
 	err = azure.network().WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
 	if err != nil {
-		return err
+		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
 	}
-
-	return err
+	return nil
 }
 
 func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
