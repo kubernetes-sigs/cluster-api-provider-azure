@@ -9,10 +9,10 @@ all: generate build images
 
 vendor:
 	dep version || go get -u github.com/golang/dep/cmd/dep
-	dep ensure
+	dep ensure -v
 vendor-update:
 	dep version || go get -u github.com/golang/dep/cmd/dep
-	dep ensure -update
+	dep ensure -v -update
 
 .PHONY: generate
 
@@ -29,10 +29,10 @@ clusterctl: vendor
 	CGO_ENABLED=0 go install $(GOFLAGS) github.com/platform9/azure-provider/clusterctl
 
 cluster-controller: vendor
-	CGO_ENABLED=0 go install $(GOFLAGS) $(GOREBUILD) github.com/platform9/azure-provider/cmd/cluster-controller
+	CGO_ENABLED=0 go install $(GOFLAGS) github.com/platform9/azure-provider/cmd/cluster-controller
 
 machine-controller: vendor
-	CGO_ENABLED=0 go install $(GOFLAGS) $(GOREBUILD) github.com/platform9/azure-provider/cmd/machine-controller
+	CGO_ENABLED=0 go install $(GOFLAGS) github.com/platform9/azure-provider/cmd/machine-controller
 
 images: vendor
 	$(MAKE) -C cmd/cluster-controller image
