@@ -349,9 +349,6 @@ func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cl
 		"subnets_default_name": map[string]interface{}{
 			"value": "ClusterAPISubnet",
 		},
-		"securityRules_default_allow_ssh_name": map[string]interface{}{
-			"value": "ClusterAPISSH",
-		},
 		"image_publisher": map[string]interface{}{
 			"value": machineConfig.Image.Publisher,
 		},

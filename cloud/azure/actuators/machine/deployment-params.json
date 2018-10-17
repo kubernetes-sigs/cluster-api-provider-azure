@@ -17,9 +17,6 @@
     "subnets_default_name": {
         "value": "ClusterAPISubnet"
     },
-    "securityRules_default_allow_ssh_name": {
-        "value": "clusterapiuser"
-    },
     "osDisk_name": {
         "value": "_OsDisk_1_2e3ae1ad37414eaca81b432401fcdd75"
     },
