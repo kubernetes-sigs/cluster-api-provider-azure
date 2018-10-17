@@ -26,10 +26,6 @@
       "defaultValue": null,
       "type": "string"
     },
-    "securityRules_default_allow_ssh_name": {
-      "defaultValue": null,
-      "type": "string"
-    },
     "image_publisher": {
       "defaultValue": null,
       "type": "string"
@@ -179,7 +175,7 @@
         "enableAcceleratedNetworking": false,
         "enableIPForwarding": false,
         "networkSecurityGroup": {
-          "id": "[concat('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroups_ClusterAPIVM_nsg_name'))]"
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ClusterAPIVM_nsg_name'))]"
         },
         "primary": true,
         "virtualMachine": {
@@ -188,8 +184,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ClusterAPI_ip_name'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_ClusterAPIVM_vnet_name'), parameters('subnets_default_name'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroups_ClusterAPIVM_nsg_name'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_ClusterAPIVM_vnet_name'), parameters('subnets_default_name'))]"
       ]
     },
     {
