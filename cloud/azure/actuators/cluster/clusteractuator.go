@@ -25,6 +25,7 @@ import (
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/services"
 	"github.com/platform9/azure-provider/cloud/azure/services/network"
+	"github.com/platform9/azure-provider/cloud/azure/services/resourcemanagement"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
@@ -64,6 +65,12 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
+
+	_, err = azure.resourcemanagement().CreateOrUpdateGroup(clusterConfig.ResourceGroup, clusterConfig.Location)
+	if err != nil {
+		return fmt.Errorf("failed to create or update resource group: %v", err)
+	}
+
 	networkSGFuture, err := azure.network().CreateOrUpdateNetworkSecurityGroup(clusterConfig.ResourceGroup, "ClusterAPINSG", clusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("error creating or updating network security group: %v", err)
@@ -107,11 +114,18 @@ func azureServicesClientOrDefault(params ClusterActuatorParams) (*services.Azure
 	}
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)
+	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
+	azureResourceManagementClient.SetAuthorizer(authorizer)
 	return &services.AzureClients{
-		Network: azureNetworkClient,
+		Network:            azureNetworkClient,
+		Resourcemanagement: azureResourceManagementClient,
 	}, nil
 }
 
 func (azure *AzureClusterClient) network() services.AzureNetworkClient {
 	return azure.services.Network
+}
+
+func (azure *AzureClusterClient) resourcemanagement() services.AzureResourceManagementClient {
+	return azure.services.Resourcemanagement
 }

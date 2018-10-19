@@ -37,7 +37,7 @@ func TestActuatorCreateSuccess(t *testing.T) {
 }
 
 func TestReconcileSuccess(t *testing.T) {
-	azureServicesClient := mockSGCreateSuccess()
+	azureServicesClient := mockReconcileSuccess()
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -51,7 +51,7 @@ func TestReconcileSuccess(t *testing.T) {
 	}
 }
 func TestReconcileFailure(t *testing.T) {
-	azureServicesClient := mockSGCreateFailure()
+	azureServicesClient := mockReconcileFailure()
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -65,28 +65,28 @@ func TestReconcileFailure(t *testing.T) {
 	}
 }
 
-func mockSGCreateSuccess() services.AzureClients {
+func mockReconcileSuccess() services.AzureClients {
 	networkMock := services.MockAzureNetworkClient{
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 			return &network.SecurityGroupsCreateOrUpdateFuture{}, nil
 		},
 	}
-	return services.AzureClients{Network: &networkMock}
+	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 }
 
-func mockSGCreateFailure() services.AzureClients {
+func mockReconcileFailure() services.AzureClients {
 	networkMock := services.MockAzureNetworkClient{
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 			return nil, errors.New("failed to create resource")
 		},
 	}
-	return services.AzureClients{Network: &networkMock}
+	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 }
 
 func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
 	return azureconfigv1.AzureClusterProviderConfig{
 		ResourceGroup: "resource-group-test",
-		Location:      "southcentralus",
+		Location:      "westus2",
 	}
 }
 

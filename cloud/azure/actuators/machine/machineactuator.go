@@ -121,10 +121,6 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return err
 	}
-	_, err = azure.createOrUpdateGroup(cluster)
-	if err != nil {
-		return err
-	}
 	_, err = azure.createOrUpdateDeployment(cluster, machine)
 	if err != nil {
 		return err

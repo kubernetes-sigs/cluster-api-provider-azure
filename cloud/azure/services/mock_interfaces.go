@@ -12,12 +12,22 @@ limitations under the License.
 */
 package services
 
-import "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+import (
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/go-autorest/autorest"
+)
 
 type MockAzureNetworkClient struct {
 	MockCreateOrUpdateNetworkSecurityGroup    func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
 	MockNetworkSGIfExists                     func(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	MockWaitForNetworkSGsCreateOrUpdateFuture func(future network.SecurityGroupsCreateOrUpdateFuture) error
+}
+type MockAzureResourceManagementClient struct {
+	MockCreateOrUpdateGroup       func(resourceGroupName string, location string) (resources.Group, error)
+	MockDeleteGroup               func(resourceGroupName string) (resources.GroupsDeleteFuture, error)
+	MockCheckGroupExistence       func(rgName string) (autorest.Response, error)
+	MockWaitForGroupsDeleteFuture func(future resources.GroupsDeleteFuture) error
 }
 
 func (m *MockAzureNetworkClient) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
@@ -39,4 +49,32 @@ func (m *MockAzureNetworkClient) WaitForNetworkSGsCreateOrUpdateFuture(future ne
 		return nil
 	}
 	return m.MockWaitForNetworkSGsCreateOrUpdateFuture(future)
+}
+
+func (m *MockAzureResourceManagementClient) CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error) {
+	if m.MockCreateOrUpdateGroup == nil {
+		return resources.Group{}, nil
+	}
+	return m.MockCreateOrUpdateGroup(resourceGroupName, location)
+}
+
+func (m *MockAzureResourceManagementClient) DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
+	if m.MockDeleteGroup == nil {
+		return resources.GroupsDeleteFuture{}, nil
+	}
+	return m.MockDeleteGroup(resourceGroupName)
+}
+
+func (m *MockAzureResourceManagementClient) CheckGroupExistence(rgName string) (autorest.Response, error) {
+	if m.MockCheckGroupExistence == nil {
+		return autorest.Response{}, nil
+	}
+	return m.MockCheckGroupExistence(rgName)
+}
+
+func (m *MockAzureResourceManagementClient) WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error {
+	if m.MockWaitForGroupsDeleteFuture == nil {
+		return nil
+	}
+	return m.MockWaitForGroupsDeleteFuture(future)
 }
