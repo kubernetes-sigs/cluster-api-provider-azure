@@ -14,11 +14,14 @@ package services
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/go-autorest/autorest"
 )
 
 // interface for all azure services clients
 type AzureClients struct {
-	Network AzureNetworkClient
+	Network            AzureNetworkClient
+	Resourcemanagement AzureResourceManagementClient
 }
 
 type AzureNetworkClient interface {
@@ -26,4 +29,12 @@ type AzureNetworkClient interface {
 	CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
 	NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
+}
+
+type AzureResourceManagementClient interface {
+	// Resource Groups Operations
+	CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error)
+	DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error)
+	CheckGroupExistence(rgName string) (autorest.Response, error)
+	WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error
 }
