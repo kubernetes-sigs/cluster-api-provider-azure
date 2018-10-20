@@ -21,6 +21,14 @@ func TestGetIP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
 	}
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
+	}
 	defer deleteTestResourceGroup(t, azure, clusterProviderConfig.ResourceGroup)
 	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {

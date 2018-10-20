@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/ghodss/yaml"
 	"github.com/joho/godotenv"
+	azure "github.com/platform9/azure-provider/cloud/azure/actuators/cluster"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	"github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
@@ -59,6 +60,14 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("unable to parse cluster provider config: %v", err)
 	}
 	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
+	}
 	for _, machine := range machines {
 		err = azure.Create(cluster, machine)
 		if err != nil {
@@ -125,6 +134,14 @@ func TestDelete(t *testing.T) {
 	_, err = azure.createOrUpdateGroup(cluster)
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
+	}
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
 	}
 	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
@@ -398,4 +415,14 @@ func mockAzureClient(t *testing.T) (*AzureClient, error) {
 		azureProviderConfigCodec: codec,
 		Authorizer:               authorizer,
 	}, nil
+}
+
+func createClusterActuator() (*azure.AzureClusterClient, error) {
+	params := azure.ClusterActuatorParams{}
+	actuator, err := azure.NewClusterActuator(params)
+	if err != nil {
+		log.Fatalf("failed to create cluster actuator")
+		return nil, err
+	}
+	return actuator, nil
 }
