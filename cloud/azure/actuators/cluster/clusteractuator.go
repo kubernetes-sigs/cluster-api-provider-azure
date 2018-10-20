@@ -83,8 +83,27 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 }
 
 func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
-	//TODO: get rid of the whole resource group?
-	return fmt.Errorf("NYI: Cluster Deletions are not yet supported")
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	if err != nil {
+		return fmt.Errorf("error loading cluster provider config: %v", err)
+	}
+	resp, err := azure.resourcemanagement().CheckGroupExistence(clusterConfig.ResourceGroup)
+	if err != nil {
+		return fmt.Errorf("error checking for resource group existence: %v", err)
+	}
+	if resp.StatusCode == 404 {
+		return fmt.Errorf("resource group %v does not exist", clusterConfig.ResourceGroup)
+	}
+
+	groupsDeleteFuture, err := azure.resourcemanagement().DeleteGroup(clusterConfig.ResourceGroup)
+	if err != nil {
+		return fmt.Errorf("error deleting resource group: %v", err)
+	}
+	err = azure.resourcemanagement().WaitForGroupsDeleteFuture(groupsDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for resource group deletion: %v", err)
+	}
+	return nil
 }
 
 func azureServicesClientOrDefault(params ClusterActuatorParams) (*services.AzureClients, error) {

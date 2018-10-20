@@ -14,9 +14,13 @@ package cluster
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+	"github.com/Azure/go-autorest/autorest"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -65,6 +69,36 @@ func TestReconcileFailure(t *testing.T) {
 	}
 }
 
+func TestDeleteSuccess(t *testing.T) {
+	azureServicesClient := mockDeleteRGExists()
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = actuator.Delete(cluster)
+	if err != nil {
+		t.Fatalf("unexpected error calling Delete: %v", err)
+	}
+}
+
+func TestDeleteFailureRGNotExists(t *testing.T) {
+	azureServicesClient := mockDeleteRGNotExists()
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = actuator.Delete(cluster)
+	if err == nil {
+		t.Fatalf("expected error, but got none")
+	}
+}
+
 func mockReconcileSuccess() services.AzureClients {
 	networkMock := services.MockAzureNetworkClient{
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
@@ -81,6 +115,27 @@ func mockReconcileFailure() services.AzureClients {
 		},
 	}
 	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+}
+
+func mockDeleteRGExists() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
+		MockDeleteGroup: func(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
+			return resources.GroupsDeleteFuture{}, nil
+		},
+	}
+	return services.AzureClients{Resourcemanagement: &resourcemanagementMock}
+}
+
+func mockDeleteRGNotExists() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 404}}, nil
+		},
+	}
+	return services.AzureClients{Resourcemanagement: &resourcemanagementMock}
 }
 
 func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
