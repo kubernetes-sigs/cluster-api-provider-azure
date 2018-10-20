@@ -18,6 +18,10 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
+const (
+	SecurityGroupDefaultName = "ClusterAPINSG"
+)
+
 func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error) {
 	networkSG, err := s.SecurityGroupsClient.Get(s.ctx, resourceGroupName, networkSecurityGroupName, "")
 	if err != nil {
@@ -32,6 +36,9 @@ func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGro
 }
 
 func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
+	if networkSecurityGroupName == "" {
+		networkSecurityGroupName = SecurityGroupDefaultName
+	}
 	sshInbound := network.SecurityRule{
 		Name: to.StringPtr("ClusterAPISSH"),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{

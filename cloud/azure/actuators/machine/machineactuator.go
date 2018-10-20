@@ -35,6 +35,7 @@ import (
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
+	"github.com/platform9/azure-provider/cloud/azure/services/network"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
@@ -340,7 +341,7 @@ func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cl
 			"value": getPublicIPName(machine),
 		},
 		"networkSecurityGroups_ClusterAPIVM_nsg_name": map[string]interface{}{
-			"value": "ClusterAPINSG",
+			"value": network.SecurityGroupDefaultName,
 		},
 		"subnets_default_name": map[string]interface{}{
 			"value": "ClusterAPISubnet",
