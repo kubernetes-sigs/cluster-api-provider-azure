@@ -25,6 +25,14 @@ func TestCreateOrUpdateDeployment(t *testing.T) {
 		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 		t.Fatalf("unable to create resource group: %v", err)
 	}
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
+	}
 	deployment, err := azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
 		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
@@ -80,6 +88,14 @@ func TestCreateOrUpdateDeploymentWExisting(t *testing.T) {
 	if err != nil {
 		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 		t.Fatalf("unable to create resource group: %v", err)
+	}
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
 	}
 	deployment, err := azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
@@ -149,6 +165,14 @@ func TestVMIfExists(t *testing.T) {
 	if err != nil {
 		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
 		t.Fatalf("unable to create resource group: %v", err)
+	}
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
 	}
 	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
@@ -226,6 +250,14 @@ func TestDeleteSingleVM(t *testing.T) {
 	_, err = azure.createOrUpdateGroup(cluster)
 	if err != nil {
 		t.Fatalf("unable to create resource group: %v", err)
+	}
+	clusterActuator, err := createClusterActuator()
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = clusterActuator.Reconcile(cluster)
+	if err != nil {
+		t.Fatalf("failed to reconcile cluster: %v", err)
 	}
 	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
 	if err != nil {
