@@ -35,7 +35,10 @@ import (
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
+	"github.com/platform9/azure-provider/cloud/azure/services"
+	"github.com/platform9/azure-provider/cloud/azure/services/compute"
 	"github.com/platform9/azure-provider/cloud/azure/services/network"
+	"github.com/platform9/azure-provider/cloud/azure/services/resourcemanagement"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
@@ -46,6 +49,7 @@ import (
 // The Azure Client, also used as a machine actuator
 type AzureClient struct {
 	v1Alpha1Client           client.ClusterV1alpha1Interface
+	services                 *services.AzureClients
 	SubscriptionID           string
 	Authorizer               autorest.Authorizer
 	kubeadmToken             string
@@ -59,6 +63,7 @@ type AzureClient struct {
 // These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
 type MachineActuatorParams struct {
 	V1Alpha1Client         client.ClusterV1alpha1Interface
+	Services               *services.AzureClients
 	KubeadmToken           string
 	MachineSetupConfigPath string
 }
@@ -105,13 +110,18 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	azureServicesClients, err := azureServicesClientOrDefault(params, authorizer, subscriptionID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting azure services client: %v", err)
+	}
 	return &AzureClient{
-		v1Alpha1Client:           params.V1Alpha1Client,
-		SubscriptionID:           subscriptionID,
-		Authorizer:               authorizer,
-		kubeadmToken:             params.KubeadmToken,
-		ctx:                      context.Background(),
-		scheme:                   scheme,
+		v1Alpha1Client: params.V1Alpha1Client,
+		services:       azureServicesClients,
+		SubscriptionID: subscriptionID,
+		Authorizer:     authorizer,
+		kubeadmToken:   params.KubeadmToken,
+		ctx:            context.Background(),
+		scheme:         scheme,
 		azureProviderConfigCodec: azureProviderConfigCodec,
 	}, nil
 }
@@ -490,4 +500,33 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")
+}
+
+func azureServicesClientOrDefault(params MachineActuatorParams, authorizer autorest.Authorizer, subscriptionID string) (*services.AzureClients, error) {
+	if params.Services != nil {
+		return params.Services, nil
+	}
+	azureComputeClient := compute.NewService(subscriptionID)
+	azureComputeClient.SetAuthorizer(authorizer)
+	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
+	azureResourceManagementClient.SetAuthorizer(authorizer)
+	azureNetworkClient := network.NewService(subscriptionID)
+	azureNetworkClient.SetAuthorizer(authorizer)
+	return &services.AzureClients{
+		Compute:            azureComputeClient,
+		Resourcemanagement: azureResourceManagementClient,
+		Network:            azureNetworkClient,
+	}, nil
+}
+
+func (azure *AzureClient) compute() services.AzureComputeClient {
+	return azure.services.Compute
+}
+
+func (azure *AzureClient) resourcemanagement() services.AzureResourceManagementClient {
+	return azure.services.Resourcemanagement
+}
+
+func (azure *AzureClient) network() services.AzureNetworkClient {
+	return azure.services.Network
 }
