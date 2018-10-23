@@ -14,6 +14,8 @@ package resourcemanagement
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
@@ -33,4 +35,13 @@ func NewService(subscriptionId string) *Service {
 
 func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
 	s.GroupsClient.BaseClient.Client.Authorizer = authorizer
+}
+
+func ResourceName(id string) (string, error) {
+	parts := strings.Split(id, "/")
+	name := parts[len(parts)-1]
+	if len(name) == 0 {
+		return "", fmt.Errorf("identifier did not contain resource name")
+	}
+	return name, nil
 }
