@@ -10,27 +10,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package resourcemanagement
+package compute
 
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 )
 
 type Service struct {
-	GroupsClient resources.GroupsClient
-	ctx          context.Context
+	DisksClient           compute.DisksClient
+	VirtualMachinesClient compute.VirtualMachinesClient
+	ctx                   context.Context
 }
 
 func NewService(subscriptionId string) *Service {
 	return &Service{
-		GroupsClient: resources.NewGroupsClient(subscriptionId),
-		ctx:          context.Background(),
+		DisksClient:           compute.NewDisksClient(subscriptionId),
+		VirtualMachinesClient: compute.NewVirtualMachinesClient(subscriptionId),
+		ctx: context.Background(),
 	}
 }
 
 func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
-	s.GroupsClient.BaseClient.Client.Authorizer = authorizer
+	s.DisksClient.BaseClient.Client.Authorizer = authorizer
+	s.VirtualMachinesClient.BaseClient.Client.Authorizer = authorizer
 }

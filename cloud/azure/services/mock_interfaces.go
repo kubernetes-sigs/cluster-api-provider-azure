@@ -13,21 +13,66 @@ limitations under the License.
 package services
 
 import (
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 )
+
+type MockAzureComputeClient struct {
+	MockVmIfExists               func(resourceGroup string, name string) (*compute.VirtualMachine, error)
+	MockDeleteVM                 func(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
+	MockWaitForVMDeletionFuture  func(future compute.VirtualMachinesDeleteFuture) error
+	MockDeleteManagedDisk        func(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
+	MockWaitForDisksDeleteFuture func(future compute.DisksDeleteFuture) error
+}
 
 type MockAzureNetworkClient struct {
 	MockCreateOrUpdateNetworkSecurityGroup    func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
 	MockNetworkSGIfExists                     func(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	MockWaitForNetworkSGsCreateOrUpdateFuture func(future network.SecurityGroupsCreateOrUpdateFuture) error
 }
+
 type MockAzureResourceManagementClient struct {
 	MockCreateOrUpdateGroup       func(resourceGroupName string, location string) (resources.Group, error)
 	MockDeleteGroup               func(resourceGroupName string) (resources.GroupsDeleteFuture, error)
 	MockCheckGroupExistence       func(rgName string) (autorest.Response, error)
 	MockWaitForGroupsDeleteFuture func(future resources.GroupsDeleteFuture) error
+}
+
+func (m *MockAzureComputeClient) VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+	if m.MockVmIfExists == nil {
+		return nil, nil
+	}
+	return m.MockVmIfExists(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
+	if m.MockDeleteVM == nil {
+		return compute.VirtualMachinesDeleteFuture{}, nil
+	}
+	return m.MockDeleteVM(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
+	if m.MockDeleteVM == nil {
+		return compute.DisksDeleteFuture{}, nil
+	}
+	return m.MockDeleteManagedDisk(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
+	if m.MockDeleteVM == nil {
+		return nil
+	}
+	return m.MockWaitForVMDeletionFuture(future)
+}
+
+func (m *MockAzureComputeClient) WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error {
+	if m.MockDeleteVM == nil {
+		return nil
+	}
+	return m.MockWaitForDisksDeleteFuture(future)
 }
 
 func (m *MockAzureNetworkClient) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {

@@ -13,6 +13,7 @@ limitations under the License.
 package services
 
 import (
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
@@ -20,8 +21,20 @@ import (
 
 // interface for all azure services clients
 type AzureClients struct {
+	Compute            AzureComputeClient
 	Network            AzureNetworkClient
 	Resourcemanagement AzureResourceManagementClient
+}
+
+type AzureComputeClient interface {
+	// Virtual Machines Operations
+	VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error)
+	DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
+	WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error
+
+	// Disk Operations
+	DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
+	WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error
 }
 
 type AzureNetworkClient interface {

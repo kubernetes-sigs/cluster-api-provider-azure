@@ -10,27 +10,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package resourcemanagement
+package compute
 
 import (
-	"context"
-
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 )
 
-type Service struct {
-	GroupsClient resources.GroupsClient
-	ctx          context.Context
+func (s *Service) DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
+	return s.DisksClient.Delete(s.ctx, resourceGroup, name)
 }
 
-func NewService(subscriptionId string) *Service {
-	return &Service{
-		GroupsClient: resources.NewGroupsClient(subscriptionId),
-		ctx:          context.Background(),
-	}
-}
-
-func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
-	s.GroupsClient.BaseClient.Client.Authorizer = authorizer
+func (s *Service) WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error {
+	return future.Future.WaitForCompletionRef(s.ctx, s.DisksClient.Client)
 }
