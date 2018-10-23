@@ -38,10 +38,18 @@ type AzureComputeClient interface {
 }
 
 type AzureNetworkClient interface {
+	// Network Interfaces Operations
+	DeleteNetworkInterface(resourceGroupName string, networkInterfaceName string) (network.InterfacesDeleteFuture, error)
+	WaitForNetworkInterfacesFuture(future network.InterfacesDeleteFuture) error
+
 	// Network Security Groups Operations
 	CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
 	NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
+
+	// Public Ip Address Operations
+	DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
+	WaitForPublicIpAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
 }
 
 type AzureResourceManagementClient interface {
