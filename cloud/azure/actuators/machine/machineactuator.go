@@ -33,7 +33,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/joho/godotenv"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
-	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/services"
 	"github.com/platform9/azure-provider/cloud/azure/services/compute"
@@ -172,38 +171,70 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 // Delete an existing machine based on the cluster and machine spec passed.
 // Will block until the machine has been successfully deleted, or an error is returned.
 func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	//Parse in configurations
-	_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
-	if err != nil {
-		return err
-	}
 	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	//Check if the machine exists
-	vm, err := azure.vmIfExists(cluster, machine)
+	// Parse in provider configs
+	_, err = azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading machine provider config: %v", err)
+	}
+	// Check if VM exists
+	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, getVMName(machine))
+	if err != nil {
+		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
 	if vm == nil {
-		//Skip deleting if we couldn't find anything to delete
-		return nil
+		return fmt.Errorf("couldn't find vm for machine: %v", machine.Name)
 	}
+	osDiskName := vm.VirtualMachineProperties.StorageProfile.OsDisk.Name
+	nicID := (*vm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
-	/*
-		TODO: See if this is the last remaining machine, and if so,
-		delete the resource group, which will automatically delete
-		all associated resources
-	*/
-
-	groupsClient := wrappers.GetGroupsClient(azure.SubscriptionID)
-	groupsClient.SetAuthorizer(azure.Authorizer)
-	groupsDeleteFuture, err := groupsClient.Delete(azure.ctx, clusterConfig.ResourceGroup)
+	// delete the VM instance
+	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, getVMName(machine))
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting virtual machine: %v", err)
 	}
-	return groupsDeleteFuture.WaitForCompletion(azure.ctx, groupsClient.Client.BaseClient.Client)
+	err = azure.compute().WaitForVMDeletionFuture(vmDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for virtual machine deletion: %v", err)
+	}
+
+	// delete OS disk associated with the VM
+	diskDeleteFuture, err := azure.compute().DeleteManagedDisk(clusterConfig.ResourceGroup, *osDiskName)
+	if err != nil {
+		return fmt.Errorf("error deleting managed disk: %v", err)
+	}
+	err = azure.compute().WaitForDisksDeleteFuture(diskDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for managed disk deletion: %v", err)
+	}
+
+	// delete NIC associated with the VM
+	nicName, err := resourcemanagement.ResourceName(*nicID)
+	if err != nil {
+		return fmt.Errorf("error retrieving network interface name: %v", err)
+	}
+	interfacesDeleteFuture, err := azure.network().DeleteNetworkInterface(clusterConfig.ResourceGroup, nicName)
+	if err != nil {
+		return fmt.Errorf("error deleting network interface: %v", err)
+	}
+	err = azure.network().WaitForNetworkInterfacesFuture(interfacesDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for network interface deletion: %v", err)
+	}
+
+	// delete public ip address associated with the VM
+	publicIpAddressDeleteFuture, err := azure.network().DeletePublicIpAddress(clusterConfig.ResourceGroup, getPublicIPName(machine))
+	if err != nil {
+		return fmt.Errorf("error deleting public IP address: %v", err)
+	}
+	err = azure.network().WaitForPublicIpAddressDeleteFuture(publicIpAddressDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for public ip address deletion: %v", err)
+	}
+	return nil
 }
 
 // Get the kubeconfig of a machine based on the cluster and machine spec passed.
@@ -508,14 +539,14 @@ func azureServicesClientOrDefault(params MachineActuatorParams, authorizer autor
 	}
 	azureComputeClient := compute.NewService(subscriptionID)
 	azureComputeClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
-	azureResourceManagementClient.SetAuthorizer(authorizer)
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)
+	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
+	azureResourceManagementClient.SetAuthorizer(authorizer)
 	return &services.AzureClients{
 		Compute:            azureComputeClient,
-		Resourcemanagement: azureResourceManagementClient,
 		Network:            azureNetworkClient,
+		Resourcemanagement: azureResourceManagementClient,
 	}, nil
 }
 
@@ -523,10 +554,10 @@ func (azure *AzureClient) compute() services.AzureComputeClient {
 	return azure.services.Compute
 }
 
-func (azure *AzureClient) resourcemanagement() services.AzureResourceManagementClient {
-	return azure.services.Resourcemanagement
-}
-
 func (azure *AzureClient) network() services.AzureNetworkClient {
 	return azure.services.Network
+}
+
+func (azure *AzureClient) resourcemanagement() services.AzureResourceManagementClient {
+	return azure.services.Resourcemanagement
 }
