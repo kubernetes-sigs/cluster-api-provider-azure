@@ -114,13 +114,13 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 		return nil, fmt.Errorf("error getting azure services client: %v", err)
 	}
 	return &AzureClient{
-		v1Alpha1Client: params.V1Alpha1Client,
-		services:       azureServicesClients,
-		SubscriptionID: subscriptionID,
-		Authorizer:     authorizer,
-		kubeadmToken:   params.KubeadmToken,
-		ctx:            context.Background(),
-		scheme:         scheme,
+		v1Alpha1Client:           params.V1Alpha1Client,
+		services:                 azureServicesClients,
+		SubscriptionID:           subscriptionID,
+		Authorizer:               authorizer,
+		kubeadmToken:             params.KubeadmToken,
+		ctx:                      context.Background(),
+		scheme:                   scheme,
 		azureProviderConfigCodec: azureProviderConfigCodec,
 	}, nil
 }
@@ -220,7 +220,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return fmt.Errorf("error deleting network interface: %v", err)
 	}
-	err = azure.network().WaitForNetworkInterfacesFuture(interfacesDeleteFuture)
+	err = azure.network().WaitForNetworkInterfacesDeleteFuture(interfacesDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for network interface deletion: %v", err)
 	}

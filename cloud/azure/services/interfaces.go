@@ -40,7 +40,7 @@ type AzureComputeClient interface {
 type AzureNetworkClient interface {
 	// Network Interfaces Operations
 	DeleteNetworkInterface(resourceGroupName string, networkInterfaceName string) (network.InterfacesDeleteFuture, error)
-	WaitForNetworkInterfacesFuture(future network.InterfacesDeleteFuture) error
+	WaitForNetworkInterfacesDeleteFuture(future network.InterfacesDeleteFuture) error
 
 	// Network Security Groups Operations
 	CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)

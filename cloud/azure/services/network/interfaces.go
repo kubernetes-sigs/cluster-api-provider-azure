@@ -18,6 +18,6 @@ func (s *Service) DeleteNetworkInterface(resourceGroup string, networkInterfaceN
 	return s.InterfacesClient.Delete(s.ctx, resourceGroup, networkInterfaceName)
 }
 
-func (s *Service) WaitForNetworkInterfacesFuture(future network.InterfacesDeleteFuture) error {
+func (s *Service) WaitForNetworkInterfacesDeleteFuture(future network.InterfacesDeleteFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.InterfacesClient.Client)
 }
