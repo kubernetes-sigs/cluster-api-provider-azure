@@ -17,17 +17,27 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/ghodss/yaml"
 	"github.com/joho/godotenv"
 	azure "github.com/platform9/azure-provider/cloud/azure/actuators/cluster"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
-	"github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
+	"github.com/platform9/azure-provider/cloud/azure/services"
+
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -155,34 +165,34 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestDeleteUnit(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-delete.yaml"
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files :%v", err)
-	}
-	azure, err := mockAzureClient(t)
+func TestDeleteSuccess(t *testing.T) {
+	azureServicesClient := mockVMExists()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	actuator, err := NewMachineActuator(params)
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	_, err = azure.createOrUpdateGroup(cluster)
+	err = actuator.Delete(cluster, machine)
 	if err != nil {
-		t.Fatalf("unable to create resource group: %v", err)
+		t.Fatalf("unable to delete machine: %v", err)
 	}
-	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
-	if err != nil {
-		t.Fatalf("unable to create deployment: %v", err)
-	}
-	err = azure.Delete(cluster, machines[0])
-	if err != nil {
-		t.Fatalf("unable to delete cluster: %v", err)
-	}
-	exists, err := azure.checkResourceGroupExists(cluster)
-	if err != nil {
-		t.Fatalf("unable to check existence of resource group: %v", err)
-	}
-	if exists {
-		t.Fatalf("got resource group that should've been deleted")
+}
+
+func TestDeleteFailureVMNotExists(t *testing.T) {
+	azureServicesClient := mockVMNotExists()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	actuator, err := NewMachineActuator(params)
+	err = actuator.Delete(cluster, machine)
+	if err == nil {
+		t.Fatalf("expected error, but got none")
 	}
 }
 
@@ -298,7 +308,7 @@ KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercon
 		},
 	}
 	machineConfig := mockAzureMachineProviderConfig(t)
-	machineConfig.Roles = []v1alpha1.MachineRole{"Master"}
+	machineConfig.Roles = []azureconfigv1.MachineRole{"Master"}
 	actualStartupScript, err := azure.getStartupScript(*machineConfig)
 	if err != nil {
 		t.Fatalf("unable to get startup script: %v", err)
@@ -358,20 +368,20 @@ func readConfigs(t *testing.T, clusterConfigPath string, machinesConfigPath stri
 	return cluster, machines, nil
 }
 
-func mockAzureMachineProviderConfig(t *testing.T) *v1alpha1.AzureMachineProviderConfig {
+func mockAzureMachineProviderConfig(t *testing.T) *azureconfigv1.AzureMachineProviderConfig {
 	t.Helper()
-	return &v1alpha1.AzureMachineProviderConfig{
+	return &azureconfigv1.AzureMachineProviderConfig{
 		Location: "eastus",
 		VMSize:   "Standard_B1s",
-		Image: v1alpha1.Image{
+		Image: azureconfigv1.Image{
 			Publisher: "Canonical",
 			Offer:     "UbuntuServer",
 			SKU:       "16.04-LTS",
 			Version:   "latest",
 		},
-		OSDisk: v1alpha1.OSDisk{
+		OSDisk: azureconfigv1.OSDisk{
 			OSType: "Linux",
-			ManagedDisk: v1alpha1.ManagedDisk{
+			ManagedDisk: azureconfigv1.ManagedDisk{
 				StorageAccountType: "Premium_LRS",
 			},
 			DiskSizeGB: 30,
@@ -379,9 +389,9 @@ func mockAzureMachineProviderConfig(t *testing.T) *v1alpha1.AzureMachineProvider
 	}
 }
 
-func mockAzureClusterProviderConfig(t *testing.T, rg string) *v1alpha1.AzureClusterProviderConfig {
+func mockAzureClusterProviderConfig(t *testing.T, rg string) *azureconfigv1.AzureClusterProviderConfig {
 	t.Helper()
-	return &v1alpha1.AzureClusterProviderConfig{
+	return &azureconfigv1.AzureClusterProviderConfig{
 		ResourceGroup: rg,
 		Location:      "eastus",
 	}
@@ -389,7 +399,7 @@ func mockAzureClusterProviderConfig(t *testing.T, rg string) *v1alpha1.AzureClus
 
 func mockAzureClient(t *testing.T) (*AzureClient, error) {
 	t.Helper()
-	scheme, codec, err := v1alpha1.NewSchemeAndCodecs()
+	scheme, codec, err := azureconfigv1.NewSchemeAndCodecs()
 	if err != nil {
 		return nil, err
 	}
@@ -425,4 +435,124 @@ func createClusterActuator() (*azure.AzureClusterClient, error) {
 		return nil, err
 	}
 	return actuator, nil
+}
+
+func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderConfig) *v1alpha1.Machine {
+	providerConfig, err := providerConfigFromMachine(&machineConfig)
+	if err != nil {
+		t.Fatalf("error encoding provider config: %v", err)
+	}
+	return &v1alpha1.Machine{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "machine-test",
+		},
+		Spec: v1alpha1.MachineSpec{
+			ProviderConfig: *providerConfig,
+			Versions: v1alpha1.MachineVersionInfo{
+				Kubelet:      "1.9.4",
+				ControlPlane: "1.9.4",
+			},
+		},
+	}
+}
+
+func newCluster(t *testing.T) *v1alpha1.Cluster {
+	clusterProviderConfig := newClusterProviderConfig()
+	providerConfig, err := providerConfigFromCluster(&clusterProviderConfig)
+	if err != nil {
+		t.Fatalf("error encoding provider config: %v", err)
+	}
+
+	return &v1alpha1.Cluster{
+		TypeMeta: v1.TypeMeta{
+			Kind: "Cluster",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: "cluster-test",
+		},
+		Spec: v1alpha1.ClusterSpec{
+			ClusterNetwork: v1alpha1.ClusterNetworkingConfig{
+				Services: v1alpha1.NetworkRanges{
+					CIDRBlocks: []string{
+						"10.96.0.0/12",
+					},
+				},
+				Pods: v1alpha1.NetworkRanges{
+					CIDRBlocks: []string{
+						"192.168.0.0/16",
+					},
+				},
+			},
+			ProviderConfig: *providerConfig,
+		},
+	}
+}
+
+func providerConfigFromMachine(in *azureconfigv1.AzureMachineProviderConfig) (*clusterv1.ProviderConfig, error) {
+	bytes, err := yaml.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+	return &clusterv1.ProviderConfig{
+		Value: &runtime.RawExtension{Raw: bytes},
+	}, nil
+}
+
+func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderConfig, error) {
+	bytes, err := yaml.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+	return &clusterv1.ProviderConfig{
+		Value: &runtime.RawExtension{Raw: bytes},
+	}, nil
+}
+
+func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
+	return azureconfigv1.AzureClusterProviderConfig{
+		ResourceGroup: "resource-group-test",
+		Location:      "westus2",
+	}
+}
+
+func mockVMExists() services.AzureClients {
+	computeMock := services.MockAzureComputeClient{
+		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{compute.NetworkInterfaceReference{ID: to.StringPtr("001")}}}
+			OsDiskName := fmt.Sprintf("OS_Disk_%v", name)
+			storageProfile := compute.StorageProfile{OsDisk: &compute.OSDisk{Name: &OsDiskName}}
+			vmProperties := compute.VirtualMachineProperties{StorageProfile: &storageProfile, NetworkProfile: &networkProfile}
+			return &compute.VirtualMachine{Name: &name, VirtualMachineProperties: &vmProperties}, nil
+		},
+	}
+	return services.AzureClients{Compute: &computeMock, Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &services.MockAzureNetworkClient{}}
+}
+
+func mockVMNotExists() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
+	}
+	return services.AzureClients{Compute: &services.MockAzureComputeClient{}, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
+}
+
+func newMachineProviderConfig() azureconfigv1.AzureMachineProviderConfig {
+	return azureconfigv1.AzureMachineProviderConfig{
+		Location: "westus2",
+		VMSize:   "Standard_B2ms",
+		Image: azureconfigv1.Image{
+			Publisher: "Canonical",
+			Offer:     "UbuntuServer",
+			SKU:       "16.04-LTS",
+			Version:   "latest",
+		},
+		OSDisk: azureconfigv1.OSDisk{
+			OSType: "Linux",
+			ManagedDisk: azureconfigv1.ManagedDisk{
+				StorageAccountType: "Premium_LRS",
+			},
+			DiskSizeGB: 30,
+		},
+	}
 }
