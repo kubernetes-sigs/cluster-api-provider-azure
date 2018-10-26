@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/go-autorest/autorest"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
-	"github.com/Azure/go-autorest/autorest"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -40,6 +40,18 @@ func TestActuatorCreateSuccess(t *testing.T) {
 	}
 }
 
+func TestNewAzureClientParamsPassed(t *testing.T) {
+	azureServicesClient := services.AzureClients{Network: &services.MockAzureNetworkClient{}}
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	client, err := azureServicesClientOrDefault(params)
+	if err != nil {
+		t.Fatalf("unable to create azure services client: %v", err)
+	}
+	if client.Compute != nil {
+		t.Fatal("expected azure services client to be nil")
+	}
+}
+
 func TestReconcileSuccess(t *testing.T) {
 	azureServicesClient := mockReconcileSuccess()
 	params := ClusterActuatorParams{Services: &azureServicesClient}
@@ -54,8 +66,8 @@ func TestReconcileSuccess(t *testing.T) {
 		t.Fatalf("unexpected error calling Reconcile: %v", err)
 	}
 }
-func TestReconcileFailure(t *testing.T) {
-	azureServicesClient := mockReconcileFailure()
+func TestReconcileFailureNG(t *testing.T) {
+	azureServicesClient := mockReconcileFailureNG()
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -68,7 +80,34 @@ func TestReconcileFailure(t *testing.T) {
 		t.Fatalf("expected error, but got none")
 	}
 }
+func TestReconcileFailureVnet(t *testing.T) {
+	azureServicesClient := mockReconcileFailureVnet()
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
 
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = actuator.Reconcile(cluster)
+	if err == nil {
+		t.Fatalf("expected error, but got none")
+	}
+}
+func TestReconcileFailureRG(t *testing.T) {
+	azureServicesClient := mockReconcileFailureRG()
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = actuator.Reconcile(cluster)
+	if err == nil {
+		t.Fatalf("expected error, but got none")
+	}
+}
 func TestDeleteSuccess(t *testing.T) {
 	azureServicesClient := mockDeleteRGExists()
 	params := ClusterActuatorParams{Services: &azureServicesClient}
@@ -84,7 +123,7 @@ func TestDeleteSuccess(t *testing.T) {
 	}
 }
 
-func TestDeleteFailureRGNotExists(t *testing.T) {
+func TestDeleteFailureSGNotExists(t *testing.T) {
 	azureServicesClient := mockDeleteRGNotExists()
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
@@ -104,17 +143,41 @@ func mockReconcileSuccess() services.AzureClients {
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 			return &network.SecurityGroupsCreateOrUpdateFuture{}, nil
 		},
+		MockCreateOrUpdateVnet: func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
+			return &network.VirtualNetworksCreateOrUpdateFuture{}, nil
+		},
 	}
 	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 }
 
-func mockReconcileFailure() services.AzureClients {
+func mockReconcileFailureNG() services.AzureClients {
 	networkMock := services.MockAzureNetworkClient{
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 			return nil, errors.New("failed to create resource")
 		},
 	}
 	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+}
+
+func mockReconcileFailureVnet() services.AzureClients {
+	networkMock := services.MockAzureNetworkClient{
+		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
+			return &network.SecurityGroupsCreateOrUpdateFuture{}, nil
+		},
+		MockCreateOrUpdateVnet: func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
+			return nil, errors.New("failed to create resource")
+		},
+	}
+	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+}
+
+func mockReconcileFailureRG() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCreateOrUpdateGroup: func(resourceGroupName string, location string) (resources.Group, error) {
+			return resources.Group{}, errors.New("failed to create resource")
+		},
+	}
+	return services.AzureClients{Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
 }
 
 func mockDeleteRGExists() services.AzureClients {
