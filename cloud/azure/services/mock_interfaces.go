@@ -13,16 +13,32 @@ limitations under the License.
 package services
 
 import (
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 )
 
+type MockAzureComputeClient struct {
+	MockVmIfExists               func(resourceGroup string, name string) (*compute.VirtualMachine, error)
+	MockDeleteVM                 func(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
+	MockWaitForVMDeletionFuture  func(future compute.VirtualMachinesDeleteFuture) error
+	MockDeleteManagedDisk        func(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
+	MockWaitForDisksDeleteFuture func(future compute.DisksDeleteFuture) error
+}
+
 type MockAzureNetworkClient struct {
+	MockDeleteNetworkInterface               func(resourceGroup string, networkInterfaceName string) (network.InterfacesDeleteFuture, error)
+	MockWaitForNetworkInterfacesDeleteFuture func(future network.InterfacesDeleteFuture) error
+
 	MockCreateOrUpdateNetworkSecurityGroup    func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
 	MockNetworkSGIfExists                     func(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	MockWaitForNetworkSGsCreateOrUpdateFuture func(future network.SecurityGroupsCreateOrUpdateFuture) error
+
+	MockDeletePublicIpAddress              func(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
+	MockWaitForPublicIpAddressDeleteFuture func(future network.PublicIPAddressesDeleteFuture) error
 }
+
 type MockAzureResourceManagementClient struct {
 	MockCreateOrUpdateGroup       func(resourceGroupName string, location string) (resources.Group, error)
 	MockDeleteGroup               func(resourceGroupName string) (resources.GroupsDeleteFuture, error)
@@ -30,6 +46,68 @@ type MockAzureResourceManagementClient struct {
 	MockWaitForGroupsDeleteFuture func(future resources.GroupsDeleteFuture) error
 }
 
+func (m *MockAzureComputeClient) VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+	if m.MockVmIfExists == nil {
+		return nil, nil
+	}
+	return m.MockVmIfExists(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
+	if m.MockDeleteVM == nil {
+		return compute.VirtualMachinesDeleteFuture{}, nil
+	}
+	return m.MockDeleteVM(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
+	if m.MockDeleteVM == nil {
+		return compute.DisksDeleteFuture{}, nil
+	}
+	return m.MockDeleteManagedDisk(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
+	if m.MockDeleteVM == nil {
+		return nil
+	}
+	return m.MockWaitForVMDeletionFuture(future)
+}
+
+func (m *MockAzureComputeClient) WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error {
+	if m.MockDeleteVM == nil {
+		return nil
+	}
+	return m.MockWaitForDisksDeleteFuture(future)
+}
+
+func (m *MockAzureNetworkClient) DeleteNetworkInterface(resourceGroup string, networkInterfaceName string) (network.InterfacesDeleteFuture, error) {
+	if m.MockDeleteNetworkInterface == nil {
+		return network.InterfacesDeleteFuture{}, nil
+	}
+	return m.MockDeleteNetworkInterface(resourceGroup, networkInterfaceName)
+}
+
+func (m *MockAzureNetworkClient) WaitForNetworkInterfacesDeleteFuture(future network.InterfacesDeleteFuture) error {
+	if m.MockWaitForNetworkInterfacesDeleteFuture == nil {
+		return nil
+	}
+	return m.MockWaitForNetworkInterfacesDeleteFuture(future)
+}
+
+func (m *MockAzureNetworkClient) DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
+	if m.MockDeleteNetworkInterface == nil {
+		return network.PublicIPAddressesDeleteFuture{}, nil
+	}
+	return m.MockDeletePublicIpAddress(resourceGroup, IPName)
+}
+
+func (m *MockAzureNetworkClient) WaitForPublicIpAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error {
+	if m.MockWaitForPublicIpAddressDeleteFuture == nil {
+		return nil
+	}
+	return m.MockWaitForPublicIpAddressDeleteFuture(future)
+}
 func (m *MockAzureNetworkClient) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 	if m.MockCreateOrUpdateNetworkSecurityGroup == nil {
 		return nil, nil

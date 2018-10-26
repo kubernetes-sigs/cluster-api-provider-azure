@@ -10,9 +10,10 @@
   revision = "75cd24fc2f2c2a2088577d12123ddee5f54e0675"
 
 [[projects]]
-  digest = "1:c141d40a2c4c8feda83e88d9c3c258ecdbb9f0b7812af799eebe263b77e7588c"
+  digest = "1:d0d50fd48a05b9850a02db8c362ffddc266da4ee44047823f8e4f68606b4d1f8"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
+    "services/compute/mgmt/2018-04-01/compute",
     "services/network/mgmt/2018-01-01/network",
     "services/resources/mgmt/2018-02-01/resources",
     "version",
@@ -1049,6 +1050,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute",
     "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network",
     "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources",
     "github.com/Azure/go-autorest/autorest",

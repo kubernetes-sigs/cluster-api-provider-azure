@@ -13,6 +13,7 @@ limitations under the License.
 package services
 
 import (
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
@@ -20,15 +21,35 @@ import (
 
 // interface for all azure services clients
 type AzureClients struct {
+	Compute            AzureComputeClient
 	Network            AzureNetworkClient
 	Resourcemanagement AzureResourceManagementClient
 }
 
+type AzureComputeClient interface {
+	// Virtual Machines Operations
+	VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error)
+	DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
+	WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error
+
+	// Disk Operations
+	DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
+	WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error
+}
+
 type AzureNetworkClient interface {
+	// Network Interfaces Operations
+	DeleteNetworkInterface(resourceGroupName string, networkInterfaceName string) (network.InterfacesDeleteFuture, error)
+	WaitForNetworkInterfacesDeleteFuture(future network.InterfacesDeleteFuture) error
+
 	// Network Security Groups Operations
 	CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
 	NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
+
+	// Public Ip Address Operations
+	DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
+	WaitForPublicIpAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
 }
 
 type AzureResourceManagementClient interface {

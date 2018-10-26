@@ -20,17 +20,23 @@ import (
 )
 
 type Service struct {
-	SecurityGroupsClient network.SecurityGroupsClient
-	ctx                  context.Context
+	InterfacesClient        network.InterfacesClient
+	PublicIPAddressesClient network.PublicIPAddressesClient
+	SecurityGroupsClient    network.SecurityGroupsClient
+	ctx                     context.Context
 }
 
 func NewService(subscriptionId string) *Service {
 	return &Service{
-		SecurityGroupsClient: network.NewSecurityGroupsClient(subscriptionId),
-		ctx:                  context.Background(),
+		InterfacesClient:        network.NewInterfacesClient(subscriptionId),
+		PublicIPAddressesClient: network.NewPublicIPAddressesClient(subscriptionId),
+		SecurityGroupsClient:    network.NewSecurityGroupsClient(subscriptionId),
+		ctx:                     context.Background(),
 	}
 }
 
 func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
+	s.InterfacesClient.BaseClient.Client.Authorizer = authorizer
+	s.PublicIPAddressesClient.BaseClient.Client.Authorizer = authorizer
 	s.SecurityGroupsClient.BaseClient.Client.Authorizer = authorizer
 }
