@@ -50,6 +50,10 @@ type AzureNetworkClient interface {
 	// Public Ip Address Operations
 	DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
 	WaitForPublicIpAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
+
+	// Virtual Networks Operations
+	CreateOrUpdateVnet(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error)
+	WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error
 }
 
 type AzureResourceManagementClient interface {

@@ -23,6 +23,7 @@ type Service struct {
 	InterfacesClient        network.InterfacesClient
 	PublicIPAddressesClient network.PublicIPAddressesClient
 	SecurityGroupsClient    network.SecurityGroupsClient
+	VirtualNetworksClient   network.VirtualNetworksClient
 	ctx                     context.Context
 }
 
@@ -31,6 +32,7 @@ func NewService(subscriptionId string) *Service {
 		InterfacesClient:        network.NewInterfacesClient(subscriptionId),
 		PublicIPAddressesClient: network.NewPublicIPAddressesClient(subscriptionId),
 		SecurityGroupsClient:    network.NewSecurityGroupsClient(subscriptionId),
+		VirtualNetworksClient:   network.NewVirtualNetworksClient(subscriptionId),
 		ctx:                     context.Background(),
 	}
 }
@@ -39,4 +41,5 @@ func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
 	s.InterfacesClient.BaseClient.Client.Authorizer = authorizer
 	s.PublicIPAddressesClient.BaseClient.Client.Authorizer = authorizer
 	s.SecurityGroupsClient.BaseClient.Client.Authorizer = authorizer
+	s.VirtualNetworksClient.BaseClient.Client.Authorizer = authorizer
 }
