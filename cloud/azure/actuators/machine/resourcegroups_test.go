@@ -7,31 +7,6 @@ import (
 )
 
 func TestCreateGroup(t *testing.T) {
-	rg := "ClusterAPI-test-CI-create-rg"
-	clusterConfigFile := "testconfigs/cluster-ci-create-rg.yaml"
-	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files: %v", err)
-	}
-	clusterConfig := mockAzureClusterProviderConfig(t, rg)
-	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
-	}
-	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
-	group, err := azure.createOrUpdateGroup(cluster)
-	if err != nil {
-		t.Fatalf("unable to create resource group: %v", err)
-	}
-	groupsClient := resources.NewGroupsClient(azure.SubscriptionID)
-	groupsClient.Authorizer = azure.Authorizer
-	_, err = groupsClient.Get(azure.ctx, *group.Name)
-	if err != nil {
-		t.Fatalf("unable to get created resource group, %v: %v", group.Name, err)
-	}
-}
-
-func TestCreateGroupUnit(t *testing.T) {
 	clusterConfigFile := "testconfigs/cluster-ci-create-rg.yaml"
 	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {
@@ -51,39 +26,6 @@ func TestCreateGroupUnit(t *testing.T) {
 }
 
 func TestCheckResourceGroupExists(t *testing.T) {
-	rg := "ClusterAPI-test-CI-rg-exists"
-	clusterConfigFile := "testconfigs/cluster-ci-rg-exists.yaml"
-	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files: %v", err)
-	}
-	clusterConfig := mockAzureClusterProviderConfig(t, rg)
-	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
-	}
-	exists, err := azure.checkResourceGroupExists(cluster)
-	if exists {
-		t.Fatalf("got resource group exists that should not have existed")
-	}
-	if err != nil {
-		t.Fatalf("error checking if resource group exists: %v", err)
-	}
-	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
-	_, err = azure.createOrUpdateGroup(cluster)
-	if err != nil {
-		t.Fatalf("unable to create resource group: %v", err)
-	}
-	exists, err = azure.checkResourceGroupExists(cluster)
-	if !exists {
-		t.Fatalf("got resource group does not exist that should have existed")
-	}
-	if err != nil {
-		t.Fatalf("error checking if resource group exists: %v", err)
-	}
-}
-
-func TestCheckResourceGroupExistsUnit(t *testing.T) {
 	clusterConfigFile := "testconfigs/cluster-ci-rg-exists.yaml"
 	cluster, _, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	if err != nil {

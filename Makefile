@@ -1,11 +1,8 @@
-REPO=github.com/platform9/azure-provider/cloud/azure/actuators/machine
 GOFLAGS += -ldflags '-extldflags "-static"'
-TESTFLAGS=-test.timeout 0 -v
-GOTEST=$(GOCMD) test $(REPO) $(TESTFLAGS)
 
 all: generate build images
 
-.PHONY: vendor
+.PHONY: vendor generate unit-tests machine-unit-tests cluster-unit-tests
 
 vendor:
 	dep version || go get -u github.com/golang/dep/cmd/dep
@@ -14,7 +11,6 @@ vendor-update:
 	dep version || go get -u github.com/golang/dep/cmd/dep
 	dep ensure -v -update
 
-.PHONY: generate
 
 generate: vendor
 	go build -o $$GOPATH/bin/deepcopy-gen github.com/platform9/azure-provider/vendor/k8s.io/code-generator/cmd/deepcopy-gen
@@ -50,11 +46,13 @@ push_dev:
 	$(MAKE) -C cmd/cluster-controller dev_push
 	$(MAKE) -C cmd/machine-controller dev_push
 
-unit_test:
-	$(GOTEST) -run "^TestParseProviderConfig|TestBase64Encoding|TestGetStartupScript|Test(\w)*Unit|TestNewMachineActuator"
+machine-unit-tests:
+	go test -v github.com/platform9/azure-provider/cloud/azure/actuators/machine
 
-integration_test:
-	$(GOTEST) -run "^TestCreate|TestUpdate|TestDelete|TestExists|TestCreateOrUpdateDeployment|TestCreateOrUpdateDeploymentWExisting|TestVMIfExists|TestDeleteSingleVM|TestCreateGroup|TestGetIP"
+cluster-unit-tests:
+	go test -v github.com/platform9/azure-provider/cloud/azure/actuators/cluster
+
+unit-tests: machine-unit-tests cluster-unit-tests
 
 clean:
 	go clean

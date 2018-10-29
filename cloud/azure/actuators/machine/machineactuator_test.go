@@ -58,37 +58,6 @@ func TestNewMachineActuator(t *testing.T) {
 func TestCreate(t *testing.T) {
 	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files :%v", err)
-	}
-	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
-	}
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
-	if err != nil {
-		t.Fatalf("unable to parse cluster provider config: %v", err)
-	}
-	defer deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
-	clusterActuator, err := createClusterActuator()
-	if err != nil {
-		t.Fatalf("unable to create cluster actuator: %v", err)
-	}
-	err = clusterActuator.Reconcile(cluster)
-	if err != nil {
-		t.Fatalf("failed to reconcile cluster: %v", err)
-	}
-	for _, machine := range machines {
-		err = azure.Create(cluster, machine)
-		if err != nil {
-			t.Fatalf("unable to create machine: %v", err)
-		}
-	}
-}
-
-func TestCreateUnit(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	azure, err := mockAzureClient(t)
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
@@ -102,11 +71,6 @@ func TestCreateUnit(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	// TODO: write test
-	return
-}
-
-func TestUpdateUnit(t *testing.T) {
 	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
 	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
 	azure, err := mockAzureClient(t)
@@ -121,48 +85,6 @@ func TestUpdateUnit(t *testing.T) {
 	}
 	// TODO: Finish test when update functionality is completed
 	return
-}
-
-func TestDelete(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-delete.yaml"
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files :%v", err)
-	}
-	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
-	}
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
-	if err != nil {
-		t.Fatalf("unable to parse cluster provider config: %v", err)
-	}
-	_, err = azure.decodeMachineProviderConfig(machines[0].Spec.ProviderConfig)
-	if err != nil {
-		t.Fatalf("unable to parse machine provider config: %v", err)
-	}
-	_, err = azure.createOrUpdateGroup(cluster)
-	if err != nil {
-		t.Fatalf("unable to create resource group: %v", err)
-	}
-	clusterActuator, err := createClusterActuator()
-	if err != nil {
-		t.Fatalf("unable to create cluster actuator: %v", err)
-	}
-	err = clusterActuator.Reconcile(cluster)
-	if err != nil {
-		t.Fatalf("failed to reconcile cluster: %v", err)
-	}
-	_, err = azure.createOrUpdateDeployment(cluster, machines[0])
-	if err != nil {
-		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
-		t.Fatalf("unable to create deployment: %v", err)
-	}
-	err = azure.Delete(cluster, machines[0])
-	if err != nil {
-		deleteTestResourceGroup(t, azure, clusterConfig.ResourceGroup)
-		t.Fatalf("unable to delete cluster: %v", err)
-	}
 }
 
 func TestDeleteSuccess(t *testing.T) {
@@ -197,11 +119,6 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	// TODO: write test
-	return
-}
-
-func TestExistsUnit(t *testing.T) {
 	// TODO: write test
 	return
 }
