@@ -82,7 +82,7 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
 	}
 
-	// Reconcile virutal network
+	// Reconcile virtual network
 	vnetFuture, err := azure.network().CreateOrUpdateVnet(clusterConfig.ResourceGroup, "", clusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("error creating or updating virtual network: %v", err)
