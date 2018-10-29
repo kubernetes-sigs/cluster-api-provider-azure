@@ -37,6 +37,9 @@ type MockAzureNetworkClient struct {
 
 	MockDeletePublicIpAddress              func(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
 	MockWaitForPublicIpAddressDeleteFuture func(future network.PublicIPAddressesDeleteFuture) error
+
+	MockCreateOrUpdateVnet              func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error)
+	MockWaitForVnetCreateOrUpdateFuture func(future network.VirtualNetworksCreateOrUpdateFuture) error
 }
 
 type MockAzureResourceManagementClient struct {
@@ -108,6 +111,7 @@ func (m *MockAzureNetworkClient) WaitForPublicIpAddressDeleteFuture(future netwo
 	}
 	return m.MockWaitForPublicIpAddressDeleteFuture(future)
 }
+
 func (m *MockAzureNetworkClient) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 	if m.MockCreateOrUpdateNetworkSecurityGroup == nil {
 		return nil, nil
@@ -127,6 +131,20 @@ func (m *MockAzureNetworkClient) WaitForNetworkSGsCreateOrUpdateFuture(future ne
 		return nil
 	}
 	return m.MockWaitForNetworkSGsCreateOrUpdateFuture(future)
+}
+
+func (m *MockAzureNetworkClient) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
+	if m.MockCreateOrUpdateVnet == nil {
+		return nil, nil
+	}
+	return m.MockCreateOrUpdateVnet(resourceGroupName, virtualNetworkName, location)
+}
+
+func (m *MockAzureNetworkClient) WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error {
+	if m.MockWaitForVnetCreateOrUpdateFuture == nil {
+		return nil
+	}
+	return m.MockWaitForVnetCreateOrUpdateFuture(future)
 }
 
 func (m *MockAzureResourceManagementClient) CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error) {

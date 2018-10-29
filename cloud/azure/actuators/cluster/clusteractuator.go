@@ -66,11 +66,13 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
 
+	// Reconcile resource group
 	_, err = azure.resourcemanagement().CreateOrUpdateGroup(clusterConfig.ResourceGroup, clusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("failed to create or update resource group: %v", err)
 	}
 
+	// Reconcile network security group
 	networkSGFuture, err := azure.network().CreateOrUpdateNetworkSecurityGroup(clusterConfig.ResourceGroup, "ClusterAPINSG", clusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("error creating or updating network security group: %v", err)
@@ -78,6 +80,16 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	err = azure.network().WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
+	}
+
+	// Reconcile virtual network
+	vnetFuture, err := azure.network().CreateOrUpdateVnet(clusterConfig.ResourceGroup, "", clusterConfig.Location)
+	if err != nil {
+		return fmt.Errorf("error creating or updating virtual network: %v", err)
+	}
+	err = azure.network().WaitForVnetCreateOrUpdateFuture(*vnetFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
 	}
 	return nil
 }

@@ -183,8 +183,7 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ClusterAPI_ip_name'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_ClusterAPIVM_vnet_name'), parameters('subnets_default_name'))]"
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ClusterAPI_ip_name'))]"
       ]
     },
     {
@@ -202,47 +201,6 @@
         "idleTimeoutInMinutes": 4
       },
       "dependsOn": []
-    },
-    {
-      "type": "Microsoft.Network/virtualNetworks",
-      "name": "[parameters('virtualNetworks_ClusterAPIVM_vnet_name')]",
-      "apiVersion": "2017-06-01",
-      "location": "[parameters('location')]",
-      "scale": null,
-      "properties": {
-        "provisioningState": "Succeeded",
-        "resourceGuid": "27c506b7-4879-45c2-9eae-480c5289de48",
-        "addressSpace": {
-          "addressPrefixes": [
-            "10.0.0.0/24"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[parameters('subnets_default_name')]",
-            "etag": "W/\"2d36bb91-8d73-4836-b61b-658cb73debbc\"",
-            "properties": {
-              "provisioningState": "Succeeded",
-              "addressPrefix": "10.0.0.0/24"
-            }
-          }
-        ],
-        "virtualNetworkPeerings": []
-      },
-      "dependsOn": []
-    },
-    {
-      "type": "Microsoft.Network/virtualNetworks/subnets",
-      "name": "[concat(parameters('virtualNetworks_ClusterAPIVM_vnet_name'), '/', parameters('subnets_default_name'))]",
-      "apiVersion": "2017-06-01",
-      "scale": null,
-      "properties": {
-        "provisioningState": "Succeeded",
-        "addressPrefix": "10.0.0.0/24"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_ClusterAPIVM_vnet_name'))]"
-      ]
     },
     {
       "apiVersion": "2015-06-15",
