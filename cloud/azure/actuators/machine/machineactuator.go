@@ -187,7 +187,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
 	// Check if VM exists
-	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, getVMName(machine))
+	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
@@ -198,7 +198,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	nicID := (*vm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
 	// delete the VM instance
-	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, getVMName(machine))
+	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting virtual machine: %v", err)
 	}
@@ -232,7 +232,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	}
 
 	// delete public ip address associated with the VM
-	publicIpAddressDeleteFuture, err := azure.network().DeletePublicIpAddress(clusterConfig.ResourceGroup, getPublicIPName(machine))
+	publicIpAddressDeleteFuture, err := azure.network().DeletePublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
@@ -246,13 +246,13 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 // Get the kubeconfig of a machine based on the cluster and machine spec passed.
 // Has not been fully tested as k8s is not yet bootstrapped on created machines.
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	_, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
 	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error loading machine provider config: %v", err)
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPrivateKey)
@@ -261,11 +261,11 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 		return "", err
 	}
 
-	ip, err := azure.GetIP(cluster, machine)
+	ip, err := azure.network().GetPublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting public ip address: %v ", err)
 	}
-	sshclient, err := GetSshClient(ip, privateKey)
+	sshclient, err := GetSshClient(*ip.IPAddress, privateKey)
 	if err != nil {
 		return "", fmt.Errorf("unable to get ssh client: %v", err)
 	}
