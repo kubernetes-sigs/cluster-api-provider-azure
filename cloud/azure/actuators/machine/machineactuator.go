@@ -319,14 +319,18 @@ func GetSshClient(host string, privatekey string) (*ssh.Client, error) {
 
 // Determine whether a machine exists based on the cluster and machine spec passed.
 func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	rgExists, err := azure.checkResourceGroupExists(cluster)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return false, err
 	}
-	if !rgExists {
+	resp, err := azure.resourcemanagement().CheckGroupExistence(clusterConfig.ResourceGroup)
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode == 404 {
 		return false, nil
 	}
-	vm, err := azure.vmIfExists(cluster, machine)
+	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return false, err
 	}
