@@ -41,7 +41,6 @@ func StartMachineController(server *options.MachineControllerServer, shutdown <-
 
 	params := azure.MachineActuatorParams{
 		V1Alpha1Client: client.ClusterV1alpha1(),
-		KubeadmToken:   "dummy",
 	}
 	actuator, err := azure.NewMachineActuator(params)
 

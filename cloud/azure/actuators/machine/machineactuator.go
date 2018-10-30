@@ -14,7 +14,6 @@ limitations under the License.
 package machine
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -22,22 +21,20 @@ import (
 	"log"
 	"os"
 
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/joho/godotenv"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
 	"time"
 
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
-	"github.com/joho/godotenv"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/services"
 	"github.com/platform9/azure-provider/cloud/azure/services/compute"
 	"github.com/platform9/azure-provider/cloud/azure/services/network"
 	"github.com/platform9/azure-provider/cloud/azure/services/resourcemanagement"
-	"k8s.io/apimachinery/pkg/runtime"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -45,13 +42,9 @@ import (
 
 // The Azure Client, also used as a machine actuator
 type AzureClient struct {
+	services *services.AzureClients
+	// interface to cluster-api
 	v1Alpha1Client           client.ClusterV1alpha1Interface
-	services                 *services.AzureClients
-	SubscriptionID           string
-	Authorizer               autorest.Authorizer
-	kubeadmToken             string
-	ctx                      context.Context
-	scheme                   *runtime.Scheme
 	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
 	machineSetupConfigs      machinesetup.MachineSetup
 }
@@ -61,12 +54,10 @@ type AzureClient struct {
 type MachineActuatorParams struct {
 	V1Alpha1Client         client.ClusterV1alpha1Interface
 	Services               *services.AzureClients
-	KubeadmToken           string
 	MachineSetupConfigPath string
 }
 
 const (
-	templateFile      = "deployment-template.json"
 	ProviderName      = "azure"
 	SSHUser           = "ClusterAPI"
 	NameAnnotationKey = "azure-name"
@@ -83,42 +74,17 @@ func init() {
 
 // Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
-	scheme, azureProviderConfigCodec, err := azureconfigv1.NewSchemeAndCodecs()
+	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating codec for provider: %v", err)
 	}
-	//Parse in environment variables if necessary
-	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-		err = godotenv.Load()
-		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
-		}
-		if err != nil {
-			log.Fatalf("Failed to load environment variables: %v", err)
-			return nil, err
-		}
-	}
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		log.Fatalf("Failed to get OAuth config: %v", err)
-		return nil, err
-	}
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if err != nil {
-		return nil, err
-	}
-	azureServicesClients, err := azureServicesClientOrDefault(params, authorizer, subscriptionID)
+	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		return nil, fmt.Errorf("error getting azure services client: %v", err)
 	}
 	return &AzureClient{
-		v1Alpha1Client:           params.V1Alpha1Client,
 		services:                 azureServicesClients,
-		SubscriptionID:           subscriptionID,
-		Authorizer:               authorizer,
-		kubeadmToken:             params.KubeadmToken,
-		ctx:                      context.Background(),
-		scheme:                   scheme,
+		v1Alpha1Client:           params.V1Alpha1Client,
 		azureProviderConfigCodec: azureProviderConfigCodec,
 	}, nil
 }
@@ -344,9 +310,30 @@ func (azure *AzureClient) decodeMachineProviderConfig(providerConfig clusterv1.P
 	return &config, err
 }
 
-func azureServicesClientOrDefault(params MachineActuatorParams, authorizer autorest.Authorizer, subscriptionID string) (*services.AzureClients, error) {
+func azureServicesClientOrDefault(params MachineActuatorParams) (*services.AzureClients, error) {
 	if params.Services != nil {
 		return params.Services, nil
+	}
+	//Parse in environment variables if necessary
+	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+		err := godotenv.Load()
+		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
+		}
+		if err != nil {
+			log.Fatalf("Failed to load environment variables: %v", err)
+			return nil, err
+		}
+	}
+
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	if err != nil {
+		log.Fatalf("Failed to get OAuth config: %v", err)
+		return nil, err
+	}
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if err != nil {
+		return nil, err
 	}
 	azureComputeClient := compute.NewService(subscriptionID)
 	azureComputeClient.SetAuthorizer(authorizer)
