@@ -15,80 +15,118 @@ package machine
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/ghodss/yaml"
-	"github.com/joho/godotenv"
-	azure "github.com/platform9/azure-provider/cloud/azure/actuators/cluster"
-	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
-	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/wrappers"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
-	"github.com/platform9/azure-provider/cloud/azure/services"
-
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
+	"github.com/platform9/azure-provider/cloud/azure/services"
+	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const (
-	machineConfigFile = "testconfigs/machines.yaml"
-)
+func TestNewMachineActuatorSuccess(t *testing.T) {
+	params := MachineActuatorParams{}
+	_, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+}
 
-func TestNewMachineActuator(t *testing.T) {
-	params := MachineActuatorParams{KubeadmToken: "token"}
+func TestCreateSuccess(t *testing.T) {
+	azureServicesClient := mockDeploymentSuccess()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
 	actuator, err := NewMachineActuator(params)
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	if actuator.kubeadmToken != params.KubeadmToken {
-		t.Fatalf("actuator.kubeadmToken != params.KubeadmToken: %v != %v", actuator.kubeadmToken, params.KubeadmToken)
+	err = actuator.Create(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine: %v", err)
 	}
 }
+func TestCreateFailure(t *testing.T) {
+	azureServicesClient := mockDeploymentFailure()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
 
-func TestCreate(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	azure, err := mockAzureClient(t)
+	actuator, err := NewMachineActuator(params)
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	for _, machine := range machines {
-		err = azure.Create(cluster, machine)
-		if err != nil {
-			t.Fatalf("unable to create machine: %v", err)
-		}
+	err = actuator.Create(cluster, machine)
+	if err == nil {
+		t.Fatalf("expected error, but got none")
 	}
 }
 
-func TestUpdate(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-create.yaml"
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	azure, err := mockAzureClient(t)
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
-	}
-	for _, machine := range machines {
-		err = azure.Create(cluster, machine)
-		if err != nil {
-			t.Fatalf("unable to create machine: %v", err)
-		}
-	}
-	// TODO: Finish test when update functionality is completed
-	return
-}
-
-func TestDeleteSuccess(t *testing.T) {
+func TestExistsSuccess(t *testing.T) {
 	azureServicesClient := mockVMExists()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unexpected error calling Exists: %v", err)
+	}
+	if !ok {
+		t.Fatalf("machine: %v does not exist", machine.ObjectMeta.Name)
+	}
+}
+
+func TestExistsFailureRGNotExists(t *testing.T) {
+	azureServicesClient := mockResourceGroupNotExists()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	actuator, err := NewMachineActuator(params)
+	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unexpected error calling Exists: %v", err)
+	}
+	if ok {
+		t.Fatalf("expected machine: %v to not exist", machine.ObjectMeta.Name)
+	}
+}
+func TestExistsFailureVMNotExists(t *testing.T) {
+	azureServicesClient := mockVMNotExists()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	actuator, err := NewMachineActuator(params)
+	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unexpected error calling Exists: %v", err)
+	}
+	if ok {
+		t.Fatalf("expected machine: %v to not exist", machine.ObjectMeta.Name)
+	}
+}
+func TestDeleteSuccess(t *testing.T) {
+	azureServicesClient := mockDeleteSuccess()
 	params := MachineActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderConfig()
 	machine := newMachine(t, machineConfig)
@@ -118,177 +156,93 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 	}
 }
 
-func TestExists(t *testing.T) {
-	// TODO: write test
-	return
-}
-
-func TestParseProviderConfigs(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-parse-providers.yaml"
-	cluster, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	if err != nil {
-		t.Fatalf("unable to parse config files: %v", err)
-	}
-	azure, err := NewMachineActuator(MachineActuatorParams{KubeadmToken: "dummy"})
-	if err != nil {
-		t.Fatalf("unable to create machine actuator: %v", err)
-	}
-	_, err = azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
-	if err != nil {
-		t.Fatalf("unable to parse cluster provider config: %v", err)
-	}
-	for _, machine := range machines {
-		_, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
-		if err != nil {
-			t.Fatalf("unable to parse machine provider config: %v", err)
-		}
-	}
-}
-
-func TestBase64Encoding(t *testing.T) {
-	baseText := "echo 'Hello world!'"
-	expectedEncoded := "ZWNobyAnSGVsbG8gd29ybGQhJw=="
-	actualEncoded := *base64EncodeCommand(baseText)
-
-	if expectedEncoded != actualEncoded {
-		t.Fatalf("encoded string does not match expected result: %s != %s", actualEncoded, expectedEncoded)
-	}
-}
-
-func TestGetStartupScript(t *testing.T) {
-	expectedStartupScript := `(
-apt-get update
-apt-get install -y docker.io
-apt-get update && apt-get install -y apt-transport-https curl prips
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial main
-EOF
-apt-get update
-apt-get install -y kubelet=1.11.3-00 kubeadm=1.11.3-00 kubectl=1.11.3-00 kubernetes-cni=0.6.0-00
-
-CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
-CLUSTER_DNS_DOMAIN="cluster.local"
-# Override network args to use kubenet instead of cni and override Kubelet DNS args.
-cat > /etc/systemd/system/kubelet.service.d/20-kubenet.conf <<EOF
-[Service]
-Environment="KUBELET_NETWORK_ARGS=--network-plugin=kubenet"
-Environment="KUBELET_DNS_ARGS=--cluster-dns=${CLUSTER_DNS_SERVER} --cluster-domain=${CLUSTER_DNS_DOMAIN}"
-EOF
-systemctl daemon-reload
-systemctl restart kubelet.service
-
-PORT=6443
-PUBLICIP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2017-08-01&format=text")
-
-# Set up kubeadm config file to pass parameters to kubeadm init.
-cat > kubeadm_config.yaml <<EOF
-apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
-api:
-  advertiseAddress: ${PUBLICIP}
-  bindPort: ${PORT}
-networking:
-  serviceSubnet: "10.96.0.0/12"
-token: "testtoken"
-controllerManagerExtraArgs:
-  cluster-cidr: "192.168.0.0/16"
-  service-cluster-ip-range: "10.96.0.0/12"
-  allocate-node-cidrs: "true"
-EOF
-
-# Create and set bridge-nf-call-iptables to 1 to pass the kubeadm preflight check.
-# Workaround was found here:
-# http://zeeshanali.com/sysadmin/fixed-sysctl-cannot-stat-procsysnetbridgebridge-nf-call-iptables/
-modprobe br_netfilter
-
-kubeadm init --config ./kubeadm_config.yaml
-
-mkdir -p /home/ClusterAPI/.kube
-cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
-chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
-
-KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`
-
-	azure := AzureClient{
-		machineSetupConfigs: machinesetup.MachineSetup{
-			Items: []machinesetup.Params{
-				{
-					MachineParams: machinesetup.MachineParams{},
-					Metadata: machinesetup.Metadata{
-						StartupScript: expectedStartupScript,
-					},
-				},
-			},
+func mockDeploymentFailure() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+			return nil, errors.New("failed to create resource")
 		},
 	}
-	machineConfig := mockAzureMachineProviderConfig(t)
-	machineConfig.Roles = []azureconfigv1.MachineRole{"Master"}
-	actualStartupScript, err := azure.getStartupScript(*machineConfig)
-	if err != nil {
-		t.Fatalf("unable to get startup script: %v", err)
-	}
-	if actualStartupScript != expectedStartupScript {
-		t.Fatalf("got wrong startup script: %v != %v", actualStartupScript, expectedStartupScript)
-	}
+	return services.AzureClients{Compute: &services.MockAzureComputeClient{}, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
 }
 
-func TestConvertMachineToDeploymentParams(t *testing.T) {
-	clusterConfigFile := "testconfigs/cluster-ci-parse-providers.yaml"
-	_, machines, err := readConfigs(t, clusterConfigFile, machineConfigFile)
-	azure, err := mockAzureClient(t)
-	if err != nil {
-		t.Fatalf("unable to create mock azure client: %v", err)
+func mockDeploymentSuccess() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+			return &resources.DeploymentsCreateOrUpdateFuture{}, nil
+		},
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
+		MockGetDeploymentResult: func(future resources.DeploymentsCreateOrUpdateFuture) (resources.DeploymentExtended, error) {
+			return resources.DeploymentExtended{Name: to.StringPtr("deployment-test")}, nil
+		},
 	}
-	params, err := azure.convertMachineToDeploymentParams(nil, machines[0])
-	if err != nil {
-		t.Fatalf("unable to convert machine to deployment params: %v", err)
-	}
-	if (*params)["virtualNetworks_ClusterAPIVM_vnet_name"].(map[string]interface{})["value"].(string) != "ClusterAPIVnet" {
-		t.Fatalf("params are not populated correctly")
-	}
+	return services.AzureClients{Compute: &services.MockAzureComputeClient{}, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
 }
 
-func readConfigs(t *testing.T, clusterConfigPath string, machinesConfigPath string) (*clusterv1.Cluster, []*clusterv1.Machine, error) {
-	t.Helper()
-
-	data, err := ioutil.ReadFile(clusterConfigPath)
-	if err != nil {
-		return nil, nil, err
+func mockVMExists() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
 	}
-	cluster := &clusterv1.Cluster{}
-	err = yaml.Unmarshal(data, cluster)
-	if err != nil {
-		return nil, nil, err
+	computeMock := services.MockAzureComputeClient{
+		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{compute.NetworkInterfaceReference{ID: to.StringPtr("001")}}}
+			OsDiskName := fmt.Sprintf("OS_Disk_%v", name)
+			storageProfile := compute.StorageProfile{OsDisk: &compute.OSDisk{Name: &OsDiskName}}
+			vmProperties := compute.VirtualMachineProperties{StorageProfile: &storageProfile, NetworkProfile: &networkProfile}
+			return &compute.VirtualMachine{Name: &name, VirtualMachineProperties: &vmProperties}, nil
+		},
 	}
-
-	data, err = ioutil.ReadFile(machinesConfigPath)
-	if err != nil {
-		return nil, nil, err
-	}
-	list := &clusterv1.MachineList{}
-	err = yaml.Unmarshal(data, &list)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var machines []*clusterv1.Machine
-	for index, machine := range list.Items {
-		if machine.Spec.ProviderConfig.Value == nil {
-			return nil, nil, fmt.Errorf("Machine %d's value is nil", index)
-		}
-		machines = append(machines, machine.DeepCopy())
-	}
-
-	return cluster, machines, nil
+	return services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
 }
 
-func mockAzureMachineProviderConfig(t *testing.T) *azureconfigv1.AzureMachineProviderConfig {
-	t.Helper()
-	return &azureconfigv1.AzureMachineProviderConfig{
-		Location: "eastus",
-		VMSize:   "Standard_B1s",
+func mockVMNotExists() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
+	}
+	// default compute mock returns nil VM
+	return services.AzureClients{Compute: &services.MockAzureComputeClient{}, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
+}
+
+func mockResourceGroupNotExists() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
+	}
+	return services.AzureClients{Compute: &services.MockAzureComputeClient{}, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
+}
+
+func mockDeleteSuccess() services.AzureClients {
+	resourcemanagementMock := services.MockAzureResourceManagementClient{
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+			return &resources.DeploymentsCreateOrUpdateFuture{}, nil
+		},
+		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
+			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
+		},
+	}
+	computeMock := services.MockAzureComputeClient{
+		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+			nicId := "001"
+			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{compute.NetworkInterfaceReference{ID: &nicId}}}
+			OsDiskName := fmt.Sprintf("OS_Disk_%v", name)
+			storageProfile := compute.StorageProfile{OsDisk: &compute.OSDisk{Name: &OsDiskName}}
+			vmProperties := compute.VirtualMachineProperties{StorageProfile: &storageProfile, NetworkProfile: &networkProfile}
+			return &compute.VirtualMachine{Name: &name, VirtualMachineProperties: &vmProperties}, nil
+		},
+	}
+	return services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
+}
+
+func newMachineProviderConfig() azureconfigv1.AzureMachineProviderConfig {
+	return azureconfigv1.AzureMachineProviderConfig{
+		Location: "southcentralus",
+		VMSize:   "Standard_B2ms",
 		Image: azureconfigv1.Image{
 			Publisher: "Canonical",
 			Offer:     "UbuntuServer",
@@ -305,52 +259,31 @@ func mockAzureMachineProviderConfig(t *testing.T) *azureconfigv1.AzureMachinePro
 	}
 }
 
-func mockAzureClusterProviderConfig(t *testing.T, rg string) *azureconfigv1.AzureClusterProviderConfig {
-	t.Helper()
-	return &azureconfigv1.AzureClusterProviderConfig{
-		ResourceGroup: rg,
-		Location:      "eastus",
+func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
+	return azureconfigv1.AzureClusterProviderConfig{
+		ResourceGroup: "resource-group-test",
+		Location:      "southcentralus",
 	}
 }
 
-func mockAzureClient(t *testing.T) (*AzureClient, error) {
-	t.Helper()
-	scheme, codec, err := azureconfigv1.NewSchemeAndCodecs()
+func providerConfigFromMachine(in *azureconfigv1.AzureMachineProviderConfig) (*clusterv1.ProviderConfig, error) {
+	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	//Parse in environment variables if necessary
-	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-		err = godotenv.Load()
-		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
-		}
-		if err != nil {
-			log.Fatalf("Failed to load environment variables: %v", err)
-			return nil, err
-		}
-	}
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		log.Fatalf("Failed to get OAuth config: %v", err)
-		return nil, err
-	}
-	return &AzureClient{
-		SubscriptionID:           wrappers.MockSubscriptionID,
-		scheme:                   scheme,
-		azureProviderConfigCodec: codec,
-		Authorizer:               authorizer,
+	return &clusterv1.ProviderConfig{
+		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
 
-func createClusterActuator() (*azure.AzureClusterClient, error) {
-	params := azure.ClusterActuatorParams{}
-	actuator, err := azure.NewClusterActuator(params)
+func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderConfig, error) {
+	bytes, err := yaml.Marshal(in)
 	if err != nil {
-		log.Fatalf("failed to create cluster actuator")
 		return nil, err
 	}
-	return actuator, nil
+	return &clusterv1.ProviderConfig{
+		Value: &runtime.RawExtension{Raw: bytes},
+	}, nil
 }
 
 func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderConfig) *v1alpha1.Machine {
@@ -400,75 +333,6 @@ func newCluster(t *testing.T) *v1alpha1.Cluster {
 				},
 			},
 			ProviderConfig: *providerConfig,
-		},
-	}
-}
-
-func providerConfigFromMachine(in *azureconfigv1.AzureMachineProviderConfig) (*clusterv1.ProviderConfig, error) {
-	bytes, err := yaml.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
-	return &clusterv1.ProviderConfig{
-		Value: &runtime.RawExtension{Raw: bytes},
-	}, nil
-}
-
-func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderConfig, error) {
-	bytes, err := yaml.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
-	return &clusterv1.ProviderConfig{
-		Value: &runtime.RawExtension{Raw: bytes},
-	}, nil
-}
-
-func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
-	return azureconfigv1.AzureClusterProviderConfig{
-		ResourceGroup: "resource-group-test",
-		Location:      "westus2",
-	}
-}
-
-func mockVMExists() services.AzureClients {
-	computeMock := services.MockAzureComputeClient{
-		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
-			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{compute.NetworkInterfaceReference{ID: to.StringPtr("001")}}}
-			OsDiskName := fmt.Sprintf("OS_Disk_%v", name)
-			storageProfile := compute.StorageProfile{OsDisk: &compute.OSDisk{Name: &OsDiskName}}
-			vmProperties := compute.VirtualMachineProperties{StorageProfile: &storageProfile, NetworkProfile: &networkProfile}
-			return &compute.VirtualMachine{Name: &name, VirtualMachineProperties: &vmProperties}, nil
-		},
-	}
-	return services.AzureClients{Compute: &computeMock, Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &services.MockAzureNetworkClient{}}
-}
-
-func mockVMNotExists() services.AzureClients {
-	resourcemanagementMock := services.MockAzureResourceManagementClient{
-		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
-			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
-		},
-	}
-	return services.AzureClients{Compute: &services.MockAzureComputeClient{}, Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
-}
-
-func newMachineProviderConfig() azureconfigv1.AzureMachineProviderConfig {
-	return azureconfigv1.AzureMachineProviderConfig{
-		Location: "westus2",
-		VMSize:   "Standard_B2ms",
-		Image: azureconfigv1.Image{
-			Publisher: "Canonical",
-			Offer:     "UbuntuServer",
-			SKU:       "16.04-LTS",
-			Version:   "latest",
-		},
-		OSDisk: azureconfigv1.OSDisk{
-			OSType: "Linux",
-			ManagedDisk: azureconfigv1.ManagedDisk{
-				StorageAccountType: "Premium_LRS",
-			},
-			DiskSizeGB: 30,
 		},
 	}
 }
