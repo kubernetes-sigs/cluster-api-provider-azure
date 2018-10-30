@@ -129,12 +129,33 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	_, err = azure.createOrUpdateDeployment(cluster, machine)
+	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
+
+	err = azure.resourcemanagement().ValidateDeployment(machine, clusterConfig, machineConfig)
+	if err != nil {
+		return fmt.Errorf("error validating deployment: %v", err)
+	}
+
+	deploymentsFuture, err := azure.resourcemanagement().CreateOrUpdateDeployment(machine, clusterConfig, machineConfig)
+	if err != nil {
+		return fmt.Errorf("error creating or updating deployment: %v", err)
+	}
+	err = azure.resourcemanagement().WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
+	if err != nil {
+		return fmt.Errorf("error waitinfg for deployment creation or update: %v", err)
+	}
+
+	deployment, err := azure.resourcemanagement().GetDeploymentResult(*deploymentsFuture)
+	// Work around possible bugs or late-stage failures
+	if deployment.Name == nil || err != nil {
+		return fmt.Errorf("error getting deployment result: %v", err)
+	}
+
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
