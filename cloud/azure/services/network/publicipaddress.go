@@ -16,6 +16,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 )
 
+func (s *Service) GetPublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+	return s.PublicIPAddressesClient.Get(s.ctx, resourceGroup, IPName, "")
+}
+
 func (s *Service) DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
 	return s.PublicIPAddressesClient.Delete(s.ctx, resourceGroup, IPName)
 }
