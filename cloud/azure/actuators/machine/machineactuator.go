@@ -172,19 +172,6 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 // Update an existing machine based on the cluster and machine spec passed.
 // Currently only checks machine existence and does not update anything.
 func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	//Parse in configurations
-	_, err := azure.decodeMachineProviderConfig(goalMachine.Spec.ProviderConfig)
-	if err != nil {
-		return err
-	}
-	_, err = azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
-	if err != nil {
-		return err
-	}
-	_, err = azure.vmIfExists(cluster, goalMachine)
-	if err != nil {
-		return err
-	}
 	// TODO: Update objects
 	return nil
 }
