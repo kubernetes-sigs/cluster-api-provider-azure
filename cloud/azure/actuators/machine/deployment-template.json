@@ -2,6 +2,10 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "clusterAPI_machine_name": {
+      "defaultValue": null,
+      "type": "string"
+    },
     "virtualNetworks_ClusterAPIVM_vnet_name": {
       "defaultValue": null,
       "type": "string"
@@ -84,6 +88,9 @@
     {
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('virtualMachines_ClusterAPIVM_name')]",
+      "tags":{
+        "machine": "[parameters('clusterAPI_machine_name')]"
+      },
       "apiVersion": "2017-03-30",
       "location": "[parameters('location')]",
       "scale": null,
@@ -141,6 +148,9 @@
     {
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[parameters('networkInterfaces_ClusterAPI_name')]",
+      "tags":{
+        "machine": "[parameters('clusterAPI_machine_name')]"
+      },
       "apiVersion": "2017-06-01",
       "location": "[parameters('location')]",
       "scale": null,
@@ -189,6 +199,9 @@
     {
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[parameters('publicIPAddresses_ClusterAPI_ip_name')]",
+      "tags":{
+        "machine": "[parameters('clusterAPI_machine_name')]"
+      },
       "apiVersion": "2017-06-01",
       "location": "[parameters('location')]",
       "scale": null,
@@ -211,6 +224,7 @@
         "[resourceId('Microsoft.Compute/virtualMachines/', parameters('virtualMachines_ClusterAPIVM_name'))]"
       ],
       "tags": {
+        "machine": "[parameters('clusterAPI_machine_name')]",
         "displayName": "config-app"
       },
       "properties": {

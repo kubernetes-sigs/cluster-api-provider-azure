@@ -1,4 +1,7 @@
 {
+    "clusterAPI_machine_name": {
+        "value": "ClusterAPIMachineName"
+    },
     "virtualNetworks_ClusterAPIVM_vnet_name": {
         "value": "ClusterAPIVnet"
     },
