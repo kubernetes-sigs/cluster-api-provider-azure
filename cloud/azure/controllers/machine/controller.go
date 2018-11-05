@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/kubernetes-incubator/apiserver-builder/pkg/controller"
 	azure "github.com/platform9/azure-provider/cloud/azure/actuators/machine"
+	"github.com/platform9/azure-provider/cloud/azure/controllers"
 	"github.com/platform9/azure-provider/cloud/azure/controllers/machine/options"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +38,10 @@ func StartMachineController(server *options.MachineControllerServer, shutdown <-
 	client, err := clientset.NewForConfig(config)
 	if err != nil {
 		glog.Fatalf("Could not create client for talking to the apiserver: %v", err)
+	}
+	// Load the environment variables needed for azure clients
+	if err := controllers.PrepareEnvironment(); err != nil {
+		glog.Fatalf("Could not prepare environment for azure machine actuator: %v", err)
 	}
 
 	params := azure.MachineActuatorParams{
