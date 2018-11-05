@@ -310,6 +310,20 @@ func (azure *AzureClient) decodeMachineProviderConfig(providerConfig clusterv1.P
 	return &config, err
 }
 
+// Return the ip address of an existing machine based on the cluster and machine spec passed.
+func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	if err != nil {
+		return "", fmt.Errorf("error loading cluster provider config: %v", err)
+	}
+	publicIP, err := azure.network().GetPublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	if err != nil {
+		return "", fmt.Errorf("error getting public ip address: %v", err)
+	}
+	return *publicIP.IPAddress, nil
+
+}
+
 func azureServicesClientOrDefault(params MachineActuatorParams) (*services.AzureClients, error) {
 	if params.Services != nil {
 		return params.Services, nil
