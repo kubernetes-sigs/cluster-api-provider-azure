@@ -111,7 +111,7 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	}
 	err = azure.resourcemanagement().WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
 	if err != nil {
-		return fmt.Errorf("error waitinfg for deployment creation or update: %v", err)
+		return fmt.Errorf("error waiting for deployment creation or update: %v", err)
 	}
 
 	deployment, err := azure.resourcemanagement().GetDeploymentResult(*deploymentsFuture)
