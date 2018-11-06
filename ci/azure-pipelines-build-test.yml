@@ -8,7 +8,6 @@ steps:
     echo '##vso[task.prependpath]$(GOBIN)'
     echo '##vso[task.prependpath]$(GOROOT)/bin'
   displayName: 'Set up the Go workspace'
-
  - script: |
     go version
     go get -v -t -d ./...
@@ -30,8 +29,6 @@ steps:
     make machine-unit-tests
     echo "Running unit tests for cluster actuator"
     make cluster-unit-tests
-  env:
-    AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
   workingDirectory: '$(modulePath)'
   displayName: 'Run unit tests'
 
