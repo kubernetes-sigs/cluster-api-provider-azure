@@ -15,14 +15,12 @@ package machine
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/joho/godotenv"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
@@ -327,17 +325,6 @@ func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.M
 func azureServicesClientOrDefault(params MachineActuatorParams) (*services.AzureClients, error) {
 	if params.Services != nil {
 		return params.Services, nil
-	}
-	//Parse in environment variables if necessary
-	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-		err := godotenv.Load()
-		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
-		}
-		if err != nil {
-			log.Fatalf("Failed to load environment variables: %v", err)
-			return nil, err
-		}
 	}
 
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
