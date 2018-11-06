@@ -27,9 +27,9 @@ steps:
  - script: |
     set -e
     echo "Running unit tests for machine actuator"
-    go test github.com/platform9/azure-provider/cloud/azure/actuators/machine -test.timeout 0 -v
+    make machine-unit-tests
     echo "Running unit tests for cluster actuator"
-    go test github.com/platform9/azure-provider/cloud/azure/actuators/cluster -test.timeout 0 -v
+    make cluster-unit-tests
   env:
     AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
   workingDirectory: '$(modulePath)'
