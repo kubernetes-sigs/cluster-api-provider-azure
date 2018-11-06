@@ -8,7 +8,8 @@ steps:
     echo '##vso[task.prependpath]$(GOBIN)'
     echo '##vso[task.prependpath]$(GOROOT)/bin'
   displayName: 'Set up the Go workspace'
- - script: |
+
+- script: |
     go version
     go get -v -t -d ./...
     if [ -f Gopkg.toml ]; then
@@ -18,12 +19,12 @@ steps:
   workingDirectory: '$(modulePath)'
   displayName: 'Check project dependencies'
 
- - script: |
+- script: |
     make build
   workingDirectory: '$(modulePath)'
   displayName: 'Build clusterctl, cluster-controller and machine-controller'
 
- - script: |
+- script: |
     set -e
     echo "Running unit tests for machine actuator"
     make machine-unit-tests
@@ -32,7 +33,7 @@ steps:
   workingDirectory: '$(modulePath)'
   displayName: 'Run unit tests'
 
- - script: |
+- script: |
     echo "Pushing CI azure-cluster-controller and azure-machine-controller to Docker Hub"
     docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
     make push_ci COMMIT_ID=$(build.SourceVersion)
