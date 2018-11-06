@@ -35,10 +35,7 @@ steps:
 
 - script: |
     echo "Pushing CI azure-cluster-controller and azure-machine-controller to Docker Hub"
-    docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+    docker login -u "$(DOCKERHUB_USER)" -p "$(DOCKERHUB_PASS)"
     make push_ci COMMIT_ID=$(build.SourceVersion)
-  env:
-    DOCKER_USER: $(DOCKERHUB_USER)
-    DOCKER_PASS: $(DOCKERHUB_PASS)
   workingDirectory: '$(modulePath)'
   displayName: 'Push CI azure-cluster-controller and azure-machine-controller images'
