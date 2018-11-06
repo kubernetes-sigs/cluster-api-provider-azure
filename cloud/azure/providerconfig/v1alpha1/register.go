@@ -53,24 +53,24 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func NewSchemeAndCodecs() (*runtime.Scheme, *AzureProviderConfigCodec, error) {
+func NewCodec() (*AzureProviderConfigCodec, error) {
 	scheme := runtime.NewScheme()
 	if err := AddToScheme(scheme); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if err := providerconfig.AddToScheme(scheme); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	codecFactory := serializer.NewCodecFactory(scheme)
 	encoder, err := newEncoder(&codecFactory)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	codec := AzureProviderConfigCodec{
 		encoder: encoder,
 		decoder: codecFactory.UniversalDecoder(SchemeGroupVersion),
 	}
-	return scheme, &codec, nil
+	return &codec, nil
 }
 func (codec *AzureProviderConfigCodec) DecodeFromProviderConfig(providerConfig clusterv1.ProviderConfig, out runtime.Object) error {
 	if providerConfig.Value != nil {

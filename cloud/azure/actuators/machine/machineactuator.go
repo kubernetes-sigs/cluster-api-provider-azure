@@ -14,32 +14,27 @@ limitations under the License.
 package machine
 
 import (
-	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/joho/godotenv"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
 	"time"
 
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
-	"github.com/joho/godotenv"
 	"github.com/platform9/azure-provider/cloud/azure/actuators/machine/machinesetup"
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/cloud/azure/services"
 	"github.com/platform9/azure-provider/cloud/azure/services/compute"
 	"github.com/platform9/azure-provider/cloud/azure/services/network"
 	"github.com/platform9/azure-provider/cloud/azure/services/resourcemanagement"
-	"gopkg.in/yaml.v2"
-	"k8s.io/apimachinery/pkg/runtime"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -47,13 +42,9 @@ import (
 
 // The Azure Client, also used as a machine actuator
 type AzureClient struct {
+	services *services.AzureClients
+	// interface to cluster-api
 	v1Alpha1Client           client.ClusterV1alpha1Interface
-	services                 *services.AzureClients
-	SubscriptionID           string
-	Authorizer               autorest.Authorizer
-	kubeadmToken             string
-	ctx                      context.Context
-	scheme                   *runtime.Scheme
 	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
 	machineSetupConfigs      machinesetup.MachineSetup
 }
@@ -63,12 +54,10 @@ type AzureClient struct {
 type MachineActuatorParams struct {
 	V1Alpha1Client         client.ClusterV1alpha1Interface
 	Services               *services.AzureClients
-	KubeadmToken           string
 	MachineSetupConfigPath string
 }
 
 const (
-	templateFile      = "deployment-template.json"
 	ProviderName      = "azure"
 	SSHUser           = "ClusterAPI"
 	NameAnnotationKey = "azure-name"
@@ -85,42 +74,17 @@ func init() {
 
 // Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
-	scheme, azureProviderConfigCodec, err := azureconfigv1.NewSchemeAndCodecs()
+	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating codec for provider: %v", err)
 	}
-	//Parse in environment variables if necessary
-	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-		err = godotenv.Load()
-		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
-		}
-		if err != nil {
-			log.Fatalf("Failed to load environment variables: %v", err)
-			return nil, err
-		}
-	}
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		log.Fatalf("Failed to get OAuth config: %v", err)
-		return nil, err
-	}
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if err != nil {
-		return nil, err
-	}
-	azureServicesClients, err := azureServicesClientOrDefault(params, authorizer, subscriptionID)
+	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		return nil, fmt.Errorf("error getting azure services client: %v", err)
 	}
 	return &AzureClient{
-		v1Alpha1Client:           params.V1Alpha1Client,
 		services:                 azureServicesClients,
-		SubscriptionID:           subscriptionID,
-		Authorizer:               authorizer,
-		kubeadmToken:             params.KubeadmToken,
-		ctx:                      context.Background(),
-		scheme:                   scheme,
+		v1Alpha1Client:           params.V1Alpha1Client,
 		azureProviderConfigCodec: azureProviderConfigCodec,
 	}, nil
 }
@@ -129,12 +93,33 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	_, err = azure.createOrUpdateDeployment(cluster, machine)
+	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
+
+	err = azure.resourcemanagement().ValidateDeployment(machine, clusterConfig, machineConfig)
+	if err != nil {
+		return fmt.Errorf("error validating deployment: %v", err)
+	}
+
+	deploymentsFuture, err := azure.resourcemanagement().CreateOrUpdateDeployment(machine, clusterConfig, machineConfig)
+	if err != nil {
+		return fmt.Errorf("error creating or updating deployment: %v", err)
+	}
+	err = azure.resourcemanagement().WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for deployment creation or update: %v", err)
+	}
+
+	deployment, err := azure.resourcemanagement().GetDeploymentResult(*deploymentsFuture)
+	// Work around possible bugs or late-stage failures
+	if deployment.Name == nil || err != nil {
+		return fmt.Errorf("error getting deployment result: %v", err)
+	}
+
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
@@ -151,19 +136,6 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 // Update an existing machine based on the cluster and machine spec passed.
 // Currently only checks machine existence and does not update anything.
 func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	//Parse in configurations
-	_, err := azure.decodeMachineProviderConfig(goalMachine.Spec.ProviderConfig)
-	if err != nil {
-		return err
-	}
-	_, err = azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
-	if err != nil {
-		return err
-	}
-	_, err = azure.vmIfExists(cluster, goalMachine)
-	if err != nil {
-		return err
-	}
 	// TODO: Update objects
 	return nil
 }
@@ -181,7 +153,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
 	// Check if VM exists
-	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, getVMName(machine))
+	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
@@ -192,7 +164,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	nicID := (*vm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
 	// delete the VM instance
-	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, getVMName(machine))
+	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting virtual machine: %v", err)
 	}
@@ -226,7 +198,7 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 	}
 
 	// delete public ip address associated with the VM
-	publicIpAddressDeleteFuture, err := azure.network().DeletePublicIpAddress(clusterConfig.ResourceGroup, getPublicIPName(machine))
+	publicIpAddressDeleteFuture, err := azure.network().DeletePublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
@@ -240,13 +212,13 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 // Get the kubeconfig of a machine based on the cluster and machine spec passed.
 // Has not been fully tested as k8s is not yet bootstrapped on created machines.
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	_, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
 	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error loading machine provider config: %v", err)
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPrivateKey)
@@ -255,11 +227,11 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 		return "", err
 	}
 
-	ip, err := azure.GetIP(cluster, machine)
+	ip, err := azure.network().GetPublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting public ip address: %v ", err)
 	}
-	sshclient, err := GetSshClient(ip, privateKey)
+	sshclient, err := GetSshClient(*ip.IPAddress, privateKey)
 	if err != nil {
 		return "", fmt.Errorf("unable to get ssh client: %v", err)
 	}
@@ -311,14 +283,18 @@ func GetSshClient(host string, privatekey string) (*ssh.Client, error) {
 
 // Determine whether a machine exists based on the cluster and machine spec passed.
 func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	rgExists, err := azure.checkResourceGroupExists(cluster)
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return false, err
 	}
-	if !rgExists {
+	resp, err := azure.resourcemanagement().CheckGroupExistence(clusterConfig.ResourceGroup)
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode == 404 {
 		return false, nil
 	}
-	vm, err := azure.vmIfExists(cluster, machine)
+	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return false, err
 	}
@@ -334,207 +310,44 @@ func (azure *AzureClient) decodeMachineProviderConfig(providerConfig clusterv1.P
 	return &config, err
 }
 
-func readJSON(path string) (*map[string]interface{}, error) {
-	fileContents, err := ioutil.ReadFile(path)
+// Return the ip address of an existing machine based on the cluster and machine spec passed.
+func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-
-	data := make(map[string]interface{})
-	err = json.Unmarshal(fileContents, &data)
+	publicIP, err := azure.network().GetPublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("error getting public ip address: %v", err)
 	}
+	return *publicIP.IPAddress, nil
 
-	return &data, nil
 }
 
-func base64EncodeCommand(command string) *string {
-	encoded := base64.StdEncoding.EncodeToString([]byte(command))
-	return &encoded
-}
-
-func (azure *AzureClient) convertMachineToDeploymentParams(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (*map[string]interface{}, error) {
-	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
-	if err != nil {
-		return nil, err
-	}
-	startupScript, err := azure.getStartupScript(*machineConfig)
-	if err != nil {
-		return nil, err
-	}
-	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPublicKey)
-	publicKey := string(decoded)
-	if err != nil {
-		return nil, err
-	}
-	params := map[string]interface{}{
-		"virtualNetworks_ClusterAPIVM_vnet_name": map[string]interface{}{
-			"value": "ClusterAPIVnet",
-		},
-		"virtualMachines_ClusterAPIVM_name": map[string]interface{}{
-			"value": getVMName(machine),
-		},
-		"networkInterfaces_ClusterAPI_name": map[string]interface{}{
-			"value": getNetworkInterfaceName(machine),
-		},
-		"publicIPAddresses_ClusterAPI_ip_name": map[string]interface{}{
-			"value": getPublicIPName(machine),
-		},
-		"networkSecurityGroups_ClusterAPIVM_nsg_name": map[string]interface{}{
-			"value": network.SecurityGroupDefaultName,
-		},
-		"subnets_default_name": map[string]interface{}{
-			"value": "ClusterAPISubnet",
-		},
-		"image_publisher": map[string]interface{}{
-			"value": machineConfig.Image.Publisher,
-		},
-		"image_offer": map[string]interface{}{
-			"value": machineConfig.Image.Offer,
-		},
-		"image_sku": map[string]interface{}{
-			"value": machineConfig.Image.SKU,
-		},
-		"image_version": map[string]interface{}{
-			"value": machineConfig.Image.Version,
-		},
-		"osDisk_name": map[string]interface{}{
-			"value": getOSDiskName(machine),
-		},
-		"os_type": map[string]interface{}{
-			"value": machineConfig.OSDisk.OSType,
-		},
-		"storage_account_type": map[string]interface{}{
-			"value": machineConfig.OSDisk.ManagedDisk.StorageAccountType,
-		},
-		"disk_size_GB": map[string]interface{}{
-			"value": machineConfig.OSDisk.DiskSizeGB,
-		},
-		"vm_user": map[string]interface{}{
-			"value": "ClusterAPI",
-		},
-		"vm_size": map[string]interface{}{
-			"value": machineConfig.VMSize,
-		},
-		"location": map[string]interface{}{
-			"value": machineConfig.Location,
-		},
-		"startup_script": map[string]interface{}{
-			"value": *base64EncodeCommand(startupScript),
-		},
-		"sshPublicKey": map[string]interface{}{
-			"value": publicKey,
-		},
-	}
-	return &params, nil
-}
-
-func parseMachineSetupConfig(path string) (*machinesetup.MachineSetup, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var machineSetupList *machinesetup.MachineSetup
-	err = yaml.Unmarshal(data, machineSetupList)
-	if err != nil {
-		return nil, err
-	}
-	return machineSetupList, nil
-}
-
-// Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func (azure *AzureClient) getStartupScript(machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
-	if machineConfig.Roles[0] == azureconfigv1.Master {
-		const startupScript = `(
-apt-get update
-apt-get install -y docker.io
-apt-get update && apt-get install -y apt-transport-https curl prips
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial main
-EOF
-apt-get update
-apt-get install -y kubelet=1.11.3-00 kubeadm=1.11.3-00 kubectl=1.11.3-00 kubernetes-cni=0.6.0-00
-
-CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
-CLUSTER_DNS_DOMAIN="cluster.local"
-# Override network args to use kubenet instead of cni and override Kubelet DNS args.
-cat > /etc/systemd/system/kubelet.service.d/20-kubenet.conf <<EOF
-[Service]
-Environment="KUBELET_NETWORK_ARGS=--network-plugin=kubenet"
-Environment="KUBELET_DNS_ARGS=--cluster-dns=${CLUSTER_DNS_SERVER} --cluster-domain=${CLUSTER_DNS_DOMAIN}"
-EOF
-systemctl daemon-reload
-systemctl restart kubelet.service
-
-PORT=6443
-PUBLICIP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2017-08-01&format=text")
-
-# Set up kubeadm config file to pass parameters to kubeadm init.
-cat > kubeadm_config.yaml <<EOF
-apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
-api:
-  advertiseAddress: ${PUBLICIP}
-  bindPort: ${PORT}
-networking:
-  serviceSubnet: "10.96.0.0/12"
-token: "testtoken"
-controllerManagerExtraArgs:
-  cluster-cidr: "192.168.0.0/16"
-  service-cluster-ip-range: "10.96.0.0/12"
-  allocate-node-cidrs: "true"
-EOF
-
-# Create and set bridge-nf-call-iptables to 1 to pass the kubeadm preflight check.
-# Workaround was found here:
-# http://zeeshanali.com/sysadmin/fixed-sysctl-cannot-stat-procsysnetbridgebridge-nf-call-iptables/
-modprobe br_netfilter
-
-kubeadm init --config ./kubeadm_config.yaml
-
-mkdir -p /home/ClusterAPI/.kube
-cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
-chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
-
-KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`
-		return startupScript, nil
-	} else if machineConfig.Roles[0] == azureconfigv1.Node {
-		const startupScript = `(
-apt-get update
-apt-get install -y docker.io
-apt-get update && apt-get install -y apt-transport-https curl prips
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial main
-EOF
-apt-get update
-apt-get install -y kubelet=1.11.3-00 kubeadm=1.11.3-00 kubectl=1.11.3-00
-
-CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
-CLUSTER_DNS_DOMAIN="cluster.local"
-# Override network args to use kubenet instead of cni and override Kubelet DNS args.
-cat > /etc/systemd/system/kubelet.service.d/20-kubenet.conf <<EOF
-[Service]
-Environment="KUBELET_NETWORK_ARGS=--network-plugin=kubenet"
-Environment="KUBELET_DNS_ARGS=--cluster-dns=${CLUSTER_DNS_SERVER} --cluster-domain=${CLUSTER_DNS_DOMAIN}"
-EOF
-systemctl daemon-reload
-systemctl restart kubelet.service
-
-kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
-) 2>&1 | tee /var/log/startup.log`
-		return startupScript, nil
-	}
-	return "", errors.New("unable to get startup script: unknown machine role")
-}
-
-func azureServicesClientOrDefault(params MachineActuatorParams, authorizer autorest.Authorizer, subscriptionID string) (*services.AzureClients, error) {
+func azureServicesClientOrDefault(params MachineActuatorParams) (*services.AzureClients, error) {
 	if params.Services != nil {
 		return params.Services, nil
+	}
+	//Parse in environment variables if necessary
+	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+		err := godotenv.Load()
+		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+			err = errors.New("AZURE_SUBSCRIPTION_ID: \"\"")
+		}
+		if err != nil {
+			log.Fatalf("Failed to load environment variables: %v", err)
+			return nil, err
+		}
+	}
+
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	if err != nil {
+		log.Fatalf("Failed to get OAuth config: %v", err)
+		return nil, err
+	}
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if err != nil {
+		return nil, err
 	}
 	azureComputeClient := compute.NewService(subscriptionID)
 	azureComputeClient.SetAuthorizer(authorizer)

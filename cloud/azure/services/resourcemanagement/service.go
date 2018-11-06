@@ -22,18 +22,21 @@ import (
 )
 
 type Service struct {
-	GroupsClient resources.GroupsClient
-	ctx          context.Context
+	DeploymentsClient resources.DeploymentsClient
+	GroupsClient      resources.GroupsClient
+	ctx               context.Context
 }
 
 func NewService(subscriptionId string) *Service {
 	return &Service{
-		GroupsClient: resources.NewGroupsClient(subscriptionId),
-		ctx:          context.Background(),
+		DeploymentsClient: resources.NewDeploymentsClient(subscriptionId),
+		GroupsClient:      resources.NewGroupsClient(subscriptionId),
+		ctx:               context.Background(),
 	}
 }
 
 func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
+	s.DeploymentsClient.BaseClient.Client.Authorizer = authorizer
 	s.GroupsClient.BaseClient.Client.Authorizer = authorizer
 }
 

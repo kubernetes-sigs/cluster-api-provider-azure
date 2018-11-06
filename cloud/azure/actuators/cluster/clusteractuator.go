@@ -42,7 +42,7 @@ type ClusterActuatorParams struct {
 }
 
 func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, error) {
-	_, azureProviderConfigCodec, err := azureconfigv1.NewSchemeAndCodecs()
+	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
 	if err != nil {
 		return nil, err
 	}
