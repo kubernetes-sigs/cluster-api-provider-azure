@@ -1,8 +1,13 @@
 variables:
-  GOBIN:  '$(GOPATH)/bin' # Go binaries path
-  GOROOT: '/usr/local/go1.11' # Go installation path
-  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
-  modulePath: '$(GOPATH)/src/github.com/platform9/azure-provider' # Path to the module's code
+- group: docker-credentials
+- name: GOBIN # Go binaries path
+  value: '$(GOPATH)/bin'
+- name: GOROOT # Go installation path
+  value: '/usr/local/go1.11'
+- name: GOPATH # Go workspace path
+  value: '$(system.defaultWorkingDirectory)/gopath'
+- name: modulePath # Path to the module's code
+  value: '$(GOPATH)/src/github.com/platform9/azure-provider'
 
 jobs:
 - job: BuildAndUnitTest
