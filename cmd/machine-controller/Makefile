@@ -34,4 +34,4 @@ ci_image:
 	docker build -t "$(PREFIX)/$(NAME):$(TAG)-ci" -f ./Dockerfile ../..
 
 ci_push: ci_image
-	docker push "$(PREFIX)/$(NAME):$(TAG)-ci" 
+	docker push "$(PREFIX)/$(NAME):$(TAG)-ci"

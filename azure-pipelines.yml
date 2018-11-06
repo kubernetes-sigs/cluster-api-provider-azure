@@ -1,0 +1,12 @@
+variables:
+  GOBIN:  '$(GOPATH)/bin' # Go binaries path
+  GOROOT: '/usr/local/go1.11' # Go installation path
+  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
+  modulePath: '$(GOPATH)/src/github.com/platform9/azure-provider' # Path to the module's code
+
+jobs:
+- job: BuildAndUnitTest
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  steps:
+  - template: ./ci/azure-pipelines-build-test.yml
