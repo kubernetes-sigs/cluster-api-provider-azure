@@ -46,6 +46,14 @@ push_dev:
 	$(MAKE) -C cmd/cluster-controller dev_push
 	$(MAKE) -C cmd/machine-controller dev_push
 
+images_ci:
+	$(MAKE) -C cmd/cluster-controller ci_image TAG=$(COMMIT_ID)
+	$(MAKE) -C cmd/machine-controller ci_image TAG=$(COMMIT_ID)
+
+push_ci:
+	$(MAKE) -C cmd/cluster-controller ci_push TAG=$(COMMIT_ID)
+	$(MAKE) -C cmd/machine-controller ci_push TAG=$(COMMIT_ID)
+
 machine-unit-tests:
 	go test -v github.com/platform9/azure-provider/cloud/azure/actuators/machine
 
