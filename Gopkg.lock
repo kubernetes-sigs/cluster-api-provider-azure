@@ -1056,7 +1056,6 @@
     "github.com/Azure/go-autorest/autorest",
     "github.com/Azure/go-autorest/autorest/azure/auth",
     "github.com/Azure/go-autorest/autorest/to",
-    "github.com/ghodss/yaml",
     "github.com/golang/glog",
     "github.com/joho/godotenv",
     "github.com/kubernetes-incubator/apiserver-builder/pkg/controller",

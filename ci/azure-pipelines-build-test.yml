@@ -1,0 +1,44 @@
+steps:
+- script: |
+    mkdir -p '$(GOBIN)'
+    mkdir -p '$(GOPATH)/pkg'
+    mkdir -p '$(modulePath)'
+    shopt -s extglob
+    mv !(gopath) '$(modulePath)'
+    echo '##vso[task.prependpath]$(GOBIN)'
+    echo '##vso[task.prependpath]$(GOROOT)/bin'
+  displayName: 'Set up the Go workspace'
+
+- script: |
+    go version
+    go get -v -t -d ./...
+    if [ -f Gopkg.toml ]; then
+        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+        dep status
+    fi
+  workingDirectory: '$(modulePath)'
+  displayName: 'Check project dependencies'
+
+- script: |
+    make build
+  workingDirectory: '$(modulePath)'
+  displayName: 'Build clusterctl, cluster-controller and machine-controller'
+
+- script: |
+    set -e
+    echo "Running unit tests for machine actuator"
+    make machine-unit-tests
+    echo "Running unit tests for cluster actuator"
+    make cluster-unit-tests
+  workingDirectory: '$(modulePath)'
+  displayName: 'Run unit tests'
+
+- script: |
+    echo "Pushing CI azure-cluster-controller and azure-machine-controller to Docker Hub"
+    docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+    make push_ci COMMIT_ID=$(build.SourceVersion)
+  env:
+    DOCKER_USER: $(DOCKERHUB_USER)
+    DOCKER_PASS: $(DOCKERHUB_PASS)
+  workingDirectory: '$(modulePath)'
+  displayName: 'Push CI azure-cluster-controller and azure-machine-controller images'
