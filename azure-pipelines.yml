@@ -1,5 +1,4 @@
 variables:
-- group: docker-credentials
 - name: GOBIN # Go binaries path
   value: '$(GOPATH)/bin'
 - name: GOROOT # Go installation path
