@@ -11,8 +11,6 @@ variables:
   value: 'ci-clusterapi-service-connection'
 - name: KubernetesVersion
   value: 'v1.10.0'
-- name: ResourceGroup
-  value: 'ci-clusterapi'
 
 jobs:
 - job: BuildAndUnitTest
