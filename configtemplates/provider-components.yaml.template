@@ -44,7 +44,7 @@ spec:
             cpu: 100m
             memory: 30Mi
       - name: azure-machine-controller
-        image: platform9/cluster-api-azure-machine-controller:0.0.30-dev
+        image: $AZURE_MACHINE_CONTROLLER_IMAGE
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes
@@ -88,7 +88,7 @@ spec:
                 name: azure-controller-secrets
                 key: subscription-id
       - name: azure-cluster-controller
-        image: platform9/cluster-api-azure-cluster-controller:0.0.29-dev
+        image: $AZURE_CLUSTER_CONTROLLER_IMAGE
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes

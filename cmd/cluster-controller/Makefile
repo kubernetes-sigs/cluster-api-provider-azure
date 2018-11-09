@@ -16,7 +16,7 @@
 
 PREFIX = platform9
 NAME = cluster-api-azure-cluster-controller
-TAG?= 0.0.29
+TAG ?= latest
 
 image:
 	docker build -t "$(PREFIX)/$(NAME):$(TAG)" -f ./Dockerfile ../..

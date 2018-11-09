@@ -1083,6 +1083,7 @@
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset",
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/scheme",
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
+    "sigs.k8s.io/cluster-api/pkg/clientcmd",
     "sigs.k8s.io/cluster-api/pkg/controller/cluster",
     "sigs.k8s.io/cluster-api/pkg/controller/config",
     "sigs.k8s.io/cluster-api/pkg/controller/machine",

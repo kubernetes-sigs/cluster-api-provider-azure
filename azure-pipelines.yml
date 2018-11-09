@@ -1,4 +1,5 @@
 variables:
+- group: docker-credentials
 - name: GOBIN # Go binaries path
   value: '$(GOPATH)/bin'
 - name: GOROOT # Go installation path
@@ -7,6 +8,12 @@ variables:
   value: '$(system.defaultWorkingDirectory)/gopath'
 - name: modulePath # Path to the module's code
   value: '$(GOPATH)/src/github.com/platform9/azure-provider'
+- name: KubernetesVersion
+  value: 'v1.10.0'
+- name: MinikubeVersion
+  value: 'v0.27.0'
+- name: ServiceConnectionName
+  value: 'ClusterAPIProviderAzure'
 
 jobs:
 - job: BuildAndUnitTest
@@ -14,3 +21,12 @@ jobs:
     vmImage: 'Ubuntu 16.04'
   steps:
   - template: ./ci/azure-pipelines-build-test.yml
+
+# Runs end-to-end tests
+- job: E2ETest
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  dependsOn: BuildAndUnitTest
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  steps:
+  - template: ./ci/azure-pipelines-e2e.yml
