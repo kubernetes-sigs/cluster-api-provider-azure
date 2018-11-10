@@ -1087,6 +1087,7 @@
     "sigs.k8s.io/cluster-api/pkg/controller/config",
     "sigs.k8s.io/cluster-api/pkg/controller/machine",
     "sigs.k8s.io/cluster-api/pkg/controller/sharedinformers",
+    "sigs.k8s.io/cluster-api/pkg/util",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
