@@ -230,6 +230,7 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		}
 	}
 	return nil
+
 }
 
 func (azure *AzureClient) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
