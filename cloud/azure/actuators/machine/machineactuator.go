@@ -96,7 +96,7 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	machineConfig, err := azure.decodeMachineProviderConfig(machine.Spec.ProviderConfig)
+	machineConfig, err := azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
