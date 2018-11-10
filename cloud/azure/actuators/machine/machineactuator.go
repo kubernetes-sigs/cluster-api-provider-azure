@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/sftp"
@@ -139,7 +140,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	goalMachineConfig, err := azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(goalMachine.Spec.ProviderConfig)
+	_, err = azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(goalMachine.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading goal machine provider config: %v", err)
 	}
@@ -190,8 +191,43 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 }
 
 func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
-	return nil
+	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	if err != nil {
+		return fmt.Errorf("error loading cluster provider config: %v", err)
+	}
 
+	// update the control plane
+	if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
+		// upgrade kubeadm
+		cmd := fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubeadm | sudo tee /usr/bin/kubeadm > /dev/null; sudo chmod a+rx /usr/bin/kubeadm;", goalMachine.Spec.Versions.ControlPlane)
+		cmd += fmt.Sprintf("sudo kubeadm upgrade apply v%s -y;", goalMachine.Spec.Versions.ControlPlane)
+
+		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
+		if err != nil {
+			return fmt.Errorf("error running command on vm: %v", err)
+		}
+		err = azure.compute().WaitForVMRunCommandFuture(commandRunFuture)
+		if err != nil {
+			return fmt.Errorf("error waiting for vm run command future: %v", err)
+		}
+	}
+
+	// update kubelet
+	if currentMachine.Spec.Versions.Kubelet != goalMachine.Spec.Versions.Kubelet {
+		nodeName := strings.ToLower(resourcemanagement.GetVMName(goalMachine))
+		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets; sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
+		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
+
+		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
+		if err != nil {
+			return fmt.Errorf("error running command on vm: %v", err)
+		}
+		err = azure.compute().WaitForVMRunCommandFuture(commandRunFuture)
+		if err != nil {
+			return fmt.Errorf("error waiting for vm run command future: %v", err)
+		}
+	}
+	return nil
 }
 
 func (azure *AzureClient) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
