@@ -91,6 +91,15 @@ func (codec *AzureProviderConfigCodec) ClusterProviderFromProviderConfig(provide
 	return &config, nil
 }
 
+func (codec *AzureProviderConfigCodec) MachineProviderFromProviderConfig(providerConfig clusterv1.ProviderConfig) (*AzureMachineProviderConfig, error) {
+	var config AzureMachineProviderConfig
+	err := codec.DecodeFromProviderConfig(providerConfig, &config)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
 func newEncoder(codecFactory *serializer.CodecFactory) (runtime.Encoder, error) {
 	serializerInfos := codecFactory.SupportedMediaTypes()
 	if len(serializerInfos) == 0 {
