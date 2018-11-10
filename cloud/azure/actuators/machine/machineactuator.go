@@ -194,7 +194,9 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 	// update the control plane
 	if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
 		// upgrade kubeadm
-		cmd := fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubeadm | sudo tee /usr/bin/kubeadm > /dev/null; sudo chmod a+rx /usr/bin/kubeadm;", goalMachine.Spec.Versions.ControlPlane)
+		cmd := fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubeadm | "+
+			"sudo tee /usr/bin/kubeadm > /dev/null;"+
+			"sudo chmod a+rx /usr/bin/kubeadm;", goalMachine.Spec.Versions.ControlPlane)
 		cmd += fmt.Sprintf("sudo kubeadm upgrade apply v%s -y;", goalMachine.Spec.Versions.ControlPlane)
 
 		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
@@ -210,10 +212,13 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 	// update kubelet and kubectl client version
 	if currentMachine.Spec.Versions.Kubelet != goalMachine.Spec.Versions.Kubelet {
 		nodeName := strings.ToLower(resourcemanagement.GetVMName(goalMachine))
-		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets; sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
+		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets;"+
+			"sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
 		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
 		// update kubectl client version
-		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | sudo tee /usr/bin/kubectl > /dev/null; sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.Kubelet)
+		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
+			"sudo tee /usr/bin/kubectl > /dev/null;"+
+			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.Kubelet)
 
 		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
 		if err != nil {
