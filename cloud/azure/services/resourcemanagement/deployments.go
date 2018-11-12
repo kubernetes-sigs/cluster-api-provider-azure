@@ -229,7 +229,6 @@ deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get install -y kubelet=%v-00 kubeadm=%v-00 kubectl=%v-00
-apt-get install -y kubelet kubeadm kubectl
 
 CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
 CLUSTER_DNS_DOMAIN="cluster.local"
