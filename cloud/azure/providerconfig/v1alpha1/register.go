@@ -53,12 +53,20 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func NewCodec() (*AzureProviderConfigCodec, error) {
+func NewScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	if err := AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := providerconfig.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	return scheme, nil
+}
+
+func NewCodec() (*AzureProviderConfigCodec, error) {
+	scheme, err := NewScheme()
+	if err != nil {
 		return nil, err
 	}
 	codecFactory := serializer.NewCodecFactory(scheme)

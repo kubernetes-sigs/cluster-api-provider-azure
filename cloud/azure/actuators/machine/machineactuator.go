@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"time"
 
@@ -38,7 +39,6 @@ import (
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 // The Azure Client, also used as a machine actuator
@@ -48,6 +48,7 @@ type AzureClient struct {
 	v1Alpha1Client           client.ClusterV1alpha1Interface
 	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
 	machineSetupConfigs      machinesetup.MachineSetup
+	scheme                   *runtime.Scheme
 }
 
 // Parameter object used to create a machine actuator.
@@ -59,10 +60,8 @@ type MachineActuatorParams struct {
 }
 
 const (
-	ProviderName      = "azure"
-	SSHUser           = "ClusterAPI"
-	NameAnnotationKey = "azure-name"
-	RGAnnotationKey   = "azure-rg"
+	ProviderName = "azure"
+	SSHUser      = "ClusterAPI"
 )
 
 func init() {
@@ -75,6 +74,10 @@ func init() {
 
 // Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
+	scheme, err := azureconfigv1.NewScheme()
+	if err != nil {
+		return nil, err
+	}
 	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
 	if err != nil {
 		return nil, fmt.Errorf("error creating codec for provider: %v", err)
@@ -87,6 +90,7 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 		services:                 azureServicesClients,
 		v1Alpha1Client:           params.V1Alpha1Client,
 		azureProviderConfigCodec: azureProviderConfigCodec,
+		scheme:                   scheme,
 	}, nil
 }
 
@@ -120,18 +124,7 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if deployment.Name == nil || err != nil {
 		return fmt.Errorf("error getting deployment result: %v", err)
 	}
-
-	if machine.ObjectMeta.Annotations == nil {
-		machine.ObjectMeta.Annotations = make(map[string]string)
-	}
-	if azure.v1Alpha1Client != nil {
-		machine.ObjectMeta.Annotations[NameAnnotationKey] = machine.ObjectMeta.Name
-		machine.ObjectMeta.Annotations[RGAnnotationKey] = clusterConfig.ResourceGroup
-		azure.v1Alpha1Client.Machines(machine.Namespace).Update(machine)
-	} else {
-		glog.V(1).Info("ClusterAPI client not found, not updating machine object")
-	}
-	return nil
+	return azure.updateAnnotations(cluster, machine)
 }
 
 // Update an existing machine based on the cluster and machine spec passed.
@@ -150,10 +143,12 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
 
-	currentMachine, err := util.GetMachineIfExists(azure.v1Alpha1Client.Machines(goalMachine.Namespace), goalMachine.ObjectMeta.Name)
+	status, err := azure.status(goalMachine)
 	if err != nil {
-		return fmt.Errorf("error getting current machine %v: %v", goalMachine.ObjectMeta.Name, err)
+		return err
 	}
+
+	currentMachine := (*clusterv1.Machine)(status)
 	if currentMachine == nil {
 		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, err)
 	}
@@ -187,7 +182,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 			glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 		}
 	}
-	return nil
+	return azure.updateAnnotations(cluster, goalMachine)
 }
 
 func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
