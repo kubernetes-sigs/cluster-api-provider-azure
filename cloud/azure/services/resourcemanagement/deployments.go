@@ -242,7 +242,7 @@ systemctl daemon-reload
 systemctl restart kubelet.service
 
 kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
-) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane)
+) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.Kubelet, machine.Spec.Versions.Kubelet)
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")
