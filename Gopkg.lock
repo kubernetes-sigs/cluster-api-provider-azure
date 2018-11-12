@@ -1072,6 +1072,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
+    "k8s.io/apimachinery/pkg/runtime/serializer/json",
     "k8s.io/apimachinery/pkg/util/uuid",
     "k8s.io/apiserver/pkg/util/logs",
     "k8s.io/client-go/kubernetes",
