@@ -40,6 +40,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var Actuator *AzureClient
+
 // The Azure Client, also used as a machine actuator
 type AzureClient struct {
 	services *services.AzureClients

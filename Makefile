@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= marwanad1/cluster-api-azure-provider-controller:latest
 
 all: test manager
 
@@ -10,6 +10,10 @@ test: generate fmt vet manifests
 # Build manager binary
 manager: generate fmt vet
 	go build -o bin/manager github.com/platform9/azure-provider/cmd/manager
+
+# Build clusterctl
+clusterctl: generate fmt vet
+	go build -o bin/clusterctl github.com/platform9/azure-provider/cmd/clusterctl
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -34,7 +38,7 @@ fmt:
 
 # Run go vet against code
 vet:
-	go vet ./pkg/... ./cmd/...
+	go vet -composites=false ./pkg/... ./cmd/... 
 
 # Generate code
 generate:

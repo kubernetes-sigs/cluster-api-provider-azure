@@ -17,11 +17,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/platform9/azure-provider/pkg/apis"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/cluster"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine"
+	capis "sigs.k8s.io/cluster-api/pkg/apis"
 	apicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	apimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 
@@ -55,10 +58,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	clusterActuator, _ := cluster.NewClusterActuator(cluster.ActuatorParams{})
-	machineActuator, _ := machine.NewMachineActuator(machine.ActuatorParams{})
+	if err := prepareEnvironment(); err != nil {
+		log.Error(err, "unable to prepare environment for actuators")
+		os.Exit(1)
+	}
+
+	clusterActuator, err := cluster.NewClusterActuator(cluster.ClusterActuatorParams{Client: mgr.GetClient()})
+	if err != nil {
+		log.Error(err, "error creating cluster actuator")
+		os.Exit(1)
+	}
+	machine.Actuator, err = machine.NewMachineActuator(machine.MachineActuatorParams{Client: mgr.GetClient(), Scheme: mgr.GetScheme()})
+	if err != nil {
+		log.Error(err, "error creating machine actuator")
+		os.Exit(1)
+	}
+
 	log.Info("Registering Components.")
-	common.RegisterClusterProvisioner(machine.ProviderName, machineActuator)
+	common.RegisterClusterProvisioner(machine.ProviderName, machine.Actuator)
 
 	// Setup Scheme for all resources
 	log.Info("setting up scheme")
@@ -68,7 +85,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	apimachine.AddWithActuator(mgr, machineActuator)
+	if err := capis.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "unable add APIs to scheme")
+		os.Exit(1)
+	}
+
+	apimachine.AddWithActuator(mgr, machine.Actuator)
 	apicluster.AddWithActuator(mgr, clusterActuator)
 
 	// Start the Cmd
@@ -77,4 +99,18 @@ func main() {
 		log.Error(err, "unable to run the manager")
 		os.Exit(1)
 	}
+}
+
+func prepareEnvironment() error {
+	//Parse in environment variables if necessary
+	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+		err := godotenv.Load()
+		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+			return fmt.Errorf("couldn't find environment variable for the Azure subscription: %v", err)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to load environment variables: %v", err)
+		}
+	}
+	return nil
 }

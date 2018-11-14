@@ -19,12 +19,12 @@ import (
 	"os"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
 	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
-	yaml "gopkg.in/yaml.v2"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
