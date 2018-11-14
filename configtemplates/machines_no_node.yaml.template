@@ -13,7 +13,7 @@ items:
         roles:
         - Master
         location: "$LOCATION"
-        vmSize: "Standard_B1s"
+        vmSize: "Standard_B2ms"
         image: 
           publisher: "Canonical"
           offer: "UbuntuServer"

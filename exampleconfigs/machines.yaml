@@ -13,8 +13,8 @@ items:
         kind: "AzureMachineProviderConfig"
         roles:
         - Master
-        location: "eastus"
-        vmSize: "Standard_B1s"
+        location: "westus2"
+        vmSize: "Standard_B2ms"
         image: 
           publisher: "Canonical"
           offer: "UbuntuServer"
@@ -42,8 +42,8 @@ items:
         kind: "AzureMachineProviderConfig"
         roles:
         - Node
-        location: "eastus"
-        vmSize: "Standard_B1s"
+        location: "westus2"
+        vmSize: "Standard_B2ms"
         image: 
           publisher: "Canonical"
           offer: "UbuntuServer"
