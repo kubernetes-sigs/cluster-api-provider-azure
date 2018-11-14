@@ -20,7 +20,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
-	azureconfigv1 "github.com/platform9/azure-provider/pkg/cloud/azure/providerconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
