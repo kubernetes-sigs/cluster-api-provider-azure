@@ -16,11 +16,17 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/platform9/azure-provider/pkg/apis"
-	"github.com/platform9/azure-provider/pkg/controller"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/cluster"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine"
+	apicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
+	apimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -28,6 +34,8 @@ import (
 )
 
 func main() {
+	flag.Parse()
+
 	logf.SetLogger(logf.ZapLogger(false))
 	log := logf.Log.WithName("entrypoint")
 
@@ -47,21 +55,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	clusterActuator, _ := cluster.NewClusterActuator(cluster.ActuatorParams{})
+	machineActuator, _ := machine.NewMachineActuator(machine.ActuatorParams{})
 	log.Info("Registering Components.")
+	common.RegisterClusterProvisioner(machine.ProviderName, machineActuator)
 
 	// Setup Scheme for all resources
 	log.Info("setting up scheme")
+
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "unable add APIs to scheme")
 		os.Exit(1)
 	}
 
-	// Setup all Controllers
-	log.Info("Setting up controller")
-	if err := controller.AddToManager(mgr); err != nil {
-		log.Error(err, "unable to register controllers to the manager")
-		os.Exit(1)
-	}
+	apimachine.AddWithActuator(mgr, machineActuator)
+	apicluster.AddWithActuator(mgr, clusterActuator)
 
 	// Start the Cmd
 	log.Info("Starting the Cmd.")
