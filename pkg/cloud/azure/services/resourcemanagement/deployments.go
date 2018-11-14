@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	azureconfigv1 "github.com/platform9/azure-provider/pkg/cloud/azure/providerconfig/v1alpha1"
+	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
