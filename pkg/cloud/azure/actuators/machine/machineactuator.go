@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,33 +31,28 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine/machinesetup"
 	azureconfigv1 "github.com/platform9/azure-provider/pkg/cloud/azure/providerconfig/v1alpha1"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/compute"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
-	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // The Azure Client, also used as a machine actuator
 type AzureClient struct {
 	services *services.AzureClients
-	// interface to cluster-api
-	v1Alpha1Client           client.ClusterV1alpha1Interface
-	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
-	machineSetupConfigs      machinesetup.MachineSetup
-	scheme                   *runtime.Scheme
+	client   client.Client
+	scheme   *runtime.Scheme
 }
 
 // Parameter object used to create a machine actuator.
 // These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
 type MachineActuatorParams struct {
-	V1Alpha1Client         client.ClusterV1alpha1Interface
-	Services               *services.AzureClients
-	MachineSetupConfigPath string
+	Services *services.AzureClients
+	Client   client.Client
+	Scheme   *runtime.Scheme
 }
 
 const (
@@ -64,43 +60,26 @@ const (
 	SSHUser      = "ClusterAPI"
 )
 
-func init() {
-	actuator, err := NewMachineActuator(MachineActuatorParams{})
-	if err != nil {
-		glog.Fatalf("Error creating cluster provisioner for azure : %v", err)
-	}
-	clustercommon.RegisterClusterProvisioner(ProviderName, actuator)
-}
-
 // Creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
-	scheme, err := azureconfigv1.NewScheme()
-	if err != nil {
-		return nil, err
-	}
-	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
-	if err != nil {
-		return nil, fmt.Errorf("error creating codec for provider: %v", err)
-	}
 	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		return nil, fmt.Errorf("error getting azure services client: %v", err)
 	}
 	return &AzureClient{
-		services:                 azureServicesClients,
-		v1Alpha1Client:           params.V1Alpha1Client,
-		azureProviderConfigCodec: azureProviderConfigCodec,
-		scheme:                   scheme,
+		services: azureServicesClients,
+		client:   params.Client,
+		scheme:   params.Scheme,
 	}, nil
 }
 
 // Create a machine based on the cluster and machine spec passed
 func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	machineConfig, err := azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(machine.Spec.ProviderConfig)
+	machineConfig, err := machineProviderFromProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
@@ -129,11 +108,11 @@ func (azure *AzureClient) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 
 // Update an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	_, err = azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(goalMachine.Spec.ProviderConfig)
+	_, err = machineProviderFromProviderConfig(goalMachine.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading goal machine provider config: %v", err)
 	}
@@ -152,7 +131,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 	if currentMachine == nil {
 		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, err)
 	}
-	currentMachineConfig, err := azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(currentMachine.Spec.ProviderConfig)
+	currentMachineConfig, err := machineProviderFromProviderConfig(currentMachine.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading current machine provider config: %v", err)
 	}
@@ -186,7 +165,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 }
 
 func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -243,12 +222,12 @@ func (azure *AzureClient) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Mach
 // Delete an existing machine based on the cluster and machine spec passed.
 // Will block until the machine has been successfully deleted, or an error is returned.
 func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
 	// Parse in provider configs
-	_, err = azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(machine.Spec.ProviderConfig)
+	_, err = machineProviderFromProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
@@ -312,11 +291,11 @@ func (azure *AzureClient) Delete(cluster *clusterv1.Cluster, machine *clusterv1.
 // Get the kubeconfig of a machine based on the cluster and machine spec passed.
 // Has not been fully tested as k8s is not yet bootstrapped on created machines.
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	machineConfig, err := azure.azureProviderConfigCodec.MachineProviderFromProviderConfig(machine.Spec.ProviderConfig)
+	machineConfig, err := machineProviderFromProviderConfig(machine.Spec.ProviderConfig)
 	if err != nil {
 		return "", fmt.Errorf("error loading machine provider config: %v", err)
 	}
@@ -383,7 +362,7 @@ func GetSshClient(host string, privatekey string) (*ssh.Client, error) {
 
 // Determine whether a machine exists based on the cluster and machine spec passed.
 func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return false, err
 	}
@@ -403,7 +382,7 @@ func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.
 
 // Return the ip address of an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -413,6 +392,22 @@ func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.M
 	}
 	return *publicIP.IPAddress, nil
 
+}
+
+func clusterProviderFromProviderConfig(providerConfig clusterv1.ProviderConfig) (*azureconfigv1.AzureClusterProviderConfig, error) {
+	var config azureconfigv1.AzureClusterProviderConfig
+	if err := yaml.Unmarshal(providerConfig.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+func machineProviderFromProviderConfig(providerConfig clusterv1.ProviderConfig) (*azureconfigv1.AzureMachineProviderConfig, error) {
+	var config azureconfigv1.AzureMachineProviderConfig
+	if err := yaml.Unmarshal(providerConfig.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
 
 func azureServicesClientOrDefault(params MachineActuatorParams) (*services.AzureClients, error) {

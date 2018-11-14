@@ -2,6 +2,7 @@ package machine
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
@@ -23,10 +24,10 @@ const (
 )
 
 func (azure *AzureClient) status(m *clusterv1.Machine) (MachineStatus, error) {
-	if azure.v1Alpha1Client == nil {
+	if azure.client == nil {
 		return nil, nil
 	}
-	currentMachine, err := util.GetMachineIfExists(azure.v1Alpha1Client.Machines(m.Namespace), m.ObjectMeta.Name)
+	currentMachine, err := util.GetMachineIfExists(azure.client, m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +39,10 @@ func (azure *AzureClient) status(m *clusterv1.Machine) (MachineStatus, error) {
 }
 
 func (azure *AzureClient) updateStatus(machine *clusterv1.Machine) error {
-	if azure.v1Alpha1Client == nil {
+	if azure.client == nil {
 		return nil
 	}
-	currentMachine, err := util.GetMachineIfExists(azure.v1Alpha1Client.Machines(machine.Namespace), machine.ObjectMeta.Name)
+	currentMachine, err := util.GetMachineIfExists(azure.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
 	if err != nil {
 		return err
 	}
@@ -50,13 +51,12 @@ func (azure *AzureClient) updateStatus(machine *clusterv1.Machine) error {
 		return fmt.Errorf("machine %v has been deleted. can not updated status for machine", machine.ObjectMeta.Name)
 	}
 
-	m, err := azure.setMachineStatus(currentMachine, MachineStatus(machine))
+	machine, err = azure.setMachineStatus(currentMachine, MachineStatus(machine))
 	if err != nil {
 		return err
 	}
 
-	_, err = azure.v1Alpha1Client.Machines(machine.Namespace).Update(m)
-	return err
+	return azure.client.Update(context.Background(), machine)
 }
 
 func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status MachineStatus) (*clusterv1.Machine, error) {
@@ -78,10 +78,10 @@ func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status Ma
 }
 
 func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	if azure.v1Alpha1Client == nil {
+	if azure.client == nil {
 		return nil
 	}
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -93,7 +93,7 @@ func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine 
 	machine.ObjectMeta.Annotations[string(Name)] = resourcemanagement.GetVMName(machine)
 	machine.ObjectMeta.Annotations[string(ResourceGroup)] = clusterConfig.ResourceGroup
 
-	_, err = azure.v1Alpha1Client.Machines(machine.Namespace).Update(machine)
+	err = azure.client.Update(context.Background(), machine)
 	if err != nil {
 		return err
 	}
