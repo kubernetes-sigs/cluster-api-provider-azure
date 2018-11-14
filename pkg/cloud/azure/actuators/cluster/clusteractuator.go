@@ -24,42 +24,37 @@ import (
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
+	yaml "gopkg.in/yaml.v2"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type AzureClusterClient struct {
-	services                 *services.AzureClients
-	clusterClient            client.ClusterInterface
-	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
+	services *services.AzureClients
+	client   client.Client
 }
 
 type ClusterActuatorParams struct {
-	ClusterClient client.ClusterInterface
-	Services      *services.AzureClients
+	Services *services.AzureClients
+	Client   client.Client
 }
 
 func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, error) {
-	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
-	if err != nil {
-		return nil, err
-	}
 	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		return nil, err
 	}
 
 	return &AzureClusterClient{
-		services:                 azureServicesClients,
-		clusterClient:            params.ClusterClient,
-		azureProviderConfigCodec: azureProviderConfigCodec,
+		services: azureServicesClients,
+		client:   params.Client,
 	}, nil
 }
 
 func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	glog.Infof("Reconciling cluster %v.", cluster.Name)
 
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -93,7 +88,7 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 }
 
 func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
-	clusterConfig, err := azure.azureProviderConfigCodec.ClusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -146,4 +141,12 @@ func (azure *AzureClusterClient) network() services.AzureNetworkClient {
 
 func (azure *AzureClusterClient) resourcemanagement() services.AzureResourceManagementClient {
 	return azure.services.Resourcemanagement
+}
+
+func clusterProviderFromProviderConfig(providerConfig clusterv1.ProviderConfig) (*azureconfigv1.AzureClusterProviderConfig, error) {
+	var config azureconfigv1.AzureClusterProviderConfig
+	if err := yaml.Unmarshal(providerConfig.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
