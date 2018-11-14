@@ -18,7 +18,27 @@ required = [
 
 [prune]
   go-tests = true
+  unused-packages = true
 
+[[constraint]]
+  name = "github.com/joho/godotenv"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "17.2.0"
+
+[[constraint]]
+  name = "github.com/Azure/go-autorest"
+  version = "10.10.0"
+
+[[constraint]]
+  name = "github.com/ghodss/yaml"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "sigs.k8s.io/cluster-api"
+  revision = "9f86c61769dced58fbc5b148209dccbdb1cf9687"
 
 # STANZAS BELOW ARE GENERATED AND MAY BE WRITTEN - DO NOT MODIFY BELOW THIS LINE.
 
