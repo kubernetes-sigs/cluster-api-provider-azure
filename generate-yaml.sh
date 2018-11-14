@@ -4,14 +4,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Generate a somewhat unique cluster name, UUID is not an option as service-accounts are limited to 30 characters in length
-# and one has a 19 character prefix (i.e. 'machine-controller-'). Of the 11 remaining characters 6 are reserved for the human
-# friendly cluster name, one for a dash, and 5 are left for this random string.
+CONTROLLER_VERSION=${CONTROLLER_VERSION:-latest}
+
+# Generate a random 5 character string
 RANDOM_STRING=$(head -c5 < <(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom) | tr '[:upper:]' '[:lower:]')
-# Human friendly cluster name, limited to 6 characters
-HUMAN_FRIENDLY_CLUSTER_NAME=test1
+
+HUMAN_FRIENDLY_CLUSTER_NAME="${HUMAN_FRIENDLY_CLUSTER_NAME:-test1}"
 CLUSTER_NAME=${HUMAN_FRIENDLY_CLUSTER_NAME}-${RANDOM_STRING}
-RESOURCE_GROUP=clusterapi-${RANDOM_STRING}
+RESOURCE_GROUP="${RESOURCE_GROUP:-clusterapi}"-${RANDOM_STRING}
 
 OUTPUT_DIR=generatedconfigs
 TEMPLATE_DIR=configtemplates
@@ -27,6 +27,9 @@ PROVIDERCOMPONENT_TEMPLATE_FILE=${TEMPLATE_DIR}/provider-components.yaml.templat
 PROVIDERCOMPONENT_GENERATED_FILE=${OUTPUT_DIR}/provider-components.yaml
 ADDON_TEMPLATE_FILE=${TEMPLATE_DIR}/addons.yaml.template
 ADDON_GENERATED_FILE=${OUTPUT_DIR}/addons.yaml
+
+MACHINE_CONTROLLER_IMAGE=${MACHINE_CONTROLLER_IMAGE:-"platform9\/cluster-api-azure-machine-controller:$CONTROLLER_VERSION"}
+CLUSTER_CONTROLLER_IMAGE=${CLUSTER_CONTROLLER_IMAGE:-"platform9\/cluster-api-azure-cluster-controller:$CONTROLLER_VERSION"}
 
 OVERWRITE=0
 
@@ -77,30 +80,33 @@ if [ $OVERWRITE -ne 1 ] && [ -f $ADDON_GENERATED_FILE ]; then
   exit 1
 fi
 
-command -v az >/dev/null 2>&1 || \
-{ echo >&2 "The Azure CLI is required. Please install it to continue."; exit 1; }
+# If CI, then use the CI service account
+if [ "$TF_BUILD" != "" ]; then
+  echo "Using service principal for CI..."
+else
+  command -v az >/dev/null 2>&1 || \
+  { echo >&2 "The Azure CLI is required. Please install it to continue."; exit 1; }
 
-echo Creating service principal...
-az ad sp create-for-rbac --name "cluster-api-${RANDOM_STRING}" --sdk-auth 2>/dev/null > tmp.auth
-echo Created service principal "cluster-api-${RANDOM_STRING}"
+  echo Creating service principal...
+  az ad sp create-for-rbac --name "cluster-api-${RANDOM_STRING}" --sdk-auth 2>/dev/null > tmp.auth
+  echo Created service principal "cluster-api-${RANDOM_STRING}"
 
-TMP=$(grep "\"clientId\": " tmp.auth)
-CLIENT_ID=${TMP:15:36}
-TMP=$(grep "\"clientSecret\": " tmp.auth)
-CLIENT_SECRET=${TMP:19:36}
-TMP=$(grep "\"subscriptionId\": " tmp.auth)
-SUBSCRIPTION_ID=${TMP:21:36}
-TMP=$(grep "\"tenantId\": " tmp.auth)
-TENANT_ID=${TMP:15:36}
-
+  TMP=$(grep "\"clientId\": " tmp.auth)
+  CLIENT_ID=${TMP:15:36}
+  TMP=$(grep "\"clientSecret\": " tmp.auth)
+  CLIENT_SECRET=${TMP:19:36}
+  TMP=$(grep "\"subscriptionId\": " tmp.auth)
+  SUBSCRIPTION_ID=${TMP:21:36}
+  TMP=$(grep "\"tenantId\": " tmp.auth)
+  TENANT_ID=${TMP:15:36}
+  rm tmp.auth
+fi
 
 CLIENT_ID_ENC=$(echo -n $CLIENT_ID | base64)
 CLIENT_SECRET_ENC=$(echo -n $CLIENT_SECRET | base64)
 SUBSCRIPTION_ID_ENC=$(echo -n $SUBSCRIPTION_ID | base64)
 TENANT_ID_ENC=$(echo -n $TENANT_ID | base64)
-LOCATION="eastus"
-
-rm tmp.auth
+LOCATION="westus2"
 
 mkdir -p ${OUTPUT_DIR}
 
@@ -133,6 +139,8 @@ cat $CLUSTER_TEMPLATE_FILE \
 
 
 cat $PROVIDERCOMPONENT_TEMPLATE_FILE \
+  | sed -e "s/\$AZURE_MACHINE_CONTROLLER_IMAGE/$MACHINE_CONTROLLER_IMAGE/" \
+  | sed -e "s/\$AZURE_CLUSTER_CONTROLLER_IMAGE/$CLUSTER_CONTROLLER_IMAGE/" \
   | sed -e "s/\$AZURE_TENANT_ID/$TENANT_ID_ENC/" \
   | sed -e "s/\$AZURE_CLIENT_ID/$CLIENT_ID_ENC/" \
   | sed -e "s/\$AZURE_CLIENT_SECRET/$CLIENT_SECRET_ENC/" \

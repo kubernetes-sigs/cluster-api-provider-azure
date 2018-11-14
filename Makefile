@@ -1,4 +1,5 @@
 GOFLAGS += -ldflags '-extldflags "-static"'
+IMAGE_TAG ?= latest
 
 all: generate build images
 
@@ -31,28 +32,20 @@ machine-controller: vendor
 	CGO_ENABLED=0 go install $(GOFLAGS) github.com/platform9/azure-provider/cmd/machine-controller
 
 images: vendor
-	$(MAKE) -C cmd/cluster-controller image
-	$(MAKE) -C cmd/machine-controller image
+	$(MAKE) -C cmd/cluster-controller image TAG=$(IMAGE_TAG)
+	$(MAKE) -C cmd/machine-controller image TAG=$(IMAGE_TAG)
 
 push: vendor
-	$(MAKE) -C cmd/cluster-controller push
-	$(MAKE) -C cmd/machine-controller push
+	$(MAKE) -C cmd/cluster-controller push TAG=$(IMAGE_TAG)
+	$(MAKE) -C cmd/machine-controller push TAG=$(IMAGE_TAG)
 
 images_dev:
-	$(MAKE) -C cmd/cluster-controller dev_image
-	$(MAKE) -C cmd/machine-controller dev_image
+	$(MAKE) -C cmd/cluster-controller dev_image TAG=$(IMAGE_TAG)
+	$(MAKE) -C cmd/machine-controller dev_image TAG=$(IMAGE_TAG)
 
 push_dev:
-	$(MAKE) -C cmd/cluster-controller dev_push
-	$(MAKE) -C cmd/machine-controller dev_push
-
-images_ci:
-	$(MAKE) -C cmd/cluster-controller ci_image TAG=$(COMMIT_ID)
-	$(MAKE) -C cmd/machine-controller ci_image TAG=$(COMMIT_ID)
-
-push_ci:
-	$(MAKE) -C cmd/cluster-controller ci_push TAG=$(COMMIT_ID)
-	$(MAKE) -C cmd/machine-controller ci_push TAG=$(COMMIT_ID)
+	$(MAKE) -C cmd/cluster-controller dev_push TAG=$(IMAGE_TAG)
+	$(MAKE) -C cmd/machine-controller dev_push TAG=$(IMAGE_TAG)
 
 machine-unit-tests:
 	go test -v github.com/platform9/azure-provider/cloud/azure/actuators/machine
