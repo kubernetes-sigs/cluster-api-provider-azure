@@ -52,6 +52,7 @@ func (in *AzureClusterProviderConfig) DeepCopyObject() runtime.Object {
 func (in *AzureMachineProviderConfig) DeepCopyInto(out *AzureMachineProviderConfig) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	if in.Roles != nil {
 		in, out := &in.Roles, &out.Roles
 		*out = make([]MachineRole, len(*in))
