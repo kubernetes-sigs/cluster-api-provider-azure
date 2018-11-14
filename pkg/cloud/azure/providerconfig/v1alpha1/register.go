@@ -16,7 +16,7 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/platform9/azure-provider/cloud/azure/providerconfig"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/providerconfig"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/runtime"

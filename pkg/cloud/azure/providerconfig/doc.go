@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/platform9/azure-provider/cloud/azure/providerconfig
+// +k8s:conversion-gen=github.com/platform9/azure-provider/pkg/cloud/azure/providerconfig
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
 
-package v1alpha1
+package providerconfig

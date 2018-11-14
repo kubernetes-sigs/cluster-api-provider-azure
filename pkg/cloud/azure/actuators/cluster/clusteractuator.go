@@ -20,10 +20,10 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/golang/glog"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
-	"github.com/platform9/azure-provider/cloud/azure/services"
-	"github.com/platform9/azure-provider/cloud/azure/services/network"
-	"github.com/platform9/azure-provider/cloud/azure/services/resourcemanagement"
+	azureconfigv1 "github.com/platform9/azure-provider/pkg/cloud/azure/providerconfig/v1alpha1"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
