@@ -66,6 +66,10 @@ spec:
         - name: certs
           mountPath: /etc/ssl/certs
         env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
           - name: AZURE_TENANT_ID
             valueFrom:
               secretKeyRef:
