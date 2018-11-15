@@ -4,7 +4,7 @@ NAME = cluster-api-azure-provider-controller
 TAG ?= latest
 IMG=${PREFIX}/${NAME}:${TAG}
 
-all: test manager
+all: test manager clusterctl
 
 vendor:
 	dep version || go get -u github.com/golang/dep/cmd/dep
@@ -16,6 +16,12 @@ vendor-update:
 # Run tests
 test: generate fmt vet manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
+
+machine-unit-tests:
+	go test ./pkg/cloud/azure/actuators/machine -coverprofile machine-actuator-cover.out
+
+cluster-unit-tests:
+	go test ./pkg/cloud/azure/actuators/cluster -coverprofile cluster-actuator-cover.out
 
 # Build manager binary
 manager: generate fmt vet

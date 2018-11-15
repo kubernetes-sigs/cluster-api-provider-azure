@@ -8,3 +8,4 @@ minikube.kubeconfig
 generatedconfigs/
 sshkey*
 kubeconfig
+*.out
