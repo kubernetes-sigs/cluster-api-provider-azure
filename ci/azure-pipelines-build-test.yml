@@ -20,9 +20,10 @@ steps:
   displayName: 'Check project dependencies'
 
 - script: |
-    make build
+    make manager
+    make clusterctl
   workingDirectory: '$(modulePath)'
-  displayName: 'Build clusterctl, cluster-controller and machine-controller'
+  displayName: 'Build controllers manager and clusterctl'
 
 - script: |
     set -e
