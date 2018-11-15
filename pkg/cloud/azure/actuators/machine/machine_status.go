@@ -51,12 +51,11 @@ func (azure *AzureClient) updateStatus(machine *clusterv1.Machine) error {
 		return fmt.Errorf("machine %v has been deleted. can not updated status for machine", machine.ObjectMeta.Name)
 	}
 
-	machine, err = azure.setMachineStatus(currentMachine, MachineStatus(machine))
+	m, err := azure.setMachineStatus(currentMachine, MachineStatus(machine))
 	if err != nil {
 		return err
 	}
-
-	return azure.client.Update(context.Background(), machine)
+	return azure.client.Update(context.Background(), m)
 }
 
 func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status MachineStatus) (*clusterv1.Machine, error) {
