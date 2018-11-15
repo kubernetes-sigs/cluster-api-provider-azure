@@ -1,7 +1,17 @@
 # Image URL to use all building/pushing image targets
-IMG ?= marwanad1/cluster-api-azure-provider-controller:latest
+PREFIX = platform9
+NAME = cluster-api-azure-provider-controller
+TAG ?= latest
+IMG=${PREFIX}/${NAME}:${TAG}
 
 all: test manager
+
+vendor:
+	dep version || go get -u github.com/golang/dep/cmd/dep
+	dep ensure -v
+vendor-update:
+	dep version || go get -u github.com/golang/dep/cmd/dep
+	dep ensure -v -update
 
 # Run tests
 test: generate fmt vet manifests
@@ -53,3 +63,13 @@ docker-build: test
 # Push the docker image
 docker-push:
 	docker push ${IMG}
+
+# Build the docker dev image
+docker-build-dev: test
+	docker build . -t "${IMG}-dev"
+	@echo "updating kustomize image patch file for manager resource"
+	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
+
+# Push the docker dev image
+docker-push-dev:
+	docker push "${IMG}-dev"
