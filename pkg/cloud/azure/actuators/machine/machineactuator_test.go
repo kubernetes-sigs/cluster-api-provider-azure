@@ -140,19 +140,19 @@ func TestUpdateVMNotExists(t *testing.T) {
 	}
 }
 
-// func TestUpdateMachineNotExists(t *testing.T) {
-// 	azureServicesClient := mockVMExists()
-// 	machineConfig := newMachineProviderConfig()
-// 	machine := newMachine(t, machineConfig)
-// 	cluster := newCluster(t)
+func TestUpdateMachineNotExists(t *testing.T) {
+	azureServicesClient := mockVMExists()
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
 
-// 	params := MachineActuatorParams{Services: &azureServicesClient, Client: fake.NewSimpleClientset().ClusterV1alpha1()}
-// 	actuator, err := NewMachineActuator(params)
-// 	err = actuator.Update(cluster, machine)
-// 	if err == nil {
-// 		t.Fatal("expected error calling Update but got none")
-// 	}
-// }
+	params := MachineActuatorParams{Services: &azureServicesClient}
+	actuator, err := NewMachineActuator(params)
+	err = actuator.Update(cluster, machine)
+	if err == nil {
+		t.Fatal("expected error calling Update but got none")
+	}
+}
 
 // func TestUpdateNoSpecChange(t *testing.T) {
 // 	azureServicesClient := mockVMExists()
