@@ -7,6 +7,5 @@ spec:
   template:
     spec:
       containers:
-      # Change the value of image field below to your controller image URL
-      - image: IMAGE_URL
+      - image: marwanad1/cluster-api-azure-provider-controller:latest
         name: manager

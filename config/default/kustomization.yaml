@@ -1,12 +1,12 @@
 # Adds namespace to all resources.
-namespace: test-system
+namespace: azure-provider-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: test-
+namePrefix: azure-provider-
 
 # Labels to add to all resources and selectors.
 #commonLabels:
@@ -18,6 +18,8 @@ namePrefix: test-
 # YAML string, with resources separated by document
 # markers ("---").
 resources:
+- ../crds/azureprovider_v1alpha1_azureclusterproviderconfig.yaml
+- ../crds/azureprovider_v1alpha1_azuremachineproviderconfig.yaml
 - ../rbac/rbac_role.yaml
 - ../rbac/rbac_role_binding.yaml
 - ../manager/manager.yaml
@@ -25,9 +27,7 @@ resources:
 patches:
 - manager_image_patch.yaml
 
-vars:
-- name: WEBHOOK_SECRET_NAME
-  objref:
-    kind: Secret
-    name: webhook-server-secret
-    apiVersion: v1
+secretGenerator:
+- name: azure-controller-secrets
+  envCommand: 'cat ../../.env'
+  type: Opqaue
