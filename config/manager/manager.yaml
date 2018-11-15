@@ -57,6 +57,9 @@ spec:
         imagePullPolicy: Always
         command:
         - /root/manager
+        args:
+        - "-logtostderr=true"
+        - "-stderrthreshold=INFO"
         volumeMounts:
         - name: config
           mountPath: /etc/kubernetes
