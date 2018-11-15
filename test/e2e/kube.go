@@ -6,8 +6,8 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/clientcmd"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/clientcmd"
 
 	clientv1alpha1 "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
@@ -19,7 +19,7 @@ type KubeClient struct {
 }
 
 func NewKubeClient(kubeconfig string) (*KubeClient, error) {
-	kubeClientSet, clusterapiClientset, err := clientcmd.NewClientsForDefaultSearchpath(kubeconfig, clientcmd.NewConfigOverrides())
+	kubeClientSet, clusterapiClientset, err := clientcmd.NewClusterApiClientForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
 	if err != nil {
 		return nil, fmt.Errorf("error creating rest config: %v", err)
 	}
