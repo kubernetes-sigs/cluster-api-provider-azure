@@ -1,7 +1,6 @@
 *.test
 .idea/
 bin/
-cover.out
 .env
 exampleconfigs/provider-components.yaml
 minikube.kubeconfig
