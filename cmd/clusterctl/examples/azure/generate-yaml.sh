@@ -4,8 +4,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CONTROLLER_VERSION=${CONTROLLER_VERSION:-latest}
-
 # Generate a random 5 character string
 RANDOM_STRING=$(head -c5 < <(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom) | tr '[:upper:]' '[:lower:]')
 
@@ -13,23 +11,19 @@ HUMAN_FRIENDLY_CLUSTER_NAME="${HUMAN_FRIENDLY_CLUSTER_NAME:-test1}"
 CLUSTER_NAME=${HUMAN_FRIENDLY_CLUSTER_NAME}-${RANDOM_STRING}
 RESOURCE_GROUP="${RESOURCE_GROUP:-clusterapi}"-${RANDOM_STRING}
 
-OUTPUT_DIR=generatedconfigs
-TEMPLATE_DIR=configtemplates
+OUTPUT_DIR=${OUTPUT_DIR:-out}
 SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
 
-MACHINE_TEMPLATE_FILE=${TEMPLATE_DIR}/machines.yaml.template
+MACHINE_TEMPLATE_FILE=machines.yaml.template
 MACHINE_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
-MACHINE_NO_NODE_TEMPLATE_FILE=${TEMPLATE_DIR}/machines_no_node.yaml.template
+MACHINE_NO_NODE_TEMPLATE_FILE=machines_no_node.yaml.template
 MACHINE_NO_NODE_GENERATED_FILE=${OUTPUT_DIR}/machines_no_node.yaml
-CLUSTER_TEMPLATE_FILE=${TEMPLATE_DIR}/cluster.yaml.template
+CLUSTER_TEMPLATE_FILE=cluster.yaml.template
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
-PROVIDERCOMPONENT_TEMPLATE_FILE=${TEMPLATE_DIR}/provider-components.yaml.template
+PROVIDERCOMPONENT_TEMPLATE_FILE=provider-components.yaml.template
 PROVIDERCOMPONENT_GENERATED_FILE=${OUTPUT_DIR}/provider-components.yaml
-ADDON_TEMPLATE_FILE=${TEMPLATE_DIR}/addons.yaml.template
+ADDON_TEMPLATE_FILE=addons.yaml.template
 ADDON_GENERATED_FILE=${OUTPUT_DIR}/addons.yaml
-
-MACHINE_CONTROLLER_IMAGE=${MACHINE_CONTROLLER_IMAGE:-"platform9\/cluster-api-azure-machine-controller:$CONTROLLER_VERSION"}
-CLUSTER_CONTROLLER_IMAGE=${CLUSTER_CONTROLLER_IMAGE:-"platform9\/cluster-api-azure-cluster-controller:$CONTROLLER_VERSION"}
 
 OVERWRITE=0
 
@@ -70,18 +64,13 @@ if [ $OVERWRITE -ne 1 ] && [ -f $CLUSTER_GENERATED_FILE ]; then
   exit 1
 fi
 
-if [ $OVERWRITE -ne 1 ] && [ -f $PROVIDERCOMPONENT_GENERATED_FILE ]; then
-  echo File $PROVIDERCOMPONENT_GENERATED_FILE already exists. Delete it manually before running this script.
-  exit 1
-fi
-
 if [ $OVERWRITE -ne 1 ] && [ -f $ADDON_GENERATED_FILE ]; then
   echo File $ADDON_GENERATED_FILE already exists. Delete it manually before running this script.
   exit 1
 fi
 
 # If CI, then use the CI service account
-if [ "$TF_BUILD" != "" ]; then
+if [[ "${TF_BUILD:+isset}" == "isset" ]]; then
   echo "Using service principal for CI..."
 else
   command -v az >/dev/null 2>&1 || \
@@ -102,10 +91,6 @@ else
   rm tmp.auth
 fi
 
-CLIENT_ID_ENC=$(echo -n $CLIENT_ID | base64)
-CLIENT_SECRET_ENC=$(echo -n $CLIENT_SECRET | base64)
-SUBSCRIPTION_ID_ENC=$(echo -n $SUBSCRIPTION_ID | base64)
-TENANT_ID_ENC=$(echo -n $TENANT_ID | base64)
 LOCATION="westus2"
 
 mkdir -p ${OUTPUT_DIR}
@@ -136,16 +121,6 @@ cat $CLUSTER_TEMPLATE_FILE \
   | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
   | sed -e "s/\$LOCATION/$LOCATION/" \
   > $CLUSTER_GENERATED_FILE
-
-
-cat $PROVIDERCOMPONENT_TEMPLATE_FILE \
-  | sed -e "s/\$AZURE_MACHINE_CONTROLLER_IMAGE/$MACHINE_CONTROLLER_IMAGE/" \
-  | sed -e "s/\$AZURE_CLUSTER_CONTROLLER_IMAGE/$CLUSTER_CONTROLLER_IMAGE/" \
-  | sed -e "s/\$AZURE_TENANT_ID/$TENANT_ID_ENC/" \
-  | sed -e "s/\$AZURE_CLIENT_ID/$CLIENT_ID_ENC/" \
-  | sed -e "s/\$AZURE_CLIENT_SECRET/$CLIENT_SECRET_ENC/" \
-  | sed -e "s/\$AZURE_SUBSCRIPTION_ID/$SUBSCRIPTION_ID_ENC/" \
-  > $PROVIDERCOMPONENT_GENERATED_FILE
 
 # TODO: implement addon file
 cat $ADDON_TEMPLATE_FILE \
