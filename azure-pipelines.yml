@@ -23,10 +23,10 @@ jobs:
   - template: ./ci/azure-pipelines-build-test.yml
 
 # Runs end-to-end tests
-- job: E2ETest
-  pool:
-    vmImage: 'Ubuntu 16.04'
-  dependsOn: BuildAndUnitTest
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
-  steps:
-  - template: ./ci/azure-pipelines-e2e.yml
+# - job: E2ETest
+#   pool:
+#     vmImage: 'Ubuntu 16.04'
+#   dependsOn: BuildAndUnitTest
+#   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+#   steps:
+#   - template: ./ci/azure-pipelines-e2e.yml
