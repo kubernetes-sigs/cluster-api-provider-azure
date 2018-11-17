@@ -9,11 +9,11 @@ variables:
 - name: modulePath # Path to the module's code
   value: '$(GOPATH)/src/github.com/platform9/azure-provider'
 - name: KubernetesVersion
-  value: 'v1.10.0'
-- name: MinikubeVersion
-  value: 'v0.27.0'
-- name: ServiceConnectionName
-  value: 'ClusterAPIProviderAzure'
+  value: 'v1.12.2'
+- name: KustomizeVersion
+  value: '1.0.10'
+- name: KubeadmDindVersion
+  value: '1.12'
 
 jobs:
 - job: BuildAndUnitTest
@@ -23,10 +23,10 @@ jobs:
   - template: ./ci/azure-pipelines-build-test.yml
 
 # Runs end-to-end tests
-# - job: E2ETest
-#   pool:
-#     vmImage: 'Ubuntu 16.04'
-#   dependsOn: BuildAndUnitTest
-#   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
-#   steps:
-#   - template: ./ci/azure-pipelines-e2e.yml
+- job: E2ETest
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  dependsOn: BuildAndUnitTest
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  steps:
+  - template: ./ci/azure-pipelines-e2e.yml

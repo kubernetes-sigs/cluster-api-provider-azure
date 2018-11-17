@@ -33,12 +33,10 @@ steps:
 - script: |
     echo "Installing kubectl..."     
     sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(KubernetesVersion)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
-    echo "Installing kubebuilder..."
-    sudo curl -L -O https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.5/kubebuilder_1.0.5_darwin_amd64.tar.gz && tar -zxvf kubebuilder_1.0.5_darwin_amd64.tar.gz && sudo mv kubebuilder_1.0.5_darwin_amd64 /usr/local/kubebuilder
     echo "Installing kubeadm-dind..."
-    sudo curl -L https://raw.githubusercontent.com/marwanad/kubeadm-dind-cluster/fix-stderr-tee/fixed/dind-cluster-v1.12.sh -o dind-cluster.sh && sudo chmod +x dind-cluster.sh
+    sudo curl -L https://raw.githubusercontent.com/marwanad/kubeadm-dind-cluster/fix-stderr-tee/fixed/dind-cluster-v$(KubeadmDindVersion).sh -o dind-cluster.sh && sudo chmod +x dind-cluster.sh
     echo "Installing kustomize..."
-    sudo curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.10/kustomize_1.0.10_linux_amd64 -o /usr/local/bin/kustomize && sudo chmod +x /usr/local/bin/kustomize
+    sudo curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/v$(KustomizeVersion)/kustomize_$(KustomizeVersion)_linux_amd64 -o /usr/local/bin/kustomize && sudo chmod +x /usr/local/bin/kustomize
   displayName: 'Prepare dependencies'
 
 - script: |
@@ -71,13 +69,20 @@ steps:
   displayName: 'Setup tcp proxy to forward the nodes localhost'
 
 - script: |
-    HUMAN_FRIENDLY_CLUSTER_NAME=ci-e2e RESOURCE_GROUP=ci-e2e-clusterapi CONTROLLER_VERSION=$(build.SourceVersion)-dev ./generate-yaml.sh
+    set -e
+    IMG="localhost:5000/cluster-api-azure-provider-controller:$(build.SourceVersion)-dev"
+    sed -i'' -e 's@image: .*@image: '"${IMG}"'@' $(modulePath)/config/default/manager_image_patch.yaml
+    HUMAN_FRIENDLY_CLUSTER_NAME=ci-e2e RESOURCE_GROUP=ci-e2e-clusterapi ./generate-yaml.sh
+    kustomize build $(modulePath)/config/default/ > out/provider-components.yaml
+    echo "---" >> out/provider-components.yaml
+    kustomize build $(modulePath)/vendor/sigs.k8s.io/cluster-api/config/default >> out/provider-components.yaml
+    cat out/provider-components.yaml
   env:
-    SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
-    CLIENT_ID: $(AZURE_CLIENT_ID)
-    CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
-    TENANT_ID: $(AZURE_TENANT_ID)
-  workingDirectory: '$(modulePath)'
+    AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
+    AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
+    AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+    AZURE_TENANT_ID: $(AZURE_TENANT_ID)
+  workingDirectory: '$(modulePath)/cmd/clusterctl/examples/azure'
   displayName: "Generate manifests"
 
 - script: |
@@ -87,14 +92,18 @@ steps:
   displayName: 'Build clusterctl'
 
 - script: |
+    echo "Copying kube config to /etc/kubernetes/admin.conf..."
+    sudo mkdir -p /etc/kubernetes
+    sudo cp $HOME/.kube/config /etc/kubernetes/admin.conf
+    sudo chown $USER:$USER /etc/kubernetes/admin.conf
     echo "Running clusterctl to create clusters..."
-    clusterctl create cluster --provider azure -m generatedconfigs/machines_no_node.yaml -c generatedconfigs/cluster.yaml -p generatedconfigs/provider-components.yaml --existing-bootstrap-cluster-kubeconfig /etc/kubernetes/admin.conf
+    $(modulePath)/bin/clusterctl create cluster --provider azure -m out/machines_no_node.yaml -c out/cluster.yaml -p out/provider-components.yaml --existing-bootstrap-cluster-kubeconfig /etc/kubernetes/admin.conf
   env:
     AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
     AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
     AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
     AZURE_TENANT_ID: $(AZURE_TENANT_ID)    
-  workingDirectory: '$(modulePath)'
+  workingDirectory: '$(modulePath)/cmd/clusterctl/examples/azure'
   displayName: 'Run clusterctl'
   
 - script: |
@@ -167,14 +176,14 @@ steps:
   displayName: 'Run e2e test cases'
 
 - script: |
-    echo "Pushing azure-cluster-controller and azure-machine-controller to Docker Hub"
+    echo "Pushing cluster-api-azure-provider-controller to Docker Hub"
     docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-    make push_dev IMAGE_TAG=$(build.SourceVersion)
+    make docker-push-dev TAG=$(build.SourceVersion)
   env:
     DOCKER_USER: $(DOCKERHUB_USER)
     DOCKER_PASS: $(DOCKERHUB_PASS)
   workingDirectory: '$(modulePath)'
-  displayName: 'Push dev azure-cluster-controller and azure-machine-controller images'
+  displayName: 'Push cluster-api-azure-provider-controller image'
 
 - script: |
     ci/cleanup-e2e.sh $(modulePath)
