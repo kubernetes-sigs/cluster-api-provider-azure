@@ -51,27 +51,24 @@ steps:
   displayName: 'Start kubeadm-dind'
 
 - script: |
-    # Copy config to etc/kubernetes
-    sudo mkdir -p /etc/kubernetes
-    sudo cp $HOME/.kube/config /etc/kubernetes/admin.conf
-    sudo chown $USER:$USER /etc/kubernetes/admin.conf    
-    # wait for nodes be ready and update node label
-    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; echo "waiting for node to become ready"; kubectl get nodes; done
-    NODE=$(kubectl get nodes -o jsonpath="{range .items[*]}{@.metadata.name}{end}")
-    kubectl label node ${NODE} node-role.kubernetes.io/master=
-    # Give cluster-admin permissions to the default service account
-    kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default
-    # Wait for kube-dns to be ready
-    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl -n kube-system get pods -lk8s-app=kube-dns -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1;echo "waiting for kube-dns to be available"; kubectl get pods --all-namespaces; done    
-    echo "Validating kubectl configuration..."
-    kubectl cluster-info
-  displayName: 'Configure kubernetes'
+    echo "Building Docker images for cluster-api-azure-provider-controller"
+    make docker-build-dev TAG=$(build.SourceVersion)
+    docker tag platform9/cluster-api-azure-provider-controller:$(build.SourceVersion)-dev localhost:5000/cluster-api-azure-provider-controller:$(build.SourceVersion)-dev
+  workingDirectory: '$(modulePath)'
+  displayName: 'Build Docker images for cluster-api-azure-provider-controller'
 
 - script: |
-    echo "Building Docker images for machine-controller and cluster-controller"
-    make images_dev IMAGE_TAG=$(build.SourceVersion)
-  workingDirectory: '$(modulePath)'
-  displayName: 'Build Docker images for machine-controller and cluster-controller'
+    docker run -d -p 5000:5000 --restart=always --name registry registry:2
+    docker push localhost:5000/cluster-api-azure-provider-controller:$(build.SourceVersion)-dev
+  displayName: 'Run local docker registry and push controller image'
+
+- script: |
+    docker ps -a -q --filter=label=mirantis.kubeadm_dind_cluster | while read container_id; do
+    docker exec ${container_id} /bin/bash -c "docker rm -fv registry-proxy || true"
+    docker exec ${container_id} /bin/bash -c \
+      "docker run --name registry-proxy -d -e LISTEN=':5000' -e TALK=\"\$(/sbin/ip route|awk '/default/ { print \$3 }'):5000\" -p 5000:5000 tecnativa/tcp-proxy"
+    done
+  displayName: 'Setup tcp proxy to forward the nodes localhost'
 
 - script: |
     HUMAN_FRIENDLY_CLUSTER_NAME=ci-e2e RESOURCE_GROUP=ci-e2e-clusterapi CONTROLLER_VERSION=$(build.SourceVersion)-dev ./generate-yaml.sh
