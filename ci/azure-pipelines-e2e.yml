@@ -31,28 +31,24 @@ steps:
   displayName: 'Prepare Azure CLI'
 
 - script: |
-    echo "Installing minikube..."
-    curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(MinikubeVersion)/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
-    echo "Installing kubeadm..."
-    curl -Lo kubeadm https://storage.googleapis.com/kubernetes-release/release/$(KubernetesVersion)/bin/linux/amd64/kubeadm && chmod +x kubeadm && sudo mv kubeadm /usr/bin/
     echo "Installing kubectl..."     
-    curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(KubernetesVersion)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-  displayName: 'Prepare clusterctl dependencies'
+    sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(KubernetesVersion)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
+    echo "Installing kubebuilder..."
+    sudo curl -L -O https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.5/kubebuilder_1.0.5_darwin_amd64.tar.gz && tar -zxvf kubebuilder_1.0.5_darwin_amd64.tar.gz && sudo mv kubebuilder_1.0.5_darwin_amd64 /usr/local/kubebuilder
+    echo "Installing kubeadm-dind..."
+    sudo curl -L https://raw.githubusercontent.com/marwanad/kubeadm-dind-cluster/fix-stderr-tee/fixed/dind-cluster-v1.12.sh -o dind-cluster.sh && sudo chmod +x dind-cluster.sh
+    echo "Installing kustomize..."
+    sudo curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.10/kustomize_1.0.10_linux_amd64 -o /usr/local/bin/kustomize && sudo chmod +x /usr/local/bin/kustomize
+  displayName: 'Prepare dependencies'
 
 - script: |
-    sudo -E minikube start --vm-driver=none --bootstrapper=localkube --kubernetes-version=$(KubernetesVersion) --feature-gates=CustomResourceSubresources=true --extra-config=apiserver.Authorization.Mode=RBAC
-    sudo chown -R $USER $HOME/.kube
-    sudo chgrp -R $USER $HOME/.kube
-    sudo chown -R $USER $HOME/.minikube
-    sudo chgrp -R $USER $HOME/.minikube
-    # Update kube config
-    minikube update-context
-    
-    # Update certs
-    sed -i "s/certificate-authority.*/certificate-authority-data: $(cat $HOME/.minikube/ca.crt | base64 -w0)/" $HOME/.kube/config
-    sed -i "s/client-certificate.*/client-certificate-data: $(cat $HOME/.minikube/client.crt | base64 -w0)/" $HOME/.kube/config
-    sed -i "s/client-key.*/client-key-data: $(cat $HOME/.minikube/client.key | base64 -w0)/" $HOME/.kube/config
-  displayName: 'Start and configure minikube'
+    # fix kube-dns issues
+    sudo mount --make-rshared /
+    # start dind-cluster
+    ./dind-cluster.sh up   
+    echo "Validating kubectl configuration..."
+    kubectl cluster-info
+  displayName: 'Start kubeadm-dind'
 
 - script: |
     # Copy config to etc/kubernetes
