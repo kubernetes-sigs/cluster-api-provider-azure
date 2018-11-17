@@ -74,22 +74,22 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: azure-controller-secrets
-                key: AZURE_TENANT_ID
+                key: tenant-id
           - name: AZURE_CLIENT_ID
             valueFrom:
               secretKeyRef:
                 name: azure-controller-secrets
-                key: AZURE_CLIENT_ID
+                key: client-id
           - name: AZURE_CLIENT_SECRET
             valueFrom:
               secretKeyRef:
                 name: azure-controller-secrets
-                key: AZURE_CLIENT_SECRET
+                key: client-secret
           - name: AZURE_SUBSCRIPTION_ID
             valueFrom:
               secretKeyRef:
                 name: azure-controller-secrets
-                key: AZURE_SUBSCRIPTION_ID
+                key: subscription-id
         resources:
           limits:
             cpu: 100m
