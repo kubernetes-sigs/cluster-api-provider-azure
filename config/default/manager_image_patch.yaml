@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-      - image: marwanad1/cluster-api-azure-provider-controller:latest
+      - image: platform9/cluster-api-azure-provider-controller:latest
         name: manager
