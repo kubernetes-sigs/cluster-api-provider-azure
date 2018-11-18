@@ -13,6 +13,7 @@ RESOURCE_GROUP="${RESOURCE_GROUP:-clusterapi}"-${RANDOM_STRING}
 
 OUTPUT_DIR=${OUTPUT_DIR:-out}
 SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
+CREDENTIALS_FILE=${OUTPUT_DIR}/credentials.sh
 
 MACHINE_TEMPLATE_FILE=machines.yaml.template
 MACHINE_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
@@ -89,6 +90,10 @@ else
   TMP=$(grep "\"tenantId\": " tmp.auth)
   TENANT_ID=${TMP:15:36}
   rm tmp.auth
+  printf "AZURE_CLIENT_ID=%s\n" "$CLIENT_ID" > "$CREDENTIALS_FILE"
+  printf "AZURE_CLIENT_SECRET=%s\n" "$CLIENT_SECRET" >> "$CREDENTIALS_FILE"
+  printf "AZURE_SUBSCRIPTION_ID=%s\n" "$SUBSCRIPTION_ID" >> "$CREDENTIALS_FILE"
+  printf "AZURE_TENANT_ID=%s\n" "$TENANT_ID" >> "$CREDENTIALS_FILE"
 fi
 
 LOCATION="westus2"
