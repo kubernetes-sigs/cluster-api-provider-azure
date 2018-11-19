@@ -42,7 +42,7 @@ func TestMasterMachineCreated(t *testing.T) {
 
 	// azure: check if virtual machine exists
 	masterMachine := machineList.Items[0]
-	resourceGroup := masterMachine.ObjectMeta.Annotations[machine.RGAnnotationKey]
+	resourceGroup := masterMachine.ObjectMeta.Annotations[string(machine.ResourceGroup)]
 	vm, err := clients.azure.Compute.VmIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
 	if err != nil {
 		t.Fatalf("error checking if vm exists: %v", err)
