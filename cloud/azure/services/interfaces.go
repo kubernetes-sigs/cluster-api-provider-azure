@@ -30,8 +30,10 @@ type AzureClients struct {
 
 type AzureComputeClient interface {
 	// Virtual Machines Operations
+	RunCommand(resoureGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error)
 	VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error)
 	DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
+	WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error
 	WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error
 
 	// Disk Operations

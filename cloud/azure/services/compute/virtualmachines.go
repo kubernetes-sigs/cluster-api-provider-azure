@@ -15,7 +15,16 @@ package compute
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 )
+
+func (s *Service) RunCommand(resoureGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error) {
+	cmdInput := compute.RunCommandInput{
+		CommandID: to.StringPtr("RunShellScript"),
+		Script:    to.StringSlicePtr([]string{cmd}),
+	}
+	return s.VirtualMachinesClient.RunCommand(s.ctx, resoureGroup, name, cmdInput)
+}
 
 func (s *Service) VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
 	vm, err := s.VirtualMachinesClient.Get(s.ctx, resourceGroup, name, "")
@@ -32,6 +41,10 @@ func (s *Service) VmIfExists(resourceGroup string, name string) (*compute.Virtua
 
 func (s *Service) DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
 	return s.VirtualMachinesClient.Delete(s.ctx, resourceGroup, name)
+}
+
+func (s *Service) WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error {
+	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualMachinesClient.Client)
 }
 
 func (s *Service) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {

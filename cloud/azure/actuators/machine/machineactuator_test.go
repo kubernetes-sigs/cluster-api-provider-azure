@@ -25,6 +25,7 @@ import (
 	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake"
 
 	"github.com/platform9/azure-provider/cloud/azure/services"
 	yaml "gopkg.in/yaml.v2"
@@ -125,6 +126,104 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 		t.Fatalf("expected machine: %v to not exist", machine.ObjectMeta.Name)
 	}
 }
+func TestUpdateVMNotExists(t *testing.T) {
+	azureServicesClient := mockVMNotExists()
+	params := MachineActuatorParams{Services: &azureServicesClient}
+
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	actuator, err := NewMachineActuator(params)
+	err = actuator.Update(cluster, machine)
+	if err == nil {
+		t.Fatal("expected error calling Update but got none")
+	}
+}
+func TestUpdateMachineNotExists(t *testing.T) {
+	azureServicesClient := mockVMExists()
+	machineConfig := newMachineProviderConfig()
+	machine := newMachine(t, machineConfig)
+	cluster := newCluster(t)
+
+	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset().ClusterV1alpha1()}
+	actuator, err := NewMachineActuator(params)
+	err = actuator.Update(cluster, machine)
+	if err == nil {
+		t.Fatal("expected error calling Update but got none")
+	}
+}
+
+// func TestUpdateNoSpecChange(t *testing.T) {
+// 	azureServicesClient := mockVMExists()
+// 	machineConfig := newMachineProviderConfig()
+// 	machine := newMachine(t, machineConfig)
+// 	cluster := newCluster(t)
+
+// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	actuator, err := NewMachineActuator(params)
+// 	err = actuator.Update(cluster, machine)
+// 	if err != nil {
+// 		t.Fatal("unexpected error calling Update")
+// 	}
+// }
+
+// func TestUpdateMasterKubeletChange(t *testing.T) {
+// 	azureServicesClient := mockVMExists()
+// 	machineConfig := newMachineProviderConfig()
+// 	// set as master machine
+// 	machineConfig.Roles = []azureconfigv1.MachineRole{azureconfigv1.Master}
+// 	machine := newMachine(t, machineConfig)
+// 	cluster := newCluster(t)
+
+// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	actuator, err := NewMachineActuator(params)
+// 	goalMachine := machine
+// 	goalMachine.Spec.Versions.Kubelet = "1.10.0"
+
+// 	err = actuator.Update(cluster, goalMachine)
+// 	if err != nil {
+// 		t.Fatalf("unexpected error calling Update: %v", err)
+// 	}
+// }
+
+// func TestUpdateMasterControlPlaneChange(t *testing.T) {
+// 	azureServicesClient := mockVMExists()
+// 	machineConfig := newMachineProviderConfig()
+// 	// set as master machine
+// 	machineConfig.Roles = []azureconfigv1.MachineRole{azureconfigv1.Master}
+// 	machine := newMachine(t, machineConfig)
+// 	cluster := newCluster(t)
+
+// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	actuator, err := NewMachineActuator(params)
+// 	goalMachine := machine
+// 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
+
+// 	err = actuator.Update(cluster, goalMachine)
+// 	if err != nil {
+// 		t.Fatalf("unexpected error calling Update: %v", err)
+// 	}
+// }
+// func TestUpdateMasterControlPlaneChangeRunCommandFailure(t *testing.T) {
+// 	azureServicesClient := mockVMExists()
+// 	machineConfig := newMachineProviderConfig()
+// 	// set as master machine
+// 	machineConfig.Roles = []azureconfigv1.MachineRole{azureconfigv1.Master}
+// 	machine := newMachine(t, machineConfig)
+// 	cluster := newCluster(t)
+
+// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	actuator, err := NewMachineActuator(params)
+// 	goalMachine := machine
+// 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
+
+// 	err = actuator.Update(cluster, goalMachine)
+// 	if err != nil {
+// 		t.Fatalf("unexpected error calling Update: %v", err)
+// 	}
+// }
+
 func TestDeleteSuccess(t *testing.T) {
 	azureServicesClient := mockDeleteSuccess()
 	params := MachineActuatorParams{Services: &azureServicesClient}

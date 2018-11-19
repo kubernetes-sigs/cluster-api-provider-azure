@@ -848,10 +848,11 @@
 
 [[projects]]
   branch = "release-6.0"
-  digest = "1:d9898b9ce0fe968efc1f8925399a5ee041550771ff4fcfaf2dd49b7cfab93542"
+  digest = "1:09b41e963b81be84afad13a44f847f7ca0894806ac7457bd9fb9817c53d36f63"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
+    "discovery/fake",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1alpha1",
@@ -949,6 +950,7 @@
     "pkg/version",
     "rest",
     "rest/watch",
+    "testing",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -1026,8 +1028,10 @@
     "pkg/apis/cluster/common",
     "pkg/apis/cluster/v1alpha1",
     "pkg/client/clientset_generated/clientset",
+    "pkg/client/clientset_generated/clientset/fake",
     "pkg/client/clientset_generated/clientset/scheme",
     "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
+    "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1/fake",
     "pkg/client/informers_generated/externalversions",
     "pkg/client/informers_generated/externalversions/cluster",
     "pkg/client/informers_generated/externalversions/cluster/v1alpha1",
@@ -1068,6 +1072,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
+    "k8s.io/apimachinery/pkg/runtime/serializer/json",
     "k8s.io/apimachinery/pkg/util/uuid",
     "k8s.io/apiserver/pkg/util/logs",
     "k8s.io/client-go/kubernetes",
@@ -1081,6 +1086,7 @@
     "sigs.k8s.io/cluster-api/pkg/apis/cluster/common",
     "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1",
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset",
+    "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake",
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/scheme",
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
     "sigs.k8s.io/cluster-api/pkg/clientcmd",
@@ -1088,6 +1094,7 @@
     "sigs.k8s.io/cluster-api/pkg/controller/config",
     "sigs.k8s.io/cluster-api/pkg/controller/machine",
     "sigs.k8s.io/cluster-api/pkg/controller/sharedinformers",
+    "sigs.k8s.io/cluster-api/pkg/util",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

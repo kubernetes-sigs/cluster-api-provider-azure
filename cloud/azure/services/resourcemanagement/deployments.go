@@ -87,7 +87,7 @@ func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.Deploy
 }
 
 func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*map[string]interface{}, error) {
-	startupScript, err := getStartupScript(*machineConfig)
+	startupScript, err := getStartupScript(machine, *machineConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -162,9 +162,9 @@ func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig 
 }
 
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func getStartupScript(machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
+func getStartupScript(machine *clusterv1.Machine, machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
 	if machineConfig.Roles[0] == azureconfigv1.Master {
-		const startupScript = `(
+		startupScript := fmt.Sprintf(`(
 apt-get update
 apt-get install -y docker.io
 apt-get update && apt-get install -y apt-transport-https curl prips
@@ -173,7 +173,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet=1.11.3-00 kubeadm=1.11.3-00 kubectl=1.11.3-00 kubernetes-cni=0.6.0-00
+apt-get install -y kubelet=%v-00 kubeadm=%v-00 kubectl=%v-00 kubernetes-cni=0.6.0-00
 
 CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
 CLUSTER_DNS_DOMAIN="cluster.local"
@@ -216,10 +216,10 @@ cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 
 KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`
+) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane)
 		return startupScript, nil
 	} else if machineConfig.Roles[0] == azureconfigv1.Node {
-		const startupScript = `(
+		startupScript := fmt.Sprintf(`(
 apt-get update
 apt-get install -y docker.io
 apt-get update && apt-get install -y apt-transport-https curl prips
@@ -228,7 +228,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-refactor-azure-clients-2apt-get install -y kubelet kubeadm kubectl
+apt-get install -y kubelet=%v-00 kubeadm=%v-00 kubectl=%v-00
 
 CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
 CLUSTER_DNS_DOMAIN="cluster.local"
@@ -242,7 +242,7 @@ systemctl daemon-reload
 systemctl restart kubelet.service
 
 kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
-) 2>&1 | tee /var/log/startup.log`
+) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.Kubelet, machine.Spec.Versions.Kubelet)
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")

@@ -22,11 +22,13 @@ import (
 )
 
 type MockAzureComputeClient struct {
-	MockVmIfExists               func(resourceGroup string, name string) (*compute.VirtualMachine, error)
-	MockDeleteVM                 func(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
-	MockWaitForVMDeletionFuture  func(future compute.VirtualMachinesDeleteFuture) error
-	MockDeleteManagedDisk        func(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
-	MockWaitForDisksDeleteFuture func(future compute.DisksDeleteFuture) error
+	MockRunCommand                func(resourceGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error)
+	MockVmIfExists                func(resourceGroup string, name string) (*compute.VirtualMachine, error)
+	MockDeleteVM                  func(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
+	MockWaitForVMRunCommandFuture func(future compute.VirtualMachinesRunCommandFuture) error
+	MockWaitForVMDeletionFuture   func(future compute.VirtualMachinesDeleteFuture) error
+	MockDeleteManagedDisk         func(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
+	MockWaitForDisksDeleteFuture  func(future compute.DisksDeleteFuture) error
 }
 
 type MockAzureNetworkClient struct {
@@ -57,6 +59,13 @@ type MockAzureResourceManagementClient struct {
 	MockWaitForDeploymentsCreateOrUpdateFuture func(future resources.DeploymentsCreateOrUpdateFuture) error
 }
 
+func (m *MockAzureComputeClient) RunCommand(resourceGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error) {
+	if m.MockRunCommand == nil {
+		return compute.VirtualMachinesRunCommandFuture{}, nil
+	}
+	return m.MockRunCommand(resourceGroup, name, cmd)
+}
+
 func (m *MockAzureComputeClient) VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
 	if m.MockVmIfExists == nil {
 		return nil, nil
@@ -76,6 +85,13 @@ func (m *MockAzureComputeClient) DeleteManagedDisk(resourceGroup string, name st
 		return compute.DisksDeleteFuture{}, nil
 	}
 	return m.MockDeleteManagedDisk(resourceGroup, name)
+}
+
+func (m *MockAzureComputeClient) WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error {
+	if m.MockWaitForVMRunCommandFuture == nil {
+		return nil
+	}
+	return m.MockWaitForVMRunCommandFuture(future)
 }
 
 func (m *MockAzureComputeClient) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
