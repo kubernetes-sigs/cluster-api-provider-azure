@@ -71,8 +71,8 @@ if [ $OVERWRITE -ne 1 ] && [ -f $ADDON_GENERATED_FILE ]; then
 fi
 
 # If CI, then use the CI service account
-if [[ "${TF_BUILD:+isset}" == "isset" ]]; then
-  echo "Using service principal for CI..."
+if [[ ( "${TF_BUILD:+isset}" == "isset" ) || ( $CREATE_SP = "FALSE" ) ]]; then
+  echo "Skipping creating service principal..."
 else
   command -v az >/dev/null 2>&1 || \
   { echo >&2 "The Azure CLI is required. Please install it to continue."; exit 1; }
