@@ -119,18 +119,20 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 		return fmt.Errorf("error loading goal machine provider config: %v", err)
 	}
 
-	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine))
-	if err != nil || vm == nil {
-		return fmt.Errorf("error checking if vm exists: %v", err)
-	}
-
 	status, err := azure.status(goalMachine)
 	if err != nil {
 		return err
 	}
-
 	currentMachine := (*clusterv1.Machine)(status)
+
 	if currentMachine == nil {
+		vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine))
+		if err != nil || vm == nil {
+			return fmt.Errorf("error checking if vm exists: %v", err)
+		}
+		if vm != nil {
+			return azure.updateAnnotations(cluster, goalMachine)
+		}
 		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, err)
 	}
 	currentMachineConfig, err := machineProviderFromProviderConfig(currentMachine.Spec.ProviderConfig)
@@ -163,7 +165,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 			glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 		}
 	}
-	return azure.updateAnnotations(cluster, goalMachine)
+	return azure.updateStatus(goalMachine)
 }
 
 func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
@@ -186,7 +188,7 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		}
 		err = azure.compute().WaitForVMRunCommandFuture(commandRunFuture)
 		if err != nil {
-			return fmt.Errorf("error waiting for vm run command future: %v", err)
+			return fmt.Errorf("error waiting for upgrade control plane future: %v", err)
 		}
 	}
 
@@ -207,11 +209,10 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		}
 		err = azure.compute().WaitForVMRunCommandFuture(commandRunFuture)
 		if err != nil {
-			return fmt.Errorf("error waiting for vm run command future: %v", err)
+			return fmt.Errorf("error waiting for upgrade kubelet command future: %v", err)
 		}
 	}
 	return nil
-
 }
 
 func (azure *AzureClient) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
