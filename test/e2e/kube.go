@@ -19,7 +19,11 @@ type KubeClient struct {
 }
 
 func NewKubeClient(kubeconfig string) (*KubeClient, error) {
-	kubeClientSet, clusterapiClientset, err := clientcmd.NewClusterApiClientForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
+	kubeClientSet, err := clientcmd.NewCoreClientSetForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
+	if err != nil {
+		return nil, fmt.Errorf("error creating core clientset: %v", err)
+	}
+	clusterapiClientset, err := clientcmd.NewClusterApiClientForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
 	if err != nil {
 		return nil, fmt.Errorf("error creating rest config: %v", err)
 	}
