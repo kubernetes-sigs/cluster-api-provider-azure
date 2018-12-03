@@ -125,6 +125,7 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 		t.Fatalf("expected machine: %v to not exist", machine.ObjectMeta.Name)
 	}
 }
+
 func TestUpdateVMNotExists(t *testing.T) {
 	azureServicesClient := mockVMNotExists()
 	params := MachineActuatorParams{Services: &azureServicesClient}
@@ -133,20 +134,6 @@ func TestUpdateVMNotExists(t *testing.T) {
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
-	actuator, err := NewMachineActuator(params)
-	err = actuator.Update(cluster, machine)
-	if err == nil {
-		t.Fatal("expected error calling Update but got none")
-	}
-}
-
-func TestUpdateMachineNotExists(t *testing.T) {
-	azureServicesClient := mockVMExists()
-	machineConfig := newMachineProviderConfig()
-	machine := newMachine(t, machineConfig)
-	cluster := newCluster(t)
-
-	params := MachineActuatorParams{Services: &azureServicesClient}
 	actuator, err := NewMachineActuator(params)
 	err = actuator.Update(cluster, machine)
 	if err == nil {

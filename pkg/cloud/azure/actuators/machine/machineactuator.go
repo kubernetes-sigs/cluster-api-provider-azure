@@ -130,6 +130,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 		if err != nil || vm == nil {
 			return fmt.Errorf("error checking if vm exists: %v", err)
 		}
+		// update annotations for bootstrap machine
 		if vm != nil {
 			return azure.updateAnnotations(cluster, goalMachine)
 		}
@@ -153,6 +154,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 		if err != nil {
 			return fmt.Errorf("error updating master machine %v in place: %v", currentMachine.ObjectMeta.Name, err)
 		}
+		return azure.updateStatus(goalMachine)
 	} else {
 		// delete and recreate machine for nodes
 		glog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
@@ -165,7 +167,7 @@ func (azure *AzureClient) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 			glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 		}
 	}
-	return azure.updateStatus(goalMachine)
+	return nil
 }
 
 func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
@@ -192,11 +194,13 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		}
 	}
 
-	// update kubelet and kubectl client version
+	// update master and node packages
 	if currentMachine.Spec.Versions.Kubelet != goalMachine.Spec.Versions.Kubelet {
 		nodeName := strings.ToLower(resourcemanagement.GetVMName(goalMachine))
+		// prepare node for maintenance
 		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets;"+
 			"sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
+		// mark the node as schedulable
 		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
 		// update kubectl client version
 		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
