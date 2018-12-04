@@ -192,6 +192,7 @@ PUBLICIP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/netwo
 cat > kubeadm_config.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
+kubernetesVersion: v%v
 api:
   advertiseAddress: ${PUBLICIP}
   bindPort: ${PORT}
@@ -216,7 +217,7 @@ cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 
 KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane)
+) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane)
 		return startupScript, nil
 	} else if machineConfig.Roles[0] == azureconfigv1.Node {
 		startupScript := fmt.Sprintf(`(
