@@ -184,6 +184,10 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 			"sudo chmod a+rx /usr/bin/kubeadm;", goalMachine.Spec.Versions.ControlPlane)
 		cmd += fmt.Sprintf("sudo kubeadm upgrade apply v%s -y;", goalMachine.Spec.Versions.ControlPlane)
 
+		// update kubectl client version
+		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
+			"sudo tee /usr/bin/kubectl > /dev/null;"+
+			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.ControlPlane)
 		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
@@ -202,10 +206,6 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 			"sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
 		// mark the node as schedulable
 		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
-		// update kubectl client version
-		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
-			"sudo tee /usr/bin/kubectl > /dev/null;"+
-			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.Kubelet)
 
 		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
 		if err != nil {
