@@ -11,7 +11,7 @@ COPY vendor/ vendor/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager github.com/platform9/azure-provider/cmd/manager
 
 # Copy the controller-manager into a thin image
-FROM ubuntu:latest
+FROM alpine:3.8
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/platform9/azure-provider/manager .
 COPY --from=builder /go/src/github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement/template/deployment-template.json .
