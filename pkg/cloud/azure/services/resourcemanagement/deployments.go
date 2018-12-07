@@ -173,7 +173,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet=%v-00 kubeadm=%v-00 kubectl=%v-00 kubernetes-cni=0.6.0-00
+apt-get install -y kubelet=%[1]v-00 kubeadm=%[2]v-00 kubectl=%[2]v-00 kubernetes-cni=0.6.0-00
 
 CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
 CLUSTER_DNS_DOMAIN="cluster.local"
@@ -192,7 +192,7 @@ PUBLICIP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/netwo
 cat > kubeadm_config.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
-kubernetesVersion: v%v
+kubernetesVersion: v%[2]v
 api:
   advertiseAddress: ${PUBLICIP}
   bindPort: ${PORT}
@@ -217,7 +217,7 @@ cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 
 KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane, machine.Spec.Versions.ControlPlane)
+) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane)
 		return startupScript, nil
 	} else if machineConfig.Roles[0] == azureconfigv1.Node {
 		startupScript := fmt.Sprintf(`(
@@ -229,7 +229,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet=%v-00 kubeadm=%v-00 kubectl=%v-00
+apt-get install -y kubelet=%[1]v-00 kubeadm=%[1]v-00 kubectl=%[1]v-00
 
 CLUSTER_DNS_SERVER=$(prips "10.96.0.0/12" | head -n 11 | tail -n 1)
 CLUSTER_DNS_DOMAIN="cluster.local"
@@ -243,7 +243,7 @@ systemctl daemon-reload
 systemctl restart kubelet.service
 
 kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
-) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.Kubelet, machine.Spec.Versions.Kubelet)
+) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet)
 		return startupScript, nil
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")
