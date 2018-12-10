@@ -17,7 +17,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -373,6 +372,11 @@ func (azure *AzureClient) Exists(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err != nil {
 		return false, err
 	}
+	_, err = machineProviderFromProviderConfig(machine.Spec.ProviderConfig)
+	if err != nil {
+		return false, fmt.Errorf("error loading machine provider config: %v", err)
+	}
+
 	resp, err := azure.resourcemanagement().CheckGroupExistence(clusterConfig.ResourceGroup)
 	if err != nil {
 		return false, err
@@ -398,7 +402,6 @@ func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.M
 		return "", fmt.Errorf("error getting public ip address: %v", err)
 	}
 	return *publicIP.IPAddress, nil
-
 }
 
 func clusterProviderFromProviderConfig(providerConfig clusterv1.ProviderConfig) (*azureconfigv1.AzureClusterProviderConfig, error) {
@@ -424,12 +427,11 @@ func azureServicesClientOrDefault(params MachineActuatorParams) (*services.Azure
 
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-		log.Fatalf("Failed to get OAuth config: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("Failed to get OAuth config: %v", err)
 	}
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if err != nil {
-		return nil, err
+	if subscriptionID == "" {
+		return nil, fmt.Errorf("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
 	}
 	azureComputeClient := compute.NewService(subscriptionID)
 	azureComputeClient.SetAuthorizer(authorizer)
