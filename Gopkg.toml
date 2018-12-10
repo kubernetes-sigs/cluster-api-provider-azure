@@ -36,6 +36,10 @@ required = [
   name = "sigs.k8s.io/cluster-api"
   revision = "9f86c61769dced58fbc5b148209dccbdb1cf9687"
 
+[[constraint]]
+  name = "github.com/imdario/mergo"
+  version = "0.3.6"
+
 # STANZAS BELOW ARE GENERATED AND MAY BE WRITTEN - DO NOT MODIFY BELOW THIS LINE.
 
 [[constraint]]
