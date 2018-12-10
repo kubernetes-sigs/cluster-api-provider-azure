@@ -1,23 +1,59 @@
-# k8s Cluster API Azure Provider [![Build Status](https://travis-ci.org/platform9/azure-provider.svg?branch=master)](https://travis-ci.org/platform9/azure-provider) [![Go Report Card](https://goreportcard.com/badge/github.com/platform9/azure-provider)](https://goreportcard.com/report/github.com/platform9/azure-provider)
+# Kubernetes Cluster API Azure Provider  [![Build Status](https://dev.azure.com/Cluster-API-Provider-Azure/Cluster-API-Provider-Azure%20Project/_apis/build/status/platform9.azure-provider)](https://dev.azure.com/Cluster-API-Provider-Azure/Cluster-API-Provider-Azure%20Project/_build/latest?definitionId=1)[![Go Report Card](https://goreportcard.com/badge/github.com/platform9/azure-provider)](https://goreportcard.com/report/github.com/platform9/azure-provider)
 
-## Usage
-1. Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-2. Log into the Azure CLI, `az login`
-3. (Optional) Modify the templates found in `configtemplates/` 
-4. Run `generate-yaml.sh`   _Note: `generate-yaml.sh` creates an Azure service principal which will not be deleted automatically._
-5. (Optional) Build a new version of `clusterctl` by running `cd clusterctl && go build && cd ..`
-5. Use the configs generated in `generatedconfigs/` with `clusterctl`
-    * Example: `./clusterctl/clusterctl create cluster --provider azure -m generatedconfigs/machines_no_node.yaml -c generatedconfigs/cluster.yaml -p generatedconfigs/provider-components.yaml`
+## Getting Started
+### Prerequisites
+1. Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+2. Install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and a [minikube driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md). It is recommended to use KVM2 driver for Linux and VirtualBox for MacOS.
+3. Install [kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md).
+4. Build the `clusterctl` tool
 
-## Creating and using controller images
-1. [Install docker](https://docs.docker.com/install/#supported-platforms) and ensure docker works with `docker run hello-world`
-2. Log into docker with `docker login`
-3. Edit `cmd/machine-controller/Makefile` such that `PREFIX` is the logged in user, and `NAME` is the repository you wish to push your images to.
-4. While in `cmd/machine-controller/`, run `make push` to create an image and push it to your Docker Hub repository.
-5. Edit `generatedconfigs/provider-components.yaml` such that the images for `azure-machine-controller` and `azure-cluster-controller` refer to the images you just pushed, e.g. `platform9/cluster-api-azure-machine-controller:0.0.29-dev`
+   ```
+   cd $(go env GOPATH)/src/platform9/azure-provider
+   make clusterctl
+   ```
 
+### Prepare your environment
+An Azure Service Principal is needed for usage by the `clusterctl` tool and for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication). The following environment variables should be set: `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`.
 
-## Testing
-Unit tests can be ran with `make unit_test`, and integration tests can be ran with `make integration_test`. However, keep in mind that the integration tests will take a significant amount of time (> 1 hour) and _**will create resources in Azure**_. The integration tests should clean up the created resources, but do not take this as a guarantee.
-### Integration test notes
-The integration tests require an azure service principal and uses [environment based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
+An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Not that the service prinicpals created by the scripts will not be deleted automatically._
+
+### Usage
+#### Creating a Cluster
+1. Generate the `cluster.yaml`, `machines.yaml`, and `addons.yaml` files, and create the service principal if needed.
+
+   ```
+   cd cmd/clusterctl/examples/azure
+   CREATE_SP=FALSE ./generate-yaml.sh # set to TRUE if creating a new Service Principal is desired
+   cd ../../../..
+   # If CREATE_SP=TRUE
+   source cmd/clusterctl/examples/out/credentials.sh
+   ```
+2. Generate the `provider-components.yaml` file.
+
+   ```
+   kustomize build config/default/ > cmd/clusterctl/examples/azure/out/provider-components.yaml
+   echo "---" >> cmd/clusterctl/examples/azure/out/provider-components.yaml
+   kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> cmd/clusterctl/examples/azure/out/provider-components.yaml
+   ```
+3. Create the cluster. 
+   Kubernetes Version >= 1.11 is required to enable CRD subresources without needing a feature gate.
+
+   ```
+   ./bin/clusterctl create cluster --provider azure \ 
+   -m cmd/clusterctl/examples/azure/out/machines.yaml \
+   -c cmd/clusterctl/examples/azure/out/cluster.yaml \
+   -p cmd/clusterctl/examples/azure/out/provider-components.yaml 
+   \--vm-driver kvm2 --minikube kubernetes-version=v1.12.2
+   ```
+Once the cluster is created succesfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
+
+```
+kubectl --kubeconfig=kubeconfig get clusters
+kubectl --kubeconfig=kubeconfig get machines
+```
+
+### Creating and using controller images
+TODO
+
+### Testing
+TODO

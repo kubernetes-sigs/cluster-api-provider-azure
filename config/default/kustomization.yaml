@@ -1,0 +1,37 @@
+# Adds namespace to all resources.
+namespace: azure-provider-system
+
+# Value of this field is prepended to the
+# names of all resources, e.g. a deployment named
+# "wordpress" becomes "alices-wordpress".
+# Note that it should also match with the prefix (text before '-') of the namespace
+# field above.
+namePrefix: azure-provider-
+
+# Labels to add to all resources and selectors.
+#commonLabels:
+#  someName: someValue
+
+# Each entry in this list must resolve to an existing
+# resource definition in YAML.  These are the resource
+# files that kustomize reads, modifies and emits as a
+# YAML string, with resources separated by document
+# markers ("---").
+resources:
+- ../crds/azureprovider_v1alpha1_azureclusterproviderconfig.yaml
+- ../crds/azureprovider_v1alpha1_azuremachineproviderconfig.yaml
+- ../rbac/rbac_role.yaml
+- ../rbac/rbac_role_binding.yaml
+- ../manager/manager.yaml
+
+patches:
+- manager_image_patch.yaml
+
+secretGenerator:
+- name: azure-controller-secrets
+  commands:
+    subscription-id: "printf $AZURE_SUBSCRIPTION_ID"
+    tenant-id: "printf $AZURE_TENANT_ID"
+    client-id: "printf $AZURE_CLIENT_ID"
+    client-secret: "printf $AZURE_CLIENT_SECRET"
+  type: Opqaue

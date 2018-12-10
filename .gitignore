@@ -1,8 +1,10 @@
 *.test
 .idea/
+bin/
 .env
 exampleconfigs/provider-components.yaml
 minikube.kubeconfig
 generatedconfigs/
 sshkey*
 kubeconfig
+*.out

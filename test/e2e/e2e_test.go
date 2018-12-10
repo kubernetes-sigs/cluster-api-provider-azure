@@ -9,10 +9,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/platform9/azure-provider/cloud/azure/actuators/machine"
-	azureconfigv1 "github.com/platform9/azure-provider/cloud/azure/providerconfig/v1alpha1"
-	"github.com/platform9/azure-provider/cloud/azure/services"
-	"github.com/platform9/azure-provider/cloud/azure/services/resourcemanagement"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
+	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
 )
 
 // do some testing with the K8s go client
@@ -23,9 +22,8 @@ var (
 )
 
 type Clients struct {
-	kube                     KubeClient
-	azure                    services.AzureClients
-	azureProviderConfigCodec *azureconfigv1.AzureProviderConfigCodec
+	kube  KubeClient
+	azure services.AzureClients
 }
 
 func TestMasterMachineCreated(t *testing.T) {
@@ -42,7 +40,7 @@ func TestMasterMachineCreated(t *testing.T) {
 
 	// azure: check if virtual machine exists
 	masterMachine := machineList.Items[0]
-	resourceGroup := masterMachine.ObjectMeta.Annotations[machine.RGAnnotationKey]
+	resourceGroup := masterMachine.ObjectMeta.Annotations[string(machine.ResourceGroup)]
 	vm, err := clients.azure.Compute.VmIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
 	if err != nil {
 		t.Fatalf("error checking if vm exists: %v", err)
@@ -73,10 +71,5 @@ func createTestClients() (*Clients, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create azure services client: %v", err)
 	}
-
-	azureProviderConfigCodec, err := azureconfigv1.NewCodec()
-	if err != nil {
-		return nil, fmt.Errorf("error creating codec for provider: %v", err)
-	}
-	return &Clients{kube: *kubeClient, azure: *azureServicesClient, azureProviderConfigCodec: azureProviderConfigCodec}, nil
+	return &Clients{kube: *kubeClient, azure: *azureServicesClient}, nil
 }
