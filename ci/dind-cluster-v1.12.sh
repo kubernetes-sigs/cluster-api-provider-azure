@@ -1084,7 +1084,7 @@ function dind::kubeadm {
   # Capturing output is necessary to grab flags for 'kubeadm join'
   local -a env=(-e KUBELET_FEATURE_GATES="${KUBELET_FEATURE_GATES}"
                 -e DIND_CRI="${DIND_CRI}")
-  if ! docker exec "${env[@]}" "${container_id}" /usr/local/bin/wrapkubeadm "$@" 2>&1 | tee /dev/fd/2; then
+  if ! docker exec "${env[@]}" "${container_id}" /usr/local/bin/wrapkubeadm "$@" 2>&1 | tee >(cat 1>&2); then
     echo "*** kubeadm failed" >&2
     return 1
   fi
