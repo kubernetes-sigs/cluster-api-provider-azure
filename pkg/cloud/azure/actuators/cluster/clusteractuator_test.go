@@ -13,20 +13,17 @@ limitations under the License.
 package cluster
 
 import (
-	"errors"
-	"net/http"
+	"os"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/imdario/mergo"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
+	"github.com/ghodss/yaml"
 	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
-	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -40,20 +37,82 @@ func TestActuatorCreateSuccess(t *testing.T) {
 	}
 }
 
+func TestActuatorCreateFailure(t *testing.T) {
+	if err := os.Setenv("AZURE_ENVIRONMENT", "dummy"); err != nil {
+		t.Fatalf("error when setting AZURE_ENVIRONMENT environment variable")
+	}
+	_, err := NewClusterActuator(ClusterActuatorParams{})
+	if err == nil {
+		t.Fatalf("expected error when creating the cluster actuator but gone none")
+	}
+	os.Unsetenv("AZURE_ENVIRONMENT")
+}
+
 func TestNewAzureClientParamsPassed(t *testing.T) {
-	azureServicesClient := services.AzureClients{Network: &services.MockAzureNetworkClient{}}
+	azureServicesClient := services.AzureClients{Compute: &services.MockAzureComputeClient{}}
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	client, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		t.Fatalf("unable to create azure services client: %v", err)
 	}
+	// ensures that the passed azure services client is the one used
+	if client.Compute == nil {
+		t.Fatal("expected compute client to not be nil")
+	}
+	if client.Network != nil {
+		t.Fatal("expected network client to be nil")
+	}
+	if client.Resourcemanagement != nil {
+		t.Fatal("expected resource management client to be nil")
+	}
+}
+
+func TestNewAzureClientNoParamsPassed(t *testing.T) {
+	if err := os.Setenv("AZURE_SUBSCRIPTION_ID", "dummy"); err != nil {
+		t.Fatalf("error when setting AZURE_SUBSCRIPTION_ID environment variable")
+	}
+	client, err := azureServicesClientOrDefault(ClusterActuatorParams{})
+	if err != nil {
+		t.Fatalf("unable to create azure services client: %v", err)
+	}
+	// cluster actuator doesn't utilize compute client
 	if client.Compute != nil {
-		t.Fatal("expected azure services client to be nil")
+		t.Fatal("expected compute client to be nil")
+	}
+	// clients should be initialized
+	if client.Resourcemanagement == nil {
+		t.Fatal("expected resource management client to not be nil")
+	}
+	if client.Network == nil {
+		t.Fatal("expected network client to not be nil")
+	}
+	os.Unsetenv("AZURE_SUBSCRIPTION_ID")
+}
+
+func TestNewAzureClientAuthorizerFailure(t *testing.T) {
+	if err := os.Setenv("AZURE_ENVIRONMENT", "dummy"); err != nil {
+		t.Fatalf("error when setting environment variable")
+	}
+	_, err := azureServicesClientOrDefault(ClusterActuatorParams{})
+	if err == nil {
+		t.Fatalf("expected error when creating the azure services client but got none")
+	}
+	os.Unsetenv("AZURE_ENVIRONMENT")
+}
+
+func TestNewAzureClientSubscriptionFailure(t *testing.T) {
+	_, err := azureServicesClientOrDefault(ClusterActuatorParams{})
+	if err == nil {
+		t.Fatalf("expected error when creating the azure services client but got none")
 	}
 }
 
 func TestReconcileSuccess(t *testing.T) {
-	azureServicesClient := mockReconcileSuccess()
+	networkMock := services.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateSuccess())
+	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateSuccess())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -66,8 +125,29 @@ func TestReconcileSuccess(t *testing.T) {
 		t.Fatalf("unexpected error calling Reconcile: %v", err)
 	}
 }
-func TestReconcileFailureNG(t *testing.T) {
-	azureServicesClient := mockReconcileFailureNG()
+
+func TestReconcileFailureParsing(t *testing.T) {
+	cluster := newCluster(t)
+	actuator, err := NewClusterActuator(ClusterActuatorParams{Services: &services.AzureClients{}})
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	bytes, err := yaml.Marshal("dummy")
+	if err != nil {
+		t.Fatalf("error while marshalling yaml")
+	}
+	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+
+	err = actuator.Reconcile(cluster)
+	if err == nil {
+		t.Fatal("expected error when calling Reconcile but got none")
+	}
+}
+func TestReconcileFailureRGCreation(t *testing.T) {
+	resourceManagementMock := services.MockAzureResourceManagementClient{}
+	mergo.Merge(&resourceManagementMock, services.MockRgCreateOrUpdateFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
+
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -77,11 +157,15 @@ func TestReconcileFailureNG(t *testing.T) {
 	}
 	err = actuator.Reconcile(cluster)
 	if err == nil {
-		t.Fatalf("expected error, but got none")
+		t.Fatalf("expected error when reconciling cluster, but got none")
 	}
 }
-func TestReconcileFailureVnet(t *testing.T) {
-	azureServicesClient := mockReconcileFailureVnet()
+
+func TestReconcileFailureNSGCreation(t *testing.T) {
+	networkMock := services.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -91,11 +175,16 @@ func TestReconcileFailureVnet(t *testing.T) {
 	}
 	err = actuator.Reconcile(cluster)
 	if err == nil {
-		t.Fatalf("expected error, but got none")
+		t.Fatalf("expected error when reconciling cluster, but got none")
 	}
 }
-func TestReconcileFailureRG(t *testing.T) {
-	azureServicesClient := mockReconcileFailureRG()
+
+func TestReconcileFailureNSGFutureError(t *testing.T) {
+	networkMock := services.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateSuccess())
+	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateFutureFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -105,11 +194,55 @@ func TestReconcileFailureRG(t *testing.T) {
 	}
 	err = actuator.Reconcile(cluster)
 	if err == nil {
-		t.Fatalf("expected error, but got none")
+		t.Fatalf("expected error when reconciling cluster, but got none")
 	}
 }
+
+func TestReconcileFailureVnetCreation(t *testing.T) {
+	networkMock := services.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateSuccess())
+	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = actuator.Reconcile(cluster)
+	if err == nil {
+		t.Fatalf("expected error when , but got none")
+	}
+}
+
+func TestReconcileFailureVnetFutureError(t *testing.T) {
+	networkMock := services.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateSuccess())
+	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateSuccess())
+	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateFutureFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	err = actuator.Reconcile(cluster)
+	if err == nil {
+		t.Fatalf("expected error when reconciling cluster, but got none")
+	}
+}
+
 func TestDeleteSuccess(t *testing.T) {
-	azureServicesClient := mockDeleteRGExists()
+	resourceManagementMock := services.MockAzureResourceManagementClient{}
+	mergo.Merge(&resourceManagementMock, services.MockRgExists())
+	mergo.Merge(&resourceManagementMock, services.MockRgDeleteSuccess())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
+
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -122,9 +255,31 @@ func TestDeleteSuccess(t *testing.T) {
 		t.Fatalf("unexpected error calling Delete: %v", err)
 	}
 }
+func TestDeleteFailureParsing(t *testing.T) {
+	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &services.MockAzureNetworkClient{}}
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
 
-func TestDeleteFailureSGNotExists(t *testing.T) {
-	azureServicesClient := mockDeleteRGNotExists()
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
+	}
+	bytes, err := yaml.Marshal("dummy")
+	if err != nil {
+		t.Fatalf("error while marshalling yaml")
+	}
+	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+
+	err = actuator.Delete(cluster)
+	if err == nil {
+		t.Fatal("expected error when calling Delete but got none")
+	}
+}
+func TestDeleteFailureRGNotExists(t *testing.T) {
+	resourceManagementMock := services.MockAzureResourceManagementClient{}
+	mergo.Merge(&resourceManagementMock, services.MockRgNotExists())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
+
 	params := ClusterActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
@@ -134,71 +289,78 @@ func TestDeleteFailureSGNotExists(t *testing.T) {
 	}
 	err = actuator.Delete(cluster)
 	if err == nil {
-		t.Fatalf("expected error, but got none")
+		t.Fatalf("expected error when deleting cluster, but got none")
 	}
 }
 
-func mockReconcileSuccess() services.AzureClients {
-	networkMock := services.MockAzureNetworkClient{
-		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
-			return &network.SecurityGroupsCreateOrUpdateFuture{}, nil
-		},
-		MockCreateOrUpdateVnet: func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
-			return &network.VirtualNetworksCreateOrUpdateFuture{}, nil
-		},
+func TestDeleteFailureRGCheckFailure(t *testing.T) {
+	resourceManagementMock := services.MockAzureResourceManagementClient{}
+	mergo.Merge(&resourceManagementMock, services.MockRgCheckFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
+
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
 	}
-	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+	err = actuator.Delete(cluster)
+	if err == nil {
+		t.Fatalf("expected error when deleting cluster, but got none")
+	}
 }
 
-func mockReconcileFailureNG() services.AzureClients {
-	networkMock := services.MockAzureNetworkClient{
-		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
-			return nil, errors.New("failed to create resource")
-		},
+func TestDeleteFailureRGDeleteFailure(t *testing.T) {
+	resourceManagementMock := services.MockAzureResourceManagementClient{}
+	mergo.Merge(&resourceManagementMock, services.MockRgExists())
+	mergo.Merge(&resourceManagementMock, services.MockRgDeleteFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
+
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
 	}
-	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+	err = actuator.Delete(cluster)
+	if err == nil {
+		t.Fatalf("expected error when deleting cluster, but got none")
+	}
 }
 
-func mockReconcileFailureVnet() services.AzureClients {
-	networkMock := services.MockAzureNetworkClient{
-		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
-			return &network.SecurityGroupsCreateOrUpdateFuture{}, nil
-		},
-		MockCreateOrUpdateVnet: func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
-			return nil, errors.New("failed to create resource")
-		},
+func TestDeleteFailureRGDeleteFutureFailure(t *testing.T) {
+	resourceManagementMock := services.MockAzureResourceManagementClient{}
+	mergo.Merge(&resourceManagementMock, services.MockRgExists())
+	mergo.Merge(&resourceManagementMock, services.MockRgDeleteFutureFailure())
+	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
+
+	params := ClusterActuatorParams{Services: &azureServicesClient}
+	cluster := newCluster(t)
+
+	actuator, err := NewClusterActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create cluster actuator: %v", err)
 	}
-	return services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
+	err = actuator.Delete(cluster)
+	if err == nil {
+		t.Fatalf("expected error when deleting cluster, but got none")
+	}
 }
 
-func mockReconcileFailureRG() services.AzureClients {
-	resourcemanagementMock := services.MockAzureResourceManagementClient{
-		MockCreateOrUpdateGroup: func(resourceGroupName string, location string) (resources.Group, error) {
-			return resources.Group{}, errors.New("failed to create resource")
-		},
+func TestClusterProviderFromProviderConfigParsingError(t *testing.T) {
+	bytes, err := yaml.Marshal("dummy")
+	if err != nil {
+		t.Fatalf("error while marshalling yaml")
 	}
-	return services.AzureClients{Resourcemanagement: &resourcemanagementMock, Network: &services.MockAzureNetworkClient{}}
-}
-
-func mockDeleteRGExists() services.AzureClients {
-	resourcemanagementMock := services.MockAzureResourceManagementClient{
-		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
-			return autorest.Response{Response: &http.Response{StatusCode: 200}}, nil
-		},
-		MockDeleteGroup: func(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
-			return resources.GroupsDeleteFuture{}, nil
-		},
+	providerConfig := &clusterv1.ProviderConfig{
+		Value: &runtime.RawExtension{Raw: bytes},
 	}
-	return services.AzureClients{Resourcemanagement: &resourcemanagementMock}
-}
-
-func mockDeleteRGNotExists() services.AzureClients {
-	resourcemanagementMock := services.MockAzureResourceManagementClient{
-		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
-			return autorest.Response{Response: &http.Response{StatusCode: 404}}, nil
-		},
+	_, err = clusterProviderFromProviderConfig(*providerConfig)
+	if err == nil {
+		t.Fatalf("expected error when parsing provider config, but got none")
 	}
-	return services.AzureClients{Resourcemanagement: &resourcemanagementMock}
 }
 
 func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
