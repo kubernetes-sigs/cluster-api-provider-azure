@@ -33,8 +33,6 @@ steps:
 - script: |
     echo "Installing kubectl..."     
     sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(KubernetesVersion)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
-    echo "Installing kubeadm-dind..."
-    sudo curl -L https://raw.githubusercontent.com/marwanad/kubeadm-dind-cluster/fix-stderr-tee/fixed/dind-cluster-v$(KubeadmDindVersion).sh -o dind-cluster.sh && sudo chmod +x dind-cluster.sh
     echo "Installing kustomize..."
     sudo curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/v$(KustomizeVersion)/kustomize_$(KustomizeVersion)_linux_amd64 -o /usr/local/bin/kustomize && sudo chmod +x /usr/local/bin/kustomize
   displayName: 'Prepare dependencies'
@@ -43,10 +41,11 @@ steps:
     # fix kube-dns issues
     sudo mount --make-rshared /
     # start dind-cluster
-    ./dind-cluster.sh up   
+    ci/dind-cluster-v$(KubeadmDindVersion).sh up   
     echo "Validating kubectl configuration..."
     kubectl cluster-info
   displayName: 'Start kubeadm-dind'
+  workingDirectory: '$(modulePath)'
 
 - script: |
     echo "Building Docker images for cluster-api-azure-provider-controller"
