@@ -15,7 +15,6 @@ package cluster
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -118,12 +117,11 @@ func azureServicesClientOrDefault(params ClusterActuatorParams) (*services.Azure
 
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-		log.Fatalf("Failed to get OAuth config: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("Failed to get OAuth config: %v", err)
 	}
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if err != nil {
-		return nil, err
+	if subscriptionID == "" {
+		return nil, fmt.Errorf("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
 	}
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)
