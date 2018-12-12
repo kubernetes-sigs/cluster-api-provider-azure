@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 ROOT_DIR=$1
 # line in the cluster config file with the resource group name
 RG_LINE=16
