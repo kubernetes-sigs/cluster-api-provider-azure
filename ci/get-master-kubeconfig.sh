@@ -6,9 +6,9 @@ RG_LINE=16
 
 echo "Adding keys to agent"
 eval `ssh-agent -s`
-ssh-add $ROOT_DIR/generatedconfigs/sshkey
+ssh-add $ROOT_DIR/cmd/clusterctl/examples/azure/out/sshkey
 
-rgName=$(cut -d ":" -f 2 <<<$(head -$RG_LINE $ROOT_DIR/generatedconfigs/cluster.yaml | tail -1) | tr -d '"')
+rgName=$(cut -d ":" -f 2 <<<$(head -$RG_LINE $ROOT_DIR/cmd/clusterctl/examples/azure/out/cluster.yaml | tail -1) | tr -d '"')
 
 # get the master node ip address
 echo "Looking for master VM in resource group: $rgName"
