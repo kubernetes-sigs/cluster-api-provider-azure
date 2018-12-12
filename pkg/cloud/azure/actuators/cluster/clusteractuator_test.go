@@ -43,7 +43,7 @@ func TestActuatorCreateFailure(t *testing.T) {
 	}
 	_, err := NewClusterActuator(ClusterActuatorParams{})
 	if err == nil {
-		t.Fatalf("expected error when creating the cluster actuator but gone none")
+		t.Fatalf("expected error when creating the cluster actuator but got none")
 	}
 	os.Unsetenv("AZURE_ENVIRONMENT")
 }
@@ -213,7 +213,7 @@ func TestReconcileFailureVnetCreation(t *testing.T) {
 	}
 	err = actuator.Reconcile(cluster)
 	if err == nil {
-		t.Fatalf("expected error when , but got none")
+		t.Fatalf("expected error when reconciling cluster, but got none")
 	}
 }
 
