@@ -69,7 +69,6 @@ type AzureResourceManagementClient interface {
 	WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error
 
 	// Deployment Operations
-	GetDeployment(resourceGroupName string, deploymentName string) (result resources.DeploymentExtended, err error)
 	CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error)
 	GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error)
 	ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) error
