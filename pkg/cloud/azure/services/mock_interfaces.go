@@ -82,7 +82,7 @@ func (m *MockAzureComputeClient) DeleteVM(resourceGroup string, name string) (co
 }
 
 func (m *MockAzureComputeClient) DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
-	if m.MockDeleteVM == nil {
+	if m.MockDeleteManagedDisk == nil {
 		return compute.DisksDeleteFuture{}, nil
 	}
 	return m.MockDeleteManagedDisk(resourceGroup, name)
@@ -96,14 +96,14 @@ func (m *MockAzureComputeClient) WaitForVMRunCommandFuture(future compute.Virtua
 }
 
 func (m *MockAzureComputeClient) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
-	if m.MockDeleteVM == nil {
+	if m.MockWaitForVMDeletionFuture == nil {
 		return nil
 	}
 	return m.MockWaitForVMDeletionFuture(future)
 }
 
 func (m *MockAzureComputeClient) WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error {
-	if m.MockDeleteVM == nil {
+	if m.MockWaitForDisksDeleteFuture == nil {
 		return nil
 	}
 	return m.MockWaitForDisksDeleteFuture(future)
@@ -131,7 +131,7 @@ func (m *MockAzureNetworkClient) GetPublicIpAddress(resourceGroup string, IPName
 }
 
 func (m *MockAzureNetworkClient) DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
-	if m.MockDeleteNetworkInterface == nil {
+	if m.MockDeletePublicIpAddress == nil {
 		return network.PublicIPAddressesDeleteFuture{}, nil
 	}
 	return m.MockDeletePublicIpAddress(resourceGroup, IPName)
