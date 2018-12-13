@@ -48,7 +48,6 @@ type MockAzureNetworkClient struct {
 }
 
 type MockAzureResourceManagementClient struct {
-	MockGetDeployment             func(resourceGroupName string, deploymentName string) (result resources.DeploymentExtended, err error)
 	MockCreateOrUpdateGroup       func(resourceGroupName string, location string) (resources.Group, error)
 	MockDeleteGroup               func(resourceGroupName string) (resources.GroupsDeleteFuture, error)
 	MockCheckGroupExistence       func(rgName string) (autorest.Response, error)
@@ -205,13 +204,6 @@ func (m *MockAzureResourceManagementClient) WaitForGroupsDeleteFuture(future res
 		return nil
 	}
 	return m.MockWaitForGroupsDeleteFuture(future)
-}
-
-func (m *MockAzureResourceManagementClient) GetDeployment(resourceGroupName string, deploymentName string) (resources.DeploymentExtended, error) {
-	if m.MockGetDeployment == nil {
-		return resources.DeploymentExtended{}, nil
-	}
-	return m.MockGetDeployment(resourceGroupName, deploymentName)
 }
 
 func (m *MockAzureResourceManagementClient) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
