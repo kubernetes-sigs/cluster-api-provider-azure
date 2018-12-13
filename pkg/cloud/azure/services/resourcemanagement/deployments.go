@@ -30,6 +30,10 @@ const (
 	templateFile = "deployment-template.json"
 )
 
+func (s *Service) GetDeployment(resourceGroupName string, deploymentName string) (resources.DeploymentExtended, error) {
+	return s.DeploymentsClient.Get(s.ctx, resourceGroupName, deploymentName)
+}
+
 func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
@@ -54,6 +58,7 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 	}
 	return &deploymentFuture, nil
 }
+
 func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) error {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)

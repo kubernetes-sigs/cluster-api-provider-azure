@@ -57,3 +57,8 @@ func (kc *KubeClient) ListMachine(namespace string, options metav1.ListOptions) 
 	machine, err := kc.ClusterV1Client.Machines(namespace).List(options)
 	return machine, err
 }
+
+func (kc *KubeClient) CreateMachine(namespace string, machine *v1alpha1.Machine) (*v1alpha1.Machine, error) {
+	machine, err := kc.ClusterV1Client.Machines(namespace).Create(machine)
+	return machine, err
+}
