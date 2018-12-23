@@ -16,7 +16,7 @@ limitations under the License.
 package apis
 
 import (
-	"github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
+	"github.com/platform9/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
 
 func init() {

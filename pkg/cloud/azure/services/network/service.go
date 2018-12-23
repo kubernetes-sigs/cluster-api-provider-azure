@@ -33,7 +33,7 @@ func NewService(subscriptionId string) *Service {
 		PublicIPAddressesClient: network.NewPublicIPAddressesClient(subscriptionId),
 		SecurityGroupsClient:    network.NewSecurityGroupsClient(subscriptionId),
 		VirtualNetworksClient:   network.NewVirtualNetworksClient(subscriptionId),
-		ctx:                     context.Background(),
+		ctx: context.Background(),
 	}
 }
 

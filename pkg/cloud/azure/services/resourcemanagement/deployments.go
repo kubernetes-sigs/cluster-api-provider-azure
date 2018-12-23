@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
+	azureconfigv1 "github.com/platform9/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"github.com/platform9/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
@@ -190,19 +190,32 @@ PORT=6443
 PUBLICIP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2017-08-01&format=text")
 # Set up kubeadm config file to pass parameters to kubeadm init.
 cat > kubeadm_config.yaml <<EOF
-apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
-kubernetesVersion: v%[2]v
-api:
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: InitConfiguration
+localAPIEndpoint:
   advertiseAddress: ${PUBLICIP}
   bindPort: ${PORT}
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+kubernetesVersion: v%[2]v
+certificatesDir: /etc/kubernetes/pki
+controlPlaneEndpoint: ""
+controllerManager:
+  extraArgs:
+    allocate-node-cidrs: "true"
+    cluster-cidr: 192.168.0.0/16
+    service-cluster-ip-range: 10.96.0.0/12
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
 networking:
-  serviceSubnet: "10.96.0.0/12"
-token: "testtoken"
-controllerManagerExtraArgs:
-  cluster-cidr: "192.168.0.0/16"
-  service-cluster-ip-range: "10.96.0.0/12"
-  allocate-node-cidrs: "true"
+  dnsDomain: cluster.local
+  podSubnet: ""
+  serviceSubnet: 10.96.0.0/12
 EOF
 
 # Create and set bridge-nf-call-iptables to 1 to pass the kubeadm preflight check.

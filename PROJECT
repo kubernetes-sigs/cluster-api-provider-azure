@@ -1,3 +1,3 @@
 version: "1"
 domain: k8s.io
-repo: github.com/platform9/azure-provider
+repo: github.com/platform9/cluster-api-provider-azure

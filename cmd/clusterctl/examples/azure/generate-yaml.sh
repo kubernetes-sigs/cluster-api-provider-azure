@@ -96,7 +96,7 @@ else
   printf "AZURE_TENANT_ID=%s\n" "$TENANT_ID" >> "$CREDENTIALS_FILE"
 fi
 
-LOCATION="westus2"
+LOCATION="${LOCATION:-westus2}"
 
 mkdir -p ${OUTPUT_DIR}
 

@@ -2,10 +2,10 @@ package e2e
 
 import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/compute"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
+	"github.com/platform9/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"github.com/platform9/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
+	"github.com/platform9/cluster-api-provider-azure/pkg/cloud/azure/services/network"
+	"github.com/platform9/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
 )
 
 func NewAzureServicesClient(subscriptionID string) (*services.AzureClients, error) {

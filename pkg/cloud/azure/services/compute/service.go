@@ -29,7 +29,7 @@ func NewService(subscriptionId string) *Service {
 	return &Service{
 		DisksClient:           compute.NewDisksClient(subscriptionId),
 		VirtualMachinesClient: compute.NewVirtualMachinesClient(subscriptionId),
-		ctx:                   context.Background(),
+		ctx: context.Background(),
 	}
 }
 
