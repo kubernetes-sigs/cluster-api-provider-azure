@@ -36,6 +36,7 @@ type AzureMachineProviderSpec struct {
 	SSHPublicKey  string        `json:"sshPublicKey"`
 	SSHPrivateKey string        `json:"sshPrivateKey"`
 }
+
 type MachineRole string
 
 const (

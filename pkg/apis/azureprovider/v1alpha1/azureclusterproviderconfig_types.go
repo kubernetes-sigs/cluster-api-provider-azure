@@ -30,6 +30,12 @@ type AzureClusterProviderSpec struct {
 
 	ResourceGroup string `json:"resourceGroup"`
 	Location      string `json:"location"`
+
+	// CACertificate is a PEM encoded CA Certificate for the control plane nodes.
+	CACertificate []byte `json:"caCertificate,omitempty"`
+
+	// CAPrivateKey is a PEM encoded PKCS1 CA PrivateKey for the control plane nodes.
+	CAPrivateKey []byte `json:"caKey,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

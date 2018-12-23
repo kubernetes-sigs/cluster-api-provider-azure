@@ -1,9 +1,12 @@
 /*
 Copyright 2018 The Kubernetes Authors.
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,16 +16,75 @@ limitations under the License.
 
 package services
 
+/*
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-10-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-// AzureClients represents the interface for all azure services clients
+//"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+
+// Getter is a unified interfaces that includes all the getters.
+type Getter interface {
+	SDKSessionGetter
+	EC2Getter
+	ELBGetter
+}
+
+// SDKSessionGetter has a single method that returns an Azure session.
+type SDKSessionGetter interface {
+	Session(*providerv1.AzureClusterProviderSpec) *session.Session
+}
+
+// EC2Getter has a single method that returns an EC2 service interface.
+type EC2Getter interface {
+	EC2(*session.Session) EC2Interface
+}
+
+// ELBGetter has a single method that returns an ELB service interface.
+type ELBGetter interface {
+	ELB(*session.Session) ELBInterface
+}
+
+// EC2Interface encapsulates the methods exposed by the ec2 service.
+type EC2Interface interface {
+	EC2ClusterInterface
+	EC2MachineInterface
+}
+
+// EC2ClusterInterface encapsulates the methods exposed to the cluster
+// actuator
+type EC2ClusterInterface interface {
+	ReconcileNetwork() error
+	ReconcileBastion() error
+	DeleteNetwork() error
+	DeleteBastion() error
+}
+
+// EC2MachineInterface encapsulates the methods exposed to the machine
+// actuator
+type EC2MachineInterface interface {
+	InstanceIfExists(id string) (*providerv1.Instance, error)
+	TerminateInstance(id string) error
+	CreateOrGetMachine(machine *actuators.MachineScope, token string) (*providerv1.Instance, error)
+	UpdateInstanceSecurityGroups(id string, securityGroups []string) error
+	UpdateResourceTags(resourceID *string, create map[string]string, remove map[string]string) error
+}
+
+// ELBInterface encapsulates the methods exposed by the elb service.
+type ELBInterface interface {
+	ReconcileLoadbalancers() error
+	DeleteLoadbalancers() error
+	RegisterInstanceWithAPIServerELB(vmId string) error
+	GetAPIServerDNSName() (string, error)
+}
+
+
+// interface for all azure services clients
 type AzureClients struct {
 	Compute            AzureComputeClient
 	Network            AzureNetworkClient
@@ -78,3 +140,4 @@ type AzureResourceManagementClient interface {
 	ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error
 	WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error
 }
+*/

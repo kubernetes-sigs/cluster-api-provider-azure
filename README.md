@@ -24,42 +24,48 @@ An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/az
 ### Usage
 
 #### Creating a Cluster
-1. Generate the `cluster.yaml`, `machines.yaml`, and `addons.yaml` files, and create the service principal if needed.
+1. Specify a cluster prefix and create a directory for cluster assets.
 
-   ```
-   cd cmd/clusterctl/examples/azure
-   CREATE_SP=FALSE ./generate-yaml.sh # set to TRUE if creating a new Service Principal is desired
-   cd ../../../..
-   # If CREATE_SP=TRUE
-   source cmd/clusterctl/examples/azure/out/credentials.sh
-   ```
-2. Generate the `provider-components.yaml` file.
+    ```
+    export HUMAN_FRIENDLY_CLUSTER_NAME="newcluster"
+    mkdir -p clusters/${HUMAN_FRIENDLY_CLUSTER_NAME}
+    export OUTPUT_DIR="$(pwd)/clusters/${HUMAN_FRIENDLY_CLUSTER_NAME}"
+    ```
+2. Generate the `cluster.yaml`, `machines.yaml`, and `addons.yaml` files, and create the service principal if needed.
 
-   ```
-   kustomize build config/default/ > cmd/clusterctl/examples/azure/out/provider-components.yaml
-   echo "---" >> cmd/clusterctl/examples/azure/out/provider-components.yaml
-   kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> cmd/clusterctl/examples/azure/out/provider-components.yaml
-   ```
-3. Create the cluster. 
+    ```
+    cd cmd/clusterctl/examples/azure
+    CREATE_SP=FALSE LOCATION=eastus ./generate-yaml.sh # set to TRUE if creating a new Service Principal is desired
+    cd ../../../..
+    # If CREATE_SP=TRUE
+    source cmd/clusterctl/examples/out/credentials.sh
+    ```
+3. Generate the `provider-components.yaml` file.
+
+    ```
+    kustomize build config/default/ > ${OUTPUT_DIR}/provider-components.yaml
+    echo "---" >> ${OUTPUT_DIR}/provider-components.yaml
+    kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> ${OUTPUT_DIR}/provider-components.yaml
+    ```
+4. Create the cluster.
    Kubernetes Version >= 1.11 is required to enable CRD subresources without needing a feature gate.
-
 
     **Linux**
     ```bash
     ./bin/clusterctl create cluster --provider azure \
-    -m cmd/clusterctl/examples/azure/out/machines.yaml \
-    -c cmd/clusterctl/examples/azure/out/cluster.yaml \
-    -p cmd/clusterctl/examples/azure/out/provider-components.yaml \
-    --vm-driver kvm2 --minikube kubernetes-version=v1.12.2
+    -m ${OUTPUT_DIR}/machines.yaml \
+    -c ${OUTPUT_DIR}/cluster.yaml \
+    -p ${OUTPUT_DIR}/provider-components.yaml \
+    --vm-driver kvm2 --minikube kubernetes-version=v1.13.1
     ```
 
     **macOS** 
     ```bash
    ./bin/clusterctl create cluster --provider azure \
-   -m cmd/clusterctl/examples/azure/out/machines.yaml \
-   -c cmd/clusterctl/examples/azure/out/cluster.yaml \
-   -p cmd/clusterctl/examples/azure/out/provider-components.yaml \
-   --vm-driver virtualbox --minikube kubernetes-version=v1.12.2
+   -m ${OUTPUT_DIR}/machines.yaml \
+   -c ${OUTPUT_DIR}/cluster.yaml \
+   -p ${OUTPUT_DIR}/provider-components.yaml \
+   --vm-driver virtualbox --minikube kubernetes-version=v1.13.1
    ```
 Once the cluster is created succesfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
 

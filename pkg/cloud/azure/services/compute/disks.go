@@ -13,16 +13,18 @@ limitations under the License.
 
 package compute
 
+/*
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 )
 
 // DeleteManagedDisk deletes a managed disk resource.
 func (s *Service) DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
-	return s.DisksClient.Delete(s.ctx, resourceGroup, name)
+	return s.scope.Disks.Delete(s.ctx, resourceGroup, name)
 }
 
 // WaitForDisksDeleteFuture returns when the DeleteManagedDisk operation completes.
 func (s *Service) WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.DisksClient.Client)
 }
+*/

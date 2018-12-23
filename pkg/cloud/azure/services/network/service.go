@@ -1,9 +1,12 @@
 /*
 Copyright 2018 The Kubernetes Authors.
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,9 +17,29 @@ limitations under the License.
 package network
 
 import (
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+)
+
+// Service holds a collection of interfaces.
+// The interfaces are broken down like this to group functions together.
+// One alternative is to have a large list of functions from the ec2 client.
+type Service struct {
+	scope *actuators.Scope
+}
+
+// NewService returns a new service given the api clients.
+func NewService(scope *actuators.Scope) *Service {
+	return &Service{
+		scope: scope,
+	}
+}
+
+// TODO: Remove this once scope code is in.
+/*
+import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-10-01/network"
 	"github.com/Azure/go-autorest/autorest"
 )
 
@@ -47,3 +70,4 @@ func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
 	s.SecurityGroupsClient.BaseClient.Client.Authorizer = authorizer
 	s.VirtualNetworksClient.BaseClient.Client.Authorizer = authorizer
 }
+*/

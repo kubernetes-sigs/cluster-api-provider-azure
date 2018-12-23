@@ -13,14 +13,15 @@ limitations under the License.
 
 package services
 
+/*
 import (
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-10-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
@@ -303,7 +304,7 @@ func MockRgDeleteFutureFailure() MockAzureResourceManagementClient {
 // MockDeploymentCreateOrUpdateSuccess mocks the DeploymentCreateOrUpdate success response.
 func MockDeploymentCreateOrUpdateSuccess() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 			return &resources.DeploymentsCreateOrUpdateFuture{}, nil
 		},
 	}
@@ -312,7 +313,7 @@ func MockDeploymentCreateOrUpdateSuccess() MockAzureResourceManagementClient {
 // MockDeploymentCreateOrUpdateFailure mocks the DeploymentCreateOrUpdate failure response.
 func MockDeploymentCreateOrUpdateFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 			return nil, errors.New("failed to create resource")
 		},
 	}
@@ -348,8 +349,9 @@ func MockDeloymentGetResultFailure() MockAzureResourceManagementClient {
 // MockDeploymentValidate mocks the DeploymentValidate error response.
 func MockDeploymentValidate() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockValidateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
+		MockValidateDeployment: func(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) error {
 			return errors.New("error validating deployment")
 		},
 	}
 }
+*/

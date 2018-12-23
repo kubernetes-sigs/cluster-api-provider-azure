@@ -11,7 +11,11 @@ spec:
         serviceDomain: "cluster.local"
     providerSpec:
       value:
+<<<<<<< HEAD
         apiVersion: "azureproviderspec/v1alpha1"
+=======
+        apiVersion: "azureproviderconfig/v1alpha1"
+>>>>>>> Fixes to cluster-api-provider-azure
         kind: "AzureClusterProviderSpec"
         resourceGroup: "ClusterAPI-test-CI-rg-exists"
         location: "eastus"

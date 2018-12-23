@@ -9,7 +9,11 @@ items:
   spec:
     providerSpec:
       value:
+<<<<<<< HEAD
         apiVersion: "azureproviderspec/v1alpha1"
+=======
+        apiVersion: "azureproviderconfig/v1alpha1"
+>>>>>>> Fixes to cluster-api-provider-azure
         kind: "AzureMachineProviderSpec"
         roles:
         - Master

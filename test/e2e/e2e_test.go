@@ -11,7 +11,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 )
 
 // do some testing with the K8s go client
@@ -44,7 +44,7 @@ func TestMasterMachineCreated(t *testing.T) {
 	// azure: check if virtual machine exists
 	masterMachine := machineList.Items[0]
 	resourceGroup := masterMachine.ObjectMeta.Annotations[string(machine.ResourceGroup)]
-	vm, err := clients.azure.Compute.VMIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
+	vm, err := clients.azure.Compute.VMIfExists(resourceGroup, resources.GetVMName(&masterMachine))
 	if err != nil {
 		t.Fatalf("error checking if vm exists: %v", err)
 	}

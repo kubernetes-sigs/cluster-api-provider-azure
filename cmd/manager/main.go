@@ -68,14 +68,14 @@ func main() {
 		log.Error(err, "error creating cluster actuator")
 		os.Exit(1)
 	}
-	machine.Actuator, err = machine.NewMachineActuator(machine.MachineActuatorParams{Client: mgr.GetClient(), Scheme: mgr.GetScheme()})
+	machineActuator, err := machine.NewMachineActuator(machine.MachineActuatorParams{Client: mgr.GetClient(), Scheme: mgr.GetScheme()})
 	if err != nil {
 		log.Error(err, "error creating machine actuator")
 		os.Exit(1)
 	}
 
 	log.Info("Registering Components.")
-	common.RegisterClusterProvisioner(machine.ProviderName, machine.Actuator)
+	common.RegisterClusterProvisioner(machine.ProviderName, machineActuator)
 
 	// Setup Scheme for all resources
 	log.Info("setting up scheme")
@@ -90,7 +90,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	apimachine.AddWithActuator(mgr, machine.Actuator)
+	apimachine.AddWithActuator(mgr, machineActuator)
 	apicluster.AddWithActuator(mgr, clusterActuator)
 
 	// Start the Cmd

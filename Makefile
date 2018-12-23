@@ -1,6 +1,6 @@
 # Image URL to use all building/pushing image targets
 PREFIX ?= platform9
-NAME = cluster-api-azure-provider-controller
+NAME ?= cluster-api-azure-provider-controller
 TAG ?= latest
 IMG=${PREFIX}/${NAME}:${TAG}
 
