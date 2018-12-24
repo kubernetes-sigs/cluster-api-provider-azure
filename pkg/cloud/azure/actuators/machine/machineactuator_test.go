@@ -13,6 +13,7 @@ limitations under the License.
 package machine
 
 import (
+	"context"
 	"encoding/base64"
 	"os"
 	"testing"
@@ -121,7 +122,7 @@ func TestCreateSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unable to create machine: %v", err)
 	}
@@ -140,8 +141,8 @@ func TestCreateFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Create(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when creating machine, but got none")
 	}
@@ -161,8 +162,8 @@ func TestCreateFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Create(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when creating machine, but got none")
 	}
@@ -182,7 +183,7 @@ func TestCreateFailureDeploymentValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when creating machine, but got none")
 	}
@@ -202,7 +203,7 @@ func TestCreateFailureDeploymentCreation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -223,7 +224,7 @@ func TestCreateFailureDeploymentFutureError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -244,7 +245,7 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -266,7 +267,7 @@ func TestExistsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	ok, err := actuator.Exists(cluster, machine)
+	ok, err := actuator.Exists(context.TODO(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -289,8 +290,8 @@ func TestExistsFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.Exists(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.Exists(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -310,8 +311,8 @@ func TestExistsFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.Exists(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.Exists(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -328,7 +329,7 @@ func TestExistsFailureRGNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	ok, err := actuator.Exists(context.TODO(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -347,7 +348,7 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	ok, err := actuator.Exists(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
 	}
@@ -368,7 +369,7 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	ok, err := actuator.Exists(context.TODO(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -390,7 +391,7 @@ func TestExistsFailureVMCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	ok, err := actuator.Exists(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
 	}
@@ -413,8 +414,8 @@ func TestUpdateFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Update(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Update(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -434,8 +435,8 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Update(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Update(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -453,7 +454,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	cluster := newCluster(t)
 
 // 	actuator, err := NewMachineActuator(params)
-// 	err = actuator.Update(cluster, machine)
+// 	err = actuator.Update(context.TODO(), cluster, machine)
 // 	if err == nil {
 // 		t.Fatal("expected error calling Update but got none")
 // 	}
@@ -467,7 +468,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // 	params := MachineActuatorParams{Services: &azureServicesClient}
 // 	actuator, err := NewMachineActuator(params)
-// 	err = actuator.Update(cluster, machine)
+// 	err = actuator.Update(context.TODO(), cluster, machine)
 // 	if err == nil {
 // 		t.Fatal("expected error calling Update but got none")
 // 	}
@@ -481,7 +482,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
-// 	err = actuator.Update(cluster, machine)
+// 	err = actuator.Update(context.TODO(), cluster, machine)
 // 	if err != nil {
 // 		t.Fatal("unexpected error calling Update")
 // 	}
@@ -500,7 +501,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	goalMachine := machine
 // 	goalMachine.Spec.Versions.Kubelet = "1.10.0"
 
-// 	err = actuator.Update(cluster, goalMachine)
+// 	err = actuator.Update(context.TODO(), cluster, goalMachine)
 // 	if err != nil {
 // 		t.Fatalf("unexpected error calling Update: %v", err)
 // 	}
@@ -519,7 +520,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	goalMachine := machine
 // 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
 
-// 	err = actuator.Update(cluster, goalMachine)
+// 	err = actuator.Update(context.TODO(), cluster, goalMachine)
 // 	if err != nil {
 // 		t.Fatalf("unexpected error calling Update: %v", err)
 // 	}
@@ -537,7 +538,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	goalMachine := machine
 // 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
 
-// 	err = actuator.Update(cluster, goalMachine)
+// 	err = actuator.Update(context.TODO(), cluster, goalMachine)
 // 	if err != nil {
 // 		t.Fatalf("unexpected error calling Update: %v", err)
 // 	}
@@ -546,7 +547,8 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
 	machineConfig := newMachineProviderConfig()
-	machine := newMachine(t, machineConfig)
+	m1 := newMachine(t, machineConfig)
+	m2 := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
@@ -557,8 +559,8 @@ func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.updateMaster(cluster, machine, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.updateMaster(cluster, m1, m2)
 	if err == nil {
 		t.Fatal("expected error when calling updateMaster, but got none")
 	}
@@ -793,7 +795,7 @@ func TestDeleteSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unable to delete machine: %v", err)
 	}
@@ -813,8 +815,8 @@ func TestDeleteFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Delete(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -834,8 +836,8 @@ func TestDeleteFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Delete(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -852,7 +854,7 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -870,7 +872,7 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -887,7 +889,7 @@ func TestDeleteFailureVMCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -905,7 +907,7 @@ func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -922,7 +924,7 @@ func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -940,7 +942,7 @@ func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -957,7 +959,7 @@ func TestDeleteFailureNICResourceName(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -976,7 +978,7 @@ func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -996,7 +998,7 @@ func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1016,7 +1018,7 @@ func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1036,7 +1038,7 @@ func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1056,8 +1058,8 @@ func TestGetKubeConfigFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
 	}
@@ -1077,8 +1079,8 @@ func TestGetKubeConfigFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
 	}
@@ -1094,7 +1096,7 @@ func TestGetKubeConfigBase64Error(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
 	}
@@ -1115,7 +1117,7 @@ func TestGetKubeConfigIPAddressFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
 	}
@@ -1135,8 +1137,8 @@ func TestGetIPFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.GetIP(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.GetIP(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetIP, but got none")
 	}
@@ -1157,7 +1159,7 @@ func TestGetKubeConfigValidPrivateKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetIP, but got none")
 	}
@@ -1178,7 +1180,7 @@ func TestGetKubeConfigInvalidBase64(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetIP, but got none")
 	}
@@ -1199,7 +1201,7 @@ func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	_, err = actuator.GetKubeConfig(cluster, machine)
+	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetIP, but got none")
 	}
@@ -1219,7 +1221,7 @@ func TestGetIPSuccess(t *testing.T) {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 
-	ip, err := actuator.GetIP(cluster, machine)
+	ip, err := actuator.GetIP(context.TODO(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error when calling GetIP: %v", err)
 	}
@@ -1243,7 +1245,7 @@ func TestGetIPFailure(t *testing.T) {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 
-	_, err = actuator.GetIP(cluster, machine)
+	_, err = actuator.GetIP(context.TODO(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error calling GetIP but got none")
 	}
@@ -1288,22 +1290,22 @@ func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
 	}
 }
 
-func providerConfigFromMachine(in *azureconfigv1.AzureMachineProviderConfig) (*clusterv1.ProviderConfig, error) {
+func providerConfigFromMachine(in *azureconfigv1.AzureMachineProviderConfig) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderConfig{
+	return &clusterv1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
 
-func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderConfig, error) {
+func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderConfig{
+	return &clusterv1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
@@ -1318,7 +1320,7 @@ func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderCo
 			Name: "machine-test",
 		},
 		Spec: v1alpha1.MachineSpec{
-			ProviderConfig: *providerConfig,
+			ProviderSpec: *providerConfig,
 			Versions: v1alpha1.MachineVersionInfo{
 				Kubelet:      "1.9.4",
 				ControlPlane: "1.9.4",
@@ -1354,7 +1356,7 @@ func newCluster(t *testing.T) *v1alpha1.Cluster {
 					},
 				},
 			},
-			ProviderConfig: *providerConfig,
+			ProviderSpec: *providerConfig,
 		},
 	}
 }

@@ -10,10 +10,10 @@ import (
 
 func main() {
 	var err error
-	machine.Actuator, err = machine.NewMachineActuator(machine.MachineActuatorParams{})
+	machineActuator, err := machine.NewMachineActuator(machine.MachineActuatorParams{})
 	if err != nil {
 		glog.Fatalf("Error creating cluster provisioner for azure : %v", err)
 	}
-	common.RegisterClusterProvisioner(machine.ProviderName, machine.Actuator)
+	common.RegisterClusterProvisioner(machine.ProviderName, machineActuator)
 	cmd.Execute()
 }

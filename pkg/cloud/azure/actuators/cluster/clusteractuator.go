@@ -53,7 +53,7 @@ func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, erro
 func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	glog.Infof("Reconciling cluster %v.", cluster.Name)
 
-	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -87,7 +87,7 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 }
 
 func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
-	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
@@ -141,7 +141,7 @@ func (azure *AzureClusterClient) resourcemanagement() services.AzureResourceMana
 	return azure.services.Resourcemanagement
 }
 
-func clusterProviderFromProviderConfig(providerConfig clusterv1.ProviderConfig) (*azureconfigv1.AzureClusterProviderConfig, error) {
+func clusterProviderFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*azureconfigv1.AzureClusterProviderConfig, error) {
 	var config azureconfigv1.AzureClusterProviderConfig
 	if err := yaml.Unmarshal(providerConfig.Value.Raw, &config); err != nil {
 		return nil, err
