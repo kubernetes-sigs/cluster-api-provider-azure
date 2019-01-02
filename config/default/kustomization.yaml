@@ -34,4 +34,4 @@ secretGenerator:
     tenant-id: "printf $AZURE_TENANT_ID"
     client-id: "printf $AZURE_CLIENT_ID"
     client-secret: "printf $AZURE_CLIENT_SECRET"
-  type: Opqaue
+  type: Opaque
