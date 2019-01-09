@@ -21,9 +21,9 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/platform9/azure-provider/pkg/apis"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/cluster"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	capis "sigs.k8s.io/cluster-api/pkg/apis"
 	apicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	apimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"

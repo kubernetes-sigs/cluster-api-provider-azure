@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
