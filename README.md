@@ -5,10 +5,14 @@
 1. Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 2. Install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and a [minikube driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md). It is recommended to use KVM2 driver for Linux and VirtualBox for MacOS.
 3. Install [kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md).
-4. Build the `clusterctl` tool
+4. Clone the Project
+    ```bash
+git clone https://github.com/kubernetes-sigs/cluster-api-provider-azure $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
+    ```
+5. Build the `clusterctl` tool
 
    ```
-   cd $(go env GOPATH)/src/platform9/azure-provider
+   cd $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
    make clusterctl
    ```
 
