@@ -7,7 +7,7 @@
 3. Install [kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md).
 4. Clone the Project
     ```bash
-git clone https://github.com/kubernetes-sigs/cluster-api-provider-azure $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
+    git clone https://github.com/kubernetes-sigs/cluster-api-provider-azure $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
     ```
 5. Build the `clusterctl` tool
 
@@ -43,12 +43,23 @@ An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/az
 3. Create the cluster. 
    Kubernetes Version >= 1.11 is required to enable CRD subresources without needing a feature gate.
 
-   ```
-   ./bin/clusterctl create cluster --provider azure \ 
+
+    **Linux**
+    ```bash
+    ./bin/clusterctl create cluster --provider azure \
+    -m cmd/clusterctl/examples/azure/out/machines.yaml \
+    -c cmd/clusterctl/examples/azure/out/cluster.yaml \
+    -p cmd/clusterctl/examples/azure/out/provider-components.yaml \
+    --vm-driver kvm2 --minikube kubernetes-version=v1.12.2
+    ```
+
+    **macOS** 
+    ```bash
+   ./bin/clusterctl create cluster --provider azure \
    -m cmd/clusterctl/examples/azure/out/machines.yaml \
    -c cmd/clusterctl/examples/azure/out/cluster.yaml \
-   -p cmd/clusterctl/examples/azure/out/provider-components.yaml 
-   \--vm-driver kvm2 --minikube kubernetes-version=v1.12.2
+   -p cmd/clusterctl/examples/azure/out/provider-components.yaml \
+   --vm-driver virtualbox --minikube kubernetes-version=v1.12.2
    ```
 Once the cluster is created succesfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
 
