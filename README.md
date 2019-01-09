@@ -22,6 +22,7 @@ An Azure Service Principal is needed for usage by the `clusterctl` tool and for 
 An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Not that the service prinicpals created by the scripts will not be deleted automatically._
 
 ### Usage
+
 #### Creating a Cluster
 1. Generate the `cluster.yaml`, `machines.yaml`, and `addons.yaml` files, and create the service principal if needed.
 
@@ -30,7 +31,7 @@ An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/az
    CREATE_SP=FALSE ./generate-yaml.sh # set to TRUE if creating a new Service Principal is desired
    cd ../../../..
    # If CREATE_SP=TRUE
-   source cmd/clusterctl/examples/out/credentials.sh
+   source cmd/clusterctl/examples/azure/out/credentials.sh
    ```
 2. Generate the `provider-components.yaml` file.
 
