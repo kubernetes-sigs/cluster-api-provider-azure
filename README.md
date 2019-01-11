@@ -1,4 +1,4 @@
-# Kubernetes Cluster API Azure Provider  [![Build Status](https://dev.azure.com/Cluster-API-Provider-Azure/Cluster-API-Provider-Azure%20Project/_apis/build/status/platform9.azure-provider)](https://dev.azure.com/Cluster-API-Provider-Azure/Cluster-API-Provider-Azure%20Project/_build/latest?definitionId=1)[![Go Report Card](https://goreportcard.com/badge/github.com/platform9/azure-provider)](https://goreportcard.com/report/github.com/platform9/azure-provider)
+# Kubernetes Cluster API Azure Provider  [![Build Status](https://dev.azure.com/Cluster-API-Provider-Azure/Cluster-API-Provider-Azure%20Project/_apis/build/status/platform9.azure-provider)](https://dev.azure.com/Cluster-API-Provider-Azure/Cluster-API-Provider-Azure%20Project/_build/latest?definitionId=1)[![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-azure)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-azure)
 
 ## Getting Started
 ### Prerequisites

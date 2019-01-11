@@ -9,9 +9,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
 )
 
 // do some testing with the K8s go client
