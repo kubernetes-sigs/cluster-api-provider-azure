@@ -81,11 +81,11 @@ type Network struct {
 	// Subnets includes all the subnets defined inside the Vnet.
 	Subnets Subnets `json:"subnets,omitempty"`
 
-	// APIServerELB is the Kubernetes api server classic load balancer.
-	APIServerELB ClassicELB `json:"apiServerElb,omitempty"`
+	// APIServerLB is the Kubernetes api server load balancer.
+	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
 }
 
-// Vnet defines an Azure vnet.
+// Vnet defines an Azure Virtual Network.
 type Vnet struct {
 	ID        string             `json:"id"`
 	CidrBlock string             `json:"cidrBlock"`
@@ -99,62 +99,61 @@ func (v *Vnet) String() string {
 	return fmt.Sprintf("id=%s", v.ID)
 }
 
-// TODO
 // Subnet defines an Azure subnet attached to a Vnet.
 type Subnet struct {
 	ID string `json:"id"`
 
-	VnetID           string  `json:"vnetId"`
-	AvailabilityZone string  `json:"availabilityZone"`
-	CidrBlock        string  `json:"cidrBlock"`
-	IsPublic         bool    `json:"public"`
-	RouteTableID     *string `json:"routeTableId"`
-	NatGatewayID     *string `json:"natGatewayId"`
+	VnetID       string  `json:"vnetId"`
+	CidrBlock    string  `json:"cidrBlock"`
+	NSGID        string  `json:nsgId`
+	RouteTableID *string `json:"routeTableId"`
 }
 
+/*
 // TODO
 // String returns a string representation of the subnet.
 func (s *Subnet) String() string {
 	return fmt.Sprintf("id=%s/az=%s/public=%v", s.ID, s.AvailabilityZone, s.IsPublic)
 }
+*/
 
 // TODO
-// ClassicELBScheme defines the scheme of a classic load balancer.
-type ClassicELBScheme string
-
-// TODO
-var (
-	// ClassicELBSchemeInternetFacing defines an internet-facing, publicly
-	// accessible Azure Classic ELB scheme
-	ClassicELBSchemeInternetFacing = ClassicELBScheme("Internet-facing")
-
-	// ClassicELBSchemeInternal defines an internal-only facing
-	// load balancer internal to an ELB.
-	ClassicELBSchemeInternal = ClassicELBScheme("internal")
-)
-
-// TODO
-// ClassicELBProtocol defines listener protocols for a classic load balancer.
-type ClassicELBProtocol string
+// LoadBalancerScheme defines the scheme of a load balancer.
+type LoadBalancerScheme string
 
 // TODO
 var (
-	// ClassicELBProtocolTCP defines the ELB API string representing the TCP protocol
-	ClassicELBProtocolTCP = ClassicELBProtocol("TCP")
+	// LoadBalancerSchemeInternetFacing defines an internet-facing, publicly
+	// accessible Azure LB scheme
+	LoadBalancerSchemeInternetFacing = LoadBalancerScheme("Internet-facing")
 
-	// ClassicELBProtocolSSL defines the ELB API string representing the TLS protocol
-	ClassicELBProtocolSSL = ClassicELBProtocol("SSL")
-
-	// ClassicELBProtocolHTTP defines the ELB API string representing the HTTP protocol at L7
-	ClassicELBProtocolHTTP = ClassicELBProtocol("HTTP")
-
-	// ClassicELBProtocolHTTPS defines the ELB API string representing the HTTP protocol at L7
-	ClassicELBProtocolHTTPS = ClassicELBProtocol("HTTPS")
+	// LoadBalancerSchemeInternal defines an internal-only facing
+	// load balancer internal to a LB.
+	LoadBalancerSchemeInternal = LoadBalancerScheme("internal")
 )
 
 // TODO
-// ClassicELB defines an Azure classic load balancer.
-type ClassicELB struct {
+// LoadBalancerProtocol defines listener protocols for a load balancer.
+type LoadBalancerProtocol string
+
+// TODO
+var (
+	// LoadBalancerProtocolTCP defines the LB API string representing the TCP protocol
+	LoadBalancerProtocolTCP = LoadBalancerProtocol("TCP")
+
+	// LoadBalancerProtocolSSL defines the LB API string representing the TLS protocol
+	LoadBalancerProtocolSSL = LoadBalancerProtocol("SSL")
+
+	// LoadBalancerProtocolHTTP defines the LB API string representing the HTTP protocol at L7
+	LoadBalancerProtocolHTTP = LoadBalancerProtocol("HTTP")
+
+	// LoadBalancerProtocolHTTPS defines the LB API string representing the HTTP protocol at L7
+	LoadBalancerProtocolHTTPS = LoadBalancerProtocol("HTTPS")
+)
+
+// TODO
+// LoadBalancer defines an Azure load balancer.
+type LoadBalancer struct {
 	// The name of the load balancer. It must be unique within the set of load balancers
 	// defined in the location. It also serves as identifier.
 	Name string `json:"name,omitempty"`
@@ -163,7 +162,7 @@ type ClassicELB struct {
 	DNSName string `json:"dnsName,omitempty"`
 
 	// Scheme is the load balancer scheme, either internet-facing or private.
-	Scheme ClassicELBScheme `json:"scheme,omitempty"`
+	Scheme LoadBalancerScheme `json:"scheme,omitempty"`
 
 	// SubnetIDs is an array of subnets in the Vnet attached to the load balancer.
 	SubnetIDs []string `json:"subnetIds,omitempty"`
@@ -171,28 +170,28 @@ type ClassicELB struct {
 	// SecurityGroupIDs is an array of security groups assigned to the load balancer.
 	SecurityGroupIDs []string `json:"securityGroupIds,omitempty"`
 
-	// Listeners is an array of classic elb listeners associated with the load balancer. There must be at least one.
-	Listeners []*ClassicELBListener `json:"listeners,omitempty"`
+	// Listeners is an array of elb listeners associated with the load balancer. There must be at least one.
+	Listeners []*LoadBalancerListener `json:"listeners,omitempty"`
 
-	// HealthCheck is the classic elb health check associated with the load balancer.
-	HealthCheck *ClassicELBHealthCheck `json:"healthChecks,omitempty"`
+	// HealthCheck is the elb health check associated with the load balancer.
+	HealthCheck *LoadBalancerHealthCheck `json:"healthChecks,omitempty"`
 
 	// Tags is a map of tags associated with the load balancer.
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
 // TODO
-// ClassicELBListener defines an Azure classic load balancer listener.
-type ClassicELBListener struct {
-	Protocol         ClassicELBProtocol `json:"protocol"`
-	Port             int64              `json:"port"`
-	InstanceProtocol ClassicELBProtocol `json:"instanceProtocol"`
-	InstancePort     int64              `json:"instancePort"`
+// LoadBalancerListener defines an Azure load balancer listener.
+type LoadBalancerListener struct {
+	Protocol         LoadBalancerProtocol `json:"protocol"`
+	Port             int64                `json:"port"`
+	InstanceProtocol LoadBalancerProtocol `json:"instanceProtocol"`
+	InstancePort     int64                `json:"instancePort"`
 }
 
 // TODO
-// ClassicELBHealthCheck defines an Azure classic load balancer health check.
-type ClassicELBHealthCheck struct {
+// LoadBalancerHealthCheck defines an Azure load balancer health check.
+type LoadBalancerHealthCheck struct {
 	Target             string        `json:"target"`
 	Interval           time.Duration `json:"interval"`
 	Timeout            time.Duration `json:"timeout"`
@@ -214,39 +213,14 @@ func (s Subnets) ToMap() map[string]*Subnet {
 	return res
 }
 
-// TODO
-// FilterPrivate returns a slice containing all subnets marked as private.
-func (s Subnets) FilterPrivate() (res Subnets) {
-	for _, x := range s {
-		if !x.IsPublic {
-			res = append(res, x)
-		}
-	}
-	return
-}
-
-// TODO
-// FilterPublic returns a slice containing all subnets marked as public.
-func (s Subnets) FilterPublic() (res Subnets) {
-	for _, x := range s {
-		if x.IsPublic {
-			res = append(res, x)
-		}
-	}
-	return
-}
-
-// TODO
 // RouteTable defines an Azure routing table.
 type RouteTable struct {
 	ID string `json:"id"`
 }
 
-// TODO
 // SecurityGroupRole defines the unique role of a security group.
 type SecurityGroupRole string
 
-// TODO
 var (
 	// SecurityGroupBastion defines an SSH bastion role
 	SecurityGroupBastion = SecurityGroupRole("bastion")
@@ -267,11 +241,13 @@ type SecurityGroup struct {
 	IngressRules IngressRules `json:"ingressRule"`
 }
 
+/*
 // TODO
 // String returns a string representation of the security group.
 func (s *SecurityGroup) String() string {
 	return fmt.Sprintf("id=%s/name=%s", s.ID, s.Name)
 }
+*/
 
 // TODO
 // SecurityGroupProtocol defines the protocol type for a security group rule.
@@ -280,16 +256,13 @@ type SecurityGroupProtocol string
 // TODO
 var (
 	// SecurityGroupProtocolAll is a wildcard for all IP protocols
-	SecurityGroupProtocolAll = SecurityGroupProtocol("-1")
+	SecurityGroupProtocolAll = SecurityGroupProtocol("*")
 
 	// SecurityGroupProtocolTCP represents the TCP protocol in ingress rules
 	SecurityGroupProtocolTCP = SecurityGroupProtocol("tcp")
 
 	// SecurityGroupProtocolUDP represents the UDP protocol in ingress rules
 	SecurityGroupProtocolUDP = SecurityGroupProtocol("udp")
-
-	// SecurityGroupProtocolICMP represents the ICMP protocol in ingress rules
-	SecurityGroupProtocolICMP = SecurityGroupProtocol("icmp")
 )
 
 // TODO

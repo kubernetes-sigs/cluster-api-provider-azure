@@ -135,7 +135,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 func (a *Actuator) reconcileLBAttachment(scope *actuators.MachineScope, m *clusterv1.Machine, i *v1alpha1.Instance) error {
 	networkSvc := network.NewService(scope.Scope)
 	if m.ObjectMeta.Labels["set"] == "controlplane" {
-		if err := computeSvc.RegisterInstanceWithAPIServerELB(i.ID); err != nil {
+		if err := computeSvc.RegisterInstanceWithAPIServerLB(i.ID); err != nil {
 			return errors.Wrapf(err, "could not register control plane instance %q with load balancer", i.ID)
 		}
 	}

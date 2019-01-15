@@ -56,8 +56,8 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, _ *clusterv1.Machine) (stri
 
 	// TODO: Reimplement using load balancer
 	/*
-		if scope.ClusterStatus != nil && scope.ClusterStatus.Network.APIServerELB.DNSName != "" {
-			return scope.ClusterStatus.Network.APIServerELB.DNSName, nil
+		if scope.ClusterStatus != nil && scope.ClusterStatus.Network.APIServerLB.DNSName != "" {
+			return scope.ClusterStatus.Network.APIServerLB.DNSName, nil
 		}
 
 		networkSvc := network.NewService(scope)

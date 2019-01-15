@@ -137,9 +137,9 @@ func (s *Service) createInstance(machine *actuators.MachineScope, bootstrapToken
 		)
 	}
 
-	if s.scope.Network().APIServerELB.DNSName == "" {
+	if s.scope.Network().APIServerLB.DNSName == "" {
 		return nil, awserrors.NewFailedDependency(
-			errors.New("failed to run controlplane, APIServer ELB not available"),
+			errors.New("failed to run controlplane, APIServer LB not available"),
 		)
 	}
 
@@ -161,7 +161,7 @@ func (s *Service) createInstance(machine *actuators.MachineScope, bootstrapToken
 		userData, err := userdata.NewControlPlane(&userdata.ControlPlaneInput{
 			CACert:            string(s.scope.ClusterConfig.CACertificate),
 			CAKey:             string(s.scope.ClusterConfig.CAPrivateKey),
-			ELBAddress:        s.scope.Network().APIServerELB.DNSName,
+			LBAddress:        s.scope.Network().APIServerLB.DNSName,
 			ClusterName:       s.scope.Name(),
 			PodSubnet:         s.scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 			ServiceSubnet:     s.scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
@@ -188,7 +188,7 @@ func (s *Service) createInstance(machine *actuators.MachineScope, bootstrapToken
 		userData, err := userdata.NewNode(&userdata.NodeInput{
 			CACertHash:     caCertHash,
 			BootstrapToken: bootstrapToken,
-			ELBAddress:     s.scope.Network().APIServerELB.DNSName,
+			LBAddress:     s.scope.Network().APIServerLB.DNSName,
 		})
 
 		if err != nil {

@@ -131,7 +131,7 @@ func NewSelfSignedCACert(key *rsa.PrivateKey) (*x509.Certificate, error) {
 		NotAfter:              now.Add(duration365d * 10),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	b, err := x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, key.Public(), key)
@@ -142,7 +142,7 @@ func NewSelfSignedCACert(key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(b)
 }
 
-// NewKubeconfig creates a new Kubeconfig where endpoint is the ELB endpoint.
+// NewKubeconfig creates a new Kubeconfig where endpoint is the LB endpoint.
 func NewKubeconfig(clusterName, endpoint string, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*api.Config, error) {
 	cfg := &Config{
 		CommonName:   "kubernetes-admin",
@@ -166,7 +166,7 @@ func NewKubeconfig(clusterName, endpoint string, caCert *x509.Certificate, caKey
 	return &api.Config{
 		Clusters: map[string]*api.Cluster{
 			clusterName: {
-				Server: endpoint,
+				Server:                   endpoint,
 				CertificateAuthorityData: EncodeCertPEM(caCert),
 			},
 		},

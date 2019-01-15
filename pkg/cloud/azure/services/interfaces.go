@@ -32,7 +32,7 @@ import (
 type Getter interface {
 	SDKSessionGetter
 	EC2Getter
-	ELBGetter
+	LBGetter
 }
 
 // SDKSessionGetter has a single method that returns an Azure session.
@@ -45,9 +45,9 @@ type EC2Getter interface {
 	EC2(*session.Session) EC2Interface
 }
 
-// ELBGetter has a single method that returns an ELB service interface.
-type ELBGetter interface {
-	ELB(*session.Session) ELBInterface
+// LBGetter has a single method that returns a LB service interface.
+type LBGetter interface {
+	LB(*session.Session) LBInterface
 }
 
 // EC2Interface encapsulates the methods exposed by the ec2 service.
@@ -75,11 +75,11 @@ type EC2MachineInterface interface {
 	UpdateResourceTags(resourceID *string, create map[string]string, remove map[string]string) error
 }
 
-// ELBInterface encapsulates the methods exposed by the elb service.
-type ELBInterface interface {
+// LBInterface encapsulates the methods exposed by the elb service.
+type LBInterface interface {
 	ReconcileLoadbalancers() error
 	DeleteLoadbalancers() error
-	RegisterInstanceWithAPIServerELB(vmId string) error
+	RegisterInstanceWithAPIServerLB(vmId string) error
 	GetAPIServerDNSName() (string, error)
 }
 

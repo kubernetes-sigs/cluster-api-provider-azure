@@ -47,7 +47,7 @@ func TestGetIP(t *testing.T) {
 		name       string
 		cluster    *clusterv1.Cluster
 		expectedIP string
-		elbExpects func(*mock_elbiface.MockELBAPIMockRecorder)
+		elbExpects func(*mock_elbiface.MockLBAPIMockRecorder)
 	}{
 		{
 			name: "sunny day test",
@@ -63,7 +63,7 @@ func TestGetIP(t *testing.T) {
 				},
 			},
 			expectedIP: "something",
-			elbExpects: func(m *mock_elbiface.MockELBAPIMockRecorder) {
+			elbExpects: func(m *mock_elbiface.MockLBAPIMockRecorder) {
 				m.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{
 					LoadBalancerNames: []*string{azure.String("test-apiserver")},
 				}).Return(&elb.DescribeLoadBalancersOutput{
@@ -87,7 +87,7 @@ func TestGetIP(t *testing.T) {
 				},
 			},
 			expectedIP: "dunno",
-			elbExpects: func(m *mock_elbiface.MockELBAPIMockRecorder) {
+			elbExpects: func(m *mock_elbiface.MockLBAPIMockRecorder) {
 				m.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{
 					LoadBalancerNames: []*string{azure.String("test-apiserver")},
 				}).Return(&elb.DescribeLoadBalancersOutput{
@@ -112,7 +112,7 @@ func TestGetIP(t *testing.T) {
 				Status: clusterv1.ClusterStatus{
 					ProviderStatus: cloudtest.RuntimeRawExtension(t, &providerv1.AzureClusterProviderStatus{
 						Network: providerv1.Network{
-							APIServerELB: providerv1.ClassicELB{
+							APIServerLB: providerv1.LoadBalancer{
 								DNSName: "banana",
 							},
 						},
@@ -129,12 +129,12 @@ func TestGetIP(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			ec2Mock := mock_ec2iface.NewMockEC2API(mockCtrl)
-			elbMock := mock_elbiface.NewMockELBAPI(mockCtrl)
+			elbMock := mock_elbiface.NewMockLBAPI(mockCtrl)
 
 			deployer := deployer.New(deployer.Params{ScopeGetter: &scopeGetter{
 				actuators.AzureClients{
 					EC2: ec2Mock,
-					ELB: elbMock,
+					LB: elbMock,
 				},
 			}})
 
