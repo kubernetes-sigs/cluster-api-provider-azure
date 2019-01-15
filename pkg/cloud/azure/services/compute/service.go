@@ -33,35 +33,3 @@ func NewService(scope *actuators.Scope) *Service {
 		scope: scope,
 	}
 }
-
-// TODO: Remove this once scope code is in.
-/*
-import (
-	"context"
-
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-	"github.com/Azure/go-autorest/autorest"
-)
-
-// Service provides the azure SDK clients to interact with the compute API.
-type Service struct {
-	DisksClient           compute.DisksClient
-	VirtualMachinesClient compute.VirtualMachinesClient
-	ctx                   context.Context
-}
-
-// NewService returns a new instance of Service.
-func NewService(subscriptionID string) *Service {
-	return &Service{
-		DisksClient:           compute.NewDisksClient(subscriptionID),
-		VirtualMachinesClient: compute.NewVirtualMachinesClient(subscriptionID),
-		ctx:                   context.Background(),
-	}
-}
-
-// SetAuthorizer sets the authorizer components of the azure clients.
-func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
-	s.DisksClient.BaseClient.Client.Authorizer = authorizer
-	s.VirtualMachinesClient.BaseClient.Client.Authorizer = authorizer
-}
-*/

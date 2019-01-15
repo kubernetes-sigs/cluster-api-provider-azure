@@ -17,6 +17,7 @@ limitations under the License.
 package actuators
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -112,6 +113,7 @@ func NewScope(params ScopeParams) (*Scope, error) {
 		ClusterClient: clusterClient,
 		ClusterConfig: clusterConfig,
 		ClusterStatus: clusterStatus,
+		Context:       context.Background(),
 	}, nil
 }
 
@@ -122,6 +124,7 @@ type Scope struct {
 	ClusterClient client.ClusterInterface
 	ClusterConfig *v1alpha1.AzureClusterProviderSpec
 	ClusterStatus *v1alpha1.AzureClusterProviderStatus
+	Context       context.Context
 }
 
 // Network returns the cluster network object.

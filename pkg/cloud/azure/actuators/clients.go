@@ -26,12 +26,17 @@ import (
 // AzureClients contains all the azure clients used by the scopes.
 type AzureClients struct {
 	// Compute
-	VMAPI    computeapi.VirtualMachinesClientAPI
-	DisksAPI computeapi.DisksClientAPI
+	VM    computeapi.VirtualMachinesClientAPI
+	Disks computeapi.DisksClientAPI
 
 	// Network
-	LBAPI networkapi.LoadBalancersClientAPI
+	Interfaces        networkapi.InterfacesClientAPI
+	LB                networkapi.LoadBalancersClientAPI
+	PublicIPAddresses networkapi.PublicIPAddressesClientAPI
+	SecurityGroups    networkapi.SecurityGroupsClientAPI
+	VirtualNetworks   networkapi.VirtualNetworksClientAPI
 
 	// Resources
-	DeploymentsAPI resourcesapi.DeploymentsClientAPI
+	Deployments resourcesapi.DeploymentsClientAPI
+	Groups      resourcesapi.GroupsClientAPI
 }

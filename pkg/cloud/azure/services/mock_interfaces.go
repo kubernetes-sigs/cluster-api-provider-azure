@@ -18,7 +18,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-10-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+
+	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -260,4 +261,3 @@ func (m *MockAzureResourceManagementClient) WaitForDeploymentsCreateOrUpdateFutu
 	}
 	return m.MockWaitForDeploymentsCreateOrUpdateFuture(future)
 }
-*/

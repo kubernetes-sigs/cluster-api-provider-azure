@@ -20,7 +20,7 @@ import (
 
 const (
 	// VnetDefaultName is the default name for the cluster's virtual network.
-	VnetDefaultName          = "ClusterAPIVnet"
+	VnetDefaultName = "ClusterAPIVnet"
 	// SubnetDefaultName is the default name for the cluster's subnet.
 	SubnetDefaultName        = "ClusterAPISubnet"
 	defaultPrivateSubnetCIDR = "10.0.0.0/24"
@@ -48,14 +48,16 @@ func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkNam
 		Location:                       to.StringPtr(location),
 		VirtualNetworkPropertiesFormat: &virtualNetworkProperties,
 	}
-	sgFuture, err := s.VirtualNetworksClient.CreateOrUpdate(s.ctx, resourceGroupName, virtualNetworkName, virtualNetwork)
+	sgFuture, err := s.scope.AzureClients.VirtualNetworks.CreateOrUpdate(s.scope.Context, resourceGroupName, virtualNetworkName, virtualNetwork)
 	if err != nil {
 		return nil, err
 	}
 	return &sgFuture, nil
 }
 
-// WaitForVnetCreateOrUpdateFuture returns when the CreateOrUpdateVnet operation completes.
+// TODO: Dead code
+/*
 func (s *Service) WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualNetworksClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VirtualNetworks.Client)
 }
+*/

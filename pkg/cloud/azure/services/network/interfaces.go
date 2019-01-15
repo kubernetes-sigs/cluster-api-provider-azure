@@ -17,10 +17,12 @@ import "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-10-01/netwo
 
 // DeleteNetworkInterface deletes the NIC resource.
 func (s *Service) DeleteNetworkInterface(resourceGroup string, networkInterfaceName string) (network.InterfacesDeleteFuture, error) {
-	return s.InterfacesClient.Delete(s.ctx, resourceGroup, networkInterfaceName)
+	return s.scope.AzureClients.Interfaces.Delete(s.scope.Context, resourceGroup, networkInterfaceName)
 }
 
-// WaitForNetworkInterfacesDeleteFuture waits for the DeleteNetworkInterface operation to complete.
+// TODO: Dead code
+/*
 func (s *Service) WaitForNetworkInterfacesDeleteFuture(future network.InterfacesDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.InterfacesClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.InterfacesClient.Client)
 }
+*/

@@ -105,7 +105,7 @@ type Subnet struct {
 
 	VnetID       string  `json:"vnetId"`
 	CidrBlock    string  `json:"cidrBlock"`
-	NSGID        string  `json:nsgId`
+	NSGID        string  `json:"nsgId"`
 	RouteTableID *string `json:"routeTableId"`
 }
 
@@ -160,6 +160,9 @@ type LoadBalancer struct {
 
 	// DNSName is the dns name of the load balancer.
 	DNSName string `json:"dnsName,omitempty"`
+
+	// IPAddress is the IP address of the load balancer.
+	IPAddress string `json:"ipAddress,omitempty"`
 
 	// Scheme is the load balancer scheme, either internet-facing or private.
 	Scheme LoadBalancerScheme `json:"scheme,omitempty"`
