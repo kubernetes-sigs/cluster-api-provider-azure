@@ -158,11 +158,11 @@ func (azure *AzureClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 	} else {
 		// delete and recreate machine for nodes
 		glog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
-		err = azure.Delete(context.Background(), cluster, currentMachine)
+		err = azure.Delete(ctx, cluster, currentMachine)
 		if err != nil {
 			return fmt.Errorf("error updating node machine %v, deleting node machine failed: %v", currentMachine.ObjectMeta.Name, err)
 		}
-		err = azure.Create(context.Background(), cluster, goalMachine)
+		err = azure.Create(ctx, cluster, goalMachine)
 		if err != nil {
 			glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 		}
