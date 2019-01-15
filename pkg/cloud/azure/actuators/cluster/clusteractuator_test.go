@@ -136,7 +136,7 @@ func TestReconcileFailureParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
 
 	err = actuator.Reconcile(cluster)
 	if err == nil {
@@ -268,7 +268,7 @@ func TestDeleteFailureParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
 
 	err = actuator.Delete(cluster)
 	if err == nil {
@@ -349,40 +349,40 @@ func TestDeleteFailureRGDeleteFutureFailure(t *testing.T) {
 	}
 }
 
-func TestClusterProviderFromProviderConfigParsingError(t *testing.T) {
+func TestClusterProviderFromProviderSpecParsingError(t *testing.T) {
 	bytes, err := yaml.Marshal("dummy")
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	providerConfig := &clusterv1.ProviderConfig{
+	providerSpec := &clusterv1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}
-	_, err = clusterProviderFromProviderConfig(*providerConfig)
+	_, err = clusterProviderFromProviderSpec(*providerSpec)
 	if err == nil {
 		t.Fatalf("expected error when parsing provider config, but got none")
 	}
 }
 
-func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
-	return azureconfigv1.AzureClusterProviderConfig{
+func newClusterProviderSpec() azureconfigv1.AzureClusterProviderSpec {
+	return azureconfigv1.AzureClusterProviderSpec{
 		ResourceGroup: "resource-group-test",
 		Location:      "westus2",
 	}
 }
 
-func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderConfig, error) {
+func providerSpecFromCluster(in *azureconfigv1.AzureClusterProviderSpec) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderConfig{
+	return &clusterv1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
 
 func newCluster(t *testing.T) *v1alpha1.Cluster {
-	clusterProviderConfig := newClusterProviderConfig()
-	providerConfig, err := providerConfigFromCluster(&clusterProviderConfig)
+	clusterProviderSpec := newClusterProviderSpec()
+	providerSpec, err := providerSpecFromCluster(&clusterProviderSpec)
 	if err != nil {
 		t.Fatalf("error encoding provider config: %v", err)
 	}
@@ -407,7 +407,7 @@ func newCluster(t *testing.T) *v1alpha1.Cluster {
 					},
 				},
 			},
-			ProviderConfig: *providerConfig,
+			ProviderSpec: *providerSpec,
 		},
 	}
 }

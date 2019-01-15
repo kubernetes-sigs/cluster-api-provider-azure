@@ -37,26 +37,28 @@ are also sponsored by SIG-cluster-lifecycle:
 
   * AWS, https://github.com/kubernetes-sigs/cluster-api-provider-aws
   * AWS/Openshift, https://github.com/openshift/cluster-operator
-  * Azure, https://github.com/platform9/azure-provider
+  * Azure, https://github.com/kubernetes-sigs/cluster-api-provider-azure
+  * Baidu Cloud, https://github.com/baidu/cluster-api-provider-baiducloud
   * DigitalOcean, https://github.com/kubernetes-sigs/cluster-api-provider-digitalocean
   * GCE, https://github.com/kubernetes-sigs/cluster-api-provider-gcp
   * OpenStack, https://github.com/kubernetes-sigs/cluster-api-provider-openstack
-  * vSphere, https://github.com/kubernetes-sigs/cluster-api-provider-vsphere
   * Tencent Cloud, https://github.com/TencentCloud/cluster-api-provider-tencent
+  * vSphere, https://github.com/kubernetes-sigs/cluster-api-provider-vsphere
 
 ## API Adoption
 
 Following are the implementations managed by third-parties adopting the standard cluster-api and/or machine-api being developed here.
 
-  * Machine-controller-manager, https://github.com/gardener/machine-controller-manager/tree/cluster-api
   * Kubermatic machine-controller, https://github.com/kubermatic/machine-controller/tree/master
+  * Machine API Operator, https://github.com/openshift/machine-api-operator/tree/master
+  * Machine-controller-manager, https://github.com/gardener/machine-controller-manager/tree/cluster-api
 
 ## Getting Started
 ### Prerequisites
 * `kubectl` is required, see [here](http://kubernetes.io/docs/user-guide/prereqs/).
 * `clusterctl` is a SIG-cluster-lifecycle sponsored tool to manage Cluster API clusters. See [here](cmd/clusterctl)
 
-[cluster-api-kep]: https://github.com/kubernetes/community/blob/master/keps/sig-cluster-lifecycle/0003-cluster-api.md
+[cluster-api-kep]: https://github.com/kubernetes/enhancements/blob/master/keps/sig-cluster-lifecycle/0003-cluster-api.md
 [notes]: https://docs.google.com/document/d/16ils69KImmE94RlmzjWDrkmFZysgB2J4lGnYMRN89WM/edit
 [recordings]: https://www.youtube.com/playlist?list=PL69nYSiGNLP29D0nYgAGWt1ZFqS9Z7lw4
 [zoomMeeting]: https://zoom.us/j/166836624

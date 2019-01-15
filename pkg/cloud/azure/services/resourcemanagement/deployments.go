@@ -30,7 +30,7 @@ const (
 	templateFile = "deployment-template.json"
 )
 
-func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 	}
 	return &deploymentFuture, nil
 }
-func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) error {
+func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.Deploy
 	return future.WaitForCompletionRef(s.ctx, s.DeploymentsClient.Client)
 }
 
-func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*map[string]interface{}, error) {
+func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*map[string]interface{}, error) {
 	startupScript, err := getStartupScript(machine, *machineConfig)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig 
 }
 
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func getStartupScript(machine *clusterv1.Machine, machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
+func getStartupScript(machine *clusterv1.Machine, machineConfig azureconfigv1.AzureMachineProviderSpec) (string, error) {
 	if machineConfig.Roles[0] == azureconfigv1.Master {
 		startupScript := fmt.Sprintf(`(
 apt-get update

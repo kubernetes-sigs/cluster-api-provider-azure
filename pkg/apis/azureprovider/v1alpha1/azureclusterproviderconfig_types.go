@@ -22,9 +22,9 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AzureClusterProviderConfig is the Schema for the azureclusterproviderconfigs API
+// AzureClusterProviderSpec is the Schema for the azureclusterproviderspecs API
 // +k8s:openapi-gen=true
-type AzureClusterProviderConfig struct {
+type AzureClusterProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -35,5 +35,5 @@ type AzureClusterProviderConfig struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 func init() {
-	SchemeBuilder.Register(&AzureClusterProviderConfig{})
+	SchemeBuilder.Register(&AzureClusterProviderSpec{})
 }

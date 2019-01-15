@@ -34,6 +34,7 @@ import (
 // MachineSet ensures that a specified number of machines replicas are running at any given time.
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.labelSelector
 type MachineSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -119,7 +120,7 @@ type MachineSetStatus struct {
 	// These fields should not be set for transitive errors that a
 	// controller faces that are expected to be fixed automatically over
 	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the MachineTemplates's spec or the configuration of
+	// fundamentally wrong with the MachineTemplate's spec or the configuration of
 	// the machine controller, and that manual intervention is required. Examples
 	// of terminal errors would be invalid combinations of settings in the
 	// spec, values that are unsupported by the machine controller, or the

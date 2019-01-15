@@ -80,7 +80,7 @@ func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine 
 	if azure.client == nil {
 		return nil
 	}
-	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
