@@ -17,10 +17,13 @@ limitations under the License.
 package machine
 
 import (
+	"context"
 	"sync"
 
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
+
+var _ Actuator = &TestActuator{}
 
 type TestActuator struct {
 	unblock         chan string
@@ -36,7 +39,7 @@ type TestActuator struct {
 	Lock            sync.Mutex
 }
 
-func (a *TestActuator) Create(*v1alpha1.Cluster, *v1alpha1.Machine) error {
+func (a *TestActuator) Create(context.Context, *v1alpha1.Cluster, *v1alpha1.Machine) error {
 	defer func() {
 		if a.BlockOnCreate {
 			<-a.unblock
@@ -49,7 +52,7 @@ func (a *TestActuator) Create(*v1alpha1.Cluster, *v1alpha1.Machine) error {
 	return nil
 }
 
-func (a *TestActuator) Delete(*v1alpha1.Cluster, *v1alpha1.Machine) error {
+func (a *TestActuator) Delete(context.Context, *v1alpha1.Cluster, *v1alpha1.Machine) error {
 	defer func() {
 		if a.BlockOnDelete {
 			<-a.unblock
@@ -62,20 +65,19 @@ func (a *TestActuator) Delete(*v1alpha1.Cluster, *v1alpha1.Machine) error {
 	return nil
 }
 
-func (a *TestActuator) Update(c *v1alpha1.Cluster, machine *v1alpha1.Machine) error {
+func (a *TestActuator) Update(ctx context.Context, c *v1alpha1.Cluster, machine *v1alpha1.Machine) error {
 	defer func() {
 		if a.BlockOnUpdate {
 			<-a.unblock
 		}
 	}()
-
 	a.Lock.Lock()
 	defer a.Lock.Unlock()
 	a.UpdateCallCount++
 	return nil
 }
 
-func (a *TestActuator) Exists(*v1alpha1.Cluster, *v1alpha1.Machine) (bool, error) {
+func (a *TestActuator) Exists(context.Context, *v1alpha1.Cluster, *v1alpha1.Machine) (bool, error) {
 	defer func() {
 		if a.BlockOnExists {
 			<-a.unblock

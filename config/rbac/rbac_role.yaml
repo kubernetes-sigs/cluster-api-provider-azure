@@ -6,8 +6,8 @@ rules:
 - apiGroups:
   - azureprovider.k8s.io
   resources:
-  - azureclusterproviderconfigs
-  - azuremachineproviderconfigs
+  - azureclusterproviderspecs
+  - azuremachineproviderspecs
   verbs:
   - get
   - list

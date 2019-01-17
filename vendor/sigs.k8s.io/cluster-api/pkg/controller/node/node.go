@@ -17,11 +17,10 @@ limitations under the License.
 package node
 
 import (
-	"github.com/golang/glog"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
 
 	"context"
 
@@ -32,10 +31,11 @@ import (
 )
 
 const (
-	machineAnnotationKey = "machine"
+	// MachineAnnotationKey annotation used to link node and machine resource
+	MachineAnnotationKey = "cluster.k8s.io/machine"
 )
 
-// We are using "machine" annotation to link node and machine resource. The "machine"
+// We are using "cluster.k8s.io/machine" annotation to link node and machine resource. The "cluster.k8s.io/machine"
 // annotation is an implementation detail of how the two objects can get linked together, but it is
 // not required behavior. However, in the event that a Machine.Spec update requires replacing the
 // Node, this can allow for faster turn-around time by allowing a new Node to be created with a new
@@ -53,14 +53,14 @@ func (c *ReconcileNode) link(node *corev1.Node) error {
 		}
 	}
 
-	val, ok := node.ObjectMeta.Annotations[machineAnnotationKey]
+	val, ok := node.ObjectMeta.Annotations[MachineAnnotationKey]
 	if !ok {
 		return nil
 	}
 
 	namespace, mach, err := cache.SplitMetaNamespaceKey(val)
 	if err != nil {
-		glog.Errorf("Machine annotation format is incorrect %v: %v\n", val, err)
+		klog.Errorf("Machine annotation format is incorrect %v: %v\n", val, err)
 		return err
 	}
 	namespace = util.GetNamespaceOrDefault(namespace)
@@ -68,7 +68,7 @@ func (c *ReconcileNode) link(node *corev1.Node) error {
 
 	machine := &v1alpha1.Machine{}
 	if err = c.Client.Get(context.Background(), key, machine); err != nil {
-		glog.Errorf("Error getting machine %v: %v\n", mach, err)
+		klog.Errorf("Error getting machine %v: %v\n", mach, err)
 		return err
 	}
 
@@ -76,9 +76,9 @@ func (c *ReconcileNode) link(node *corev1.Node) error {
 	machine.Status.LastUpdated = &t
 	machine.Status.NodeRef = objectRef(node)
 	if err = c.Client.Status().Update(context.Background(), machine); err != nil {
-		glog.Errorf("Error updating machine to link to node: %v\n", err)
+		klog.Errorf("Error updating machine to link to node: %v\n", err)
 	} else {
-		glog.Infof("Successfully linked machine %s to node %s\n",
+		klog.Infof("Successfully linked machine %s to node %s\n",
 			machine.ObjectMeta.Name, node.ObjectMeta.Name)
 		c.linkedNodes[node.ObjectMeta.Name] = true
 		c.cachedReadiness[node.ObjectMeta.Name] = nodeReady
@@ -87,14 +87,14 @@ func (c *ReconcileNode) link(node *corev1.Node) error {
 }
 
 func (c *ReconcileNode) unlink(node *corev1.Node) error {
-	val, ok := node.ObjectMeta.Annotations[machineAnnotationKey]
+	val, ok := node.ObjectMeta.Annotations[MachineAnnotationKey]
 	if !ok {
 		return nil
 	}
 
 	namespace, mach, err := cache.SplitMetaNamespaceKey(val)
 	if err != nil {
-		glog.Errorf("Machine annotation format is incorrect %v: %v\n", val, err)
+		klog.Errorf("Machine annotation format is incorrect %v: %v\n", val, err)
 		return err
 	}
 	namespace = util.GetNamespaceOrDefault(namespace)
@@ -102,7 +102,7 @@ func (c *ReconcileNode) unlink(node *corev1.Node) error {
 
 	machine := &v1alpha1.Machine{}
 	if err = c.Client.Get(context.Background(), key, machine); err != nil {
-		glog.Errorf("Error getting machine %v: %v\n", mach, err)
+		klog.Errorf("Error getting machine %v: %v\n", mach, err)
 		return err
 	}
 
@@ -113,7 +113,7 @@ func (c *ReconcileNode) unlink(node *corev1.Node) error {
 
 	// This machine was linked to a different node, don't unlink them
 	if machine.Status.NodeRef.Name != node.ObjectMeta.Name {
-		glog.Warningf("Node (%v) is tring to unlink machine (%v) which is linked with node (%v).",
+		klog.Warningf("Node (%v) is tring to unlink machine (%v) which is linked with node (%v).",
 			node.ObjectMeta.Name, machine.ObjectMeta.Name, machine.Status.NodeRef.Name)
 		return nil
 	}
@@ -122,10 +122,10 @@ func (c *ReconcileNode) unlink(node *corev1.Node) error {
 	machine.Status.LastUpdated = &t
 	machine.Status.NodeRef = nil
 	if err = c.Client.Status().Update(context.Background(), machine); err != nil {
-		glog.Errorf("Error updating machine %s to unlink node %s: %v\n",
+		klog.Errorf("Error updating machine %s to unlink node %s: %v\n",
 			machine.ObjectMeta.Name, node.ObjectMeta.Name, err)
 	} else {
-		glog.Infof("Successfully unlinked node %s from machine %s\n",
+		klog.Infof("Successfully unlinked node %s from machine %s\n",
 			node.ObjectMeta.Name, machine.ObjectMeta.Name)
 		delete(c.cachedReadiness, node.ObjectMeta.Name)
 		delete(c.linkedNodes, node.ObjectMeta.Name)

@@ -273,7 +273,7 @@ func MockRgDeleteFutureFailure() MockAzureResourceManagementClient {
 
 func MockDeploymentCreateOrUpdateSuccess() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 			return &resources.DeploymentsCreateOrUpdateFuture{}, nil
 		},
 	}
@@ -281,7 +281,7 @@ func MockDeploymentCreateOrUpdateSuccess() MockAzureResourceManagementClient {
 
 func MockDeploymentCreateOrUpdateFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 			return nil, errors.New("failed to create resource")
 		},
 	}
@@ -312,7 +312,7 @@ func MockDeloymentGetResultFailure() MockAzureResourceManagementClient {
 
 func MockDeploymentValidate() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockValidateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) error {
+		MockValidateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
 			return errors.New("error validating deployment")
 		},
 	}
