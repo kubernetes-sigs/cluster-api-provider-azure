@@ -329,6 +329,9 @@ func TestExistsFailureRGNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
@@ -348,6 +351,9 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
@@ -369,6 +375,9 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
@@ -391,6 +400,9 @@ func TestExistsFailureVMCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
@@ -853,6 +865,9 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -871,6 +886,9 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -888,6 +906,9 @@ func TestDeleteFailureVMCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -906,6 +927,9 @@ func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -923,6 +947,9 @@ func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -941,6 +968,9 @@ func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -958,6 +988,9 @@ func TestDeleteFailureNICResourceName(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -977,6 +1010,9 @@ func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -997,6 +1033,9 @@ func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -1017,6 +1056,9 @@ func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
@@ -1037,6 +1079,9 @@ func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
 	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")

@@ -34,6 +34,9 @@ func TestMasterMachineCreated(t *testing.T) {
 
 	// kube: verify virtual machine was created sucessfully and healthy
 	machineList, err := clients.kube.ListMachine("default", metav1.ListOptions{LabelSelector: "set=master"})
+	if err != nil {
+		t.Fatalf("error to while trying to retrieve machine list: %v", err)
+	}
 	if len(machineList.Items) != 1 {
 		t.Fatalf("expected only one machine with label master in the default namespace")
 	}
