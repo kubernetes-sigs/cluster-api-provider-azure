@@ -28,16 +28,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// AzureClusterClient holds the Azure SDK Client and Kubernetes Client objects.
 type AzureClusterClient struct {
 	services *services.AzureClients
 	client   client.Client
 }
 
+// ClusterActuatorParams holds the Azure SDK Client and Kubernetes Client objects for the cluster actuator.
 type ClusterActuatorParams struct {
 	Services *services.AzureClients
 	Client   client.Client
 }
 
+// NewClusterActuator returns a new instance of AzureClusterClient.
 func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, error) {
 	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
@@ -50,6 +53,7 @@ func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, erro
 	}, nil
 }
 
+// Reconcile creates or applies updates to the cluster.
 func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	glog.Infof("Reconciling cluster %v.", cluster.Name)
 
@@ -86,6 +90,7 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	return nil
 }
 
+// Delete the cluster.
 func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {

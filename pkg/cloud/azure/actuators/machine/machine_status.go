@@ -14,12 +14,18 @@ import (
 // holds the machine status under an annotation.
 // TODO: implement MachineStatus once the API is stable
 
+// MachineStatus  is an instance of the MachineType custom resource.
 type MachineStatus *clusterv1.Machine
+
+// AnnotationKey represents the key value of a Kubernetes annotation.
 type AnnotationKey string
 
 const (
+	// Name is the annotation key for the machine type's name.
 	Name           AnnotationKey = "azure-name"
+	// ResourceGroup is the annotation key for the machine's resource group.
 	ResourceGroup  AnnotationKey = "azure-rg"
+	// InstanceStatus is the annotation key for the machine's instance status.
 	InstanceStatus AnnotationKey = "instance-status"
 )
 
