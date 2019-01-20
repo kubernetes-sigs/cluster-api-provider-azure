@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package network
 
 import (
@@ -18,18 +19,21 @@ import (
 )
 
 const (
+	// VnetDefaultName is the default name for the cluster's virtual network.
 	VnetDefaultName          = "ClusterAPIVnet"
+	// SubnetDefaultName is the default name for the cluster's subnet.
 	SubnetDefaultName        = "ClusterAPISubnet"
 	defaultPrivateSubnetCIDR = "10.0.0.0/24"
 )
 
+// CreateOrUpdateVnet creates or updates a virtual network resource.
 func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
 	if virtualNetworkName == "" {
 		virtualNetworkName = VnetDefaultName
 	}
 
 	subnets := []network.Subnet{
-		network.Subnet{
+		{
 			Name: to.StringPtr(SubnetDefaultName),
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 				AddressPrefix: to.StringPtr(defaultPrivateSubnetCIDR),
@@ -51,6 +55,7 @@ func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkNam
 	return &sgFuture, nil
 }
 
+// WaitForVnetCreateOrUpdateFuture returns when the CreateOrUpdateVnet operation completes.
 func (s *Service) WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualNetworksClient.Client)
 }

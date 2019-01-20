@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package network
 
 import (
@@ -19,9 +20,11 @@ import (
 )
 
 const (
+	// SecurityGroupDefaultName is the default name for the network security group of the cluster.
 	SecurityGroupDefaultName = "ClusterAPINSG"
 )
 
+// NetworkSGIfExists returns the nsg reference if the nsg resource exists.
 func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error) {
 	networkSG, err := s.SecurityGroupsClient.Get(s.ctx, resourceGroupName, networkSecurityGroupName, "")
 	if err != nil {
@@ -35,6 +38,7 @@ func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGro
 	return &networkSG, nil
 }
 
+// CreateOrUpdateNetworkSecurityGroup creates or updates the nsg resource.
 func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
 	if networkSecurityGroupName == "" {
 		networkSecurityGroupName = SecurityGroupDefaultName
@@ -81,10 +85,12 @@ func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, n
 	return &sgFuture, nil
 }
 
+// DeleteNetworkSecurityGroup deletes the nsg resource.
 func (s *Service) DeleteNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string) (network.SecurityGroupsDeleteFuture, error) {
 	return s.SecurityGroupsClient.Delete(s.ctx, resourceGroupName, networkSecurityGroupName)
 }
 
+// WaitForNetworkSGsCreateOrUpdateFuture returns when the CreateOrUpdateNetworkSecurityGroup operation completes.
 func (s *Service) WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.SecurityGroupsClient.Client)
 }

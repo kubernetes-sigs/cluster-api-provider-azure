@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package resourcemanagement
 
 import (
@@ -18,18 +19,22 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
+// CreateOrUpdateGroup creates or updates an azure resource group.
 func (s *Service) CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error) {
 	return s.GroupsClient.CreateOrUpdate(s.ctx, resourceGroupName, resources.Group{Location: to.StringPtr(location)})
 }
 
+// DeleteGroup deletes an azure resource group.
 func (s *Service) DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
 	return s.GroupsClient.Delete(s.ctx, resourceGroupName)
 }
 
+// CheckGroupExistence checks oif the resource group exists or not.
 func (s *Service) CheckGroupExistence(resourceGroupName string) (autorest.Response, error) {
 	return s.GroupsClient.CheckExistence(s.ctx, resourceGroupName)
 }
 
+// WaitForGroupsDeleteFuture returns when the DeleteGroup operation completes.
 func (s *Service) WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error {
 	return future.WaitForCompletionRef(s.ctx, s.GroupsClient.Client)
 }

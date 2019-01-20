@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package resourcemanagement
 
 import (
@@ -30,6 +31,7 @@ const (
 	templateFile = "deployment-template.json"
 )
 
+// CreateOrUpdateDeployment is used to create or update a kubernetes cluster. It does so by creating or updating an ARM deployment.
 func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
@@ -54,6 +56,8 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 	}
 	return &deploymentFuture, nil
 }
+
+// ValidateDeployment validates the parameters of the cluster by calling the ARM validate method.
 func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
@@ -78,10 +82,12 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 	return err
 }
 
+// GetDeploymentResult retrieves the result of the ARM deployment operation.
 func (s *Service) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
 	return future.Result(s.DeploymentsClient)
 }
 
+// WaitForDeploymentsCreateOrUpdateFuture returns when the ARM operation completes.
 func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
 	return future.WaitForCompletionRef(s.ctx, s.DeploymentsClient.Client)
 }
@@ -249,18 +255,22 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 	return "", errors.New("unable to get startup script: unknown machine role")
 }
 
+// GetPublicIPName returns the public IP resource name of the machine.
 func GetPublicIPName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPIIP-%s", machine.ObjectMeta.Name)
 }
 
+// GetNetworkInterfaceName returns the nic resource name of the machine.
 func GetNetworkInterfaceName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPINIC-%s", GetVMName(machine))
 }
 
+// GetVMName returns the VM resource name of the machine.
 func GetVMName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPIVM-%s", machine.ObjectMeta.Name)
 }
 
+// GetOSDiskName returns the OS disk resource name of the machine.
 func GetOSDiskName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("%s_OSDisk", GetVMName(machine))
 }

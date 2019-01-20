@@ -10,20 +10,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package network
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
 )
 
-func (s *Service) GetPublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+// GetPublicIPAddress retrieves the Public IP address resource.
+func (s *Service) GetPublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
 	return s.PublicIPAddressesClient.Get(s.ctx, resourceGroup, IPName, "")
 }
 
-func (s *Service) DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
+// DeletePublicIPAddress deletes the Public IP address resource.
+func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
 	return s.PublicIPAddressesClient.Delete(s.ctx, resourceGroup, IPName)
 }
 
-func (s *Service) WaitForPublicIpAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error {
+// WaitForPublicIPAddressDeleteFuture waits for the DeletePublicIPAddress operation to complete.
+func (s *Service) WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.PublicIPAddressesClient.Client)
 }

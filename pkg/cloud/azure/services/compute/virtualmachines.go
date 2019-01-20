@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package compute
 
 import (
@@ -18,6 +19,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
+// RunCommand executes a command on the VM.
 func (s *Service) RunCommand(resoureGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error) {
 	cmdInput := compute.RunCommandInput{
 		CommandID: to.StringPtr("RunShellScript"),
@@ -26,7 +28,8 @@ func (s *Service) RunCommand(resoureGroup string, name string, cmd string) (comp
 	return s.VirtualMachinesClient.RunCommand(s.ctx, resoureGroup, name, cmdInput)
 }
 
-func (s *Service) VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+// VMIfExists returns the reference to the VM object if it exists.
+func (s *Service) VMIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
 	vm, err := s.VirtualMachinesClient.Get(s.ctx, resourceGroup, name, "")
 	if err != nil {
 		if aerr, ok := err.(autorest.DetailedError); ok {
@@ -39,14 +42,17 @@ func (s *Service) VmIfExists(resourceGroup string, name string) (*compute.Virtua
 	return &vm, nil
 }
 
+// DeleteVM deletes the virtual machine.
 func (s *Service) DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
 	return s.VirtualMachinesClient.Delete(s.ctx, resourceGroup, name)
 }
 
+// WaitForVMRunCommandFuture returns when the RunCommand operation completes.
 func (s *Service) WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualMachinesClient.Client)
 }
 
+// WaitForVMDeletionFuture returns when the DeleteVM operation completes.
 func (s *Service) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
 	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualMachinesClient.Client)
 }

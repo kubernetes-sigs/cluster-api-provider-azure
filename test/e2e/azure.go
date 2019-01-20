@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
 )
 
+// NewAzureServicesClient returns a new instance of the services.AzureClients object.
 func NewAzureServicesClient(subscriptionID string) (*services.AzureClients, error) {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
