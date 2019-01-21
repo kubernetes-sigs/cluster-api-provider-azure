@@ -32,7 +32,7 @@ func TestMasterMachineCreated(t *testing.T) {
 		t.Fatalf("failed to create test clients: %v", err)
 	}
 
-	// kube: verify virtual machine was created sucessfully and healthy
+	// kube: verify virtual machine was created successfully and healthy
 	machineList, err := clients.kube.ListMachine("default", metav1.ListOptions{LabelSelector: "set=master"})
 	if err != nil {
 		t.Fatalf("error to while trying to retrieve machine list: %v", err)
@@ -44,7 +44,7 @@ func TestMasterMachineCreated(t *testing.T) {
 	// azure: check if virtual machine exists
 	masterMachine := machineList.Items[0]
 	resourceGroup := masterMachine.ObjectMeta.Annotations[string(machine.ResourceGroup)]
-	vm, err := clients.azure.Compute.VmIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
+	vm, err := clients.azure.Compute.VMIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
 	if err != nil {
 		t.Fatalf("error checking if vm exists: %v", err)
 	}

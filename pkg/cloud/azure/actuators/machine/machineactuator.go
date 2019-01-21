@@ -40,16 +40,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// Actuator is an instance of the MachineActuator's AzureClient.
 var Actuator *AzureClient
 
-// The Azure Client, also used as a machine actuator
+// AzureClient holds the Azure SDK and Kubernetes Client for the MachineActuator
 type AzureClient struct {
 	services *services.AzureClients
 	client   client.Client
 	scheme   *runtime.Scheme
 }
 
-// Parameter object used to create a machine actuator.
+// MachineActuatorParams contains the parameters that are used to create a machine actuator.
 // These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
 type MachineActuatorParams struct {
 	Services *services.AzureClients
@@ -58,11 +59,13 @@ type MachineActuatorParams struct {
 }
 
 const (
+	// ProviderName is the default name of the cloud provider used.
 	ProviderName = "azure"
+	// SSHUser is the default ssh username.
 	SSHUser      = "ClusterAPI"
 )
 
-// Creates a new azure client to be used as a machine actuator
+// NewMachineActuator creates a new azure client to be used as a machine actuator
 func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
@@ -75,7 +78,7 @@ func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
 	}, nil
 }
 
-// Create a machine based on the cluster and machine spec passed
+// Create a machine based on the cluster and machine spec parameters.
 func (azure *AzureClient) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
@@ -108,7 +111,7 @@ func (azure *AzureClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 	return azure.updateAnnotations(cluster, machine)
 }
 
-// Update an existing machine based on the cluster and machine spec passed.
+// Update an existing machine based on the cluster and machine spec parameters.
 func (azure *AzureClient) Update(ctx context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
@@ -126,7 +129,7 @@ func (azure *AzureClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 	currentMachine := (*clusterv1.Machine)(status)
 
 	if currentMachine == nil {
-		vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine))
+		vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine))
 		if err != nil || vm == nil {
 			return fmt.Errorf("error checking if vm exists: %v", err)
 		}
@@ -155,17 +158,16 @@ func (azure *AzureClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 			return fmt.Errorf("error updating master machine %v in place: %v", currentMachine.ObjectMeta.Name, err)
 		}
 		return azure.updateStatus(goalMachine)
-	} else {
-		// delete and recreate machine for nodes
-		glog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
-		err = azure.Delete(ctx, cluster, currentMachine)
-		if err != nil {
-			return fmt.Errorf("error updating node machine %v, deleting node machine failed: %v", currentMachine.ObjectMeta.Name, err)
-		}
-		err = azure.Create(ctx, cluster, goalMachine)
-		if err != nil {
-			glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
-		}
+	}
+	// delete and recreate machine for nodes
+	glog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
+	err = azure.Delete(ctx, cluster, currentMachine)
+	if err != nil {
+		return fmt.Errorf("error updating node machine %v, deleting node machine failed: %v", currentMachine.ObjectMeta.Name, err)
+	}
+	err = azure.Create(ctx, cluster, goalMachine)
+	if err != nil {
+		glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 	}
 	return nil
 }
@@ -239,7 +241,7 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
 	// Check if VM exists
-	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
+	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
@@ -284,18 +286,18 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	// delete public ip address associated with the VM
-	publicIpAddressDeleteFuture, err := azure.network().DeletePublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	publicIPAddressDeleteFuture, err := azure.network().DeletePublicIPAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
-	err = azure.network().WaitForPublicIpAddressDeleteFuture(publicIpAddressDeleteFuture)
+	err = azure.network().WaitForPublicIPAddressDeleteFuture(publicIPAddressDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for public ip address deletion: %v", err)
 	}
 	return nil
 }
 
-// Get the kubeconfig of a machine based on the cluster and machine spec passed.
+// GetKubeConfig gets the kubeconfig of a machine based on the cluster and machine spec passed.
 // Has not been fully tested as k8s is not yet bootstrapped on created machines.
 func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
@@ -313,11 +315,11 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 		return "", err
 	}
 
-	ip, err := azure.network().GetPublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	ip, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
 		return "", fmt.Errorf("error getting public ip address: %v ", err)
 	}
-	sshclient, err := GetSshClient(*ip.IPAddress, privateKey)
+	sshclient, err := GetSSHClient(*ip.IPAddress, privateKey)
 	if err != nil {
 		return "", fmt.Errorf("unable to get ssh client: %v", err)
 	}
@@ -349,7 +351,8 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 	return string(content), nil
 }
 
-func GetSshClient(host string, privatekey string) (*ssh.Client, error) {
+// GetSSHClient returns an instance of ssh.Client from the host and private key passed.
+func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
 	key := []byte(privatekey)
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
@@ -367,7 +370,7 @@ func GetSshClient(host string, privatekey string) (*ssh.Client, error) {
 	return client, err
 }
 
-// Determine whether a machine exists based on the cluster and machine spec passed.
+// Exists determines whether a machine exists based on the cluster and machine spec passed.
 func (azure *AzureClient) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
@@ -385,20 +388,20 @@ func (azure *AzureClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 	if resp.StatusCode == 404 {
 		return false, nil
 	}
-	vm, err := azure.compute().VmIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
+	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
 	if err != nil {
 		return false, err
 	}
 	return vm != nil, nil
 }
 
-// Return the ip address of an existing machine based on the cluster and machine spec passed.
+// GetIP returns the ip address of an existing machine based on the cluster and machine spec passed.
 func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	publicIP, err := azure.network().GetPublicIpAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	publicIP, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
 	if err != nil {
 		return "", fmt.Errorf("error getting public ip address: %v", err)
 	}

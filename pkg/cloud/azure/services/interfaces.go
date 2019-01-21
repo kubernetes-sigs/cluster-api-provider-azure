@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package services
 
 import (
@@ -21,17 +22,18 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-// interface for all azure services clients
+// AzureClients represents the interface for all azure services clients
 type AzureClients struct {
 	Compute            AzureComputeClient
 	Network            AzureNetworkClient
 	Resourcemanagement AzureResourceManagementClient
 }
 
+// AzureComputeClient defines the operations that will interact with the Azure compute API
 type AzureComputeClient interface {
 	// Virtual Machines Operations
 	RunCommand(resoureGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error)
-	VmIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error)
+	VMIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error)
 	DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
 	WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error
 	WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error
@@ -41,6 +43,7 @@ type AzureComputeClient interface {
 	WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error
 }
 
+// AzureNetworkClient defines the operations that will interact with the Azure networking API
 type AzureNetworkClient interface {
 	// Network Interfaces Operations
 	DeleteNetworkInterface(resourceGroupName string, networkInterfaceName string) (network.InterfacesDeleteFuture, error)
@@ -52,15 +55,16 @@ type AzureNetworkClient interface {
 	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
 
 	// Public Ip Address Operations
-	GetPublicIpAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
-	DeletePublicIpAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
-	WaitForPublicIpAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
+	GetPublicIPAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
+	DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
+	WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
 
 	// Virtual Networks Operations
 	CreateOrUpdateVnet(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error)
 	WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error
 }
 
+// AzureResourceManagementClient defines the operations that will interact with the Azure resources API
 type AzureResourceManagementClient interface {
 	// Resource Groups Operations
 	CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error)
