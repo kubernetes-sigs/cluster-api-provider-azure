@@ -60,6 +60,8 @@ vet:
 generate:
 	go generate ./pkg/... ./cmd/...
 
+check: vendor fmt vet
+
 # Build the docker image
 docker-build: test
 	docker build . -t ${IMG}
