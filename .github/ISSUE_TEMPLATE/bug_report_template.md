@@ -17,6 +17,6 @@ about: Tell us about a problem you are experiencing.
 
 **Environment:**
 
-- Cluster-api-provider-aws version: 
+- cluster-api-provider-azure version: 
 - Kubernetes version: (use `kubectl version`): 
 - OS (e.g. from `/etc/os-release`): 
