@@ -16,22 +16,16 @@ limitations under the License.
 
 package services
 
-/*
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-10-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/go-autorest/autorest"
-	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
-//"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
-
+/*
 // Getter is a unified interfaces that includes all the getters.
 type Getter interface {
 	SDKSessionGetter
-	EC2Getter
+	AzureGetter
 	LBGetter
 }
 
@@ -40,34 +34,35 @@ type SDKSessionGetter interface {
 	Session(*providerv1.AzureClusterProviderSpec) *session.Session
 }
 
-// EC2Getter has a single method that returns an EC2 service interface.
-type EC2Getter interface {
-	EC2(*session.Session) EC2Interface
+// AzureGetter has a single method that returns an Azure service interface.
+type AzureGetter interface {
+	Azure(*session.Session) AzureInterface
 }
 
 // LBGetter has a single method that returns a LB service interface.
 type LBGetter interface {
 	LB(*session.Session) LBInterface
 }
+*/
 
-// EC2Interface encapsulates the methods exposed by the ec2 service.
-type EC2Interface interface {
-	EC2ClusterInterface
-	EC2MachineInterface
+// AzureInterface encapsulates the methods exposed by the Azure service.
+type AzureInterface interface {
+	AzureClusterInterface
+	AzureMachineInterface
 }
 
-// EC2ClusterInterface encapsulates the methods exposed to the cluster
+// AzureClusterInterface encapsulates the methods exposed to the cluster
 // actuator
-type EC2ClusterInterface interface {
+type AzureClusterInterface interface {
 	ReconcileNetwork() error
 	ReconcileBastion() error
 	DeleteNetwork() error
 	DeleteBastion() error
 }
 
-// EC2MachineInterface encapsulates the methods exposed to the machine
+// AzureMachineInterface encapsulates the methods exposed to the machine
 // actuator
-type EC2MachineInterface interface {
+type AzureMachineInterface interface {
 	InstanceIfExists(id string) (*providerv1.Instance, error)
 	TerminateInstance(id string) error
 	CreateOrGetMachine(machine *actuators.MachineScope, token string) (*providerv1.Instance, error)
@@ -77,13 +72,13 @@ type EC2MachineInterface interface {
 
 // LBInterface encapsulates the methods exposed by the elb service.
 type LBInterface interface {
-	ReconcileLoadbalancers() error
-	DeleteLoadbalancers() error
-	RegisterInstanceWithAPIServerLB(vmId string) error
+	ReconcileLoadBalancers() error
+	DeleteLoadBalancers() error
+	RegisterInstanceWithAPIServerLB(vmID string) error
 	GetAPIServerDNSName() (string, error)
 }
 
-
+/*
 // interface for all azure services clients
 type AzureClients struct {
 	Compute            AzureComputeClient

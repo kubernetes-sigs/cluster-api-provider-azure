@@ -1,5 +1,6 @@
 package machine
 
+/*
 import (
 	"bytes"
 	"context"
@@ -21,9 +22,9 @@ type AnnotationKey string
 
 const (
 	// Name is the annotation key for the machine type's name.
-	Name           AnnotationKey = "azure-name"
+	Name AnnotationKey = "azure-name"
 	// ResourceGroup is the annotation key for the machine's resource group.
-	ResourceGroup  AnnotationKey = "azure-rg"
+	ResourceGroup AnnotationKey = "azure-rg"
 	// InstanceStatus is the annotation key for the machine's instance status.
 	InstanceStatus AnnotationKey = "instance-status"
 )
@@ -123,3 +124,4 @@ func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (MachineStat
 	}
 	return MachineStatus(&status), nil
 }
+*/

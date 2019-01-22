@@ -12,6 +12,7 @@ limitations under the License.
 */
 package cluster
 
+/*
 import (
 	"os"
 	"testing"
@@ -410,3 +411,4 @@ func newCluster(t *testing.T) *v1alpha1.Cluster {
 		},
 	}
 }
+*/

@@ -12,23 +12,7 @@ limitations under the License.
 */
 package machine
 
-import (
-	"context"
-	"encoding/base64"
-	"os"
-	"testing"
-
-	"github.com/imdario/mergo"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
-	"github.com/ghodss/yaml"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-)
-
+/*
 func TestActuatorCreateSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Network: &services.MockAzureNetworkClient{}}
 	params := MachineActuatorParams{Services: &azureServicesClient}
@@ -121,11 +105,7 @@ func TestCreateSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine: %v", err)
 	}
@@ -145,11 +125,7 @@ func TestCreateFailureClusterParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when creating machine, but got none")
 	}
@@ -170,11 +146,7 @@ func TestCreateFailureMachineParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when creating machine, but got none")
 	}
@@ -194,11 +166,7 @@ func TestCreateFailureDeploymentValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error when creating machine, but got none")
 	}
@@ -218,11 +186,7 @@ func TestCreateFailureDeploymentCreation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -243,11 +207,7 @@ func TestCreateFailureDeploymentFutureError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -268,11 +228,7 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Create(context.Background(), cluster, machine)
-=======
-	err = actuator.Create(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -294,11 +250,7 @@ func TestExistsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
-=======
-	ok, err := actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -322,11 +274,7 @@ func TestExistsFailureClusterParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	_, err = actuator.Exists(context.Background(), cluster, machine)
-=======
-	_, err = actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -347,11 +295,7 @@ func TestExistsFailureMachineParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	_, err = actuator.Exists(context.Background(), cluster, machine)
-=======
-	_, err = actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -368,14 +312,10 @@ func TestExistsFailureRGNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
-=======
-	ok, err := actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -394,14 +334,10 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
-=======
-	ok, err := actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
 	}
@@ -422,14 +358,10 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
-=======
-	ok, err := actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -451,14 +383,10 @@ func TestExistsFailureVMCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	ok, err := actuator.Exists(context.Background(), cluster, machine)
-=======
-	ok, err := actuator.Exists(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
 	}
@@ -482,11 +410,7 @@ func TestUpdateFailureClusterParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Update(context.Background(), cluster, machine)
-=======
-	err = actuator.Update(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -507,11 +431,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Update(context.Background(), cluster, machine)
-=======
-	err = actuator.Update(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -621,14 +541,8 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
-=======
-	machineConfig := newMachineProviderConfig()
-	m1 := newMachine(t, machineConfig)
-	m2 := newMachine(t, machineConfig)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
@@ -640,11 +554,7 @@ func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.updateMaster(cluster, machine, machine)
-=======
-	err = actuator.updateMaster(cluster, m1, m2)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling updateMaster, but got none")
 	}
@@ -879,11 +789,7 @@ func TestDeleteSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err != nil {
 		t.Fatalf("unable to delete machine: %v", err)
 	}
@@ -904,11 +810,7 @@ func TestDeleteFailureClusterParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -929,11 +831,7 @@ func TestDeleteFailureMachineParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -950,14 +848,10 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -975,14 +869,10 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -999,14 +889,10 @@ func TestDeleteFailureVMCheckFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1024,14 +910,10 @@ func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1048,14 +930,10 @@ func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1073,14 +951,10 @@ func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1097,14 +971,10 @@ func TestDeleteFailureNICResourceName(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1123,14 +993,10 @@ func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1150,14 +1016,10 @@ func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1177,14 +1039,10 @@ func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1204,14 +1062,10 @@ func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	err = actuator.Delete(context.Background(), cluster, machine)
-=======
-	err = actuator.Delete(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1232,11 +1086,7 @@ func TestGetKubeConfigFailureClusterParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	_, err = actuator.GetKubeConfig(cluster, machine)
-=======
-	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
 	}
@@ -1257,11 +1107,7 @@ func TestGetKubeConfigFailureMachineParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	_, err = actuator.GetKubeConfig(cluster, machine)
-=======
-	_, err = actuator.GetKubeConfig(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
 	}
@@ -1319,11 +1165,7 @@ func TestGetIPFailureClusterParsing(t *testing.T) {
 		t.Fatalf("error while marshalling yaml")
 	}
 	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	_, err = actuator.GetIP(cluster, machine)
-=======
-	_, err = actuator.GetIP(context.TODO(), cluster, machine)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err == nil {
 		t.Fatal("expected error when calling GetIP, but got none")
 	}
@@ -1435,11 +1277,7 @@ func TestGetIPFailure(t *testing.T) {
 		t.Fatal("expected error calling GetIP but got none")
 	}
 }
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 func newMachineProviderSpec() azureconfigv1.AzureMachineProviderSpec {
-=======
-func newMachineProviderConfig() providerv1.AzureMachineProviderSpec {
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	var privateKey = []byte(`
 -----BEGIN RSA PRIVATE KEY-----
 MIIBPQIBAAJBALqbHeRLCyOdykC5SDLqI49ArYGYG1mqaH9/GnWjGavZM02fos4l
@@ -1452,11 +1290,7 @@ AL70wdUu5jMm2ex5cZGkZLRB50yE6rBiHCd5W1WdTFoe
 -----END RSA PRIVATE KEY-----
 `)
 
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 	return azureconfigv1.AzureMachineProviderSpec{
-=======
-	return providerv1.AzureMachineProviderSpec{
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 		Location: "southcentralus",
 		VMSize:   "Standard_B2ms",
 		Image: providerv1.Image{
@@ -1476,23 +1310,14 @@ AL70wdUu5jMm2ex5cZGkZLRB50yE6rBiHCd5W1WdTFoe
 	}
 }
 
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
-func newClusterProviderSpec() azureconfigv1.AzureClusterProviderSpec {
-	return azureconfigv1.AzureClusterProviderSpec{
-=======
-func newClusterProviderConfig() providerv1.AzureClusterProviderSpec {
+func newClusterProviderSpec() providerv1.AzureClusterProviderSpec {
 	return providerv1.AzureClusterProviderSpec{
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 		ResourceGroup: "resource-group-test",
 		Location:      "southcentralus",
 	}
 }
 
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
-func providerSpecFromMachine(in *azureconfigv1.AzureMachineProviderSpec) (*clusterv1.ProviderSpec, error) {
-=======
-func providerConfigFromMachine(in *providerv1.AzureMachineProviderSpec) (*clusterv1.ProviderSpec, error) {
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
+func providerSpecFromMachine(in *providerv1.AzureMachineProviderSpec) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
@@ -1502,11 +1327,7 @@ func providerConfigFromMachine(in *providerv1.AzureMachineProviderSpec) (*cluste
 	}, nil
 }
 
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
-func providerSpecFromCluster(in *azureconfigv1.AzureClusterProviderSpec) (*clusterv1.ProviderSpec, error) {
-=======
-func providerConfigFromCluster(in *providerv1.AzureClusterProviderSpec) (*clusterv1.ProviderSpec, error) {
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
+func providerSpecFromCluster(in *providerv1.AzureClusterProviderSpec) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
@@ -1516,13 +1337,8 @@ func providerConfigFromCluster(in *providerv1.AzureClusterProviderSpec) (*cluste
 	}, nil
 }
 
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
-func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderSpec) *v1alpha1.Machine {
-	providerSpec, err := providerSpecFromMachine(&machineConfig)
-=======
 func newMachine(t *testing.T, machineConfig providerv1.AzureMachineProviderSpec) *v1alpha1.Machine {
 	providerConfig, err := providerConfigFromMachine(&machineConfig)
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 	if err != nil {
 		t.Fatalf("error encoding provider config: %v", err)
 	}
@@ -1531,11 +1347,7 @@ func newMachine(t *testing.T, machineConfig providerv1.AzureMachineProviderSpec)
 			Name: "machine-test",
 		},
 		Spec: v1alpha1.MachineSpec{
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 			ProviderSpec: *providerSpec,
-=======
-			ProviderSpec: *providerConfig,
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 			Versions: v1alpha1.MachineVersionInfo{
 				Kubelet:      "1.9.4",
 				ControlPlane: "1.9.4",
@@ -1571,11 +1383,8 @@ func newCluster(t *testing.T) *v1alpha1.Cluster {
 					},
 				},
 			},
-<<<<<<< HEAD:pkg/cloud/azure/actuators/machine/machineactuator_test.go
 			ProviderSpec: *providerSpec,
-=======
-			ProviderSpec: *providerConfig,
->>>>>>> Fixes to cluster-api-provider-azure:pkg/cloud/azure/actuators/machine/actuator_test.go
 		},
 	}
 }
+*/

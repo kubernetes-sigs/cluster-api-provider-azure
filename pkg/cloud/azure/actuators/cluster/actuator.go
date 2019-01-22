@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -60,6 +61,7 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 	defer scope.Close()
 
 	computeSvc := compute.NewService(scope)
+	networkSvc := network.NewService(scope)
 
 	// Store some config parameters in the status.
 	if len(scope.ClusterConfig.CACertificate) == 0 {
@@ -72,7 +74,7 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 		scope.ClusterConfig.CAPrivateKey = certificates.EncodePrivateKeyPEM(caKey)
 	}
 
-	if err := computeSvc.ReconcileNetwork(); err != nil {
+	if err := networkSvc.ReconcileNetwork(); err != nil {
 		return errors.Errorf("unable to reconcile network: %+v", err)
 	}
 
@@ -80,7 +82,7 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 		return errors.Errorf("unable to reconcile network: %+v", err)
 	}
 
-	if err := computeSvc.ReconcileLoadbalancers(); err != nil {
+	if err := networkSvc.ReconcileLoadBalancers(); err != nil {
 		return errors.Errorf("unable to reconcile load balancers: %+v", err)
 	}
 
@@ -99,8 +101,9 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	defer scope.Close()
 
 	computeSvc := compute.NewService(scope)
+	networkSvc := network.NewService(scope)
 
-	if err := computeSvc.DeleteLoadbalancers(); err != nil {
+	if err := networkSvc.DeleteLoadBalancers(); err != nil {
 		return errors.Errorf("unable to delete load balancers: %+v", err)
 	}
 
@@ -108,7 +111,7 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 		return errors.Errorf("unable to delete bastion: %+v", err)
 	}
 
-	if err := computeSvc.DeleteNetwork(); err != nil {
+	if err := networkSvc.DeleteNetwork(); err != nil {
 		klog.Errorf("Error deleting cluster %v: %v.", cluster.Name, err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: 5 * 1000 * 1000 * 1000,

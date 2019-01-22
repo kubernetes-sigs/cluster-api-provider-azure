@@ -19,14 +19,15 @@ package deployer
 import (
 	"fmt"
 
+	//"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
+	//"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
+	//"k8s.io/client-go/tools/clientcmd"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/clientcmd"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-
-	//"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/elb"
-	"k8s.io/client-go/tools/clientcmd"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -55,14 +56,6 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, _ *clusterv1.Machine) (stri
 	}
 
 	// TODO: Reimplement using load balancer
-	/*
-		if scope.ClusterStatus != nil && scope.ClusterStatus.Network.APIServerLB.DNSName != "" {
-			return scope.ClusterStatus.Network.APIServerLB.DNSName, nil
-		}
-
-		networkSvc := network.NewService(scope)
-		return computeSvc.GetAPIServerDNSName()
-	*/
 	if scope.ClusterStatus != nil && scope.ClusterStatus.Network.APIServerLB.DNSName != "" {
 		return scope.ClusterStatus.Network.APIServerLB.IPAddress, nil
 	}
