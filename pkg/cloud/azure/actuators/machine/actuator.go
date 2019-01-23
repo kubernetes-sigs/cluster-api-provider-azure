@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -89,21 +89,21 @@ func (azure *AzureClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
 
-	err = azure.resourcemanagement().ValidateDeployment(machine, clusterConfig, machineConfig)
+	err = azure.resources().ValidateDeployment(machine, clusterConfig, machineConfig)
 	if err != nil {
 		return fmt.Errorf("error validating deployment: %v", err)
 	}
 
-	deploymentsFuture, err := azure.resourcemanagement().CreateOrUpdateDeployment(machine, clusterConfig, machineConfig)
+	deploymentsFuture, err := azure.resources().CreateOrUpdateDeployment(machine, clusterConfig, machineConfig)
 	if err != nil {
 		return fmt.Errorf("error creating or updating deployment: %v", err)
 	}
-	err = azure.resourcemanagement().WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
+	err = azure.resources().WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for deployment creation or update: %v", err)
 	}
 
-	deployment, err := azure.resourcemanagement().GetDeploymentResult(*deploymentsFuture)
+	deployment, err := azure.resources().GetDeploymentResult(*deploymentsFuture)
 	// Work around possible bugs or late-stage failures
 	if deployment.Name == nil || err != nil {
 		return fmt.Errorf("error getting deployment result: %v", err)
@@ -129,7 +129,7 @@ func (azure *AzureClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 	currentMachine := (*clusterv1.Machine)(status)
 
 	if currentMachine == nil {
-		vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine))
+		vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resources.GetVMName(goalMachine))
 		if err != nil || vm == nil {
 			return fmt.Errorf("error checking if vm exists: %v", err)
 		}
@@ -190,7 +190,7 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
 			"sudo tee /usr/bin/kubectl > /dev/null;"+
 			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.ControlPlane)
-		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
+		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
 		}
@@ -202,14 +202,14 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 
 	// update master and node packages
 	if currentMachine.Spec.Versions.Kubelet != goalMachine.Spec.Versions.Kubelet {
-		nodeName := strings.ToLower(resourcemanagement.GetVMName(goalMachine))
+		nodeName := strings.ToLower(resources.GetVMName(goalMachine))
 		// prepare node for maintenance
 		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets;"+
 			"sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
 		// mark the node as schedulable
 		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
 
-		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(goalMachine), cmd)
+		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
 		}
@@ -241,7 +241,7 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 		return fmt.Errorf("error loading machine provider config: %v", err)
 	}
 	// Check if VM exists
-	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
+	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resources.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
@@ -252,7 +252,7 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	nicID := (*vm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
 	// delete the VM instance
-	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
+	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, resources.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting virtual machine: %v", err)
 	}
@@ -272,7 +272,7 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	// delete NIC associated with the VM
-	nicName, err := resourcemanagement.ResourceName(*nicID)
+	nicName, err := resources.ResourceName(*nicID)
 	if err != nil {
 		return fmt.Errorf("error retrieving network interface name: %v", err)
 	}
@@ -286,7 +286,7 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	// delete public ip address associated with the VM
-	publicIPAddressDeleteFuture, err := azure.network().DeletePublicIPAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	publicIPAddressDeleteFuture, err := azure.network().DeletePublicIPAddress(clusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
@@ -315,7 +315,7 @@ func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clu
 		return "", err
 	}
 
-	ip, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	ip, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
 	if err != nil {
 		return "", fmt.Errorf("error getting public ip address: %v ", err)
 	}
@@ -381,14 +381,14 @@ func (azure *AzureClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 		return false, fmt.Errorf("error loading machine provider config: %v", err)
 	}
 
-	resp, err := azure.resourcemanagement().CheckGroupExistence(clusterConfig.ResourceGroup)
+	resp, err := azure.resources().CheckGroupExistence(clusterConfig.ResourceGroup)
 	if err != nil {
 		return false, err
 	}
 	if resp.StatusCode == 404 {
 		return false, nil
 	}
-	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resourcemanagement.GetVMName(machine))
+	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resources.GetVMName(machine))
 	if err != nil {
 		return false, err
 	}
@@ -401,7 +401,7 @@ func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.M
 	if err != nil {
 		return "", fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	publicIP, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resourcemanagement.GetPublicIPName(machine))
+	publicIP, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
 	if err != nil {
 		return "", fmt.Errorf("error getting public ip address: %v", err)
 	}
@@ -441,7 +441,7 @@ func azureServicesClientOrDefault(params MachineActuatorParams) (*services.Azure
 	azureComputeClient.SetAuthorizer(authorizer)
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
+	azureResourceManagementClient := resources.NewService(subscriptionID)
 	azureResourceManagementClient.SetAuthorizer(authorizer)
 	return &services.AzureClients{
 		Compute:            azureComputeClient,
@@ -458,7 +458,7 @@ func (azure *AzureClient) network() services.AzureNetworkClient {
 	return azure.services.Network
 }
 
-func (azure *AzureClient) resourcemanagement() services.AzureResourceManagementClient {
+func (azure *AzureClient) resources() services.AzureResourceManagementClient {
 	return azure.services.Resourcemanagement
 }
 

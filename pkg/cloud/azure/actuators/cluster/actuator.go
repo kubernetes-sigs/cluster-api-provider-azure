@@ -23,7 +23,7 @@ import (
 	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -63,7 +63,7 @@ func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
 	}
 
 	// Reconcile resource group
-	_, err = azure.resourcemanagement().CreateOrUpdateGroup(clusterConfig.ResourceGroup, clusterConfig.Location)
+	_, err = azure.resources().CreateOrUpdateGroup(clusterConfig.ResourceGroup, clusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("failed to create or update resource group: %v", err)
 	}
@@ -96,7 +96,7 @@ func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}
-	resp, err := azure.resourcemanagement().CheckGroupExistence(clusterConfig.ResourceGroup)
+	resp, err := azure.resources().CheckGroupExistence(clusterConfig.ResourceGroup)
 	if err != nil {
 		return fmt.Errorf("error checking for resource group existence: %v", err)
 	}
@@ -104,11 +104,11 @@ func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
 		return fmt.Errorf("resource group %v does not exist", clusterConfig.ResourceGroup)
 	}
 
-	groupsDeleteFuture, err := azure.resourcemanagement().DeleteGroup(clusterConfig.ResourceGroup)
+	groupsDeleteFuture, err := azure.resources().DeleteGroup(clusterConfig.ResourceGroup)
 	if err != nil {
 		return fmt.Errorf("error deleting resource group: %v", err)
 	}
-	err = azure.resourcemanagement().WaitForGroupsDeleteFuture(groupsDeleteFuture)
+	err = azure.resources().WaitForGroupsDeleteFuture(groupsDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for resource group deletion: %v", err)
 	}
@@ -130,7 +130,7 @@ func azureServicesClientOrDefault(params ClusterActuatorParams) (*services.Azure
 	}
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
+	azureResourceManagementClient := resources.NewService(subscriptionID)
 	azureResourceManagementClient.SetAuthorizer(authorizer)
 	return &services.AzureClients{
 		Network:            azureNetworkClient,
@@ -142,7 +142,7 @@ func (azure *AzureClusterClient) network() services.AzureNetworkClient {
 	return azure.services.Network
 }
 
-func (azure *AzureClusterClient) resourcemanagement() services.AzureResourceManagementClient {
+func (azure *AzureClusterClient) resources() services.AzureResourceManagementClient {
 	return azure.services.Resourcemanagement
 }
 

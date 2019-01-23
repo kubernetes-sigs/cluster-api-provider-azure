@@ -5,7 +5,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 )
 
 // NewAzureServicesClient returns a new instance of the services.AzureClients object.
@@ -17,7 +17,7 @@ func NewAzureServicesClient(subscriptionID string) (*services.AzureClients, erro
 
 	azureComputeClient := compute.NewService(subscriptionID)
 	azureComputeClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resourcemanagement.NewService(subscriptionID)
+	azureResourceManagementClient := resources.NewService(subscriptionID)
 	azureResourceManagementClient.SetAuthorizer(authorizer)
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)

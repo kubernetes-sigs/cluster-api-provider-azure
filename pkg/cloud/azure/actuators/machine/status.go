@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
@@ -95,7 +95,7 @@ func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine 
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
 	// store the name of the azure VM
-	machine.ObjectMeta.Annotations[string(Name)] = resourcemanagement.GetVMName(machine)
+	machine.ObjectMeta.Annotations[string(Name)] = resources.GetVMName(machine)
 	machine.ObjectMeta.Annotations[string(ResourceGroup)] = clusterConfig.ResourceGroup
 
 	err = azure.client.Update(context.Background(), machine)
