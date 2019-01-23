@@ -62,7 +62,7 @@ const (
 	// ProviderName is the default name of the cloud provider used.
 	ProviderName = "azure"
 	// SSHUser is the default ssh username.
-	SSHUser      = "ClusterAPI"
+	SSHUser = "ClusterAPI"
 )
 
 // NewMachineActuator creates a new azure client to be used as a machine actuator
