@@ -18,7 +18,7 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:c1615db7f85216df1d0c35549b97d471a5bd5e98d6bcaaaa8390f36c492ef8da"
+  digest = "1:d79f163e250500f283688eeb3c6950c78d11e881ce984ef8cc1394a9a81bc974"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "services/compute/mgmt/2018-04-01/compute",
@@ -27,11 +27,11 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "1951233eb944a49aa5f7278cba8e3e32a8c958af"
-  version = "v24.0.0"
+  revision = "392ea0b046cfb0cb05942ea92baf22af9ff7f9df"
+  version = "v24.1.0"
 
 [[projects]]
-  digest = "1:fc6ffc4546e74d5ef8477f97e2e733eb482c3015c8703d14d7dbd2bb72103963"
+  digest = "1:30617ad68ae19f94ae96950c94642e7dee89d0146670a55b0d22ac68de8b315f"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -46,8 +46,8 @@
     "tracing",
   ]
   pruneopts = "UT"
-  revision = "f401b1ccc8eb505927fae7a0c7f6406d37ca1c7e"
-  version = "v11.2.8"
+  revision = "7324aa01f00acb1ae6e502ac06e0213cfdf09bdb"
+  version = "v11.3.2"
 
 [[projects]]
   digest = "1:65b0d980b428a6ad4425f2df4cd5410edd81f044cf527bd1c345368444649e58"
@@ -909,17 +909,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0fe09b9541379a2e3c914146c6cf2489d817becd62e3b4c184c0f54d6c7aa057"
+  digest = "1:937e46834bfd618b223206d7e3d459bf0eb53ac7d05135bf809d73b8fafdf7f7"
   name = "k8s.io/code-generator"
   packages = [
-    "cmd/client-gen",
-    "cmd/client-gen/args",
-    "cmd/client-gen/generators",
-    "cmd/client-gen/generators/fake",
-    "cmd/client-gen/generators/scheme",
-    "cmd/client-gen/generators/util",
-    "cmd/client-gen/path",
-    "cmd/client-gen/types",
     "cmd/deepcopy-gen",
     "cmd/deepcopy-gen/args",
     "pkg/util",
@@ -960,13 +952,14 @@
   revision = "c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d"
 
 [[projects]]
-  digest = "1:037fe8c297908b3b7e2a775c1f611cbd54ef434828cccd1fc00f87ca23148aa4"
+  digest = "1:63d86c3cf4db8359fd678c10764e0434fb74d477ff0026cb9ce61277bba541c1"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "cmd/clusterctl/clientcmd",
     "cmd/clusterctl/clusterdeployer",
     "cmd/clusterctl/clusterdeployer/bootstrap",
     "cmd/clusterctl/clusterdeployer/bootstrap/existing",
+    "cmd/clusterctl/clusterdeployer/bootstrap/kind",
     "cmd/clusterctl/clusterdeployer/bootstrap/minikube",
     "cmd/clusterctl/clusterdeployer/clusterclient",
     "cmd/clusterctl/cmd",
@@ -986,7 +979,7 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "45f1c93260140936c610e56575d7505ba3d52444"
+  revision = "40d9d12e7bf4e1d0c6a3453e018c4eed1007ae0a"
 
 [[projects]]
   digest = "1:dca19204224bb3835c1ece945b28aa2b19095f99bad4fff33b72e3a9d47ad968"
@@ -1084,7 +1077,6 @@
     "k8s.io/apimachinery/pkg/runtime/serializer/json",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
-    "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "sigs.k8s.io/cluster-api/cmd/clusterctl/clientcmd",
     "sigs.k8s.io/cluster-api/cmd/clusterctl/cmd",
