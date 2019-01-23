@@ -5,21 +5,24 @@
 1. Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 2. Install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and a [minikube driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md). It is recommended to use KVM2 driver for Linux and VirtualBox for MacOS.
 3. Install [kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md).
-4. Clone the Project
+4. Clone the Project.
     ```bash
     git clone https://github.com/kubernetes-sigs/cluster-api-provider-azure $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
     ```
-5. Build the `clusterctl` tool
-
-   ```
+5. Ensure that you have the project root as your current working directory.
+   ```bash
    cd $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
+   ```
+6. Build the `clusterctl` tool.
+
+   ```bash
    make clusterctl
    ```
 
 ### Prepare your environment
 An Azure Service Principal is needed for usage by the `clusterctl` tool and for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication). The following environment variables should be set: `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`.
 
-An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Not that the service prinicpals created by the scripts will not be deleted automatically._
+An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Note that the service principals created by the scripts will not be deleted automatically._
 
 ### Usage
 
@@ -61,7 +64,7 @@ An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/az
    -p cmd/clusterctl/examples/azure/out/provider-components.yaml \
    --vm-driver virtualbox --minikube kubernetes-version=v1.12.2
    ```
-Once the cluster is created succesfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
+Once the cluster is created successfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
 
 ```
 kubectl --kubeconfig=kubeconfig get clusters
