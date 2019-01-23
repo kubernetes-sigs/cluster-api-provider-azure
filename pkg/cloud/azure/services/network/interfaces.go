@@ -13,7 +13,7 @@ limitations under the License.
 
 package network
 
-import "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+import "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 
 // DeleteNetworkInterface deletes the NIC resource.
 func (s *Service) DeleteNetworkInterface(resourceGroup string, networkInterfaceName string) (network.InterfacesDeleteFuture, error) {

@@ -14,13 +14,13 @@ limitations under the License.
 package network
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-01-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
 const (
 	// VnetDefaultName is the default name for the cluster's virtual network.
-	VnetDefaultName          = "ClusterAPIVnet"
+	VnetDefaultName = "ClusterAPIVnet"
 	// SubnetDefaultName is the default name for the cluster's subnet.
 	SubnetDefaultName        = "ClusterAPISubnet"
 	defaultPrivateSubnetCIDR = "10.0.0.0/24"
