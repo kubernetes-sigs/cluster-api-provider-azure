@@ -7,7 +7,7 @@ variables:
 - name: GOPATH # Go workspace path
   value: '$(system.defaultWorkingDirectory)/gopath'
 - name: modulePath # Path to the module's code
-  value: '$(GOPATH)/src/github.com/platform9/azure-provider'
+  value: '$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure'
 - name: KubernetesVersion
   value: 'v1.12.2'
 - name: KustomizeVersion

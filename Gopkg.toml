@@ -22,11 +22,11 @@ required = [
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
-  version = "17.2.0"
+  version = "24.0.0"
 
 [[constraint]]
   name = "github.com/Azure/go-autorest"
-  version = "10.10.0"
+  version = "11.2.8"
 
 [[constraint]]
   name = "github.com/ghodss/yaml"
@@ -34,7 +34,7 @@ required = [
 
 [[constraint]]
   name = "sigs.k8s.io/cluster-api"
-  revision = "9f86c61769dced58fbc5b148209dccbdb1cf9687"
+  revision = "45f1c93260140936c610e56575d7505ba3d52444"
 
 [[constraint]]
   name = "github.com/imdario/mergo"

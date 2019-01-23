@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package network
 
 import (
@@ -19,6 +20,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
+// Service provides the instances of the azure network API clients.
 type Service struct {
 	InterfacesClient        network.InterfacesClient
 	PublicIPAddressesClient network.PublicIPAddressesClient
@@ -27,16 +29,18 @@ type Service struct {
 	ctx                     context.Context
 }
 
-func NewService(subscriptionId string) *Service {
+// NewService returns a new instance of Service.
+func NewService(subscriptionID string) *Service {
 	return &Service{
-		InterfacesClient:        network.NewInterfacesClient(subscriptionId),
-		PublicIPAddressesClient: network.NewPublicIPAddressesClient(subscriptionId),
-		SecurityGroupsClient:    network.NewSecurityGroupsClient(subscriptionId),
-		VirtualNetworksClient:   network.NewVirtualNetworksClient(subscriptionId),
+		InterfacesClient:        network.NewInterfacesClient(subscriptionID),
+		PublicIPAddressesClient: network.NewPublicIPAddressesClient(subscriptionID),
+		SecurityGroupsClient:    network.NewSecurityGroupsClient(subscriptionID),
+		VirtualNetworksClient:   network.NewVirtualNetworksClient(subscriptionID),
 		ctx:                     context.Background(),
 	}
 }
 
+// SetAuthorizer populates the authorizer component of the network client objects.
 func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
 	s.InterfacesClient.BaseClient.Client.Authorizer = authorizer
 	s.PublicIPAddressesClient.BaseClient.Client.Authorizer = authorizer

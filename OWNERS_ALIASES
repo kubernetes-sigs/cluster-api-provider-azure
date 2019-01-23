@@ -1,0 +1,41 @@
+# See the OWNERS_ALIASES docs: https://git.k8s.io/community/contributors/guide/owners.md#owners_aliases
+
+aliases:
+  sig-cluster-lifecycle-leads:
+    - lukemarsden
+    - luxas
+    - roberthbailey
+    - timothysc
+  cluster-api-admins:
+    - justinsb
+    - krousey
+    - luxas
+    - roberthbailey
+    - kris-nova
+  cluster-api-maintainers:
+    - jessicaochen
+    - k4leung4
+    - karan
+    - kris-nova
+    - krousey
+    - medinatiger
+    - mkjelland
+    - roberthbailey
+    - rsdcastro
+    - spew
+  sig-azure-leads:
+    - dstrebel
+    - feiskyer
+    - justaugustus
+    - khenidak
+  cluster-api-azure-maintainers:
+    - andyzhangx
+    - brendandburns
+    - feiskyer
+    - justaugustus
+    - karataliu
+    - khenidak
+    - marwanad
+    - soggiest
+    - tariq1890
+    - vannrt

@@ -13,19 +13,20 @@ limitations under the License.
 package machine
 
 import (
+	"context"
 	"encoding/base64"
 	"os"
 	"testing"
 
 	"github.com/imdario/mergo"
-	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
+	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	"github.com/ghodss/yaml"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -113,7 +114,7 @@ func TestCreateSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -121,14 +122,14 @@ func TestCreateSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unable to create machine: %v", err)
 	}
 }
 func TestCreateFailureClusterParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -140,8 +141,8 @@ func TestCreateFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Create(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when creating machine, but got none")
 	}
@@ -149,7 +150,7 @@ func TestCreateFailureClusterParsing(t *testing.T) {
 
 func TestCreateFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -161,8 +162,8 @@ func TestCreateFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Create(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when creating machine, but got none")
 	}
@@ -174,7 +175,7 @@ func TestCreateFailureDeploymentValidation(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -182,7 +183,7 @@ func TestCreateFailureDeploymentValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when creating machine, but got none")
 	}
@@ -194,7 +195,7 @@ func TestCreateFailureDeploymentCreation(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -202,7 +203,7 @@ func TestCreateFailureDeploymentCreation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -215,7 +216,7 @@ func TestCreateFailureDeploymentFutureError(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -223,7 +224,7 @@ func TestCreateFailureDeploymentFutureError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -236,7 +237,7 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -244,7 +245,7 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Create(cluster, machine)
+	err = actuator.Create(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling create, but got none")
 	}
@@ -252,13 +253,13 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 
 func TestExistsSuccess(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	resourceManagementMock := services.MockAzureResourceManagementClient{}
 	mergo.Merge(&resourceManagementMock, services.MockRgExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -266,7 +267,7 @@ func TestExistsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	ok, err := actuator.Exists(cluster, machine)
+	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -277,7 +278,7 @@ func TestExistsSuccess(t *testing.T) {
 
 func TestExistsFailureClusterParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -289,8 +290,8 @@ func TestExistsFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.Exists(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.Exists(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -298,7 +299,7 @@ func TestExistsFailureClusterParsing(t *testing.T) {
 
 func TestExistsFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -310,8 +311,8 @@ func TestExistsFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	_, err = actuator.Exists(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	_, err = actuator.Exists(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -323,12 +324,15 @@ func TestExistsFailureRGNotExists(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -342,12 +346,15 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
 	}
@@ -357,18 +364,21 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 }
 func TestExistsFailureVMNotExists(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmNotExists())
+	mergo.Merge(&computeMock, services.MockVMNotExists())
 	resourceManagementMock := services.MockAzureResourceManagementClient{}
 	mergo.Merge(&resourceManagementMock, services.MockRgExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unexpected error calling Exists: %v", err)
 	}
@@ -379,18 +389,21 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 
 func TestExistsFailureVMCheckFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmCheckFailure())
+	mergo.Merge(&computeMock, services.MockVMCheckFailure())
 	resourceManagementMock := services.MockAzureResourceManagementClient{}
 	mergo.Merge(&resourceManagementMock, services.MockRgExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourceManagementMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	ok, err := actuator.Exists(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	ok, err := actuator.Exists(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error when calling exists, but got none")
 	}
@@ -401,7 +414,7 @@ func TestExistsFailureVMCheckFailure(t *testing.T) {
 
 func TestUpdateFailureClusterParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -413,8 +426,8 @@ func TestUpdateFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Update(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Update(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -422,7 +435,7 @@ func TestUpdateFailureClusterParsing(t *testing.T) {
 
 func TestUpdateFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -434,8 +447,8 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Update(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Update(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -448,7 +461,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	azureServicesClient := mockVMNotExists()
 // 	params := MachineActuatorParams{Services: &azureServicesClient}
 
-// 	machineConfig := newMachineProviderConfig()
+// 	machineConfig := newMachineProviderSpec()
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
@@ -461,7 +474,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // func TestUpdateMachineNotExists(t *testing.T) {
 // 	azureServicesClient := mockVMExists()
-// 	machineConfig := newMachineProviderConfig()
+// 	machineConfig := newMachineProviderSpec()
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
@@ -475,7 +488,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // func TestUpdateNoSpecChange(t *testing.T) {
 // 	azureServicesClient := mockVMExists()
-// 	machineConfig := newMachineProviderConfig()
+// 	machineConfig := newMachineProviderSpec()
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
@@ -489,7 +502,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // func TestUpdateMasterKubeletChange(t *testing.T) {
 // 	azureServicesClient := mockVMExists()
-// 	machineConfig := newMachineProviderConfig()
+// 	machineConfig := newMachineProviderSpec()
 // 	// set as master machine
 // 	machineConfig.Roles = []azureconfigv1.MachineRole{azureconfigv1.Master}
 // 	machine := newMachine(t, machineConfig)
@@ -508,7 +521,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // func TestUpdateMasterControlPlaneChange(t *testing.T) {
 // 	azureServicesClient := mockVMExists()
-// 	machineConfig := newMachineProviderConfig()
+// 	machineConfig := newMachineProviderSpec()
 // 	// set as master machine
 // 	machineConfig.Roles = []azureconfigv1.MachineRole{azureconfigv1.Master}
 // 	machine := newMachine(t, machineConfig)
@@ -526,7 +539,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // }
 // func TestUpdateMasterControlPlaneChangeRunCommandFailure(t *testing.T) {
 // 	azureServicesClient := mockVMExists()
-// 	machineConfig := newMachineProviderConfig()
+// 	machineConfig := newMachineProviderSpec()
 // 	// set as master machine
 // 	machineConfig.Roles = []azureconfigv1.MachineRole{azureconfigv1.Master}
 // 	machine := newMachine(t, machineConfig)
@@ -545,7 +558,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -557,7 +570,7 @@ func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
 	err = actuator.updateMaster(cluster, machine, machine)
 	if err == nil {
 		t.Fatal("expected error when calling updateMaster, but got none")
@@ -569,7 +582,7 @@ func TestUpdateMasterControlPlaneSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
@@ -592,7 +605,7 @@ func TestUpdateMasterControlPlaneCmdRunFailure(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
@@ -615,7 +628,7 @@ func TestUpdateMasterControlPlaneFutureFailure(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
@@ -636,7 +649,7 @@ func TestUpdateMasterKubeletSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.Kubelet = "1.1.1.1.1"
@@ -658,7 +671,7 @@ func TestUpdateMasterKubeletFailure(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.Kubelet = "1.1.1.1.1"
@@ -680,7 +693,7 @@ func TestUpdateMasterKubeletFutureFailure(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.Kubelet = "1.1.1.1.1"
@@ -698,7 +711,7 @@ func TestUpdateMasterKubeletFutureFailure(t *testing.T) {
 
 func TestShouldUpdateSameMachine(t *testing.T) {
 	params := MachineActuatorParams{Services: &services.AzureClients{}}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 
@@ -714,7 +727,7 @@ func TestShouldUpdateSameMachine(t *testing.T) {
 
 func TestShouldUpdateVersionChange(t *testing.T) {
 	params := MachineActuatorParams{Services: &services.AzureClients{}}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
@@ -730,7 +743,7 @@ func TestShouldUpdateVersionChange(t *testing.T) {
 }
 func TestShouldUpdateObjectMetaChange(t *testing.T) {
 	params := MachineActuatorParams{Services: &services.AzureClients{}}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.ObjectMeta.Namespace = "namespace-update"
@@ -744,9 +757,9 @@ func TestShouldUpdateObjectMetaChange(t *testing.T) {
 		t.Fatalf("expected shouldUpdate to return true but got false")
 	}
 }
-func TestShouldUpdateProviderConfigChange(t *testing.T) {
+func TestShouldUpdateProviderSpecChange(t *testing.T) {
 	params := MachineActuatorParams{Services: &services.AzureClients{}}
-	m1Config := newMachineProviderConfig()
+	m1Config := newMachineProviderSpec()
 	m1 := newMachine(t, m1Config)
 	m2Config := m1Config
 	m2Config.Location = "new-region"
@@ -764,7 +777,7 @@ func TestShouldUpdateProviderConfigChange(t *testing.T) {
 
 func TestShouldUpdateNameChange(t *testing.T) {
 	params := MachineActuatorParams{Services: &services.AzureClients{}}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
 	m2.Spec.ObjectMeta.Name = "name-update"
@@ -781,11 +794,11 @@ func TestShouldUpdateNameChange(t *testing.T) {
 
 func TestDeleteSuccess(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &services.MockAzureNetworkClient{}}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -793,7 +806,7 @@ func TestDeleteSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
-	err = actuator.Delete(cluster, machine)
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err != nil {
 		t.Fatalf("unable to delete machine: %v", err)
 	}
@@ -801,7 +814,7 @@ func TestDeleteSuccess(t *testing.T) {
 
 func TestDeleteFailureClusterParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -813,8 +826,8 @@ func TestDeleteFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Delete(cluster, machine)
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -822,7 +835,7 @@ func TestDeleteFailureClusterParsing(t *testing.T) {
 
 func TestDeleteFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -834,8 +847,8 @@ func TestDeleteFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
-	err = actuator.Delete(cluster, machine)
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling exists, but got none")
 	}
@@ -843,16 +856,19 @@ func TestDeleteFailureMachineParsing(t *testing.T) {
 
 func TestDeleteFailureVMNotExists(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmNotExists())
+	mergo.Merge(&computeMock, services.MockVMNotExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -860,17 +876,20 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 
 func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
-	mergo.Merge(&computeMock, services.MockVmDeleteFailure())
+	mergo.Merge(&computeMock, services.MockVMExists())
+	mergo.Merge(&computeMock, services.MockVMDeleteFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -878,16 +897,19 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 
 func TestDeleteFailureVMCheckFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmCheckFailure())
+	mergo.Merge(&computeMock, services.MockVMCheckFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -895,34 +917,40 @@ func TestDeleteFailureVMCheckFailure(t *testing.T) {
 
 func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
-	mergo.Merge(&computeMock, services.MockVmDeleteFutureFailure())
+	mergo.Merge(&computeMock, services.MockVMExists())
+	mergo.Merge(&computeMock, services.MockVMDeleteFutureFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
 }
 func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	mergo.Merge(&computeMock, services.MockDisksDeleteFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -930,53 +958,62 @@ func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 
 func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	mergo.Merge(&computeMock, services.MockDisksDeleteFutureFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
 }
 func TestDeleteFailureNICResourceName(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExistsNICInvalid())
+	mergo.Merge(&computeMock, services.MockVMExistsNICInvalid())
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
 }
 func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	networkMock := services.MockAzureNetworkClient{}
 	mergo.Merge(&networkMock, services.MockNicDeleteFailure())
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -984,19 +1021,22 @@ func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 
 func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	networkMock := services.MockAzureNetworkClient{}
 	mergo.Merge(&networkMock, services.MockNicDeleteFutureFailure())
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1004,19 +1044,22 @@ func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 
 func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockPublicIpDeleteFailure())
+	mergo.Merge(&networkMock, services.MockPublicIPDeleteFailure())
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1024,19 +1067,22 @@ func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 
 func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmExists())
+	mergo.Merge(&computeMock, services.MockVMExists())
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockPublicIpDeleteFutureFailure())
+	mergo.Merge(&networkMock, services.MockPublicIPDeleteFutureFailure())
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
-	err = actuator.Delete(cluster, machine)
+	if err != nil {
+		t.Fatalf("unable to create machine actuator: %v", err)
+	}
+	err = actuator.Delete(context.Background(), cluster, machine)
 	if err == nil {
 		t.Fatalf("expected error, but got none")
 	}
@@ -1044,7 +1090,7 @@ func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
 
 func TestGetKubeConfigFailureClusterParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -1056,7 +1102,7 @@ func TestGetKubeConfigFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
 	_, err = actuator.GetKubeConfig(cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
@@ -1065,7 +1111,7 @@ func TestGetKubeConfigFailureClusterParsing(t *testing.T) {
 
 func TestGetKubeConfigFailureMachineParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -1077,7 +1123,7 @@ func TestGetKubeConfigFailureMachineParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	machine.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+	machine.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
 	_, err = actuator.GetKubeConfig(cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetKubeConfig, but got none")
@@ -1086,7 +1132,7 @@ func TestGetKubeConfigFailureMachineParsing(t *testing.T) {
 
 func TestGetKubeConfigBase64Error(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machineConfig.SSHPrivateKey = "===="
 	machine := newMachine(t, machineConfig)
 
@@ -1107,7 +1153,7 @@ func TestGetKubeConfigIPAddressFailure(t *testing.T) {
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
 
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -1123,7 +1169,7 @@ func TestGetKubeConfigIPAddressFailure(t *testing.T) {
 
 func TestGetIPFailureClusterParsing(t *testing.T) {
 	cluster := newCluster(t)
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
 	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
@@ -1135,7 +1181,7 @@ func TestGetIPFailureClusterParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while marshalling yaml")
 	}
-	cluster.Spec.ProviderConfig.Value = &runtime.RawExtension{Raw: bytes}
+	cluster.Spec.ProviderSpec.Value = &runtime.RawExtension{Raw: bytes}
 	_, err = actuator.GetIP(cluster, machine)
 	if err == nil {
 		t.Fatal("expected error when calling GetIP, but got none")
@@ -1149,7 +1195,7 @@ func TestGetKubeConfigValidPrivateKey(t *testing.T) {
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
 
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -1169,7 +1215,7 @@ func TestGetKubeConfigInvalidBase64(t *testing.T) {
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
 
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machineConfig.SSHPrivateKey = "====="
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1190,7 +1236,7 @@ func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
 
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machineConfig.SSHPrivateKey = "aGVsbG8="
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1210,7 +1256,7 @@ func TestGetIPSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -1234,7 +1280,7 @@ func TestGetIPFailure(t *testing.T) {
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
-	machineConfig := newMachineProviderConfig()
+	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
 
@@ -1248,7 +1294,7 @@ func TestGetIPFailure(t *testing.T) {
 		t.Fatal("expected error calling GetIP but got none")
 	}
 }
-func newMachineProviderConfig() azureconfigv1.AzureMachineProviderConfig {
+func newMachineProviderSpec() azureconfigv1.AzureMachineProviderSpec {
 	var privateKey = []byte(`
 -----BEGIN RSA PRIVATE KEY-----
 MIIBPQIBAAJBALqbHeRLCyOdykC5SDLqI49ArYGYG1mqaH9/GnWjGavZM02fos4l
@@ -1261,7 +1307,7 @@ AL70wdUu5jMm2ex5cZGkZLRB50yE6rBiHCd5W1WdTFoe
 -----END RSA PRIVATE KEY-----
 `)
 
-	return azureconfigv1.AzureMachineProviderConfig{
+	return azureconfigv1.AzureMachineProviderSpec{
 		Location: "southcentralus",
 		VMSize:   "Standard_B2ms",
 		Image: azureconfigv1.Image{
@@ -1281,35 +1327,35 @@ AL70wdUu5jMm2ex5cZGkZLRB50yE6rBiHCd5W1WdTFoe
 	}
 }
 
-func newClusterProviderConfig() azureconfigv1.AzureClusterProviderConfig {
-	return azureconfigv1.AzureClusterProviderConfig{
+func newClusterProviderSpec() azureconfigv1.AzureClusterProviderSpec {
+	return azureconfigv1.AzureClusterProviderSpec{
 		ResourceGroup: "resource-group-test",
 		Location:      "southcentralus",
 	}
 }
 
-func providerConfigFromMachine(in *azureconfigv1.AzureMachineProviderConfig) (*clusterv1.ProviderConfig, error) {
+func providerSpecFromMachine(in *azureconfigv1.AzureMachineProviderSpec) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderConfig{
+	return &clusterv1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
 
-func providerConfigFromCluster(in *azureconfigv1.AzureClusterProviderConfig) (*clusterv1.ProviderConfig, error) {
+func providerSpecFromCluster(in *azureconfigv1.AzureClusterProviderSpec) (*clusterv1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderConfig{
+	return &clusterv1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
 
-func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderConfig) *v1alpha1.Machine {
-	providerConfig, err := providerConfigFromMachine(&machineConfig)
+func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderSpec) *v1alpha1.Machine {
+	providerSpec, err := providerSpecFromMachine(&machineConfig)
 	if err != nil {
 		t.Fatalf("error encoding provider config: %v", err)
 	}
@@ -1318,7 +1364,7 @@ func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderCo
 			Name: "machine-test",
 		},
 		Spec: v1alpha1.MachineSpec{
-			ProviderConfig: *providerConfig,
+			ProviderSpec: *providerSpec,
 			Versions: v1alpha1.MachineVersionInfo{
 				Kubelet:      "1.9.4",
 				ControlPlane: "1.9.4",
@@ -1328,8 +1374,8 @@ func newMachine(t *testing.T, machineConfig azureconfigv1.AzureMachineProviderCo
 }
 
 func newCluster(t *testing.T) *v1alpha1.Cluster {
-	clusterProviderConfig := newClusterProviderConfig()
-	providerConfig, err := providerConfigFromCluster(&clusterProviderConfig)
+	clusterProviderSpec := newClusterProviderSpec()
+	providerSpec, err := providerSpecFromCluster(&clusterProviderSpec)
 	if err != nil {
 		t.Fatalf("error encoding provider config: %v", err)
 	}
@@ -1354,7 +1400,7 @@ func newCluster(t *testing.T) *v1alpha1.Cluster {
 					},
 				},
 			},
-			ProviderConfig: *providerConfig,
+			ProviderSpec: *providerSpec,
 		},
 	}
 }

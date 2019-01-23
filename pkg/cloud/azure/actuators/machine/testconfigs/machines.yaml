@@ -7,10 +7,10 @@ items:
     labels:
       set: master
   spec:
-    providerConfig:
+    providerSpec:
       value:
-        apiVersion: "azureproviderconfig/v1alpha1"
-        kind: "AzureMachineProviderConfig"
+        apiVersion: "azureproviderspec/v1alpha1"
+        kind: "AzureMachineProviderSpec"
         roles:
         - Master
         location: "eastus"

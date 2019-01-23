@@ -9,9 +9,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/platform9/azure-provider/pkg/cloud/azure/actuators/machine"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
 )
 
 // do some testing with the K8s go client
@@ -32,8 +32,11 @@ func TestMasterMachineCreated(t *testing.T) {
 		t.Fatalf("failed to create test clients: %v", err)
 	}
 
-	// kube: verify virtual machine was created sucessfully and healthy
+	// kube: verify virtual machine was created successfully and healthy
 	machineList, err := clients.kube.ListMachine("default", metav1.ListOptions{LabelSelector: "set=master"})
+	if err != nil {
+		t.Fatalf("error to while trying to retrieve machine list: %v", err)
+	}
 	if len(machineList.Items) != 1 {
 		t.Fatalf("expected only one machine with label master in the default namespace")
 	}
@@ -41,7 +44,7 @@ func TestMasterMachineCreated(t *testing.T) {
 	// azure: check if virtual machine exists
 	masterMachine := machineList.Items[0]
 	resourceGroup := masterMachine.ObjectMeta.Annotations[string(machine.ResourceGroup)]
-	vm, err := clients.azure.Compute.VmIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
+	vm, err := clients.azure.Compute.VMIfExists(resourceGroup, resourcemanagement.GetVMName(&masterMachine))
 	if err != nil {
 		t.Fatalf("error checking if vm exists: %v", err)
 	}

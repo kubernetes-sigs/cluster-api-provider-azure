@@ -22,9 +22,9 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AzureMachineProviderConfig is the Schema for the azuremachineproviderconfigs API
+// AzureMachineProviderSpec is the Schema for the azuremachineproviderspecs API
 // +k8s:openapi-gen=true
-type AzureMachineProviderConfig struct {
+type AzureMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -63,5 +63,5 @@ type ManagedDisk struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 func init() {
-	SchemeBuilder.Register(&AzureMachineProviderConfig{})
+	SchemeBuilder.Register(&AzureMachineProviderSpec{})
 }

@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-PREFIX = platform9
+PREFIX ?= platform9
 NAME = cluster-api-azure-provider-controller
 TAG ?= latest
 IMG=${PREFIX}/${NAME}:${TAG}
@@ -25,11 +25,11 @@ cluster-unit-tests:
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager github.com/platform9/azure-provider/cmd/manager
+	go build -o bin/manager sigs.k8s.io/cluster-api-provider-azure/cmd/manager
 
 # Build clusterctl
 clusterctl: generate fmt vet
-	go build -o bin/clusterctl github.com/platform9/azure-provider/cmd/clusterctl
+	go build -o bin/clusterctl sigs.k8s.io/cluster-api-provider-azure/cmd/clusterctl
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -59,6 +59,8 @@ vet:
 # Generate code
 generate:
 	go generate ./pkg/... ./cmd/...
+
+check: vendor fmt vet
 
 # Build the docker image
 docker-build: test

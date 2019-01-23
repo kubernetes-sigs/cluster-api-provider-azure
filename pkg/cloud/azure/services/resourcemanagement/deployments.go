@@ -10,6 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package resourcemanagement
 
 import (
@@ -19,8 +20,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/network"
+	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
@@ -30,7 +31,8 @@ const (
 	templateFile = "deployment-template.json"
 )
 
-func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+// CreateOrUpdateDeployment is used to create or update a kubernetes cluster. It does so by creating or updating an ARM deployment.
+func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
@@ -54,7 +56,9 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 	}
 	return &deploymentFuture, nil
 }
-func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) error {
+
+// ValidateDeployment validates the parameters of the cluster by calling the ARM validate method.
+func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
@@ -78,15 +82,17 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 	return err
 }
 
+// GetDeploymentResult retrieves the result of the ARM deployment operation.
 func (s *Service) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
 	return future.Result(s.DeploymentsClient)
 }
 
+// WaitForDeploymentsCreateOrUpdateFuture returns when the ARM operation completes.
 func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
 	return future.WaitForCompletionRef(s.ctx, s.DeploymentsClient.Client)
 }
 
-func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*map[string]interface{}, error) {
+func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*map[string]interface{}, error) {
 	startupScript, err := getStartupScript(machine, *machineConfig)
 	if err != nil {
 		return nil, err
@@ -162,7 +168,7 @@ func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig 
 }
 
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func getStartupScript(machine *clusterv1.Machine, machineConfig azureconfigv1.AzureMachineProviderConfig) (string, error) {
+func getStartupScript(machine *clusterv1.Machine, machineConfig azureconfigv1.AzureMachineProviderSpec) (string, error) {
 	if machineConfig.Roles[0] == azureconfigv1.Master {
 		startupScript := fmt.Sprintf(`(
 apt-get update
@@ -249,18 +255,22 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 	return "", errors.New("unable to get startup script: unknown machine role")
 }
 
+// GetPublicIPName returns the public IP resource name of the machine.
 func GetPublicIPName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPIIP-%s", machine.ObjectMeta.Name)
 }
 
+// GetNetworkInterfaceName returns the nic resource name of the machine.
 func GetNetworkInterfaceName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPINIC-%s", GetVMName(machine))
 }
 
+// GetVMName returns the VM resource name of the machine.
 func GetVMName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("ClusterAPIVM-%s", machine.ObjectMeta.Name)
 }
 
+// GetOSDiskName returns the OS disk resource name of the machine.
 func GetOSDiskName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("%s_OSDisk", GetVMName(machine))
 }

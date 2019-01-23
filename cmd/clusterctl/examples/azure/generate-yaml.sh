@@ -10,6 +10,7 @@ RANDOM_STRING=$(head -c5 < <(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom) | tr '[
 HUMAN_FRIENDLY_CLUSTER_NAME="${HUMAN_FRIENDLY_CLUSTER_NAME:-test1}"
 CLUSTER_NAME=${HUMAN_FRIENDLY_CLUSTER_NAME}-${RANDOM_STRING}
 RESOURCE_GROUP="${RESOURCE_GROUP:-clusterapi}"-${RANDOM_STRING}
+LOCATION=${LOCATION:-"westus2"}
 
 OUTPUT_DIR=${OUTPUT_DIR:-out}
 SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
@@ -55,6 +56,8 @@ while test $# -gt 0; do
         esac
 done
 
+mkdir -p ${OUTPUT_DIR}
+
 if [ $OVERWRITE -ne 1 ] && [ -f $MACHINE_GENERATED_FILE ]; then
   echo File $MACHINE_GENERATED_FILE already exists. Delete it manually before running this script.
   exit 1
@@ -95,10 +98,6 @@ else
   printf "AZURE_SUBSCRIPTION_ID=%s\n" "$SUBSCRIPTION_ID" >> "$CREDENTIALS_FILE"
   printf "AZURE_TENANT_ID=%s\n" "$TENANT_ID" >> "$CREDENTIALS_FILE"
 fi
-
-LOCATION="westus2"
-
-mkdir -p ${OUTPUT_DIR}
 
 rm -f $SSH_KEY_FILE 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f $SSH_KEY_FILE -N '' 1>/dev/null

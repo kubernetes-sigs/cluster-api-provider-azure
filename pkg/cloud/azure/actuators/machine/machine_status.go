@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/platform9/azure-provider/pkg/cloud/azure/services/resourcemanagement"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
@@ -14,12 +14,18 @@ import (
 // holds the machine status under an annotation.
 // TODO: implement MachineStatus once the API is stable
 
+// MachineStatus  is an instance of the MachineType custom resource.
 type MachineStatus *clusterv1.Machine
+
+// AnnotationKey represents the key value of a Kubernetes annotation.
 type AnnotationKey string
 
 const (
+	// Name is the annotation key for the machine type's name.
 	Name           AnnotationKey = "azure-name"
+	// ResourceGroup is the annotation key for the machine's resource group.
 	ResourceGroup  AnnotationKey = "azure-rg"
+	// InstanceStatus is the annotation key for the machine's instance status.
 	InstanceStatus AnnotationKey = "instance-status"
 )
 
@@ -80,7 +86,7 @@ func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine 
 	if azure.client == nil {
 		return nil
 	}
-	clusterConfig, err := clusterProviderFromProviderConfig(cluster.Spec.ProviderConfig)
+	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return fmt.Errorf("error loading cluster provider config: %v", err)
 	}

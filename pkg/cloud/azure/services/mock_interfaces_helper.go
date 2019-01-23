@@ -23,15 +23,15 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	azureconfigv1 "github.com/platform9/azure-provider/pkg/apis/azureprovider/v1alpha1"
+	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-// Compute Mocks
-func MockVmExists() MockAzureComputeClient {
+// MockVMExists mocks the VMIfExists success response.
+func MockVMExists() MockAzureComputeClient {
 	return MockAzureComputeClient{
-		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
-			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{compute.NetworkInterfaceReference{ID: to.StringPtr("001")}}}
+		MockVMIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{{ID: to.StringPtr("001")}}}
 			OsDiskName := fmt.Sprintf("OS_Disk_%v", name)
 			storageProfile := compute.StorageProfile{OsDisk: &compute.OSDisk{Name: &OsDiskName}}
 			vmProperties := compute.VirtualMachineProperties{StorageProfile: &storageProfile, NetworkProfile: &networkProfile}
@@ -40,10 +40,11 @@ func MockVmExists() MockAzureComputeClient {
 	}
 }
 
-func MockVmExistsNICInvalid() MockAzureComputeClient {
+// MockVMExistsNICInvalid mocks the VMIfExists Invalid NIC response.
+func MockVMExistsNICInvalid() MockAzureComputeClient {
 	return MockAzureComputeClient{
-		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
-			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{compute.NetworkInterfaceReference{ID: to.StringPtr("")}}}
+		MockVMIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+			networkProfile := compute.NetworkProfile{NetworkInterfaces: &[]compute.NetworkInterfaceReference{{ID: to.StringPtr("")}}}
 			OsDiskName := fmt.Sprintf("OS_Disk_%v", name)
 			storageProfile := compute.StorageProfile{OsDisk: &compute.OSDisk{Name: &OsDiskName}}
 			vmProperties := compute.VirtualMachineProperties{StorageProfile: &storageProfile, NetworkProfile: &networkProfile}
@@ -51,23 +52,27 @@ func MockVmExistsNICInvalid() MockAzureComputeClient {
 		},
 	}
 }
-func MockVmNotExists() MockAzureComputeClient {
+
+// MockVMNotExists mocks the VMExists not found response.
+func MockVMNotExists() MockAzureComputeClient {
 	return MockAzureComputeClient{
-		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+		MockVMIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
 			return nil, nil
 		},
 	}
 }
 
-func MockVmCheckFailure() MockAzureComputeClient {
+// MockVMCheckFailure mocks the VMIfExists failure response
+func MockVMCheckFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
-		MockVmIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
+		MockVMIfExists: func(resourceGroup string, name string) (*compute.VirtualMachine, error) {
 			return &compute.VirtualMachine{}, errors.New("error while checking if vm exists")
 		},
 	}
 }
 
-func MockVmDeleteFailure() MockAzureComputeClient {
+// MockVMDeleteFailure mocks the VMDelete failure response.
+func MockVMDeleteFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
 		MockDeleteVM: func(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
 			return compute.VirtualMachinesDeleteFuture{}, errors.New("error while deleting vm")
@@ -75,7 +80,8 @@ func MockVmDeleteFailure() MockAzureComputeClient {
 	}
 }
 
-func MockVmDeleteFutureFailure() MockAzureComputeClient {
+// MockVMDeleteFutureFailure mocks the VMDeleteFutureFailure response.
+func MockVMDeleteFutureFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
 		MockWaitForVMDeletionFuture: func(future compute.VirtualMachinesDeleteFuture) error {
 			return errors.New("failed on waiting for VirtualMachinesDeleteFuture")
@@ -83,6 +89,7 @@ func MockVmDeleteFutureFailure() MockAzureComputeClient {
 	}
 }
 
+// MockDisksDeleteFailure mocks the Disks Delete failure response.
 func MockDisksDeleteFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
 		MockDeleteManagedDisk: func(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
@@ -91,6 +98,7 @@ func MockDisksDeleteFailure() MockAzureComputeClient {
 	}
 }
 
+// MockDisksDeleteFutureFailure mocks the Disks Delete Future failure response.
 func MockDisksDeleteFutureFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
 		MockWaitForDisksDeleteFuture: func(future compute.DisksDeleteFuture) error {
@@ -99,6 +107,7 @@ func MockDisksDeleteFutureFailure() MockAzureComputeClient {
 	}
 }
 
+// MockRunCommandFailure mocks the RunCommand failure response.
 func MockRunCommandFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
 		MockRunCommand: func(resourceGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error) {
@@ -107,6 +116,7 @@ func MockRunCommandFailure() MockAzureComputeClient {
 	}
 }
 
+// MockRunCommandFutureFailure mocks the RunCommand's future failure response.
 func MockRunCommandFutureFailure() MockAzureComputeClient {
 	return MockAzureComputeClient{
 		MockWaitForVMRunCommandFuture: func(future compute.VirtualMachinesRunCommandFuture) error {
@@ -115,7 +125,7 @@ func MockRunCommandFutureFailure() MockAzureComputeClient {
 	}
 }
 
-// Network Mocks
+// MockNsgCreateOrUpdateSuccess mocks the SecurityGroupsCreateOrUpdateFuture response.
 func MockNsgCreateOrUpdateSuccess() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
@@ -124,6 +134,7 @@ func MockNsgCreateOrUpdateSuccess() MockAzureNetworkClient {
 	}
 }
 
+// MockNsgCreateOrUpdateFailure SecurityGroupsCreateOrUpdateFuture failure response.
 func MockNsgCreateOrUpdateFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockCreateOrUpdateNetworkSecurityGroup: func(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
@@ -132,6 +143,7 @@ func MockNsgCreateOrUpdateFailure() MockAzureNetworkClient {
 	}
 }
 
+// MockVnetCreateOrUpdateSuccess mocks the VnetCreateOrUpdateSuccess response.
 func MockVnetCreateOrUpdateSuccess() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockCreateOrUpdateVnet: func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
@@ -140,6 +152,7 @@ func MockVnetCreateOrUpdateSuccess() MockAzureNetworkClient {
 	}
 }
 
+// MockVnetCreateOrUpdateFailure mocks the VnetCreateOrUpdateSuccess failure response.
 func MockVnetCreateOrUpdateFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockCreateOrUpdateVnet: func(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
@@ -147,6 +160,8 @@ func MockVnetCreateOrUpdateFailure() MockAzureNetworkClient {
 		},
 	}
 }
+
+// MockNsgCreateOrUpdateFutureFailure mocks the SecurityGroupsCreateOrUpdateSuccess future failure response.
 func MockNsgCreateOrUpdateFutureFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockWaitForNetworkSGsCreateOrUpdateFuture: func(future network.SecurityGroupsCreateOrUpdateFuture) error {
@@ -155,6 +170,7 @@ func MockNsgCreateOrUpdateFutureFailure() MockAzureNetworkClient {
 	}
 }
 
+// MockVnetCreateOrUpdateFutureFailure mocks the VnetCreateOrUpdate future failure response.
 func MockVnetCreateOrUpdateFutureFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockWaitForVnetCreateOrUpdateFuture: func(future network.VirtualNetworksCreateOrUpdateFuture) error {
@@ -163,6 +179,7 @@ func MockVnetCreateOrUpdateFutureFailure() MockAzureNetworkClient {
 	}
 }
 
+// MockNicDeleteFailure mocks the InterfacesDelete failure response.
 func MockNicDeleteFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockDeleteNetworkInterface: func(resourceGroup string, networkInterfaceName string) (network.InterfacesDeleteFuture, error) {
@@ -171,6 +188,7 @@ func MockNicDeleteFailure() MockAzureNetworkClient {
 	}
 }
 
+// MockNicDeleteFutureFailure mocks the InterfacesDelete future failure response.
 func MockNicDeleteFutureFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
 		MockWaitForNetworkInterfacesDeleteFuture: func(future network.InterfacesDeleteFuture) error {
@@ -179,25 +197,28 @@ func MockNicDeleteFutureFailure() MockAzureNetworkClient {
 	}
 }
 
-func MockPublicIpDeleteFailure() MockAzureNetworkClient {
+// MockPublicIPDeleteFailure mocks the PublicIPDeleteFailure response.
+func MockPublicIPDeleteFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
-		MockDeletePublicIpAddress: func(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
+		MockDeletePublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
 			return network.PublicIPAddressesDeleteFuture{}, errors.New("failed to delete public ip address")
 		},
 	}
 }
 
-func MockPublicIpDeleteFutureFailure() MockAzureNetworkClient {
+// MockPublicIPDeleteFutureFailure mocks the PublicIPDeleteFailure future response.
+func MockPublicIPDeleteFutureFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
-		MockWaitForPublicIpAddressDeleteFuture: func(future network.PublicIPAddressesDeleteFuture) error {
+		MockWaitForPublicIPAddressDeleteFuture: func(future network.PublicIPAddressesDeleteFuture) error {
 			return errors.New("failed on waiting for PublicIPAddressesDeleteFuture")
 		},
 	}
 }
 
+// MockGetPublicIPAddress mocks the GetPublicIPAddress success response.
 func MockGetPublicIPAddress(ip string) MockAzureNetworkClient {
 	return MockAzureNetworkClient{
-		MockGetPublicIpAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+		MockGetPublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
 			publicIPAddress := network.PublicIPAddress{PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{}}
 			publicIPAddress.IPAddress = to.StringPtr(ip)
 			return publicIPAddress, nil
@@ -205,9 +226,10 @@ func MockGetPublicIPAddress(ip string) MockAzureNetworkClient {
 	}
 }
 
+// MockGetPublicIPAddressFailure mocks the GetPublicIPAddress failure response.
 func MockGetPublicIPAddressFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
-		MockGetPublicIpAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+		MockGetPublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
 			return network.PublicIPAddress{}, errors.New("failed to get public ip address")
 		},
 	}
@@ -215,6 +237,7 @@ func MockGetPublicIPAddressFailure() MockAzureNetworkClient {
 
 // ResourceManagement Mocks
 
+// MockRgExists mocks the CheckGroupExistence response.
 func MockRgExists() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
@@ -223,6 +246,7 @@ func MockRgExists() MockAzureResourceManagementClient {
 	}
 }
 
+// MockRgNotExists mocks the CheckGroupExistence not found response.
 func MockRgNotExists() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
@@ -231,6 +255,7 @@ func MockRgNotExists() MockAzureResourceManagementClient {
 	}
 }
 
+// MockRgCheckFailure mocks the CheckGroupExistence failure response.
 func MockRgCheckFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockCheckGroupExistence: func(rgName string) (autorest.Response, error) {
@@ -239,6 +264,7 @@ func MockRgCheckFailure() MockAzureResourceManagementClient {
 	}
 }
 
+// MockRgCreateOrUpdateFailure mocks the CheckGroupExistence future failure response.
 func MockRgCreateOrUpdateFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockCreateOrUpdateGroup: func(resourceGroupName string, location string) (resources.Group, error) {
@@ -247,6 +273,7 @@ func MockRgCreateOrUpdateFailure() MockAzureResourceManagementClient {
 	}
 }
 
+// MockRgDeleteSuccess mocks the WaitForGroupsDeleteFuture response
 func MockRgDeleteSuccess() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockDeleteGroup: func(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
@@ -255,6 +282,7 @@ func MockRgDeleteSuccess() MockAzureResourceManagementClient {
 	}
 }
 
+// MockRgDeleteFailure mocks the groups delete response.
 func MockRgDeleteFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockDeleteGroup: func(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
@@ -263,6 +291,7 @@ func MockRgDeleteFailure() MockAzureResourceManagementClient {
 	}
 }
 
+// MockRgDeleteFutureFailure mocks the WaitForGroupsDeleteFuture failure response.
 func MockRgDeleteFutureFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockWaitForGroupsDeleteFuture: func(future resources.GroupsDeleteFuture) error {
@@ -271,22 +300,25 @@ func MockRgDeleteFutureFailure() MockAzureResourceManagementClient {
 	}
 }
 
+// MockDeploymentCreateOrUpdateSuccess mocks the DeploymentCreateOrUpdate success response.
 func MockDeploymentCreateOrUpdateSuccess() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 			return &resources.DeploymentsCreateOrUpdateFuture{}, nil
 		},
 	}
 }
 
+// MockDeploymentCreateOrUpdateFailure mocks the DeploymentCreateOrUpdate failure response.
 func MockDeploymentCreateOrUpdateFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+		MockCreateOrUpdateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 			return nil, errors.New("failed to create resource")
 		},
 	}
 }
 
+// MockDeploymentCreateOrUpdateFutureFailure mocks the DeploymentCreateOrUpdate future failure response.
 func MockDeploymentCreateOrUpdateFutureFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockWaitForDeploymentsCreateOrUpdateFuture: func(future resources.DeploymentsCreateOrUpdateFuture) error {
@@ -294,6 +326,8 @@ func MockDeploymentCreateOrUpdateFutureFailure() MockAzureResourceManagementClie
 		},
 	}
 }
+
+// MockDeloymentGetResultSuccess mocks the DeploymentGetResult success response.
 func MockDeloymentGetResultSuccess() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockGetDeploymentResult: func(future resources.DeploymentsCreateOrUpdateFuture) (resources.DeploymentExtended, error) {
@@ -302,6 +336,7 @@ func MockDeloymentGetResultSuccess() MockAzureResourceManagementClient {
 	}
 }
 
+// MockDeloymentGetResultFailure mocks the DeploymentGetResult failure response.
 func MockDeloymentGetResultFailure() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
 		MockGetDeploymentResult: func(future resources.DeploymentsCreateOrUpdateFuture) (resources.DeploymentExtended, error) {
@@ -310,9 +345,10 @@ func MockDeloymentGetResultFailure() MockAzureResourceManagementClient {
 	}
 }
 
+// MockDeploymentValidate mocks the DeploymentValidate error response.
 func MockDeploymentValidate() MockAzureResourceManagementClient {
 	return MockAzureResourceManagementClient{
-		MockValidateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderConfig, machineConfig *azureconfigv1.AzureMachineProviderConfig) error {
+		MockValidateDeployment: func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
 			return errors.New("error validating deployment")
 		},
 	}

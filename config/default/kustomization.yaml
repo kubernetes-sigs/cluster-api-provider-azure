@@ -18,8 +18,8 @@ namePrefix: azure-provider-
 # YAML string, with resources separated by document
 # markers ("---").
 resources:
-- ../crds/azureprovider_v1alpha1_azureclusterproviderconfig.yaml
-- ../crds/azureprovider_v1alpha1_azuremachineproviderconfig.yaml
+- ../crds/azureprovider_v1alpha1_azureclusterproviderspec.yaml
+- ../crds/azureprovider_v1alpha1_azuremachineproviderspec.yaml
 - ../rbac/rbac_role.yaml
 - ../rbac/rbac_role_binding.yaml
 - ../manager/manager.yaml
@@ -34,4 +34,4 @@ secretGenerator:
     tenant-id: "printf $AZURE_TENANT_ID"
     client-id: "printf $AZURE_CLIENT_ID"
     client-secret: "printf $AZURE_CLIENT_SECRET"
-  type: Opqaue
+  type: Opaque

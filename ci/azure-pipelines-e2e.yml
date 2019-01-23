@@ -164,7 +164,7 @@ steps:
 
 - script: |
     echo "Running e2e test cases"
-    go test github.com/platform9/azure-provider/test/e2e -test.timeout 0 -v
+    go test sigs.k8s.io/cluster-api-provider-azure/test/e2e -test.timeout 0 -v
   env:
     AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
     AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)

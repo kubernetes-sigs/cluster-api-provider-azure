@@ -20,17 +20,15 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap/existing"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap/minikube"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
-	"sigs.k8s.io/yaml"
 )
 
 type CreateOptions struct {
@@ -63,17 +61,17 @@ var createClusterCmd = &cobra.Command{
 			exitWithHelp(cmd, "Please provide yaml file for provider component definition.")
 		}
 		if err := RunCreate(co); err != nil {
-			glog.Exit(err)
+			klog.Exit(err)
 		}
 	},
 }
 
 func RunCreate(co *CreateOptions) error {
-	c, err := parseClusterYaml(co.Cluster)
+	c, err := util.ParseClusterYaml(co.Cluster)
 	if err != nil {
 		return err
 	}
-	m, err := parseMachinesYaml(co.Machine)
+	m, err := util.ParseMachinesYaml(co.Machine)
 	if err != nil {
 		return err
 	}
@@ -120,12 +118,15 @@ func RunCreate(co *CreateOptions) error {
 
 func init() {
 	// Required flags
-	createClusterCmd.Flags().StringVarP(&co.Cluster, "cluster", "c", "", "A yaml file containing cluster object definition")
-	createClusterCmd.Flags().StringVarP(&co.Machine, "machines", "m", "", "A yaml file containing machine object definition(s)")
-	createClusterCmd.Flags().StringVarP(&co.ProviderComponents, "provider-components", "p", "", "A yaml file containing cluster api provider controllers and supporting objects")
+	createClusterCmd.Flags().StringVarP(&co.Cluster, "cluster", "c", "", "A yaml file containing cluster object definition. Required.")
+	createClusterCmd.MarkFlagRequired("cluster")
+	createClusterCmd.Flags().StringVarP(&co.Machine, "machines", "m", "", "A yaml file containing machine object definition(s). Required.")
+	createClusterCmd.MarkFlagRequired("machines")
+	createClusterCmd.Flags().StringVarP(&co.ProviderComponents, "provider-components", "p", "", "A yaml file containing cluster api provider controllers and supporting objects. Required.")
+	createClusterCmd.MarkFlagRequired("provider-components")
 	// TODO: Remove as soon as code allows https://github.com/kubernetes-sigs/cluster-api/issues/157
-	createClusterCmd.Flags().StringVarP(&co.Provider, "provider", "", "", "Which provider deployment logic to use (google/vsphere/azure)")
-
+	createClusterCmd.Flags().StringVarP(&co.Provider, "provider", "", "", "Which provider deployment logic to use (google/vsphere/azure). Required.")
+	createClusterCmd.MarkFlagRequired("provider")
 	// Optional flags
 	createClusterCmd.Flags().StringVarP(&co.AddonComponents, "addon-components", "a", "", "A yaml file containing cluster addons to apply to the internal cluster")
 	createClusterCmd.Flags().BoolVarP(&co.CleanupBootstrapCluster, "cleanup-bootstrap-cluster", "", true, "Whether to cleanup the bootstrap cluster after bootstrap")
@@ -135,40 +136,6 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&co.ExistingClusterKubeconfigPath, "existing-bootstrap-cluster-kubeconfig", "e", "", "Path to an existing cluster's kubeconfig for bootstrapping (intead of using minikube)")
 
 	createCmd.AddCommand(createClusterCmd)
-}
-
-func parseClusterYaml(file string) (*clusterv1.Cluster, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	cluster := &clusterv1.Cluster{}
-	err = yaml.Unmarshal(bytes, cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	return cluster, nil
-}
-
-func parseMachinesYaml(file string) ([]*clusterv1.Machine, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	list := &clusterv1.MachineList{}
-	err = yaml.Unmarshal(bytes, &list)
-	if err != nil {
-		return nil, err
-	}
-
-	if list == nil {
-		return []*clusterv1.Machine{}, nil
-	}
-
-	return util.MachineP(list.Items), nil
 }
 
 func getProvider(name string) (clusterdeployer.ProviderDeployer, error) {
