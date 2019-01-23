@@ -42,7 +42,7 @@ required = [
 
 [[constraint]]
   name = "github.com/golang/mock"
-  branch = "master"
+  version = "1.2.0"
 
 [[constraint]]
   name = "sigs.k8s.io/cluster-api"
