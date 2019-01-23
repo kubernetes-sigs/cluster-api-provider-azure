@@ -410,6 +410,16 @@ type DeviceFlowConfig struct {
 
 // Authorizer gets the authorizer from device flow.
 func (dfc DeviceFlowConfig) Authorizer() (autorest.Authorizer, error) {
+	spToken, err := dfc.ServicePrincipalToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get oauth token from device flow: %v", err)
+	}
+
+	return autorest.NewBearerAuthorizer(spToken), nil
+}
+
+// ServicePrincipalToken gets the service principal token from device flow.
+func (dfc DeviceFlowConfig) ServicePrincipalToken() (*adal.ServicePrincipalToken, error) {
 	oauthClient := &autorest.Client{}
 	oauthConfig, err := adal.NewOAuthConfig(dfc.AADEndpoint, dfc.TenantID)
 	deviceCode, err := adal.InitiateDeviceAuth(oauthClient, *oauthConfig, dfc.ClientID, dfc.Resource)
@@ -424,12 +434,7 @@ func (dfc DeviceFlowConfig) Authorizer() (autorest.Authorizer, error) {
 		return nil, fmt.Errorf("failed to finish device auth flow: %s", err)
 	}
 
-	spToken, err := adal.NewServicePrincipalTokenFromManualToken(*oauthConfig, dfc.ClientID, dfc.Resource, *token)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get oauth token from device flow: %v", err)
-	}
-
-	return autorest.NewBearerAuthorizer(spToken), nil
+	return adal.NewServicePrincipalTokenFromManualToken(*oauthConfig, dfc.ClientID, dfc.Resource, *token)
 }
 
 func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.PrivateKey, error) {

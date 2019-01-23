@@ -14,5 +14,5 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager sigs.k8s.io/clu
 FROM alpine:3.8
 WORKDIR /root/
 COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-azure/manager .
-COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resourcemanagement/template/deployment-template.json .
+COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources/template/deployment-template.json .
 ENTRYPOINT ["./manager"]
