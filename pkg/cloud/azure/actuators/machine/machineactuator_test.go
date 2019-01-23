@@ -897,7 +897,7 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 
 func TestDeleteFailureVMCheckFailure(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVmCheckFailure())
+	mergo.Merge(&computeMock, services.MockVMCheckFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
 	params := MachineActuatorParams{Services: &azureServicesClient}
