@@ -53,7 +53,7 @@ func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkNam
 		Location:                       to.StringPtr(location),
 		VirtualNetworkPropertiesFormat: &virtualNetworkProperties,
 	}
-	sgFuture, err := s.VirtualNetworksClient.CreateOrUpdate(s.ctx, resourceGroupName, virtualNetworkName, virtualNetwork)
+	sgFuture, err := s.scope.AzureClients.VirtualNetworks.CreateOrUpdate(s.scope.Context, resourceGroupName, virtualNetworkName, virtualNetwork)
 	if err != nil {
 		return nil, err
 	}
@@ -62,5 +62,5 @@ func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkNam
 
 // WaitForVnetCreateOrUpdateFuture returns when the CreateOrUpdateVnet operation completes.
 func (s *Service) WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualNetworksClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VirtualNetworks.Client)
 }

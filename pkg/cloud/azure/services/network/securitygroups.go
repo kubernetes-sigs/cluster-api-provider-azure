@@ -29,7 +29,7 @@ const (
 
 // NetworkSGIfExists returns the nsg reference if the nsg resource exists.
 func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error) {
-	networkSG, err := s.SecurityGroupsClient.Get(s.ctx, resourceGroupName, networkSecurityGroupName, "")
+	networkSG, err := s.scope.AzureClients.SecurityGroups.Get(s.scope.Context, resourceGroupName, networkSecurityGroupName, "")
 	if err != nil {
 		if aerr, ok := err.(autorest.DetailedError); ok {
 			if aerr.StatusCode.(int) == 404 {
@@ -81,7 +81,7 @@ func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, n
 		Location:                      to.StringPtr(location),
 		SecurityGroupPropertiesFormat: &securityGroupProperties,
 	}
-	sgFuture, err := s.SecurityGroupsClient.CreateOrUpdate(s.ctx, resourceGroupName, networkSecurityGroupName, securityGroup)
+	sgFuture, err := s.scope.AzureClients.SecurityGroups.CreateOrUpdate(s.scope.Context, resourceGroupName, networkSecurityGroupName, securityGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +90,10 @@ func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, n
 
 // DeleteNetworkSecurityGroup deletes the nsg resource.
 func (s *Service) DeleteNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string) (network.SecurityGroupsDeleteFuture, error) {
-	return s.SecurityGroupsClient.Delete(s.ctx, resourceGroupName, networkSecurityGroupName)
+	return s.scope.AzureClients.SecurityGroups.Delete(s.scope.Context, resourceGroupName, networkSecurityGroupName)
 }
 
 // WaitForNetworkSGsCreateOrUpdateFuture returns when the CreateOrUpdateNetworkSecurityGroup operation completes.
 func (s *Service) WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.SecurityGroupsClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.SecurityGroups.Client)
 }

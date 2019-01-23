@@ -17,36 +17,19 @@ limitations under the License.
 package network
 
 import (
-	"context"
-
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
-	"github.com/Azure/go-autorest/autorest"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
-// Service provides the instances of the azure network API clients.
+// Service holds a collection of interfaces.
+// The interfaces are broken down like this to group functions together.
+// One alternative is to have a large list of functions from the ec2 client.
 type Service struct {
-	InterfacesClient        network.InterfacesClient
-	PublicIPAddressesClient network.PublicIPAddressesClient
-	SecurityGroupsClient    network.SecurityGroupsClient
-	VirtualNetworksClient   network.VirtualNetworksClient
-	ctx                     context.Context
+	scope *actuators.Scope
 }
 
-// NewService returns a new instance of Service.
-func NewService(subscriptionID string) *Service {
+// NewService returns a new service given the api clients.
+func NewService(scope *actuators.Scope) *Service {
 	return &Service{
-		InterfacesClient:        network.NewInterfacesClient(subscriptionID),
-		PublicIPAddressesClient: network.NewPublicIPAddressesClient(subscriptionID),
-		SecurityGroupsClient:    network.NewSecurityGroupsClient(subscriptionID),
-		VirtualNetworksClient:   network.NewVirtualNetworksClient(subscriptionID),
-		ctx:                     context.Background(),
+		scope: scope,
 	}
-}
-
-// SetAuthorizer populates the authorizer component of the network client objects.
-func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
-	s.InterfacesClient.BaseClient.Client.Authorizer = authorizer
-	s.PublicIPAddressesClient.BaseClient.Client.Authorizer = authorizer
-	s.SecurityGroupsClient.BaseClient.Client.Authorizer = authorizer
-	s.VirtualNetworksClient.BaseClient.Client.Authorizer = authorizer
 }

@@ -17,30 +17,19 @@ limitations under the License.
 package compute
 
 import (
-	"context"
-
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-	"github.com/Azure/go-autorest/autorest"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
-// Service provides the azure SDK clients to interact with the compute API.
+// Service holds a collection of interfaces.
+// The interfaces are broken down like this to group functions together.
+// One alternative is to have a large list of functions from the ec2 client.
 type Service struct {
-	DisksClient           compute.DisksClient
-	VirtualMachinesClient compute.VirtualMachinesClient
-	ctx                   context.Context
+	scope *actuators.Scope
 }
 
-// NewService returns a new instance of Service.
-func NewService(subscriptionID string) *Service {
+// NewService returns a new service given the api clients.
+func NewService(scope *actuators.Scope) *Service {
 	return &Service{
-		DisksClient:           compute.NewDisksClient(subscriptionID),
-		VirtualMachinesClient: compute.NewVirtualMachinesClient(subscriptionID),
-		ctx:                   context.Background(),
+		scope: scope,
 	}
-}
-
-// SetAuthorizer sets the authorizer components of the azure clients.
-func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
-	s.DisksClient.BaseClient.Client.Authorizer = authorizer
-	s.VirtualMachinesClient.BaseClient.Client.Authorizer = authorizer
 }

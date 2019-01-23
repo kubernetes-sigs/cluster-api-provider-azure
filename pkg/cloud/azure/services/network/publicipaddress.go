@@ -22,15 +22,15 @@ import (
 
 // GetPublicIPAddress retrieves the Public IP address resource.
 func (s *Service) GetPublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
-	return s.PublicIPAddressesClient.Get(s.ctx, resourceGroup, IPName, "")
+	return s.scope.AzureClients.PublicIPAddresses.Get(s.scope.Context, resourceGroup, IPName, "")
 }
 
 // DeletePublicIPAddress deletes the Public IP address resource.
 func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
-	return s.PublicIPAddressesClient.Delete(s.ctx, resourceGroup, IPName)
+	return s.scope.AzureClients.PublicIPAddresses.Delete(s.scope.Context, resourceGroup, IPName)
 }
 
 // WaitForPublicIPAddressDeleteFuture waits for the DeletePublicIPAddress operation to complete.
 func (s *Service) WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.PublicIPAddressesClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.PublicIPAddresses.Client)
 }

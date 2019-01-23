@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,21 +24,21 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // AzureMachineProviderStatus is the type that will be embedded in a Machine.Status.ProviderStatus field.
-// It containsk Azure-specific status information.
+// It contains Azure-specific status information.
 // +k8s:openapi-gen=true
 type AzureMachineProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// VMID is the instance ID of the machine created in Azure
+	// VMID is the instance ID of the machine created in Azure.
 	// +optional
 	VMID *string `json:"vmId,omitempty"`
 
-	// InstanceState is the state of the Azure instance for this machine
+	// InstanceState is the state of the Azure instance for this machine.
 	// +optional
 	InstanceState *string `json:"instanceState,omitempty"`
 
 	// Conditions is a set of conditions associated with the Machine to indicate
-	// errors or other status
+	// errors or other status.
 	// +optional
 	Conditions []AzureMachineProviderCondition `json:"conditions,omitempty"`
 }

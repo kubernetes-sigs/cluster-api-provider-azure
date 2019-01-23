@@ -53,7 +53,7 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 		},
 	}
 
-	deploymentFuture, err := s.DeploymentsClient.CreateOrUpdate(s.ctx, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
+	deploymentFuture, err := s.scope.AzureClients.Deployments.CreateOrUpdate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 			Mode:       resources.Incremental, // Do not delete and re-create matching resources that already exist
 		},
 	}
-	res, err := s.DeploymentsClient.Validate(s.ctx, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
+	res, err := s.scope.AzureClients.Deployments.Validate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
 	if res.Error != nil {
 		return errors.New(*res.Error.Message)
 	}
@@ -87,12 +87,12 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 
 // GetDeploymentResult retrieves the result of the ARM deployment operation.
 func (s *Service) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
-	return future.Result(s.DeploymentsClient)
+	return future.Result(s.scope.AzureClients.Deployments)
 }
 
 // WaitForDeploymentsCreateOrUpdateFuture returns when the ARM operation completes.
 func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
-	return future.WaitForCompletionRef(s.ctx, s.DeploymentsClient.Client)
+	return future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Deployments.Client)
 }
 
 func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*map[string]interface{}, error) {

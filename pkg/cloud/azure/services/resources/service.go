@@ -17,42 +17,19 @@ limitations under the License.
 package resources
 
 import (
-	"context"
-	"fmt"
-	"strings"
-
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/go-autorest/autorest"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
-// Service implements the AzureResourceManagementClient interface.
+// Service holds a collection of interfaces.
+// The interfaces are broken down like this to group functions together.
+// One alternative is to have a large list of functions from the ec2 client.
 type Service struct {
-	DeploymentsClient resources.DeploymentsClient
-	GroupsClient      resources.GroupsClient
-	ctx               context.Context
+	scope *actuators.Scope
 }
 
-// NewService returns a new instance of Service.
-func NewService(subscriptionID string) *Service {
+// NewService returns a new service given the api clients.
+func NewService(scope *actuators.Scope) *Service {
 	return &Service{
-		DeploymentsClient: resources.NewDeploymentsClient(subscriptionID),
-		GroupsClient:      resources.NewGroupsClient(subscriptionID),
-		ctx:               context.Background(),
+		scope: scope,
 	}
-}
-
-// SetAuthorizer sets the authorizer component of the azure clients.
-func (s *Service) SetAuthorizer(authorizer autorest.Authorizer) {
-	s.DeploymentsClient.BaseClient.Client.Authorizer = authorizer
-	s.GroupsClient.BaseClient.Client.Authorizer = authorizer
-}
-
-// ResourceName extracts the name of the resource from its ID.
-func ResourceName(id string) (string, error) {
-	parts := strings.Split(id, "/")
-	name := parts[len(parts)-1]
-	if len(name) == 0 {
-		return "", fmt.Errorf("identifier did not contain resource name")
-	}
-	return name, nil
 }
