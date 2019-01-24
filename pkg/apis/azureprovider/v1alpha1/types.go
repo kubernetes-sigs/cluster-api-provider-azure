@@ -81,8 +81,11 @@ type Network struct {
 	// Subnets includes all the subnets defined inside the Vnet.
 	Subnets Subnets `json:"subnets,omitempty"`
 
-	// APIServerLB is the Kubernetes api server load balancer.
+	// APIServerLB is the Kubernetes API server load balancer.
 	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
+
+	// APIServerIP is the Kubernetes API server public IP address.
+	APIServerIP PublicIPAddress `json:"apiServerIp,omitempty"`
 }
 
 // Vnet defines an Azure Virtual Network.
@@ -107,6 +110,12 @@ type Subnet struct {
 	CidrBlock    string  `json:"cidrBlock"`
 	NSGID        string  `json:"nsgId"`
 	RouteTableID *string `json:"routeTableId"`
+}
+
+// PublicIPAddress defines an Azure public IP address.
+type PublicIPAddress struct {
+	ID        string `json:"id"`
+	IPAddress string `json:"ipAddress"`
 }
 
 /*

@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -124,7 +125,6 @@ type Scope struct {
 }
 
 // TODO: Implement scope functions
-/*
 // Network returns the cluster network object.
 func (s *Scope) Network() *v1alpha1.Network {
 	return &s.ClusterStatus.Network
@@ -196,4 +196,3 @@ func (s *Scope) Close() {
 		klog.Errorf("[scope] failed to store provider status for cluster %q in namespace %q: %v", s.Cluster.Name, s.Cluster.Namespace, err)
 	}
 }
-*/

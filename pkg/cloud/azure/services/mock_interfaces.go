@@ -21,7 +21,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
-	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -53,16 +53,16 @@ type MockAzureNetworkClient struct {
 	MockWaitForVnetCreateOrUpdateFuture func(future network.VirtualNetworksCreateOrUpdateFuture) error
 }
 
-// MockAzureResourceManagementClient is a mock implementation of MockAzureResourceManagementClient.
-type MockAzureResourceManagementClient struct {
+// MockAzureResourcesClient is a mock implementation of MockAzureResourcesClient.
+type MockAzureResourcesClient struct {
 	MockCreateOrUpdateGroup       func(resourceGroupName string, location string) (resources.Group, error)
 	MockDeleteGroup               func(resourceGroupName string) (resources.GroupsDeleteFuture, error)
 	MockCheckGroupExistence       func(rgName string) (autorest.Response, error)
 	MockWaitForGroupsDeleteFuture func(future resources.GroupsDeleteFuture) error
 
-	MockCreateOrUpdateDeployment               func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error)
+	MockCreateOrUpdateDeployment               func(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error)
 	MockGetDeploymentResult                    func(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error)
-	MockValidateDeployment                     func(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error
+	MockValidateDeployment                     func(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) error
 	MockWaitForDeploymentsCreateOrUpdateFuture func(future resources.DeploymentsCreateOrUpdateFuture) error
 }
 
@@ -203,7 +203,7 @@ func (m *MockAzureNetworkClient) WaitForVnetCreateOrUpdateFuture(future network.
 }
 
 // CreateOrUpdateGroup creates or updates an azure resource group.
-func (m *MockAzureResourceManagementClient) CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error) {
+func (m *MockAzureResourcesClient) CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error) {
 	if m.MockCreateOrUpdateGroup == nil {
 		return resources.Group{}, nil
 	}
@@ -211,7 +211,7 @@ func (m *MockAzureResourceManagementClient) CreateOrUpdateGroup(resourceGroupNam
 }
 
 // DeleteGroup deletes an azure resource group.
-func (m *MockAzureResourceManagementClient) DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
+func (m *MockAzureResourcesClient) DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
 	if m.MockDeleteGroup == nil {
 		return resources.GroupsDeleteFuture{}, nil
 	}
@@ -219,7 +219,7 @@ func (m *MockAzureResourceManagementClient) DeleteGroup(resourceGroupName string
 }
 
 // CheckGroupExistence checks if a resource group with name 'rgName' exists.
-func (m *MockAzureResourceManagementClient) CheckGroupExistence(rgName string) (autorest.Response, error) {
+func (m *MockAzureResourcesClient) CheckGroupExistence(rgName string) (autorest.Response, error) {
 	if m.MockCheckGroupExistence == nil {
 		return autorest.Response{}, nil
 	}
@@ -227,7 +227,7 @@ func (m *MockAzureResourceManagementClient) CheckGroupExistence(rgName string) (
 }
 
 // WaitForGroupsDeleteFuture returns when the DeleteGroup operation completes.
-func (m *MockAzureResourceManagementClient) WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error {
+func (m *MockAzureResourcesClient) WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error {
 	if m.MockWaitForGroupsDeleteFuture == nil {
 		return nil
 	}
@@ -235,7 +235,7 @@ func (m *MockAzureResourceManagementClient) WaitForGroupsDeleteFuture(future res
 }
 
 // CreateOrUpdateDeployment creates or updates an ARM deployment.
-func (m *MockAzureResourceManagementClient) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+func (m *MockAzureResourcesClient) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	if m.MockCreateOrUpdateDeployment == nil {
 		return nil, nil
 	}
@@ -243,7 +243,7 @@ func (m *MockAzureResourceManagementClient) CreateOrUpdateDeployment(machine *cl
 }
 
 // ValidateDeployment validates an ARM deployment.
-func (m *MockAzureResourceManagementClient) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
+func (m *MockAzureResourcesClient) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) error {
 	if m.MockValidateDeployment == nil {
 		return nil
 	}
@@ -251,7 +251,7 @@ func (m *MockAzureResourceManagementClient) ValidateDeployment(machine *clusterv
 }
 
 // GetDeploymentResult retrives an existing ARM deployment reference.
-func (m *MockAzureResourceManagementClient) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
+func (m *MockAzureResourcesClient) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
 	if m.MockGetDeploymentResult == nil {
 		return resources.DeploymentExtended{}, nil
 	}
@@ -259,7 +259,7 @@ func (m *MockAzureResourceManagementClient) GetDeploymentResult(future resources
 }
 
 // WaitForDeploymentsCreateOrUpdateFuture returns when the CreateOrUpdateDeployment operation completes.
-func (m *MockAzureResourceManagementClient) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
+func (m *MockAzureResourcesClient) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
 	if m.MockWaitForDeploymentsCreateOrUpdateFuture == nil {
 		return nil
 	}

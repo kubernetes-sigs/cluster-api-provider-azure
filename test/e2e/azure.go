@@ -18,14 +18,14 @@ package e2e
 
 import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 )
 
-// NewAzureServicesClient returns a new instance of the services.AzureClients object.
-func NewAzureServicesClient(subscriptionID string) (*services.AzureClients, error) {
+// NewAzureServicesClient returns a new instance of the actuators.AzureClients object.
+func NewAzureServicesClient(subscriptionID string) (*actuators.AzureClients, error) {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -33,13 +33,13 @@ func NewAzureServicesClient(subscriptionID string) (*services.AzureClients, erro
 
 	azureComputeClient := compute.NewService(subscriptionID)
 	azureComputeClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resources.NewService(subscriptionID)
-	azureResourceManagementClient.SetAuthorizer(authorizer)
+	azureResourcesClient := resources.NewService(subscriptionID)
+	azureResourcesClient.SetAuthorizer(authorizer)
 	azureNetworkClient := network.NewService(subscriptionID)
 	azureNetworkClient.SetAuthorizer(authorizer)
-	return &services.AzureClients{
-		Compute:            azureComputeClient,
-		Resourcemanagement: azureResourceManagementClient,
-		Network:            azureNetworkClient,
+	return &actuators.AzureClients{
+		Compute:   azureComputeClient,
+		Resources: azureResourcesClient,
+		Network:   azureNetworkClient,
 	}, nil
 }

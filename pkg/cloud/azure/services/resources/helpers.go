@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,4 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package services
+package resources
+
+import (
+	"fmt"
+	"strings"
+)
+
+// ResourceName extracts the name of the resource from its ID.
+func ResourceName(id string) (string, error) {
+	parts := strings.Split(id, "/")
+	name := parts[len(parts)-1]
+	if len(name) == 0 {
+		return "", fmt.Errorf("identifier did not contain resource name")
+	}
+	return name, nil
+}

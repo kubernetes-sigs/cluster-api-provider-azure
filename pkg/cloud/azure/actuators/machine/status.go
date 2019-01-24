@@ -16,6 +16,7 @@ limitations under the License.
 
 package machine
 
+/*
 import (
 	"bytes"
 	"context"
@@ -31,7 +32,7 @@ import (
 // TODO: implement MachineStatus once the API is stable
 
 // Status is an instance of the MachineType custom resource.
-type Status *clusterv1.Machine
+type Status *clusterv1.MachineStatus
 
 // AnnotationKey represents the key value of a Kubernetes annotation.
 type AnnotationKey string
@@ -45,11 +46,11 @@ const (
 	InstanceStatus AnnotationKey = "instance-status"
 )
 
-func (azure *AzureClient) status(m *clusterv1.Machine) (Status, error) {
-	if azure.client == nil {
+func (a *Actuator) status(m *clusterv1.Machine) (Status, error) {
+	if a.client == nil {
 		return nil, nil
 	}
-	currentMachine, err := util.GetMachineIfExists(azure.client, m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+	currentMachine, err := util.GetMachineIfExists(a.client, m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +58,14 @@ func (azure *AzureClient) status(m *clusterv1.Machine) (Status, error) {
 	if currentMachine == nil {
 		return nil, nil
 	}
-	return azure.machineStatus(currentMachine)
+	return a.machineStatus(currentMachine)
 }
 
-func (azure *AzureClient) updateStatus(machine *clusterv1.Machine) error {
-	if azure.client == nil {
+func (a *Actuator) updateStatus(machine *clusterv1.Machine) error {
+	if a.client == nil {
 		return nil
 	}
-	currentMachine, err := util.GetMachineIfExists(azure.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
+	currentMachine, err := util.GetMachineIfExists(a.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
 	if err != nil {
 		return err
 	}
@@ -73,17 +74,17 @@ func (azure *AzureClient) updateStatus(machine *clusterv1.Machine) error {
 		return fmt.Errorf("machine %v has been deleted. can not update status for machine", machine.ObjectMeta.Name)
 	}
 
-	m, err := azure.setMachineStatus(currentMachine, Status(machine))
+	m, err := a.setMachineStatus(currentMachine, Status(machine))
 	if err != nil {
 		return err
 	}
-	return azure.client.Update(context.Background(), m)
+	return a.client.Update(context.Background(), m)
 }
 
-func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status Status) (*clusterv1.Machine, error) {
+func (a *Actuator) setMachineStatus(machine *clusterv1.Machine, status Status) (*clusterv1.Machine, error) {
 	status.ObjectMeta.Annotations[string(InstanceStatus)] = ""
 
-	serializer := json.NewSerializer(json.DefaultMetaFactory, azure.scheme, azure.scheme, false)
+	serializer := json.NewSerializer(json.DefaultMetaFactory, a.scheme, a.scheme, false)
 	b := []byte{}
 	buff := bytes.NewBuffer(b)
 	err := serializer.Encode((*clusterv1.Machine)(status), buff)
@@ -98,8 +99,8 @@ func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status St
 	return machine, nil
 }
 
-func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	if azure.client == nil {
+func (a *Actuator) updateAnnotations(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	if a.client == nil {
 		return nil
 	}
 	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
@@ -114,14 +115,14 @@ func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine 
 	machine.ObjectMeta.Annotations[string(Name)] = resources.GetVMName(machine)
 	machine.ObjectMeta.Annotations[string(ResourceGroup)] = clusterConfig.ResourceGroup
 
-	err = azure.client.Update(context.Background(), machine)
+	err = a.client.Update(context.Background(), machine)
 	if err != nil {
 		return err
 	}
-	return azure.updateStatus(machine)
+	return a.updateStatus(machine)
 }
 
-func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (Status, error) {
+func (a *Actuator) machineStatus(machine *clusterv1.Machine) (Status, error) {
 	if machine.ObjectMeta.Annotations == nil {
 		return nil, nil
 	}
@@ -131,7 +132,7 @@ func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (Status, err
 		return nil, nil
 	}
 
-	serializer := json.NewSerializer(json.DefaultMetaFactory, azure.scheme, azure.scheme, false)
+	serializer := json.NewSerializer(json.DefaultMetaFactory, a.scheme, a.scheme, false)
 	var status clusterv1.Machine
 	gvk := clusterv1.SchemeGroupVersion.WithKind("Machine")
 	_, _, err := serializer.Decode([]byte(annotation), &gvk, &status)
@@ -140,3 +141,4 @@ func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (Status, err
 	}
 	return Status(&status), nil
 }
+*/
