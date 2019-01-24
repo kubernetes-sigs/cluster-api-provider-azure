@@ -41,8 +41,10 @@ func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkNam
 		},
 	}
 	virtualNetworkProperties := network.VirtualNetworkPropertiesFormat{
-		AddressSpace: &network.AddressSpace{&[]string{defaultPrivateSubnetCIDR}},
-		Subnets:      &subnets,
+		AddressSpace: &network.AddressSpace{
+			AddressPrefixes: &[]string{defaultPrivateSubnetCIDR},
+		},
+		Subnets: &subnets,
 	}
 	virtualNetwork := network.VirtualNetwork{
 		Location:                       to.StringPtr(location),

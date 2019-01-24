@@ -27,8 +27,8 @@ import (
 // holds the machine status under an annotation.
 // TODO: implement MachineStatus once the API is stable
 
-// MachineStatus  is an instance of the MachineType custom resource.
-type MachineStatus *clusterv1.Machine
+// Status is an instance of the MachineType custom resource.
+type Status *clusterv1.Machine
 
 // AnnotationKey represents the key value of a Kubernetes annotation.
 type AnnotationKey string
@@ -42,7 +42,7 @@ const (
 	InstanceStatus AnnotationKey = "instance-status"
 )
 
-func (azure *AzureClient) status(m *clusterv1.Machine) (MachineStatus, error) {
+func (azure *AzureClient) status(m *clusterv1.Machine) (Status, error) {
 	if azure.client == nil {
 		return nil, nil
 	}
@@ -70,14 +70,14 @@ func (azure *AzureClient) updateStatus(machine *clusterv1.Machine) error {
 		return fmt.Errorf("machine %v has been deleted. can not update status for machine", machine.ObjectMeta.Name)
 	}
 
-	m, err := azure.setMachineStatus(currentMachine, MachineStatus(machine))
+	m, err := azure.setMachineStatus(currentMachine, Status(machine))
 	if err != nil {
 		return err
 	}
 	return azure.client.Update(context.Background(), m)
 }
 
-func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status MachineStatus) (*clusterv1.Machine, error) {
+func (azure *AzureClient) setMachineStatus(machine *clusterv1.Machine, status Status) (*clusterv1.Machine, error) {
 	status.ObjectMeta.Annotations[string(InstanceStatus)] = ""
 
 	serializer := json.NewSerializer(json.DefaultMetaFactory, azure.scheme, azure.scheme, false)
@@ -118,7 +118,7 @@ func (azure *AzureClient) updateAnnotations(cluster *clusterv1.Cluster, machine 
 	return azure.updateStatus(machine)
 }
 
-func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (MachineStatus, error) {
+func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (Status, error) {
 	if machine.ObjectMeta.Annotations == nil {
 		return nil, nil
 	}
@@ -135,5 +135,5 @@ func (azure *AzureClient) machineStatus(machine *clusterv1.Machine) (MachineStat
 	if err != nil {
 		return nil, fmt.Errorf("decoding failure: %v", err)
 	}
-	return MachineStatus(&status), nil
+	return Status(&status), nil
 }

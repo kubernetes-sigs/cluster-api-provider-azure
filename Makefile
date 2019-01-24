@@ -4,7 +4,18 @@ NAME = cluster-api-azure-provider-controller
 TAG ?= latest
 IMG=${PREFIX}/${NAME}:${TAG}
 
-all: test manager clusterctl
+HAS_DEP          := $(shell which dep)
+HAS_GOLANGCI     := $(shell which golangci-lint)
+
+all: bootstrap test manager clusterctl
+
+bootstrap:
+ifndef HAS_DEP
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+endif
+ifndef HAS_GOLANGCI
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin
+endif
 
 vendor:
 	dep version || go get -u github.com/golang/dep/cmd/dep
@@ -12,6 +23,8 @@ vendor:
 vendor-update:
 	dep version || go get -u github.com/golang/dep/cmd/dep
 	dep ensure -v -update
+vendor-validate:
+	dep check
 
 # Run tests
 test: generate fmt vet manifests
@@ -56,11 +69,15 @@ fmt:
 vet:
 	go vet -composites=false ./pkg/... ./cmd/... 
 
+# Run golang-ci linter against the code
+lint:
+	golangci-lint run
+
 # Generate code
 generate:
 	go generate ./pkg/... ./cmd/...
 
-check: vendor fmt vet
+check: bootstrap vendor-validate lint
 
 # Build the docker image
 docker-build: test

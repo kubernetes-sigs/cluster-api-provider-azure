@@ -30,9 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const controlPlaneTestVersion = "1.1.1.1"
+
 func TestActuatorCreateSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Network: &services.MockAzureNetworkClient{}}
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	_, err := NewMachineActuator(params)
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
@@ -42,7 +44,7 @@ func TestActuatorCreateFailure(t *testing.T) {
 	if err := os.Setenv("AZURE_ENVIRONMENT", "dummy"); err != nil {
 		t.Fatalf("error when setting AZURE_ENVIRONMENT environment variable")
 	}
-	_, err := NewMachineActuator(MachineActuatorParams{})
+	_, err := NewMachineActuator(ActuatorParams{})
 	if err == nil {
 		t.Fatalf("expected error when creating the cluster actuator but gone none")
 	}
@@ -50,7 +52,7 @@ func TestActuatorCreateFailure(t *testing.T) {
 }
 func TestNewAzureClientParamsPassed(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &services.MockAzureComputeClient{}}
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	client, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		t.Fatalf("unable to create azure services client: %v", err)
@@ -71,7 +73,7 @@ func TestNewAzureClientNoParamsPassed(t *testing.T) {
 	if err := os.Setenv("AZURE_SUBSCRIPTION_ID", "dummy"); err != nil {
 		t.Fatalf("error when setting AZURE_SUBSCRIPTION_ID environment variable")
 	}
-	client, err := azureServicesClientOrDefault(MachineActuatorParams{})
+	client, err := azureServicesClientOrDefault(ActuatorParams{})
 	if err != nil {
 		t.Fatalf("unable to create azure services client: %v", err)
 	}
@@ -93,7 +95,7 @@ func TestNewAzureClientAuthorizerFailure(t *testing.T) {
 	if err := os.Setenv("AZURE_ENVIRONMENT", "dummy"); err != nil {
 		t.Fatalf("error when setting environment variable")
 	}
-	_, err := azureServicesClientOrDefault(MachineActuatorParams{})
+	_, err := azureServicesClientOrDefault(ActuatorParams{})
 	if err == nil {
 		t.Fatalf("expected error when creating the azure services client but got none")
 	}
@@ -101,7 +103,7 @@ func TestNewAzureClientAuthorizerFailure(t *testing.T) {
 }
 
 func TestNewAzureClientSubscriptionFailure(t *testing.T) {
-	_, err := azureServicesClientOrDefault(MachineActuatorParams{})
+	_, err := azureServicesClientOrDefault(ActuatorParams{})
 	if err == nil {
 		t.Fatalf("expected error when creating the azure services client but got none")
 	}
@@ -113,7 +115,7 @@ func TestCreateSuccess(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockDeloymentGetResultSuccess())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -132,7 +134,7 @@ func TestCreateFailureClusterParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -153,7 +155,7 @@ func TestCreateFailureMachineParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -174,7 +176,7 @@ func TestCreateFailureDeploymentValidation(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockDeploymentValidate())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -194,7 +196,7 @@ func TestCreateFailureDeploymentCreation(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -215,7 +217,7 @@ func TestCreateFailureDeploymentFutureError(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateFutureFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -236,7 +238,7 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockDeloymentGetResultFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -258,7 +260,7 @@ func TestExistsSuccess(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -281,7 +283,7 @@ func TestExistsFailureClusterParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -302,7 +304,7 @@ func TestExistsFailureMachineParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -323,7 +325,7 @@ func TestExistsFailureRGNotExists(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgNotExists())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -345,7 +347,7 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgCheckFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -369,7 +371,7 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -394,7 +396,7 @@ func TestExistsFailureVMCheckFailure(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Resourcemanagement: &resourceManagementMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -417,7 +419,7 @@ func TestUpdateFailureClusterParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -438,7 +440,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -456,10 +458,10 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 
 // func TestUpdateVMNotExists(t *testing.T) {
 // 	azureServicesClient := mockVMNotExists()
-// 	params := MachineActuatorParams{Services: &azureServicesClient}
+// 	params := ActuatorParams{Services: &azureServicesClient}
 // func TestUpdateVMNotExists(t *testing.T) {
 // 	azureServicesClient := mockVMNotExists()
-// 	params := MachineActuatorParams{Services: &azureServicesClient}
+// 	params := ActuatorParams{Services: &azureServicesClient}
 
 // 	machineConfig := newMachineProviderSpec()
 // 	machine := newMachine(t, machineConfig)
@@ -478,7 +480,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
-// 	params := MachineActuatorParams{Services: &azureServicesClient}
+// 	params := ActuatorParams{Services: &azureServicesClient}
 // 	actuator, err := NewMachineActuator(params)
 // 	err = actuator.Update(cluster, machine)
 // 	if err == nil {
@@ -492,7 +494,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
-// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	err = actuator.Update(cluster, machine)
 // 	if err != nil {
@@ -508,7 +510,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
-// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	goalMachine := machine
 // 	goalMachine.Spec.Versions.Kubelet = "1.10.0"
@@ -527,7 +529,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
-// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	goalMachine := machine
 // 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
@@ -545,7 +547,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	machine := newMachine(t, machineConfig)
 // 	cluster := newCluster(t)
 
-// 	params := MachineActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
+// 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	goalMachine := machine
 // 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
@@ -561,7 +563,7 @@ func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -581,11 +583,11 @@ func TestUpdateMasterControlPlaneSuccess(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
+	m2.Spec.Versions.ControlPlane = controlPlaneTestVersion
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
@@ -604,11 +606,11 @@ func TestUpdateMasterControlPlaneCmdRunFailure(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
+	m2.Spec.Versions.ControlPlane = controlPlaneTestVersion
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
@@ -627,11 +629,11 @@ func TestUpdateMasterControlPlaneFutureFailure(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
+	m2.Spec.Versions.ControlPlane = controlPlaneTestVersion
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
@@ -648,11 +650,11 @@ func TestUpdateMasterKubeletSuccess(t *testing.T) {
 	computeMock := services.MockAzureComputeClient{}
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.Kubelet = "1.1.1.1.1"
+	m2.Spec.Versions.Kubelet = controlPlaneTestVersion
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
@@ -670,11 +672,11 @@ func TestUpdateMasterKubeletFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockRunCommandFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.Kubelet = "1.1.1.1.1"
+	m2.Spec.Versions.Kubelet = controlPlaneTestVersion
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
@@ -692,11 +694,11 @@ func TestUpdateMasterKubeletFutureFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockRunCommandFutureFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.Kubelet = "1.1.1.1.1"
+	m2.Spec.Versions.Kubelet = controlPlaneTestVersion
 	cluster := newCluster(t)
 
 	actuator, err := NewMachineActuator(params)
@@ -710,7 +712,7 @@ func TestUpdateMasterKubeletFutureFailure(t *testing.T) {
 }
 
 func TestShouldUpdateSameMachine(t *testing.T) {
-	params := MachineActuatorParams{Services: &services.AzureClients{}}
+	params := ActuatorParams{Services: &services.AzureClients{}}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
@@ -720,29 +722,29 @@ func TestShouldUpdateSameMachine(t *testing.T) {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	shouldUpdate := actuator.shouldUpdate(m1, m2)
-	if shouldUpdate != false {
+	if shouldUpdate {
 		t.Fatalf("expected shouldUpdate to return false but got true")
 	}
 }
 
 func TestShouldUpdateVersionChange(t *testing.T) {
-	params := MachineActuatorParams{Services: &services.AzureClients{}}
+	params := ActuatorParams{Services: &services.AzureClients{}}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
-	m2.Spec.Versions.ControlPlane = "1.1.1.1.1"
+	m2.Spec.Versions.ControlPlane = controlPlaneTestVersion
 
 	actuator, err := NewMachineActuator(params)
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	shouldUpdate := actuator.shouldUpdate(m1, m2)
-	if shouldUpdate != true {
+	if !shouldUpdate {
 		t.Fatalf("expected shouldUpdate to return true but got false")
 	}
 }
 func TestShouldUpdateObjectMetaChange(t *testing.T) {
-	params := MachineActuatorParams{Services: &services.AzureClients{}}
+	params := ActuatorParams{Services: &services.AzureClients{}}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
@@ -753,12 +755,12 @@ func TestShouldUpdateObjectMetaChange(t *testing.T) {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	shouldUpdate := actuator.shouldUpdate(m1, m2)
-	if shouldUpdate != true {
+	if !shouldUpdate {
 		t.Fatalf("expected shouldUpdate to return true but got false")
 	}
 }
 func TestShouldUpdateProviderSpecChange(t *testing.T) {
-	params := MachineActuatorParams{Services: &services.AzureClients{}}
+	params := ActuatorParams{Services: &services.AzureClients{}}
 	m1Config := newMachineProviderSpec()
 	m1 := newMachine(t, m1Config)
 	m2Config := m1Config
@@ -770,13 +772,13 @@ func TestShouldUpdateProviderSpecChange(t *testing.T) {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
 	shouldUpdate := actuator.shouldUpdate(m1, m2)
-	if shouldUpdate != true {
+	if !shouldUpdate {
 		t.Fatalf("expected shouldUpdate to return true but got false")
 	}
 }
 
 func TestShouldUpdateNameChange(t *testing.T) {
-	params := MachineActuatorParams{Services: &services.AzureClients{}}
+	params := ActuatorParams{Services: &services.AzureClients{}}
 	machineConfig := newMachineProviderSpec()
 	m1 := newMachine(t, machineConfig)
 	m2 := newMachine(t, machineConfig)
@@ -797,7 +799,7 @@ func TestDeleteSuccess(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockVMExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &services.MockAzureNetworkClient{}}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -817,7 +819,7 @@ func TestDeleteFailureClusterParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -838,7 +840,7 @@ func TestDeleteFailureMachineParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -859,7 +861,7 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockVMNotExists())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -880,7 +882,7 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockVMDeleteFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -900,7 +902,7 @@ func TestDeleteFailureVMCheckFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockVMCheckFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -921,7 +923,7 @@ func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockVMDeleteFutureFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -941,7 +943,7 @@ func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockDisksDeleteFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -962,7 +964,7 @@ func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
 	mergo.Merge(&computeMock, services.MockDisksDeleteFutureFailure())
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -982,7 +984,7 @@ func TestDeleteFailureNICResourceName(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1004,7 +1006,7 @@ func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1027,7 +1029,7 @@ func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1050,7 +1052,7 @@ func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1073,7 +1075,7 @@ func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
 
 	azureServicesClient := services.AzureClients{Compute: &computeMock, Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1093,7 +1095,7 @@ func TestGetKubeConfigFailureClusterParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -1114,7 +1116,7 @@ func TestGetKubeConfigFailureMachineParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -1136,7 +1138,7 @@ func TestGetKubeConfigBase64Error(t *testing.T) {
 	machineConfig.SSHPrivateKey = "===="
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -1151,7 +1153,7 @@ func TestGetKubeConfigIPAddressFailure(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockGetPublicIPAddressFailure())
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
@@ -1172,7 +1174,7 @@ func TestGetIPFailureClusterParsing(t *testing.T) {
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 
-	actuator, err := NewMachineActuator(MachineActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewMachineActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create machine actuator: %v", err)
 	}
@@ -1193,7 +1195,7 @@ func TestGetKubeConfigValidPrivateKey(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
@@ -1213,7 +1215,7 @@ func TestGetKubeConfigInvalidBase64(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 
 	machineConfig := newMachineProviderSpec()
 	machineConfig.SSHPrivateKey = "====="
@@ -1234,7 +1236,7 @@ func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 
 	machineConfig := newMachineProviderSpec()
 	machineConfig.SSHPrivateKey = "aGVsbG8="
@@ -1255,7 +1257,7 @@ func TestGetIPSuccess(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)
@@ -1279,7 +1281,7 @@ func TestGetIPFailure(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockGetPublicIPAddressFailure())
 	azureServicesClient := services.AzureClients{Network: &networkMock}
 
-	params := MachineActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
 	machine := newMachine(t, machineConfig)
 	cluster := newCluster(t)

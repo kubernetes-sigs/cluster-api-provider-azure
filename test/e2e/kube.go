@@ -29,7 +29,7 @@ import (
 type KubeClient struct {
 	Kube            *kubernetes.Clientset
 	ClusterV1Client clientv1alpha1.ClusterV1alpha1Interface
-	machInterface   clientv1alpha1.MachineInterface
+	//machInterface   clientv1alpha1.MachineInterface
 }
 
 // NewKubeClient returns a new instance of the KubeClient object.

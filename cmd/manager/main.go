@@ -63,12 +63,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	clusterActuator, err := cluster.NewClusterActuator(cluster.ClusterActuatorParams{Client: mgr.GetClient()})
+	clusterActuator, err := cluster.NewClusterActuator(cluster.ActuatorParams{Client: mgr.GetClient()})
 	if err != nil {
 		log.Error(err, "error creating cluster actuator")
 		os.Exit(1)
 	}
-	machine.Actuator, err = machine.NewMachineActuator(machine.MachineActuatorParams{Client: mgr.GetClient(), Scheme: mgr.GetScheme()})
+	machine.Actuator, err = machine.NewMachineActuator(machine.ActuatorParams{Client: mgr.GetClient(), Scheme: mgr.GetScheme()})
 	if err != nil {
 		log.Error(err, "error creating machine actuator")
 		os.Exit(1)

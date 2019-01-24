@@ -50,9 +50,9 @@ type AzureClient struct {
 	scheme   *runtime.Scheme
 }
 
-// MachineActuatorParams contains the parameters that are used to create a machine actuator.
+// ActuatorParams contains the parameters that are used to create a machine actuator.
 // These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
-type MachineActuatorParams struct {
+type ActuatorParams struct {
 	Services *services.AzureClients
 	Client   client.Client
 	Scheme   *runtime.Scheme
@@ -66,7 +66,7 @@ const (
 )
 
 // NewMachineActuator creates a new azure client to be used as a machine actuator
-func NewMachineActuator(params MachineActuatorParams) (*AzureClient, error) {
+func NewMachineActuator(params ActuatorParams) (*AzureClient, error) {
 	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		return nil, fmt.Errorf("error getting azure services client: %v", err)
@@ -424,7 +424,7 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*azur
 	return &config, nil
 }
 
-func azureServicesClientOrDefault(params MachineActuatorParams) (*services.AzureClients, error) {
+func azureServicesClientOrDefault(params ActuatorParams) (*services.AzureClients, error) {
 	if params.Services != nil {
 		return params.Services, nil
 	}
