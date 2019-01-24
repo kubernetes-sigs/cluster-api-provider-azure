@@ -8,3 +8,6 @@ generatedconfigs/
 sshkey*
 kubeconfig
 *.out
+
+# exclude vendor directory from gitignore
+!/vendor/**/*

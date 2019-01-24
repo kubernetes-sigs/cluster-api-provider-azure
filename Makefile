@@ -4,17 +4,32 @@ NAME = cluster-api-azure-provider-controller
 TAG ?= latest
 IMG=${PREFIX}/${NAME}:${TAG}
 
+# Keep an existing GOPATH/GOBIN, make a private one if it is not defined
+PWD := $(shell pwd)
+GOPATH_DEFAULT := $(PWD)/.go
+export GOPATH ?= $(GOPATH_DEFAULT)
+GOBIN_DEFAULT := $(GOPATH)/bin
+export GOBIN ?= $(GOBIN_DEFAULT)
+PATH := $(GOBIN):$(PATH)
+
 HAS_DEP          := $(shell which dep)
 HAS_GOLANGCI     := $(shell which golangci-lint)
 
 all: bootstrap test manager clusterctl
 
-bootstrap:
+# Creates GOBIN path if not present.
+$(GOBIN):
+	echo "Creating GOBIN"
+	mkdir -p $(GOBIN)
+
+createpath: $(GOBIN)
+
+bootstrap: createpath
 ifndef HAS_DEP
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 ifndef HAS_GOLANGCI
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOBIN)
 endif
 
 vendor:
