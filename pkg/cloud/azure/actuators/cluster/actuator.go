@@ -34,14 +34,14 @@ type AzureClusterClient struct {
 	client   client.Client
 }
 
-// ClusterActuatorParams holds the Azure SDK Client and Kubernetes Client objects for the cluster actuator.
-type ClusterActuatorParams struct {
+// ActuatorParams holds the Azure SDK Client and Kubernetes Client objects for the cluster actuator.
+type ActuatorParams struct {
 	Services *services.AzureClients
 	Client   client.Client
 }
 
 // NewClusterActuator returns a new instance of AzureClusterClient.
-func NewClusterActuator(params ClusterActuatorParams) (*AzureClusterClient, error) {
+func NewClusterActuator(params ActuatorParams) (*AzureClusterClient, error) {
 	azureServicesClients, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
 	return nil
 }
 
-func azureServicesClientOrDefault(params ClusterActuatorParams) (*services.AzureClients, error) {
+func azureServicesClientOrDefault(params ActuatorParams) (*services.AzureClients, error) {
 	if params.Services != nil {
 		return params.Services, nil
 	}

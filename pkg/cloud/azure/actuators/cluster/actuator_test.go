@@ -30,7 +30,7 @@ import (
 
 func TestActuatorCreateSuccess(t *testing.T) {
 	azureServicesClient := services.AzureClients{Network: &services.MockAzureNetworkClient{}}
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	_, err := NewClusterActuator(params)
 	if err != nil {
 		t.Fatalf("unable to create cluster actuator: %v", err)
@@ -41,7 +41,7 @@ func TestActuatorCreateFailure(t *testing.T) {
 	if err := os.Setenv("AZURE_ENVIRONMENT", "dummy"); err != nil {
 		t.Fatalf("error when setting AZURE_ENVIRONMENT environment variable")
 	}
-	_, err := NewClusterActuator(ClusterActuatorParams{})
+	_, err := NewClusterActuator(ActuatorParams{})
 	if err == nil {
 		t.Fatalf("expected error when creating the cluster actuator but got none")
 	}
@@ -50,7 +50,7 @@ func TestActuatorCreateFailure(t *testing.T) {
 
 func TestNewAzureClientParamsPassed(t *testing.T) {
 	azureServicesClient := services.AzureClients{Compute: &services.MockAzureComputeClient{}}
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	client, err := azureServicesClientOrDefault(params)
 	if err != nil {
 		t.Fatalf("unable to create azure services client: %v", err)
@@ -71,7 +71,7 @@ func TestNewAzureClientNoParamsPassed(t *testing.T) {
 	if err := os.Setenv("AZURE_SUBSCRIPTION_ID", "dummy"); err != nil {
 		t.Fatalf("error when setting AZURE_SUBSCRIPTION_ID environment variable")
 	}
-	client, err := azureServicesClientOrDefault(ClusterActuatorParams{})
+	client, err := azureServicesClientOrDefault(ActuatorParams{})
 	if err != nil {
 		t.Fatalf("unable to create azure services client: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestNewAzureClientAuthorizerFailure(t *testing.T) {
 	if err := os.Setenv("AZURE_ENVIRONMENT", "dummy"); err != nil {
 		t.Fatalf("error when setting environment variable")
 	}
-	_, err := azureServicesClientOrDefault(ClusterActuatorParams{})
+	_, err := azureServicesClientOrDefault(ActuatorParams{})
 	if err == nil {
 		t.Fatalf("expected error when creating the azure services client but got none")
 	}
@@ -101,7 +101,7 @@ func TestNewAzureClientAuthorizerFailure(t *testing.T) {
 }
 
 func TestNewAzureClientSubscriptionFailure(t *testing.T) {
-	_, err := azureServicesClientOrDefault(ClusterActuatorParams{})
+	_, err := azureServicesClientOrDefault(ActuatorParams{})
 	if err == nil {
 		t.Fatalf("expected error when creating the azure services client but got none")
 	}
@@ -113,7 +113,7 @@ func TestReconcileSuccess(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateSuccess())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -128,7 +128,7 @@ func TestReconcileSuccess(t *testing.T) {
 
 func TestReconcileFailureParsing(t *testing.T) {
 	cluster := newCluster(t)
-	actuator, err := NewClusterActuator(ClusterActuatorParams{Services: &services.AzureClients{}})
+	actuator, err := NewClusterActuator(ActuatorParams{Services: &services.AzureClients{}})
 	if err != nil {
 		t.Fatalf("unable to create cluster actuator: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestReconcileFailureRGCreation(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgCreateOrUpdateFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -166,7 +166,7 @@ func TestReconcileFailureNSGCreation(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -185,7 +185,7 @@ func TestReconcileFailureNSGFutureError(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockNsgCreateOrUpdateFutureFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -204,7 +204,7 @@ func TestReconcileFailureVnetCreation(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -224,7 +224,7 @@ func TestReconcileFailureVnetFutureError(t *testing.T) {
 	mergo.Merge(&networkMock, services.MockVnetCreateOrUpdateFutureFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &networkMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -243,7 +243,7 @@ func TestDeleteSuccess(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgDeleteSuccess())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -257,7 +257,7 @@ func TestDeleteSuccess(t *testing.T) {
 }
 func TestDeleteFailureParsing(t *testing.T) {
 	azureServicesClient := services.AzureClients{Resourcemanagement: &services.MockAzureResourceManagementClient{}, Network: &services.MockAzureNetworkClient{}}
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -280,7 +280,7 @@ func TestDeleteFailureRGNotExists(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgNotExists())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -298,7 +298,7 @@ func TestDeleteFailureRGCheckFailure(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgCheckFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -317,7 +317,7 @@ func TestDeleteFailureRGDeleteFailure(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgDeleteFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)
@@ -336,7 +336,7 @@ func TestDeleteFailureRGDeleteFutureFailure(t *testing.T) {
 	mergo.Merge(&resourceManagementMock, services.MockRgDeleteFutureFailure())
 	azureServicesClient := services.AzureClients{Resourcemanagement: &resourceManagementMock}
 
-	params := ClusterActuatorParams{Services: &azureServicesClient}
+	params := ActuatorParams{Services: &azureServicesClient}
 	cluster := newCluster(t)
 
 	actuator, err := NewClusterActuator(params)

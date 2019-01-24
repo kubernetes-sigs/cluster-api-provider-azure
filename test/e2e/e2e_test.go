@@ -3,8 +3,6 @@ package e2e
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,11 +13,11 @@ import (
 )
 
 // do some testing with the K8s go client
-var (
-	_, b, _, _          = runtime.Caller(0)
-	testBasePath        = filepath.Dir(filepath.Dir(b))
-	generatedConfigPath = filepath.Join(filepath.Dir(testBasePath), "generatedconfigs")
-)
+//var (
+//	_, b, _, _          = runtime.Caller(0)
+//	testBasePath        = filepath.Dir(filepath.Dir(b))
+//	generatedConfigPath = filepath.Join(filepath.Dir(testBasePath), "generatedconfigs")
+//)
 
 type Clients struct {
 	kube  KubeClient
