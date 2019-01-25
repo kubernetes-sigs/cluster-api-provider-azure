@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	capis "sigs.k8s.io/cluster-api/pkg/apis"
+	"sigs.k8s.io/cluster-api/pkg/controller"
 	apicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	apimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 
@@ -92,6 +93,12 @@ func main() {
 
 	apimachine.AddWithActuator(mgr, machine.Actuator)
 	apicluster.AddWithActuator(mgr, clusterActuator)
+
+	// Setup all Controllers
+	if err := controller.AddToManager(mgr); err != nil {
+		log.Error(err, "unable add AddToManager")
+		os.Exit(1)
+	}
 
 	// Start the Cmd
 	log.Info("Starting the Cmd.")
