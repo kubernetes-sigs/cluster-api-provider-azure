@@ -1,11 +1,16 @@
 ---
-title: 'Feature request'
-labels: feature
-about: Suggest an idea for this project.
+name: 'Bug report'
+about: Tell us about a problem you are experiencing.
+
 ---
 
-**Describe the solution you'd like**
-[A clear and concise description of what you want to happen.]
+/kind bug
+
+**What steps did you take and what happened:**
+[A clear and concise description of what the bug is.]
+
+
+**What did you expect to happen:**
 
 
 **Anything else you would like to add:**
