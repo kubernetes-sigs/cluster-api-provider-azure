@@ -1,123 +1,99 @@
-# Kubernetes Cluster API Azure Provider  [![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-azure)](https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure)
+# Kubernetes Cluster API Provider Azure
 
-## Getting Started
+[![Go Report Card](https://goreportcard.com/badge/kubernetes-sigs/cluster-api-provider-azure)](https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure)
 
-### Requirements
+<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100">
 
-- Linux or MacOS (Windows isn't supported at the moment)
-- A set of Azure credentials sufficient to bootstrap the cluster (an Azure service principal with Collaborator rights).
-- [KIND]
-- [kubectl]
-- [kustomize]
-- make
-- gettext (with `envsubst` in your PATH)
-- bazel
+------
 
-### Optional
+Kubernetes-native declarative infrastructure for Azure.
 
-- [Homebrew][brew] (MacOS)
-- [jq]
-- [Go]
+## What is the Cluster API Provider Azure
 
-[brew]: https://brew.sh/
-[Go]: https://golang.org/dl/
-[jq]: https://stedolan.github.io/jq/download/
-[KIND]: https://sigs.k8s.io/kind
-[kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
-[kustomize]: https://github.com/kubernetes-sigs/kustomize
+The [Cluster API][cluster_api] brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
 
-### Install the project
+The API itself is shared across multiple cloud providers allowing for true Azure
+hybrid deployments of Kubernetes.
 
-#### Release binaries
+## Launching a Kubernetes cluster on Azure
+
+Check out the [getting started guide](docs/getting-started.md) for launching a
+cluster on Azure.
+
+## Features
+
+TODO
+
+------
+
+## Documentation
+
+Documentation is in the `/docs` directory, and the [index is here](docs/README.md).
+
+## Getting involved and contributing
+
+Are you interested in contributing to cluster-api-provider-azure? We, the
+maintainers and community, would love your suggestions, contributions, and help!
+Also, the maintainers can be contacted at any time to learn more about how to get
+involved.
+
+In the interest of getting more new people involved we to tag issues with
+[`good first issue`][good_first_issue].
+These are typically issues that have smaller scope but are good ways to start
+to get acquainted with the codebase.
+
+We also encourage ALL active community participants to act as if they are
+maintainers, even if you don't have "official" write permissions. This is a
+community effort, we are here to serve the Kubernetes community. If you have an
+active interest and you want to get involved, you have real power! Don't assume
+that the only people who can get things done around here are the "maintainers".
+
+We also would love to add more "official" maintainers, so show us what you can
+do!
+
+This repository uses the Kubernetes bots.  See a full list of the commands [here][prow].
+
+### Implementer office hours
+
 TODO. Coming soon!
 
-#### Building from master
+### Other ways to communicate with the contributors
 
-Currently, you'll need to build the latest version from `master`:
+Please check in with us in the [#cluster-api-azure][slack] channel on Slack.
 
-```bash
-# Get the latest version of cluster-api-provider-azure
-go get sigs.k8s.io/cluster-api-provider-azure
+## Github issues
 
-# Ensure that you have the project root as your current working directory.
-cd $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
+### Bugs
 
-# Build the `clusterctl` tool.
-make clusterctl
-```
+If you think you have found a bug please follow the instructions below.
 
-### Prepare your environment
-An Azure Service Principal is needed for usage by the `clusterctl` tool and for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication). The following environment variables should be set: `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`.
+- Please spend a small amount of time giving due diligence to the issue tracker. Your issue might be a duplicate.
+- Get the logs from the cluster controllers. Please paste this into your issue.
+- Open a [new issue][new_issue].
+- Remember users might be searching for your issue in the future, so please give it a meaningful title to helps others.
+- Feel free to reach out to the cluster-api community on [kubernetes slack][slack_info].
 
-An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Note that the service principals created by the scripts will not be deleted automatically._
+### Tracking new features
 
-### Usage
+We also use the issue tracker to track features. If you have an idea for a feature, or think you can help kops become even more awesome follow the steps below.
 
-#### Creating a Cluster
-1. Generate the `cluster.yaml`, `machines.yaml`, and `addons.yaml` files, and create the service principal if needed.
+- Open a [new issue][new_issue].
+- Remember users might be searching for your issue in the future, so please
+  give it a meaningful title to helps others.
+- Clearly define the use case, using concrete examples. EG: I type `this` and
+  cluster-api-provider-azure does `that`.
+- Some of our larger features will require some design. If you would like to
+  include a technical design for your feature please include it in the issue.
+- After the new feature is well understood, and the design agreed upon we can
+  start coding the feature. We would love for you to code it. So please open
+  up a **WIP** *(work in progress)* pull request, and happy coding.
 
-   ```
-   cd cmd/clusterctl/examples/azure
-   RESOURCE_GROUP=capz-test CLUSTER_NAME="capz-test-0" ./generate-yaml.sh # set CREATE_SP=TRUE if creating a new Service Principal is desired
-   cd ../../../..
-   # If CREATE_SP=TRUE
-   source cmd/clusterctl/examples/azure/out/credentials.sh
-   ```
-2. Generate the `provider-components.yaml` file.
+<!-- References -->
 
-   ```
-   kustomize build config/default/ > cmd/clusterctl/examples/azure/out/provider-components.yaml
-   echo "---" >> cmd/clusterctl/examples/azure/out/provider-components.yaml
-   kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> cmd/clusterctl/examples/azure/out/provider-components.yaml
-   ```
-3. Create the cluster.
-
-   **NOTE:** Kubernetes Version >= 1.11 is required to enable CRD subresources without needing a feature gate.
-
-    ```bash
-    ./bin/clusterctl create cluster -v 3 \
-    --provider azure \
-    --bootstrap-type kind \
-    -m ./cmd/clusterctl/examples/azure/out/machines.yaml \
-    -c ./cmd/clusterctl/examples/azure/out/cluster.yaml \
-    -p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
-    -a ./cmd/clusterctl/examples/azure/out/addons.yaml
-   ```
-
-Once the cluster is created successfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
-
-```
-export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")"
-kubectl get clusters
-kubectl get machines
-```
-
-### Creating and using controller images
-
-Here's an example of how to build controller images, if you're interested in testing changes in the image yourself:
-
-```bash
-# Build the image.
-PREFIX=quay.io/k8s \
-NAME=cluster-api-azure-controller \
-TAG=0.2.0-alpha.3 \
-make docker-build
-
-# Push the image.
-PREFIX=quay.io/k8s \
-NAME=cluster-api-azure-controller \
-TAG=0.2.0-alpha.3 \
-make docker-push
-```
-
-**NOTE:** In order for the created images to be used for testing, you must push them to a public container registry.
-
-### Submitting PRs and testing
-
-Pull requests and issues are highly encouraged!
-If you're interested in submitting PRs to the project, please be sure to run some initial checks prior to submission:
-
-```bash
-make check # Runs a suite of quick scripts to check code structure
-make test # Runs tests on the Go code
-```
+[slack]: https://kubernetes.slack.com/messages/CEX9HENG7
+[good_first_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
+[prow]:
+https://github.com/kubernetes/test-infra/blob/master/commands.md
+[new_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new
+[slack_info]: https://github.com/kubernetes/community/blob/master/communication.md#social-media
+[cluster_api]: https://github.com/kubernetes-sigs/cluster-api

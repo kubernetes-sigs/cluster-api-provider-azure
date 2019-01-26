@@ -23,11 +23,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 )
 
 const (

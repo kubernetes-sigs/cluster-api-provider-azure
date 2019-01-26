@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clientcmd"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
 	clientv1alpha1 "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 

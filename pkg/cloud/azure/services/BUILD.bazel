@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "interfaces.go",
+        "mock_interfaces.go",
+        "mock_interfaces_helper.go",
+    ],
+    importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/azureprovider/v1alpha1:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/autorest/to:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
+    ],
+)
