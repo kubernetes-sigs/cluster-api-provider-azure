@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  digest = "1:aac888275c4d362725b47e75d4e660f41435ed1b0524c193d0af8ee873139e5d"
-  name = "cloud.google.com/go"
-  packages = ["compute/metadata"]
-  pruneopts = "UT"
-  revision = "bb12be1742b232539b22ad8d0efc7afb02bbae39"
-  version = "v0.33.0"
-
-[[projects]]
   digest = "1:b92928b73320648b38c93cacb9082c0fe3f8ac3383ad9bd537eef62c380e0e7a"
   name = "contrib.go.opencensus.io/exporter/ocagent"
   packages = ["."]
@@ -516,11 +508,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3b26c934d4b1b601aa272456290a18144b072259c44e92040a1925fec6ed7013"
+  digest = "1:8e4cc636d70e1402963972d4bf761ce6f4a432e74a537917b3198ec026ebc98c"
   name = "golang.org/x/net"
   packages = [
     "context",
-    "context/ctxhttp",
     "html",
     "html/atom",
     "html/charset",
@@ -533,20 +524,6 @@
   ]
   pruneopts = "UT"
   revision = "88d92db4c548972d942ac2a3531a8a9a34c82ca6"
-
-[[projects]]
-  branch = "master"
-  digest = "1:d71cf3891adad6f2d608396a8da36e90ac46cd51e34d5a75a31385d2682b43ce"
-  name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "google",
-    "internal",
-    "jws",
-    "jwt",
-  ]
-  pruneopts = "UT"
-  revision = "f42d05182288abf10faef86d16c0d07b8d40ea2d"
 
 [[projects]]
   branch = "master"
@@ -630,25 +607,6 @@
   packages = ["support/bundler"]
   pruneopts = "UT"
   revision = "f26a60c56f148a32e87f3f4591c8ebf834b5561f"
-
-[[projects]]
-  digest = "1:d2a8db567a76203e3b41c1f632d86485ffd57f8e650a0d1b19d240671c2fddd7"
-  name = "google.golang.org/appengine"
-  packages = [
-    ".",
-    "internal",
-    "internal/app_identity",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/modules",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch",
-  ]
-  pruneopts = "UT"
-  revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
-  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -782,10 +740,9 @@
   version = "kubernetes-1.11.2"
 
 [[projects]]
-  digest = "1:6a8fca786f4e263fac02cb6cfe8f0decfee526aede3969d301e18fcef167cd38"
+  digest = "1:51747a5c0ff0e54039ee78dcb3c9f2260725747f9a79f92813fb69b84ef07d4a"
   name = "k8s.io/apimachinery"
   packages = [
-    "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
@@ -817,7 +774,6 @@
     "pkg/util/json",
     "pkg/util/mergepatch",
     "pkg/util/net",
-    "pkg/util/rand",
     "pkg/util/runtime",
     "pkg/util/sets",
     "pkg/util/strategicpatch",
@@ -836,7 +792,7 @@
   version = "kubernetes-1.11.2"
 
 [[projects]]
-  digest = "1:3b7c5a327845c0ea13dade20996cae79ccb7da9c3f72a18cdabb0c50000f7e43"
+  digest = "1:cd6bfafd9a23bafb0d8d317312021b725450dabaf5573a1d5d041af94e89a824"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -877,11 +833,9 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
-    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
     "restmapper",
-    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -901,7 +855,6 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
-    "util/jsonpath",
     "util/retry",
     "util/workqueue",
   ]
@@ -974,14 +927,9 @@
     "pkg/client/clientset_generated/clientset",
     "pkg/client/clientset_generated/clientset/scheme",
     "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
-    "pkg/controller",
     "pkg/controller/cluster",
     "pkg/controller/error",
     "pkg/controller/machine",
-    "pkg/controller/machinedeployment",
-    "pkg/controller/machinedeployment/util",
-    "pkg/controller/machineset",
-    "pkg/controller/node",
     "pkg/controller/noderefutil",
     "pkg/util",
   ]
@@ -1069,11 +1017,11 @@
     "github.com/Azure/go-autorest/autorest/to",
     "github.com/emicklei/go-restful",
     "github.com/golang/glog",
-    "github.com/joho/godotenv",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/pkg/sftp",
+    "github.com/spf13/cobra",
     "golang.org/x/crypto/ssh",
     "k8s.io/api/core/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
@@ -1082,9 +1030,9 @@
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/util/json",
     "k8s.io/client-go/kubernetes",
-    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
+    "k8s.io/client-go/tools/record",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/klog",
     "sigs.k8s.io/cluster-api/cmd/clusterctl/clientcmd",
@@ -1092,15 +1040,14 @@
     "sigs.k8s.io/cluster-api/pkg/apis",
     "sigs.k8s.io/cluster-api/pkg/apis/cluster/common",
     "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1",
+    "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset",
     "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
-    "sigs.k8s.io/cluster-api/pkg/controller",
     "sigs.k8s.io/cluster-api/pkg/controller/cluster",
     "sigs.k8s.io/cluster-api/pkg/controller/machine",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/controller",
     "sigs.k8s.io/controller-runtime/pkg/handler",
     "sigs.k8s.io/controller-runtime/pkg/manager",
-    "sigs.k8s.io/controller-runtime/pkg/runtime/log",
     "sigs.k8s.io/controller-runtime/pkg/runtime/scheme",
     "sigs.k8s.io/controller-runtime/pkg/runtime/signals",
     "sigs.k8s.io/controller-runtime/pkg/source",

@@ -18,107 +18,68 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
-	"github.com/joho/godotenv"
+	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
-	capis "sigs.k8s.io/cluster-api/pkg/apis"
-	"sigs.k8s.io/cluster-api/pkg/controller"
-	apicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
-	apimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
+	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+	capicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
+	capimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 )
 
 func main() {
+	klog.InitFlags(nil)
+	flag.Set("logtostderr", "true")
 	flag.Parse()
 
-	logf.SetLogger(logf.ZapLogger(false))
-	log := logf.Log.WithName("entrypoint")
+	cfg := config.GetConfigOrDie()
 
-	// Get a config to talk to the apiserver
-	log.Info("setting up client for manager")
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Error(err, "unable to set up client config")
-		os.Exit(1)
-	}
-
-	// Create a new Cmd to provide shared dependencies and start components
-	log.Info("setting up manager")
+	// Setup a Manager
 	mgr, err := manager.New(cfg, manager.Options{})
 	if err != nil {
-		log.Error(err, "unable to set up overall controller manager")
-		os.Exit(1)
+		klog.Fatalf("Failed to set up overall controller manager: %v", err)
 	}
 
-	if err := prepareEnvironment(); err != nil {
-		log.Error(err, "unable to prepare environment for actuators")
-		os.Exit(1)
-	}
-
-	clusterActuator, err := cluster.NewClusterActuator(cluster.ActuatorParams{Client: mgr.GetClient()})
+	cs, err := clientset.NewForConfig(cfg)
 	if err != nil {
-		log.Error(err, "error creating cluster actuator")
-		os.Exit(1)
-	}
-	machine.Actuator, err = machine.NewMachineActuator(machine.ActuatorParams{Client: mgr.GetClient(), Scheme: mgr.GetScheme()})
-	if err != nil {
-		log.Error(err, "error creating machine actuator")
-		os.Exit(1)
+		klog.Fatalf("Failed to create client from configuration: %v", err)
 	}
 
-	log.Info("Registering Components.")
-	common.RegisterClusterProvisioner(machine.ProviderName, machine.Actuator)
+	// Initialize event recorder.
+	record.InitFromRecorder(mgr.GetRecorder("azure-controller"))
 
-	// Setup Scheme for all resources
-	log.Info("setting up scheme")
+	// Initialize cluster actuator.
+	clusterActuator := cluster.NewActuator(cluster.ActuatorParams{
+		Client: cs.ClusterV1alpha1(),
+	})
+
+	// Initialize machine actuator.
+	machineActuator := machine.NewActuator(machine.ActuatorParams{
+		Client: cs.ClusterV1alpha1(),
+	})
+
+	// Register our cluster deployer (the interface is in clusterctl and we define the Deployer interface on the actuator)
+	common.RegisterClusterProvisioner("azure", clusterActuator)
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "unable add APIs to scheme")
-		os.Exit(1)
+		klog.Fatal(err)
 	}
 
-	if err := capis.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "unable add APIs to scheme")
-		os.Exit(1)
+	if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
+		klog.Fatal(err)
 	}
 
-	apimachine.AddWithActuator(mgr, machine.Actuator)
-	apicluster.AddWithActuator(mgr, clusterActuator)
+	capimachine.AddWithActuator(mgr, machineActuator)
+	capicluster.AddWithActuator(mgr, clusterActuator)
 
-	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
-		log.Error(err, "unable add AddToManager")
-		os.Exit(1)
-	}
-
-	// Start the Cmd
-	log.Info("Starting the Cmd.")
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		log.Error(err, "unable to run the manager")
-		os.Exit(1)
+		klog.Fatalf("Failed to run manager: %v", err)
 	}
-}
-
-func prepareEnvironment() error {
-	//Parse in environment variables if necessary
-	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-		err := godotenv.Load()
-		if err == nil && os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
-			return fmt.Errorf("couldn't find environment variable for the Azure subscription: %v", err)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to load environment variables: %v", err)
-		}
-	}
-	return nil
 }
