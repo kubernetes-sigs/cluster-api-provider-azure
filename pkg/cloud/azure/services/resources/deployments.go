@@ -225,8 +225,7 @@ mkdir -p /home/ClusterAPI/.kube
 cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 
-KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane)
+KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane)
 		return startupScript, nil
 	} else if machineConfig.Roles[0] == providerv1.Node {
 		startupScript := fmt.Sprintf(`(

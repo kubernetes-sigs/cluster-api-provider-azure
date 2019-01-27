@@ -29,33 +29,6 @@ import (
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
-/*
-// AzureClusterClient holds the Azure SDK Client and Kubernetes Client objects.
-type AzureClusterClient struct {
-	services *actuators.AzureClients
-	client   client.ClusterV1alpha1Interface
-}
-
-// ClusterActuatorParams holds the Azure SDK Client and Kubernetes Client objects for the cluster actuator.
-type ClusterActuatorParams struct {
-	Services *actuators.AzureClients
-	Client   client.ClusterV1alpha1Interface
-}
-
-// NewClusterActuator returns a new instance of AzureClusterClient.
-func NewClusterActuator(params actuators.ScopeParams) (*AzureClusterClient, error) {
-	scope, err := actuators.NewScope(params)
-	if err != nil {
-		return nil, errors.Errorf("failed to create scope: %+v", err)
-	}
-
-	return &AzureClusterClient{
-		services: &scope.AzureClients,
-		client:   params.Client,
-	}, nil
-}
-*/
-
 // Actuator is responsible for performing cluster reconciliation
 type Actuator struct {
 	*deployer.Deployer

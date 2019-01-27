@@ -1016,7 +1016,6 @@
     "github.com/Azure/go-autorest/autorest/azure/auth",
     "github.com/Azure/go-autorest/autorest/to",
     "github.com/emicklei/go-restful",
-    "github.com/golang/glog",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/pkg/errors",

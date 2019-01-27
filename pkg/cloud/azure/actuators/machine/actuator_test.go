@@ -529,7 +529,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	goalMachine := machine
-// 	goalMachine.Spec.Versions.Kubelet = "1.10.0"
+// 	goalMachine.Spec.Versions.Kubelet = "1.12.5"
 
 // 	err = actuator.Update(cluster, goalMachine)
 // 	if err != nil {
@@ -548,7 +548,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	goalMachine := machine
-// 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
+// 	goalMachine.Spec.Versions.ControlPlane = "1.12.5"
 
 // 	err = actuator.Update(cluster, goalMachine)
 // 	if err != nil {
@@ -566,7 +566,7 @@ func TestUpdateFailureMachineParsing(t *testing.T) {
 // 	params := ActuatorParams{Services: &azureServicesClient, V1Alpha1Client: fake.NewSimpleClientset(machine).ClusterV1alpha1()}
 // 	actuator, err := NewMachineActuator(params)
 // 	goalMachine := machine
-// 	goalMachine.Spec.Versions.ControlPlane = "1.10.0"
+// 	goalMachine.Spec.Versions.ControlPlane = "1.12.5"
 
 // 	err = actuator.Update(cluster, goalMachine)
 // 	if err != nil {

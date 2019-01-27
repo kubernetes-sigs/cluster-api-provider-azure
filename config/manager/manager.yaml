@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: system
+  name: system #TODO: add the prefix here manually, next version of kustomize won't prefix namespaces.
 ---
 apiVersion: v1
 kind: Service
@@ -41,67 +41,70 @@ spec:
         controller-tools.k8s.io: "1.0"
     spec:
       tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - effect: NoExecute
-        key: node.alpha.kubernetes.io/notReady
-        operator: Exists
-      - effect: NoExecute
-        key: node.alpha.kubernetes.io/unreachable
-        operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          key: node.alpha.kubernetes.io/notReady
+          operator: Exists
+        - effect: NoExecute
+          key: node.alpha.kubernetes.io/unreachable
+          operator: Exists
       containers:
-      - name: manager
-        image: controller:latest
-        imagePullPolicy: Always
-        command:
-        - /root/manager
-        args:
-        - "-logtostderr=true"
-        - "-stderrthreshold=INFO"
-        volumeMounts:
-        - name: config
-          mountPath: /etc/kubernetes
-        - name: certs
-          mountPath: /etc/ssl/certs
-        env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: AZURE_TENANT_ID
-            valueFrom:
-              secretKeyRef:
-                name: azure-controller-secrets
-                key: tenant-id
-          - name: AZURE_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: azure-controller-secrets
-                key: client-id
-          - name: AZURE_CLIENT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: azure-controller-secrets
-                key: client-secret
-          - name: AZURE_SUBSCRIPTION_ID
-            valueFrom:
-              secretKeyRef:
-                name: azure-controller-secrets
-                key: subscription-id
-        resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
-          requests:
-            cpu: 100m
-            memory: 20Mi
+        - name: manager
+          image: SET_BY_PATCH
+          imagePullPolicy: SET_BY_PATCH
+          args:
+            - "-v=3"
+            - "-logtostderr=true"
+            - "-stderrthreshold=INFO"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/kubernetes
+            - name: certs
+              mountPath: /etc/ssl/certs
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-controller-secrets
+                  key: tenant-id
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-controller-secrets
+                  key: client-id
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: azure-controller-secrets
+                  key: client-secret
+            - name: AZURE_SUBSCRIPTION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: azure-controller-secrets
+                  key: subscription-id
       volumes:
-      - name: config
-        hostPath:
-          path: /etc/kubernetes
-      - name: certs
-        hostPath:
-          path: /etc/ssl/certs
+        - name: config
+          hostPath:
+            path: /etc/kubernetes
+        - name: certs
+          hostPath:
+            path: /etc/ssl/certs
+        # TODO: Investigate Azure bootstrap credentials
+        #- name: credentials
+        #  secret:
+        #    secretName: manager-bootstrap-credentials
       terminationGracePeriodSeconds: 10

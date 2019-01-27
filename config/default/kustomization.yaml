@@ -19,13 +19,15 @@ namePrefix: azure-provider-
 # markers ("---").
 resources:
 - ../crds/azureprovider_v1alpha1_azureclusterproviderspec.yaml
+- ../crds/azureprovider_v1alpha1_azureclusterproviderstatus.yaml
 - ../crds/azureprovider_v1alpha1_azuremachineproviderspec.yaml
+- ../crds/azureprovider_v1alpha1_azuremachineproviderstatus.yaml
 - ../rbac/rbac_role.yaml
 - ../rbac/rbac_role_binding.yaml
 - ../manager/manager.yaml
 
-patches:
-- manager_image_patch.yaml
+patchesStrategicMerge:
+- ../../cmd/clusterctl/examples/azure/out/azure_manager_image_patch.yaml
 
 secretGenerator:
 - name: azure-controller-secrets
@@ -35,3 +37,8 @@ secretGenerator:
     client-id: "printf $AZURE_CLIENT_ID"
     client-secret: "printf $AZURE_CLIENT_SECRET"
   type: Opaque
+# TODO: Investigate Azure bootstrap credentials
+#  - name: manager-bootstrap-credentials
+#    type: Opaque
+#    commands:
+#      credentials: "cat ../../cmd/clusterctl/examples/aws/out/credentials"

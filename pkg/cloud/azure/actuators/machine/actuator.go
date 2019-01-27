@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -145,13 +144,13 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 
 	// no need for update if fields havent changed
 	if !a.shouldUpdate(currentMachine, goalMachine) {
-		glog.Infof("no need to update machine: %v", currentMachine.ObjectMeta.Name)
+		klog.Infof("no need to update machine: %v", currentMachine.ObjectMeta.Name)
 		return nil
 	}
 
 	// update master inplace
 	if isMasterMachine(scope.MachineConfig.Roles) {
-		glog.Infof("updating master machine %v in place", currentMachine.ObjectMeta.Name)
+		klog.Infof("updating master machine %v in place", currentMachine.ObjectMeta.Name)
 		err = a.updateMaster(cluster, currentMachine, goalMachine)
 		if err != nil {
 			return fmt.Errorf("error updating master machine %v in place: %v", currentMachine.ObjectMeta.Name, err)
@@ -161,14 +160,14 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 		return nil
 	}
 	// delete and recreate machine for nodes
-	glog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
+	klog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
 	err = a.Delete(ctx, cluster, currentMachine)
 	if err != nil {
 		return fmt.Errorf("error updating node machine %v, deleting node machine failed: %v", currentMachine.ObjectMeta.Name, err)
 	}
 	err = a.Create(ctx, cluster, goalMachine)
 	if err != nil {
-		glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
+		klog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 	}
 	return nil
 }
