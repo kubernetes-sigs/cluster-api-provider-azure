@@ -71,7 +71,7 @@ func TestMasterMachineCreated(t *testing.T) {
 func createTestClients() (*Clients, error) {
 	kubeconfig := os.Getenv("KUBE_CONFIG")
 	if kubeconfig == "" {
-		return nil, fmt.Errorf("KUBE_CONFIG environment variable is not set")
+		t.Skip("KUBE_CONFIG environment variable is not set")
 	}
 	kubeClient, err := NewKubeClient(kubeconfig)
 	if err != nil {
