@@ -68,7 +68,7 @@ func TestMasterMachineCreated(t *testing.T) {
 	// validate virtual machine fields match the spec
 }
 
-func createTestClients() (*Clients, error) {
+func createTestClients() (t *Testing.T, *Clients, error) {
 	kubeconfig := os.Getenv("KUBE_CONFIG")
 	if kubeconfig == "" {
 		t.Skip("KUBE_CONFIG environment variable is not set")
