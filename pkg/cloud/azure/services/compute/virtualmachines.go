@@ -28,12 +28,12 @@ func (s *Service) RunCommand(resoureGroup string, name string, cmd string) (comp
 		CommandID: to.StringPtr("RunShellScript"),
 		Script:    to.StringSlicePtr([]string{cmd}),
 	}
-	return s.VirtualMachinesClient.RunCommand(s.ctx, resoureGroup, name, cmdInput)
+	return s.scope.AzureClients.VM.RunCommand(s.scope.Context, resoureGroup, name, cmdInput)
 }
 
 // VMIfExists returns the reference to the VM object if it exists.
 func (s *Service) VMIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error) {
-	vm, err := s.VirtualMachinesClient.Get(s.ctx, resourceGroup, name, "")
+	vm, err := s.scope.AzureClients.VM.Get(s.scope.Context, resourceGroup, name, "")
 	if err != nil {
 		if aerr, ok := err.(autorest.DetailedError); ok {
 			if aerr.StatusCode.(int) == 404 {
@@ -47,15 +47,15 @@ func (s *Service) VMIfExists(resourceGroup string, name string) (*compute.Virtua
 
 // DeleteVM deletes the virtual machine.
 func (s *Service) DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
-	return s.VirtualMachinesClient.Delete(s.ctx, resourceGroup, name)
+	return s.scope.AzureClients.VM.Delete(s.scope.Context, resourceGroup, name)
 }
 
 // WaitForVMRunCommandFuture returns when the RunCommand operation completes.
 func (s *Service) WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualMachinesClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VM.Client)
 }
 
 // WaitForVMDeletionFuture returns when the DeleteVM operation completes.
 func (s *Service) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.ctx, s.VirtualMachinesClient.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VM.Client)
 }

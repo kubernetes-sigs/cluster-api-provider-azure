@@ -24,41 +24,41 @@ import (
 	"os"
 	"reflect"
 	"strings"
-
-	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/ghodss/yaml"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"time"
 
-	"github.com/golang/glog"
-	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"github.com/pkg/errors"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
+	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
-// Actuator is an instance of the MachineActuator's AzureClient.
-var Actuator *AzureClient
+// Actuator is responsible for performing machine reconciliation.
+type Actuator struct {
+	*deployer.Deployer
 
-// AzureClient holds the Azure SDK and Kubernetes Client for the MachineActuator
-type AzureClient struct {
-	services *services.AzureClients
-	client   client.Client
-	scheme   *runtime.Scheme
+	client client.ClusterV1alpha1Interface
 }
 
 // ActuatorParams contains the parameters that are used to create a machine actuator.
 // These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
 type ActuatorParams struct {
-	Services *services.AzureClients
-	Client   client.Client
-	Scheme   *runtime.Scheme
+	Client client.ClusterV1alpha1Interface
+}
+
+// NewActuator returns an actuator.
+func NewActuator(params ActuatorParams) *Actuator {
+	return &Actuator{
+		Deployer: deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter}),
+		client:   params.Client,
+	}
 }
 
 const (
@@ -68,118 +68,121 @@ const (
 	SSHUser = "ClusterAPI"
 )
 
-// NewMachineActuator creates a new azure client to be used as a machine actuator
-func NewMachineActuator(params ActuatorParams) (*AzureClient, error) {
-	azureServicesClients, err := azureServicesClientOrDefault(params)
-	if err != nil {
-		return nil, fmt.Errorf("error getting azure services client: %v", err)
-	}
-	return &AzureClient{
-		services: azureServicesClients,
-		client:   params.Client,
-		scheme:   params.Scheme,
-	}, nil
-}
+// Create creates a machine and is invoked by the machine controller.
+func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
 
-// Create a machine based on the cluster and machine spec parameters.
-func (azure *AzureClient) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return fmt.Errorf("error loading cluster provider config: %v", err)
-	}
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
-	if err != nil {
-		return fmt.Errorf("error loading machine provider config: %v", err)
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	err = azure.resources().ValidateDeployment(machine, clusterConfig, machineConfig)
+	defer scope.Close()
+
+	resourcesSvc := resources.NewService(scope.Scope)
+
+	err = resourcesSvc.ValidateDeployment(machine, scope.ClusterConfig, scope.MachineConfig)
 	if err != nil {
 		return fmt.Errorf("error validating deployment: %v", err)
 	}
 
-	deploymentsFuture, err := azure.resources().CreateOrUpdateDeployment(machine, clusterConfig, machineConfig)
+	deploymentsFuture, err := resourcesSvc.CreateOrUpdateDeployment(machine, scope.ClusterConfig, scope.MachineConfig)
 	if err != nil {
 		return fmt.Errorf("error creating or updating deployment: %v", err)
 	}
-	err = azure.resources().WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
+	err = resourcesSvc.WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for deployment creation or update: %v", err)
 	}
 
-	deployment, err := azure.resources().GetDeploymentResult(*deploymentsFuture)
+	deployment, err := resourcesSvc.GetDeploymentResult(*deploymentsFuture)
 	// Work around possible bugs or late-stage failures
 	if deployment.Name == nil || err != nil {
 		return fmt.Errorf("error getting deployment result: %v", err)
 	}
-	return azure.updateAnnotations(cluster, machine)
+	// TODO: Is this still required with scope.Close()?
+	//return a.updateAnnotations(cluster, machine)
+	return nil
 }
 
 // Update an existing machine based on the cluster and machine spec parameters.
-func (azure *AzureClient) Update(ctx context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
+	klog.Infof("Updating machine %v for cluster %v.", goalMachine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: goalMachine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return fmt.Errorf("error loading cluster provider config: %v", err)
-	}
-	_, err = machineProviderFromProviderSpec(goalMachine.Spec.ProviderSpec)
-	if err != nil {
-		return fmt.Errorf("error loading goal machine provider config: %v", err)
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	status, err := azure.status(goalMachine)
-	if err != nil {
-		return err
-	}
-	currentMachine := (*clusterv1.Machine)(status)
+	defer scope.Close()
+
+	computeSvc := compute.NewService(scope.Scope)
+
+	/*
+		status, err := a.status(goalMachine)
+		if err != nil {
+			return err
+		}
+		currentMachine := (*clusterv1.Machine)(status)
+	*/
+
+	currentMachine := scope.Machine
 
 	if currentMachine == nil {
-		vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resources.GetVMName(goalMachine))
+		vm, err := computeSvc.VMIfExists(scope.ClusterConfig.ResourceGroup, resources.GetVMName(goalMachine))
 		if err != nil || vm == nil {
 			return fmt.Errorf("error checking if vm exists: %v", err)
 		}
 		// update annotations for bootstrap machine
 		if vm != nil {
-			return azure.updateAnnotations(cluster, goalMachine)
+			// TODO: Is this still required with scope.Close()?
+			//return a.updateAnnotations(cluster, goalMachine)
+			return nil
 		}
 		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, err)
 	}
-	currentMachineConfig, err := machineProviderFromProviderSpec(currentMachine.Spec.ProviderSpec)
-	if err != nil {
-		return fmt.Errorf("error loading current machine provider config: %v", err)
-	}
 
 	// no need for update if fields havent changed
-	if !azure.shouldUpdate(currentMachine, goalMachine) {
-		glog.Infof("no need to update machine: %v", currentMachine.ObjectMeta.Name)
+	if !a.shouldUpdate(currentMachine, goalMachine) {
+		klog.Infof("no need to update machine: %v", currentMachine.ObjectMeta.Name)
 		return nil
 	}
 
 	// update master inplace
-	if isMasterMachine(currentMachineConfig.Roles) {
-		glog.Infof("updating master machine %v in place", currentMachine.ObjectMeta.Name)
-		err = azure.updateMaster(cluster, currentMachine, goalMachine)
+	if isMasterMachine(scope.MachineConfig.Roles) {
+		klog.Infof("updating master machine %v in place", currentMachine.ObjectMeta.Name)
+		err = a.updateMaster(cluster, currentMachine, goalMachine)
 		if err != nil {
 			return fmt.Errorf("error updating master machine %v in place: %v", currentMachine.ObjectMeta.Name, err)
 		}
-		return azure.updateStatus(goalMachine)
+		// TODO: Is this still required with scope.Close()?
+		//return a.updateStatus(goalMachine)
+		return nil
 	}
 	// delete and recreate machine for nodes
-	glog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
-	err = azure.Delete(ctx, cluster, currentMachine)
+	klog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
+	err = a.Delete(ctx, cluster, currentMachine)
 	if err != nil {
 		return fmt.Errorf("error updating node machine %v, deleting node machine failed: %v", currentMachine.ObjectMeta.Name, err)
 	}
-	err = azure.Create(ctx, cluster, goalMachine)
+	err = a.Create(ctx, cluster, goalMachine)
 	if err != nil {
-		glog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
+		klog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
 	}
 	return nil
 }
 
-func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
+	//klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: goalMachine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return fmt.Errorf("error loading cluster provider config: %v", err)
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
+
+	defer scope.Close()
+
+	computeSvc := compute.NewService(scope.Scope)
 
 	// update the control plane
 	if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
@@ -193,11 +196,11 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
 			"sudo tee /usr/bin/kubectl > /dev/null;"+
 			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.ControlPlane)
-		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
+		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
 		}
-		err = azure.compute().WaitForVMRunCommandFuture(commandRunFuture)
+		err = computeSvc.WaitForVMRunCommandFuture(commandRunFuture)
 		if err != nil {
 			return fmt.Errorf("error waiting for upgrade control plane future: %v", err)
 		}
@@ -212,11 +215,11 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 		// mark the node as schedulable
 		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
 
-		commandRunFuture, err := azure.compute().RunCommand(clusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
+		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
 		}
-		err = azure.compute().WaitForVMRunCommandFuture(commandRunFuture)
+		err = computeSvc.WaitForVMRunCommandFuture(commandRunFuture)
 		if err != nil {
 			return fmt.Errorf("error waiting for upgrade kubelet command future: %v", err)
 		}
@@ -224,7 +227,7 @@ func (azure *AzureClient) updateMaster(cluster *clusterv1.Cluster, currentMachin
 	return nil
 }
 
-func (azure *AzureClient) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
+func (a *Actuator) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
 	return !reflect.DeepEqual(m1.Spec.Versions, m2.Spec.Versions) ||
 		!reflect.DeepEqual(m1.Spec.ObjectMeta, m2.Spec.ObjectMeta) ||
 		!reflect.DeepEqual(m1.Spec.ProviderSpec, m2.Spec.ProviderSpec) ||
@@ -233,18 +236,21 @@ func (azure *AzureClient) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Mach
 
 // Delete an existing machine based on the cluster and machine spec passed.
 // Will block until the machine has been successfully deleted, or an error is returned.
-func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return fmt.Errorf("error loading cluster provider config: %v", err)
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
-	// Parse in provider configs
-	_, err = machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
-	if err != nil {
-		return fmt.Errorf("error loading machine provider config: %v", err)
-	}
+
+	defer scope.Close()
+
+	computeSvc := compute.NewService(scope.Scope)
+	networkSvc := network.NewService(scope.Scope)
+
 	// Check if VM exists
-	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resources.GetVMName(machine))
+	vm, err := computeSvc.VMIfExists(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
@@ -255,21 +261,21 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	nicID := (*vm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
 	// delete the VM instance
-	vmDeleteFuture, err := azure.compute().DeleteVM(clusterConfig.ResourceGroup, resources.GetVMName(machine))
+	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting virtual machine: %v", err)
 	}
-	err = azure.compute().WaitForVMDeletionFuture(vmDeleteFuture)
+	err = computeSvc.WaitForVMDeletionFuture(vmDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for virtual machine deletion: %v", err)
 	}
 
 	// delete OS disk associated with the VM
-	diskDeleteFuture, err := azure.compute().DeleteManagedDisk(clusterConfig.ResourceGroup, *osDiskName)
+	diskDeleteFuture, err := computeSvc.DeleteManagedDisk(scope.ClusterConfig.ResourceGroup, *osDiskName)
 	if err != nil {
 		return fmt.Errorf("error deleting managed disk: %v", err)
 	}
-	err = azure.compute().WaitForDisksDeleteFuture(diskDeleteFuture)
+	err = computeSvc.WaitForDisksDeleteFuture(diskDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for managed disk deletion: %v", err)
 	}
@@ -279,21 +285,21 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	if err != nil {
 		return fmt.Errorf("error retrieving network interface name: %v", err)
 	}
-	interfacesDeleteFuture, err := azure.network().DeleteNetworkInterface(clusterConfig.ResourceGroup, nicName)
+	interfacesDeleteFuture, err := networkSvc.DeleteNetworkInterface(scope.ClusterConfig.ResourceGroup, nicName)
 	if err != nil {
 		return fmt.Errorf("error deleting network interface: %v", err)
 	}
-	err = azure.network().WaitForNetworkInterfacesDeleteFuture(interfacesDeleteFuture)
+	err = networkSvc.WaitForNetworkInterfacesDeleteFuture(interfacesDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for network interface deletion: %v", err)
 	}
 
 	// delete public ip address associated with the VM
-	publicIPAddressDeleteFuture, err := azure.network().DeletePublicIPAddress(clusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
+	publicIPAddressDeleteFuture, err := networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
-	err = azure.network().WaitForPublicIPAddressDeleteFuture(publicIPAddressDeleteFuture)
+	err = networkSvc.WaitForPublicIPAddressDeleteFuture(publicIPAddressDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for public ip address deletion: %v", err)
 	}
@@ -302,23 +308,25 @@ func (azure *AzureClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 
 // GetKubeConfig gets the kubeconfig of a machine based on the cluster and machine spec passed.
 // Has not been fully tested as k8s is not yet bootstrapped on created machines.
-func (azure *AzureClient) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+func (a *Actuator) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
+	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return "", fmt.Errorf("error loading cluster provider config: %v", err)
-	}
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
-	if err != nil {
-		return "", fmt.Errorf("error loading machine provider config: %v", err)
+		return "", errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPrivateKey)
+	defer scope.Close()
+
+	networkSvc := network.NewService(scope.Scope)
+
+	decoded, err := base64.StdEncoding.DecodeString(scope.MachineConfig.SSHPrivateKey)
 	privateKey := string(decoded)
 	if err != nil {
 		return "", err
 	}
 
-	ip, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
+	ip, err := networkSvc.GetPublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
 	if err != nil {
 		return "", fmt.Errorf("error getting public ip address: %v ", err)
 	}
@@ -374,100 +382,36 @@ func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
 }
 
 // Exists determines whether a machine exists based on the cluster and machine spec passed.
-func (azure *AzureClient) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+	klog.Infof("Checking if machine %v for cluster %v exists", machine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return false, err
-	}
-	_, err = machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
-	if err != nil {
-		return false, fmt.Errorf("error loading machine provider config: %v", err)
+		return false, errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	resp, err := azure.resources().CheckGroupExistence(clusterConfig.ResourceGroup)
+	defer scope.Close()
+
+	computeSvc := compute.NewService(scope.Scope)
+	resourcesSvc := resources.NewService(scope.Scope)
+
+	resp, err := resourcesSvc.CheckGroupExistence(scope.ClusterConfig.ResourceGroup)
 	if err != nil {
 		return false, err
 	}
 	if resp.StatusCode == 404 {
 		return false, nil
 	}
-	vm, err := azure.compute().VMIfExists(clusterConfig.ResourceGroup, resources.GetVMName(machine))
+	vm, err := computeSvc.VMIfExists(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
 	if err != nil {
 		return false, err
 	}
 	return vm != nil, nil
 }
 
-// GetIP returns the ip address of an existing machine based on the cluster and machine spec passed.
-func (azure *AzureClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
-	if err != nil {
-		return "", fmt.Errorf("error loading cluster provider config: %v", err)
-	}
-	publicIP, err := azure.network().GetPublicIPAddress(clusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
-	if err != nil {
-		return "", fmt.Errorf("error getting public ip address: %v", err)
-	}
-	return *publicIP.IPAddress, nil
-}
-
-func clusterProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*azureconfigv1.AzureClusterProviderSpec, error) {
-	var config azureconfigv1.AzureClusterProviderSpec
-	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
-}
-
-func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*azureconfigv1.AzureMachineProviderSpec, error) {
-	var config azureconfigv1.AzureMachineProviderSpec
-	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
-}
-
-func azureServicesClientOrDefault(params ActuatorParams) (*services.AzureClients, error) {
-	if params.Services != nil {
-		return params.Services, nil
-	}
-
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get OAuth config: %v", err)
-	}
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return nil, fmt.Errorf("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
-	}
-	azureComputeClient := compute.NewService(subscriptionID)
-	azureComputeClient.SetAuthorizer(authorizer)
-	azureNetworkClient := network.NewService(subscriptionID)
-	azureNetworkClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resources.NewService(subscriptionID)
-	azureResourceManagementClient.SetAuthorizer(authorizer)
-	return &services.AzureClients{
-		Compute:            azureComputeClient,
-		Network:            azureNetworkClient,
-		Resourcemanagement: azureResourceManagementClient,
-	}, nil
-}
-
-func (azure *AzureClient) compute() services.AzureComputeClient {
-	return azure.services.Compute
-}
-
-func (azure *AzureClient) network() services.AzureNetworkClient {
-	return azure.services.Network
-}
-
-func (azure *AzureClient) resources() services.AzureResourceManagementClient {
-	return azure.services.Resourcemanagement
-}
-
-func isMasterMachine(roles []azureconfigv1.MachineRole) bool {
+func isMasterMachine(roles []v1alpha1.MachineRole) bool {
 	for _, r := range roles {
-		if r == azureconfigv1.Master {
+		if r == v1alpha1.Master {
 			return true
 		}
 	}

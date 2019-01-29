@@ -18,141 +18,107 @@ package cluster
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
-	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"github.com/pkg/errors"
+	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
-// AzureClusterClient holds the Azure SDK Client and Kubernetes Client objects.
-type AzureClusterClient struct {
-	services *services.AzureClients
-	client   client.Client
+// Actuator is responsible for performing cluster reconciliation
+type Actuator struct {
+	*deployer.Deployer
+
+	client client.ClusterV1alpha1Interface
 }
 
-// ActuatorParams holds the Azure SDK Client and Kubernetes Client objects for the cluster actuator.
+// ActuatorParams holds parameter information for Actuator
 type ActuatorParams struct {
-	Services *services.AzureClients
-	Client   client.Client
+	Client client.ClusterV1alpha1Interface
 }
 
-// NewClusterActuator returns a new instance of AzureClusterClient.
-func NewClusterActuator(params ActuatorParams) (*AzureClusterClient, error) {
-	azureServicesClients, err := azureServicesClientOrDefault(params)
-	if err != nil {
-		return nil, err
-	}
-
-	return &AzureClusterClient{
-		services: azureServicesClients,
+// NewActuator creates a new Actuator
+func NewActuator(params ActuatorParams) *Actuator {
+	return &Actuator{
+		Deployer: deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter}),
 		client:   params.Client,
-	}, nil
+	}
 }
 
 // Reconcile creates or applies updates to the cluster.
-func (azure *AzureClusterClient) Reconcile(cluster *clusterv1.Cluster) error {
-	glog.Infof("Reconciling cluster %v.", cluster.Name)
+func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
+	klog.Infof("Reconciling cluster %v", cluster.Name)
 
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client})
 	if err != nil {
-		return fmt.Errorf("error loading cluster provider config: %v", err)
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
 
+	defer scope.Close()
+
+	networkSvc := network.NewService(scope)
+	resourcesSvc := resources.NewService(scope)
+
 	// Reconcile resource group
-	_, err = azure.resources().CreateOrUpdateGroup(clusterConfig.ResourceGroup, clusterConfig.Location)
+	_, err = resourcesSvc.CreateOrUpdateGroup(scope.ClusterConfig.ResourceGroup, scope.ClusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("failed to create or update resource group: %v", err)
 	}
 
 	// Reconcile network security group
-	networkSGFuture, err := azure.network().CreateOrUpdateNetworkSecurityGroup(clusterConfig.ResourceGroup, "ClusterAPINSG", clusterConfig.Location)
+	networkSGFuture, err := networkSvc.CreateOrUpdateNetworkSecurityGroup(scope.ClusterConfig.ResourceGroup, "ClusterAPINSG", scope.ClusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("error creating or updating network security group: %v", err)
 	}
-	err = azure.network().WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
+	err = networkSvc.WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
 	}
 
 	// Reconcile virtual network
-	vnetFuture, err := azure.network().CreateOrUpdateVnet(clusterConfig.ResourceGroup, "", clusterConfig.Location)
+	vnetFuture, err := networkSvc.CreateOrUpdateVnet(scope.ClusterConfig.ResourceGroup, "", scope.ClusterConfig.Location)
 	if err != nil {
 		return fmt.Errorf("error creating or updating virtual network: %v", err)
 	}
-	err = azure.network().WaitForVnetCreateOrUpdateFuture(*vnetFuture)
+	err = networkSvc.WaitForVnetCreateOrUpdateFuture(*vnetFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
 	}
 	return nil
 }
 
-// Delete the cluster.
-func (azure *AzureClusterClient) Delete(cluster *clusterv1.Cluster) error {
-	clusterConfig, err := clusterProviderFromProviderSpec(cluster.Spec.ProviderSpec)
+// Delete deletes a cluster and is invoked by the Cluster Controller.
+func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
+	klog.Infof("Reconciling cluster %v", cluster.Name)
+
+	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client})
 	if err != nil {
-		return fmt.Errorf("error loading cluster provider config: %v", err)
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
-	resp, err := azure.resources().CheckGroupExistence(clusterConfig.ResourceGroup)
+
+	defer scope.Close()
+
+	resourcesSvc := resources.NewService(scope)
+
+	resp, err := resourcesSvc.CheckGroupExistence(scope.ClusterConfig.ResourceGroup)
 	if err != nil {
 		return fmt.Errorf("error checking for resource group existence: %v", err)
 	}
 	if resp.StatusCode == 404 {
-		return fmt.Errorf("resource group %v does not exist", clusterConfig.ResourceGroup)
+		return fmt.Errorf("resource group %v does not exist", scope.ClusterConfig.ResourceGroup)
 	}
 
-	groupsDeleteFuture, err := azure.resources().DeleteGroup(clusterConfig.ResourceGroup)
+	groupsDeleteFuture, err := resourcesSvc.DeleteGroup(scope.ClusterConfig.ResourceGroup)
 	if err != nil {
 		return fmt.Errorf("error deleting resource group: %v", err)
 	}
-	err = azure.resources().WaitForGroupsDeleteFuture(groupsDeleteFuture)
+	err = resourcesSvc.WaitForGroupsDeleteFuture(groupsDeleteFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for resource group deletion: %v", err)
 	}
 	return nil
-}
-
-func azureServicesClientOrDefault(params ActuatorParams) (*services.AzureClients, error) {
-	if params.Services != nil {
-		return params.Services, nil
-	}
-
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get OAuth config: %v", err)
-	}
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return nil, fmt.Errorf("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
-	}
-	azureNetworkClient := network.NewService(subscriptionID)
-	azureNetworkClient.SetAuthorizer(authorizer)
-	azureResourceManagementClient := resources.NewService(subscriptionID)
-	azureResourceManagementClient.SetAuthorizer(authorizer)
-	return &services.AzureClients{
-		Network:            azureNetworkClient,
-		Resourcemanagement: azureResourceManagementClient,
-	}, nil
-}
-
-func (azure *AzureClusterClient) network() services.AzureNetworkClient {
-	return azure.services.Network
-}
-
-func (azure *AzureClusterClient) resources() services.AzureResourceManagementClient {
-	return azure.services.Resourcemanagement
-}
-
-func clusterProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*azureconfigv1.AzureClusterProviderSpec, error) {
-	var config azureconfigv1.AzureClusterProviderSpec
-	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
 }

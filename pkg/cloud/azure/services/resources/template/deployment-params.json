@@ -33,7 +33,7 @@
         "value": "Standard_B2ms"
     },
     "location": {
-        "value": "westus2"
+        "value": "eastus"
     },
     "os_type": {
         "value": "Linux"

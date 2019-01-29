@@ -1,31 +1,33 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: MachineList
 items:
-- apiVersion: "cluster.k8s.io/v1alpha1"
-  kind: Machine
-  metadata:
-    generateName: azure-master-
-    labels:
-      set: master
-  spec:
-    providerSpec:
-      value:
-        apiVersion: "azureproviderspec/v1alpha1"
-        kind: "AzureMachineProviderSpec"
-        roles:
-        - Master
-        location: "$LOCATION"
-        vmSize: "Standard_B2ms"
-        image: 
-          publisher: "Canonical"
-          offer: "UbuntuServer"
-          sku: "16.04-LTS"
-          version: "latest"
-        osDisk:
-          osType: "Linux"
-          managedDisk:
-            storageAccountType: "Premium_LRS"
-          diskSizeGB: 30
-        sshPublicKey: $SSH_PUBLIC_KEY
-        sshPrivateKey: $SSH_PRIVATE_KEY
-    versions:
-      kubelet: 1.11.3
-      controlPlane: 1.11.3
+  - apiVersion: "cluster.k8s.io/v1alpha1"
+    kind: Machine
+    metadata:
+      name: controlplane-0
+      labels:
+        set: controlplane
+    spec:
+      versions:
+        kubelet: 1.12.5
+        controlPlane: 1.12.5
+      providerSpec:
+        value:
+          apiVersion: azureprovider/v1alpha1
+          kind: AzureMachineProviderSpec
+          roles:
+          - Master
+          location: ${LOCATION}
+          vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
+          image:
+            publisher: "Canonical"
+            offer: "UbuntuServer"
+            sku: "16.04-LTS"
+            version: "latest"
+          osDisk:
+            osType: "Linux"
+            managedDisk:
+              storageAccountType: "Premium_LRS"
+            diskSizeGB: 30
+          sshPublicKey: ${SSH_PUBLIC_KEY}
+          sshPrivateKey: ${SSH_PRIVATE_KEY}

@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	azureconfigv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
@@ -35,7 +35,7 @@ const (
 )
 
 // CreateOrUpdateDeployment is used to create or update a kubernetes cluster. It does so by creating or updating an ARM deployment.
-func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
@@ -53,7 +53,7 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 		},
 	}
 
-	deploymentFuture, err := s.DeploymentsClient.CreateOrUpdate(s.ctx, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
+	deploymentFuture, err := s.scope.AzureClients.Deployments.CreateOrUpdate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 }
 
 // ValidateDeployment validates the parameters of the cluster by calling the ARM validate method.
-func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *azureconfigv1.AzureClusterProviderSpec, machineConfig *azureconfigv1.AzureMachineProviderSpec) error {
+func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) error {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 			Mode:       resources.Incremental, // Do not delete and re-create matching resources that already exist
 		},
 	}
-	res, err := s.DeploymentsClient.Validate(s.ctx, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
+	res, err := s.scope.AzureClients.Deployments.Validate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
 	if res.Error != nil {
 		return errors.New(*res.Error.Message)
 	}
@@ -87,15 +87,15 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 
 // GetDeploymentResult retrieves the result of the ARM deployment operation.
 func (s *Service) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
-	return future.Result(s.DeploymentsClient)
+	return future.Result(s.scope.AzureClients.Deployments)
 }
 
 // WaitForDeploymentsCreateOrUpdateFuture returns when the ARM operation completes.
 func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
-	return future.WaitForCompletionRef(s.ctx, s.DeploymentsClient.Client)
+	return future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Deployments.Client)
 }
 
-func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *azureconfigv1.AzureMachineProviderSpec) (*map[string]interface{}, error) {
+func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec) (*map[string]interface{}, error) {
 	startupScript, err := getStartupScript(machine, *machineConfig)
 	if err != nil {
 		return nil, err
@@ -171,8 +171,8 @@ func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig 
 }
 
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
-func getStartupScript(machine *clusterv1.Machine, machineConfig azureconfigv1.AzureMachineProviderSpec) (string, error) {
-	if machineConfig.Roles[0] == azureconfigv1.Master {
+func getStartupScript(machine *clusterv1.Machine, machineConfig providerv1.AzureMachineProviderSpec) (string, error) {
+	if machineConfig.Roles[0] == providerv1.Master {
 		startupScript := fmt.Sprintf(`(
 apt-get update
 apt-get install -y docker.io
@@ -225,10 +225,9 @@ mkdir -p /home/ClusterAPI/.kube
 cp -i /etc/kubernetes/admin.conf /home/ClusterAPI/.kube/config
 chown $(id -u ClusterAPI):$(id -g ClusterAPI) /home/ClusterAPI/.kube/config
 
-KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
-) 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane)
+KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml 2>&1 | tee /var/log/startup.log`, machine.Spec.Versions.Kubelet, machine.Spec.Versions.ControlPlane)
 		return startupScript, nil
-	} else if machineConfig.Roles[0] == azureconfigv1.Node {
+	} else if machineConfig.Roles[0] == providerv1.Node {
 		startupScript := fmt.Sprintf(`(
 apt-get update
 apt-get install -y docker.io

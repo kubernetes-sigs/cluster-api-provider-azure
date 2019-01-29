@@ -1,4 +1,5 @@
-# Copyright 2019 The Kubernetes Authors.
+#!/bin/bash
+# Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,35 +13,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
-# Generate a random 5 character string
-RANDOM_STRING=$(head -c5 < <(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom) | tr '[:upper:]' '[:lower:]')
+# Directories.
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+OUTPUT_DIR=${OUTPUT_DIR:-${DIR}/out}
+ENVSUBST=${ENVSUBST:-envsubst}
 
-HUMAN_FRIENDLY_CLUSTER_NAME="${HUMAN_FRIENDLY_CLUSTER_NAME:-test1}"
-CLUSTER_NAME=${HUMAN_FRIENDLY_CLUSTER_NAME}-${RANDOM_STRING}
-RESOURCE_GROUP="${RESOURCE_GROUP:-clusterapi}"-${RANDOM_STRING}
-LOCATION=${LOCATION:-"westus2"}
+RANDOM_STRING=$(date | md5sum | head -c8)
 
-OUTPUT_DIR=${OUTPUT_DIR:-out}
+# Azure settings.
+export LOCATION="${LOCATION:-eastus}"
+export RESOURCE_GROUP="${RESOURCE_GROUP:-capi-${RANDOM_STRING}}"
+
+# Cluster name.
+export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
+
+# Manager image.
+export MANAGER_IMAGE="${MANAGER_IMAGE:-quay.io/k8s/cluster-api-azure-controller:0.2.0-alpha.3}"
+export MANAGER_IMAGE_PULL_POLICY=${MANAGER_IMAGE_PULL_POLICY:-IfNotPresent}
+
+# Machine settings.
+export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
+export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2ms}"
+
+# Credential locations.
 SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
 CREDENTIALS_FILE=${OUTPUT_DIR}/credentials.sh
 
-MACHINE_TEMPLATE_FILE=machines.yaml.template
-MACHINE_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
-MACHINE_NO_NODE_TEMPLATE_FILE=machines_no_node.yaml.template
-MACHINE_NO_NODE_GENERATED_FILE=${OUTPUT_DIR}/machines_no_node.yaml
-CLUSTER_TEMPLATE_FILE=cluster.yaml.template
+# Templates.
+CLUSTER_TEMPLATE_FILE=${DIR}/cluster.yaml.template
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
-PROVIDERCOMPONENT_TEMPLATE_FILE=provider-components.yaml.template
-PROVIDERCOMPONENT_GENERATED_FILE=${OUTPUT_DIR}/provider-components.yaml
-ADDON_TEMPLATE_FILE=addons.yaml.template
-ADDON_GENERATED_FILE=${OUTPUT_DIR}/addons.yaml
+# TODO: Change the machine template once nodes are implemented
+MACHINES_TEMPLATE_FILE=${DIR}/machines_no_node.yaml.template
+MACHINES_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
+MANAGER_PATCH_TEMPLATE_FILE=${DIR}/azure_manager_image_patch.yaml.template
+MANAGER_PATCH_GENERATED_FILE=${OUTPUT_DIR}/azure_manager_image_patch.yaml
+ADDONS_FILE=${OUTPUT_DIR}/addons.yaml
 
+# Overwrite flag.
 OVERWRITE=0
 
 SCRIPT=$(basename $0)
@@ -70,10 +83,8 @@ while test $# -gt 0; do
         esac
 done
 
-mkdir -p ${OUTPUT_DIR}
-
-if [ $OVERWRITE -ne 1 ] && [ -f $MACHINE_GENERATED_FILE ]; then
-  echo File $MACHINE_GENERATED_FILE already exists. Delete it manually before running this script.
+if [ $OVERWRITE -ne 1 ] && [ -f $MACHINES_GENERATED_FILE ]; then
+  echo File $MACHINES_GENERATED_FILE already exists. Delete it manually before running this script.
   exit 1
 fi
 
@@ -82,13 +93,10 @@ if [ $OVERWRITE -ne 1 ] && [ -f $CLUSTER_GENERATED_FILE ]; then
   exit 1
 fi
 
-if [ $OVERWRITE -ne 1 ] && [ -f $ADDON_GENERATED_FILE ]; then
-  echo File $ADDON_GENERATED_FILE already exists. Delete it manually before running this script.
-  exit 1
-fi
+mkdir -p ${OUTPUT_DIR}
 
 # If CI, then use the CI service account
-if [[ ( "${TF_BUILD:+isset}" == "isset" ) || ( $CREATE_SP = "FALSE" ) ]]; then
+if [[ ( "${TF_BUILD:+isset}" == "isset" ) || ( ${CREATE_SP:-FALSE} ) ]]; then
   echo "Skipping creating service principal..."
 else
   command -v az >/dev/null 2>&1 || \
@@ -113,35 +121,25 @@ else
   printf "AZURE_TENANT_ID=%s\n" "$TENANT_ID" >> "$CREDENTIALS_FILE"
 fi
 
-rm -f $SSH_KEY_FILE 2>/dev/null
-ssh-keygen -t rsa -b 2048 -f $SSH_KEY_FILE -N '' 1>/dev/null
+rm -f ${SSH_KEY_FILE} 2>/dev/null
+ssh-keygen -t rsa -b 2048 -f ${SSH_KEY_FILE} -N '' 1>/dev/null
 
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 
-SSH_PUBLIC_KEY=$(cat $SSH_KEY_FILE.pub | base64 | tr -d '\r\n')
-SSH_PRIVATE_KEY=$(cat $SSH_KEY_FILE | base64 | tr -d '\r\n')
+export SSH_PUBLIC_KEY=$(cat ${SSH_KEY_FILE}.pub | base64 | tr -d '\r\n')
+export SSH_PRIVATE_KEY=$(cat ${SSH_KEY_FILE} | base64 | tr -d '\r\n')
 
+$ENVSUBST < $CLUSTER_TEMPLATE_FILE > "${CLUSTER_GENERATED_FILE}"
+echo "Done generating ${CLUSTER_GENERATED_FILE}"
 
-cat $MACHINE_TEMPLATE_FILE \
-  | sed -e "s/\$LOCATION/$LOCATION/" \
-  | sed -e "s/\$SSH_PUBLIC_KEY/$SSH_PUBLIC_KEY/" \
-  | sed -e "s/\$SSH_PRIVATE_KEY/$SSH_PRIVATE_KEY/" \
-  > $MACHINE_GENERATED_FILE
+$ENVSUBST < $MACHINES_TEMPLATE_FILE > "${MACHINES_GENERATED_FILE}"
+echo "Done generating ${MACHINES_GENERATED_FILE}"
 
-cat $MACHINE_NO_NODE_TEMPLATE_FILE \
-  | sed -e "s/\$LOCATION/$LOCATION/" \
-  | sed -e "s/\$SSH_PUBLIC_KEY/$SSH_PUBLIC_KEY/" \
-  | sed -e "s/\$SSH_PRIVATE_KEY/$SSH_PRIVATE_KEY/" \
-  > $MACHINE_NO_NODE_GENERATED_FILE
+$ENVSUBST < $MANAGER_PATCH_TEMPLATE_FILE > "${MANAGER_PATCH_GENERATED_FILE}"
+echo "Done generating ${MANAGER_PATCH_GENERATED_FILE}"
 
-cat $CLUSTER_TEMPLATE_FILE \
-  | sed -e "s/\$RESOURCE_GROUP/$RESOURCE_GROUP/" \
-  | sed -e "s/\$CLUSTER_NAME/$CLUSTER_NAME/" \
-  | sed -e "s/\$LOCATION/$LOCATION/" \
-  > $CLUSTER_GENERATED_FILE
+cp  ${DIR}/addons.yaml.template ${ADDONS_FILE}
+echo "Done copying ${ADDONS_FILE}"
 
-# TODO: implement addon file
-cat $ADDON_TEMPLATE_FILE \
-  > $ADDON_GENERATED_FILE
-
+echo -e "\nYour resource group is '${RESOURCE_GROUP}' in '${LOCATION}'"
 echo -e "\nYour cluster name is '${CLUSTER_NAME}'"

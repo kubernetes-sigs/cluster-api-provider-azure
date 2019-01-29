@@ -13,9 +13,9 @@
 # limitations under the License.
 
 # Image URL to use all building/pushing image targets
-PREFIX ?= platform9
-NAME = cluster-api-azure-provider-controller
-TAG ?= latest
+PREFIX ?= quay.io/k8s
+NAME ?= cluster-api-azure-controller
+TAG ?= 0.2.0-alpha.3
 IMG=${PREFIX}/${NAME}:${TAG}
 
 # Keep an existing GOPATH/GOBIN, make a private one if it is not defined
@@ -114,8 +114,8 @@ check: verify-boilerplate bootstrap vendor-validate lint
 # Build the docker image
 docker-build: test
 	docker build . -t ${IMG}
-	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
+	#@echo "updating kustomize image patch file for manager resource"
+	#sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
 
 # Push the docker image
 docker-push:
@@ -124,8 +124,8 @@ docker-push:
 # Build the docker dev image
 docker-build-dev: test
 	docker build . -t "${IMG}-dev"
-	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
+	#@echo "updating kustomize image patch file for manager resource"
+	#sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
 
 # Push the docker dev image
 docker-push-dev:

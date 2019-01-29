@@ -16,6 +16,12 @@ spec:
       properties:
         apiVersion:
           type: string
+        caCertificate:
+          format: byte
+          type: string
+        caKey:
+          format: byte
+          type: string
         kind:
           type: string
         location:

@@ -17,19 +17,19 @@ limitations under the License.
 package main
 
 import (
-	"github.com/golang/glog"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
-
+	"sigs.k8s.io/cluster-api-provider-azure/cmd/versioninfo"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/cmd"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 )
 
+func registerCustomCommands() {
+	cmd.RootCmd.AddCommand(versioninfo.VersionCmd())
+}
+
 func main() {
-	var err error
-	machine.Actuator, err = machine.NewMachineActuator(machine.ActuatorParams{})
-	if err != nil {
-		glog.Fatalf("Error creating cluster provisioner for azure : %v", err)
-	}
-	common.RegisterClusterProvisioner(machine.ProviderName, machine.Actuator)
+	clusterActuator := cluster.NewActuator(cluster.ActuatorParams{})
+	common.RegisterClusterProvisioner("azure", clusterActuator)
+	registerCustomCommands()
 	cmd.Execute()
 }
