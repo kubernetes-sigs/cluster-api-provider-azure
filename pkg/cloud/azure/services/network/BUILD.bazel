@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "interfaces.go",
+        "publicipaddress.go",
+        "securitygroups.go",
+        "service.go",
+        "virtualnetworks.go",
+    ],
+    importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/cloud/azure/actuators:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/autorest/to:go_default_library",
+    ],
+)

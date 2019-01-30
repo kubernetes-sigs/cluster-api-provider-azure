@@ -41,4 +41,4 @@ secretGenerator:
 #  - name: manager-bootstrap-credentials
 #    type: Opaque
 #    commands:
-#      credentials: "cat ../../cmd/clusterctl/examples/aws/out/credentials"
+#      credentials: "cat ../../cmd/clusterctl/examples/azure/out/credentials"

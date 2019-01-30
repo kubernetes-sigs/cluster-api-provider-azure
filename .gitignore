@@ -1,13 +1,46 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
 *.test
-.idea/
-bin/
-.env
-exampleconfigs/provider-components.yaml
-minikube.kubeconfig
-generatedconfigs/
-sshkey*
-kubeconfig
+
+# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# exclude vendor directory from gitignore
-!/vendor/**/*
+# Ansible
+*.retry
+
+# vim
+*~
+*.swp
+
+# envfiles
+.env
+envfile
+
+# kubeconfigs
+kind.kubeconfig
+minikube.kubeconfig
+kubeconfig
+
+# binaries
+/manager
+/clusterctl
+/clusterazureadm
+
+# Example and binary output directory
+/out
+
+# bazel
+/bazel-bin
+/bazel-cluster-api-provider-azure
+/bazel-genfiles
+/bazel-out
+/bazel-testlogs
+
+# vscode
+.vscode
