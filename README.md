@@ -69,7 +69,7 @@ If you think you have found a bug please follow the instructions below.
 
 - Please spend a small amount of time giving due diligence to the issue tracker. Your issue might be a duplicate.
 - Get the logs from the cluster controllers. Please paste this into your issue.
-- Open a [new issue][new_issue].
+- Open a [bug report][bug_report].
 - Remember users might be searching for your issue in the future, so please give it a meaningful title to helps others.
 - Feel free to reach out to the cluster-api community on [kubernetes slack][slack_info].
 
@@ -77,7 +77,7 @@ If you think you have found a bug please follow the instructions below.
 
 We also use the issue tracker to track features. If you have an idea for a feature, or think you can help kops become even more awesome follow the steps below.
 
-- Open a [new issue][new_issue].
+- Open a [feature request][feature_request].
 - Remember users might be searching for your issue in the future, so please
   give it a meaningful title to helps others.
 - Clearly define the use case, using concrete examples. EG: I type `this` and
@@ -94,6 +94,7 @@ We also use the issue tracker to track features. If you have an idea for a featu
 [good_first_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
 [prow]:
 https://github.com/kubernetes/test-infra/blob/master/commands.md
-[new_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new
+[bug_report]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=bug_report.md
+[feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=feature_request.md
 [slack_info]: https://github.com/kubernetes/community/blob/master/communication.md#social-media
 [cluster_api]: https://github.com/kubernetes-sigs/cluster-api
