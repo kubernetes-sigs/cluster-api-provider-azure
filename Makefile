@@ -22,7 +22,7 @@ FASTBUILD ?= n ## Set FASTBUILD=y (case-sensitive) to skip some slow tasks
 ## Image URL to use all building/pushing image targets
 STABLE_DOCKER_REPO ?= quay.io/k8s
 MANAGER_IMAGE_NAME ?= cluster-api-azure-controller
-MANAGER_IMAGE_TAG ?= 0.2.0-alpha.4
+MANAGER_IMAGE_TAG ?= 0.2.0-alpha.5
 MANAGER_IMAGE ?= $(STABLE_DOCKER_REPO)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)
 DEV_DOCKER_REPO ?= quay.io/k8s
 DEV_MANAGER_IMAGE ?= $(DEV_DOCKER_REPO)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)-dev
@@ -114,6 +114,11 @@ BAZEL_DOCKER_ARGS_DEV := --define=DOCKER_REPO=$(DEV_DOCKER_REPO) $(BAZEL_DOCKER_
 
 .PHONY: docker-build
 docker-build: generate ## Build the production docker image
+	docker build . -t $(MANAGER_IMAGE)
+
+# TODO: Move this to docker-build target once we figure out multi-stage builds and using a thinner image
+.PHONY: docker-build-new
+docker-build-new: generate ## Build the production docker image
 	bazel run //cmd/manager:manager-image $(BAZEL_DOCKER_ARGS)
 
 .PHONY: docker-build-dev
@@ -122,6 +127,11 @@ docker-build-dev: generate ## Build the development docker image
 
 .PHONY: docker-push
 docker-push: generate ## Push production docker image
+	docker push $(MANAGER_IMAGE)
+
+# TODO: Move this to docker-push target once we figure out multi-stage builds and using a thinner image
+.PHONY: docker-push-new
+docker-push-new: generate ## Push production docker image
 	bazel run //cmd/manager:manager-push $(BAZEL_DOCKER_ARGS)
 
 .PHONY: docker-push-dev

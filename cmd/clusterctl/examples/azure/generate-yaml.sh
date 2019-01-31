@@ -32,7 +32,7 @@ export RESOURCE_GROUP="${RESOURCE_GROUP:-capi-${RANDOM_STRING}}"
 export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
 
 # Manager image.
-export MANAGER_IMAGE="${MANAGER_IMAGE:-quay.io/k8s/cluster-api-azure-controller:0.2.0-alpha.4}"
+export MANAGER_IMAGE="${MANAGER_IMAGE:-quay.io/k8s/cluster-api-azure-controller:0.2.0-alpha.5}"
 export MANAGER_IMAGE_PULL_POLICY=${MANAGER_IMAGE_PULL_POLICY:-IfNotPresent}
 
 # Machine settings.

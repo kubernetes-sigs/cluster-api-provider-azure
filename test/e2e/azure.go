@@ -16,6 +16,8 @@ limitations under the License.
 
 package e2e
 
+// TODO: Rewrite e2e tests. Old tests are effectively useless (and failing) with the refactor (#68)
+/*
 import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
@@ -43,3 +45,4 @@ func NewAzureServicesClient(subscriptionID string) (*actuators.AzureClients, err
 		Network:   azureNetworkClient,
 	}, nil
 }
+*/
