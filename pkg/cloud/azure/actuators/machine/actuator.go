@@ -105,8 +105,20 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if deployment.Name == nil || err != nil {
 		return fmt.Errorf("error getting deployment result: %v", err)
 	}
+
 	// TODO: Is this still required with scope.Close()?
 	//return a.updateAnnotations(cluster, machine)
+
+	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
+	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
+	// the stack that provisions it.
+
+	if scope.MachineStatus.Annotations == nil {
+		scope.MachineStatus.Annotations = map[string]string{}
+	}
+
+	scope.MachineStatus.Annotations["cluster-api-provider-azure"] = "true"
+
 	return nil
 }
 
