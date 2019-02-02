@@ -1166,7 +1166,7 @@ func TestGetKubeConfigBase64Error(t *testing.T) {
 
 func TestGetKubeConfigIPAddressFailure(t *testing.T) {
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockGetPublicIPAddressFailure())
+	mergo.Merge(&networkMock, services.MockCreateOrGetPublicIPAddressFailure())
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1208,7 +1208,7 @@ func TestGetIPFailureClusterParsing(t *testing.T) {
 
 func TestGetKubeConfigValidPrivateKey(t *testing.T) {
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
+	mergo.Merge(&networkMock, services.MockCreateOrGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1228,7 +1228,7 @@ func TestGetKubeConfigValidPrivateKey(t *testing.T) {
 }
 func TestGetKubeConfigInvalidBase64(t *testing.T) {
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
+	mergo.Merge(&networkMock, services.MockCreateOrGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1249,7 +1249,7 @@ func TestGetKubeConfigInvalidBase64(t *testing.T) {
 }
 func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
+	mergo.Merge(&networkMock, services.MockCreateOrGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1270,7 +1270,7 @@ func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
 }
 func TestGetIPSuccess(t *testing.T) {
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockGetPublicIPAddress("127.0.0.1"))
+	mergo.Merge(&networkMock, services.MockCreateOrGetPublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1294,7 +1294,7 @@ func TestGetIPSuccess(t *testing.T) {
 
 func TestGetIPFailure(t *testing.T) {
 	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockGetPublicIPAddressFailure())
+	mergo.Merge(&networkMock, services.MockCreateOrGetPublicIPAddressFailure())
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}

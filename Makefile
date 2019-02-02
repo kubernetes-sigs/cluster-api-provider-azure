@@ -22,7 +22,7 @@ FASTBUILD ?= n ## Set FASTBUILD=y (case-sensitive) to skip some slow tasks
 ## Image URL to use all building/pushing image targets
 STABLE_DOCKER_REPO ?= quay.io/k8s
 MANAGER_IMAGE_NAME ?= cluster-api-azure-controller
-MANAGER_IMAGE_TAG ?= 0.2.0-alpha.5
+MANAGER_IMAGE_TAG ?= 0.3.0-alpha.1
 MANAGER_IMAGE ?= $(STABLE_DOCKER_REPO)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)
 DEV_DOCKER_REPO ?= quay.io/k8s
 DEV_MANAGER_IMAGE ?= $(DEV_DOCKER_REPO)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)-dev
@@ -167,7 +167,7 @@ examples-dev: ## Generate example output with developer image
 
 .PHONY: manifests
 manifests: #cmd/clusterctl/examples/azure/out/credentials ## Generate manifests for clusterctl
-	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go crd
+	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go all
 	kustomize build config/default/ > cmd/clusterctl/examples/azure/out/provider-components.yaml
 	echo "---" >> cmd/clusterctl/examples/azure/out/provider-components.yaml
 	kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> cmd/clusterctl/examples/azure/out/provider-components.yaml

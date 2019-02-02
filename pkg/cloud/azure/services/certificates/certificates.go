@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ func NewSelfSignedCACert(key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(b)
 }
 
-// NewKubeconfig creates a new Kubeconfig where endpoint is the LB endpoint.
+// NewKubeconfig creates a new Kubeconfig where endpoint is the ELB endpoint.
 func NewKubeconfig(clusterName, endpoint string, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*api.Config, error) {
 	cfg := &Config{
 		CommonName:   "kubernetes-admin",
@@ -203,6 +203,19 @@ func EncodePrivateKeyPEM(key *rsa.PrivateKey) []byte {
 	}
 
 	return pem.EncodeToMemory(&block)
+}
+
+// EncodePublicKeyPEM returns PEM-encoded public key data.
+func EncodePublicKeyPEM(key *rsa.PublicKey) ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return []byte{}, err
+	}
+	block := pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: der,
+	}
+	return pem.EncodeToMemory(&block), nil
 }
 
 // DecodeCertPEM attempts to return a decoded certificate or nil

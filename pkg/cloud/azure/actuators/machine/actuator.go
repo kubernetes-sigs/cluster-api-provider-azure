@@ -18,17 +18,17 @@ package machine
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
@@ -36,8 +36,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/tokens"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
 )
 
 //+kubebuilder:rbac:groups=azureprovider.k8s.io,resources=azuremachineproviderconfigs;azuremachineproviderstatuses,verbs=get;list;watch;create;update;patch;delete
@@ -73,6 +75,57 @@ const (
 	SSHUser = "ClusterAPI"
 )
 
+func (a *Actuator) getControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Machine {
+	var cpm []*clusterv1.Machine
+	for _, m := range machineList.Items {
+		if m.Spec.Versions.ControlPlane != "" {
+			cpm = append(cpm, m.DeepCopy())
+		}
+	}
+	return cpm
+}
+
+// defining equality as name and namespace are equivalent and not checking any other fields.
+func machinesEqual(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
+	return m1.Name == m2.Name && m1.Namespace == m2.Namespace
+}
+
+func (a *Actuator) isNodeJoin(controlPlaneMachines []*clusterv1.Machine, newMachine *clusterv1.Machine, cluster *clusterv1.Cluster) (bool, error) {
+	switch newMachine.ObjectMeta.Labels["set"] {
+	case "node":
+		return true, nil
+	case "controlplane":
+		contolPlaneExists := false
+		for _, cm := range controlPlaneMachines {
+			m, err := actuators.NewMachineScope(actuators.MachineScopeParams{
+				Machine: cm,
+				Cluster: cluster,
+				Client:  a.client,
+			})
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to create machine scope for machine %q", cm.Name)
+			}
+
+			computeSvc := compute.NewService(m.Scope)
+			contolPlaneExists, err = computeSvc.MachineExists(m)
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to verify existence of machine %q", m.Name())
+			}
+			if contolPlaneExists {
+				break
+			}
+		}
+
+		klog.V(2).Infof("Machine %q should join the controlplane: %t", newMachine.Name, contolPlaneExists)
+		return contolPlaneExists, nil
+	default:
+		errMsg := fmt.Sprintf("Unknown value %q for label \"set\" on machine %q, skipping machine creation", newMachine.ObjectMeta.Labels["set"], newMachine.Name)
+		klog.Errorf(errMsg)
+		err := errors.Errorf(errMsg)
+		return false, err
+	}
+}
+
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
@@ -84,27 +137,46 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	defer scope.Close()
 
-	resourcesSvc := resources.NewService(scope.Scope)
+	computeSvc := compute.NewService(scope.Scope)
 
-	err = resourcesSvc.ValidateDeployment(machine, scope.ClusterConfig, scope.MachineConfig)
+	clusterMachines, err := scope.MachineClient.List(v1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("error validating deployment: %v", err)
+		return errors.Wrapf(err, "failed to retrieve machines in cluster %q", cluster.Name)
 	}
-
-	deploymentsFuture, err := resourcesSvc.CreateOrUpdateDeployment(machine, scope.ClusterConfig, scope.MachineConfig)
+	controlPlaneMachines := a.getControlPlaneMachines(clusterMachines)
+	isNodeJoin, err := a.isNodeJoin(controlPlaneMachines, machine, cluster)
 	if err != nil {
-		return fmt.Errorf("error creating or updating deployment: %v", err)
-	}
-	err = resourcesSvc.WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for deployment creation or update: %v", err)
+		return errors.Wrapf(err, "failed to determine whether machine %q should join cluster %q", machine.Name, cluster.Name)
 	}
 
-	deployment, err := resourcesSvc.GetDeploymentResult(*deploymentsFuture)
-	// Work around possible bugs or late-stage failures
-	if deployment.Name == nil || err != nil {
-		return fmt.Errorf("error getting deployment result: %v", err)
+	var bootstrapToken string
+	if isNodeJoin {
+		bootstrapToken, err = a.getNodeJoinToken(cluster)
+		if err != nil {
+			return errors.Wrapf(err, "failed to obtain token for node %q to join cluster %q", machine.Name, cluster.Name)
+		}
 	}
+
+	kubeConfig := ""
+
+	if len(controlPlaneMachines) > 0 {
+		kubeConfig, err = a.GetKubeConfig(cluster, nil)
+		if err != nil {
+			return errors.Wrapf(err, "failed to retrieve kubeconfig while creating machine %q", machine.Name)
+		}
+	}
+
+	i, err := computeSvc.CreateOrGetMachine(scope, bootstrapToken, kubeConfig)
+	if err != nil {
+		klog.Errorf("network not ready to launch instances yet: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Minute,
+		}
+
+		//return errors.Errorf("failed to create or get machine: %+v", err)
+	}
+
+	scope.MachineStatus.VMID = &i.ID
 
 	// TODO: Is this still required with scope.Close()?
 	//return a.updateAnnotations(cluster, machine)
@@ -112,7 +184,6 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
 	// the stack that provisions it.
-
 	if scope.MachineStatus.Annotations == nil {
 		scope.MachineStatus.Annotations = map[string]string{}
 	}
@@ -122,7 +193,135 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	return nil
 }
 
-// Update an existing machine based on the cluster and machine spec parameters.
+func (a *Actuator) getNodeJoinToken(cluster *clusterv1.Cluster) (string, error) {
+	controlPlaneDNSName, err := a.GetIP(cluster, nil)
+	if err != nil {
+		return "", errors.Errorf("failed to retrieve controlplane (GetIP): %+v", err)
+	}
+
+	controlPlaneURL := fmt.Sprintf("https://%s:6443", controlPlaneDNSName)
+
+	kubeConfig, err := a.GetKubeConfig(cluster, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to retrieve kubeconfig for cluster %q.", cluster.Name)
+	}
+
+	clientConfig, err := clientcmd.BuildConfigFromKubeconfigGetter(controlPlaneURL, func() (*clientcmdapi.Config, error) {
+		return clientcmd.Load([]byte(kubeConfig))
+	})
+
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get client config for cluster at %q", controlPlaneURL)
+	}
+
+	coreClient, err := corev1.NewForConfig(clientConfig)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to initialize new corev1 client")
+	}
+
+	bootstrapToken, err := tokens.NewBootstrap(coreClient, 10*time.Minute)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create new bootstrap token")
+	}
+
+	return bootstrapToken, nil
+}
+
+// Delete an existing machine based on the cluster and machine spec passed.
+// Will block until the machine has been successfully deleted, or an error is returned.
+func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	klog.Infof("Deleting machine %v for cluster %v.", machine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	if err != nil {
+		return errors.Errorf("failed to create scope: %+v", err)
+	}
+
+	defer scope.Close()
+
+	computeSvc := compute.NewService(scope.Scope)
+	networkSvc := network.NewService(scope.Scope)
+
+	// Check if VM exists
+	vm, err := computeSvc.VMIfExists(resources.GetVMName(machine))
+	if err != nil {
+		return fmt.Errorf("error checking if vm exists: %v", err)
+	}
+	if vm == nil {
+		return fmt.Errorf("couldn't find vm for machine: %v", machine.Name)
+	}
+
+	avm, err := scope.VM.Get(scope.Context, scope.ClusterConfig.ResourceGroup, vm.Name, "")
+	if err != nil {
+		return errors.Errorf("could not set vm: %v", err)
+	}
+
+	osDiskName := avm.VirtualMachineProperties.StorageProfile.OsDisk.Name
+	nicID := (*avm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
+
+	// delete the VM instance
+	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
+	if err != nil {
+		return fmt.Errorf("error deleting virtual machine: %v", err)
+	}
+	err = computeSvc.WaitForVMDeletionFuture(vmDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for virtual machine deletion: %v", err)
+	}
+
+	// delete OS disk associated with the VM
+	diskDeleteFuture, err := computeSvc.DeleteManagedDisk(scope.ClusterConfig.ResourceGroup, *osDiskName)
+	if err != nil {
+		return fmt.Errorf("error deleting managed disk: %v", err)
+	}
+	err = computeSvc.WaitForDisksDeleteFuture(diskDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for managed disk deletion: %v", err)
+	}
+
+	// delete NIC associated with the VM
+	nicName, err := resources.ResourceName(*nicID)
+	if err != nil {
+		return fmt.Errorf("error retrieving network interface name: %v", err)
+	}
+	interfacesDeleteFuture, err := networkSvc.DeleteNetworkInterface(scope.ClusterConfig.ResourceGroup, nicName)
+	if err != nil {
+		return fmt.Errorf("error deleting network interface: %v", err)
+	}
+	err = networkSvc.WaitForNetworkInterfacesDeleteFuture(interfacesDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for network interface deletion: %v", err)
+	}
+
+	// delete public ip address associated with the VM
+	publicIPAddressDeleteFuture, err := networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
+	if err != nil {
+		return fmt.Errorf("error deleting public IP address: %v", err)
+	}
+	err = networkSvc.WaitForPublicIPAddressDeleteFuture(publicIPAddressDeleteFuture)
+	if err != nil {
+		return fmt.Errorf("error waiting for public ip address deletion: %v", err)
+	}
+	return nil
+}
+
+// TODO: Implement method
+// isMachineOudated checks that no immutable fields have been updated in an
+// Update request.
+// Returns a bool indicating if an attempt to change immutable state occurred.
+//  - true:  An attempt to change immutable state occurred.
+//  - false: Immutable state was untouched.
+/*
+func (a *Actuator) isMachineOutdated(machineSpec *v1alpha1.AzureMachineProviderSpec, instance *v1alpha1.VM) bool {
+
+	// No immutable state changes found.
+	return false
+}
+*/
+
+// Update updates a machine and is invoked by the Machine Controller.
+// If the Update attempts to mutate any immutable state, the method will error
+// and no updates will be performed.
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	klog.Infof("Updating machine %v for cluster %v.", goalMachine.Name, cluster.Name)
 
@@ -146,7 +345,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	currentMachine := scope.Machine
 
 	if currentMachine == nil {
-		vm, err := computeSvc.VMIfExists(scope.ClusterConfig.ResourceGroup, resources.GetVMName(goalMachine))
+		vm, err := computeSvc.VMIfExists(resources.GetVMName(goalMachine))
 		if err != nil || vm == nil {
 			return fmt.Errorf("error checking if vm exists: %v", err)
 		}
@@ -189,6 +388,56 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	return nil
 }
 
+// Exists test for the existence of a machine and is invoked by the Machine Controller
+func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+	klog.Infof("Checking if machine %v for cluster %v exists", machine.Name, cluster.Name)
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	if err != nil {
+		return false, errors.Errorf("failed to create scope: %+v", err)
+	}
+
+	defer scope.Close()
+
+	computeSvc := compute.NewService(scope.Scope)
+
+	// TODO worry about pointers. instance if exists returns *any* instance
+	if scope.MachineStatus.VMID == nil {
+		return false, nil
+	}
+
+	instance, err := computeSvc.VMIfExists(*scope.MachineStatus.VMID)
+	if err != nil {
+		return false, errors.Errorf("failed to retrieve instance: %+v", err)
+	}
+
+	if instance == nil {
+		return false, nil
+	}
+
+	klog.Infof("Found instance for machine %q: %v", machine.Name, instance)
+
+	switch instance.State {
+	case v1alpha1.VMStateSucceeded:
+		klog.Infof("Machine %v is running", *scope.MachineStatus.VMID)
+	case v1alpha1.VMStateUpdating:
+		klog.Infof("Machine %v is updating", *scope.MachineStatus.VMID)
+	default:
+		return false, nil
+	}
+
+	/*
+		if err := a.reconcileLBAttachment(scope, machine, instance); err != nil {
+			return true, err
+		}
+	*/
+
+	return true, nil
+}
+
+// Old methods
+
+// TODO: Remove old methods
 func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
 	//klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
 
@@ -251,134 +500,6 @@ func (a *Actuator) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bo
 		m1.ObjectMeta.Name != m2.ObjectMeta.Name
 }
 
-// Delete an existing machine based on the cluster and machine spec passed.
-// Will block until the machine has been successfully deleted, or an error is returned.
-func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
-
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
-	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
-	}
-
-	defer scope.Close()
-
-	computeSvc := compute.NewService(scope.Scope)
-	networkSvc := network.NewService(scope.Scope)
-
-	// Check if VM exists
-	vm, err := computeSvc.VMIfExists(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
-	if err != nil {
-		return fmt.Errorf("error checking if vm exists: %v", err)
-	}
-	if vm == nil {
-		return fmt.Errorf("couldn't find vm for machine: %v", machine.Name)
-	}
-	osDiskName := vm.VirtualMachineProperties.StorageProfile.OsDisk.Name
-	nicID := (*vm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
-
-	// delete the VM instance
-	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
-	if err != nil {
-		return fmt.Errorf("error deleting virtual machine: %v", err)
-	}
-	err = computeSvc.WaitForVMDeletionFuture(vmDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for virtual machine deletion: %v", err)
-	}
-
-	// delete OS disk associated with the VM
-	diskDeleteFuture, err := computeSvc.DeleteManagedDisk(scope.ClusterConfig.ResourceGroup, *osDiskName)
-	if err != nil {
-		return fmt.Errorf("error deleting managed disk: %v", err)
-	}
-	err = computeSvc.WaitForDisksDeleteFuture(diskDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for managed disk deletion: %v", err)
-	}
-
-	// delete NIC associated with the VM
-	nicName, err := resources.ResourceName(*nicID)
-	if err != nil {
-		return fmt.Errorf("error retrieving network interface name: %v", err)
-	}
-	interfacesDeleteFuture, err := networkSvc.DeleteNetworkInterface(scope.ClusterConfig.ResourceGroup, nicName)
-	if err != nil {
-		return fmt.Errorf("error deleting network interface: %v", err)
-	}
-	err = networkSvc.WaitForNetworkInterfacesDeleteFuture(interfacesDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for network interface deletion: %v", err)
-	}
-
-	// delete public ip address associated with the VM
-	publicIPAddressDeleteFuture, err := networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
-	if err != nil {
-		return fmt.Errorf("error deleting public IP address: %v", err)
-	}
-	err = networkSvc.WaitForPublicIPAddressDeleteFuture(publicIPAddressDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for public ip address deletion: %v", err)
-	}
-	return nil
-}
-
-// GetKubeConfig gets the kubeconfig of a machine based on the cluster and machine spec passed.
-// Has not been fully tested as k8s is not yet bootstrapped on created machines.
-func (a *Actuator) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
-
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
-	if err != nil {
-		return "", errors.Errorf("failed to create scope: %+v", err)
-	}
-
-	defer scope.Close()
-
-	networkSvc := network.NewService(scope.Scope)
-
-	decoded, err := base64.StdEncoding.DecodeString(scope.MachineConfig.SSHPrivateKey)
-	privateKey := string(decoded)
-	if err != nil {
-		return "", err
-	}
-
-	ip, err := networkSvc.GetPublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
-	if err != nil {
-		return "", fmt.Errorf("error getting public ip address: %v ", err)
-	}
-	sshclient, err := GetSSHClient(*ip.IPAddress, privateKey)
-	if err != nil {
-		return "", fmt.Errorf("unable to get ssh client: %v", err)
-	}
-	sftpClient, err := sftp.NewClient(sshclient)
-	if err != nil {
-		return "", fmt.Errorf("Error setting sftp client: %s", err)
-	}
-
-	remoteFile := fmt.Sprintf("/home/%s/.kube/config", SSHUser)
-	srcFile, err := sftpClient.Open(remoteFile)
-	if err != nil {
-		return "", fmt.Errorf("Error opening %s: %s", remoteFile, err)
-	}
-
-	defer srcFile.Close()
-	dstFileName := "kubeconfig"
-	dstFile, err := os.Create(dstFileName)
-	if err != nil {
-		return "", fmt.Errorf("unable to write local kubeconfig: %v", err)
-	}
-
-	defer dstFile.Close()
-	srcFile.WriteTo(dstFile)
-
-	content, err := ioutil.ReadFile(dstFileName)
-	if err != nil {
-		return "", fmt.Errorf("unable to read local kubeconfig: %v", err)
-	}
-	return string(content), nil
-}
-
 // GetSSHClient returns an instance of ssh.Client from the host and private key passed.
 func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
 	key := []byte(privatekey)
@@ -396,34 +517,6 @@ func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
 	}
 	client, err := ssh.Dial("tcp", host+":22", config)
 	return client, err
-}
-
-// Exists determines whether a machine exists based on the cluster and machine spec passed.
-func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	klog.Infof("Checking if machine %v for cluster %v exists", machine.Name, cluster.Name)
-
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
-	if err != nil {
-		return false, errors.Errorf("failed to create scope: %+v", err)
-	}
-
-	defer scope.Close()
-
-	computeSvc := compute.NewService(scope.Scope)
-	resourcesSvc := resources.NewService(scope.Scope)
-
-	resp, err := resourcesSvc.CheckGroupExistence(scope.ClusterConfig.ResourceGroup)
-	if err != nil {
-		return false, err
-	}
-	if resp.StatusCode == 404 {
-		return false, nil
-	}
-	vm, err := computeSvc.VMIfExists(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
-	if err != nil {
-		return false, err
-	}
-	return vm != nil, nil
 }
 
 func isMasterMachine(roles []v1alpha1.MachineRole) bool {

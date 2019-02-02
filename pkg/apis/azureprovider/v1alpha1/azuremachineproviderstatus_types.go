@@ -33,9 +33,9 @@ type AzureMachineProviderStatus struct {
 	// +optional
 	VMID *string `json:"vmId,omitempty"`
 
-	// InstanceState is the state of the Azure instance for this machine.
+	// VMState is the state of the Azure instance for this machine.
 	// +optional
-	InstanceState *string `json:"instanceState,omitempty"`
+	VMState *string `json:"instanceState,omitempty"`
 
 	// Conditions is a set of conditions associated with the Machine to indicate
 	// errors or other status.

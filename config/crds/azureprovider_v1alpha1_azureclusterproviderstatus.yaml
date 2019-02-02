@@ -15,148 +15,179 @@ spec:
     openAPIV3Schema:
       properties:
         apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         bastion:
           properties:
-            ebsOptimized:
-              type: boolean
-            enaSupport:
-              type: boolean
-            iamProfile:
-              type: string
             id:
               type: string
-            imageId:
+            identity:
               type: string
-            instanceState:
+            image:
+              description: Storage profile
+              properties:
+                offer:
+                  type: string
+                publisher:
+                  type: string
+                sku:
+                  type: string
+                version:
+                  type: string
+              required:
+              - publisher
+              - offer
+              - sku
+              - version
+              type: object
+            name:
               type: string
-            keyName:
-              type: string
-            privateIp:
-              type: string
-            publicIp:
-              type: string
-            securityGroupIds:
-              items:
-                type: string
-              type: array
-            subnetId:
+            osDisk:
+              properties:
+                diskSizeGB:
+                  format: int32
+                  type: integer
+                managedDisk:
+                  properties:
+                    storageAccountType:
+                      type: string
+                  required:
+                  - storageAccountType
+                  type: object
+                osType:
+                  type: string
+              required:
+              - osType
+              - managedDisk
+              - diskSizeGB
+              type: object
+            startupScript:
               type: string
             tags:
               type: object
-            type:
+            vmSize:
+              description: Hardware profile
               type: string
-            userData:
+            vmState:
+              description: State - The provisioning state, which only appears in the
+                response.
               type: string
-          required:
-          - id
           type: object
         kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
         network:
           properties:
             apiServerIp:
+              description: 'APIServerIP is the Kubernetes API server public IP address.
+                TODO: Remove once load balancer is implemented.'
               properties:
                 id:
                   type: string
                 ipAddress:
                   type: string
+                name:
+                  type: string
               required:
               - id
+              - name
               - ipAddress
               type: object
             apiServerLb:
+              description: APIServerLB is the Kubernetes API server load balancer.
               properties:
-                dnsName:
-                  type: string
-                healthChecks:
-                  properties:
-                    healthyThreshold:
-                      format: int64
-                      type: integer
-                    interval:
-                      format: int64
-                      type: integer
-                    target:
-                      type: string
-                    timeout:
-                      format: int64
-                      type: integer
-                    unhealthyThreshold:
-                      format: int64
-                      type: integer
-                  required:
-                  - target
-                  - interval
-                  - timeout
-                  - healthyThreshold
-                  - unhealthyThreshold
+                frontendIpConfig:
                   type: object
-                ipAddress:
+                id:
                   type: string
-                listeners:
-                  items:
-                    properties:
-                      instancePort:
-                        format: int64
-                        type: integer
-                      instanceProtocol:
-                        type: string
-                      port:
-                        format: int64
-                        type: integer
-                      protocol:
-                        type: string
-                    required:
-                    - protocol
-                    - port
-                    - instanceProtocol
-                    - instancePort
-                    type: object
-                  type: array
                 name:
                   type: string
-                scheme:
+                sku:
                   type: string
-                securityGroupIds:
-                  items:
-                    type: string
-                  type: array
-                subnetIds:
-                  items:
-                    type: string
-                  type: array
                 tags:
                   type: object
               type: object
-            internetGatewayId:
-              type: string
             securityGroups:
+              description: SecurityGroups is a map from the role/kind of the security
+                group to its unique name, if any.
               type: object
             subnets:
+              description: Subnets includes all the subnets defined inside the Vnet.
               items:
                 properties:
                   cidrBlock:
                     type: string
                   id:
                     type: string
-                  nsgId:
+                  name:
                     type: string
-                  routeTableId:
-                    type: string
+                  securityGroup:
+                    properties:
+                      id:
+                        type: string
+                      ingressRule:
+                        items:
+                          properties:
+                            description:
+                              type: string
+                            destination:
+                              description: Destination - The destination address prefix.
+                                CIDR or destination IP range. Asterix '*' can also
+                                be used to match all source IPs. Default tags such
+                                as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet'
+                                can also be used.
+                              type: string
+                            destinationPorts:
+                              description: DestinationPorts - The destination port
+                                or range. Integer or range between 0 and 65535. Asterix
+                                '*' can also be used to match all ports.
+                              type: string
+                            protocol:
+                              type: string
+                            source:
+                              description: Source - The CIDR or source IP range. Asterix
+                                '*' can also be used to match all source IPs. Default
+                                tags such as 'VirtualNetwork', 'AzureLoadBalancer'
+                                and 'Internet' can also be used. If this is an ingress
+                                rule, specifies where network traffic originates from.
+                              type: string
+                            sourcePorts:
+                              description: SourcePorts - The source port or range.
+                                Integer or range between 0 and 65535. Asterix '*'
+                                can also be used to match all ports.
+                              type: string
+                          required:
+                          - description
+                          - protocol
+                          type: object
+                        type: array
+                      name:
+                        type: string
+                      tags:
+                        type: object
+                    required:
+                    - id
+                    - name
+                    - ingressRule
+                    - tags
+                    type: object
                   vnetId:
                     type: string
                 required:
-                - id
+                - name
                 - vnetId
                 - cidrBlock
-                - nsgId
-                - routeTableId
+                - securityGroup
                 type: object
               type: array
             vnet:
+              description: Vnet defines the cluster vnet.
               properties:
                 cidrBlock:
                   type: string
@@ -167,7 +198,6 @@ spec:
                 tags:
                   type: object
               required:
-              - id
               - cidrBlock
               - tags
               type: object

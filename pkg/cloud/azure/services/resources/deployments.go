@@ -34,13 +34,13 @@ const (
 )
 
 // CreateOrUpdateDeployment is used to create or update a kubernetes cluster. It does so by creating or updating an ARM deployment.
-func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*resources.DeploymentsCreateOrUpdateFuture, error) {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
 		return nil, err
 	}
-	params, err := convertMachineToDeploymentParams(machine, machineConfig)
+	params, err := convertVMToDeploymentParams(machine, machineConfig, startupScript)
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +60,13 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 }
 
 // ValidateDeployment validates the parameters of the cluster by calling the ARM validate method.
-func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) error {
+func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) error {
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
 	if err != nil {
 		return err
 	}
-	params, err := convertMachineToDeploymentParams(machine, machineConfig)
+	params, err := convertVMToDeploymentParams(machine, machineConfig, startupScript)
 	if err != nil {
 		return err
 	}
@@ -94,16 +94,14 @@ func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.Deploy
 	return future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Deployments.Client)
 }
 
-func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec) (*map[string]interface{}, error) {
-	startupScript, err := getStartupScript(machine, *machineConfig)
-	if err != nil {
-		return nil, err
-	}
+func convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*map[string]interface{}, error) {
 	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPublicKey)
 	publicKey := string(decoded)
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: Allow parameterized value or set defaults
 	params := map[string]interface{}{
 		"clusterAPI_machine_name": map[string]interface{}{
 			"value": machine.ObjectMeta.Name,
@@ -151,7 +149,7 @@ func convertMachineToDeploymentParams(machine *clusterv1.Machine, machineConfig 
 			"value": machineConfig.OSDisk.DiskSizeGB,
 		},
 		"vm_user": map[string]interface{}{
-			"value": "ClusterAPI",
+			"value": "capi",
 		},
 		"vm_size": map[string]interface{}{
 			"value": machineConfig.VMSize,
@@ -259,17 +257,17 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 
 // GetPublicIPName returns the public IP resource name of the machine.
 func GetPublicIPName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("ClusterAPIIP-%s", machine.ObjectMeta.Name)
+	return fmt.Sprintf("%s-pip", machine.ObjectMeta.Name)
 }
 
 // GetNetworkInterfaceName returns the nic resource name of the machine.
 func GetNetworkInterfaceName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("ClusterAPINIC-%s", GetVMName(machine))
+	return fmt.Sprintf("%s-nic", GetVMName(machine))
 }
 
 // GetVMName returns the VM resource name of the machine.
 func GetVMName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("ClusterAPIVM-%s", machine.ObjectMeta.Name)
+	return fmt.Sprintf("%s-%s", machine.ClusterName, machine.ObjectMeta.Name)
 }
 
 // GetOSDiskName returns the OS disk resource name of the machine.
