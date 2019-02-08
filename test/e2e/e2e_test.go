@@ -40,7 +40,11 @@ type Clients struct {
 }
 
 func TestMasterMachineCreated(t *testing.T) {
-	clients, err := createTestClients()
+	kubeConfig := os.Getenv("KUBE_CONFIG")
+	if kubeConfig == "" {
+		t.Skip("KUBE_CONFIG environment variable is not set")
+	}
+	clients, err := createTestClients(kubeConfig)
 	if err != nil {
 		t.Fatalf("failed to create test clients: %v", err)
 	}
@@ -68,12 +72,8 @@ func TestMasterMachineCreated(t *testing.T) {
 	// validate virtual machine fields match the spec
 }
 
-func createTestClients() (*Clients, error) {
-	kubeconfig := os.Getenv("KUBE_CONFIG")
-	if kubeconfig == "" {
-		return nil, fmt.Errorf("KUBE_CONFIG environment variable is not set")
-	}
-	kubeClient, err := NewKubeClient(kubeconfig)
+func createTestClients(kubeConfig string) (*Clients, error) {
+	kubeClient, err := NewKubeClient(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubernetes client: %v", err)
 	}
