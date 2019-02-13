@@ -46,21 +46,21 @@ required = [
 
 [[constraint]]
   name = "sigs.k8s.io/cluster-api"
-  revision = "40d9d12e7bf4e1d0c6a3453e018c4eed1007ae0a"
+  revision = "0f315e945d5fabe0c805ccf30fa6cf02fac6c0b5"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
-  version = "24.1.0"
+  version = "25.1.0"
 
 [[constraint]]
   name = "github.com/Azure/go-autorest"
-  version = "11.3.2"
+  version = "11.4.0"
 
 # For dependency below: Refer to issue https://github.com/golang/dep/issues/1799
 [[override]]
-name = "gopkg.in/fsnotify.v1"
-source = "https://github.com/fsnotify/fsnotify.git"
-version="v1.4.7"
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+  version = "v1.4.7"
 
 [prune]
   go-tests = true

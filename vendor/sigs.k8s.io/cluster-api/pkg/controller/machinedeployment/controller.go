@@ -97,14 +97,6 @@ func (r *ReconcileMachineDeployment) getMachineSetsForDeployment(d *v1alpha1.Mac
 	machineSets := &v1alpha1.MachineSetList{}
 	listOptions := &client.ListOptions{
 		Namespace: d.Namespace,
-		// This is set so the fake client can be used for unit test. See:
-		// https://github.com/kubernetes-sigs/controller-runtime/issues/168
-		Raw: &metav1.ListOptions{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				Kind:       "MachineSet",
-			},
-		},
 	}
 	if err := r.Client.List(context.Background(), listOptions, machineSets); err != nil {
 		return nil, err
@@ -112,8 +104,8 @@ func (r *ReconcileMachineDeployment) getMachineSetsForDeployment(d *v1alpha1.Mac
 
 	// TODO: flush out machine set adoption.
 
-	var filteredMS []*v1alpha1.MachineSet
-	for idx, _ := range machineSets.Items {
+	filteredMS := make([]*v1alpha1.MachineSet, 0, len(machineSets.Items))
+	for idx := range machineSets.Items {
 		ms := &machineSets.Items[idx]
 		if metav1.GetControllerOf(ms) == nil || (metav1.GetControllerOf(ms) != nil && !metav1.IsControlledBy(ms, d)) {
 			klog.V(4).Infof("%s not controlled by %v", ms.Name, d.Name)
@@ -169,6 +161,17 @@ func (r *ReconcileMachineDeployment) Reconcile(request reconcile.Request) (recon
 		return reconcile.Result{}, nil
 	}
 
+	// Make sure that label selector can match template's labels.
+	// TODO(vincepri): Move to a validation (admission) webhook when supported.
+	selector, err := metav1.LabelSelectorAsSelector(&d.Spec.Selector)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "failed to parse MachineDeployment %q label selector", d.Name)
+	}
+
+	if !selector.Matches(labels.Set(d.Spec.Template.Labels)) {
+		return reconcile.Result{}, errors.Errorf("failed validation on MachineDeployment %q label selector, cannot match any machines ", d.Name)
+	}
+
 	msList, err := r.getMachineSetsForDeployment(d)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -206,21 +209,13 @@ func (r *ReconcileMachineDeployment) getMachineDeploymentsForMachineSet(ms *v1al
 	dList := &v1alpha1.MachineDeploymentList{}
 	listOptions := &client.ListOptions{
 		Namespace: ms.Namespace,
-		// This is set so the fake client can be used for unit test. See:
-		// https://github.com/kubernetes-sigs/controller-runtime/issues/168
-		Raw: &metav1.ListOptions{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				Kind:       "MachineDeployment",
-			},
-		},
 	}
 	if err := r.Client.List(context.Background(), listOptions, dList); err != nil {
 		klog.Warningf("failed to list machine deployments, %v", err)
 		return nil
 	}
 
-	var deployments []*v1alpha1.MachineDeployment
+	deployments := make([]*v1alpha1.MachineDeployment, 0, len(dList.Items))
 	for idx, d := range dList.Items {
 		selector, err := metav1.LabelSelectorAsSelector(&d.Spec.Selector)
 		if err != nil {
@@ -252,14 +247,6 @@ func (r *ReconcileMachineDeployment) getMachineMapForDeployment(d *v1alpha1.Mach
 	machines := &v1alpha1.MachineList{}
 	listOptions := &client.ListOptions{
 		Namespace: d.Namespace,
-		// This is set so the fake client can be used for unit test. See:
-		// https://github.com/kubernetes-sigs/controller-runtime/issues/168
-		Raw: &metav1.ListOptions{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				Kind:       "Machine",
-			},
-		},
 	}
 	if err = r.Client.List(context.Background(), listOptions.MatchingLabels(selector), machines); err != nil {
 		return nil, err
