@@ -68,19 +68,6 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*AzureClu
 	return status, nil
 }
 
-// MachineConfigFromProviderSpec unmarshals a provider config into an Azure machine type
-func MachineConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*AzureMachineProviderSpec, error) {
-	var config AzureMachineProviderSpec
-	if providerConfig.Value == nil {
-		return &config, nil
-	}
-
-	if err := yaml.Unmarshal(providerConfig.Value.Raw, &config); err != nil {
-		return nil, err
-	}
-	return &config, nil
-}
-
 // MachineStatusFromProviderStatus unmarshals a raw extension into an Azure machine type
 func MachineStatusFromProviderStatus(extension *runtime.RawExtension) (*AzureMachineProviderStatus, error) {
 	if extension == nil {
