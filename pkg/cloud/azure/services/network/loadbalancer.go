@@ -29,30 +29,37 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 	klog.V(2).Info("Reconciling load balancer")
 
 	// Get default LB spec.
+	klog.V(2).Info("Getting load balancer spec")
 	spec, err := s.getLBSpec(role)
 	if err != nil {
+		klog.V(2).Info("Unable to get load balancer spec")
 		return err
 	}
 
 	// Create or get a public IP
-	klog.V(2).Info("Getting a public IP for load balancer")
-	pip, err := s.CreateOrGetPublicIPAddress(s.scope.ClusterConfig.ResourceGroup, to.String(s.setLBName(role)))
+	klog.V(2).Info("Getting or creating a public IP for load balancer")
+	pip, err := s.CreateOrUpdatePublicIPAddress(s.scope.ClusterConfig.ResourceGroup, to.String(s.setLBName(role)))
 	if err != nil {
 		return errors.Errorf("Public IP get/create was unsuccessful: %s", err)
 	}
+	klog.V(2).Info("Successfully retrieved a public IP for load balancer")
 
-	frontendIPConfig := &network.FrontendIPConfiguration{
-		Name: spec.Name,
-		FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-			PrivateIPAllocationMethod: network.Dynamic,
-			PublicIPAddress:           &pip,
+	klog.V(2).Info("Building frontend IP for load balancer")
+	frontendIPConfigs := []network.FrontendIPConfiguration{
+		{
+			Name: spec.Name,
+			FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
+				PrivateIPAllocationMethod: network.Dynamic,
+				PublicIPAddress:           &pip,
+			},
 		},
 	}
 
 	// Describe or create a load balancer.
 	apiLB, err := s.describeLB(to.String(spec.Name))
 	if err != nil {
-		*spec.FrontendIPConfigurations = append(*spec.FrontendIPConfigurations, *frontendIPConfig)
+		klog.V(2).Info("Unable to find existing load balancer.")
+		spec.FrontendIPConfigurations = &frontendIPConfigs
 
 		apiLB, err := s.createLB(*spec, role)
 		if err != nil {
@@ -60,20 +67,14 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 		}
 
 		klog.V(2).Infof("Created new load balancer for %s: %v", role, apiLB)
-
-		klog.V(2).Infof("Reconciling load balancer rules")
-
-		apiLB, err = s.reconcileLBRules(&apiLB)
-		if err != nil {
-			return err
-		}
-
-		klog.V(2).Infof("Successfully reconciled load balancer rules")
-
 	}
 
-	klog.V(2).Info("Successfully attached public IP to load balancer")
-	klog.V(2).Infof("Control plane load balancer: %+v", apiLB)
+	apiLB, err = s.reconcileLBRules(&apiLB)
+	if err != nil {
+		return err
+	}
+
+	klog.V(2).Infof("Control plane load balancer: %v", apiLB)
 	klog.V(2).Info("Reconcile load balancers completed successfully")
 
 	return nil
@@ -109,11 +110,14 @@ func (s *Service) getAPILBSpec() *network.LoadBalancer {
 			Name: network.LoadBalancerSkuNameStandard,
 		},
 		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
-				{
-					Name: lbName,
+			// TODO: Remove debug
+			/*
+				FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+					{
+						Name: lbName,
+					},
 				},
-			},
+			*/
 			BackendAddressPools: &[]network.BackendAddressPool{
 				{
 					Name: lbName,
@@ -145,10 +149,12 @@ func (s *Service) getServiceLBSpec() *v1alpha1.LoadBalancer {
 */
 
 func (s *Service) describeLB(lbName string) (network.LoadBalancer, error) {
+	klog.V(2).Info("Attempting to find existing load balancer")
 	return s.scope.LB.Get(s.scope.Context, s.scope.ClusterConfig.ResourceGroup, lbName, "")
 }
 
 func (s *Service) createLB(lbSpec network.LoadBalancer, role string) (lb network.LoadBalancer, err error) {
+	klog.V(2).Info("Creating a new load balancer.")
 	future, err := s.scope.LB.CreateOrUpdate(s.scope.Context, s.scope.ClusterConfig.ResourceGroup, *lbSpec.Name, lbSpec)
 
 	if err != nil {
@@ -164,51 +170,52 @@ func (s *Service) createLB(lbSpec network.LoadBalancer, role string) (lb network
 }
 
 func (s *Service) reconcileLBRules(lbSpec *network.LoadBalancer) (lb network.LoadBalancer, err error) {
-	future, err := s.scope.LB.CreateOrUpdate(
-		s.scope.Context,
-		s.scope.ClusterConfig.ResourceGroup,
-		to.String(lb.Name),
-		network.LoadBalancer{
-			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-				LoadBalancingRules: &[]network.LoadBalancingRule{
-					{
-						Name: to.StringPtr("api"),
-						LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-							Protocol:     network.TransportProtocolTCP,
-							FrontendPort: to.Int32Ptr(6443),
-							BackendPort:  to.Int32Ptr(6443),
-							FrontendIPConfiguration: &network.SubResource{
-								ID: to.StringPtr(
-									s.getResourceID(
-										*lbSpec.ID,
-										"frontendIPConfigurations",
-										*lbSpec.Name,
-									),
-								),
-							},
-							BackendAddressPool: &network.SubResource{
-								ID: to.StringPtr(
-									s.getResourceID(
-										*lbSpec.ID,
-										"backendAddressPools",
-										*lbSpec.Name,
-									),
-								),
-							},
-							Probe: &network.SubResource{
-								ID: to.StringPtr(
-									s.getResourceID(
-										*lbSpec.ID,
-										"probes",
-										*lbSpec.Name,
-									),
-								),
-							},
-						},
-					},
+	klog.V(2).Infof("Reconciling load balancer rules")
+	lbRules := []network.LoadBalancingRule{
+		{
+			Name: to.StringPtr("api"),
+			LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
+				Protocol:     network.TransportProtocolTCP,
+				FrontendPort: to.Int32Ptr(6443),
+				BackendPort:  to.Int32Ptr(6443),
+				FrontendIPConfiguration: &network.SubResource{
+					ID: to.StringPtr(
+						s.getResourceID(
+							*lbSpec.ID,
+							"frontendIPConfigurations",
+							*lbSpec.Name,
+						),
+					),
+				},
+				BackendAddressPool: &network.SubResource{
+					ID: to.StringPtr(
+						s.getResourceID(
+							*lbSpec.ID,
+							"backendAddressPools",
+							*lbSpec.Name,
+						),
+					),
+				},
+				Probe: &network.SubResource{
+					ID: to.StringPtr(
+						s.getResourceID(
+							*lbSpec.ID,
+							"probes",
+							*lbSpec.Name,
+						),
+					),
 				},
 			},
 		},
+	}
+
+	lbSpec.LoadBalancingRules = &lbRules
+
+	future, err := s.scope.LB.CreateOrUpdate(
+		s.scope.Context,
+		s.scope.ClusterConfig.ResourceGroup,
+		to.String(lbSpec.Name),
+		*lbSpec,
 	)
 
 	if err != nil {
@@ -220,6 +227,7 @@ func (s *Service) reconcileLBRules(lbSpec *network.LoadBalancer) (lb network.Loa
 		return lb, fmt.Errorf("cannot get load balancer create or update future response: %v", err)
 	}
 
+	klog.V(2).Info("Successfully reconciled load balancer rules")
 	return future.Result(s.scope.LB)
 }
 

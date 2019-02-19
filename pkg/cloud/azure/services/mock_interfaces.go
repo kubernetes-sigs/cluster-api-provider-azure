@@ -45,7 +45,7 @@ type MockAzureNetworkClient struct {
 	MockNetworkSGIfExists                     func(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
 	MockWaitForNetworkSGsCreateOrUpdateFuture func(future network.SecurityGroupsCreateOrUpdateFuture) error
 
-	MockCreateOrGetPublicIPAddress         func(resourceGroup string, IPName string) (network.PublicIPAddress, error)
+	MockCreateOrUpdatePublicIPAddress      func(resourceGroup string, IPName string) (network.PublicIPAddress, error)
 	MockDeletePublicIPAddress              func(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
 	MockWaitForPublicIPAddressDeleteFuture func(future network.PublicIPAddressesDeleteFuture) error
 
@@ -138,12 +138,12 @@ func (m *MockAzureNetworkClient) WaitForNetworkInterfacesDeleteFuture(future net
 	return m.MockWaitForNetworkInterfacesDeleteFuture(future)
 }
 
-// CreateOrGetPublicIPAddress retrieves the reference of the PublicIPAddress resource.
-func (m *MockAzureNetworkClient) CreateOrGetPublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
-	if m.MockCreateOrGetPublicIPAddress == nil {
+// CreateOrUpdatePublicIPAddress retrieves the reference of the PublicIPAddress resource.
+func (m *MockAzureNetworkClient) CreateOrUpdatePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+	if m.MockCreateOrUpdatePublicIPAddress == nil {
 		return network.PublicIPAddress{}, nil
 	}
-	return m.MockCreateOrGetPublicIPAddress(resourceGroup, IPName)
+	return m.MockCreateOrUpdatePublicIPAddress(resourceGroup, IPName)
 }
 
 // DeletePublicIPAddress deletes the PublicIPAddress resource.

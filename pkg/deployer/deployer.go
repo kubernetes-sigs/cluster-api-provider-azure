@@ -62,7 +62,7 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine)
 	// TODO: Remove once resourcesSvc.GetPublicIPName() has moved to network package.
 	resourcesSvc := resources.NewService(scope)
 
-	pip, err := pipSvc.CreateOrGetPublicIPAddress(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetPublicIPName(machine))
+	pip, err := pipSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetPublicIPName(machine))
 	if err != nil {
 		return "", err
 	}

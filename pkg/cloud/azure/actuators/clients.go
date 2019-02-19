@@ -75,7 +75,7 @@ type AzureNetworkClient interface {
 	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
 
 	// Public Ip Address Operations
-	CreateOrGetPublicIPAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
+	CreateOrUpdatePublicIPAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
 	DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
 	WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
 

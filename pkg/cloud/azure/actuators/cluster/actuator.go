@@ -125,12 +125,9 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 		}
 	*/
 
-	// TODO: Remove debug
-	/*
-		if err := networkSvc.ReconcileLoadBalancer("api"); err != nil {
-			return errors.Errorf("unable to reconcile load balancer: %+v", err)
-		}
-	*/
+	if err := networkSvc.ReconcileLoadBalancer("api"); err != nil {
+		return errors.Errorf("unable to reconcile load balancer: %+v", err)
+	}
 
 	return nil
 }

@@ -23,36 +23,30 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
-// CreateOrGetPublicIPAddress retrieves the Public IP address resource.
-func (s *Service) CreateOrGetPublicIPAddress(resourceGroup string, IPName string) (pip network.PublicIPAddress, err error) {
-	pip, err = s.scope.PublicIPAddresses.Get(s.scope.Context, resourceGroup, IPName, "")
+// CreateOrUpdatePublicIPAddress retrieves the Public IP address resource.
+func (s *Service) CreateOrUpdatePublicIPAddress(resourceGroup string, IPName string) (pip network.PublicIPAddress, err error) {
+	future, err := s.scope.PublicIPAddresses.CreateOrUpdate(
+		s.scope.Context,
+		resourceGroup,
+		IPName,
+		network.PublicIPAddress{
+			Name:                            to.StringPtr(IPName),
+			Location:                        to.StringPtr(s.scope.Location()),
+			Sku:                             s.getDefaultPublicIPSKU(),
+			PublicIPAddressPropertiesFormat: s.getDefaultPublicIPProperties(IPName),
+		},
+	)
 
 	if err != nil {
-		future, err := s.scope.PublicIPAddresses.CreateOrUpdate(
-			s.scope.Context,
-			resourceGroup,
-			IPName,
-			network.PublicIPAddress{
-				Name:                            to.StringPtr(IPName),
-				Location:                        to.StringPtr(s.scope.Location()),
-				Sku:                             getDefaultPublicIPSKU(),
-				PublicIPAddressPropertiesFormat: getDefaultPublicIPProperties(),
-			},
-		)
-
-		if err != nil {
-			return pip, err
-		}
-
-		err = future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
-		if err != nil {
-			return pip, fmt.Errorf("cannot get public ip address create or update future response: %v", err)
-		}
-
-		return future.Result(s.scope.PublicIPAddresses)
+		return pip, err
 	}
 
-	return pip, nil
+	err = future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
+	if err != nil {
+		return pip, fmt.Errorf("cannot get public ip address create or update future response: %v", err)
+	}
+
+	return future.Result(s.scope.PublicIPAddresses)
 }
 
 // DeletePublicIPAddress deletes the Public IP address resource.
@@ -65,15 +59,18 @@ func (s *Service) WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddr
 	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
 }
 
-func getDefaultPublicIPSKU() *network.PublicIPAddressSku {
+func (s *Service) getDefaultPublicIPSKU() *network.PublicIPAddressSku {
 	return &network.PublicIPAddressSku{
 		Name: network.PublicIPAddressSkuNameStandard,
 	}
 }
 
-func getDefaultPublicIPProperties() *network.PublicIPAddressPropertiesFormat {
+func (s *Service) getDefaultPublicIPProperties(IPName string) *network.PublicIPAddressPropertiesFormat {
 	return &network.PublicIPAddressPropertiesFormat{
 		PublicIPAddressVersion:   network.IPv4,
 		PublicIPAllocationMethod: network.Static,
+		DNSSettings: &network.PublicIPAddressDNSSettings{
+			DomainNameLabel: &IPName,
+		},
 	}
 }
