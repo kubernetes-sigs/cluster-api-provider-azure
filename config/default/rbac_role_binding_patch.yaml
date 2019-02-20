@@ -19,4 +19,4 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: default
-    namespace: azure-provider-system
+    namespace: system
