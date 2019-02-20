@@ -8,6 +8,17 @@ rules:
   resources:
   - azureclusterproviderconfigs
   - azureclusterproviderstatuses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - azureprovider.k8s.io
+  resources:
   - azuremachineproviderconfigs
   - azuremachineproviderstatuses
   verbs:
@@ -23,6 +34,13 @@ rules:
   resources:
   - clusters
   - clusters/status
+  verbs:
+  - get
+  - list
+  - watch
+- apigroups:
+  - cluster.k8s.io
+  resources:
   - machines
   - machines/status
   - machinedeployments
