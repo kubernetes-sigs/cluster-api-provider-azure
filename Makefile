@@ -22,7 +22,7 @@ FASTBUILD ?= n ## Set FASTBUILD=y (case-sensitive) to skip some slow tasks
 ## Image URL to use all building/pushing image targets
 STABLE_DOCKER_REPO ?= quay.io/k8s
 MANAGER_IMAGE_NAME ?= cluster-api-azure-controller
-MANAGER_IMAGE_TAG ?= 0.3.0-alpha.1
+MANAGER_IMAGE_TAG ?= 0.1.0-alpha.3
 MANAGER_IMAGE ?= $(STABLE_DOCKER_REPO)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)
 DEV_DOCKER_REPO ?= quay.io/k8s
 DEV_MANAGER_IMAGE ?= $(DEV_DOCKER_REPO)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)-dev

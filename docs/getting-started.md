@@ -100,13 +100,13 @@ Here's an example of how to build controller images, if you're interested in tes
 # Build the image.
 PREFIX=quay.io/k8s \
 NAME=cluster-api-azure-controller \
-TAG=0.3.0-alpha.1 \
+TAG=0.1.0-alpha.3 \
 make docker-build
 
 # Push the image.
 PREFIX=quay.io/k8s \
 NAME=cluster-api-azure-controller \
-TAG=0.3.0-alpha.1 \
+TAG=0.1.0-alpha.3 \
 make docker-push
 ```
 
