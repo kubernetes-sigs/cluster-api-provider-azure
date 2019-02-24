@@ -241,9 +241,10 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	computeSvc := compute.NewService(scope.Scope)
 	networkSvc := network.NewService(scope.Scope)
+	resourcesSvc := resources.NewService(scope.Scope)
 
 	// Check if VM exists
-	vm, err := computeSvc.VMIfExists(resources.GetVMName(machine))
+	vm, err := computeSvc.VMIfExists(resourcesSvc.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error checking if vm exists: %v", err)
 	}
@@ -260,7 +261,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	nicID := (*avm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
 	// delete the VM instance
-	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resources.GetVMName(machine))
+	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting virtual machine: %v", err)
 	}
@@ -294,7 +295,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	// delete public ip address associated with the VM
-	publicIPAddressDeleteFuture, err := networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
+	publicIPAddressDeleteFuture, err := networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
@@ -333,6 +334,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	defer scope.Close()
 
 	computeSvc := compute.NewService(scope.Scope)
+	resourcesSvc := resources.NewService(scope.Scope)
 
 	/*
 		status, err := a.status(goalMachine)
@@ -345,7 +347,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	currentMachine := scope.Machine
 
 	if currentMachine == nil {
-		vm, err := computeSvc.VMIfExists(resources.GetVMName(goalMachine))
+		vm, err := computeSvc.VMIfExists(resourcesSvc.GetVMName(goalMachine))
 		if err != nil || vm == nil {
 			return fmt.Errorf("error checking if vm exists: %v", err)
 		}
@@ -449,6 +451,7 @@ func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clus
 	defer scope.Close()
 
 	computeSvc := compute.NewService(scope.Scope)
+	resourcesSvc := resources.NewService(scope.Scope)
 
 	// update the control plane
 	if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
@@ -462,7 +465,7 @@ func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clus
 		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
 			"sudo tee /usr/bin/kubectl > /dev/null;"+
 			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.ControlPlane)
-		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
+		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
 		}
@@ -474,14 +477,14 @@ func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clus
 
 	// update master and node packages
 	if currentMachine.Spec.Versions.Kubelet != goalMachine.Spec.Versions.Kubelet {
-		nodeName := strings.ToLower(resources.GetVMName(goalMachine))
+		nodeName := strings.ToLower(resourcesSvc.GetVMName(goalMachine))
 		// prepare node for maintenance
 		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets;"+
 			"sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
 		// mark the node as schedulable
 		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
 
-		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resources.GetVMName(goalMachine), cmd)
+		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(goalMachine), cmd)
 		if err != nil {
 			return fmt.Errorf("error running command on vm: %v", err)
 		}

@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"k8s.io/klog"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -35,12 +36,18 @@ const (
 
 // CreateOrUpdateDeployment is used to create or update a kubernetes cluster. It does so by creating or updating an ARM deployment.
 func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*resources.DeploymentsCreateOrUpdateFuture, error) {
+	// TODO: Remove debug
+	klog.V(2).Info("CreateOrUpdateDeployment start")
 	// Parse the ARM template
+	// TODO: Remove debug
+	klog.V(2).Info("CreateOrUpdateDeployment: reading template")
 	template, err := readJSON(templateFile)
 	if err != nil {
+		// TODO: Remove debug
+		klog.V(2).Info("CreateOrUpdateDeployment: could not read template")
 		return nil, err
 	}
-	params, err := convertVMToDeploymentParams(machine, machineConfig, startupScript)
+	params, err := s.convertVMToDeploymentParams(machine, machineConfig, startupScript)
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +68,16 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 
 // ValidateDeployment validates the parameters of the cluster by calling the ARM validate method.
 func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) error {
+	// TODO: Remove debug
+	klog.V(2).Info("ValidateDeployment start")
 	// Parse the ARM template
 	template, err := readJSON(templateFile)
+	// TODO: Remove debug
+	klog.V(2).Info("ValidateDeployment: reading template")
 	if err != nil {
 		return err
 	}
-	params, err := convertVMToDeploymentParams(machine, machineConfig, startupScript)
+	params, err := s.convertVMToDeploymentParams(machine, machineConfig, startupScript)
 	if err != nil {
 		return err
 	}
@@ -94,10 +105,14 @@ func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.Deploy
 	return future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Deployments.Client)
 }
 
-func convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*map[string]interface{}, error) {
+func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*map[string]interface{}, error) {
+	// TODO: Remove debug
+	klog.V(2).Info("convertVMToDeploymentParams start")
 	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPublicKey)
 	publicKey := string(decoded)
 	if err != nil {
+		// TODO: Remove debug
+		klog.V(2).Info("convertVMToDeploymentParams: could not decode SSH key")
 		return nil, err
 	}
 
@@ -110,13 +125,13 @@ func convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *prov
 			"value": network.VnetDefaultName,
 		},
 		"virtualMachines_ClusterAPIVM_name": map[string]interface{}{
-			"value": GetVMName(machine),
+			"value": s.GetVMName(machine),
 		},
 		"networkInterfaces_ClusterAPI_name": map[string]interface{}{
-			"value": GetNetworkInterfaceName(machine),
+			"value": s.GetNetworkInterfaceName(machine),
 		},
 		"publicIPAddresses_ClusterAPI_ip_name": map[string]interface{}{
-			"value": GetPublicIPName(machine),
+			"value": s.GetPublicIPName(machine),
 		},
 		"networkSecurityGroups_ClusterAPIVM_nsg_name": map[string]interface{}{
 			"value": "ClusterAPINSG",
@@ -137,7 +152,7 @@ func convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *prov
 			"value": machineConfig.Image.Version,
 		},
 		"osDisk_name": map[string]interface{}{
-			"value": GetOSDiskName(machine),
+			"value": s.GetOSDiskName(machine),
 		},
 		"os_type": map[string]interface{}{
 			"value": machineConfig.OSDisk.OSType,
@@ -255,24 +270,25 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 	return "", errors.New("unable to get startup script: unknown machine role")
 }
 
+// GetVMName returns the VM resource name of the machine.
+func (s *Service) GetVMName(machine *clusterv1.Machine) string {
+	return fmt.Sprintf("%s-%s", s.scope.Name(), machine.ObjectMeta.Name)
+}
+
 // GetPublicIPName returns the public IP resource name of the machine.
-func GetPublicIPName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-pip", machine.ObjectMeta.Name)
+// TODO: Move to network package
+func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
+	return fmt.Sprintf("%s-pip", s.GetVMName(machine))
 }
 
 // GetNetworkInterfaceName returns the nic resource name of the machine.
-func GetNetworkInterfaceName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-nic", GetVMName(machine))
-}
-
-// GetVMName returns the VM resource name of the machine.
-func GetVMName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-%s", machine.ClusterName, machine.ObjectMeta.Name)
+func (s *Service) GetNetworkInterfaceName(machine *clusterv1.Machine) string {
+	return fmt.Sprintf("%s-nic", s.GetVMName(machine))
 }
 
 // GetOSDiskName returns the OS disk resource name of the machine.
-func GetOSDiskName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s_OSDisk", GetVMName(machine))
+func (s *Service) GetOSDiskName(machine *clusterv1.Machine) string {
+	return fmt.Sprintf("%s_OSDisk", s.GetVMName(machine))
 }
 
 func readJSON(path string) (*map[string]interface{}, error) {

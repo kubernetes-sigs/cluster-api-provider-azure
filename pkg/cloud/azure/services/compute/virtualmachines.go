@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
+	rs "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
 )
 
@@ -110,7 +111,8 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 				SaCert:           string(s.scope.ClusterConfig.SAKeyPair.Cert),
 				SaKey:            string(s.scope.ClusterConfig.SAKeyPair.Key),
 				BootstrapToken:   bootstrapToken,
-				LBAddress:        s.scope.Network().APIServerIP.IPAddress,
+				// TODO: Fix LBAddress to retrieve LB DNS Name
+				LBAddress: s.scope.Network().APIServerIP.IPAddress,
 			})
 			if err != nil {
 				return input, err
@@ -122,15 +124,16 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 			}
 
 			cfg, err = config.NewControlPlane(&config.ControlPlaneInput{
-				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
-				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
-				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
-				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
-				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
-				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
-				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
-				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
-				LBAddress:         s.scope.Network().APIServerIP.IPAddress,
+				CACert:           string(s.scope.ClusterConfig.CAKeyPair.Cert),
+				CAKey:            string(s.scope.ClusterConfig.CAKeyPair.Key),
+				EtcdCACert:       string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
+				EtcdCAKey:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
+				FrontProxyCACert: string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
+				FrontProxyCAKey:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
+				SaCert:           string(s.scope.ClusterConfig.SAKeyPair.Cert),
+				SaKey:            string(s.scope.ClusterConfig.SAKeyPair.Key),
+				// TODO: Fix LBAddress to retrieve LB DNS Name
+				LBAddress:         "fakelb.example.com", //s.scope.Network().APIServerIP.IPAddress,
 				ClusterName:       s.scope.Name(),
 				PodSubnet:         s.scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 				ServiceSubnet:     s.scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
@@ -151,7 +154,8 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 		cfg, err := config.NewNode(&config.NodeInput{
 			CACertHash:     caCertHash,
 			BootstrapToken: bootstrapToken,
-			LBAddress:      s.scope.Network().APIServerIP.IPAddress,
+			// TODO: Fix LBAddress to retrieve LB DNS Name
+			LBAddress: s.scope.Network().APIServerIP.IPAddress,
 		})
 
 		if err != nil {
@@ -166,22 +170,23 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 
 	// TODO: Set ssh key
 
-	err = s.scope.Resources.ValidateDeployment(machine.Machine, s.scope.ClusterConfig, machine.MachineConfig, input.StartupScript)
+	resourcesSvc := rs.NewService(s.scope)
+	err = resourcesSvc.ValidateDeployment(machine.Machine, s.scope.ClusterConfig, machine.MachineConfig, input.StartupScript)
 	if err != nil {
 		return nil, fmt.Errorf("error validating deployment: %v", err)
 	}
 
-	deploymentsFuture, err := s.scope.Resources.CreateOrUpdateDeployment(machine.Machine, s.scope.ClusterConfig, machine.MachineConfig, input.StartupScript)
+	deploymentsFuture, err := resourcesSvc.CreateOrUpdateDeployment(machine.Machine, s.scope.ClusterConfig, machine.MachineConfig, input.StartupScript)
 	if err != nil {
 		return nil, fmt.Errorf("error creating or updating deployment: %v", err)
 	}
 
-	err = s.scope.Resources.WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
+	err = resourcesSvc.WaitForDeploymentsCreateOrUpdateFuture(*deploymentsFuture)
 	if err != nil {
 		return nil, fmt.Errorf("error waiting for deployment creation or update: %v", err)
 	}
 
-	deployment, err := s.scope.Resources.GetDeploymentResult(*deploymentsFuture)
+	deployment, err := resourcesSvc.GetDeploymentResult(*deploymentsFuture)
 	// Work around possible bugs or late-stage failures
 	if deployment.Name == nil || err != nil {
 		return nil, fmt.Errorf("error getting deployment result: %v", err)

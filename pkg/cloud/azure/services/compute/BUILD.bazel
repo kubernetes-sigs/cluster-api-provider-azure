@@ -15,6 +15,7 @@ go_library(
         "//pkg/cloud/azure/converters:go_default_library",
         "//pkg/cloud/azure/services/certificates:go_default_library",
         "//pkg/cloud/azure/services/config:go_default_library",
+        "//pkg/cloud/azure/services/resources:go_default_library",
         "//pkg/record:go_default_library",
         "//vendor/github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",

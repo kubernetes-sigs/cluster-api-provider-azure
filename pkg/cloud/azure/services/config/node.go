@@ -20,7 +20,7 @@ const (
 	// TODO: Make config Azure specific
 	nodeBashScript = `{{.Header}}
 
-HOSTNAME="$(curl http://169.254.169.254/latest/meta-data/local-hostname)"
+HOSTNAME="$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
 
 cat >/tmp/kubeadm-node.yaml <<EOF
 ---
@@ -38,6 +38,48 @@ nodeRegistration:
   kubeletExtraArgs:
     cloud-provider: azure
 EOF
+
+# Configure containerd prerequisites
+modprobe overlay
+modprobe br_netfilter
+
+# Setup required sysctl params, these persist across reboots.
+cat > /etc/sysctl.d/99-kubernetes-cri.conf <<EOF
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+
+sysctl --system
+
+apt-get install -y libseccomp2
+
+# Install containerd
+# Export required environment variables.
+export CONTAINERD_VERSION="1.2.4"
+export CONTAINERD_SHA256="3391758c62d17a56807ddac98b05487d9e78e5beb614a0602caab747b0eda9e0"
+
+# Download containerd tar.
+wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+
+# Check hash.
+echo "${CONTAINERD_SHA256} cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz" | sha256sum --check -
+
+# Unpack.
+tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+
+# Start containerd.
+systemctl start containerd
+
+# Install kubeadm (https://kubernetes.io/docs/setup/independent/install-kubeadm/)
+apt-get update && apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+apt-get update
+apt-get install -y kubelet kubeadm kubectl
+apt-mark hold kubelet kubeadm kubectl
 
 kubeadm join --config /tmp/kubeadm-node.yaml
 `

@@ -58,9 +58,11 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine)
 		return scope.ClusterStatus.Network.APIServerIP.IPAddress, nil
 	}
 
-	pipsvc := network.NewService(scope)
+	pipSvc := network.NewService(scope)
+	// TODO: Remove once resourcesSvc.GetPublicIPName() has moved to network package.
+	resourcesSvc := resources.NewService(scope)
 
-	pip, err := pipsvc.CreateOrGetPublicIPAddress(scope.ClusterConfig.ResourceGroup, resources.GetPublicIPName(machine))
+	pip, err := pipSvc.CreateOrGetPublicIPAddress(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetPublicIPName(machine))
 	if err != nil {
 		return "", err
 	}

@@ -207,6 +207,9 @@
       },
       "apiVersion": "2017-06-01",
       "location": "[parameters('location')]",
+      "zones": [
+          "3"
+      ],
       "scale": null,
       "properties": {
         "provisioningState": "Succeeded",
