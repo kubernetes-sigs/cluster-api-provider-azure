@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
-	rs "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
 )
 
@@ -170,7 +170,7 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 
 	// TODO: Set ssh key
 
-	resourcesSvc := rs.NewService(s.scope)
+	resourcesSvc := resources.NewService(s.scope)
 	err = resourcesSvc.ValidateDeployment(machine.Machine, s.scope.ClusterConfig, machine.MachineConfig, input.StartupScript)
 	if err != nil {
 		return nil, fmt.Errorf("error validating deployment: %v", err)

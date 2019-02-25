@@ -36,7 +36,8 @@ nodeRegistration:
   name: "${HOSTNAME}"
   criSocket: /var/run/containerd/containerd.sock
   kubeletExtraArgs:
-    cloud-provider: azure
+    # TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
+    #cloud-provider: azure
 EOF
 
 # Configure containerd prerequisites

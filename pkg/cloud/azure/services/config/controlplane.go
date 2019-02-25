@@ -53,8 +53,9 @@ apiServer:
   certSANs:
     - "$PRIVATE_IP"
     - "{{.LBAddress}}"
-  extraArgs:
-    cloud-provider: azure
+	extraArgs:
+		# TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
+		#cloud-provider: azure
 controlPlaneEndpoint: "{{.LBAddress}}:6443"
 clusterName: "{{.ClusterName}}"
 networking:
@@ -69,7 +70,8 @@ nodeRegistration:
   name: ${HOSTNAME}
   criSocket: /var/run/containerd/containerd.sock
   kubeletExtraArgs:
-    cloud-provider: azure
+		# TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
+		#cloud-provider: azure
 EOF
 
 # Configure containerd prerequisites
@@ -156,7 +158,8 @@ nodeRegistration:
   name: "${HOSTNAME}"
   criSocket: /var/run/containerd/containerd.sock
   kubeletExtraArgs:
-    cloud-provider: azure
+		# TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
+		#cloud-provider: azure
 controlPlane:
   localAPIEndpoint:
     advertiseAddress: "${PRIVATE_IP}"
