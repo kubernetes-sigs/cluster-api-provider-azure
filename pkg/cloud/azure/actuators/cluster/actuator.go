@@ -17,10 +17,9 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
@@ -28,6 +27,9 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
+
+//+kubebuilder:rbac:groups=azureprovider.k8s.io,resources=azureclusterproviderconfigs;azureclusterproviderstatuses,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cluster.k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;create;update;patch;delete
 
 // Actuator is responsible for performing cluster reconciliation
 type Actuator struct {
@@ -63,31 +65,70 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 	networkSvc := network.NewService(scope)
 	resourcesSvc := resources.NewService(scope)
 
-	// Reconcile resource group
-	_, err = resourcesSvc.CreateOrUpdateGroup(scope.ClusterConfig.ResourceGroup, scope.ClusterConfig.Location)
-	if err != nil {
-		return fmt.Errorf("failed to create or update resource group: %v", err)
+	// Store some config parameters in the status.
+	if !scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
+		caCert, caKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.CAKeyPair, actuators.ClusterCA)
+		if err != nil {
+			return errors.Wrap(err, "Failed to generate a CA for the control plane")
+		}
+		scope.ClusterConfig.CAKeyPair = v1alpha1.KeyPair{
+			Cert: caCert,
+			Key:  caKey,
+		}
 	}
 
-	// Reconcile network security group
-	networkSGFuture, err := networkSvc.CreateOrUpdateNetworkSecurityGroup(scope.ClusterConfig.ResourceGroup, "ClusterAPINSG", scope.ClusterConfig.Location)
-	if err != nil {
-		return fmt.Errorf("error creating or updating network security group: %v", err)
-	}
-	err = networkSvc.WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
+	if !scope.ClusterConfig.EtcdCAKeyPair.HasCertAndKey() {
+		etcdCACert, etcdCAKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.EtcdCAKeyPair, actuators.EtcdCA)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get or generate etcd CA cert")
+		}
+		scope.ClusterConfig.EtcdCAKeyPair = v1alpha1.KeyPair{
+			Cert: etcdCACert,
+			Key:  etcdCAKey,
+		}
 	}
 
-	// Reconcile virtual network
-	vnetFuture, err := networkSvc.CreateOrUpdateVnet(scope.ClusterConfig.ResourceGroup, "", scope.ClusterConfig.Location)
-	if err != nil {
-		return fmt.Errorf("error creating or updating virtual network: %v", err)
+	if !scope.ClusterConfig.FrontProxyCAKeyPair.HasCertAndKey() {
+		fpCACert, fpCAKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.FrontProxyCAKeyPair, actuators.FrontProxyCA)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get or generate front-proxy CA cert")
+		}
+		scope.ClusterConfig.FrontProxyCAKeyPair = v1alpha1.KeyPair{
+			Cert: fpCACert,
+			Key:  fpCAKey,
+		}
 	}
-	err = networkSvc.WaitForVnetCreateOrUpdateFuture(*vnetFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
+
+	if !scope.ClusterConfig.SAKeyPair.HasCertAndKey() {
+		saPub, saKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.SAKeyPair, actuators.ServiceAccount)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get or generate service-account certificates")
+		}
+		scope.ClusterConfig.SAKeyPair = v1alpha1.KeyPair{
+			Cert: saPub,
+			Key:  saKey,
+		}
 	}
+
+	if err := resourcesSvc.ReconcileResourceGroup(); err != nil {
+		return errors.Errorf("unable to reconcile resource group: %+v", err)
+	}
+
+	if err := networkSvc.ReconcileNetwork(); err != nil {
+		return errors.Errorf("unable to reconcile network: %+v", err)
+	}
+
+	// TODO: Add bastion method
+	/*
+		if err := resourcesSvc.ReconcileBastion(); err != nil {
+			return errors.Errorf("unable to reconcile bastion: %+v", err)
+		}
+	*/
+
+	if err := networkSvc.ReconcileLoadBalancer("api"); err != nil {
+		return errors.Errorf("unable to reconcile load balancer: %+v", err)
+	}
+
 	return nil
 }
 
@@ -102,23 +143,36 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 
 	defer scope.Close()
 
+	//networkSvc := network.NewService(scope)
 	resourcesSvc := resources.NewService(scope)
 
-	resp, err := resourcesSvc.CheckGroupExistence(scope.ClusterConfig.ResourceGroup)
-	if err != nil {
-		return fmt.Errorf("error checking for resource group existence: %v", err)
-	}
-	if resp.StatusCode == 404 {
-		return fmt.Errorf("resource group %v does not exist", scope.ClusterConfig.ResourceGroup)
+	// TODO: Add load balancer method
+	/*
+		if err := networkSvc.DeleteLoadBalancers(); err != nil {
+			return errors.Errorf("unable to delete load balancers: %+v", err)
+		}
+	*/
+
+	// TODO: Add bastion method
+	/*
+		if err := resourcesSvc.DeleteBastion(); err != nil {
+			return errors.Errorf("unable to delete bastion: %+v", err)
+		}
+	*/
+
+	// TODO: Add network method
+	/*
+		if err := resourcesSvc.DeleteNetwork(); err != nil {
+			klog.Errorf("Error deleting cluster %v: %v.", cluster.Name, err)
+			return &controllerError.RequeueAfterError{
+				RequeueAfter: 5 * 1000 * 1000 * 1000,
+			}
+		}
+	*/
+
+	if err := resourcesSvc.DeleteResourceGroup(); err != nil {
+		return errors.Errorf("unable to delete resource group: %+v", err)
 	}
 
-	groupsDeleteFuture, err := resourcesSvc.DeleteGroup(scope.ClusterConfig.ResourceGroup)
-	if err != nil {
-		return fmt.Errorf("error deleting resource group: %v", err)
-	}
-	err = resourcesSvc.WaitForGroupsDeleteFuture(groupsDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for resource group deletion: %v", err)
-	}
 	return nil
 }

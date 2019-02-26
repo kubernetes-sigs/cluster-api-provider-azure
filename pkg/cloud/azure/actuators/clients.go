@@ -75,7 +75,7 @@ type AzureNetworkClient interface {
 	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
 
 	// Public Ip Address Operations
-	GetPublicIPAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
+	CreateOrUpdatePublicIPAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
 	DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
 	WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
 
@@ -93,8 +93,8 @@ type AzureResourcesClient interface {
 	WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error
 
 	// Deployment Operations
-	CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) (*resources.DeploymentsCreateOrUpdateFuture, error)
+	CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*resources.DeploymentsCreateOrUpdateFuture, error)
 	GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error)
-	ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec) error
+	ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) error
 	WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error
 }

@@ -4,6 +4,8 @@ go_library(
     name = "go_default_library",
     srcs = [
         "interfaces.go",
+        "loadbalancer.go",
+        "network.go",
         "publicipaddress.go",
         "securitygroups.go",
         "service.go",
@@ -16,5 +18,7 @@ go_library(
         "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest/to:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/k8s.io/klog:go_default_library",
     ],
 )

@@ -17,20 +17,60 @@ limitations under the License.
 package network
 
 import (
+	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
+	"github.com/Azure/go-autorest/autorest/to"
 )
 
-// GetPublicIPAddress retrieves the Public IP address resource.
-func (s *Service) GetPublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
-	return s.scope.AzureClients.PublicIPAddresses.Get(s.scope.Context, resourceGroup, IPName, "")
+// CreateOrUpdatePublicIPAddress retrieves the Public IP address resource.
+func (s *Service) CreateOrUpdatePublicIPAddress(resourceGroup string, IPName string) (pip network.PublicIPAddress, err error) {
+	future, err := s.scope.PublicIPAddresses.CreateOrUpdate(
+		s.scope.Context,
+		resourceGroup,
+		IPName,
+		network.PublicIPAddress{
+			Name:                            to.StringPtr(IPName),
+			Location:                        to.StringPtr(s.scope.Location()),
+			Sku:                             s.getDefaultPublicIPSKU(),
+			PublicIPAddressPropertiesFormat: s.getDefaultPublicIPProperties(IPName),
+		},
+	)
+
+	if err != nil {
+		return pip, err
+	}
+
+	err = future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
+	if err != nil {
+		return pip, fmt.Errorf("cannot get public ip address create or update future response: %v", err)
+	}
+
+	return future.Result(s.scope.PublicIPAddresses)
 }
 
 // DeletePublicIPAddress deletes the Public IP address resource.
 func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
-	return s.scope.AzureClients.PublicIPAddresses.Delete(s.scope.Context, resourceGroup, IPName)
+	return s.scope.PublicIPAddresses.Delete(s.scope.Context, resourceGroup, IPName)
 }
 
 // WaitForPublicIPAddressDeleteFuture waits for the DeletePublicIPAddress operation to complete.
 func (s *Service) WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.PublicIPAddresses.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
+}
+
+func (s *Service) getDefaultPublicIPSKU() *network.PublicIPAddressSku {
+	return &network.PublicIPAddressSku{
+		Name: network.PublicIPAddressSkuNameStandard,
+	}
+}
+
+func (s *Service) getDefaultPublicIPProperties(IPName string) *network.PublicIPAddressPropertiesFormat {
+	return &network.PublicIPAddressPropertiesFormat{
+		PublicIPAddressVersion:   network.IPv4,
+		PublicIPAllocationMethod: network.Static,
+		DNSSettings: &network.PublicIPAddressDNSSettings{
+			DomainNameLabel: &IPName,
+		},
+	}
 }

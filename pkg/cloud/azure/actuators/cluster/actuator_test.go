@@ -381,7 +381,7 @@ func TestClusterProviderFromProviderSpecParsingError(t *testing.T) {
 func newClusterProviderSpec() providerv1.AzureClusterProviderSpec {
 	return providerv1.AzureClusterProviderSpec{
 		ResourceGroup: "resource-group-test",
-		Location:      "eastus",
+		Location:      "eastus2",
 	}
 }
 

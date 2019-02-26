@@ -17,9 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-	"reflect"
-	"sort"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -66,14 +63,18 @@ type AzureMachineProviderCondition struct {
 	Message string `json:"message"`
 }
 
-// TODO
+type MachineRole string
+
+const (
+	// TODO: Change references to "controlplane", instead of "Master" and lowercase both roles.
+	Master MachineRole = "Master"
+	Node   MachineRole = "Node"
+)
+
 // Network encapsulates Azure networking resources.
 type Network struct {
 	// Vnet defines the cluster vnet.
 	Vnet Vnet `json:"vnet,omitempty"`
-
-	// InternetGatewayID is the id of the internet gateway associated with the Vnet.
-	InternetGatewayID *string `json:"internetGatewayId,omitempty"`
 
 	// SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
 	SecurityGroups map[SecurityGroupRole]*SecurityGroup `json:"securityGroups,omitempty"`
@@ -85,133 +86,21 @@ type Network struct {
 	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
 
 	// APIServerIP is the Kubernetes API server public IP address.
-	APIServerIP PublicIPAddress `json:"apiServerIp,omitempty"`
+	// TODO: Remove once load balancer is implemented.
+	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
 }
+
+// Tags defines resource tags.
+type Tags map[string]*string
 
 // Vnet defines an Azure Virtual Network.
 type Vnet struct {
-	ID        string             `json:"id"`
-	CidrBlock string             `json:"cidrBlock"`
-	Name      *string            `json:"name,omitempty"`
-	Tags      map[string]*string `json:"tags"`
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	CidrBlock string `json:"cidrBlock"`
+	Tags      *Tags  `json:"tags"`
 }
 
-// TODO: Do we need this?
-// String returns a string representation of the Vnet.
-func (v *Vnet) String() string {
-	return fmt.Sprintf("id=%s", v.ID)
-}
-
-// Subnet defines an Azure subnet attached to a Vnet.
-type Subnet struct {
-	ID string `json:"id"`
-
-	VnetID       string  `json:"vnetId"`
-	CidrBlock    string  `json:"cidrBlock"`
-	NSGID        string  `json:"nsgId"`
-	RouteTableID *string `json:"routeTableId"`
-}
-
-// PublicIPAddress defines an Azure public IP address.
-type PublicIPAddress struct {
-	ID        string `json:"id"`
-	IPAddress string `json:"ipAddress"`
-}
-
-/*
-// TODO
-// String returns a string representation of the subnet.
-func (s *Subnet) String() string {
-	return fmt.Sprintf("id=%s/az=%s/public=%v", s.ID, s.AvailabilityZone, s.IsPublic)
-}
-*/
-
-// TODO
-// LoadBalancerScheme defines the scheme of a load balancer.
-type LoadBalancerScheme string
-
-// TODO
-var (
-	// LoadBalancerSchemeInternetFacing defines an internet-facing, publicly
-	// accessible Azure LB scheme
-	LoadBalancerSchemeInternetFacing = LoadBalancerScheme("Internet-facing")
-
-	// LoadBalancerSchemeInternal defines an internal-only facing
-	// load balancer internal to a LB.
-	LoadBalancerSchemeInternal = LoadBalancerScheme("internal")
-)
-
-// TODO
-// LoadBalancerProtocol defines listener protocols for a load balancer.
-type LoadBalancerProtocol string
-
-// TODO
-var (
-	// LoadBalancerProtocolTCP defines the LB API string representing the TCP protocol
-	LoadBalancerProtocolTCP = LoadBalancerProtocol("TCP")
-
-	// LoadBalancerProtocolSSL defines the LB API string representing the TLS protocol
-	LoadBalancerProtocolSSL = LoadBalancerProtocol("SSL")
-
-	// LoadBalancerProtocolHTTP defines the LB API string representing the HTTP protocol at L7
-	LoadBalancerProtocolHTTP = LoadBalancerProtocol("HTTP")
-
-	// LoadBalancerProtocolHTTPS defines the LB API string representing the HTTP protocol at L7
-	LoadBalancerProtocolHTTPS = LoadBalancerProtocol("HTTPS")
-)
-
-// TODO
-// LoadBalancer defines an Azure load balancer.
-type LoadBalancer struct {
-	// The name of the load balancer. It must be unique within the set of load balancers
-	// defined in the location. It also serves as identifier.
-	Name string `json:"name,omitempty"`
-
-	// DNSName is the dns name of the load balancer.
-	DNSName string `json:"dnsName,omitempty"`
-
-	// IPAddress is the IP address of the load balancer.
-	IPAddress string `json:"ipAddress,omitempty"`
-
-	// Scheme is the load balancer scheme, either internet-facing or private.
-	Scheme LoadBalancerScheme `json:"scheme,omitempty"`
-
-	// SubnetIDs is an array of subnets in the Vnet attached to the load balancer.
-	SubnetIDs []string `json:"subnetIds,omitempty"`
-
-	// SecurityGroupIDs is an array of security groups assigned to the load balancer.
-	SecurityGroupIDs []string `json:"securityGroupIds,omitempty"`
-
-	// Listeners is an array of elb listeners associated with the load balancer. There must be at least one.
-	Listeners []*LoadBalancerListener `json:"listeners,omitempty"`
-
-	// HealthCheck is the elb health check associated with the load balancer.
-	HealthCheck *LoadBalancerHealthCheck `json:"healthChecks,omitempty"`
-
-	// Tags is a map of tags associated with the load balancer.
-	Tags map[string]string `json:"tags,omitempty"`
-}
-
-// TODO
-// LoadBalancerListener defines an Azure load balancer listener.
-type LoadBalancerListener struct {
-	Protocol         LoadBalancerProtocol `json:"protocol"`
-	Port             int64                `json:"port"`
-	InstanceProtocol LoadBalancerProtocol `json:"instanceProtocol"`
-	InstancePort     int64                `json:"instancePort"`
-}
-
-// TODO
-// LoadBalancerHealthCheck defines an Azure load balancer health check.
-type LoadBalancerHealthCheck struct {
-	Target             string        `json:"target"`
-	Interval           time.Duration `json:"interval"`
-	Timeout            time.Duration `json:"timeout"`
-	HealthyThreshold   int64         `json:"healthyThreshold"`
-	UnhealthyThreshold int64         `json:"unhealthyThreshold"`
-}
-
-// TODO
 // Subnets is a slice of Subnet.
 type Subnets []*Subnet
 
@@ -225,9 +114,13 @@ func (s Subnets) ToMap() map[string]*Subnet {
 	return res
 }
 
-// RouteTable defines an Azure routing table.
-type RouteTable struct {
-	ID string `json:"id"`
+// Subnet defines an Azure subnet attached to a Vnet.
+type Subnet struct {
+	ID            string        `json:"id,omitempty"`
+	Name          string        `json:"name"`
+	VnetID        string        `json:"vnetId"`
+	CidrBlock     string        `json:"cidrBlock"`
+	SecurityGroup SecurityGroup `json:"securityGroup"`
 }
 
 // SecurityGroupRole defines the unique role of a security group.
@@ -244,13 +137,12 @@ var (
 	SecurityGroupControlPlane = SecurityGroupRole("controlplane")
 )
 
-// TODO
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
 	IngressRules IngressRules `json:"ingressRule"`
+	Tags         *Tags        `json:"tags"`
 }
 
 /*
@@ -261,20 +153,18 @@ func (s *SecurityGroup) String() string {
 }
 */
 
-// TODO
 // SecurityGroupProtocol defines the protocol type for a security group rule.
 type SecurityGroupProtocol string
 
-// TODO
 var (
 	// SecurityGroupProtocolAll is a wildcard for all IP protocols
 	SecurityGroupProtocolAll = SecurityGroupProtocol("*")
 
 	// SecurityGroupProtocolTCP represents the TCP protocol in ingress rules
-	SecurityGroupProtocolTCP = SecurityGroupProtocol("tcp")
+	SecurityGroupProtocolTCP = SecurityGroupProtocol("Tcp")
 
 	// SecurityGroupProtocolUDP represents the UDP protocol in ingress rules
-	SecurityGroupProtocolUDP = SecurityGroupProtocol("udp")
+	SecurityGroupProtocolUDP = SecurityGroupProtocol("Udp")
 )
 
 // TODO
@@ -282,21 +172,27 @@ var (
 type IngressRule struct {
 	Description string                `json:"description"`
 	Protocol    SecurityGroupProtocol `json:"protocol"`
-	FromPort    int64                 `json:"fromPort"`
-	ToPort      int64                 `json:"toPort"`
 
-	// List of CIDR blocks to allow access from. Cannot be specified with SourceSecurityGroupID.
-	CidrBlocks []string `json:"cidrBlocks"`
+	// SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+	SourcePorts *string `json:"sourcePorts,omitempty"`
 
-	// The security group id to allow access from. Cannot be specified with CidrBlocks.
-	SourceSecurityGroupIDs []string `json:"sourceSecurityGroupIds"`
+	// DestinationPorts - The destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+	DestinationPorts *string `json:"destinationPorts,omitempty"`
+
+	// Source - The CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
+	Source *string `json:"source,omitempty"`
+
+	// Destination - The destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+	Destination *string `json:"destination,omitempty"`
 }
 
 // TODO
 // String returns a string representation of the ingress rule.
+/*
 func (i *IngressRule) String() string {
 	return fmt.Sprintf("protocol=%s/range=[%d-%d]/description=%s", i.Protocol, i.FromPort, i.ToPort, i.Description)
 }
+*/
 
 // TODO
 // IngressRules is a slice of Azure ingress rules for security groups.
@@ -304,6 +200,7 @@ type IngressRules []*IngressRule
 
 // TODO
 // Difference returns the difference between this slice and the other slice.
+/*
 func (i IngressRules) Difference(o IngressRules) (out IngressRules) {
 	for _, x := range i {
 		found := false
@@ -325,76 +222,178 @@ func (i IngressRules) Difference(o IngressRules) (out IngressRules) {
 
 	return
 }
+*/
+
+// PublicIP defines an Azure public IP address.
+// TODO: Remove once load balancer is implemented.
+type PublicIP struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	IPAddress string `json:"ipAddress"`
+}
 
 // TODO
-// InstanceState describes the state of an Azure instance.
-type InstanceState string
+// LoadBalancer defines an Azure load balancer.
+type LoadBalancer struct {
+	ID               string           `json:"id,omitempty"`
+	Name             string           `json:"name,omitempty"`
+	SKU              SKU              `json:"sku,omitempty"`
+	FrontendIPConfig FrontendIPConfig `json:"frontendIpConfig,omitempty"`
+	Tags             Tags             `json:"tags,omitempty"`
+	/*
+		// FrontendIPConfigurations - Object representing the frontend IPs to be used for the load balancer
+		FrontendIPConfigurations *[]FrontendIPConfiguration `json:"frontendIPConfigurations,omitempty"`
+		// BackendAddressPools - Collection of backend address pools used by a load balancer
+		BackendAddressPools *[]BackendAddressPool `json:"backendAddressPools,omitempty"`
+		// LoadBalancingRules - Object collection representing the load balancing rules Gets the provisioning
+		LoadBalancingRules *[]LoadBalancingRule `json:"loadBalancingRules,omitempty"`
+		// Probes - Collection of probe objects used in the load balancer
+		Probes *[]Probe `json:"probes,omitempty"`
+		// InboundNatRules - Collection of inbound NAT Rules used by a load balancer. Defining inbound NAT rules on your load balancer is mutually exclusive with defining an inbound NAT pool. Inbound NAT pools are referenced from virtual machine scale sets. NICs that are associated with individual virtual machines cannot reference an Inbound NAT pool. They have to reference individual inbound NAT rules.
+		InboundNatRules *[]InboundNatRule `json:"inboundNatRules,omitempty"`
+		// InboundNatPools - Defines an external port range for inbound NAT to a single backend port on NICs associated with a load balancer. Inbound NAT rules are created automatically for each NIC associated with the Load Balancer using an external port from this range. Defining an Inbound NAT pool on your Load Balancer is mutually exclusive with defining inbound Nat rules. Inbound NAT pools are referenced from virtual machine scale sets. NICs that are associated with individual virtual machines cannot reference an inbound NAT pool. They have to reference individual inbound NAT rules.
+		InboundNatPools *[]InboundNatPool `json:"inboundNatPools,omitempty"`
+		// OutboundRules - The outbound rules.
+		OutboundRules *[]OutboundRule `json:"outboundRules,omitempty"`
+		// ResourceGUID - The resource GUID property of the load balancer resource.
+		ResourceGUID *string `json:"resourceGuid,omitempty"`
+		// ProvisioningState - Gets the provisioning state of the PublicIP resource. Possible values are: 'Updating', 'Deleting', and 'Failed'.
+		ProvisioningState *string `json:"provisioningState,omitempty"`
+	*/
+}
+
+// LoadBalancerSKU enumerates the values for load balancer sku name.
+type SKU string
+
+var (
+	SKUBasic    = SKU("Basic")
+	SKUStandard = SKU("Standard")
+)
+
+type FrontendIPConfig struct {
+	/*
+		// FrontendIPConfigurationPropertiesFormat - Properties of the load balancer probe.
+		*FrontendIPConfigurationPropertiesFormat `json:"properties,omitempty"`
+		// Name - The name of the resource that is unique within a resource group. This name can be used to access the resource.
+		Name *string `json:"name,omitempty"`
+		// Etag - A unique read-only string that changes whenever the resource is updated.
+		Etag *string `json:"etag,omitempty"`
+		// Zones - A list of availability zones denoting the IP allocated for the resource needs to come from.
+		Zones *[]string `json:"zones,omitempty"`
+		// ID - Resource ID.
+		ID *string `json:"id,omitempty"`
+	*/
+}
+
+// TODO
+// LoadBalancerProtocol defines listener protocols for a load balancer.
+type LoadBalancerProtocol string
 
 // TODO
 var (
-	// InstanceStatePending is the string representing an instance in a pending state
-	InstanceStatePending = InstanceState("pending")
+	// LoadBalancerProtocolTCP defines the LB API string representing the TCP protocol
+	LoadBalancerProtocolTCP = LoadBalancerProtocol("TCP")
 
-	// InstanceStateRunning is the string representing an instance in a pending state
-	InstanceStateRunning = InstanceState("running")
+	// LoadBalancerProtocolSSL defines the LB API string representing the TLS protocol
+	LoadBalancerProtocolSSL = LoadBalancerProtocol("SSL")
 
-	// InstanceStateShuttingDown is the string representing an instance shutting down
-	InstanceStateShuttingDown = InstanceState("shutting-down")
+	// LoadBalancerProtocolHTTP defines the LB API string representing the HTTP protocol at L7
+	LoadBalancerProtocolHTTP = LoadBalancerProtocol("HTTP")
 
-	// InstanceStateTerminated is the string representing an instance that has been terminated
-	InstanceStateTerminated = InstanceState("terminated")
-
-	// InstanceStateStopping is the string representing an instance
-	// that is in the process of being stopped and can be restarted
-	InstanceStateStopping = InstanceState("stopping")
-
-	// InstanceStateStopped is the string representing an instance
-	// that has been stopped and can be restarted
-	InstanceStateStopped = InstanceState("stopped")
+	// LoadBalancerProtocolHTTPS defines the LB API string representing the HTTP protocol at L7
+	LoadBalancerProtocolHTTPS = LoadBalancerProtocol("HTTPS")
 )
 
 // TODO
-// Instance describes an Azure instance.
-type Instance struct {
-	ID string `json:"id"`
+// LoadBalancerListener defines an Azure load balancer listener.
+type LoadBalancerListener struct {
+	Protocol         LoadBalancerProtocol `json:"protocol"`
+	Port             int64                `json:"port"`
+	InstanceProtocol LoadBalancerProtocol `json:"instanceProtocol"`
+	InstancePort     int64                `json:"instancePort"`
+}
 
-	// The current state of the instance.
-	State InstanceState `json:"instanceState,omitempty"`
+// TODO
+// LoadBalancerHealthCheck defines an Azure load balancer health check.
+type LoadBalancerHealthCheck struct {
+	Target             string        `json:"target"`
+	Interval           time.Duration `json:"interval"`
+	Timeout            time.Duration `json:"timeout"`
+	HealthyThreshold   int64         `json:"healthyThreshold"`
+	UnhealthyThreshold int64         `json:"unhealthyThreshold"`
+}
 
-	// The instance type.
-	Type string `json:"type,omitempty"`
+// VMState describes the state of an Azure virtual machine.
+type VMState string
 
-	// The ID of the subnet of the instance.
-	SubnetID string `json:"subnetId,omitempty"`
+var (
+	// VMStateCreating ...
+	VMStateCreating = VMState("Creating")
+	// VMStateDeleting ...
+	VMStateDeleting = VMState("Deleting")
+	// VMStateFailed ...
+	VMStateFailed = VMState("Failed")
+	// VMStateMigrating ...
+	VMStateMigrating = VMState("Migrating")
+	// VMStateSucceeded ...
+	VMStateSucceeded = VMState("Succeeded")
+	// VMStateUpdating ...
+	VMStateUpdating = VMState("Updating")
+)
 
-	// The ID of the AMI used to launch the instance.
-	ImageID string `json:"imageId,omitempty"`
+// VM describes an Azure virtual machine.
+type VM struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
 
-	// The name of the SSH key pair.
-	KeyName *string `json:"keyName,omitempty"`
+	// Hardware profile
+	VMSize string `json:"vmSize,omitempty"`
 
-	// SecurityGroupIDs are one or more security group IDs this instance belongs to.
-	SecurityGroupIDs []string `json:"securityGroupIds,omitempty"`
+	// Storage profile
+	Image  Image  `json:"image,omitempty"`
+	OSDisk OSDisk `json:"osDisk,omitempty"`
 
-	// UserData is the raw data script passed to the instance which is run upon bootstrap.
-	// This field must not be base64 encoded and should only be used when running a new instance.
-	UserData *string `json:"userData,omitempty"`
+	StartupScript string `json:"startupScript,omitempty"`
 
-	// The name of the IAM instance profile associated with the instance, if applicable.
-	IAMProfile string `json:"iamProfile,omitempty"`
+	// State - The provisioning state, which only appears in the response.
+	State    VMState    `json:"vmState,omitempty"`
+	Identity VMIdentity `json:"identity,omitempty"`
 
-	// The private IPv4 address assigned to the instance.
-	PrivateIP *string `json:"privateIp,omitempty"`
+	Tags Tags `json:"tags,omitempty"`
 
-	// The public IPv4 address assigned to the instance, if applicable.
-	PublicIP *string `json:"publicIp,omitempty"`
+	// HardwareProfile - Specifies the hardware settings for the virtual machine.
+	//HardwareProfile *HardwareProfile `json:"hardwareProfile,omitempty"`
 
-	// Specifies whether enhanced networking with ENA is enabled.
-	ENASupport *bool `json:"enaSupport,omitempty"`
+	// StorageProfile - Specifies the storage settings for the virtual machine disks.
+	//StorageProfile *StorageProfile `json:"storageProfile,omitempty"`
 
-	// Indicates whether the instance is optimized for Amazon EBS I/O.
-	EBSOptimized *bool `json:"ebsOptimized,omitempty"`
+	// AdditionalCapabilities - Specifies additional capabilities enabled or disabled on the virtual machine.
+	//AdditionalCapabilities *AdditionalCapabilities `json:"additionalCapabilities,omitempty"`
 
-	// The tags associated with the instance.
-	Tags map[string]string `json:"tags,omitempty"`
+	// OsProfile - Specifies the operating system settings for the virtual machine.
+	//OsProfile *OSProfile `json:"osProfile,omitempty"`
+	// NetworkProfile - Specifies the network interfaces of the virtual machine.
+	//NetworkProfile *NetworkProfile `json:"networkProfile,omitempty"`
+
+	//AvailabilitySet *SubResource `json:"availabilitySet,omitempty"`
+}
+
+type Image struct {
+	Publisher string `json:"publisher"`
+	Offer     string `json:"offer"`
+	SKU       string `json:"sku"`
+	Version   string `json:"version"`
+}
+
+// VMIdentity defines the identity of the virtual machine, if configured.
+type VMIdentity string
+
+type OSDisk struct {
+	OSType      string      `json:"osType"`
+	ManagedDisk ManagedDisk `json:"managedDisk"`
+	DiskSizeGB  int32       `json:"diskSizeGB"`
+}
+
+type ManagedDisk struct {
+	StorageAccountType string `json:"storageAccountType"`
 }

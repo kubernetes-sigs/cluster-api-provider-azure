@@ -16,6 +16,7 @@ limitations under the License.
 
 package deployer_test
 
+// TODO: Rewrite deployer tests
 /*
 import (
 	"testing"

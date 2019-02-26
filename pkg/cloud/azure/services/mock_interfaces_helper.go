@@ -218,10 +218,10 @@ func MockPublicIPDeleteFutureFailure() MockAzureNetworkClient {
 	}
 }
 
-// MockGetPublicIPAddress mocks the GetPublicIPAddress success response.
-func MockGetPublicIPAddress(ip string) MockAzureNetworkClient {
+// MockCreateOrUpdatePublicIPAddress mocks the CreateOrUpdatePublicIPAddress success response.
+func MockCreateOrUpdatePublicIPAddress(ip string) MockAzureNetworkClient {
 	return MockAzureNetworkClient{
-		MockGetPublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+		MockCreateOrUpdatePublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
 			publicIPAddress := network.PublicIPAddress{PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{}}
 			publicIPAddress.IPAddress = to.StringPtr(ip)
 			return publicIPAddress, nil
@@ -229,10 +229,10 @@ func MockGetPublicIPAddress(ip string) MockAzureNetworkClient {
 	}
 }
 
-// MockGetPublicIPAddressFailure mocks the GetPublicIPAddress failure response.
-func MockGetPublicIPAddressFailure() MockAzureNetworkClient {
+// MockCreateOrUpdatePublicIPAddressFailure mocks the CreateOrUpdatePublicIPAddress failure response.
+func MockCreateOrUpdatePublicIPAddressFailure() MockAzureNetworkClient {
 	return MockAzureNetworkClient{
-		MockGetPublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
+		MockCreateOrUpdatePublicIPAddress: func(resourceGroup string, IPName string) (network.PublicIPAddress, error) {
 			return network.PublicIPAddress{}, errors.New("failed to get public ip address")
 		},
 	}

@@ -40,7 +40,7 @@ func NewKubeClient(kubeconfig string) (*KubeClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating core clientset: %v", err)
 	}
-	clusterapiClientset, err := clientcmd.NewClusterApiClientForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
+	clusterapiClientset, err := clientcmd.NewClusterAPIClientForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
 	if err != nil {
 		return nil, fmt.Errorf("error creating rest config: %v", err)
 	}
