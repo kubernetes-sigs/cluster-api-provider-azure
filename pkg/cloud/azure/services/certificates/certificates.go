@@ -142,7 +142,7 @@ func NewSelfSignedCACert(key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(b)
 }
 
-// NewKubeconfig creates a new Kubeconfig where endpoint is the ELB endpoint.
+// NewKubeconfig creates a new Kubeconfig where endpoint is the LB endpoint.
 func NewKubeconfig(clusterName, endpoint string, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*api.Config, error) {
 	cfg := &Config{
 		CommonName:   "kubernetes-admin",

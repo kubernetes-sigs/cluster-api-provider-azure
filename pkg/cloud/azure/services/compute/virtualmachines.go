@@ -67,7 +67,7 @@ func (s *Service) VMIfExists(name string) (*v1alpha1.VM, error) {
 	return converters.SDKToVM(vm), nil
 }
 
-// createVM runs an ec2 instance.
+// createVM creates a new Azure VM instance.
 func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kubeConfig string) (*v1alpha1.VM, error) {
 	klog.V(2).Infof("Creating a new instance for machine %q", machine.Name())
 
