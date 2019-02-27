@@ -77,12 +77,9 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 		return nil, errors.New("failed to run controlplane, missing CACertificate")
 	}
 
-	// TODO: Renable this once load balancer is implemented
-	/*
-		if s.scope.Network().APIServerIP.IPAddress == "" {
-			return nil, errors.New("failed to run controlplane, APIServer IP not available")
-		}
-	*/
+	if s.scope.Network().APIServerIP.DNSName == "" {
+		return nil, errors.New("failed to run controlplane, APIServer DNS name not available")
+	}
 
 	caCertHash, err := certificates.GenerateCertificateHash(s.scope.ClusterConfig.CAKeyPair.Cert)
 	if err != nil {
@@ -111,8 +108,7 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 				SaCert:           string(s.scope.ClusterConfig.SAKeyPair.Cert),
 				SaKey:            string(s.scope.ClusterConfig.SAKeyPair.Key),
 				BootstrapToken:   bootstrapToken,
-				// TODO: Fix LBAddress to retrieve LB DNS Name
-				LBAddress: s.scope.Network().APIServerIP.IPAddress,
+				LBAddress:        s.scope.Network().APIServerIP.DNSName,
 			})
 			if err != nil {
 				return input, err
@@ -124,16 +120,15 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 			}
 
 			cfg, err = config.NewControlPlane(&config.ControlPlaneInput{
-				CACert:           string(s.scope.ClusterConfig.CAKeyPair.Cert),
-				CAKey:            string(s.scope.ClusterConfig.CAKeyPair.Key),
-				EtcdCACert:       string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
-				EtcdCAKey:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
-				FrontProxyCACert: string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
-				FrontProxyCAKey:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
-				SaCert:           string(s.scope.ClusterConfig.SAKeyPair.Cert),
-				SaKey:            string(s.scope.ClusterConfig.SAKeyPair.Key),
-				// TODO: Fix LBAddress to retrieve LB DNS Name
-				LBAddress:         "fakelb.example.com", //s.scope.Network().APIServerIP.IPAddress,
+				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
+				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
+				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
+				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
+				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
+				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
+				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
+				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
+				LBAddress:         s.scope.Network().APIServerIP.DNSName,
 				ClusterName:       s.scope.Name(),
 				PodSubnet:         s.scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 				ServiceSubnet:     s.scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
@@ -154,8 +149,7 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 		cfg, err := config.NewNode(&config.NodeInput{
 			CACertHash:     caCertHash,
 			BootstrapToken: bootstrapToken,
-			// TODO: Fix LBAddress to retrieve LB DNS Name
-			LBAddress: s.scope.Network().APIServerIP.IPAddress,
+			LBAddress:      s.scope.Network().APIServerIP.DNSName,
 		})
 
 		if err != nil {

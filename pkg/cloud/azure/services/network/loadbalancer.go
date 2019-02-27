@@ -44,6 +44,9 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 	}
 	klog.V(2).Info("Successfully retrieved a public IP for load balancer")
 
+	s.scope.Network().APIServerIP.DNSName = *pip.DNSSettings.Fqdn
+	klog.V(2).Infof("APIServerIP.DNSName stored as %s", s.scope.Network().APIServerIP.DNSName)
+
 	klog.V(2).Info("Building frontend IP for load balancer")
 	frontendIPConfigs := []network.FrontendIPConfiguration{
 		{
