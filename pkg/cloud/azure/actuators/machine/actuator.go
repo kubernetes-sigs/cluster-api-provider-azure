@@ -95,7 +95,7 @@ func (a *Actuator) isNodeJoin(controlPlaneMachines []*clusterv1.Machine, newMach
 	case "node":
 		return true, nil
 	case "controlplane":
-		contolPlaneExists := false
+		controlPlaneExists := false
 		for _, cm := range controlPlaneMachines {
 			m, err := actuators.NewMachineScope(actuators.MachineScopeParams{
 				Machine: cm,
@@ -107,17 +107,17 @@ func (a *Actuator) isNodeJoin(controlPlaneMachines []*clusterv1.Machine, newMach
 			}
 
 			computeSvc := compute.NewService(m.Scope)
-			contolPlaneExists, err = computeSvc.MachineExists(m)
+			controlPlaneExists, err = computeSvc.MachineExists(m)
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to verify existence of machine %q", m.Name())
 			}
-			if contolPlaneExists {
+			if controlPlaneExists {
 				break
 			}
 		}
 
-		klog.V(2).Infof("Machine %q should join the controlplane: %t", newMachine.Name, contolPlaneExists)
-		return contolPlaneExists, nil
+		klog.V(2).Infof("Machine %q should join the controlplane: %t", newMachine.Name, controlPlaneExists)
+		return controlPlaneExists, nil
 	default:
 		errMsg := fmt.Sprintf("Unknown value %q for label \"set\" on machine %q, skipping machine creation", newMachine.ObjectMeta.Labels["set"], newMachine.Name)
 		klog.Errorf(errMsg)
@@ -184,11 +184,11 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
 	// the stack that provisions it.
-	if scope.MachineStatus.Annotations == nil {
-		scope.MachineStatus.Annotations = map[string]string{}
+	if machine.Annotations == nil {
+		machine.Annotations = map[string]string{}
 	}
 
-	scope.MachineStatus.Annotations["cluster-api-provider-azure"] = "true"
+	machine.Annotations["cluster-api-provider-azure"] = "true"
 
 	return nil
 }

@@ -39,11 +39,11 @@ func (s *Service) CreateOrGetMachine(machine *actuators.MachineScope, bootstrapT
 
 	// instance id exists, try to get it
 	if machine.MachineStatus.VMID != nil {
-		klog.V(2).Infof("Looking up machine %q by id %q", machine.Name(), *machine.MachineStatus.VMID)
+		klog.V(2).Infof("Looking up machine %q (id: %q)", machine.Name(), *machine.MachineStatus.VMID)
 
-		instance, err := s.VMIfExists(*machine.MachineStatus.VMID)
+		instance, err := s.VMIfExists(machine.Name())
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to look up machine %q by id %q", machine.Name(), *machine.MachineStatus.VMID)
+			return nil, errors.Wrapf(err, "failed to look up machine %q (id: %q)", machine.Name(), *machine.MachineStatus.VMID)
 		} else if err == nil && instance != nil {
 			return instance, nil
 		}
@@ -54,7 +54,7 @@ func (s *Service) CreateOrGetMachine(machine *actuators.MachineScope, bootstrapT
 
 // VMIfExists returns the existing instance or nothing if it doesn't exist.
 func (s *Service) VMIfExists(name string) (*v1alpha1.VM, error) {
-	vm, err := s.scope.AzureClients.VM.Get(s.scope.Context, s.scope.ClusterConfig.ResourceGroup, name, "")
+	vm, err := s.scope.VM.Get(s.scope.Context, s.scope.ClusterConfig.ResourceGroup, name, "")
 	if err != nil {
 		if aerr, ok := err.(autorest.DetailedError); ok {
 			if aerr.StatusCode.(int) == 404 {
@@ -186,7 +186,7 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 		return nil, fmt.Errorf("error getting deployment result: %v", err)
 	}
 
-	vm, err := s.scope.VM.Get(s.scope.Context, machine.ClusterConfig.ResourceGroup, machine.Machine.Name, "")
+	vm, err := s.scope.VM.Get(s.scope.Context, machine.ClusterConfig.ResourceGroup, machine.Name(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -197,15 +197,16 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 
 // DeleteVM deletes the virtual machine.
 func (s *Service) DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error) {
-	return s.scope.AzureClients.VM.Delete(s.scope.Context, resourceGroup, name)
+	return s.scope.VM.Delete(s.scope.Context, resourceGroup, name)
 }
 
 // MachineExists will return whether or not a machine exists.
 func (s *Service) MachineExists(machine *actuators.MachineScope) (bool, error) {
 	var err error
 	var instance *v1alpha1.VM
+
 	if machine.MachineStatus.VMID != nil {
-		instance, err = s.VMIfExists(*machine.MachineStatus.VMID)
+		instance, err = s.VMIfExists(machine.Name())
 	}
 
 	if err != nil {
@@ -222,15 +223,15 @@ func (s *Service) RunCommand(resoureGroup string, name string, cmd string) (comp
 		CommandID: to.StringPtr("RunShellScript"),
 		Script:    to.StringSlicePtr([]string{cmd}),
 	}
-	return s.scope.AzureClients.VM.RunCommand(s.scope.Context, resoureGroup, name, cmdInput)
+	return s.scope.VM.RunCommand(s.scope.Context, resoureGroup, name, cmdInput)
 }
 
 // WaitForVMRunCommandFuture returns when the RunCommand operation completes.
 func (s *Service) WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VM.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.VM.Client)
 }
 
 // WaitForVMDeletionFuture returns when the DeleteVM operation completes.
 func (s *Service) WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VM.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.VM.Client)
 }
