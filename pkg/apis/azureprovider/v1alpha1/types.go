@@ -86,7 +86,6 @@ type Network struct {
 	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
 
 	// APIServerIP is the Kubernetes API server public IP address.
-	// TODO: Remove once load balancer is implemented.
 	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
 }
 
@@ -227,9 +226,10 @@ func (i IngressRules) Difference(o IngressRules) (out IngressRules) {
 // PublicIP defines an Azure public IP address.
 // TODO: Remove once load balancer is implemented.
 type PublicIP struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	IPAddress string `json:"ipAddress"`
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	IPAddress string `json:"ipAddress,omitempty"`
+	DNSName   string `json:"dnsName,omitempty"`
 }
 
 // TODO
