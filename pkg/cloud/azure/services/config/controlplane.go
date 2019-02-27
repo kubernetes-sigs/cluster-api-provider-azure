@@ -20,6 +20,16 @@ import "github.com/pkg/errors"
 
 const (
 	// TODO: Make config Azure specific
+	// TODO: Add cloud provider config back to ClusterConfiguration apiServer once we handle Azure AAD auth (either via creds or MSI)
+	/*
+		extraArgs:
+			cloud-provider: azure
+	*/
+	// TODO: Add cloud provider config back to InitConfiguration nodeRegistration once we handle Azure AAD auth (either via creds or MSI)
+	/*
+	  kubeletExtraArgs:
+	    cloud-provider: azure
+	*/
 	controlPlaneBashScript = `{{.Header}}
 
 set -eox
@@ -53,9 +63,6 @@ apiServer:
   certSANs:
     - "$PRIVATE_IP"
     - "{{.LBAddress}}"
-	extraArgs:
-		# TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
-		#cloud-provider: azure
 controlPlaneEndpoint: "{{.LBAddress}}:6443"
 clusterName: "{{.ClusterName}}"
 networking:
@@ -69,9 +76,6 @@ kind: InitConfiguration
 nodeRegistration:
   name: ${HOSTNAME}
   criSocket: /var/run/containerd/containerd.sock
-  kubeletExtraArgs:
-		# TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
-		#cloud-provider: azure
 EOF
 
 # Configure containerd prerequisites
@@ -157,9 +161,6 @@ discovery:
 nodeRegistration:
   name: "${HOSTNAME}"
   criSocket: /var/run/containerd/containerd.sock
-  kubeletExtraArgs:
-		# TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
-		#cloud-provider: azure
 controlPlane:
   localAPIEndpoint:
     advertiseAddress: "${PRIVATE_IP}"

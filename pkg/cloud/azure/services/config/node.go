@@ -18,6 +18,11 @@ package config
 
 const (
 	// TODO: Make config Azure specific
+	// TODO: Add cloud provider config back to InitConfiguration nodeRegistration once we handle Azure AAD auth (either via creds or MSI)
+	/*
+	  kubeletExtraArgs:
+	    cloud-provider: azure
+	*/
 	nodeBashScript = `{{.Header}}
 
 HOSTNAME="$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
@@ -35,9 +40,6 @@ discovery:
 nodeRegistration:
   name: "${HOSTNAME}"
   criSocket: /var/run/containerd/containerd.sock
-  kubeletExtraArgs:
-    # TODO: Re-enable once we handle Azure AAD auth (either via creds or MSI)
-    #cloud-provider: azure
 EOF
 
 # Configure containerd prerequisites
