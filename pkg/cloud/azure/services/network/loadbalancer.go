@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
 
 func (s *Service) ReconcileLoadBalancer(role string) error {
@@ -44,6 +45,10 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 	}
 	klog.V(2).Info("Successfully retrieved a public IP for load balancer")
 
+	// TODO: Use deepcopy function to copy public IP attributes to Network object
+	s.scope.Network().APIServerIP.ID = *pip.ID
+	s.scope.Network().APIServerIP.Name = *pip.Name
+	s.scope.Network().APIServerIP.IPAddress = *pip.IPAddress
 	s.scope.Network().APIServerIP.DNSName = *pip.DNSSettings.Fqdn
 	klog.V(2).Infof("APIServerIP.DNSName stored as %s", s.scope.Network().APIServerIP.DNSName)
 
@@ -76,6 +81,15 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 	if err != nil {
 		return err
 	}
+
+	// TODO: Use deepcopy function to copy LB attributes to Network object
+	s.scope.Network().APIServerLB.ID = *apiLB.ID
+	s.scope.Network().APIServerLB.Name = *apiLB.Name
+	s.scope.Network().APIServerLB.SKU = v1alpha1.SKU(apiLB.Sku.Name)
+
+	backendPools := *apiLB.BackendAddressPools
+	s.scope.Network().APIServerLB.BackendPool.ID = *backendPools[0].ID
+	s.scope.Network().APIServerLB.BackendPool.Name = *backendPools[0].Name
 
 	klog.V(2).Infof("Control plane load balancer: %v", apiLB)
 	klog.V(2).Info("Reconcile load balancers completed successfully")

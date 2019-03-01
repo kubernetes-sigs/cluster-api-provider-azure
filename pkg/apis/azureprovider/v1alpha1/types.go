@@ -239,6 +239,7 @@ type LoadBalancer struct {
 	Name             string           `json:"name,omitempty"`
 	SKU              SKU              `json:"sku,omitempty"`
 	FrontendIPConfig FrontendIPConfig `json:"frontendIpConfig,omitempty"`
+	BackendPool      BackendPool      `json:"backendPool,omitempty"`
 	Tags             Tags             `json:"tags,omitempty"`
 	/*
 		// FrontendIPConfigurations - Object representing the frontend IPs to be used for the load balancer
@@ -283,6 +284,11 @@ type FrontendIPConfig struct {
 		// ID - Resource ID.
 		ID *string `json:"id,omitempty"`
 	*/
+}
+
+type BackendPool struct {
+	Name string `json:"name,omitempty"`
+	ID   string `json:"id,omitempty"`
 }
 
 // TODO
