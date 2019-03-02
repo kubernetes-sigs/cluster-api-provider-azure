@@ -68,20 +68,20 @@ func (s *Service) DeleteResourceGroup() (err error) {
 
 // CreateOrUpdateGroup creates or updates an azure resource group.
 func (s *Service) CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error) {
-	return s.scope.AzureClients.Groups.CreateOrUpdate(s.scope.Context, resourceGroupName, resources.Group{Location: to.StringPtr(location)})
+	return s.scope.Groups.CreateOrUpdate(s.scope.Context, resourceGroupName, resources.Group{Location: to.StringPtr(location)})
 }
 
 // DeleteGroup deletes an azure resource group.
 func (s *Service) DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error) {
-	return s.scope.AzureClients.Groups.Delete(s.scope.Context, resourceGroupName)
+	return s.scope.Groups.Delete(s.scope.Context, resourceGroupName)
 }
 
 // CheckGroupExistence checks if the resource group exists or not.
 func (s *Service) CheckGroupExistence(resourceGroupName string) (autorest.Response, error) {
-	return s.scope.AzureClients.Groups.CheckExistence(s.scope.Context, resourceGroupName)
+	return s.scope.Groups.CheckExistence(s.scope.Context, resourceGroupName)
 }
 
 // WaitForGroupsDeleteFuture returns when the DeleteGroup operation completes.
 func (s *Service) WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error {
-	return future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Groups.Client)
+	return future.WaitForCompletionRef(s.scope.Context, s.scope.Groups.Client)
 }

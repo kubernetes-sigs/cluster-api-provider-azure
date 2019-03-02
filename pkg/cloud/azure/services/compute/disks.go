@@ -22,10 +22,10 @@ import (
 
 // DeleteManagedDisk deletes a managed disk resource.
 func (s *Service) DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error) {
-	return s.scope.AzureClients.Disks.Delete(s.scope.Context, resourceGroup, name)
+	return s.scope.Disks.Delete(s.scope.Context, resourceGroup, name)
 }
 
 // WaitForDisksDeleteFuture returns when the DeleteManagedDisk operation completes.
 func (s *Service) WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Disks.Client)
+	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.Disks.Client)
 }
