@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-	aznetwork "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -32,7 +31,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // CreateOrGetMachine will either return an existing instance or create and return an instance.
@@ -54,11 +52,6 @@ func (s *Service) CreateOrGetMachine(machine *actuators.MachineScope, bootstrapT
 	instance, err := s.createVM(machine, bootstrapToken, kubeConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create virtual machine %q", machine.Name())
-	}
-
-	backendPoolID := s.scope.Network().APIServerLB.BackendPool.ID
-	if backendPoolID != "" {
-		err = s.reconcileBackendPool(machine.Machine, backendPoolID)
 	}
 
 	return instance, nil
@@ -225,53 +218,6 @@ func (s *Service) MachineExists(machine *actuators.MachineScope) (bool, error) {
 		return false, errors.Wrapf(err, "failed to lookup machine %q", machine.Name())
 	}
 	return instance != nil, nil
-}
-
-func (s *Service) reconcileBackendPool(machine *clusterv1.Machine, backendPoolID string) error {
-	resourcesSvc := resources.NewService(s.scope)
-
-	nicName := resourcesSvc.GetNetworkInterfaceName(machine)
-	nic, err := s.scope.Interfaces.Get(s.scope.Context, s.scope.ClusterConfig.ResourceGroup, nicName, "")
-	if err != nil {
-		return errors.Wrapf(err, "Failed to get NIC %q", nicName)
-	}
-
-	ipConfigs := *nic.IPConfigurations
-	for _, ipConfig := range ipConfigs {
-		if *ipConfig.Primary {
-			primaryIPConfig := ipConfig
-
-			if len(*primaryIPConfig.LoadBalancerBackendAddressPools) == 0 {
-				backendPools := *primaryIPConfig.LoadBalancerBackendAddressPools
-				backendPools = append(
-					backendPools,
-					aznetwork.BackendAddressPool{
-						ID: &backendPoolID,
-					},
-				)
-			}
-
-			future, err := s.scope.Interfaces.CreateOrUpdate(
-				s.scope.Context,
-				s.scope.ClusterConfig.ResourceGroup,
-				*primaryIPConfig.Name,
-				nic,
-			)
-
-			if err != nil {
-				return err
-			}
-
-			err = future.WaitForCompletionRef(s.scope.Context, s.scope.Interfaces.Client)
-			if err != nil {
-				return fmt.Errorf("cannot get interface create or update future response: %v", err)
-			}
-
-			return nil
-		}
-	}
-
-	return nil
 }
 
 // Old methods

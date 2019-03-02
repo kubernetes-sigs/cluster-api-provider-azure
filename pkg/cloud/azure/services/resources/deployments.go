@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"github.com/Azure/go-autorest/autorest/to"
 	"k8s.io/klog"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
@@ -108,6 +109,15 @@ func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.Deploy
 func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*map[string]interface{}, error) {
 	// TODO: Remove debug
 	klog.V(2).Info("convertVMToDeploymentParams start")
+
+	networkSvc := network.NewService(s.scope)
+	nicName := networkSvc.GetNetworkInterfaceName(machine)
+	nic, err := networkSvc.GetNetworkInterface(s.scope.ClusterConfig.ResourceGroup, nicName)
+	if err != nil {
+		klog.V(2).Info("convertVMToDeploymentParams: could not get network interface")
+		return nil, err
+	}
+
 	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPublicKey)
 	publicKey := string(decoded)
 	if err != nil {
@@ -128,7 +138,10 @@ func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machin
 			"value": s.GetVMName(machine),
 		},
 		"networkInterfaces_ClusterAPI_name": map[string]interface{}{
-			"value": s.GetNetworkInterfaceName(machine),
+			"value": to.String(nic.Name),
+		},
+		"networkInterfaces_ClusterAPI_id": map[string]interface{}{
+			"value": to.String(nic.ID),
 		},
 		"publicIPAddresses_ClusterAPI_ip_name": map[string]interface{}{
 			"value": s.GetPublicIPName(machine),
@@ -279,11 +292,6 @@ func (s *Service) GetVMName(machine *clusterv1.Machine) string {
 // TODO: Move to network package
 func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("%s-pip", s.GetVMName(machine))
-}
-
-// GetNetworkInterfaceName returns the nic resource name of the machine.
-func (s *Service) GetNetworkInterfaceName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-nic", s.GetVMName(machine))
 }
 
 // GetOSDiskName returns the OS disk resource name of the machine.

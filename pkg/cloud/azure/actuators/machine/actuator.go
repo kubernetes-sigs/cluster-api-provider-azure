@@ -138,6 +138,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	defer scope.Close()
 
 	computeSvc := compute.NewService(scope.Scope)
+	networkSvc := network.NewService(scope.Scope)
 
 	clusterMachines, err := scope.MachineClient.List(v1.ListOptions{})
 	if err != nil {
@@ -166,14 +167,28 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		}
 	}
 
+	nic, err := networkSvc.CreateDefaultVMNetworkInterface(scope.ClusterConfig.ResourceGroup, scope.Machine)
+	if err != nil {
+		klog.Errorf("Unable to create VM network interface: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Minute,
+		}
+	}
+
+	err = networkSvc.ReconcileBackendPool(*nic.Name, scope.Network().APIServerLB.BackendPool.ID)
+	if err != nil {
+		klog.Errorf("Unable to reconcile backend pool attachment: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Minute,
+		}
+	}
+
 	i, err := computeSvc.CreateOrGetMachine(scope, bootstrapToken, kubeConfig)
 	if err != nil {
 		klog.Errorf("network not ready to launch instances yet: %+v", err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: time.Minute,
 		}
-
-		//return errors.Errorf("failed to create or get machine: %+v", err)
 	}
 
 	scope.MachineStatus.VMID = &i.ID

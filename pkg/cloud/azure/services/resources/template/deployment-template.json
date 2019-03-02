@@ -18,6 +18,10 @@
       "defaultValue": null,
       "type": "string"
     },
+    "networkInterfaces_ClusterAPI_id": {
+      "defaultValue": null,
+      "type": "string"
+    },
     "publicIPAddresses_ClusterAPI_ip_name": {
       "defaultValue": null,
       "type": "string"
@@ -139,64 +143,13 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ClusterAPI_name'))]"
+              "id": "[parameters('networkInterfaces_ClusterAPI_id')]"
             }
           ]
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_ClusterAPI_name'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[parameters('networkInterfaces_ClusterAPI_name')]",
-      "tags":{
-        "machine": "[parameters('clusterAPI_machine_name')]"
-      },
-      "apiVersion": "2018-11-01",
-      "location": "[parameters('location')]",
-      "scale": null,
-      "properties": {
-        "provisioningState": "Succeeded",
-        "resourceGuid": "d25c4596-2f13-4758-bccb-35cde6369ed6",
-        "ipConfigurations": [
-          {
-            "name": "ipconfig1",
-            "etag": "W/\"ce7de133-36d6-45a0-901e-a76a1ae65cc5\"",
-            "properties": {
-              "provisioningState": "Succeeded",
-              "privateIPAddress": "10.0.0.4",
-              "privateIPAllocationMethod": "Dynamic",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ClusterAPI_ip_name'))]"
-              },
-              "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_ClusterAPIVM_vnet_name'), parameters('subnets_default_name'))]"
-              },
-              "primary": true,
-              "privateIPAddressVersion": "IPv4"
-            }
-          }
-        ],
-        "dnsSettings": {
-          "dnsServers": [],
-          "appliedDnsServers": [],
-          "internalDomainNameSuffix": "w2dmkj1zjdbelhvojagffco4ja.bx.internal.cloudapp.net"
-        },
-        "macAddress": "00-0D-3A-1C-E3-A9",
-        "enableAcceleratedNetworking": false,
-        "enableIPForwarding": false,
-        "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_ClusterAPIVM_nsg_name'))]"
-        },
-        "primary": true,
-        "virtualMachine": {
-          "id": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_ClusterAPIVM_name'))]"
-        }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_ClusterAPI_ip_name'))]"
+        "[parameters('networkInterfaces_ClusterAPI_id')]"
       ]
     },
     {

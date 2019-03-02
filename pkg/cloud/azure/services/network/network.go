@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
 
 // ReconcileNetwork reconciles the network of the given cluster.
@@ -43,9 +44,29 @@ func (s *Service) ReconcileNetwork() (err error) {
 	if err != nil {
 		return fmt.Errorf("error creating or updating virtual network: %v", err)
 	}
+	// TODO: Move wait into CreateOrUpdate method
 	err = s.WaitForVnetCreateOrUpdateFuture(*vnetFuture)
 	if err != nil {
 		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
+	}
+
+	vnet, err := vnetFuture.Result(s.scope.VirtualNetworks)
+	if err != nil {
+		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
+	}
+
+	s.scope.Network().Vnet.ID = *vnet.ID
+	s.scope.Network().Vnet.Name = *vnet.Name
+
+	// TODO: This should reconcile the subnet list. Right now, it only appends.
+	azsubnets := *vnet.Subnets
+	for _, azsubnet := range azsubnets {
+		s.scope.Network().Subnets = v1alpha1.Subnets{
+			{
+				ID:   *azsubnet.ID,
+				Name: *azsubnet.Name,
+			},
+		}
 	}
 
 	klog.V(2).Info("Reconcile network completed successfully")
