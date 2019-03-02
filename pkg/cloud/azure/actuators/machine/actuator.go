@@ -171,7 +171,14 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		klog.Errorf("Unable to create VM network interface: %+v", err)
 		return &controllerError.RequeueAfterError{
-			RequeueAfter: time.Minute,
+			RequeueAfter: time.Second * 30,
+		}
+	}
+
+	if scope.Network().APIServerLB.BackendPool.ID == "" {
+		klog.Errorf("Unable to find backend pool ID. Retrying...")
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Second * 15,
 		}
 	}
 
