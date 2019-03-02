@@ -30,29 +30,15 @@ func (s *Service) ReconcileNetwork() (err error) {
 	// TODO: Refactor
 	// TODO: Fix hardcoded values.
 	// Reconcile network security group
-	networkSGFuture, err := s.CreateOrUpdateNetworkSecurityGroup(s.scope.ClusterConfig.ResourceGroup, "ClusterAPINSG", s.scope.ClusterConfig.Location)
+	_, err = s.CreateOrUpdateNetworkSecurityGroup(s.scope.ClusterConfig.ResourceGroup, SecurityGroupDefaultName)
 	if err != nil {
 		return fmt.Errorf("error creating or updating network security group: %v", err)
 	}
-	err = s.WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
-	}
 
 	// Reconcile virtual network
-	vnetFuture, err := s.CreateOrUpdateVnet(s.scope.ClusterConfig.ResourceGroup, "", s.scope.ClusterConfig.Location)
+	vnet, err := s.CreateOrUpdateVnet(s.scope.ClusterConfig.ResourceGroup, "")
 	if err != nil {
 		return fmt.Errorf("error creating or updating virtual network: %v", err)
-	}
-	// TODO: Move wait into CreateOrUpdate method
-	err = s.WaitForVnetCreateOrUpdateFuture(*vnetFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
-	}
-
-	vnet, err := vnetFuture.Result(s.scope.VirtualNetworks)
-	if err != nil {
-		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
 	}
 
 	s.scope.Network().Vnet.ID = *vnet.ID

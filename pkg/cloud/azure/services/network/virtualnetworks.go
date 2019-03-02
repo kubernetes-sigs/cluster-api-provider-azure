@@ -17,8 +17,11 @@ limitations under the License.
 package network
 
 import (
+	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/klog"
 )
 
 const (
@@ -30,37 +33,51 @@ const (
 )
 
 // CreateOrUpdateVnet creates or updates a virtual network resource.
-func (s *Service) CreateOrUpdateVnet(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error) {
+func (s *Service) CreateOrUpdateVnet(resourceGroupName, virtualNetworkName string) (vnet network.VirtualNetwork, err error) {
 	if virtualNetworkName == "" {
 		virtualNetworkName = VnetDefaultName
+	}
+
+	// TODO: Rewrite to allow for non-default NSG name.
+	nsg, err := s.CreateOrUpdateNetworkSecurityGroup(s.scope.ClusterConfig.ResourceGroup, SecurityGroupDefaultName)
+	if err != nil {
+		klog.V(2).Info("CreateOrUpdateVnet: could not get NSG")
+		return vnet, err
 	}
 
 	subnets := []network.Subnet{
 		{
 			Name: to.StringPtr(SubnetDefaultName),
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-				AddressPrefix: to.StringPtr(defaultPrivateSubnetCIDR),
+				AddressPrefix:        to.StringPtr(defaultPrivateSubnetCIDR),
+				NetworkSecurityGroup: &nsg,
 			},
 		},
 	}
+
 	virtualNetworkProperties := network.VirtualNetworkPropertiesFormat{
 		AddressSpace: &network.AddressSpace{
 			AddressPrefixes: &[]string{defaultPrivateSubnetCIDR},
 		},
 		Subnets: &subnets,
 	}
+
 	virtualNetwork := network.VirtualNetwork{
-		Location:                       to.StringPtr(location),
+		Location:                       to.StringPtr(s.scope.Location()),
 		VirtualNetworkPropertiesFormat: &virtualNetworkProperties,
 	}
-	sgFuture, err := s.scope.AzureClients.VirtualNetworks.CreateOrUpdate(s.scope.Context, resourceGroupName, virtualNetworkName, virtualNetwork)
-	if err != nil {
-		return nil, err
-	}
-	return &sgFuture, nil
-}
 
-// WaitForVnetCreateOrUpdateFuture returns when the CreateOrUpdateVnet operation completes.
-func (s *Service) WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VirtualNetworks.Client)
+	future, err := s.scope.VirtualNetworks.CreateOrUpdate(s.scope.Context, resourceGroupName, virtualNetworkName, virtualNetwork)
+
+	if err != nil {
+		return vnet, err
+	}
+
+	err = future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.VirtualNetworks.Client)
+	if err != nil {
+		return vnet, fmt.Errorf("cannot get vnet create or update future response: %v", err)
+	}
+
+	klog.V(2).Info("Successfully updated virtual network")
+	return future.Result(s.scope.AzureClients.VirtualNetworks)
 }
