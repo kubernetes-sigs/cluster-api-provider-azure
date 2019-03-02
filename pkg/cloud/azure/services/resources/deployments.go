@@ -272,7 +272,7 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 
 // GetVMName returns the VM resource name of the machine.
 func (s *Service) GetVMName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-%s", s.scope.Name(), machine.ObjectMeta.Name)
+	return machine.ObjectMeta.Name
 }
 
 // GetPublicIPName returns the public IP resource name of the machine.
