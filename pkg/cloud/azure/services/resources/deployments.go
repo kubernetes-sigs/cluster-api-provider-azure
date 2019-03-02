@@ -131,26 +131,11 @@ func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machin
 		"clusterAPI_machine_name": map[string]interface{}{
 			"value": machine.ObjectMeta.Name,
 		},
-		"virtualNetworks_ClusterAPIVM_vnet_name": map[string]interface{}{
-			"value": network.VnetDefaultName,
-		},
 		"virtualMachines_ClusterAPIVM_name": map[string]interface{}{
 			"value": s.GetVMName(machine),
 		},
-		"networkInterfaces_ClusterAPI_name": map[string]interface{}{
-			"value": to.String(nic.Name),
-		},
 		"networkInterfaces_ClusterAPI_id": map[string]interface{}{
 			"value": to.String(nic.ID),
-		},
-		"publicIPAddresses_ClusterAPI_ip_name": map[string]interface{}{
-			"value": s.GetPublicIPName(machine),
-		},
-		"networkSecurityGroups_ClusterAPIVM_nsg_name": map[string]interface{}{
-			"value": "ClusterAPINSG",
-		},
-		"subnets_default_name": map[string]interface{}{
-			"value": network.SubnetDefaultName,
 		},
 		"image_publisher": map[string]interface{}{
 			"value": machineConfig.Image.Publisher,
@@ -286,12 +271,6 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 // GetVMName returns the VM resource name of the machine.
 func (s *Service) GetVMName(machine *clusterv1.Machine) string {
 	return machine.ObjectMeta.Name
-}
-
-// GetPublicIPName returns the public IP resource name of the machine.
-// TODO: Move to network package
-func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-pip", s.GetVMName(machine))
 }
 
 // GetOSDiskName returns the OS disk resource name of the machine.

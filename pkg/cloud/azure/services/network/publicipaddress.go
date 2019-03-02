@@ -21,20 +21,30 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/klog"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // CreateOrUpdatePublicIPAddress retrieves the Public IP address resource.
-func (s *Service) CreateOrUpdatePublicIPAddress(resourceGroup string, IPName string) (pip network.PublicIPAddress, err error) {
+func (s *Service) CreateOrUpdatePublicIPAddress(resourceGroup, IPName, zone string) (pip network.PublicIPAddress, err error) {
+	publicIP := network.PublicIPAddress{
+		Name:                            to.StringPtr(IPName),
+		Location:                        to.StringPtr(s.scope.Location()),
+		Sku:                             s.getDefaultPublicIPSKU(),
+		PublicIPAddressPropertiesFormat: s.getDefaultPublicIPProperties(IPName),
+	}
+
+	// TODO: Need logic for choosing public IP zone
+	if zone != "" {
+		pipZones := []string{zone}
+		publicIP.Zones = &pipZones
+	}
+
 	future, err := s.scope.PublicIPAddresses.CreateOrUpdate(
 		s.scope.Context,
 		resourceGroup,
 		IPName,
-		network.PublicIPAddress{
-			Name:                            to.StringPtr(IPName),
-			Location:                        to.StringPtr(s.scope.Location()),
-			Sku:                             s.getDefaultPublicIPSKU(),
-			PublicIPAddressPropertiesFormat: s.getDefaultPublicIPProperties(IPName),
-		},
+		publicIP,
 	)
 
 	if err != nil {
@@ -50,13 +60,30 @@ func (s *Service) CreateOrUpdatePublicIPAddress(resourceGroup string, IPName str
 }
 
 // DeletePublicIPAddress deletes the Public IP address resource.
-func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error) {
-	return s.scope.PublicIPAddresses.Delete(s.scope.Context, resourceGroup, IPName)
+func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (err error) {
+	future, err := s.scope.PublicIPAddresses.Delete(s.scope.Context, resourceGroup, IPName)
+
+	if err != nil {
+		return err
+	}
+
+	err = future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
+	if err != nil {
+		return fmt.Errorf("cannot get public IP delete future response: %v", err)
+	}
+
+	klog.V(2).Info("Successfully deleted public IP")
+	return nil
 }
 
-// WaitForPublicIPAddressDeleteFuture waits for the DeletePublicIPAddress operation to complete.
-func (s *Service) WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.PublicIPAddresses.Client)
+// GetPublicIPName returns the public IP resource name of the machine.
+func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
+	return fmt.Sprintf("%s-pip", machine.Name)
+}
+
+// GetDefaultPublicIPZone returns the public IP resource name of the machine.
+func (s *Service) GetDefaultPublicIPZone() string {
+	return "3"
 }
 
 func (s *Service) getDefaultPublicIPSKU() *network.PublicIPAddressSku {

@@ -69,8 +69,8 @@ func (s *Service) CreateDefaultVMNetworkInterface(resourceGroup string, machine 
 	return s.CreateOrUpdateNetworkInterface(resourceGroup, s.GetNetworkInterfaceName(machine), s.getDefaultVMNetworkInterfaceConfig())
 }
 
-// ReconcileBackendPool attaches a backend address pool ID to the supplied NIC.
-func (s *Service) ReconcileBackendPool(networkInterfaceName, backendPoolID string) error {
+// ReconcileNICBackendPool attaches a backend address pool ID to the supplied NIC.
+func (s *Service) ReconcileNICBackendPool(networkInterfaceName, backendPoolID string) error {
 	nic, err := s.GetNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get NIC %q", networkInterfaceName)
@@ -83,6 +83,23 @@ func (s *Service) ReconcileBackendPool(networkInterfaceName, backendPoolID strin
 	}
 
 	(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.LoadBalancerBackendAddressPools = &backendPools
+
+	_, err = s.CreateOrUpdateNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName, nic)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to update NIC %q", networkInterfaceName)
+	}
+
+	return nil
+}
+
+// ReconcileNICPublicIP attaches a backend address pool ID to the supplied NIC.
+func (s *Service) ReconcileNICPublicIP(networkInterfaceName string, publicIP network.PublicIPAddress) error {
+	nic, err := s.GetNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get NIC %q", networkInterfaceName)
+	}
+
+	(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &publicIP
 
 	_, err = s.CreateOrUpdateNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName, nic)
 	if err != nil {

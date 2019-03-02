@@ -182,11 +182,27 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		}
 	}
 
-	err = networkSvc.ReconcileBackendPool(*nic.Name, scope.Network().APIServerLB.BackendPool.ID)
+	err = networkSvc.ReconcileNICBackendPool(*nic.Name, scope.Network().APIServerLB.BackendPool.ID)
 	if err != nil {
 		klog.Errorf("Unable to reconcile backend pool attachment: %+v", err)
 		return &controllerError.RequeueAfterError{
-			RequeueAfter: time.Minute,
+			RequeueAfter: time.Second * 30,
+		}
+	}
+
+	pip, err := networkSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, scope.Machine.Name, networkSvc.GetDefaultPublicIPZone())
+	if err != nil {
+		klog.Errorf("Unable to create public IP: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Second * 30,
+		}
+	}
+
+	err = networkSvc.ReconcileNICPublicIP(*nic.Name, pip)
+	if err != nil {
+		klog.Errorf("Unable to reconcile public IP attachment: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Second * 30,
 		}
 	}
 
@@ -317,14 +333,11 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	// delete public ip address associated with the VM
-	publicIPAddressDeleteFuture, err := networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetPublicIPName(machine))
+	err = networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting public IP address: %v", err)
 	}
-	err = networkSvc.WaitForPublicIPAddressDeleteFuture(publicIPAddressDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for public ip address deletion: %v", err)
-	}
+
 	return nil
 }
 

@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -57,11 +56,9 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine)
 		return scope.ClusterStatus.Network.APIServerIP.DNSName, nil
 	}
 
-	pipSvc := network.NewService(scope)
-	// TODO: Remove once resourcesSvc.GetPublicIPName() has moved to network package.
-	resourcesSvc := resources.NewService(scope)
+	networkSvc := network.NewService(scope)
 
-	pip, err := pipSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetPublicIPName(machine))
+	pip, err := networkSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine), "")
 	if err != nil {
 		return "", err
 	}

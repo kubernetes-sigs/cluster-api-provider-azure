@@ -39,7 +39,7 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 
 	// Create or get a public IP
 	klog.V(2).Info("Getting or creating a public IP for load balancer")
-	pip, err := s.CreateOrUpdatePublicIPAddress(s.scope.ClusterConfig.ResourceGroup, to.String(s.setLBName(role)))
+	pip, err := s.CreateOrUpdatePublicIPAddress(s.scope.ClusterConfig.ResourceGroup, to.String(s.setLBName(role)), "")
 	if err != nil {
 		return errors.Errorf("Public IP get/create was unsuccessful: %s", err)
 	}

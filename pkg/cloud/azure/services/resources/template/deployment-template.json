@@ -6,31 +6,11 @@
       "defaultValue": null,
       "type": "string"
     },
-    "virtualNetworks_ClusterAPIVM_vnet_name": {
-      "defaultValue": null,
-      "type": "string"
-    },
     "virtualMachines_ClusterAPIVM_name": {
       "defaultValue": null,
       "type": "string"
     },
-    "networkInterfaces_ClusterAPI_name": {
-      "defaultValue": null,
-      "type": "string"
-    },
     "networkInterfaces_ClusterAPI_id": {
-      "defaultValue": null,
-      "type": "string"
-    },
-    "publicIPAddresses_ClusterAPI_ip_name": {
-      "defaultValue": null,
-      "type": "string"
-    },
-    "networkSecurityGroups_ClusterAPIVM_nsg_name": {
-      "defaultValue": null,
-      "type": "string"
-    },
-    "subnets_default_name": {
       "defaultValue": null,
       "type": "string"
     },
@@ -147,35 +127,7 @@
             }
           ]
         }
-      },
-      "dependsOn": [
-        "[parameters('networkInterfaces_ClusterAPI_id')]"
-      ]
-    },
-    {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "sku": {
-          "name": "Standard"
-      },
-      "name": "[parameters('publicIPAddresses_ClusterAPI_ip_name')]",
-      "tags":{
-        "machine": "[parameters('clusterAPI_machine_name')]"
-      },
-      "apiVersion": "2018-11-01",
-      "location": "[parameters('location')]",
-      "zones": [
-          "3"
-      ],
-      "scale": null,
-      "properties": {
-        "provisioningState": "Succeeded",
-        "resourceGuid": "48b2c96b-40e6-4378-973c-fd9b7b066c2c",
-        "ipAddress": "40.121.193.102",
-        "publicIPAddressVersion": "IPv4",
-        "publicIPAllocationMethod": "Static",
-        "idleTimeoutInMinutes": 4
-      },
-      "dependsOn": []
+      }
     },
     {
       "apiVersion": "2018-10-01",
