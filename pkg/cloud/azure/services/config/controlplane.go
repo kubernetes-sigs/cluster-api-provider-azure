@@ -117,10 +117,10 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet kubeadm kubectl
+apt-get install -y kubelet="{{.KubernetesVersion}}-00" kubeadm="{{.KubernetesVersion}}-00" kubectl="{{.KubernetesVersion}}-00"
 apt-mark hold kubelet kubeadm kubectl
 
-kubeadm init --config /tmp/kubeadm.yaml --v 10
+kubeadm init --config /tmp/kubeadm.yaml --v 10 || true
 `
 
 	controlPlaneJoinBashScript = `{{.Header}}
@@ -206,10 +206,10 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet kubeadm kubectl
+apt-get install -y kubelet="{{.KubernetesVersion}}-00" kubeadm="{{.KubernetesVersion}}-00" kubectl="{{.KubernetesVersion}}-00"
 apt-mark hold kubelet kubeadm kubectl
 
-kubeadm join --config /tmp/kubeadm-controlplane-join-config.yaml --v 10
+kubeadm join --config /tmp/kubeadm-controlplane-join-config.yaml --v 10 || true
 `
 )
 
@@ -241,17 +241,18 @@ type ControlPlaneInput struct {
 type ContolPlaneJoinInput struct {
 	baseConfig
 
-	CACertHash       string
-	CACert           string
-	CAKey            string
-	EtcdCACert       string
-	EtcdCAKey        string
-	FrontProxyCACert string
-	FrontProxyCAKey  string
-	SaCert           string
-	SaKey            string
-	BootstrapToken   string
-	LBAddress        string
+	CACertHash        string
+	CACert            string
+	CAKey             string
+	EtcdCACert        string
+	EtcdCAKey         string
+	FrontProxyCACert  string
+	FrontProxyCAKey   string
+	SaCert            string
+	SaKey             string
+	BootstrapToken    string
+	LBAddress         string
+	KubernetesVersion string
 }
 
 func (cpi *ControlPlaneInput) validateCertificates() error {

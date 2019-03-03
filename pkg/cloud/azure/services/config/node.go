@@ -81,10 +81,10 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet kubeadm kubectl
+apt-get install -y kubelet="{{.KubernetesVersion}}-00" kubeadm="{{.KubernetesVersion}}-00" kubectl="{{.KubernetesVersion}}-00"
 apt-mark hold kubelet kubeadm kubectl
 
-kubeadm join --config /tmp/kubeadm-node.yaml
+kubeadm join --config /tmp/kubeadm-node.yaml || true
 `
 )
 
@@ -92,9 +92,10 @@ kubeadm join --config /tmp/kubeadm-node.yaml
 type NodeInput struct {
 	baseConfig
 
-	CACertHash     string
-	BootstrapToken string
-	LBAddress      string
+	CACertHash        string
+	BootstrapToken    string
+	LBAddress         string
+	KubernetesVersion string
 }
 
 // NewNode returns the user data string to be used on a node instance.

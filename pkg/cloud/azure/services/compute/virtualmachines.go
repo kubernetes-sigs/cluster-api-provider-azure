@@ -103,17 +103,18 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 			klog.V(2).Infof("Allowing machine %q to join control plane for cluster %q", machine.Name(), s.scope.Name())
 
 			cfg, err = config.JoinControlPlane(&config.ContolPlaneJoinInput{
-				CACert:           string(s.scope.ClusterConfig.CAKeyPair.Cert),
-				CAKey:            string(s.scope.ClusterConfig.CAKeyPair.Key),
-				CACertHash:       caCertHash,
-				EtcdCACert:       string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
-				EtcdCAKey:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
-				FrontProxyCACert: string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
-				FrontProxyCAKey:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
-				SaCert:           string(s.scope.ClusterConfig.SAKeyPair.Cert),
-				SaKey:            string(s.scope.ClusterConfig.SAKeyPair.Key),
-				BootstrapToken:   bootstrapToken,
-				LBAddress:        s.scope.Network().APIServerIP.DNSName,
+				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
+				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
+				CACertHash:        caCertHash,
+				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
+				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
+				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
+				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
+				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
+				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
+				BootstrapToken:    bootstrapToken,
+				LBAddress:         s.scope.Network().APIServerIP.DNSName,
+				KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
 			})
 			if err != nil {
 				return input, err
@@ -152,9 +153,10 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 		// TODO: Check for existence of node subnet & ensure NSG is attached to subnet
 
 		cfg, err := config.NewNode(&config.NodeInput{
-			CACertHash:     caCertHash,
-			BootstrapToken: bootstrapToken,
-			LBAddress:      s.scope.Network().APIServerIP.DNSName,
+			CACertHash:        caCertHash,
+			BootstrapToken:    bootstrapToken,
+			LBAddress:         s.scope.Network().APIServerIP.DNSName,
+			KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
 		})
 
 		if err != nil {
