@@ -73,9 +73,4 @@ def controller_gen(name, importpath, api, visibility, deps = []):
         visibility = visibility,
         tools = [CONTROLLER_GEN],
         tags = [ "generated" ],
-<<<<<<< HEAD
     )
-
-=======
-    )
->>>>>>> c464ecf3cae9dc46c9d9eb45135ff8bd8c8b95e3

@@ -19,9 +19,4 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: default
-<<<<<<< HEAD
     namespace: system
-
-=======
-    namespace: system
->>>>>>> c464ecf3cae9dc46c9d9eb45135ff8bd8c8b95e3
