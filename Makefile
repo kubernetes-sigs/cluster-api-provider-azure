@@ -166,11 +166,7 @@ examples-dev: ## Generate example output with developer image
 	$(MAKE) cmd/clusterctl/examples/azure/out MANAGER_IMAGE=${DEV_MANAGER_IMAGE}
 
 .PHONY: manifests
-manifests: #cmd/clusterctl/examples/azure/out/credentials ## Generate manifests for clusterctl
-<<<<<<< HEAD
-	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go all
-=======
->>>>>>> Added RBAC templates and added BAZEL files
+manifests: cmd/clusterctl/examples/azure/out/credentials ## Generate manifests for clusterctl
 	kustomize build config/default/ > cmd/clusterctl/examples/azure/out/provider-components.yaml
 	echo "---" >> cmd/clusterctl/examples/azure/out/provider-components.yaml
 	kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> cmd/clusterctl/examples/azure/out/provider-components.yaml
