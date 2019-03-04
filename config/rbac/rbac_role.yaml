@@ -1,7 +1,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
@@ -9,19 +8,6 @@ rules:
   resources:
   - azureclusterproviderconfigs
   - azureclusterproviderstatuses
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - cluster.k8s.io
-  resources:
-  - clusters
-  - clusters/status
   verbs:
   - get
   - list
@@ -46,6 +32,15 @@ rules:
 - apiGroups:
   - cluster.k8s.io
   resources:
+  - clusters
+  - clusters/status
+  verbs:
+  - get
+  - list
+  - watch
+- apigroups:
+  - cluster.k8s.io
+  resources:
   - machines
   - machines/status
   - machinedeployments
@@ -61,15 +56,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - cluster.k8s.io
-  resources:
-  - clusters
-  - clusters/status
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - ""
   resources:
