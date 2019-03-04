@@ -71,22 +71,42 @@ func (s *Service) CreateDefaultVMNetworkInterface(resourceGroup string, machine 
 
 // ReconcileNICBackendPool attaches a backend address pool ID to the supplied NIC.
 func (s *Service) ReconcileNICBackendPool(networkInterfaceName, backendPoolID string) error {
+	klog.V(2).Info("Attempting to attach NIC to load balancer backend pool")
 	nic, err := s.GetNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get NIC %q", networkInterfaceName)
 	}
 
-	backendPools := []network.BackendAddressPool{
-		{
-			ID: &backendPoolID,
-		},
-	}
+	ipConfigs := (*nic.IPConfigurations)
+	if len(ipConfigs) > 0 {
+		ipConfig := ipConfigs[0]
 
-	(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.LoadBalancerBackendAddressPools = &backendPools
+		if ipConfig.LoadBalancerBackendAddressPools != nil {
+			backendPool := (*ipConfig.LoadBalancerBackendAddressPools)[0]
+			if *backendPool.ID != backendPoolID {
+				klog.V(2).Infof("Could not attach NIC to load balancer backend pool (%q). NIC is already attached to %q.", backendPoolID, *backendPool.ID)
+				return nil
+			}
 
-	_, err = s.CreateOrUpdateNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName, nic)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to update NIC %q", networkInterfaceName)
+			klog.V(2).Infof("No action required. NIC is already attached to %q.", backendPoolID)
+			return nil
+		}
+
+		backendPools := []network.BackendAddressPool{
+			{
+				ID: &backendPoolID,
+			},
+		}
+
+		// TODO: Remove debug once reconcile logic is improved.
+		klog.V(2).Info("ReconcileNICBackendPool: Never checked the state of existing IP configuration")
+		klog.V(2).Info("Setting NIC backend pool")
+		(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.LoadBalancerBackendAddressPools = &backendPools
+
+		_, err = s.CreateOrUpdateNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName, nic)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to update NIC %q", networkInterfaceName)
+		}
 	}
 
 	return nil
@@ -94,16 +114,37 @@ func (s *Service) ReconcileNICBackendPool(networkInterfaceName, backendPoolID st
 
 // ReconcileNICPublicIP attaches a backend address pool ID to the supplied NIC.
 func (s *Service) ReconcileNICPublicIP(networkInterfaceName string, publicIP network.PublicIPAddress) error {
+	klog.V(2).Info("Attempting to attach public IP to NIC")
 	nic, err := s.GetNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get NIC %q", networkInterfaceName)
 	}
 
-	(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &publicIP
+	ipConfigs := (*nic.IPConfigurations)
+	if len(ipConfigs) > 0 {
+		ipConfig := ipConfigs[0]
+		pip := ipConfig.PublicIPAddress
 
-	_, err = s.CreateOrUpdateNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName, nic)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to update NIC %q", networkInterfaceName)
+		if pip != nil {
+			pipID := *ipConfig.PublicIPAddress.ID
+			if pipID != *publicIP.ID {
+				klog.V(2).Infof("Could not associate NIC to public IP (%q). NIC is already associated with %q.", *publicIP.ID, pipID)
+				return nil
+			}
+
+			klog.V(2).Infof("No action required. NIC is already attached to %q.", *publicIP.ID)
+			return nil
+		}
+
+		// TODO: Remove debug once reconcile logic is improved.
+		klog.V(2).Info("ReconcileNICPublicIP: Never checked the state of existing IP configuration")
+		klog.V(2).Info("Setting NIC public IP")
+		(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.PublicIPAddress = &publicIP
+
+		_, err = s.CreateOrUpdateNetworkInterface(s.scope.ClusterConfig.ResourceGroup, networkInterfaceName, nic)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to update NIC %q", networkInterfaceName)
+		}
 	}
 
 	return nil
