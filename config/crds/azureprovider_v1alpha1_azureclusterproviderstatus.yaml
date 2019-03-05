@@ -85,23 +85,27 @@ spec:
         network:
           properties:
             apiServerIp:
-              description: 'APIServerIP is the Kubernetes API server public IP address.
-                TODO: Remove once load balancer is implemented.'
+              description: APIServerIP is the Kubernetes API server public IP address.
               properties:
+                dnsName:
+                  type: string
                 id:
                   type: string
                 ipAddress:
                   type: string
                 name:
                   type: string
-              required:
-              - id
-              - name
-              - ipAddress
               type: object
             apiServerLb:
               description: APIServerLB is the Kubernetes API server load balancer.
               properties:
+                backendPool:
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                  type: object
                 frontendIpConfig:
                   type: object
                 id:

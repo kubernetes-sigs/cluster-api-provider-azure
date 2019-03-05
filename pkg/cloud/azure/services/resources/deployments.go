@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"github.com/Azure/go-autorest/autorest/to"
 	"k8s.io/klog"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
@@ -59,7 +60,7 @@ func (s *Service) CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterCo
 		},
 	}
 
-	deploymentFuture, err := s.scope.AzureClients.Deployments.CreateOrUpdate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
+	deploymentFuture, err := s.scope.Deployments.CreateOrUpdate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 			Mode:       resources.Incremental, // Do not delete and re-create matching resources that already exist
 		},
 	}
-	res, err := s.scope.AzureClients.Deployments.Validate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
+	res, err := s.scope.Deployments.Validate(s.scope.Context, clusterConfig.ResourceGroup, machine.ObjectMeta.Name, deployment)
 	if res.Error != nil {
 		return errors.New(*res.Error.Message)
 	}
@@ -97,17 +98,26 @@ func (s *Service) ValidateDeployment(machine *clusterv1.Machine, clusterConfig *
 
 // GetDeploymentResult retrieves the result of the ARM deployment operation.
 func (s *Service) GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error) {
-	return future.Result(s.scope.AzureClients.Deployments)
+	return future.Result(s.scope.Deployments)
 }
 
 // WaitForDeploymentsCreateOrUpdateFuture returns when the ARM operation completes.
 func (s *Service) WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error {
-	return future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.Deployments.Client)
+	return future.WaitForCompletionRef(s.scope.Context, s.scope.Deployments.Client)
 }
 
 func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*map[string]interface{}, error) {
 	// TODO: Remove debug
 	klog.V(2).Info("convertVMToDeploymentParams start")
+
+	networkSvc := network.NewService(s.scope)
+	nicName := networkSvc.GetNetworkInterfaceName(machine)
+	nic, err := networkSvc.GetNetworkInterface(s.scope.ClusterConfig.ResourceGroup, nicName)
+	if err != nil {
+		klog.V(2).Info("convertVMToDeploymentParams: could not get network interface")
+		return nil, err
+	}
+
 	decoded, err := base64.StdEncoding.DecodeString(machineConfig.SSHPublicKey)
 	publicKey := string(decoded)
 	if err != nil {
@@ -121,23 +131,11 @@ func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machin
 		"clusterAPI_machine_name": map[string]interface{}{
 			"value": machine.ObjectMeta.Name,
 		},
-		"virtualNetworks_ClusterAPIVM_vnet_name": map[string]interface{}{
-			"value": network.VnetDefaultName,
-		},
 		"virtualMachines_ClusterAPIVM_name": map[string]interface{}{
 			"value": s.GetVMName(machine),
 		},
-		"networkInterfaces_ClusterAPI_name": map[string]interface{}{
-			"value": s.GetNetworkInterfaceName(machine),
-		},
-		"publicIPAddresses_ClusterAPI_ip_name": map[string]interface{}{
-			"value": s.GetPublicIPName(machine),
-		},
-		"networkSecurityGroups_ClusterAPIVM_nsg_name": map[string]interface{}{
-			"value": "ClusterAPINSG",
-		},
-		"subnets_default_name": map[string]interface{}{
-			"value": network.SubnetDefaultName,
+		"networkInterfaces_ClusterAPI_id": map[string]interface{}{
+			"value": to.String(nic.ID),
 		},
 		"image_publisher": map[string]interface{}{
 			"value": machineConfig.Image.Publisher,
@@ -272,18 +270,7 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 
 // GetVMName returns the VM resource name of the machine.
 func (s *Service) GetVMName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-%s", s.scope.Name(), machine.ObjectMeta.Name)
-}
-
-// GetPublicIPName returns the public IP resource name of the machine.
-// TODO: Move to network package
-func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-pip", s.GetVMName(machine))
-}
-
-// GetNetworkInterfaceName returns the nic resource name of the machine.
-func (s *Service) GetNetworkInterfaceName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-nic", s.GetVMName(machine))
+	return machine.ObjectMeta.Name
 }
 
 // GetOSDiskName returns the OS disk resource name of the machine.

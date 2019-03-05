@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
 
 // ReconcileNetwork reconciles the network of the given cluster.
@@ -29,23 +30,29 @@ func (s *Service) ReconcileNetwork() (err error) {
 	// TODO: Refactor
 	// TODO: Fix hardcoded values.
 	// Reconcile network security group
-	networkSGFuture, err := s.CreateOrUpdateNetworkSecurityGroup(s.scope.ClusterConfig.ResourceGroup, "ClusterAPINSG", s.scope.ClusterConfig.Location)
+	_, err = s.CreateOrUpdateNetworkSecurityGroup(s.scope.ClusterConfig.ResourceGroup, SecurityGroupDefaultName)
 	if err != nil {
 		return fmt.Errorf("error creating or updating network security group: %v", err)
 	}
-	err = s.WaitForNetworkSGsCreateOrUpdateFuture(*networkSGFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for network security group creation or update: %v", err)
-	}
 
 	// Reconcile virtual network
-	vnetFuture, err := s.CreateOrUpdateVnet(s.scope.ClusterConfig.ResourceGroup, "", s.scope.ClusterConfig.Location)
+	vnet, err := s.CreateOrUpdateVnet(s.scope.ClusterConfig.ResourceGroup, "")
 	if err != nil {
 		return fmt.Errorf("error creating or updating virtual network: %v", err)
 	}
-	err = s.WaitForVnetCreateOrUpdateFuture(*vnetFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for virtual network creation or update: %v", err)
+
+	s.scope.Network().Vnet.ID = *vnet.ID
+	s.scope.Network().Vnet.Name = *vnet.Name
+
+	// TODO: This should reconcile the subnet list. Right now, it only appends.
+	azsubnets := *vnet.Subnets
+	for _, azsubnet := range azsubnets {
+		s.scope.Network().Subnets = v1alpha1.Subnets{
+			{
+				ID:   *azsubnet.ID,
+				Name: *azsubnet.Name,
+			},
+		}
 	}
 
 	klog.V(2).Info("Reconcile network completed successfully")

@@ -17,9 +17,12 @@ limitations under the License.
 package network
 
 import (
+	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
+	"k8s.io/klog"
 )
 
 const (
@@ -28,21 +31,22 @@ const (
 )
 
 // NetworkSGIfExists returns the nsg reference if the nsg resource exists.
-func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error) {
+func (s *Service) NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (nsg network.SecurityGroup, err error) {
 	networkSG, err := s.scope.AzureClients.SecurityGroups.Get(s.scope.Context, resourceGroupName, networkSecurityGroupName, "")
 	if err != nil {
 		if aerr, ok := err.(autorest.DetailedError); ok {
 			if aerr.StatusCode.(int) == 404 {
-				return nil, nil
+				return nsg, nil
 			}
 		}
-		return nil, err
+		return nsg, err
 	}
-	return &networkSG, nil
+
+	return networkSG, nil
 }
 
 // CreateOrUpdateNetworkSecurityGroup creates or updates the nsg resource.
-func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error) {
+func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName, networkSecurityGroupName string) (nsg network.SecurityGroup, err error) {
 	if networkSecurityGroupName == "" {
 		networkSecurityGroupName = SecurityGroupDefaultName
 	}
@@ -78,22 +82,26 @@ func (s *Service) CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, n
 		SecurityRules: &[]network.SecurityRule{sshInbound, kubernetesInbound},
 	}
 	securityGroup := network.SecurityGroup{
-		Location:                      to.StringPtr(location),
+		Location:                      to.StringPtr(s.scope.Location()),
 		SecurityGroupPropertiesFormat: &securityGroupProperties,
 	}
-	sgFuture, err := s.scope.AzureClients.SecurityGroups.CreateOrUpdate(s.scope.Context, resourceGroupName, networkSecurityGroupName, securityGroup)
+
+	future, err := s.scope.AzureClients.SecurityGroups.CreateOrUpdate(s.scope.Context, resourceGroupName, networkSecurityGroupName, securityGroup)
+
 	if err != nil {
-		return nil, err
+		return nsg, err
 	}
-	return &sgFuture, nil
+
+	err = future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.SecurityGroups.Client)
+	if err != nil {
+		return nsg, fmt.Errorf("cannot get NSG create or update future response: %v", err)
+	}
+
+	klog.V(2).Info("Successfully updated NSG")
+	return future.Result(s.scope.AzureClients.SecurityGroups)
 }
 
 // DeleteNetworkSecurityGroup deletes the nsg resource.
 func (s *Service) DeleteNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string) (network.SecurityGroupsDeleteFuture, error) {
 	return s.scope.AzureClients.SecurityGroups.Delete(s.scope.Context, resourceGroupName, networkSecurityGroupName)
-}
-
-// WaitForNetworkSGsCreateOrUpdateFuture returns when the CreateOrUpdateNetworkSecurityGroup operation completes.
-func (s *Service) WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error {
-	return future.Future.WaitForCompletionRef(s.scope.Context, s.scope.AzureClients.SecurityGroups.Client)
 }
