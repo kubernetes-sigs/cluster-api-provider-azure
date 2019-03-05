@@ -5,7 +5,9 @@ go_library(
     srcs = ["versioninfo.go"],
     importpath = "sigs.k8s.io/cluster-api-provider-azure/cmd/versioninfo",
     visibility = ["//visibility:public"],
-    deps = ["//vendor/github.com/spf13/cobra:go_default_library"],
+    deps = [
+        "//vendor/github.com/spf13/cobra:go_default_library",
+    ],
 )
 
 go_test(

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,17 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-namespace: azure-provider-system
-namePrefix: azure-provider-
+set -o nounset
+set -o pipefail
 
-resources:
-  - ../crds/azureprovider_v1alpha1_azureclusterproviderspec.yaml
-  - ../crds/azureprovider_v1alpha1_azureclusterproviderstatus.yaml
-  - ../crds/azureprovider_v1alpha1_azuremachineproviderspec.yaml
-  - ../crds/azureprovider_v1alpha1_azuremachineproviderstatus.yaml
-  - ../rbac/rbac_role.yaml
-  - ../rbac/rbac_role_binding.yaml
-  - ../manager/manager.yaml
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+cd "${REPO_ROOT}" || exit 1
 
-patches:
-  - rbac_role_binding_patch.yaml
+bazel test --define='gotags=integration' --test_output all //test/integration/...
+bazel_status="${?}"
+python hack/coalesce.py
+exit "${bazel_status}"

@@ -17,8 +17,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "ade51a315fa17347e5c31201fdc55aa5ffb913377aa315dceb56ee9725e620ee",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.16.6/rules_go-0.16.6.tar.gz",
+    sha256 = "77dfd303492f2634de7a660445ee2d3de2960cbd52f97d8c0dffa9362d3ddef9",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.18.1/rules_go-0.18.1.tar.gz"],
 )
 
 http_archive(
@@ -41,7 +41,7 @@ http_archive(
     urls = ["https://github.com/kubernetes/repo-infra/archive/e8f2f7c3decf03e1fde9f30d249e39b8328aa8b0.tar.gz"],
 )
 
-load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
@@ -68,20 +68,18 @@ load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
 )
-
-container_pull(
-    name = "golang-image",
-    registry = "registry.hub.docker.com",
-    repository = "library/golang",
-    tag = "1.10-alpine",
+load(
+    "@io_bazel_rules_docker//go:image.bzl",
+    _go_image_repos = "repositories",
 )
+
+_go_image_repos()
 
 go_repository(
     name = "com_github_golang_dep",
     build_file_generation = "on",
     importpath = "github.com/golang/dep",
-    strip_prefix = "dep-22125cfaa6ddc71e145b1535d4b7ee9744fefff2",
-    urls = ["https://github.com/golang/dep/archive/22125cfaa6ddc71e145b1535d4b7ee9744fefff2.zip"],
+    tag = "v0.5.1",
 )
 
 go_repository(
@@ -95,13 +93,12 @@ go_repository(
     name = "com_github_golang_mock",
     build_file_generation = "on",
     importpath = "github.com/golang/mock",
-    strip_prefix = "mock-8a44ef6e8be577e050008c7886f24fc705d709fb",
-    urls = ["https://github.com/golang/mock/archive/8a44ef6e8be577e050008c7886f24fc705d709fb.zip"],
+    tag = "v1.2.0",
 )
 
 go_repository(
     name = "io_k8s_sigs_kind",
-    commit = "45ed3d23016727dbdad2f42291ab25e0f09118f1",
+    commit = "d4ff13e4808ee5a816ed92bf2d3348bda12413db",
     importpath = "sigs.k8s.io/kind",
 )
 

@@ -84,7 +84,7 @@ func (kp *KeyPair) HasCertAndKey() bool {
 type NetworkSpec struct {
 	// Vnet configuration.
 	// +optional
-	Vnet VnetSpec `json:"vpc,omitempty"`
+	Vnet VnetSpec `json:"vnet,omitempty"`
 
 	// Subnets configuration.
 	// +optional

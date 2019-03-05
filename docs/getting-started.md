@@ -1,8 +1,23 @@
-# Kubernetes Cluster API Azure Provider  [![Go Report Card](https://goreportcard.com/badge/kubernetes-sigs/cluster-api-provider-azure)](https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure)
+# Getting started with cluster-api-provider-azure <!-- omit in toc -->
 
-## Getting Started
+## Contents <!-- omit in toc -->
 
-### Requirements
+<!-- Below is generated using VSCode yzhang.markdown-all-in-one >
+
+<!-- TOC depthFrom:2 -->
+
+- [Requirements](#requirements)
+  - [Optional](#optional)
+  - [Install the project](#install-the-project)
+    - [Release binaries](#release-binaries)
+    - [Building from master](#building-from-master)
+  - [Prepare your environment](#prepare-your-environment)
+  - [Usage](#usage)
+    - [Creating a Cluster](#creating-a-cluster)
+
+<!-- /TOC -->
+
+## Requirements
 
 - Linux or MacOS (Windows isn't supported at the moment)
 - A set of Azure credentials sufficient to bootstrap the cluster (an Azure service principal with Collaborator rights).
@@ -33,18 +48,7 @@ TODO. Coming soon!
 
 #### Building from master
 
-Currently, you'll need to build the latest version from `master`:
-
-```bash
-# Get the latest version of cluster-api-provider-azure
-go get sigs.k8s.io/cluster-api-provider-azure
-
-# Ensure that you have the project root as your current working directory.
-cd $(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure
-
-# Build the `clusterctl` tool.
-make clusterctl
-```
+If you're interested in developing cluster-api-provider-azure and getting the latest version from `master`, please follow the [development guide][development].
 
 ### Prepare your environment
 An Azure Service Principal is needed for usage by the `clusterctl` tool and for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication). The following environment variables should be set: `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`.
@@ -56,33 +60,25 @@ An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/az
 #### Creating a Cluster
 1. Generate the `cluster.yaml`, `machines.yaml`, and `addons.yaml` files, and create the service principal if needed.
 
-   ```
-   cd cmd/clusterctl/examples/azure
-   RESOURCE_GROUP=capz-test CLUSTER_NAME="capz-test-0" ./generate-yaml.sh # set CREATE_SP=TRUE if creating a new Service Principal is desired
-   cd ../../../..
-   # If CREATE_SP=TRUE
-   source cmd/clusterctl/examples/azure/out/credentials.sh
-   ```
-2. Generate the `provider-components.yaml` file.
+    ```bash
+    make clean # Clean up any previous manifests
 
-   ```
-   kustomize build config/default/ > cmd/clusterctl/examples/azure/out/provider-components.yaml
-   echo "---" >> cmd/clusterctl/examples/azure/out/provider-components.yaml
-   kustomize build vendor/sigs.k8s.io/cluster-api/config/default/ >> cmd/clusterctl/examples/azure/out/provider-components.yaml
-   ```
+    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" RESOURCE_GROUP="<resource-group>" CLUSTER_NAME="<cluster-name>" make manifests # set CREATE_SP=TRUE if creating a new Service Principal is desired
+   
+    # If CREATE_SP=TRUE
+    source cmd/clusterctl/examples/azure/out/credentials.sh
+    ```
+2. Ensure kind has been reset:
+    ```bash
+    make kind-reset
+    ```
 3. Create the cluster.
 
    **NOTE:** Kubernetes Version >= 1.11 is required to enable CRD subresources without needing a feature gate.
 
     ```bash
-    ./bin/clusterctl create cluster -v 3 \
-    --provider azure \
-    --bootstrap-type kind \
-    -m ./cmd/clusterctl/examples/azure/out/machines.yaml \
-    -c ./cmd/clusterctl/examples/azure/out/cluster.yaml \
-    -p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
-    -a ./cmd/clusterctl/examples/azure/out/addons.yaml
-   ```
+    make create-cluster
+    ```
 
 Once the cluster is created successfully, you can interact with the cluster using `kubectl` and the kubeconfig downloaded by the `clusterctl` tool.
 
@@ -92,28 +88,4 @@ kubectl get clusters
 kubectl get machines
 ```
 
-### Creating and using controller images
-
-Here's an example of how to build controller images, if you're interested in testing changes in the image yourself:
-
-```bash
-# Build the image.
-STABLE_DOCKER_REPO=quay.io/<name here> make docker-build
-
-# Push the image.
-STABLE_DOCKER_REPO=quay.io/<name here> make docker-push
-```
-
-**NOTE:** In order for the created images to be used for testing, you must push them to a public container registry.
-
-MANAGER_IMAGE must point to right repo, to make sure the image is picked up by bootstrap and target cluster
-
-### Submitting PRs and testing
-
-Pull requests and issues are highly encouraged!
-If you're interested in submitting PRs to the project, please be sure to run some initial checks prior to submission:
-
-```bash
-make check # Runs a suite of quick scripts to check code structure
-make test # Runs tests on the Go code
-```
+[development]: /docs/development.md

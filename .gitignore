@@ -44,3 +44,7 @@ envfile
 
 # vscode
 .vscode
+
+# Ignore output manifests
+cmd/clusterctl/examples/azure/out
+cmd/clusterctl/examples/azure/provider-components-base.yaml
