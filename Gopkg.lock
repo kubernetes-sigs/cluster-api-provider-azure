@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:4d6f036ea3fe636bcb2e89850bcdc62a771354e157cd51b8b22a2de8562bf663"
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  pruneopts = "UT"
+  revision = "c9474f2f8deb81759839474b6bd1726bbfe1c1c4"
+  version = "v0.36.0"
+
+[[projects]]
   digest = "1:b92928b73320648b38c93cacb9082c0fe3f8ac3383ad9bd537eef62c380e0e7a"
   name = "contrib.go.opencensus.io/exporter/ocagent"
   packages = ["."]
@@ -10,20 +18,20 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:523488885cb42b34d92de0625a2e8e13833218453855c329f2821605b2fe8251"
+  digest = "1:9f10f99986c12284c48fb4ea16da3d0bac219e2cd7ab4b267b5216c4d1ba3fe6"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "services/compute/mgmt/2018-10-01/compute",
-    "services/network/mgmt/2018-11-01/network",
+    "services/network/mgmt/2018-12-01/network",
     "services/resources/mgmt/2018-05-01/resources",
     "version",
   ]
   pruneopts = "UT"
-  revision = "2ea98fc438b9d78aa2ab32bab44c7f68e506385e"
-  version = "v25.1.0"
+  revision = "961851084b22af00900473bc704eb2f06e3a4e6c"
+  version = "v26.2.0"
 
 [[projects]]
-  digest = "1:ae358a959f3d1ed9a051cffd1d388f2889cce13ecf86434d406d5d6b12723a35"
+  digest = "1:8b0c2e6fd5976e77994a0174f8076b538671b14ecde5155c3efad04e006cd39b"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -38,8 +46,8 @@
     "tracing",
   ]
   pruneopts = "UT"
-  revision = "71d02b67e17a3d80abf8db171f1ca80c39eb2e90"
-  version = "v11.4.0"
+  revision = "f4369d4c79bf40df5e86def1e0f54c7ef261a51c"
+  version = "v11.5.0"
 
 [[projects]]
   digest = "1:464aef731a5f82ded547c62e249a2e9ec59fbbc9ddab53cda7b9857852630a61"
@@ -206,6 +214,22 @@
   pruneopts = "UT"
   revision = "7c663266750e7d82587642f65e60bc4083f1f84e"
   version = "v0.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:97047773a250808f6a436749af47088a94ed09b7c70df29baace96548574012c"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination",
+  ]
+  pruneopts = "UT"
+  revision = "f83aee3da90f3f337d024070e2e68b04fb035149"
 
 [[projects]]
   branch = "master"
@@ -577,11 +601,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c664d4451770ebc9ab63d54bccb9e4f2c6106cde7e566ea02889930b836c7d4c"
+  digest = "1:1540fd815845f20e31cb95c3b6f7f0f0c8880c3d053845ba4a4a609539446bf6"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
+    "google",
     "internal",
+    "jws",
+    "jwt",
   ]
   pruneopts = "UT"
   revision = "3e8b2be1363542a95c52ea0796d4a40dacfb5b95"
@@ -678,13 +705,16 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:6f3bd49ddf2e104e52062774d797714371fac1b8bddfd8e124ce78e6b2264a10"
+  digest = "1:fa026a5c59bd2df343ec4a3538e6288dcf4e2ec5281d743ae82c120affe6926a"
   name = "google.golang.org/appengine"
   packages = [
+    ".",
     "internal",
+    "internal/app_identity",
     "internal/base",
     "internal/datastore",
     "internal/log",
+    "internal/modules",
     "internal/remote_api",
     "internal/urlfetch",
     "urlfetch",
@@ -881,7 +911,7 @@
   version = "kubernetes-1.13.1"
 
 [[projects]]
-  digest = "1:4864bfa93153adb014b4427853fc58d3d29fd3ff0120d8e5794e5d8aa42df6e4"
+  digest = "1:c8db29861de02552602eadd2b44098b312308fd94e8f3eb525d4aac73afa9a01"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -924,10 +954,16 @@
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
+    "plugin/pkg/client/auth",
+    "plugin/pkg/client/auth/azure",
     "plugin/pkg/client/auth/exec",
+    "plugin/pkg/client/auth/gcp",
+    "plugin/pkg/client/auth/oidc",
+    "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
     "restmapper",
+    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -947,6 +983,7 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
+    "util/jsonpath",
     "util/retry",
     "util/workqueue",
   ]
@@ -1010,7 +1047,7 @@
   revision = "ea82251f3668f8c1bde607fa6e20e5bf36e576a4"
 
 [[projects]]
-  digest = "1:0dd3be513e09375e3f8fefc718fdfc1aac6924dc57adecb6dddfc7edc96a8dda"
+  digest = "1:2e1e9272fcf518dfc9e78a4e574fcd240089cbeb2ce0519a60bf6060c3fd4355"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "cmd/clusterctl/clientcmd",
@@ -1038,7 +1075,7 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "0f315e945d5fabe0c805ccf30fa6cf02fac6c0b5"
+  revision = "c51a9c13aa0ebe6d2d7bef869094b9b78bebcd48"
 
 [[projects]]
   digest = "1:743eebdcc3e564ed574b3fa0c10c223f5edeba6ee2e3c625c345c1604432a8f1"
@@ -1126,7 +1163,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute",
-    "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-11-01/network",
+    "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network",
     "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources",
     "github.com/Azure/go-autorest/autorest",
     "github.com/Azure/go-autorest/autorest/azure/auth",
