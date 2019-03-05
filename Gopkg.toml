@@ -48,6 +48,15 @@ required = [
   name = "sigs.k8s.io/cluster-api"
   revision = "c51a9c13aa0ebe6d2d7bef869094b9b78bebcd48"
 
+# TODO: It's currently necessary to pin this to kubernetes-1.13.1, instead of
+# kubernetes-1.13.4, due to some transitive dependencies upstream.
+# See here:
+#  - https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/116#discussion_r262599059
+#  - https://github.com/kubernetes-sigs/controller-runtime/pull/349
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.13.1"
+
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
   version = "26.2.0"
