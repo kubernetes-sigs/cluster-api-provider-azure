@@ -6,7 +6,7 @@
 3. Run `make release-binaries`
 4. Attach the tarball to the drafted release
 5. Attach `clusterctl` to the drafted release (for darwin and linux architectures)
-6. Write the release notes (see note below on release notes)
+6. Write the [release notes](#release-notes)
 7. Build and push the container image
 8. Publish release
 9. Announce the release
@@ -53,11 +53,12 @@ The binary produced by a release is the `clusterctl` binary. There should be sup
 
 ### Release Notes
 
-Release notes are written by hand. Generally, we'll make a [hackmd](https://hackmd.io/)
-and share the release note responsibility for a few days in advance of the
-release.
+Release notes are written by hand using the [release notes template][template] as a guide.
 
-The markdown is shared in the kubernetes slack in the channel #cluster-api-azure.
+Generally, we'll make a [HackMD](https://hackmd.io/) and share the release note
+ responsibility for a few days in advance of the release.
+
+The markdown is shared in the Kubernetes slack in the channel #cluster-api-azure.
 
 ## Communication
 
@@ -72,3 +73,4 @@ The markdown is shared in the kubernetes slack in the channel #cluster-api-azure
 
 
 [semver]: https://semver.org/#semantic-versioning-200
+[template]: /docs/release-notes-template.md
