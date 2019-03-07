@@ -64,8 +64,8 @@ func NewBootstrap(client corev1.SecretsGetter, ttl time.Duration) (string, error
 	}
 
 	err = TryRunCommand(func() error {
-		_, err := client.Secrets(secretToken.ObjectMeta.Namespace).Create(secretToken)
-		return err
+		_, e := client.Secrets(secretToken.ObjectMeta.Namespace).Create(secretToken)
+		return e
 	}, MaximumRetries)
 
 	if err != nil {

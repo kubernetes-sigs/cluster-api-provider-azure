@@ -382,9 +382,9 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	currentMachine := scope.Machine
 
 	if currentMachine == nil {
-		vm, err := computeSvc.VMIfExists(resourcesSvc.GetVMName(goalMachine))
-		if err != nil || vm == nil {
-			return fmt.Errorf("error checking if vm exists: %v", err)
+		vm, existsErr := computeSvc.VMIfExists(resourcesSvc.GetVMName(goalMachine))
+		if existsErr != nil || vm == nil {
+			return fmt.Errorf("error checking if vm exists: %v", existsErr)
 		}
 		// update annotations for bootstrap machine
 		if vm != nil {
@@ -392,7 +392,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 			//return a.updateAnnotations(cluster, goalMachine)
 			return nil
 		}
-		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, err)
+		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, existsErr)
 	}
 
 	// no need for update if fields havent changed

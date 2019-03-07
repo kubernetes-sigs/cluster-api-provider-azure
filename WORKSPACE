@@ -88,8 +88,7 @@ go_repository(
     name = "com_github_golangci_golangci-lint",
     build_file_generation = "on",
     importpath = "github.com/golangci/golangci-lint",
-    strip_prefix = "golangci-lint-901cf25e20f86b7e9dc6f73eaba5afbd0cbdc257", #
-    urls = ["https://github.com/golangci/golangci-lint/archive/901cf25e20f86b7e9dc6f73eaba5afbd0cbdc257.zip"],
+    tag = "v1.15.0",
 )
 
 go_repository(
