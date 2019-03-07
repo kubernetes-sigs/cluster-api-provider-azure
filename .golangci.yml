@@ -1,3 +1,6 @@
+run:
+  skip-files:
+    - build/asm_shim/c.go
 linters-settings:
   gocyclo:
     min-complexity: 15
@@ -24,8 +27,4 @@ linters:
   fast: true
 issue:
   max-same-issues: 0
-max-per-linter: 0
-
-run:
-  skip-dirs:
-    - build
+  max-per-linter: 0
