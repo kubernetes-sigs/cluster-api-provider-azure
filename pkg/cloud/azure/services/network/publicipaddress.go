@@ -21,12 +21,31 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-// CreateOrUpdatePublicIPAddress retrieves the Public IP address resource.
+// GetPublicIPAddress retrieves the Public IP address resource.
+func (s *Service) GetPublicIPAddress(resourceGroup, IPName string) (network.PublicIPAddress, error) {
+	klog.V(2).Info("Attempting to get public IP")
+	pip, err := s.scope.PublicIPAddresses.Get(
+		s.scope.Context,
+		resourceGroup,
+		IPName,
+		"",
+	)
+
+	if err != nil {
+		return pip, errors.Wrapf(err, "Failed to get public IP %q", IPName)
+	}
+
+	return pip, nil
+}
+
+// CreateOrUpdatePublicIPAddress updates a Public IP address resource or creates one, if it doesn't exist.
 func (s *Service) CreateOrUpdatePublicIPAddress(resourceGroup, IPName, zone string) (pip network.PublicIPAddress, err error) {
+	klog.V(2).Info("Attempting to create or update public IP")
 	publicIP := network.PublicIPAddress{
 		Name:                            to.StringPtr(IPName),
 		Location:                        to.StringPtr(s.scope.Location()),
@@ -78,7 +97,7 @@ func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (er
 
 // GetPublicIPName returns the public IP resource name of the machine.
 func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-pip", machine.Name)
+	return fmt.Sprintf("%s", machine.Name)
 }
 
 // GetDefaultPublicIPZone returns the public IP resource name of the machine.
