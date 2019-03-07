@@ -2,8 +2,12 @@ run:
   skip-files:
     - build/asm_shim/c.go
 linters-settings:
+  govet:
+    check-shadowing: true
   gocyclo:
     min-complexity: 15
+  maligned:
+    suggest-new: true
 linters:
   enable:
     - golint
