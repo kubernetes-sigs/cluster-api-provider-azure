@@ -58,15 +58,17 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine)
 
 	networkSvc := network.NewService(scope)
 
-	pip, err := networkSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine), "")
+	// TODO: Consider moving FQDN retrieval into its' own method.
+	pip, err := networkSvc.GetPublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine))
 	if err != nil {
 		return "", err
 	}
-	return *pip.IPAddress, nil
+
+	return *pip.DNSSettings.Fqdn, nil
 }
 
 // GetKubeConfig returns the kubeconfig after the bootstrap process is complete.
-func (d *Deployer) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
+func (d *Deployer) GetKubeConfig(cluster *clusterv1.Cluster, _ *clusterv1.Machine) (string, error) {
 
 	// Load provider config.
 	config, err := providerv1.ClusterConfigFromProviderSpec(cluster.Spec.ProviderSpec)
@@ -88,14 +90,9 @@ func (d *Deployer) GetKubeConfig(cluster *clusterv1.Cluster, machine *clusterv1.
 		return "", errors.New("key not found in status")
 	}
 
-	// TODO: Unwrap this once load balancer is implemented
-	dnsName := "null"
-
-	if machine != nil {
-		dnsName, err = d.GetIP(cluster, nil)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to get DNS address")
-		}
+	dnsName, err := d.GetIP(cluster, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get DNS address")
 	}
 
 	server := fmt.Sprintf("https://%s:6443", dnsName)
