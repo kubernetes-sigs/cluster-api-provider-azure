@@ -64,34 +64,34 @@ func (s *Service) ReconcileLoadBalancer(role string) error {
 	}
 
 	// Describe or create a load balancer.
-	apiLB, err := s.describeLB(to.String(spec.Name))
+	existingLB, err := s.describeLB(to.String(spec.Name))
 	if err != nil {
 		klog.V(2).Info("Unable to find existing load balancer.")
 		spec.FrontendIPConfigurations = &frontendIPConfigs
 
-		apiLB, err := s.createLB(*spec, role)
-		if err != nil {
-			return err
+		apiLB, createErr := s.createLB(*spec, role)
+		if createErr != nil {
+			return createErr
 		}
 
 		klog.V(2).Infof("Created new load balancer for %s: %v", role, apiLB)
 	}
 
-	apiLB, err = s.reconcileLBRules(&apiLB)
+	existingLB, err = s.reconcileLBRules(&existingLB)
 	if err != nil {
 		return err
 	}
 
 	// TODO: Use deepcopy function to copy LB attributes to Network object
-	s.scope.Network().APIServerLB.ID = *apiLB.ID
-	s.scope.Network().APIServerLB.Name = *apiLB.Name
-	s.scope.Network().APIServerLB.SKU = v1alpha1.SKU(apiLB.Sku.Name)
+	s.scope.Network().APIServerLB.ID = *existingLB.ID
+	s.scope.Network().APIServerLB.Name = *existingLB.Name
+	s.scope.Network().APIServerLB.SKU = v1alpha1.SKU(existingLB.Sku.Name)
 
-	backendPools := *apiLB.BackendAddressPools
+	backendPools := *existingLB.BackendAddressPools
 	s.scope.Network().APIServerLB.BackendPool.ID = *backendPools[0].ID
 	s.scope.Network().APIServerLB.BackendPool.Name = *backendPools[0].Name
 
-	klog.V(2).Infof("Control plane load balancer: %v", apiLB)
+	klog.V(2).Infof("Control plane load balancer: %v", existingLB)
 	klog.V(2).Info("Reconcile load balancers completed successfully")
 
 	return nil
