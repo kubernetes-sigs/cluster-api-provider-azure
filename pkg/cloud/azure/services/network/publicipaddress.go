@@ -97,7 +97,7 @@ func (s *Service) DeletePublicIPAddress(resourceGroup string, IPName string) (er
 
 // GetPublicIPName returns the public IP resource name of the machine.
 func (s *Service) GetPublicIPName(machine *clusterv1.Machine) string {
-	return fmt.Sprintf("%s-pip", machine.Name)
+	return fmt.Sprintf("%s", machine.Name)
 }
 
 // GetDefaultPublicIPZone returns the public IP resource name of the machine.

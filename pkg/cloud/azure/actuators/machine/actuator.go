@@ -190,7 +190,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		}
 	}
 
-	pip, err := networkSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, scope.Machine.Name, networkSvc.GetDefaultPublicIPZone())
+	pip, err := networkSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine), networkSvc.GetDefaultPublicIPZone())
 	if err != nil {
 		klog.Errorf("Unable to create public IP: %+v", err)
 		return &controllerError.RequeueAfterError{
