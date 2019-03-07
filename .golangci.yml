@@ -1,3 +1,6 @@
+linters-settings:
+  gocyclo:
+    min-complexity: 15
 linters:
   enable:
     - golint
@@ -22,3 +25,7 @@ linters:
 issue:
   max-same-issues: 0
 max-per-linter: 0
+
+run:
+  skip-dirs:
+    - build

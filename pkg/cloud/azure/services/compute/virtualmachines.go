@@ -78,97 +78,11 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 
 	input := &v1alpha1.VM{}
 
-	if !s.scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
-		return nil, errors.New("failed to run controlplane, missing CACertificate")
-	}
-
-	if s.scope.Network().APIServerIP.DNSName == "" {
-		return nil, errors.New("failed to run controlplane, APIServer DNS name not available")
-	}
-
-	caCertHash, err := certificates.GenerateCertificateHash(s.scope.ClusterConfig.CAKeyPair.Cert)
+	startupScript, err := s.getVMStartupScript(machine, bootstrapToken)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "error while trying to get VM startupscript for machine name %s in cluster %s", machine.Name(), s.scope.Name())
 	}
-
-	// apply values based on the role of the machine
-	switch machine.Role() {
-	case "controlplane":
-		// TODO: Check for existence of control plane subnet & ensure NSG is attached to subnet
-
-		var cfg string
-		var err error
-
-		if bootstrapToken != "" {
-			klog.V(2).Infof("Allowing machine %q to join control plane for cluster %q", machine.Name(), s.scope.Name())
-
-			cfg, err = config.JoinControlPlane(&config.ContolPlaneJoinInput{
-				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
-				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
-				CACertHash:        caCertHash,
-				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
-				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
-				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
-				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
-				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
-				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
-				BootstrapToken:    bootstrapToken,
-				LBAddress:         s.scope.Network().APIServerIP.DNSName,
-				KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
-			})
-			if err != nil {
-				return input, err
-			}
-		} else {
-			klog.V(2).Infof("Machine %q is the first controlplane machine for cluster %q", machine.Name(), s.scope.Name())
-			if !s.scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
-				return nil, errors.New("failed to run controlplane, missing CAPrivateKey")
-			}
-
-			cfg, err = config.NewControlPlane(&config.ControlPlaneInput{
-				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
-				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
-				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
-				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
-				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
-				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
-				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
-				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
-				LBAddress:         s.scope.Network().APIServerIP.DNSName,
-				ClusterName:       s.scope.Name(),
-				PodSubnet:         s.scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
-				ServiceSubnet:     s.scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
-				ServiceDomain:     s.scope.Cluster.Spec.ClusterNetwork.ServiceDomain,
-				KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
-			})
-
-			if err != nil {
-				return input, err
-			}
-		}
-
-		input.StartupScript = cfg
-
-	case "node":
-		// TODO: Check for existence of node subnet & ensure NSG is attached to subnet
-
-		cfg, err := config.NewNode(&config.NodeInput{
-			CACertHash:        caCertHash,
-			BootstrapToken:    bootstrapToken,
-			LBAddress:         s.scope.Network().APIServerIP.DNSName,
-			KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
-		})
-
-		if err != nil {
-			return input, err
-		}
-
-		input.StartupScript = cfg
-
-	default:
-		return nil, errors.Errorf("Unknown node role %q", machine.Role())
-	}
-
+	input.StartupScript = startupScript
 	// TODO: Set ssh key
 
 	resourcesSvc := resources.NewService(s.scope)
@@ -220,6 +134,97 @@ func (s *Service) MachineExists(machine *actuators.MachineScope) (bool, error) {
 		return false, errors.Wrapf(err, "failed to lookup machine %q", machine.Name())
 	}
 	return instance != nil, nil
+}
+
+func (s *Service) getVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) (string, error) {
+	var startupScript string
+
+	if !s.scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
+		return "", errors.New("failed to run controlplane, missing CACertificate")
+	}
+
+	if s.scope.Network().APIServerIP.DNSName == "" {
+		return "", errors.New("failed to run controlplane, APIServer DNS name not available")
+	}
+
+	caCertHash, err := certificates.GenerateCertificateHash(s.scope.ClusterConfig.CAKeyPair.Cert)
+	if err != nil {
+		return "", err
+	}
+
+	// apply values based on the role of the machine
+	switch machine.Role() {
+	case "controlplane":
+		// TODO: Check for existence of control plane subnet & ensure NSG is attached to subnet
+
+		var err error
+
+		if bootstrapToken != "" {
+			klog.V(2).Infof("Allowing machine %s to join control plane for cluster %s", machine.Name(), s.scope.Name())
+
+			startupScript, err = config.JoinControlPlane(&config.ContolPlaneJoinInput{
+				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
+				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
+				CACertHash:        caCertHash,
+				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
+				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
+				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
+				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
+				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
+				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
+				BootstrapToken:    bootstrapToken,
+				LBAddress:         s.scope.Network().APIServerIP.DNSName,
+				KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
+			})
+			if err != nil {
+				return "", err
+			}
+		} else {
+			klog.V(2).Infof("Machine %s is the first controlplane machine for cluster %s", machine.Name(), s.scope.Name())
+			if !s.scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
+				return "", errors.New("failed to run controlplane, missing CAPrivateKey")
+			}
+
+			startupScript, err = config.NewControlPlane(&config.ControlPlaneInput{
+				CACert:            string(s.scope.ClusterConfig.CAKeyPair.Cert),
+				CAKey:             string(s.scope.ClusterConfig.CAKeyPair.Key),
+				EtcdCACert:        string(s.scope.ClusterConfig.EtcdCAKeyPair.Cert),
+				EtcdCAKey:         string(s.scope.ClusterConfig.EtcdCAKeyPair.Key),
+				FrontProxyCACert:  string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Cert),
+				FrontProxyCAKey:   string(s.scope.ClusterConfig.FrontProxyCAKeyPair.Key),
+				SaCert:            string(s.scope.ClusterConfig.SAKeyPair.Cert),
+				SaKey:             string(s.scope.ClusterConfig.SAKeyPair.Key),
+				LBAddress:         s.scope.Network().APIServerIP.DNSName,
+				ClusterName:       s.scope.Name(),
+				PodSubnet:         s.scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+				ServiceSubnet:     s.scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
+				ServiceDomain:     s.scope.Cluster.Spec.ClusterNetwork.ServiceDomain,
+				KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
+			})
+
+			if err != nil {
+				return "", err
+			}
+		}
+
+	case "node":
+		// TODO: Check for existence of node subnet & ensure NSG is attached to subnet
+		var err error
+		startupScript, err = config.NewNode(&config.NodeInput{
+			CACertHash:        caCertHash,
+			BootstrapToken:    bootstrapToken,
+			LBAddress:         s.scope.Network().APIServerIP.DNSName,
+			KubernetesVersion: machine.Machine.Spec.Versions.ControlPlane,
+		})
+
+		if err != nil {
+			return "", err
+		}
+
+	default:
+		return "", errors.Errorf("Unknown node role %s", machine.Role())
+	}
+	return startupScript, nil
 }
 
 // Old methods
