@@ -81,7 +81,7 @@ func (s *Service) ReconcileNICBackendPool(networkInterfaceName, backendPoolID st
 	if len(ipConfigs) > 0 {
 		ipConfig := ipConfigs[0]
 
-		if ipConfig.LoadBalancerBackendAddressPools != nil {
+		if ipConfig.LoadBalancerBackendAddressPools != (*[]network.BackendAddressPool)(nil) {
 			backendPool := (*ipConfig.LoadBalancerBackendAddressPools)[0]
 			if *backendPool.ID != backendPoolID {
 				klog.V(2).Infof("Could not attach NIC to load balancer backend pool (%q). NIC is already attached to %q.", backendPoolID, *backendPool.ID)
@@ -123,9 +123,8 @@ func (s *Service) ReconcileNICPublicIP(networkInterfaceName string, publicIP net
 	ipConfigs := (*nic.IPConfigurations)
 	if len(ipConfigs) > 0 {
 		ipConfig := ipConfigs[0]
-		pip := ipConfig.PublicIPAddress
 
-		if pip != nil {
+		if ipConfig.PublicIPAddress != (*network.PublicIPAddress)(nil) {
 			pipID := *ipConfig.PublicIPAddress.ID
 			if pipID != *publicIP.ID {
 				klog.V(2).Infof("Could not associate NIC to public IP (%q). NIC is already associated with %q.", *publicIP.ID, pipID)
@@ -173,3 +172,5 @@ func (s *Service) getDefaultVMNetworkInterfaceConfig() network.Interface {
 func (s *Service) GetNetworkInterfaceName(machine *clusterv1.Machine) string {
 	return fmt.Sprintf("%s-nic", machine.Name)
 }
+
+// TODO: Add method for retrieving a network interface's primary IP config
