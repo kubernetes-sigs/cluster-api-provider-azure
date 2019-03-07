@@ -1,4 +1,4 @@
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -101,26 +101,26 @@ go_repository(
 
 go_repository(
     name = "io_k8s_sigs_kind",
-    commit = "1284e993a84a56c994ea541dbcb97486a7b86b50",
+    commit = "45ed3d23016727dbdad2f42291ab25e0f09118f1",
     importpath = "sigs.k8s.io/kind",
 )
 
 go_repository(
     name = "io_k8s_sigs_kustomize",
-    commit = "58492e2d83c59ed63881311f46ad6251f77dabc3",
     importpath = "sigs.k8s.io/kustomize",
+    tag = "v1.0.11",
 )
 
 go_repository(
     name = "io_k8s_kubernetes",
-    commit = "4ed3216f3ec431b140b1d899130a69fc671678f4",  # v1.12.1
     importpath = "k8s.io/kubernetes",
+    tag = "v1.13.4",
 )
 
 go_repository(
     name = "com_github_a8m_envsubst",
-    commit = "41dec2456c86b2a9fa51a22a808b7084b8d52c64",  # v1.1.0
     importpath = "github.com/a8m/envsubst",
+    tag = "v1.1.0",
 )
 
 # for @io_k8s_kubernetes
