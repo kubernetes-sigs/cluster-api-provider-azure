@@ -24,7 +24,31 @@ cluster on Azure.
 
 TODO
 
-------
+---
+
+## Support Policy
+
+This provider's versions are compatible with the following versions of Cluster API:
+
+||Cluster API 0.0.x|Cluster API 0.1 (unreleased)|Cluster API 0.2 (unreleased)|
+|-|-|-|-|
+|Azure Provider 0.1 (unreleased)|✓|✓|-|
+|Azure Provider 0.2 (unreleased)|x|x|✓|
+
+This provider's versions are able to install and manage the following versions of Kubernetes:
+
+||Kubernetes 1.13|Kubernetes 1.14 (unreleased)|
+|-|-|-|
+|Azure Provider 0.1 (unreleased)|✓|? (Currently untested)|
+|Azure Provider 0.2 (unreleased)|x|✓|
+
+In general, Cluster API for Azure will remain in lock-step with Cluster API versioning in terms of support e.g., Azure Provider `v0.x` will maintain compatibility with Cluster API `v0.x`.
+
+Each version of Cluster API for Azure will attempt to support two Kubernetes versions e.g., Cluster API for Azure `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
+
+**NOTE:** As the versioning for this project is tied to the versioning of Cluster API, future modifications to this policy may be made to more closely align with other providers in the Cluster API ecosystem.
+
+---
 
 ## Documentation
 
