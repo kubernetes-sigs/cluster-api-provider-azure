@@ -122,7 +122,8 @@ spec:
                 group to its unique name, if any.
               type: object
             subnets:
-              description: Subnets includes all the subnets defined inside the Vnet.
+              description: 'TODO: Move into NetworkSpec Subnets includes all the subnets
+                defined inside the Vnet.'
               items:
                 properties:
                   cidrBlock:

@@ -23,6 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TODO: Write type tests
+
 // AzureResourceReference is a reference to a specific Azure resource by ID
 type AzureResourceReference struct {
 	// ID of resource
@@ -79,6 +81,7 @@ type Network struct {
 	// SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
 	SecurityGroups map[SecurityGroupRole]*SecurityGroup `json:"securityGroups,omitempty"`
 
+	// TODO: Move into NetworkSpec
 	// Subnets includes all the subnets defined inside the Vnet.
 	Subnets Subnets `json:"subnets,omitempty"`
 

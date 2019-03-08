@@ -56,9 +56,6 @@ spec:
             - message
             type: object
           type: array
-        instanceState:
-          description: VMState is the state of the Azure instance for this machine.
-          type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
@@ -67,7 +64,10 @@ spec:
         metadata:
           type: object
         vmId:
-          description: VMID is the instance ID of the machine created in Azure.
+          description: VMID is the vm ID of the machine created in Azure
+          type: string
+        vmState:
+          description: VMState is the state of the Azure vm for this machine
           type: string
   version: v1alpha1
 status:

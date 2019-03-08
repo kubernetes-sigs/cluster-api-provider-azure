@@ -402,6 +402,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	}
 
 	// update master inplace
+	// TODO: Remove usage of Roles
 	if isMasterMachine(scope.MachineConfig.Roles) {
 		klog.Infof("updating master machine %v in place", currentMachine.ObjectMeta.Name)
 		err = a.updateMaster(cluster, currentMachine, goalMachine)
@@ -557,6 +558,7 @@ func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
 	return client, err
 }
 
+// TODO: Remove usage of MachineRole
 func isMasterMachine(roles []v1alpha1.MachineRole) bool {
 	for _, r := range roles {
 		if r == v1alpha1.Master {

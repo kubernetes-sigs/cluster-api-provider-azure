@@ -180,6 +180,7 @@ func (s *Service) convertVMToDeploymentParams(machine *clusterv1.Machine, machin
 	return &params, nil
 }
 
+/*
 // Get the startup script from the machine_set_configs, taking into account the role of the given machine
 func getStartupScript(machine *clusterv1.Machine, machineConfig providerv1.AzureMachineProviderSpec) (string, error) {
 	if machineConfig.Roles[0] == providerv1.Master {
@@ -267,6 +268,7 @@ kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --disc
 	}
 	return "", errors.New("unable to get startup script: unknown machine role")
 }
+*/
 
 // GetVMName returns the VM resource name of the machine.
 func (s *Service) GetVMName(machine *clusterv1.Machine) string {
