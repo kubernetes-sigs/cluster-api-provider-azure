@@ -1,15 +1,16 @@
 # Release Process
 
-1. Create a draft release in github
-2. Tag the repository and push the tag
+1. Review and discuss any potential modifications to the [support matrix/policy][support-policy]
+2. Create a draft release in github
+3. Tag the repository and push the tag
    - An [OWNER](/OWNERS) runs `git tag -s $VERSION` and inserts the changelog and pushes the tag with `git push $VERSION`
-3. Run `make release-binaries`
-4. Attach the tarball to the drafted release
-5. Attach `clusterctl` to the drafted release (for darwin and linux architectures)
-6. Write the [release notes](#release-notes)
-7. Build and push the container image
-8. Publish release
-9. Announce the release
+4. Run `make release-binaries`
+5. Attach the tarball to the drafted release
+6. Attach `clusterctl` to the drafted release (for darwin and linux architectures)
+7. Write the [release notes](#release-notes)
+8. Build and push the container image
+9. Publish release
+10. Announce the release
 
 ## Versioning
 
@@ -73,4 +74,5 @@ The markdown is shared in the Kubernetes slack in the channel #cluster-api-azure
 
 
 [semver]: https://semver.org/#semantic-versioning-200
+[support-policy]: /README.md#support-policy
 [template]: /docs/release-notes-template.md
