@@ -59,6 +59,8 @@ func (s *Service) CreateOrGetMachine(machine *actuators.MachineScope, bootstrapT
 
 // VMIfExists returns the existing instance or nothing if it doesn't exist.
 func (s *Service) VMIfExists(name string) (*v1alpha1.VM, error) {
+	klog.V(2).Infof("Looking for instance %q", name)
+
 	vm, err := s.scope.VM.Get(s.scope.Context, s.scope.ClusterConfig.ResourceGroup, name, "")
 	if err != nil {
 		if aerr, ok := err.(autorest.DetailedError); ok {
@@ -66,7 +68,7 @@ func (s *Service) VMIfExists(name string) (*v1alpha1.VM, error) {
 				return nil, nil
 			}
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to describe instance: %q", name)
 	}
 
 	return converters.SDKToVM(vm), nil
@@ -124,16 +126,16 @@ func (s *Service) DeleteVM(resourceGroup string, name string) (compute.VirtualMa
 // MachineExists will return whether or not a machine exists.
 func (s *Service) MachineExists(machine *actuators.MachineScope) (bool, error) {
 	var err error
-	var instance *v1alpha1.VM
+	var vm *v1alpha1.VM
 
 	if machine.MachineStatus.VMID != nil {
-		instance, err = s.VMIfExists(machine.Name())
+		vm, err = s.VMIfExists(machine.Name())
 	}
 
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to lookup machine %q", machine.Name())
 	}
-	return instance != nil, nil
+	return vm != nil, nil
 }
 
 func (s *Service) getVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) (string, error) {
