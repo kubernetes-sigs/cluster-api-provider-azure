@@ -75,15 +75,8 @@ const (
 
 // Network encapsulates Azure networking resources.
 type Network struct {
-	// Vnet defines the cluster vnet.
-	Vnet Vnet `json:"vnet,omitempty"`
-
 	// SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
 	SecurityGroups map[SecurityGroupRole]*SecurityGroup `json:"securityGroups,omitempty"`
-
-	// TODO: Move into NetworkSpec
-	// Subnets includes all the subnets defined inside the Vnet.
-	Subnets Subnets `json:"subnets,omitempty"`
 
 	// APIServerLB is the Kubernetes API server load balancer.
 	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
@@ -92,37 +85,23 @@ type Network struct {
 	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
 }
 
+// TODO: Implement tagging
+/*
 // Tags defines resource tags.
 type Tags map[string]*string
-
-// Vnet defines an Azure Virtual Network.
-type Vnet struct {
-	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	CidrBlock string `json:"cidrBlock"`
-	Tags      *Tags  `json:"tags"`
-}
+*/
 
 // Subnets is a slice of Subnet.
-type Subnets []*Subnet
+type Subnets []*SubnetSpec
 
 // TODO
 // ToMap returns a map from id to subnet.
-func (s Subnets) ToMap() map[string]*Subnet {
-	res := make(map[string]*Subnet)
+func (s Subnets) ToMap() map[string]*SubnetSpec {
+	res := make(map[string]*SubnetSpec)
 	for _, x := range s {
 		res[x.ID] = x
 	}
 	return res
-}
-
-// Subnet defines an Azure subnet attached to a Vnet.
-type Subnet struct {
-	ID            string        `json:"id,omitempty"`
-	Name          string        `json:"name"`
-	VnetID        string        `json:"vnetId"`
-	CidrBlock     string        `json:"cidrBlock"`
-	SecurityGroup SecurityGroup `json:"securityGroup"`
 }
 
 // SecurityGroupRole defines the unique role of a security group.
@@ -144,7 +123,8 @@ type SecurityGroup struct {
 	ID           string       `json:"id"`
 	Name         string       `json:"name"`
 	IngressRules IngressRules `json:"ingressRule"`
-	Tags         *Tags        `json:"tags"`
+	// TODO: Uncomment once tagging is implemented.
+	//Tags         *Tags        `json:"tags"`
 }
 
 /*
@@ -243,7 +223,8 @@ type LoadBalancer struct {
 	SKU              SKU              `json:"sku,omitempty"`
 	FrontendIPConfig FrontendIPConfig `json:"frontendIpConfig,omitempty"`
 	BackendPool      BackendPool      `json:"backendPool,omitempty"`
-	Tags             Tags             `json:"tags,omitempty"`
+	// TODO: Uncomment once tagging is implemented.
+	//Tags             Tags             `json:"tags,omitempty"`
 	/*
 		// FrontendIPConfigurations - Object representing the frontend IPs to be used for the load balancer
 		FrontendIPConfigurations *[]FrontendIPConfiguration `json:"frontendIPConfigurations,omitempty"`
@@ -368,7 +349,8 @@ type VM struct {
 	State    VMState    `json:"vmState,omitempty"`
 	Identity VMIdentity `json:"identity,omitempty"`
 
-	Tags Tags `json:"tags,omitempty"`
+	// TODO: Uncomment once tagging is implemented.
+	//Tags Tags `json:"tags,omitempty"`
 
 	// HardwareProfile - Specifies the hardware settings for the virtual machine.
 	//HardwareProfile *HardwareProfile `json:"hardwareProfile,omitempty"`
