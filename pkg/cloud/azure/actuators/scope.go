@@ -129,16 +129,14 @@ func (s *Scope) Network() *v1alpha1.Network {
 	return &s.ClusterStatus.Network
 }
 
-// TODO: Rewrite to use ClusterConfig and NetworkSpec
 // Vnet returns the cluster Vnet.
-func (s *Scope) Vnet() *v1alpha1.Vnet {
-	return &s.ClusterStatus.Network.Vnet
+func (s *Scope) Vnet() *v1alpha1.VnetSpec {
+	return &s.ClusterConfig.NetworkSpec.Vnet
 }
 
-// TODO: Rewrite to use ClusterConfig and NetworkSpec
 // Subnets returns the cluster subnets.
 func (s *Scope) Subnets() v1alpha1.Subnets {
-	return s.ClusterStatus.Network.Subnets
+	return s.ClusterConfig.NetworkSpec.Subnets
 }
 
 // SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
