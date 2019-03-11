@@ -18,12 +18,17 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadmv1beta1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 )
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AzureMachineProviderSpec is the Schema for the azuremachineproviderspecs API
+// AzureMachineProviderSpec is the type that will be embedded in a Machine.Spec.ProviderSpec field
+// for an Azure virtual machine. It is used by the Azure machine actuator to create a single Machine.
+// Required parameters such as location that are not specified by this configuration, will be defaulted
+// by the actuator.
+// TODO: Update type
 // +k8s:openapi-gen=true
 type AzureMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -36,6 +41,17 @@ type AzureMachineProviderSpec struct {
 	OSDisk        OSDisk        `json:"osDisk"`
 	SSHPublicKey  string        `json:"sshPublicKey"`
 	SSHPrivateKey string        `json:"sshPrivateKey"`
+}
+
+// KubeadmConfiguration holds the various configurations that kubeadm uses
+type KubeadmConfiguration struct {
+	// JoinConfiguration is used to customize any kubeadm join configuration
+	// parameters.
+	Join kubeadmv1beta1.JoinConfiguration `json:"join,omitempty"`
+
+	// InitConfiguration is used to customize any kubeadm init configuration
+	// parameters.
+	Init kubeadmv1beta1.InitConfiguration `json:"init,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

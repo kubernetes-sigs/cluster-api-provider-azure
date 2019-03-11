@@ -19,12 +19,12 @@ package machine
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
+	apicorev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,6 +42,10 @@ import (
 	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
 )
 
+const (
+	defaultTokenTTL = 10 * time.Minute
+)
+
 //+kubebuilder:rbac:groups=azureprovider.k8s.io,resources=azuremachineproviderconfigs;azuremachineproviderstatuses,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cluster.k8s.io,resources=machines;machines/status;machinedeployments;machinedeployments/status;machinesets;machinesets/status;machineclasses,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cluster.k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
@@ -54,8 +58,7 @@ type Actuator struct {
 	client client.ClusterV1alpha1Interface
 }
 
-// ActuatorParams contains the parameters that are used to create a machine actuator.
-// These are not indicative of all requirements for a machine actuator, environment variables are also necessary.
+// ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
 	Client client.ClusterV1alpha1Interface
 }
@@ -68,14 +71,8 @@ func NewActuator(params ActuatorParams) *Actuator {
 	}
 }
 
-const (
-	// ProviderName is the default name of the cloud provider used.
-	ProviderName = "azure"
-	// SSHUser is the default ssh username.
-	SSHUser = "ClusterAPI"
-)
-
-func (a *Actuator) getControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Machine {
+// GetControlPlaneMachines retrieves all control plane nodes from a MachineList
+func GetControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Machine {
 	var cpm []*clusterv1.Machine
 	for _, m := range machineList.Items {
 		if m.Spec.Versions.ControlPlane != "" {
@@ -90,39 +87,36 @@ func machinesEqual(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
 	return m1.Name == m2.Name && m1.Namespace == m2.Namespace
 }
 
-func (a *Actuator) isNodeJoin(controlPlaneMachines []*clusterv1.Machine, newMachine *clusterv1.Machine, cluster *clusterv1.Cluster) (bool, error) {
-	switch newMachine.ObjectMeta.Labels["set"] {
+func (a *Actuator) isNodeJoin(scope *actuators.MachineScope, controlPlaneMachines []*clusterv1.Machine) (bool, error) {
+	switch set := scope.Machine.ObjectMeta.Labels["set"]; set {
 	case "node":
 		return true, nil
 	case "controlplane":
-		controlPlaneExists := false
 		for _, cm := range controlPlaneMachines {
 			m, err := actuators.NewMachineScope(actuators.MachineScopeParams{
 				Machine: cm,
-				Cluster: cluster,
+				Cluster: scope.Cluster,
 				Client:  a.client,
 			})
+
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to create machine scope for machine %q", cm.Name)
 			}
 
 			computeSvc := compute.NewService(m.Scope)
-			controlPlaneExists, err = computeSvc.MachineExists(m)
+
+			ok, err := computeSvc.MachineExists(m)
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to verify existence of machine %q", m.Name())
 			}
-			if controlPlaneExists {
-				break
-			}
+
+			klog.V(2).Infof("Machine %q should join the controlplane: %t", scope.Machine.Name, ok)
+			return ok, nil
 		}
 
-		klog.V(2).Infof("Machine %q should join the controlplane: %t", newMachine.Name, controlPlaneExists)
-		return controlPlaneExists, nil
+		return false, nil
 	default:
-		errMsg := fmt.Sprintf("Unknown value %q for label \"set\" on machine %q, skipping machine creation", newMachine.ObjectMeta.Labels["set"], newMachine.Name)
-		klog.Errorf(errMsg)
-		err := errors.Errorf(errMsg)
-		return false, err
+		return false, errors.Errorf("Unknown value %q for label `set` on machine %q, skipping machine creation", set, scope.Machine.Name)
 	}
 }
 
@@ -144,27 +138,30 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve machines in cluster %q", cluster.Name)
 	}
-	controlPlaneMachines := a.getControlPlaneMachines(clusterMachines)
-	isNodeJoin, err := a.isNodeJoin(controlPlaneMachines, machine, cluster)
+
+	controlPlaneMachines := GetControlPlaneMachines(clusterMachines)
+
+	isNodeJoin, err := a.isNodeJoin(scope, controlPlaneMachines)
 	if err != nil {
 		return errors.Wrapf(err, "failed to determine whether machine %q should join cluster %q", machine.Name, cluster.Name)
 	}
 
 	var bootstrapToken string
 	if isNodeJoin {
-		bootstrapToken, err = a.getNodeJoinToken(cluster)
-		if err != nil {
-			return errors.Wrapf(err, "failed to obtain token for node %q to join cluster %q", machine.Name, cluster.Name)
+		coreClient, bootstrapErr := a.coreV1Client(cluster)
+		if bootstrapErr != nil {
+			return errors.Wrapf(bootstrapErr, "failed to retrieve corev1 client for cluster %q", cluster.Name)
+		}
+
+		bootstrapToken, bootstrapErr = tokens.NewBootstrap(coreClient, defaultTokenTTL)
+		if bootstrapErr != nil {
+			return errors.Wrapf(bootstrapErr, "failed to create new bootstrap token")
 		}
 	}
 
-	kubeConfig := ""
-
-	if len(controlPlaneMachines) > 0 {
-		kubeConfig, err = a.GetKubeConfig(cluster, nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to retrieve kubeconfig while creating machine %q", machine.Name)
-		}
+	kubeConfig, err := a.GetKubeConfig(cluster, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to retrieve kubeconfig while creating machine %q", machine.Name)
 	}
 
 	nic, err := networkSvc.CreateDefaultVMNetworkInterface(scope.ClusterConfig.ResourceGroup, scope.Machine)
@@ -206,18 +203,16 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		}
 	}
 
-	i, err := computeSvc.CreateOrGetMachine(scope, bootstrapToken, kubeConfig)
+	vm, err := computeSvc.CreateOrGetMachine(scope, bootstrapToken, kubeConfig)
 	if err != nil {
-		klog.Errorf("network not ready to launch instances yet: %+v", err)
+		klog.Errorf("failed to create or get machine: %+v", err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: time.Minute,
 		}
 	}
 
-	scope.MachineStatus.VMID = &i.ID
-
-	// TODO: Is this still required with scope.Close()?
-	//return a.updateAnnotations(cluster, machine)
+	scope.MachineStatus.VMID = &vm.ID
+	scope.MachineStatus.VMState = &vm.State
 
 	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
@@ -231,17 +226,17 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	return nil
 }
 
-func (a *Actuator) getNodeJoinToken(cluster *clusterv1.Cluster) (string, error) {
+func (a *Actuator) coreV1Client(cluster *clusterv1.Cluster) (corev1.CoreV1Interface, error) {
 	controlPlaneDNSName, err := a.GetIP(cluster, nil)
 	if err != nil {
-		return "", errors.Errorf("failed to retrieve controlplane (GetIP): %+v", err)
+		return nil, errors.Errorf("failed to retrieve controlplane (GetIP): %+v", err)
 	}
 
 	controlPlaneURL := fmt.Sprintf("https://%s:6443", controlPlaneDNSName)
 
 	kubeConfig, err := a.GetKubeConfig(cluster, nil)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to retrieve kubeconfig for cluster %q.", cluster.Name)
+		return nil, errors.Wrapf(err, "failed to retrieve kubeconfig for cluster %q.", cluster.Name)
 	}
 
 	clientConfig, err := clientcmd.BuildConfigFromKubeconfigGetter(controlPlaneURL, func() (*clientcmdapi.Config, error) {
@@ -249,24 +244,14 @@ func (a *Actuator) getNodeJoinToken(cluster *clusterv1.Cluster) (string, error) 
 	})
 
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get client config for cluster at %q", controlPlaneURL)
+		return nil, errors.Wrapf(err, "failed to get client config for cluster at %q", controlPlaneURL)
 	}
 
-	coreClient, err := corev1.NewForConfig(clientConfig)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to initialize new corev1 client")
-	}
-
-	bootstrapToken, err := tokens.NewBootstrap(coreClient, 10*time.Minute)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to create new bootstrap token")
-	}
-
-	return bootstrapToken, nil
+	return corev1.NewForConfig(clientConfig)
 }
 
-// Delete an existing machine based on the cluster and machine spec passed.
-// Will block until the machine has been successfully deleted, or an error is returned.
+// Delete deletes a machine and is invoked by the Machine Controller
+// TODO: Rewrite method
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Deleting machine %v for cluster %v.", machine.Name, cluster.Name)
 
@@ -298,7 +283,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	osDiskName := avm.VirtualMachineProperties.StorageProfile.OsDisk.Name
 	nicID := (*avm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
 
-	// delete the VM instance
+	// delete the VM
 	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(machine))
 	if err != nil {
 		return fmt.Errorf("error deleting virtual machine: %v", err)
@@ -341,27 +326,30 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	return nil
 }
 
-// TODO: Implement method
-// isMachineOudated checks that no immutable fields have been updated in an
+// isMachineOutdated checks that no immutable fields have been updated in an
 // Update request.
 // Returns a bool indicating if an attempt to change immutable state occurred.
 //  - true:  An attempt to change immutable state occurred.
 //  - false: Immutable state was untouched.
-/*
-func (a *Actuator) isMachineOutdated(machineSpec *v1alpha1.AzureMachineProviderSpec, instance *v1alpha1.VM) bool {
+func (a *Actuator) isMachineOutdated(machineSpec *v1alpha1.AzureMachineProviderSpec, vm *v1alpha1.VM) bool {
+	// VM Size
+	if machineSpec.VMSize != vm.VMSize {
+		return true
+	}
+
+	// TODO: Add additional checks for immutable fields
 
 	// No immutable state changes found.
 	return false
 }
-*/
 
 // Update updates a machine and is invoked by the Machine Controller.
 // If the Update attempts to mutate any immutable state, the method will error
 // and no updates will be performed.
-func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	klog.Infof("Updating machine %v for cluster %v.", goalMachine.Name, cluster.Name)
+func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	klog.Infof("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
 
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: goalMachine, Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
 		return errors.Errorf("failed to create scope: %+v", err)
 	}
@@ -369,59 +357,29 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, goalM
 	defer scope.Close()
 
 	computeSvc := compute.NewService(scope.Scope)
-	resourcesSvc := resources.NewService(scope.Scope)
 
+	// Get the current vm description from Azure.
+	vmDescription, err := computeSvc.VMIfExists(*scope.MachineStatus.VMID)
+	if err != nil {
+		return errors.Errorf("failed to get vm: %+v", err)
+	}
+
+	// We can now compare the various Azure state to the state we were passed.
+	// We will check immutable state first, in order to fail quickly before
+	// moving on to state that we can mutate.
+	if a.isMachineOutdated(scope.MachineConfig, vmDescription) {
+		return errors.Errorf("found attempt to change immutable state")
+	}
+
+	// TODO: Uncomment after implementing tagging.
+	// Ensure that the tags are correct.
 	/*
-		status, err := a.status(goalMachine)
+		_, err = a.ensureTags(computeSvc, machine, scope.MachineStatus.VMID, scope.MachineConfig.AdditionalTags)
 		if err != nil {
-			return err
+			return errors.Errorf("failed to ensure tags: %+v", err)
 		}
-		currentMachine := (*clusterv1.Machine)(status)
 	*/
 
-	currentMachine := scope.Machine
-
-	if currentMachine == nil {
-		vm, existsErr := computeSvc.VMIfExists(resourcesSvc.GetVMName(goalMachine))
-		if existsErr != nil || vm == nil {
-			return fmt.Errorf("error checking if vm exists: %v", existsErr)
-		}
-		// update annotations for bootstrap machine
-		if vm != nil {
-			// TODO: Is this still required with scope.Close()?
-			//return a.updateAnnotations(cluster, goalMachine)
-			return nil
-		}
-		return fmt.Errorf("current machine %v no longer exists: %v", goalMachine.ObjectMeta.Name, existsErr)
-	}
-
-	// no need for update if fields havent changed
-	if !a.shouldUpdate(currentMachine, goalMachine) {
-		klog.Infof("no need to update machine: %v", currentMachine.ObjectMeta.Name)
-		return nil
-	}
-
-	// update master inplace
-	if isMasterMachine(scope.MachineConfig.Roles) {
-		klog.Infof("updating master machine %v in place", currentMachine.ObjectMeta.Name)
-		err = a.updateMaster(cluster, currentMachine, goalMachine)
-		if err != nil {
-			return fmt.Errorf("error updating master machine %v in place: %v", currentMachine.ObjectMeta.Name, err)
-		}
-		// TODO: Is this still required with scope.Close()?
-		//return a.updateStatus(goalMachine)
-		return nil
-	}
-	// delete and recreate machine for nodes
-	klog.Infof("replacing node machine %v", currentMachine.ObjectMeta.Name)
-	err = a.Delete(ctx, cluster, currentMachine)
-	if err != nil {
-		return fmt.Errorf("error updating node machine %v, deleting node machine failed: %v", currentMachine.ObjectMeta.Name, err)
-	}
-	err = a.Create(ctx, cluster, goalMachine)
-	if err != nil {
-		klog.Errorf("error updating node machine %v, creating node machine failed: %v", goalMachine.ObjectMeta.Name, err)
-	}
 	return nil
 }
 
@@ -438,23 +396,23 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	computeSvc := compute.NewService(scope.Scope)
 
-	// TODO worry about pointers. instance if exists returns *any* instance
+	// TODO worry about pointers. vm if exists returns *any* vm
 	if scope.MachineStatus.VMID == nil {
 		return false, nil
 	}
 
-	instance, err := computeSvc.VMIfExists(*scope.MachineStatus.VMID)
+	vm, err := computeSvc.VMIfExists(*scope.MachineStatus.VMID)
 	if err != nil {
-		return false, errors.Errorf("failed to retrieve instance: %+v", err)
+		return false, errors.Errorf("failed to retrieve vm: %+v", err)
 	}
 
-	if instance == nil {
+	if vm == nil {
 		return false, nil
 	}
 
-	klog.Infof("Found instance for machine %q: %v", machine.Name, instance)
+	klog.Infof("Found vm for machine %q: %v", machine.Name, vm)
 
-	switch instance.State {
+	switch vm.State {
 	case v1alpha1.VMStateSucceeded:
 		klog.Infof("Machine %v is running", *scope.MachineStatus.VMID)
 	case v1alpha1.VMStateUpdating:
@@ -463,18 +421,71 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return false, nil
 	}
 
-	/*
-		if err := a.reconcileLBAttachment(scope, machine, instance); err != nil {
-			return true, err
+	scope.MachineStatus.VMState = &vm.State
+
+	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
+		// TODO: This should be unified with the logic for getting the nodeRef, and
+		// should potentially leverage the code that already exists in
+		// kubernetes/cloud-provider-azure
+		providerID := fmt.Sprintf("azure:////%s", *scope.MachineStatus.VMID)
+		scope.Machine.Spec.ProviderID = &providerID
+	}
+
+	// Set the Machine NodeRef.
+	if machine.Status.NodeRef == nil {
+		nodeRef, err := a.getNodeReference(scope)
+		if err != nil {
+			klog.Warningf("Failed to set nodeRef: %v", err)
+			return true, nil
 		}
-	*/
+
+		scope.Machine.Status.NodeRef = nodeRef
+		klog.Infof("Setting machine %q nodeRef to %q", scope.Name(), nodeRef.Name)
+	}
 
 	return true, nil
+}
+
+func (a *Actuator) getNodeReference(scope *actuators.MachineScope) (*apicorev1.ObjectReference, error) {
+	instanceID := *scope.MachineStatus.VMID
+
+	coreClient, err := a.coreV1Client(scope.Cluster)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve corev1 client for cluster %q", scope.Cluster.Name)
+	}
+
+	listOpt := metav1.ListOptions{}
+
+	for {
+		nodeList, err := coreClient.Nodes().List(listOpt)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to query cluster nodes")
+		}
+
+		for _, node := range nodeList.Items {
+			// TODO(vincepri): Improve this comparison without relying on substrings.
+			if strings.Contains(node.Spec.ProviderID, instanceID) {
+				return &apicorev1.ObjectReference{
+					Kind:       node.Kind,
+					APIVersion: node.APIVersion,
+					Name:       node.Name,
+				}, nil
+			}
+		}
+
+		listOpt.Continue = nodeList.Continue
+		if listOpt.Continue == "" {
+			break
+		}
+	}
+
+	return nil, errors.Errorf("no node found for machine %q", scope.Name())
 }
 
 // Old methods
 
 // TODO: Remove old methods
+/*
 func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
 	//klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
 
@@ -557,6 +568,7 @@ func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
 	return client, err
 }
 
+// TODO: Remove usage of MachineRole
 func isMasterMachine(roles []v1alpha1.MachineRole) bool {
 	for _, r := range roles {
 		if r == v1alpha1.Master {
@@ -565,3 +577,4 @@ func isMasterMachine(roles []v1alpha1.MachineRole) bool {
 	}
 	return false
 }
+*/

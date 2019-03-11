@@ -19,13 +19,14 @@ package cluster
 import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
 )
 
 //+kubebuilder:rbac:groups=azureprovider.k8s.io,resources=azureclusterproviderconfigs;azureclusterproviderstatuses,verbs=get;list;watch;create;update;patch;delete
@@ -51,7 +52,7 @@ func NewActuator(params ActuatorParams) *Actuator {
 	}
 }
 
-// Reconcile creates or applies updates to the cluster.
+// Reconcile reconciles a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 	klog.Infof("Reconciling cluster %v", cluster.Name)
 
@@ -64,69 +65,30 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 
 	networkSvc := network.NewService(scope)
 	resourcesSvc := resources.NewService(scope)
+	certSvc := certificates.NewService(scope)
 
-	// Store some config parameters in the status.
-	if !scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
-		caCert, caKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.CAKeyPair, actuators.ClusterCA)
-		if err != nil {
-			return errors.Wrap(err, "Failed to generate a CA for the control plane")
-		}
-		scope.ClusterConfig.CAKeyPair = v1alpha1.KeyPair{
-			Cert: caCert,
-			Key:  caKey,
-		}
-	}
-
-	if !scope.ClusterConfig.EtcdCAKeyPair.HasCertAndKey() {
-		etcdCACert, etcdCAKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.EtcdCAKeyPair, actuators.EtcdCA)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get or generate etcd CA cert")
-		}
-		scope.ClusterConfig.EtcdCAKeyPair = v1alpha1.KeyPair{
-			Cert: etcdCACert,
-			Key:  etcdCAKey,
-		}
-	}
-
-	if !scope.ClusterConfig.FrontProxyCAKeyPair.HasCertAndKey() {
-		fpCACert, fpCAKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.FrontProxyCAKeyPair, actuators.FrontProxyCA)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get or generate front-proxy CA cert")
-		}
-		scope.ClusterConfig.FrontProxyCAKeyPair = v1alpha1.KeyPair{
-			Cert: fpCACert,
-			Key:  fpCAKey,
-		}
-	}
-
-	if !scope.ClusterConfig.SAKeyPair.HasCertAndKey() {
-		saPub, saKey, err := actuators.GetOrGenerateKeyPair(&scope.ClusterConfig.SAKeyPair, actuators.ServiceAccount)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get or generate service-account certificates")
-		}
-		scope.ClusterConfig.SAKeyPair = v1alpha1.KeyPair{
-			Cert: saPub,
-			Key:  saKey,
-		}
+	// Store cert material in spec.
+	if err := certSvc.ReconcileCertificates(); err != nil {
+		return errors.Wrapf(err, "failed to reconcile certificates for cluster %q", cluster.Name)
 	}
 
 	if err := resourcesSvc.ReconcileResourceGroup(); err != nil {
-		return errors.Errorf("unable to reconcile resource group: %+v", err)
+		return errors.Wrapf(err, "failed to reconcile resource group for cluster %q", cluster.Name)
 	}
 
 	if err := networkSvc.ReconcileNetwork(); err != nil {
-		return errors.Errorf("unable to reconcile network: %+v", err)
+		return errors.Wrapf(err, "failed to reconcile network for cluster %q", cluster.Name)
 	}
 
 	// TODO: Add bastion method
 	/*
 		if err := resourcesSvc.ReconcileBastion(); err != nil {
-			return errors.Errorf("unable to reconcile bastion: %+v", err)
+			return errors.Wrapf(err, "failed to reconcile bastion host for cluster %q", cluster.Name)
 		}
 	*/
 
 	if err := networkSvc.ReconcileLoadBalancer("api"); err != nil {
-		return errors.Errorf("unable to reconcile load balancer: %+v", err)
+		return errors.Wrapf(err, "failed to reconcile load balancers for cluster %q", cluster.Name)
 	}
 
 	return nil
@@ -171,7 +133,10 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	*/
 
 	if err := resourcesSvc.DeleteResourceGroup(); err != nil {
-		return errors.Errorf("unable to delete resource group: %+v", err)
+		klog.Errorf("Error deleting resource group: %v.", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: 5 * 1000 * 1000 * 1000,
+		}
 	}
 
 	return nil

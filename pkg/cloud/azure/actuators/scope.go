@@ -124,20 +124,19 @@ type Scope struct {
 	Context       context.Context
 }
 
-// TODO: Implement scope functions
 // Network returns the cluster network object.
 func (s *Scope) Network() *v1alpha1.Network {
 	return &s.ClusterStatus.Network
 }
 
 // Vnet returns the cluster Vnet.
-func (s *Scope) Vnet() *v1alpha1.Vnet {
-	return &s.ClusterStatus.Network.Vnet
+func (s *Scope) Vnet() *v1alpha1.VnetSpec {
+	return &s.ClusterConfig.NetworkSpec.Vnet
 }
 
 // Subnets returns the cluster subnets.
 func (s *Scope) Subnets() v1alpha1.Subnets {
-	return s.ClusterStatus.Network.Subnets
+	return s.ClusterConfig.NetworkSpec.Subnets
 }
 
 // SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
@@ -189,6 +188,7 @@ func (s *Scope) Close() {
 	latestCluster, err := s.storeClusterConfig(s.Cluster)
 	if err != nil {
 		klog.Errorf("[scope] failed to store provider config for cluster %q in namespace %q: %v", s.Cluster.Name, s.Cluster.Namespace, err)
+		return
 	}
 
 	_, err = s.storeClusterStatus(latestCluster)

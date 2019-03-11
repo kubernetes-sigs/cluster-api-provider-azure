@@ -43,7 +43,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, err
 	}
 
-	machineConfig, err := machineConfigFromProviderSpec(params.Client, params.Machine.Spec.ProviderSpec)
+	machineConfig, err := MachineConfigFromProviderSpec(params.Client, params.Machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get machine config")
 	}
@@ -113,10 +113,12 @@ func (m *MachineScope) storeMachineStatus(machine *clusterv1.Machine) (*clusterv
 		return nil, err
 	}
 
+	m.Machine.Status.DeepCopyInto(&machine.Status)
 	machine.Status.ProviderStatus = ext
 	return m.MachineClient.UpdateStatus(machine)
 }
 
+// Close the MachineScope by updating the machine spec, machine status.
 func (m *MachineScope) Close() {
 	if m.MachineClient == nil {
 		return
@@ -125,6 +127,7 @@ func (m *MachineScope) Close() {
 	latestMachine, err := m.storeMachineSpec(m.Machine)
 	if err != nil {
 		klog.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", m.Machine.Name, m.Machine.Namespace, err)
+		return
 	}
 
 	_, err = m.storeMachineStatus(latestMachine)
@@ -133,7 +136,8 @@ func (m *MachineScope) Close() {
 	}
 }
 
-func machineConfigFromProviderSpec(clusterClient client.MachineClassesGetter, providerConfig clusterv1.ProviderSpec) (*v1alpha1.AzureMachineProviderSpec, error) {
+// MachineConfigFromProviderSpec tries to decode the JSON-encoded spec, falling back on getting a MachineClass if the value is absent.
+func MachineConfigFromProviderSpec(clusterClient client.MachineClassesGetter, providerConfig clusterv1.ProviderSpec) (*v1alpha1.AzureMachineProviderSpec, error) {
 	var config v1alpha1.AzureMachineProviderSpec
 	if providerConfig.Value != nil {
 		klog.V(4).Info("Decoding ProviderConfig from Value")

@@ -41,18 +41,20 @@ func (s *Service) ReconcileNetwork() (err error) {
 		return fmt.Errorf("error creating or updating virtual network: %v", err)
 	}
 
-	s.scope.Network().Vnet.ID = *vnet.ID
-	s.scope.Network().Vnet.Name = *vnet.Name
+	s.scope.Vnet().ID = *vnet.ID
+	s.scope.Vnet().Name = *vnet.Name
 
 	// TODO: This should reconcile the subnet list. Right now, it only appends.
 	azsubnets := *vnet.Subnets
 	for _, azsubnet := range azsubnets {
-		s.scope.Network().Subnets = v1alpha1.Subnets{
-			{
+		s.scope.ClusterConfig.NetworkSpec.Subnets = append(
+			// TODO: Complete SubnetSpec struct
+			s.scope.ClusterConfig.NetworkSpec.Subnets,
+			&v1alpha1.SubnetSpec{
 				ID:   *azsubnet.ID,
 				Name: *azsubnet.Name,
 			},
-		}
+		)
 	}
 
 	klog.V(2).Info("Reconcile network completed successfully")

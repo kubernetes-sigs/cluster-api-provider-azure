@@ -155,11 +155,12 @@ func (s *Service) getDefaultVMNetworkInterfaceConfig() network.Interface {
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				{
+					// TODO: Remove hardcoded values
 					Name: to.StringPtr("ipconfig1"),
 					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 						Subnet: &network.Subnet{
 							// TODO: Need a method to pull the specific role (controlplane, node) subnet ID. This only works because we're only creating one subnet currently.
-							ID: to.StringPtr(s.scope.ClusterStatus.Network.Subnets[0].ID),
+							ID: to.StringPtr(s.scope.ClusterConfig.NetworkSpec.Subnets[0].ID),
 						},
 					},
 				},
