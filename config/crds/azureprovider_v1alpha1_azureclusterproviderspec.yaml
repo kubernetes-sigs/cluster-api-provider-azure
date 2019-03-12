@@ -20,7 +20,7 @@ spec:
             internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         caKeyPair:
-          description: CAKeyPair is the key pair for ca certs.
+          description: CAKeyPair is the key pair for CA certs.
           properties:
             cert:
               description: base64 encoded cert and key
@@ -343,7 +343,7 @@ spec:
           - key
           type: object
         frontProxyCAKeyPair:
-          description: FrontProxyCAKeyPair is the key pair for FrontProxyKeyPair.
+          description: FrontProxyCAKeyPair is the key pair for the front proxy.
           properties:
             cert:
               description: base64 encoded cert and key
@@ -364,6 +364,101 @@ spec:
         location:
           type: string
         metadata:
+          type: object
+        networkSpec:
+          description: NetworkSpec encapsulates all things related to Azure network.
+          properties:
+            subnets:
+              description: Subnets configuration.
+              items:
+                properties:
+                  cidrBlock:
+                    description: CidrBlock is the CIDR block to be used when the provider
+                      creates a managed Vnet.
+                    type: string
+                  id:
+                    description: ID defines a unique identifier to reference this
+                      resource.
+                    type: string
+                  name:
+                    description: Name defines a name for the subnet resource.
+                    type: string
+                  securityGroup:
+                    description: SecurityGroup defines the NSG (network security group)
+                      that should be attached to this subnet.
+                    properties:
+                      id:
+                        type: string
+                      ingressRule:
+                        items:
+                          properties:
+                            description:
+                              type: string
+                            destination:
+                              description: Destination - The destination address prefix.
+                                CIDR or destination IP range. Asterix '*' can also
+                                be used to match all source IPs. Default tags such
+                                as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet'
+                                can also be used.
+                              type: string
+                            destinationPorts:
+                              description: DestinationPorts - The destination port
+                                or range. Integer or range between 0 and 65535. Asterix
+                                '*' can also be used to match all ports.
+                              type: string
+                            protocol:
+                              type: string
+                            source:
+                              description: Source - The CIDR or source IP range. Asterix
+                                '*' can also be used to match all source IPs. Default
+                                tags such as 'VirtualNetwork', 'AzureLoadBalancer'
+                                and 'Internet' can also be used. If this is an ingress
+                                rule, specifies where network traffic originates from.
+                              type: string
+                            sourcePorts:
+                              description: SourcePorts - The source port or range.
+                                Integer or range between 0 and 65535. Asterix '*'
+                                can also be used to match all ports.
+                              type: string
+                          required:
+                          - description
+                          - protocol
+                          type: object
+                        type: array
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    - ingressRule
+                    type: object
+                  vnetId:
+                    description: VnetID defines the ID of the virtual network this
+                      subnet should be built in.
+                    type: string
+                required:
+                - name
+                - vnetId
+                - securityGroup
+                type: object
+              type: array
+            vpc:
+              description: Vnet configuration.
+              properties:
+                cidrBlock:
+                  description: CidrBlock is the CIDR block to be used when the provider
+                    creates a managed virtual network.
+                  type: string
+                id:
+                  description: ID is the identifier of the virtual network this provider
+                    should use to create resources.
+                  type: string
+                name:
+                  description: Name defines a name for the virtual network resource.
+                  type: string
+              required:
+              - name
+              type: object
           type: object
         resourceGroup:
           type: string

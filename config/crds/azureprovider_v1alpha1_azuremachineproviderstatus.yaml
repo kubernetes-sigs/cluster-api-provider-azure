@@ -64,10 +64,10 @@ spec:
         metadata:
           type: object
         vmId:
-          description: VMID is the vm ID of the machine created in Azure
+          description: VMID is the ID of the virtual machine created in Azure.
           type: string
         vmState:
-          description: VMState is the state of the Azure vm for this machine
+          description: VMState is the provisioning state of the Azure virtual machine.
           type: string
   version: v1alpha1
 status:
