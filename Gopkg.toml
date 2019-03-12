@@ -46,7 +46,7 @@ required = [
 
 [[constraint]]
   name = "sigs.k8s.io/cluster-api"
-  revision = "b59602c29d9d9d045d52deebf351a91fed09a951"
+  revision = "af298a2a480fb7143786cf4f9990e741855f08e9"
 
 # TODO: It's currently necessary to pin this to kubernetes-1.13.1, instead of
 # kubernetes-1.13.4, due to some transitive dependencies upstream.
