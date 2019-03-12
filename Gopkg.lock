@@ -18,7 +18,7 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:9f10f99986c12284c48fb4ea16da3d0bac219e2cd7ab4b267b5216c4d1ba3fe6"
+  digest = "1:b962159061d0bb19649ffeb44e66655f18097e5fd0fbb204c1286f4e2708f560"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "services/compute/mgmt/2018-10-01/compute",
@@ -27,11 +27,11 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "961851084b22af00900473bc704eb2f06e3a4e6c"
-  version = "v26.2.0"
+  revision = "a1a2da0aba294fe51ba47119e652ff2f08a78afb"
+  version = "v26.3.0"
 
 [[projects]]
-  digest = "1:8b0c2e6fd5976e77994a0174f8076b538671b14ecde5155c3efad04e006cd39b"
+  digest = "1:7d07de673941caccba9a59974404e29919935b89f0d99a9bac6a8e3b72bc6e51"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
@@ -46,8 +46,8 @@
     "tracing",
   ]
   pruneopts = "UT"
-  revision = "f4369d4c79bf40df5e86def1e0f54c7ef261a51c"
-  version = "v11.5.0"
+  revision = "134ac34d5a96fc72758c0f157f38f87cbdb3f532"
+  version = "v11.5.1"
 
 [[projects]]
   digest = "1:464aef731a5f82ded547c62e249a2e9ec59fbbc9ddab53cda7b9857852630a61"
@@ -1060,7 +1060,7 @@
   version = "v1.13.4"
 
 [[projects]]
-  digest = "1:2e1e9272fcf518dfc9e78a4e574fcd240089cbeb2ce0519a60bf6060c3fd4355"
+  digest = "1:a027ce065fff86c54a06cda8e6eb07e62f7d131c9f10dc0b69f68468bf64baf5"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "cmd/clusterctl/clientcmd",
@@ -1088,7 +1088,7 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "c51a9c13aa0ebe6d2d7bef869094b9b78bebcd48"
+  revision = "b59602c29d9d9d045d52deebf351a91fed09a951"
 
 [[projects]]
   digest = "1:743eebdcc3e564ed574b3fa0c10c223f5edeba6ee2e3c625c345c1604432a8f1"
