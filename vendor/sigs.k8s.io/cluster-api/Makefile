@@ -84,6 +84,7 @@ lint-full: dep-ensure ## Run slower linters to detect possible issues
 .PHONY: generate
 generate: clientset dep-ensure ## Generate code
 	go generate ./pkg/... ./cmd/...
+	$(MAKE) gazelle
 
 .PHONY: clientset
 clientset: ## Generate a typed clientset
