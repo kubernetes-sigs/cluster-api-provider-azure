@@ -65,8 +65,6 @@ spec:
               type: object
             startupScript:
               type: string
-            tags:
-              type: object
             vmSize:
               description: Hardware profile
               type: string
@@ -114,97 +112,10 @@ spec:
                   type: string
                 sku:
                   type: string
-                tags:
-                  type: object
               type: object
             securityGroups:
               description: SecurityGroups is a map from the role/kind of the security
                 group to its unique name, if any.
-              type: object
-            subnets:
-              description: 'TODO: Move into NetworkSpec Subnets includes all the subnets
-                defined inside the Vnet.'
-              items:
-                properties:
-                  cidrBlock:
-                    type: string
-                  id:
-                    type: string
-                  name:
-                    type: string
-                  securityGroup:
-                    properties:
-                      id:
-                        type: string
-                      ingressRule:
-                        items:
-                          properties:
-                            description:
-                              type: string
-                            destination:
-                              description: Destination - The destination address prefix.
-                                CIDR or destination IP range. Asterix '*' can also
-                                be used to match all source IPs. Default tags such
-                                as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet'
-                                can also be used.
-                              type: string
-                            destinationPorts:
-                              description: DestinationPorts - The destination port
-                                or range. Integer or range between 0 and 65535. Asterix
-                                '*' can also be used to match all ports.
-                              type: string
-                            protocol:
-                              type: string
-                            source:
-                              description: Source - The CIDR or source IP range. Asterix
-                                '*' can also be used to match all source IPs. Default
-                                tags such as 'VirtualNetwork', 'AzureLoadBalancer'
-                                and 'Internet' can also be used. If this is an ingress
-                                rule, specifies where network traffic originates from.
-                              type: string
-                            sourcePorts:
-                              description: SourcePorts - The source port or range.
-                                Integer or range between 0 and 65535. Asterix '*'
-                                can also be used to match all ports.
-                              type: string
-                          required:
-                          - description
-                          - protocol
-                          type: object
-                        type: array
-                      name:
-                        type: string
-                      tags:
-                        type: object
-                    required:
-                    - id
-                    - name
-                    - ingressRule
-                    - tags
-                    type: object
-                  vnetId:
-                    type: string
-                required:
-                - name
-                - vnetId
-                - cidrBlock
-                - securityGroup
-                type: object
-              type: array
-            vnet:
-              description: Vnet defines the cluster vnet.
-              properties:
-                cidrBlock:
-                  type: string
-                id:
-                  type: string
-                name:
-                  type: string
-                tags:
-                  type: object
-              required:
-              - cidrBlock
-              - tags
               type: object
           type: object
   version: v1alpha1

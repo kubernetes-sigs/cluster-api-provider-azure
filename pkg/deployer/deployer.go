@@ -17,13 +17,7 @@ limitations under the License.
 package deployer
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
-	"k8s.io/client-go/tools/clientcmd"
-	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -69,43 +63,10 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine)
 
 // GetKubeConfig returns the kubeconfig after the bootstrap process is complete.
 func (d *Deployer) GetKubeConfig(cluster *clusterv1.Cluster, _ *clusterv1.Machine) (string, error) {
-
-	// Load provider config.
-	config, err := providerv1.ClusterConfigFromProviderSpec(cluster.Spec.ProviderSpec)
+	scope, err := d.scopeGetter.GetScope(actuators.ScopeParams{Cluster: cluster})
 	if err != nil {
-		return "", errors.Errorf("failed to load cluster provider status: %v", err)
+		return "", err
 	}
 
-	cert, err := certificates.DecodeCertPEM(config.CAKeyPair.Cert)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to decode CA Cert")
-	} else if cert == nil {
-		return "", errors.New("certificate not found in config")
-	}
-
-	key, err := certificates.DecodePrivateKeyPEM(config.CAKeyPair.Key)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to decode private key")
-	} else if key == nil {
-		return "", errors.New("key not found in status")
-	}
-
-	dnsName, err := d.GetIP(cluster, nil)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get DNS address")
-	}
-
-	server := fmt.Sprintf("https://%s:6443", dnsName)
-
-	cfg, err := certificates.NewKubeconfig(cluster.Name, server, cert, key)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to generate a kubeconfig")
-	}
-
-	yaml, err := clientcmd.Write(*cfg)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to serialize config to yaml")
-	}
-
-	return string(yaml), nil
+	return scope.ClusterConfig.AdminKubeconfig, nil
 }

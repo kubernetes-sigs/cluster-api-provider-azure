@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
@@ -149,9 +148,14 @@ func (s *Service) getVMStartupScript(machine *actuators.MachineScope, bootstrapT
 		return "", errors.New("failed to run controlplane, APIServer DNS name not available")
 	}
 
-	caCertHash, err := certificates.GenerateCertificateHash(s.scope.ClusterConfig.CAKeyPair.Cert)
-	if err != nil {
-		return "", err
+	caCertHash := ""
+
+	if len(s.scope.ClusterConfig.DiscoveryHashes) > 0 {
+		caCertHash = s.scope.ClusterConfig.DiscoveryHashes[0]
+	}
+
+	if caCertHash == "" {
+		return "", errors.New("failed to run controlplane, missing discovery hashes")
 	}
 
 	// apply values based on the role of the machine

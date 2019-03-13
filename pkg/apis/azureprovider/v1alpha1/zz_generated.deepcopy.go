@@ -34,6 +34,11 @@ func (in *AzureClusterProviderSpec) DeepCopyInto(out *AzureClusterProviderSpec) 
 	in.EtcdCAKeyPair.DeepCopyInto(&out.EtcdCAKeyPair)
 	in.FrontProxyCAKeyPair.DeepCopyInto(&out.FrontProxyCAKeyPair)
 	in.SAKeyPair.DeepCopyInto(&out.SAKeyPair)
+	if in.DiscoveryHashes != nil {
+		in, out := &in.DiscoveryHashes, &out.DiscoveryHashes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	in.ClusterConfiguration.DeepCopyInto(&out.ClusterConfiguration)
 	return
 }

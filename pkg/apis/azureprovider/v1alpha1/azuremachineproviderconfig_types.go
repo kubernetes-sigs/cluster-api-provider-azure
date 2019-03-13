@@ -43,7 +43,7 @@ type AzureMachineProviderSpec struct {
 	SSHPrivateKey string        `json:"sshPrivateKey"`
 }
 
-// KubeadmConfiguration holds the various configurations that kubeadm uses
+// KubeadmConfiguration holds the various configurations that kubeadm uses.
 type KubeadmConfiguration struct {
 	// JoinConfiguration is used to customize any kubeadm join configuration
 	// parameters.
