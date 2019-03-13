@@ -124,7 +124,12 @@ func (a *Actuator) isNodeJoin(scope *actuators.MachineScope, controlPlaneMachine
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
 
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	coreClient, bootstrapErr := a.coreV1Client(cluster)
+	if bootstrapErr != nil {
+		return errors.Wrapf(bootstrapErr, "failed to retrieve corev1 client for cluster %q", cluster.Name)
+	}
+
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client, CoreClient: coreClient})
 	if err != nil {
 		return errors.Errorf("failed to create scope: %+v", err)
 	}
@@ -148,12 +153,8 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	var bootstrapToken string
 	if isNodeJoin {
-		coreClient, bootstrapErr := a.coreV1Client(cluster)
-		if bootstrapErr != nil {
-			return errors.Wrapf(bootstrapErr, "failed to retrieve corev1 client for cluster %q", cluster.Name)
-		}
 
-		bootstrapToken, bootstrapErr = tokens.NewBootstrap(coreClient, defaultTokenTTL)
+		bootstrapToken, bootstrapErr = tokens.NewBootstrap(scope.CoreClient, defaultTokenTTL)
 		if bootstrapErr != nil {
 			return errors.Wrapf(bootstrapErr, "failed to create new bootstrap token")
 		}

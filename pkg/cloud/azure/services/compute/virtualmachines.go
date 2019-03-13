@@ -17,12 +17,14 @@ limitations under the License.
 package compute
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
@@ -84,6 +86,7 @@ func (s *Service) createVM(machine *actuators.MachineScope, bootstrapToken, kube
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while trying to get VM startupscript for machine name %s in cluster %s", machine.Name(), s.scope.Name())
 	}
+
 	input.StartupScript = startupScript
 	// TODO: Set ssh key
 
@@ -138,7 +141,34 @@ func (s *Service) MachineExists(machine *actuators.MachineScope) (bool, error) {
 	return vm != nil, nil
 }
 
+func getUserDataFromSecret(machine *actuators.MachineScope) (string, error) {
+	if machine.MachineConfig.UserDataSecret != nil {
+		userData := []byte{}
+		userDataSecret, err := machine.CoreClient.Secrets(machine.Namespace()).Get(machine.MachineConfig.UserDataSecret.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", fmt.Errorf("failed to get userData secret %q", machine.MachineConfig.UserDataSecret.Name)
+		}
+		if data, exists := userDataSecret.Data["userData"]; exists {
+			userData = data
+		} else {
+			return "", fmt.Errorf("secret %q does not have field %q", machine.MachineConfig.UserDataSecret.Name, "userData")
+		}
+		encodedUserData := base64.StdEncoding.EncodeToString(userData)
+		return encodedUserData, nil
+	}
+	return "", nil
+}
+
 func (s *Service) getVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) (string, error) {
+
+	userData, err := getUserDataFromSecret(machine)
+	if err != nil {
+		return "", errors.Errorf("failed getting userData from secret %v", err)
+	}
+	if userData != "" {
+		return userData, nil
+	}
+
 	var startupScript string
 
 	if !s.scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
