@@ -29,11 +29,11 @@ import (
 type AzureMachineProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// VMID is the vm ID of the machine created in Azure
+	// VMID is the ID of the virtual machine created in Azure.
 	// +optional
 	VMID *string `json:"vmId,omitempty"`
 
-	// VMState is the state of the Azure vm for this machine
+	// VMState is the provisioning state of the Azure virtual machine.
 	// +optional
 	VMState *VMState `json:"vmState,omitempty"`
 

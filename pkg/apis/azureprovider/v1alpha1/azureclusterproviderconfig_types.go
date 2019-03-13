@@ -24,7 +24,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// AzureClusterProviderSpec is the providerConfig for Azure in the cluster
+// AzureClusterProviderSpec is the providerConfig for Azure in the cluster.
 // +k8s:openapi-gen=true
 type AzureClusterProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -36,13 +36,13 @@ type AzureClusterProviderSpec struct {
 	ResourceGroup string `json:"resourceGroup"`
 	Location      string `json:"location"`
 
-	// CAKeyPair is the key pair for ca certs.
+	// CAKeyPair is the key pair for CA certs.
 	CAKeyPair KeyPair `json:"caKeyPair,omitempty"`
 
 	// EtcdCAKeyPair is the key pair for etcd.
 	EtcdCAKeyPair KeyPair `json:"etcdCAKeyPair,omitempty"`
 
-	// FrontProxyCAKeyPair is the key pair for FrontProxyKeyPair.
+	// FrontProxyCAKeyPair is the key pair for the front proxy.
 	FrontProxyCAKeyPair KeyPair `json:"frontProxyCAKeyPair,omitempty"`
 
 	// SAKeyPair is the service account key pair.
@@ -82,16 +82,15 @@ type NetworkSpec struct {
 	Subnets Subnets `json:"subnets,omitempty"`
 }
 
-// VnetSpec configures an Azure Vnet.
+// VnetSpec configures an Azure virtual network.
 type VnetSpec struct {
-	// ID is the vpc-id of the Vnet this provider should use to create resources.
+	// ID is the identifier of the virtual network this provider should use to create resources.
 	ID string `json:"id,omitempty"`
 
 	// Name defines a name for the virtual network resource.
 	Name string `json:"name"`
 
-	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
-	// Defaults to 10.0.0.0/16.
+	// CidrBlock is the CIDR block to be used when the provider creates a managed virtual network.
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
 	// Tags is a collection of tags describing the resource.
@@ -99,7 +98,7 @@ type VnetSpec struct {
 	//Tags tags.Map `json:"tags,omitempty"`
 }
 
-// IsProvided returns true if the Vnet is unmanaged.
+// IsProvided returns true if the virtual network is not managed by Cluster API.
 // TODO: Uncomment once tagging is implemented.
 /*
 func (v *VnetSpec) IsProvided() bool {
@@ -107,7 +106,7 @@ func (v *VnetSpec) IsProvided() bool {
 }
 */
 
-// SubnetSpec configures an Azure Subnet.
+// SubnetSpec configures an Azure subnet.
 type SubnetSpec struct {
 	// ID defines a unique identifier to reference this resource.
 	ID string `json:"id,omitempty"`
