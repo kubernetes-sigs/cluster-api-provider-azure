@@ -8,11 +8,12 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["kube_features.go"],
+    importmap = "sigs.k8s.io/cluster-api-provider-azure/vendor/k8s.io/kubernetes/pkg/features",
     importpath = "k8s.io/kubernetes/pkg/features",
     deps = [
-        "//staging/src/k8s.io/apiextensions-apiserver/pkg/features:go_default_library",
-        "//staging/src/k8s.io/apiserver/pkg/features:go_default_library",
-        "//staging/src/k8s.io/apiserver/pkg/util/feature:go_default_library",
+        "//vendor/k8s.io/apiextensions-apiserver/pkg/features:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/features:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/util/feature:go_default_library",
     ],
 )
 
