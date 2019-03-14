@@ -92,6 +92,10 @@ func CreateOrUpdateCertificates(clusterConfig *v1alpha1.AzureClusterProviderSpec
 		return errors.Wrapf(err, "Failed to update certificates: %q", err)
 	}
 
+	if err := updateClusterConfigKubeConfig(clusterConfig, tmpDirName); err != nil {
+		return errors.Wrapf(err, "Failed to update kubeconfigs and discoveryhashes: %q", err)
+	}
+
 	return nil
 }
 
@@ -172,7 +176,7 @@ func CreateNewBootstrapToken() (string, error) {
 	}
 
 	bootstrapTokens := []kubeadmapi.BootstrapToken{
-		kubeadmapi.BootstrapToken{
+		{
 			Token:  tokenString,
 			TTL:    &metav1.Duration{Duration: 1 * time.Hour},
 			Groups: []string{"system:bootstrappers:kubeadm:default-node-token"},
@@ -207,20 +211,19 @@ func CreateKubeconfigs(cfg *kubeadmapi.InitConfiguration, kubeConfigDir string) 
 // updateClusterConfigKeyPairs populates clusterConfig with all the requisite certs
 func updateClusterConfigKeyPairs(clusterConfig *v1alpha1.AzureClusterProviderSpec, tmpDirName string) error {
 	certsDir := tmpDirName + "/certs"
-	if len(clusterConfig.CAKeyPair.Cert) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/ca.crt")
-		if err != nil {
-			return err
-		}
-		clusterConfig.CAKeyPair.Cert = buf
+
+	if err := updateCertKeyPair(&clusterConfig.CAKeyPair, certsDir+"/ca"); err != nil {
+		return err
 	}
-	if len(clusterConfig.CAKeyPair.Key) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/ca.key")
-		if err != nil {
-			return err
-		}
-		clusterConfig.CAKeyPair.Key = buf
+
+	if err := updateCertKeyPair(&clusterConfig.FrontProxyCAKeyPair, certsDir+"/front-proxy-ca"); err != nil {
+		return err
 	}
+
+	if err := updateCertKeyPair(&clusterConfig.EtcdCAKeyPair, certsDir+"/etcd/ca"); err != nil {
+		return err
+	}
+
 	if len(clusterConfig.SAKeyPair.Key) <= 0 {
 		buf, err := ioutil.ReadFile(certsDir + "/sa.key")
 		if err != nil {
@@ -235,38 +238,29 @@ func updateClusterConfigKeyPairs(clusterConfig *v1alpha1.AzureClusterProviderSpe
 		}
 		clusterConfig.SAKeyPair.Cert = buf
 	}
-	if len(clusterConfig.FrontProxyCAKeyPair.Cert) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/front-proxy-ca.crt")
+
+	return nil
+}
+
+func updateCertKeyPair(keyPair *v1alpha1.KeyPair, certsDir string) error {
+	if len(keyPair.Cert) <= 0 {
+		buf, err := ioutil.ReadFile(certsDir + ".crt")
 		if err != nil {
 			return err
 		}
-		clusterConfig.FrontProxyCAKeyPair.Cert = buf
+		keyPair.Cert = buf
 	}
-
-	if len(clusterConfig.FrontProxyCAKeyPair.Key) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/front-proxy-ca.key")
+	if len(keyPair.Key) <= 0 {
+		buf, err := ioutil.ReadFile(certsDir + ".key")
 		if err != nil {
 			return err
 		}
-		clusterConfig.FrontProxyCAKeyPair.Key = buf
+		keyPair.Key = buf
 	}
+	return nil
+}
 
-	if len(clusterConfig.EtcdCAKeyPair.Cert) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/etcd/ca.crt")
-		if err != nil {
-			return err
-		}
-		clusterConfig.EtcdCAKeyPair.Cert = buf
-	}
-
-	if len(clusterConfig.EtcdCAKeyPair.Key) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/etcd/ca.key")
-		if err != nil {
-			return err
-		}
-		clusterConfig.EtcdCAKeyPair.Key = buf
-	}
-
+func updateClusterConfigKubeConfig(clusterConfig *v1alpha1.AzureClusterProviderSpec, tmpDirName string) error {
 	kubeConfigsDir := tmpDirName + "/kubeconfigs"
 
 	if len(clusterConfig.AdminKubeconfig) <= 0 {
