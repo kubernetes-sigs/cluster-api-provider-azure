@@ -26,32 +26,26 @@ func TestCreateOrUpdateCertificates(t *testing.T) {
 	cfg := v1alpha1.AzureClusterProviderSpec{}
 
 	if err := CreateOrUpdateCertificates(&cfg, "dummyclustername"); err != nil {
-		t.Fatalf("Error creating certificates")
-		return
+		t.Errorf("Error creating certificates")
 	}
 
 	if !cfg.CAKeyPair.HasCertAndKey() {
-		t.Fatalf("Error creating ca keypair")
-		return
+		t.Errorf("Error creating ca keypair")
 	}
 
 	if !cfg.SAKeyPair.HasCertAndKey() {
-		t.Fatalf("Error creating sa keypair")
-		return
+		t.Errorf("Error creating sa keypair")
 	}
 
 	if !cfg.EtcdCAKeyPair.HasCertAndKey() {
-		t.Fatalf("Error creating etcd ca keypair")
-		return
+		t.Errorf("Error creating etcd ca keypair")
 	}
 
 	if cfg.AdminKubeconfig == "" {
-		t.Fatalf("Error generating admin kube config")
-		return
+		t.Errorf("Error generating admin kube config")
 	}
 
 	if len(cfg.DiscoveryHashes) <= 0 {
-		t.Fatalf("Error generating discovery hashes")
-		return
+		t.Errorf("Error generating discovery hashes")
 	}
 }
