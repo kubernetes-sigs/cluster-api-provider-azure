@@ -23,9 +23,9 @@
 envfile
 
 # kubeconfigs
-kind.kubeconfig
-minikube.kubeconfig
-kubeconfig
+/kind.kubeconfig
+/minikube.kubeconfig
+/kubeconfig
 
 # binaries
 /manager
