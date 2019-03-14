@@ -1,4 +1,4 @@
-# Kubernetes Cluster API Provider Azure
+#     Kubernetes Cluster API Provider Azure
 
 [![Go Report Card](https://goreportcard.com/badge/kubernetes-sigs/cluster-api-provider-azure)](https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure)
 
