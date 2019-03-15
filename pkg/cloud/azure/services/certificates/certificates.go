@@ -17,6 +17,7 @@ limitations under the License.
 package certificates
 
 import (
+	"context"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
@@ -29,7 +30,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcertutil "k8s.io/client-go/util/cert"
 	bootstraputil "k8s.io/cluster-bootstrap/token/util"
-	"k8s.io/klog"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadmscheme "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/scheme"
 	kubeadmv1beta1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -40,24 +40,22 @@ import (
 	kubeconfigutil "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-// ReconcileCertificates generate certificates if none exists.
-func (s *Service) ReconcileCertificates() error {
-	klog.V(2).Infof("Reconciling certificates for cluster %q", s.scope.Cluster.Name)
+// Get should implement returning certs and kubeconfigs.
+func (s *Service) Get(ctx context.Context) (interface{}, error) {
+	return nil, errors.New("Not implemented")
+}
 
-	if err := CreateOrUpdateCertificates(s.scope); err != nil {
-		return err
-	}
-
+// Delete cleans up and generated certificates, could be useful for renewal.
+func (s *Service) Delete(ctx context.Context) error {
 	return nil
 }
 
-// CreateOrUpdateCertificates Helper function so this can be unittested
-func CreateOrUpdateCertificates(scope *actuators.Scope) error {
-	clusterName := scope.Cluster.Name
+// CreateOrUpdate Helper function so this can be unittested.
+func (s *Service) CreateOrUpdate(ctx context.Context) error {
+	clusterName := s.scope.Cluster.Name
 	tmpDirName := "/tmp/cluster-api/" + clusterName
 	dnsName := fmt.Sprintf("%s-api", clusterName)
 
@@ -90,18 +88,18 @@ func CreateOrUpdateCertificates(scope *actuators.Scope) error {
 		return errors.Wrapf(err, "Failed to generate kubeconfigs: %q", err)
 	}
 
-	if err := updateClusterConfigKeyPairs(scope.ClusterConfig, tmpDirName); err != nil {
+	if err := updateClusterConfigKeyPairs(s.scope.ClusterConfig, tmpDirName); err != nil {
 		return errors.Wrapf(err, "Failed to update certificates: %q", err)
 	}
 
-	if err := updateClusterConfigKubeConfig(scope.ClusterStatus, tmpDirName); err != nil {
+	if err := updateClusterConfigKubeConfig(s.scope.ClusterStatus, tmpDirName); err != nil {
 		return errors.Wrapf(err, "Failed to update kubeconfigs and discoveryhashes: %q", err)
 	}
 
 	return nil
 }
 
-// CreatePKICertificates creates base pki assets in cfg.CertDir directory
+// CreatePKICertificates creates base pki assets in cfg.CertDir directory.
 func CreatePKICertificates(cfg *kubeadmapi.InitConfiguration) error {
 	if err := certsphase.CreatePKIAssets(cfg); err != nil {
 		return err
@@ -109,7 +107,7 @@ func CreatePKICertificates(cfg *kubeadmapi.InitConfiguration) error {
 	return nil
 }
 
-// CreateSACertificates creates sa certificates in cfg.CertDir directory
+// CreateSACertificates creates sa certificates in cfg.CertDir directory.
 func CreateSACertificates(cfg *kubeadmapi.InitConfiguration) error {
 	if err := certsphase.CreateServiceAccountKeyAndPublicKeyFiles(cfg); err != nil {
 		return err
@@ -118,7 +116,7 @@ func CreateSACertificates(cfg *kubeadmapi.InitConfiguration) error {
 	return nil
 }
 
-// GetDiscoveryHashes returns discovery hashes from a given kubeconfig file
+// GetDiscoveryHashes returns discovery hashes from a given kubeconfig file.
 func GetDiscoveryHashes(kubeConfigFile string) ([]string, error) {
 	// load the kubeconfig file to get the CA certificate and endpoint
 	config, err := clientcmd.LoadFromFile(kubeConfigFile)
@@ -156,6 +154,7 @@ func GetDiscoveryHashes(kubeConfigFile string) ([]string, error) {
 	return publicKeyPins, nil
 }
 
+// CreateNewBootstrapToken creates new bootstrap token using in cluster config.
 func CreateNewBootstrapToken() (string, error) {
 	token, err := bootstraputil.GenerateBootstrapToken()
 	if err != nil {
@@ -193,7 +192,7 @@ func CreateNewBootstrapToken() (string, error) {
 	return token, nil
 }
 
-// CreateKubeconfigs creates kubeconfigs for all profiles
+// CreateKubeconfigs creates kubeconfigs for all profiles.
 func CreateKubeconfigs(cfg *kubeadmapi.InitConfiguration, kubeConfigDir string) error {
 	if err := kubeconfigphase.CreateKubeConfigFile(kubeadmconstants.AdminKubeConfigFileName, kubeConfigDir, cfg); err != nil {
 		return err
@@ -210,7 +209,7 @@ func CreateKubeconfigs(cfg *kubeadmapi.InitConfiguration, kubeConfigDir string) 
 	return nil
 }
 
-// updateClusterConfigKeyPairs populates clusterConfig with all the requisite certs
+// updateClusterConfigKeyPairs populates clusterConfig with all the requisite certs.
 func updateClusterConfigKeyPairs(clusterConfig *v1alpha1.AzureClusterProviderSpec, tmpDirName string) error {
 	certsDir := tmpDirName + "/certs"
 
