@@ -150,8 +150,8 @@ func (s *Service) getVMStartupScript(machine *actuators.MachineScope, bootstrapT
 
 	caCertHash := ""
 
-	if len(s.scope.ClusterConfig.DiscoveryHashes) > 0 {
-		caCertHash = s.scope.ClusterConfig.DiscoveryHashes[0]
+	if len(s.scope.ClusterStatus.CertificateStatus.DiscoveryHashes) > 0 {
+		caCertHash = s.scope.ClusterStatus.CertificateStatus.DiscoveryHashes[0]
 	}
 
 	if caCertHash == "" {

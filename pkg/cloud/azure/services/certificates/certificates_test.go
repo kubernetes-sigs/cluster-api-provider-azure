@@ -19,33 +19,44 @@ package certificates
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func TestCreateOrUpdateCertificates(t *testing.T) {
-	cfg := v1alpha1.AzureClusterProviderSpec{}
+	scope := actuators.Scope{
+		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{},
+		ClusterStatus: &v1alpha1.AzureClusterProviderStatus{},
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "dummyclustername",
+			},
+		},
+	}
 
-	if err := CreateOrUpdateCertificates(&cfg, "dummyclustername"); err != nil {
+	if err := CreateOrUpdateCertificates(&scope); err != nil {
 		t.Errorf("Error creating certificates")
 	}
 
-	if !cfg.CAKeyPair.HasCertAndKey() {
+	if !scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
 		t.Errorf("Error creating ca keypair")
 	}
 
-	if !cfg.SAKeyPair.HasCertAndKey() {
+	if !scope.ClusterConfig.SAKeyPair.HasCertAndKey() {
 		t.Errorf("Error creating sa keypair")
 	}
 
-	if !cfg.EtcdCAKeyPair.HasCertAndKey() {
+	if !scope.ClusterConfig.EtcdCAKeyPair.HasCertAndKey() {
 		t.Errorf("Error creating etcd ca keypair")
 	}
 
-	if cfg.AdminKubeconfig == "" {
+	if scope.ClusterStatus.CertificateStatus.AdminKubeconfig == "" {
 		t.Errorf("Error generating admin kube config")
 	}
 
-	if len(cfg.DiscoveryHashes) <= 0 {
+	if len(scope.ClusterStatus.CertificateStatus.DiscoveryHashes) <= 0 {
 		t.Errorf("Error generating discovery hashes")
 	}
 }

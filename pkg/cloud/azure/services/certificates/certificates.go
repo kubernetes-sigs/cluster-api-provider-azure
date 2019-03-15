@@ -40,6 +40,7 @@ import (
 	kubeconfigutil "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -47,7 +48,7 @@ import (
 func (s *Service) ReconcileCertificates() error {
 	klog.V(2).Infof("Reconciling certificates for cluster %q", s.scope.Cluster.Name)
 
-	if err := CreateOrUpdateCertificates(s.scope.ClusterConfig, s.scope.Cluster.Name); err != nil {
+	if err := CreateOrUpdateCertificates(s.scope); err != nil {
 		return err
 	}
 
@@ -55,7 +56,8 @@ func (s *Service) ReconcileCertificates() error {
 }
 
 // CreateOrUpdateCertificates Helper function so this can be unittested
-func CreateOrUpdateCertificates(clusterConfig *v1alpha1.AzureClusterProviderSpec, clusterName string) error {
+func CreateOrUpdateCertificates(scope *actuators.Scope) error {
+	clusterName := scope.Cluster.Name
 	tmpDirName := "/tmp/cluster-api/" + clusterName
 	dnsName := fmt.Sprintf("%s-api", clusterName)
 
@@ -88,11 +90,11 @@ func CreateOrUpdateCertificates(clusterConfig *v1alpha1.AzureClusterProviderSpec
 		return errors.Wrapf(err, "Failed to generate kubeconfigs: %q", err)
 	}
 
-	if err := updateClusterConfigKeyPairs(clusterConfig, tmpDirName); err != nil {
+	if err := updateClusterConfigKeyPairs(scope.ClusterConfig, tmpDirName); err != nil {
 		return errors.Wrapf(err, "Failed to update certificates: %q", err)
 	}
 
-	if err := updateClusterConfigKubeConfig(clusterConfig, tmpDirName); err != nil {
+	if err := updateClusterConfigKubeConfig(scope.ClusterStatus, tmpDirName); err != nil {
 		return errors.Wrapf(err, "Failed to update kubeconfigs and discoveryhashes: %q", err)
 	}
 
@@ -260,24 +262,24 @@ func updateCertKeyPair(keyPair *v1alpha1.KeyPair, certsDir string) error {
 	return nil
 }
 
-func updateClusterConfigKubeConfig(clusterConfig *v1alpha1.AzureClusterProviderSpec, tmpDirName string) error {
+func updateClusterConfigKubeConfig(clusterStatus *v1alpha1.AzureClusterProviderStatus, tmpDirName string) error {
 	kubeConfigsDir := tmpDirName + "/kubeconfigs"
 
-	if len(clusterConfig.AdminKubeconfig) <= 0 {
+	if len(clusterStatus.CertificateStatus.AdminKubeconfig) <= 0 {
 		buf, err := ioutil.ReadFile(kubeConfigsDir + "/admin.conf")
 		if err != nil {
 			return err
 		}
-		clusterConfig.AdminKubeconfig = string(buf)
+		clusterStatus.CertificateStatus.AdminKubeconfig = string(buf)
 	}
 
 	// // Discovery hashes typically never changes
-	if len(clusterConfig.DiscoveryHashes) <= 0 {
+	if len(clusterStatus.CertificateStatus.DiscoveryHashes) <= 0 {
 		discoveryHashes, err := GetDiscoveryHashes(kubeConfigsDir + "/admin.conf")
 		if err != nil {
 			return err
 		}
-		clusterConfig.DiscoveryHashes = discoveryHashes
+		clusterStatus.CertificateStatus.DiscoveryHashes = discoveryHashes
 	}
 	return nil
 }

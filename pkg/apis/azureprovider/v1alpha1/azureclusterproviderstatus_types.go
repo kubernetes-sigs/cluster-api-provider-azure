@@ -30,8 +30,9 @@ type AzureClusterProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Network Network `json:"network,omitempty"`
-	Bastion VM      `json:"bastion,omitempty"`
+	CertificateStatus CertificateStatus `json:"certificateStatus,omitempty"`
+	Network           Network           `json:"network,omitempty"`
+	Bastion           VM                `json:"bastion,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

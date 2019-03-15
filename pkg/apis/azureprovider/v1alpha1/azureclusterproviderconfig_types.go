@@ -48,9 +48,6 @@ type AzureClusterProviderSpec struct {
 	// SAKeyPair is the service account key pair.
 	SAKeyPair KeyPair `json:"saKeyPair,omitempty"`
 
-	AdminKubeconfig string `json:"adminKubeconfig,omitempty"`
-
-	DiscoveryHashes []string `json:"discoveryHashes,omitempty"`
 	// ClusterConfiguration holds the cluster-wide information used during a
 	// kubeadm init call.
 	ClusterConfiguration kubeadmv1beta1.ClusterConfiguration `json:"clusterConfiguration,omitempty"`

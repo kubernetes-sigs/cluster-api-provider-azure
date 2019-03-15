@@ -68,5 +68,5 @@ func (d *Deployer) GetKubeConfig(cluster *clusterv1.Cluster, _ *clusterv1.Machin
 		return "", err
 	}
 
-	return scope.ClusterConfig.AdminKubeconfig, nil
+	return scope.ClusterStatus.CertificateStatus.AdminKubeconfig, nil
 }

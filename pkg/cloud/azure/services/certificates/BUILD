@@ -35,5 +35,10 @@ go_test(
     name = "go_default_test",
     srcs = ["certificates_test.go"],
     embed = [":go_default_library"],
-    deps = ["//pkg/apis/azureprovider/v1alpha1:go_default_library"],
+    deps = [
+        "//pkg/apis/azureprovider/v1alpha1:go_default_library",
+        "//pkg/cloud/azure/actuators:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
+    ],
 )
