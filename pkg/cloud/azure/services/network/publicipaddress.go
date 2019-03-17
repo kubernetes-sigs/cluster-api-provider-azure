@@ -18,6 +18,7 @@ package network
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -112,11 +113,13 @@ func (s *Service) getDefaultPublicIPSKU() *network.PublicIPAddressSku {
 }
 
 func (s *Service) getDefaultPublicIPProperties(IPName string) *network.PublicIPAddressPropertiesFormat {
+	dnsName := fmt.Sprintf("%s.%s.cloudapp.azure.com", strings.ToLower(IPName), strings.ToLower(s.scope.ClusterConfig.Location))
 	return &network.PublicIPAddressPropertiesFormat{
 		PublicIPAddressVersion:   network.IPv4,
 		PublicIPAllocationMethod: network.Static,
 		DNSSettings: &network.PublicIPAddressDNSSettings{
 			DomainNameLabel: &IPName,
+			Fqdn:            &dnsName,
 		},
 	}
 }
