@@ -17,7 +17,9 @@ limitations under the License.
 package certificates
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
@@ -36,7 +38,11 @@ func TestCreateOrUpdateCertificates(t *testing.T) {
 		},
 	}
 
-	if err := CreateOrUpdateCertificates(&scope); err != nil {
+	certsSvc := NewService(&scope)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	if err := certsSvc.CreateOrUpdate(ctx); err != nil {
 		t.Errorf("Error creating certificates")
 	}
 

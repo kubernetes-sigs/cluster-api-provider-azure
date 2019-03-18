@@ -17,12 +17,79 @@ limitations under the License.
 package cluster
 
 import (
-	"sigs.k8s.io/cluster-api/pkg/controller/cluster"
+	"context"
+	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-var (
-	_ cluster.Actuator = (*Actuator)(nil)
-)
+func createFakeScope() *actuators.Scope {
+	return &actuators.Scope{
+		Context: context.Background(),
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "dummyClusterName",
+			},
+		},
+	}
+}
+
+func TestReconcileSuccess(t *testing.T) {
+	fakeSuccessSvc := &services.FakeSuccessService{}
+	fakeNotFoundSvc := &services.FakeNotFoundService{}
+
+	fakeReconciler := &Reconciler{
+		scope:           createFakeScope(),
+		groupsSvc:       fakeSuccessSvc,
+		certificatesSvc: fakeSuccessSvc,
+	}
+
+	if err := fakeReconciler.Reconcile(); err != nil {
+		t.Errorf("failed to reconcile cluster services: %+v", err)
+	}
+
+	if err := fakeReconciler.Delete(); err != nil {
+		t.Errorf("failed to delete cluster services: %+v", err)
+	}
+
+	fakeReconciler.groupsSvc = fakeNotFoundSvc
+
+	if err := fakeReconciler.Delete(); err != nil {
+		t.Errorf("failed to delete cluster services: %+v", err)
+	}
+}
+
+func TestReconcileFailure(t *testing.T) {
+	fakeSuccessSvc := &services.FakeSuccessService{}
+	fakeFailureSvc := &services.FakeFailureService{}
+
+	fakeReconciler := &Reconciler{
+		scope:           createFakeScope(),
+		groupsSvc:       fakeSuccessSvc,
+		certificatesSvc: fakeFailureSvc,
+	}
+
+	if err := fakeReconciler.Reconcile(); err == nil {
+		t.Errorf("expected reconcile to fail")
+	}
+
+	if err := fakeReconciler.Delete(); err != nil {
+		t.Errorf("expected delete to succeed, since we delete groupssvc only")
+	}
+
+	fakeReconciler.groupsSvc = fakeFailureSvc
+
+	if err := fakeReconciler.Reconcile(); err == nil {
+		t.Errorf("expected reconcile to fail")
+	}
+
+	if err := fakeReconciler.Delete(); err == nil {
+		t.Errorf("expected delete to fail")
+	}
+}
 
 // TODO: Reimplement tests
 /*

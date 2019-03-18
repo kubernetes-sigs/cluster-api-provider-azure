@@ -20,9 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -63,32 +61,27 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 
 	defer scope.Close()
 
+	err = NewReconciler(scope).Reconcile()
+	if err != nil {
+		return errors.Wrap(err, "failed to reconcile cluster services")
+	}
+
 	networkSvc := network.NewService(scope)
-	resourcesSvc := resources.NewService(scope)
-	certSvc := certificates.NewService(scope)
-
-	// Store cert material in spec.
-	if err := certSvc.ReconcileCertificates(); err != nil {
-		return errors.Wrapf(err, "failed to reconcile certificates for cluster %q", cluster.Name)
-	}
-
-	if err := resourcesSvc.ReconcileResourceGroup(); err != nil {
-		return errors.Wrapf(err, "failed to reconcile resource group for cluster %q", cluster.Name)
-	}
-
-	if err := networkSvc.ReconcileNetwork(); err != nil {
-		return errors.Wrapf(err, "failed to reconcile network for cluster %q", cluster.Name)
+	err = networkSvc.ReconcileNetwork()
+	if err != nil {
+		return errors.Wrapf(err, "failed to reconcile network for cluster %s", scope.Cluster.Name)
 	}
 
 	// TODO: Add bastion method
 	/*
 		if err := resourcesSvc.ReconcileBastion(); err != nil {
-			return errors.Wrapf(err, "failed to reconcile bastion host for cluster %q", cluster.Name)
+			return errors.Wrapf(err, "failed to reconcile bastion host for cluster %q", scope.Cluster.Name)
 		}
 	*/
 
-	if err := networkSvc.ReconcileLoadBalancer("api"); err != nil {
-		return errors.Wrapf(err, "failed to reconcile load balancers for cluster %q", cluster.Name)
+	err = networkSvc.ReconcileLoadBalancer("api")
+	if err != nil {
+		return errors.Wrapf(err, "failed to reconcile load balancers for cluster %s", scope.Cluster.Name)
 	}
 
 	return nil
@@ -106,7 +99,6 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	defer scope.Close()
 
 	//networkSvc := network.NewService(scope)
-	resourcesSvc := resources.NewService(scope)
 
 	// TODO: Add load balancer method
 	/*
@@ -131,8 +123,7 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 			}
 		}
 	*/
-
-	if err := resourcesSvc.DeleteResourceGroup(); err != nil {
+	if err := NewReconciler(scope).Delete(); err != nil {
 		klog.Errorf("Error deleting resource group: %v.", err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: 5 * 1000 * 1000 * 1000,

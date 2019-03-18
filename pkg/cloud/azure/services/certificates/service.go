@@ -20,13 +20,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
-// Service groups certificate related operations together and allows
-// certificate updates to be applied to the actuator scope.
+// Service holds a collection of interfaces.
+// The interfaces are broken down like this to group functions together.
+// One alternative is to have a large list of functions from the ec2 client.
 type Service struct {
 	scope *actuators.Scope
 }
 
-// NewService returns a new certificates service for the given actuators scope.
+// NewService returns a new service given the api clients.
 func NewService(scope *actuators.Scope) *Service {
 	return &Service{
 		scope: scope,
