@@ -18,25 +18,29 @@ package machine
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/pkg/errors"
 	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/compute"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachineextensions"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/tokens"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
@@ -103,15 +107,29 @@ func (a *Actuator) isNodeJoin(scope *actuators.MachineScope, controlPlaneMachine
 				return false, errors.Wrapf(err, "failed to create machine scope for machine %q", cm.Name)
 			}
 
-			computeSvc := compute.NewService(m.Scope)
+			vmInterface, err := virtualmachines.NewService(m.Scope).Get(context.Background(), &virtualmachines.Spec{Name: m.Machine.Name})
+			if err != nil && vmInterface == nil {
+				klog.V(2).Infof("Machine %q should join the controlplane: false", m.Machine.Name)
+				return false, nil
+			}
 
-			ok, err := computeSvc.MachineExists(m)
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to verify existence of machine %q", m.Name())
 			}
 
-			klog.V(2).Infof("Machine %q should join the controlplane: %t", scope.Machine.Name, ok)
-			return ok, nil
+			vmExtSpec := &virtualmachineextensions.Spec{
+				Name:   "startupScript",
+				VMName: m.Machine.Name,
+			}
+
+			vmExt, err := virtualmachineextensions.NewService(scope.Scope).Get(context.Background(), vmExtSpec)
+			if err != nil && vmExt == nil {
+				klog.V(2).Infof("Machine %q should join the controlplane: false", m.Machine.Name)
+				return false, nil
+			}
+
+			klog.V(2).Infof("Machine %q should join the controlplane: true", m.Machine.Name)
+			return true, nil
 		}
 
 		return false, nil
@@ -128,23 +146,35 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return errors.Errorf("failed to create scope: %+v", err)
 	}
-
 	defer scope.Close()
-
-	computeSvc := compute.NewService(scope.Scope)
-	networkSvc := network.NewService(scope.Scope)
 
 	bootstrapToken, err := a.checkControlPlaneMachines(scope, cluster, machine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check control plane machines in cluster %s", cluster.Name)
 	}
 
-	kubeConfig, err := a.GetKubeConfig(cluster, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to retrieve kubeconfig while creating machine %q", machine.Name)
+	// kubeConfig, err := a.GetKubeConfig(cluster, nil)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "failed to retrieve kubeconfig while creating machine %q", machine.Name)
+	// }
+
+	networkInterfaceSpec := &networkinterfaces.Spec{
+		Name:     fmt.Sprintf("%s-nic", machine.Name),
+		VNETName: azure.DefaultVnetName,
+	}
+	switch set := scope.Machine.ObjectMeta.Labels["set"]; set {
+	case "node":
+		networkInterfaceSpec.SubnetName = azure.DefaultNodeSubnetName
+	case "controlplane":
+		networkInterfaceSpec.SubnetName = azure.DefaultControlPlaneSubnetName
+		networkInterfaceSpec.PublicLoadBalancerName = azure.DefaultPublicLBName
+		networkInterfaceSpec.InternalLoadBalancerName = azure.DefaultInternalLBName
+		networkInterfaceSpec.NatRule = 0
+	default:
+		return errors.Errorf("Unknown value %q for label `set` on machine %q, skipping machine creation", set, scope.Machine.Name)
 	}
 
-	nic, err := networkSvc.CreateDefaultVMNetworkInterface(scope.ClusterConfig.ResourceGroup, scope.Machine)
+	err = networkinterfaces.NewService(scope.Scope).CreateOrUpdate(ctx, networkInterfaceSpec)
 	if err != nil {
 		klog.Errorf("Unable to create VM network interface: %+v", err)
 		return &controllerError.RequeueAfterError{
@@ -152,38 +182,17 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		}
 	}
 
-	if scope.Network().APIServerLB.BackendPool.ID == "" {
-		klog.Errorf("Unable to find backend pool ID. Retrying...")
-		return &controllerError.RequeueAfterError{
-			RequeueAfter: time.Second * 15,
-		}
-	}
-
-	err = networkSvc.ReconcileNICBackendPool(*nic.Name, scope.Network().APIServerLB.BackendPool.ID)
+	decoded, err := base64.StdEncoding.DecodeString(scope.MachineConfig.SSHPublicKey)
 	if err != nil {
-		klog.Errorf("Unable to reconcile backend pool attachment: %+v", err)
-		return &controllerError.RequeueAfterError{
-			RequeueAfter: time.Second * 30,
-		}
+		errors.Wrapf(err, "failed to decode ssh public key")
 	}
 
-	pip, err := networkSvc.CreateOrUpdatePublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine), networkSvc.GetDefaultPublicIPZone())
-	if err != nil {
-		klog.Errorf("Unable to create public IP: %+v", err)
-		return &controllerError.RequeueAfterError{
-			RequeueAfter: time.Second * 30,
-		}
+	vmSpec := &virtualmachines.Spec{
+		Name:       scope.Machine.Name,
+		NICName:    networkInterfaceSpec.Name,
+		SSHKeyData: string(decoded),
 	}
-
-	err = networkSvc.ReconcileNICPublicIP(*nic.Name, pip)
-	if err != nil {
-		klog.Errorf("Unable to reconcile public IP attachment: %+v", err)
-		return &controllerError.RequeueAfterError{
-			RequeueAfter: time.Second * 30,
-		}
-	}
-
-	vm, err := computeSvc.CreateOrGetMachine(scope, bootstrapToken, kubeConfig)
+	err = virtualmachines.NewService(scope.Scope).CreateOrUpdate(context.Background(), vmSpec)
 	if err != nil {
 		klog.Errorf("failed to create or get machine: %+v", err)
 		return &controllerError.RequeueAfterError{
@@ -191,8 +200,23 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		}
 	}
 
-	scope.MachineStatus.VMID = &vm.ID
-	scope.MachineStatus.VMState = &vm.State
+	scriptData, err := config.GetVMStartupScript(scope, bootstrapToken)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get vm startup script")
+	}
+
+	vmExtSpec := &virtualmachineextensions.Spec{
+		Name:       "startupScript",
+		VMName:     scope.Machine.Name,
+		ScriptData: base64.StdEncoding.EncodeToString([]byte(scriptData)),
+	}
+	err = virtualmachineextensions.NewService(scope.Scope).CreateOrUpdate(context.Background(), vmExtSpec)
+	if err != nil {
+		klog.Errorf("failed to create or get machine: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Minute,
+		}
+	}
 
 	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
@@ -209,53 +233,42 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 func (a *Actuator) checkControlPlaneMachines(scope *actuators.MachineScope, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	clusterMachines, err := scope.MachineClient.List(v1.ListOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to retrieve machines in cluster %q", cluster.Name)
+		return "", errors.Wrapf(err, "failed to retrieve machines in cluster %s", cluster.Name)
 	}
 
 	controlPlaneMachines := GetControlPlaneMachines(clusterMachines)
 
 	isNodeJoin, err := a.isNodeJoin(scope, controlPlaneMachines)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to determine whether machine %q should join cluster %q", machine.Name, cluster.Name)
+		return "", errors.Wrapf(err, "failed to determine whether machine %s should join cluster %s", machine.Name, cluster.Name)
 	}
 
 	var bootstrapToken string
 	if isNodeJoin {
-		coreClient, bootstrapErr := a.coreV1Client(cluster)
-		if bootstrapErr != nil {
-			return "", errors.Wrapf(bootstrapErr, "failed to retrieve corev1 client for cluster %q", cluster.Name)
+		if scope.ClusterConfig == nil {
+			return "", errors.Errorf("failed to retrieve corev1 client for empty kubeconfig %s", cluster.Name)
 		}
-
-		bootstrapToken, bootstrapErr = tokens.NewBootstrap(coreClient, defaultTokenTTL)
-		if bootstrapErr != nil {
-			return "", errors.Wrapf(bootstrapErr, "failed to create new bootstrap token")
+		bootstrapToken, err = certificates.CreateNewBootstrapToken(scope.ClusterConfig.AdminKubeconfig, defaultTokenTTL)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to create new bootstrap token")
 		}
 	}
 	return bootstrapToken, nil
 }
 
-func (a *Actuator) coreV1Client(cluster *clusterv1.Cluster) (corev1.CoreV1Interface, error) {
-	controlPlaneDNSName, err := a.GetIP(cluster, nil)
-	if err != nil {
-		return nil, errors.Errorf("failed to retrieve controlplane (GetIP): %+v", err)
-	}
-
-	controlPlaneURL := fmt.Sprintf("https://%s:6443", controlPlaneDNSName)
-
-	kubeConfig, err := a.GetKubeConfig(cluster, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve kubeconfig for cluster %q.", cluster.Name)
-	}
-
-	clientConfig, err := clientcmd.BuildConfigFromKubeconfigGetter(controlPlaneURL, func() (*clientcmdapi.Config, error) {
-		return clientcmd.Load([]byte(kubeConfig))
-	})
+func (a *Actuator) coreV1Client(kubeconfig string) (corev1.CoreV1Interface, error) {
+	clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfig))
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get client config for cluster at %q", controlPlaneURL)
+		return nil, errors.Wrapf(err, "failed to get client config for cluster")
 	}
 
-	return corev1.NewForConfig(clientConfig)
+	cfg, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get client config for cluster")
+	}
+
+	return corev1.NewForConfig(cfg)
 }
 
 // Delete deletes a machine and is invoked by the Machine Controller.
@@ -265,70 +278,34 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
+		return errors.Wrapf(err, "failed to create scope")
 	}
 
 	defer scope.Close()
 
-	computeSvc := compute.NewService(scope.Scope)
-	networkSvc := network.NewService(scope.Scope)
-	resourcesSvc := resources.NewService(scope.Scope)
-
-	// Check if VM exists
-	vm, err := computeSvc.VMIfExists(resourcesSvc.GetVMName(machine))
-	if err != nil {
-		return fmt.Errorf("error checking if vm exists: %v", err)
-	}
-	if vm == nil {
-		return fmt.Errorf("couldn't find vm for machine: %v", machine.Name)
+	vmSpec := &virtualmachines.Spec{
+		Name: scope.Machine.Name,
 	}
 
-	avm, err := scope.VM.Get(scope.Context, scope.ClusterConfig.ResourceGroup, vm.Name, "")
+	err = virtualmachines.NewService(scope.Scope).Delete(context.Background(), vmSpec)
 	if err != nil {
-		return errors.Errorf("could not set vm: %v", err)
+		klog.Errorf("failed to delete machine: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Minute,
+		}
 	}
 
-	osDiskName := avm.VirtualMachineProperties.StorageProfile.OsDisk.Name
-	nicID := (*avm.VirtualMachineProperties.NetworkProfile.NetworkInterfaces)[0].ID
-
-	// delete the VM
-	vmDeleteFuture, err := computeSvc.DeleteVM(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(machine))
-	if err != nil {
-		return fmt.Errorf("error deleting virtual machine: %v", err)
-	}
-	err = computeSvc.WaitForVMDeletionFuture(vmDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for virtual machine deletion: %v", err)
+	networkInterfaceSpec := &networkinterfaces.Spec{
+		Name:     fmt.Sprintf("%s-nic", machine.Name),
+		VNETName: azure.DefaultVnetName,
 	}
 
-	// delete OS disk associated with the VM
-	diskDeleteFuture, err := computeSvc.DeleteManagedDisk(scope.ClusterConfig.ResourceGroup, *osDiskName)
+	err = networkinterfaces.NewService(scope.Scope).Delete(ctx, networkInterfaceSpec)
 	if err != nil {
-		return fmt.Errorf("error deleting managed disk: %v", err)
-	}
-	err = computeSvc.WaitForDisksDeleteFuture(diskDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for managed disk deletion: %v", err)
-	}
-
-	// delete NIC associated with the VM
-	nicName, err := resources.ResourceName(*nicID)
-	if err != nil {
-		return fmt.Errorf("error retrieving network interface name: %v", err)
-	}
-	interfacesDeleteFuture, err := networkSvc.DeleteNetworkInterface(scope.ClusterConfig.ResourceGroup, nicName)
-	if err != nil {
-		return fmt.Errorf("error deleting network interface: %v", err)
-	}
-	err = networkSvc.WaitForNetworkInterfacesDeleteFuture(interfacesDeleteFuture)
-	if err != nil {
-		return fmt.Errorf("error waiting for network interface deletion: %v", err)
-	}
-
-	// delete public ip address associated with the VM
-	err = networkSvc.DeletePublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine))
-	if err != nil {
-		return fmt.Errorf("error deleting public IP address: %v", err)
+		klog.Errorf("Unable to delete network interface: %+v", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: time.Second * 30,
+		}
 	}
 
 	return nil
@@ -364,18 +341,23 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	defer scope.Close()
 
-	computeSvc := compute.NewService(scope.Scope)
-
-	// Get the current vm description from Azure.
-	vmDescription, err := computeSvc.VMIfExists(*scope.MachineStatus.VMID)
+	vmSpec := &virtualmachines.Spec{
+		Name: scope.Machine.Name,
+	}
+	vmInterface, err := virtualmachines.NewService(scope.Scope).Get(ctx, vmSpec)
 	if err != nil {
 		return errors.Errorf("failed to get vm: %+v", err)
+	}
+
+	vm, ok := vmInterface.(compute.VirtualMachine)
+	if !ok {
+		return errors.New("returned incorrect vm interface")
 	}
 
 	// We can now compare the various Azure state to the state we were passed.
 	// We will check immutable state first, in order to fail quickly before
 	// moving on to state that we can mutate.
-	if a.isMachineOutdated(scope.MachineConfig, vmDescription) {
+	if a.isMachineOutdated(scope.MachineConfig, converters.SDKToVM(vm)) {
 		return errors.Errorf("found attempt to change immutable state")
 	}
 
@@ -402,25 +384,14 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	defer scope.Close()
 
-	computeSvc := compute.NewService(scope.Scope)
-
-	// TODO worry about pointers. vm if exists returns *any* vm
-	if scope.MachineStatus.VMID == nil {
-		return false, nil
-	}
-
-	vm, err := computeSvc.VMIfExists(*scope.MachineStatus.VMID)
+	exists, err := isVMExists(ctx, scope)
 	if err != nil {
-		return false, errors.Errorf("failed to retrieve vm: %+v", err)
-	}
-
-	if vm == nil {
+		return false, err
+	} else if !exists {
 		return false, nil
 	}
 
-	klog.Infof("Found vm for machine %q: %v", machine.Name, vm)
-
-	switch vm.State {
+	switch *scope.MachineStatus.VMState {
 	case v1alpha1.VMStateSucceeded:
 		klog.Infof("Machine %v is running", *scope.MachineStatus.VMID)
 	case v1alpha1.VMStateUpdating:
@@ -428,8 +399,6 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	default:
 		return false, nil
 	}
-
-	scope.MachineStatus.VMState = &vm.State
 
 	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
 		// TODO: This should be unified with the logic for getting the nodeRef, and
@@ -454,10 +423,60 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	return true, nil
 }
 
+func isVMExists(ctx context.Context, scope *actuators.MachineScope) (bool, error) {
+	vmSpec := &virtualmachines.Spec{
+		Name: scope.Machine.Name,
+	}
+	vmInterface, err := virtualmachines.NewService(scope.Scope).Get(ctx, vmSpec)
+
+	if err != nil && vmInterface == nil {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, errors.Wrap(err, "Failed to get vm")
+	}
+
+	vm, ok := vmInterface.(compute.VirtualMachine)
+	if !ok {
+		return false, errors.New("returned incorrect vm interface")
+	}
+
+	klog.Infof("Found vm for machine %s", scope.Machine.Name)
+
+	vmExtSpec := &virtualmachineextensions.Spec{
+		Name:   "startupScript",
+		VMName: scope.Machine.Name,
+	}
+
+	vmExt, err := virtualmachineextensions.NewService(scope.Scope).Get(context.Background(), vmExtSpec)
+	if err != nil && vmExt == nil {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get vm extension")
+	}
+
+	vmState := v1alpha1.VMState(*vm.ProvisioningState)
+
+	scope.MachineStatus.VMID = vm.ID
+	scope.MachineStatus.VMState = &vmState
+	return true, nil
+}
+
 func (a *Actuator) getNodeReference(scope *actuators.MachineScope) (*apicorev1.ObjectReference, error) {
+	if scope.MachineStatus.VMID == nil {
+		return nil, errors.Errorf("instance id is empty for machine %s", scope.Machine.Name)
+	}
+
 	instanceID := *scope.MachineStatus.VMID
 
-	coreClient, err := a.coreV1Client(scope.Cluster)
+	if scope.ClusterConfig == nil {
+		return nil, errors.Errorf("failed to retrieve corev1 client for empty kubeconfig %s", scope.Cluster.Name)
+	}
+
+	coreClient, err := a.coreV1Client(scope.ClusterConfig.AdminKubeconfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to retrieve corev1 client for cluster %q", scope.Cluster.Name)
 	}
@@ -489,100 +508,3 @@ func (a *Actuator) getNodeReference(scope *actuators.MachineScope) (*apicorev1.O
 
 	return nil, errors.Errorf("no node found for machine %q", scope.Name())
 }
-
-// Old methods
-
-// TODO: Remove old methods
-/*
-func (a *Actuator) updateMaster(cluster *clusterv1.Cluster, currentMachine *clusterv1.Machine, goalMachine *clusterv1.Machine) error {
-	//klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
-
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: goalMachine, Cluster: cluster, Client: a.client})
-	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
-	}
-
-	defer scope.Close()
-
-	computeSvc := compute.NewService(scope.Scope)
-	resourcesSvc := resources.NewService(scope.Scope)
-
-	// update the control plane
-	if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
-		// upgrade kubeadm
-		cmd := fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubeadm | "+
-			"sudo tee /usr/bin/kubeadm > /dev/null;"+
-			"sudo chmod a+rx /usr/bin/kubeadm;", goalMachine.Spec.Versions.ControlPlane)
-		cmd += fmt.Sprintf("sudo kubeadm upgrade apply v%s -y;", goalMachine.Spec.Versions.ControlPlane)
-
-		// update kubectl client version
-		cmd += fmt.Sprintf("curl -sSL https://dl.k8s.io/release/v%s/bin/linux/amd64/kubectl | "+
-			"sudo tee /usr/bin/kubectl > /dev/null;"+
-			"sudo chmod a+rx /usr/bin/kubectl;", goalMachine.Spec.Versions.ControlPlane)
-		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(goalMachine), cmd)
-		if err != nil {
-			return fmt.Errorf("error running command on vm: %v", err)
-		}
-		err = computeSvc.WaitForVMRunCommandFuture(commandRunFuture)
-		if err != nil {
-			return fmt.Errorf("error waiting for upgrade control plane future: %v", err)
-		}
-	}
-
-	// update master and node packages
-	if currentMachine.Spec.Versions.Kubelet != goalMachine.Spec.Versions.Kubelet {
-		nodeName := strings.ToLower(resourcesSvc.GetVMName(goalMachine))
-		// prepare node for maintenance
-		cmd := fmt.Sprintf("sudo kubectl drain %s --kubeconfig /etc/kubernetes/admin.conf --ignore-daemonsets;"+
-			"sudo apt-get install kubelet=%s;", nodeName, goalMachine.Spec.Versions.Kubelet+"-00")
-		// mark the node as schedulable
-		cmd += fmt.Sprintf("sudo kubectl uncordon %s --kubeconfig /etc/kubernetes/admin.conf;", nodeName)
-
-		commandRunFuture, err := computeSvc.RunCommand(scope.ClusterConfig.ResourceGroup, resourcesSvc.GetVMName(goalMachine), cmd)
-		if err != nil {
-			return fmt.Errorf("error running command on vm: %v", err)
-		}
-		err = computeSvc.WaitForVMRunCommandFuture(commandRunFuture)
-		if err != nil {
-			return fmt.Errorf("error waiting for upgrade kubelet command future: %v", err)
-		}
-	}
-	return nil
-}
-
-func (a *Actuator) shouldUpdate(m1 *clusterv1.Machine, m2 *clusterv1.Machine) bool {
-	return !reflect.DeepEqual(m1.Spec.Versions, m2.Spec.Versions) ||
-		!reflect.DeepEqual(m1.Spec.ObjectMeta, m2.Spec.ObjectMeta) ||
-		!reflect.DeepEqual(m1.Spec.ProviderSpec, m2.Spec.ProviderSpec) ||
-		m1.ObjectMeta.Name != m2.ObjectMeta.Name
-}
-
-// GetSSHClient returns an instance of ssh.Client from the host and private key passed.
-func GetSSHClient(host string, privatekey string) (*ssh.Client, error) {
-	key := []byte(privatekey)
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse private key: %v", err)
-	}
-	config := &ssh.ClientConfig{
-		User: SSHUser,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         60 * time.Second,
-	}
-	client, err := ssh.Dial("tcp", host+":22", config)
-	return client, err
-}
-
-// TODO: Remove usage of MachineRole
-func isMasterMachine(roles []v1alpha1.MachineRole) bool {
-	for _, r := range roles {
-		if r == v1alpha1.Master {
-			return true
-		}
-	}
-	return false
-}
-*/

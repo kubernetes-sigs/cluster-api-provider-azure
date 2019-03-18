@@ -39,7 +39,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,7 +48,7 @@ import (
 const controlPlaneTestVersion = "1.1.1.1"
 
 func TestActuatorCreateSuccess(t *testing.T) {
-	azureServicesClient := actuators.AzureClients{Network: &services.MockAzureNetworkClient{}}
+	azureServicesClient := actuators.AzureClients{Network: &azure.MockAzureNetworkClient{}}
 	params := MachineActuatorParams{Services: &azureServicesClient}
 	_, err := NewMachineActuator(params)
 	if err != nil {
@@ -66,7 +66,7 @@ func TestActuatorCreateFailure(t *testing.T) {
 	os.Unsetenv("AZURE_ENVIRONMENT")
 }
 func TestNewAzureClientParamsPassed(t *testing.T) {
-	azureServicesClient := actuators.AzureClients{Compute: &services.MockAzureComputeClient{}}
+	azureServicesClient := actuators.AzureClients{Compute: &azure.MockAzureComputeClient{}}
 	params := MachineActuatorParams{Services: &azureServicesClient}
 	client, err := actuators.NewScope(params)
 	if err != nil {
@@ -124,10 +124,10 @@ func TestNewAzureClientSubscriptionFailure(t *testing.T) {
 	}
 }
 func TestCreateSuccess(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateSuccess())
-	mergo.Merge(&resourceManagementMock, services.MockRgExists())
-	mergo.Merge(&resourceManagementMock, services.MockDeloymentGetResultSuccess())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockDeploymentCreateOrUpdateSuccess())
+	mergo.Merge(&resourceManagementMock, azure.MockRgExists())
+	mergo.Merge(&resourceManagementMock, azure.MockDeloymentGetResultSuccess())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -187,8 +187,8 @@ func TestCreateFailureMachineParsing(t *testing.T) {
 }
 
 func TestCreateFailureDeploymentValidation(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockDeploymentValidate())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockDeploymentValidate())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -207,8 +207,8 @@ func TestCreateFailureDeploymentValidation(t *testing.T) {
 }
 
 func TestCreateFailureDeploymentCreation(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateFailure())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockDeploymentCreateOrUpdateFailure())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -227,9 +227,9 @@ func TestCreateFailureDeploymentCreation(t *testing.T) {
 }
 
 func TestCreateFailureDeploymentFutureError(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateSuccess())
-	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateFutureFailure())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockDeploymentCreateOrUpdateSuccess())
+	mergo.Merge(&resourceManagementMock, azure.MockDeploymentCreateOrUpdateFutureFailure())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -248,9 +248,9 @@ func TestCreateFailureDeploymentFutureError(t *testing.T) {
 }
 
 func TestCreateFailureDeploymentResult(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockDeploymentCreateOrUpdateSuccess())
-	mergo.Merge(&resourceManagementMock, services.MockDeloymentGetResultFailure())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockDeploymentCreateOrUpdateSuccess())
+	mergo.Merge(&resourceManagementMock, azure.MockDeloymentGetResultFailure())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -269,10 +269,10 @@ func TestCreateFailureDeploymentResult(t *testing.T) {
 }
 
 func TestExistsSuccess(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockRgExists())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockRgExists())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -336,8 +336,8 @@ func TestExistsFailureMachineParsing(t *testing.T) {
 }
 
 func TestExistsFailureRGNotExists(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockRgNotExists())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockRgNotExists())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -358,8 +358,8 @@ func TestExistsFailureRGNotExists(t *testing.T) {
 	}
 }
 func TestExistsFailureRGCheckFailure(t *testing.T) {
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockRgCheckFailure())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockRgCheckFailure())
 	azureServicesClient := actuators.AzureClients{Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -380,10 +380,10 @@ func TestExistsFailureRGCheckFailure(t *testing.T) {
 	}
 }
 func TestExistsFailureVMNotExists(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMNotExists())
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockRgExists())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMNotExists())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockRgExists())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -405,10 +405,10 @@ func TestExistsFailureVMNotExists(t *testing.T) {
 }
 
 func TestExistsFailureVMCheckFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMCheckFailure())
-	resourceManagementMock := services.MockAzureResourcesClient{}
-	mergo.Merge(&resourceManagementMock, services.MockRgExists())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMCheckFailure())
+	resourceManagementMock := azure.MockAzureResourcesClient{}
+	mergo.Merge(&resourceManagementMock, azure.MockRgExists())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Resources: &resourceManagementMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -596,7 +596,7 @@ func TestUpdateMasterFailureMachineParsing(t *testing.T) {
 }
 
 func TestUpdateMasterControlPlaneSuccess(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
+	computeMock := azure.MockAzureComputeClient{}
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -617,8 +617,8 @@ func TestUpdateMasterControlPlaneSuccess(t *testing.T) {
 }
 
 func TestUpdateMasterControlPlaneCmdRunFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockRunCommandFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockRunCommandFailure())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
@@ -640,8 +640,8 @@ func TestUpdateMasterControlPlaneCmdRunFailure(t *testing.T) {
 }
 
 func TestUpdateMasterControlPlaneFutureFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockRunCommandFutureFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockRunCommandFutureFailure())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
@@ -663,7 +663,7 @@ func TestUpdateMasterControlPlaneFutureFailure(t *testing.T) {
 }
 
 func TestUpdateMasterKubeletSuccess(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
+	computeMock := azure.MockAzureComputeClient{}
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -684,8 +684,8 @@ func TestUpdateMasterKubeletSuccess(t *testing.T) {
 }
 
 func TestUpdateMasterKubeletFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockRunCommandFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockRunCommandFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -706,8 +706,8 @@ func TestUpdateMasterKubeletFailure(t *testing.T) {
 }
 
 func TestUpdateMasterKubeletFutureFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockRunCommandFutureFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockRunCommandFutureFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -811,9 +811,9 @@ func TestShouldUpdateNameChange(t *testing.T) {
 }
 
 func TestDeleteSuccess(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Network: &services.MockAzureNetworkClient{}}
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Network: &azure.MockAzureNetworkClient{}}
 
 	params := ActuatorParams{Services: &azureServicesClient}
 	machineConfig := newMachineProviderSpec()
@@ -873,8 +873,8 @@ func TestDeleteFailureMachineParsing(t *testing.T) {
 }
 
 func TestDeleteFailureVMNotExists(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMNotExists())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMNotExists())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -893,9 +893,9 @@ func TestDeleteFailureVMNotExists(t *testing.T) {
 }
 
 func TestDeleteFailureVMDeletionFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	mergo.Merge(&computeMock, services.MockVMDeleteFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	mergo.Merge(&computeMock, azure.MockVMDeleteFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -914,8 +914,8 @@ func TestDeleteFailureVMDeletionFailure(t *testing.T) {
 }
 
 func TestDeleteFailureVMCheckFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMCheckFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMCheckFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -934,9 +934,9 @@ func TestDeleteFailureVMCheckFailure(t *testing.T) {
 }
 
 func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	mergo.Merge(&computeMock, services.MockVMDeleteFutureFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	mergo.Merge(&computeMock, azure.MockVMDeleteFutureFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -954,9 +954,9 @@ func TestDeleteFailureVMDeleteFutureFailure(t *testing.T) {
 	}
 }
 func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	mergo.Merge(&computeMock, services.MockDisksDeleteFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	mergo.Merge(&computeMock, azure.MockDisksDeleteFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -975,9 +975,9 @@ func TestDeleteFailureDiskDeleteFailure(t *testing.T) {
 }
 
 func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	mergo.Merge(&computeMock, services.MockDisksDeleteFutureFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	mergo.Merge(&computeMock, azure.MockDisksDeleteFutureFailure())
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -995,8 +995,8 @@ func TestDeleteFailureDiskDeleteFutureFailure(t *testing.T) {
 	}
 }
 func TestDeleteFailureNICResourceName(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExistsNICInvalid())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExistsNICInvalid())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock}
 
@@ -1015,10 +1015,10 @@ func TestDeleteFailureNICResourceName(t *testing.T) {
 	}
 }
 func TestDeleteFailureNICDeleteFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockNicDeleteFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockNicDeleteFailure())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Network: &networkMock}
 
@@ -1038,10 +1038,10 @@ func TestDeleteFailureNICDeleteFailure(t *testing.T) {
 }
 
 func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockNicDeleteFutureFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockNicDeleteFutureFailure())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Network: &networkMock}
 
@@ -1061,10 +1061,10 @@ func TestDeleteFailureNICDeleteFutureFailure(t *testing.T) {
 }
 
 func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockPublicIPDeleteFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockPublicIPDeleteFailure())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Network: &networkMock}
 
@@ -1084,10 +1084,10 @@ func TestDeleteFailurePublicIPDeleteFailure(t *testing.T) {
 }
 
 func TestDeleteFailurePublicIPDeleteFutureFailure(t *testing.T) {
-	computeMock := services.MockAzureComputeClient{}
-	mergo.Merge(&computeMock, services.MockVMExists())
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockPublicIPDeleteFutureFailure())
+	computeMock := azure.MockAzureComputeClient{}
+	mergo.Merge(&computeMock, azure.MockVMExists())
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockPublicIPDeleteFutureFailure())
 
 	azureServicesClient := actuators.AzureClients{Compute: &computeMock, Network: &networkMock}
 
@@ -1165,8 +1165,8 @@ func TestGetKubeConfigBase64Error(t *testing.T) {
 }
 
 func TestGetKubeConfigIPAddressFailure(t *testing.T) {
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockCreateOrUpdatePublicIPAddressFailure())
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockCreateOrUpdatePublicIPAddressFailure())
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1207,8 +1207,8 @@ func TestGetIPFailureClusterParsing(t *testing.T) {
 }
 
 func TestGetKubeConfigValidPrivateKey(t *testing.T) {
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1227,8 +1227,8 @@ func TestGetKubeConfigValidPrivateKey(t *testing.T) {
 	}
 }
 func TestGetKubeConfigInvalidBase64(t *testing.T) {
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1248,8 +1248,8 @@ func TestGetKubeConfigInvalidBase64(t *testing.T) {
 	}
 }
 func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1269,8 +1269,8 @@ func TestGetKubeConfigInvalidPrivateKey(t *testing.T) {
 	}
 }
 func TestGetIPSuccess(t *testing.T) {
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockCreateOrUpdatePublicIPAddress("127.0.0.1"))
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}
@@ -1293,8 +1293,8 @@ func TestGetIPSuccess(t *testing.T) {
 }
 
 func TestGetIPFailure(t *testing.T) {
-	networkMock := services.MockAzureNetworkClient{}
-	mergo.Merge(&networkMock, services.MockCreateOrUpdatePublicIPAddressFailure())
+	networkMock := azure.MockAzureNetworkClient{}
+	mergo.Merge(&networkMock, azure.MockCreateOrUpdatePublicIPAddressFailure())
 	azureServicesClient := actuators.AzureClients{Network: &networkMock}
 
 	params := ActuatorParams{Services: &azureServicesClient}

@@ -85,16 +85,6 @@ type Network struct {
 	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
 }
 
-//CertificateStatus contains fields generated along with certificate generation
-type CertificateStatus struct {
-	// AdminKubeconfig generated using the certificates part of the spec
-	AdminKubeconfig string `json:"adminKubeconfig,omitempty"`
-
-	// DiscoveryHashes generated using the certificates part of the spec, used by master and nodes bootstrapping
-	// this never changes until ca is rotated
-	DiscoveryHashes []string `json:"discoveryHashes,omitempty"`
-}
-
 // TODO: Implement tagging
 /*
 // Tags defines resource tags.

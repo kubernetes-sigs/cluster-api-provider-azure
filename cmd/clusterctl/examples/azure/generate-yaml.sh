@@ -47,7 +47,7 @@ CREDENTIALS_FILE=${OUTPUT_DIR}/credentials.sh
 CLUSTER_TEMPLATE_FILE=${DIR}/cluster.yaml.template
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
 # TODO: Change the machine template once nodes are implemented
-MACHINES_TEMPLATE_FILE=${DIR}/machines_no_node.yaml.template
+MACHINES_TEMPLATE_FILE=${DIR}/machines.yaml.template
 MACHINES_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
 MANAGER_PATCH_TEMPLATE_FILE=${DIR}/azure_manager_image_patch.yaml.template
 MANAGER_PATCH_GENERATED_FILE=${OUTPUT_DIR}/azure_manager_image_patch.yaml

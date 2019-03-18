@@ -21,9 +21,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -60,41 +57,13 @@ func NewScope(params ScopeParams) (*Scope, error) {
 	if err != nil {
 		return nil, errors.Errorf("failed to create azure session: %v", err)
 	}
+	params.AzureClients.Authorizer = authorizer
 
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
 		return nil, fmt.Errorf("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
 	}
-
-	// Compute
-	params.AzureClients.VM = compute.NewVirtualMachinesClient(subscriptionID)
-	params.AzureClients.VM.Authorizer = authorizer
-
-	params.AzureClients.Disks = compute.NewDisksClient(subscriptionID)
-	params.AzureClients.Disks.Authorizer = authorizer
-
-	// Network
-	params.AzureClients.VirtualNetworks = network.NewVirtualNetworksClient(subscriptionID)
-	params.AzureClients.VirtualNetworks.Authorizer = authorizer
-
-	params.AzureClients.SecurityGroups = network.NewSecurityGroupsClient(subscriptionID)
-	params.AzureClients.SecurityGroups.Authorizer = authorizer
-
-	params.AzureClients.Interfaces = network.NewInterfacesClient(subscriptionID)
-	params.AzureClients.Interfaces.Authorizer = authorizer
-
-	params.AzureClients.LB = network.NewLoadBalancersClient(subscriptionID)
-	params.AzureClients.LB.Authorizer = authorizer
-
-	params.AzureClients.PublicIPAddresses = network.NewPublicIPAddressesClient(subscriptionID)
-	params.AzureClients.PublicIPAddresses.Authorizer = authorizer
-
-	// Resources
-	params.AzureClients.Deployments = resources.NewDeploymentsClient(subscriptionID)
-	params.AzureClients.Deployments.Authorizer = authorizer
-
-	params.AzureClients.Tags = resources.NewTagsClient(subscriptionID)
-	params.AzureClients.Tags.Authorizer = authorizer
+	params.AzureClients.SubscriptionID = subscriptionID
 
 	var clusterClient client.ClusterInterface
 	if params.Client != nil {

@@ -17,80 +17,26 @@ limitations under the License.
 package actuators
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"fmt"
+	"hash/fnv"
+	"strings"
+
 	"github.com/Azure/go-autorest/autorest"
-	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
 	SubscriptionID string
-
-	Authorizer autorest.Authorizer
-	// TODO: Remove legacy clients once interfaces are reimplemented
-	Compute   AzureComputeClient
-	Network   AzureNetworkClient
-	Resources AzureResourcesClient
-
-	// Compute
-	VM    compute.VirtualMachinesClient
-	Disks compute.DisksClient
-
-	// Network
-	VirtualNetworks   network.VirtualNetworksClient
-	SecurityGroups    network.SecurityGroupsClient
-	Interfaces        network.InterfacesClient
-	LB                network.LoadBalancersClient
-	PublicIPAddresses network.PublicIPAddressesClient
-
-	// Resources
-	Deployments resources.DeploymentsClient
-	Tags        resources.TagsClient
+	Authorizer     autorest.Authorizer
 }
 
-// AzureComputeClient defines the operations that will interact with the Azure Compute API
-type AzureComputeClient interface {
-	// Virtual Machines Operations
-	RunCommand(resoureGroup string, name string, cmd string) (compute.VirtualMachinesRunCommandFuture, error)
-	VMIfExists(resourceGroup string, name string) (*compute.VirtualMachine, error)
-	DeleteVM(resourceGroup string, name string) (compute.VirtualMachinesDeleteFuture, error)
-	WaitForVMRunCommandFuture(future compute.VirtualMachinesRunCommandFuture) error
-	WaitForVMDeletionFuture(future compute.VirtualMachinesDeleteFuture) error
-
-	// Disk Operations
-	DeleteManagedDisk(resourceGroup string, name string) (compute.DisksDeleteFuture, error)
-	WaitForDisksDeleteFuture(future compute.DisksDeleteFuture) error
-}
-
-// AzureNetworkClient defines the operations that will interact with the Azure Network API
-type AzureNetworkClient interface {
-	// Network Interfaces Operations
-	DeleteNetworkInterface(resourceGroupName string, networkInterfaceName string) (network.InterfacesDeleteFuture, error)
-	WaitForNetworkInterfacesDeleteFuture(future network.InterfacesDeleteFuture) error
-
-	// Network Security Groups Operations
-	CreateOrUpdateNetworkSecurityGroup(resourceGroupName string, networkSecurityGroupName string, location string) (*network.SecurityGroupsCreateOrUpdateFuture, error)
-	NetworkSGIfExists(resourceGroupName string, networkSecurityGroupName string) (*network.SecurityGroup, error)
-	WaitForNetworkSGsCreateOrUpdateFuture(future network.SecurityGroupsCreateOrUpdateFuture) error
-
-	// Public Ip Address Operations
-	CreateOrUpdatePublicIPAddress(resourceGroupName string, IPName string) (network.PublicIPAddress, error)
-	DeletePublicIPAddress(resourceGroup string, IPName string) (network.PublicIPAddressesDeleteFuture, error)
-	WaitForPublicIPAddressDeleteFuture(future network.PublicIPAddressesDeleteFuture) error
-
-	// Virtual Networks Operations
-	CreateOrUpdateVnet(resourceGroupName string, virtualNetworkName string, location string) (*network.VirtualNetworksCreateOrUpdateFuture, error)
-	WaitForVnetCreateOrUpdateFuture(future network.VirtualNetworksCreateOrUpdateFuture) error
-}
-
-// AzureResourcesClient defines the operations that will interact with the Azure Resources API
-type AzureResourcesClient interface {
-	// Deployment Operations
-	CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*resources.DeploymentsCreateOrUpdateFuture, error)
-	GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error)
-	ValidateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) error
-	WaitForDeploymentsCreateOrUpdateFuture(future resources.DeploymentsCreateOrUpdateFuture) error
+// CreateOrUpdateNetworkAPIServerIP creates or updates public ip name and dns name
+func CreateOrUpdateNetworkAPIServerIP(scope *Scope) {
+	if scope.Network().APIServerIP.Name == "" {
+		h := fnv.New32a()
+		h.Write([]byte(fmt.Sprintf("%s/%s/%s", scope.SubscriptionID, scope.ClusterConfig.ResourceGroup, scope.Cluster.Name)))
+		scope.Network().APIServerIP.Name = strings.ToLower(azure.DefaultPublicIPPrefix + fmt.Sprintf("%x", h.Sum32()))
+	}
+	scope.Network().APIServerIP.DNSName = fmt.Sprintf("%s.%s.%s", strings.ToLower(scope.Network().APIServerIP.Name), strings.ToLower(scope.ClusterConfig.Location), azure.DefaultAzureDNSZone)
 }

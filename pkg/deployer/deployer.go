@@ -17,8 +17,10 @@ limitations under the License.
 package deployer
 
 import (
+	"github.com/pkg/errors"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/network"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -46,19 +48,13 @@ func (d *Deployer) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine)
 		return "", err
 	}
 
+	actuators.CreateOrUpdateNetworkAPIServerIP(scope)
+
 	if scope.ClusterStatus != nil && scope.ClusterStatus.Network.APIServerIP.DNSName != "" {
 		return scope.ClusterStatus.Network.APIServerIP.DNSName, nil
 	}
 
-	networkSvc := network.NewService(scope)
-
-	// TODO: Consider moving FQDN retrieval into its' own method.
-	pip, err := networkSvc.GetPublicIPAddress(scope.ClusterConfig.ResourceGroup, networkSvc.GetPublicIPName(machine))
-	if err != nil {
-		return "", err
-	}
-
-	return *pip.DNSSettings.Fqdn, nil
+	return "", errors.New("error getting dns name from cluster, dns name not set")
 }
 
 // GetKubeConfig returns the kubeconfig after the bootstrap process is complete.
@@ -68,5 +64,25 @@ func (d *Deployer) GetKubeConfig(cluster *clusterv1.Cluster, _ *clusterv1.Machin
 		return "", err
 	}
 
-	return scope.ClusterStatus.CertificateStatus.AdminKubeconfig, nil
+	// Poll for cluster to be ready before returning
+	if _, err := coreV1Client(scope.ClusterConfig.AdminKubeconfig); err != nil {
+		return "", err
+	}
+
+	return scope.ClusterConfig.AdminKubeconfig, nil
+}
+
+func coreV1Client(kubeconfig string) (corev1.CoreV1Interface, error) {
+	clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfig))
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get client config for cluster")
+	}
+
+	cfg, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get client config for cluster")
+	}
+
+	return corev1.NewForConfig(cfg)
 }
