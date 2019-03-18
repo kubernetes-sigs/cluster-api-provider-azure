@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@ limitations under the License.
 package services
 
 import (
-	"context"
+	"github.com/Azure/go-autorest/autorest"
 )
 
-// Service is a generic interface used by components offering a type of service.
-// example: Network service would offer get/createorupdate/delete.
-type Service interface {
-	Get(ctx context.Context) (interface{}, error)
-	CreateOrUpdate(ctx context.Context) error
-	Delete(ctx context.Context) error
+// ResourceNotFound parses the error to check if its a resource not found
+func ResourceNotFound(err error) bool {
+	if derr, ok := err.(autorest.DetailedError); ok && derr.StatusCode == 404 {
+		return true
+	}
+	return false
 }

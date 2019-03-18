@@ -90,9 +90,6 @@ func NewScope(params ScopeParams) (*Scope, error) {
 	params.AzureClients.PublicIPAddresses.Authorizer = authorizer
 
 	// Resources
-	params.AzureClients.Groups = resources.NewGroupsClient(subscriptionID)
-	params.AzureClients.Groups.Authorizer = authorizer
-
 	params.AzureClients.Deployments = resources.NewDeploymentsClient(subscriptionID)
 	params.AzureClients.Deployments.Authorizer = authorizer
 

@@ -134,29 +134,9 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	computeSvc := compute.NewService(scope.Scope)
 	networkSvc := network.NewService(scope.Scope)
 
-	clusterMachines, err := scope.MachineClient.List(v1.ListOptions{})
+	bootstrapToken, err := a.checkControlPlaneMachines(scope, cluster, machine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to retrieve machines in cluster %q", cluster.Name)
-	}
-
-	controlPlaneMachines := GetControlPlaneMachines(clusterMachines)
-
-	isNodeJoin, err := a.isNodeJoin(scope, controlPlaneMachines)
-	if err != nil {
-		return errors.Wrapf(err, "failed to determine whether machine %q should join cluster %q", machine.Name, cluster.Name)
-	}
-
-	var bootstrapToken string
-	if isNodeJoin {
-		coreClient, bootstrapErr := a.coreV1Client(cluster)
-		if bootstrapErr != nil {
-			return errors.Wrapf(bootstrapErr, "failed to retrieve corev1 client for cluster %q", cluster.Name)
-		}
-
-		bootstrapToken, bootstrapErr = tokens.NewBootstrap(coreClient, defaultTokenTTL)
-		if bootstrapErr != nil {
-			return errors.Wrapf(bootstrapErr, "failed to create new bootstrap token")
-		}
+		return errors.Wrapf(err, "failed to check control plane machines in cluster %s", cluster.Name)
 	}
 
 	kubeConfig, err := a.GetKubeConfig(cluster, nil)
@@ -226,6 +206,34 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	return nil
 }
 
+func (a *Actuator) checkControlPlaneMachines(scope *actuators.MachineScope, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
+	clusterMachines, err := scope.MachineClient.List(v1.ListOptions{})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to retrieve machines in cluster %q", cluster.Name)
+	}
+
+	controlPlaneMachines := GetControlPlaneMachines(clusterMachines)
+
+	isNodeJoin, err := a.isNodeJoin(scope, controlPlaneMachines)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to determine whether machine %q should join cluster %q", machine.Name, cluster.Name)
+	}
+
+	var bootstrapToken string
+	if isNodeJoin {
+		coreClient, bootstrapErr := a.coreV1Client(cluster)
+		if bootstrapErr != nil {
+			return "", errors.Wrapf(bootstrapErr, "failed to retrieve corev1 client for cluster %q", cluster.Name)
+		}
+
+		bootstrapToken, bootstrapErr = tokens.NewBootstrap(coreClient, defaultTokenTTL)
+		if bootstrapErr != nil {
+			return "", errors.Wrapf(bootstrapErr, "failed to create new bootstrap token")
+		}
+	}
+	return bootstrapToken, nil
+}
+
 func (a *Actuator) coreV1Client(cluster *clusterv1.Cluster) (corev1.CoreV1Interface, error) {
 	controlPlaneDNSName, err := a.GetIP(cluster, nil)
 	if err != nil {
@@ -250,7 +258,7 @@ func (a *Actuator) coreV1Client(cluster *clusterv1.Cluster) (corev1.CoreV1Interf
 	return corev1.NewForConfig(clientConfig)
 }
 
-// Delete deletes a machine and is invoked by the Machine Controller
+// Delete deletes a machine and is invoked by the Machine Controller.
 // TODO: Rewrite method
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Deleting machine %v for cluster %v.", machine.Name, cluster.Name)

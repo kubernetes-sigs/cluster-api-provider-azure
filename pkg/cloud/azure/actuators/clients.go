@@ -27,6 +27,9 @@ import (
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
+	SubscriptionID string
+
+	Authorizer autorest.Authorizer
 	// TODO: Remove legacy clients once interfaces are reimplemented
 	Compute   AzureComputeClient
 	Network   AzureNetworkClient
@@ -44,7 +47,6 @@ type AzureClients struct {
 	PublicIPAddresses network.PublicIPAddressesClient
 
 	// Resources
-	Groups      resources.GroupsClient
 	Deployments resources.DeploymentsClient
 	Tags        resources.TagsClient
 }
@@ -86,12 +88,6 @@ type AzureNetworkClient interface {
 
 // AzureResourcesClient defines the operations that will interact with the Azure Resources API
 type AzureResourcesClient interface {
-	// Resource Groups Operations
-	CreateOrUpdateGroup(resourceGroupName string, location string) (resources.Group, error)
-	DeleteGroup(resourceGroupName string) (resources.GroupsDeleteFuture, error)
-	CheckGroupExistence(rgName string) (autorest.Response, error)
-	WaitForGroupsDeleteFuture(future resources.GroupsDeleteFuture) error
-
 	// Deployment Operations
 	CreateOrUpdateDeployment(machine *clusterv1.Machine, clusterConfig *providerv1.AzureClusterProviderSpec, machineConfig *providerv1.AzureMachineProviderSpec, startupScript string) (*resources.DeploymentsCreateOrUpdateFuture, error)
 	GetDeploymentResult(future resources.DeploymentsCreateOrUpdateFuture) (de resources.DeploymentExtended, err error)

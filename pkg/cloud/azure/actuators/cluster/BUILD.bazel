@@ -2,14 +2,18 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["actuator.go"],
+    srcs = [
+        "actuator.go",
+        "reconciler.go",
+    ],
     importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/cloud/azure/actuators:go_default_library",
+        "//pkg/cloud/azure/services:go_default_library",
         "//pkg/cloud/azure/services/certificates:go_default_library",
+        "//pkg/cloud/azure/services/groups:go_default_library",
         "//pkg/cloud/azure/services/network:go_default_library",
-        "//pkg/cloud/azure/services/resources:go_default_library",
         "//pkg/deployer:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/k8s.io/klog:go_default_library",
@@ -23,5 +27,10 @@ go_test(
     name = "go_default_test",
     srcs = ["actuator_test.go"],
     embed = [":go_default_library"],
-    deps = ["//vendor/sigs.k8s.io/cluster-api/pkg/controller/cluster:go_default_library"],
+    deps = [
+        "//pkg/cloud/azure/actuators:go_default_library",
+        "//pkg/cloud/azure/services:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
+    ],
 )
