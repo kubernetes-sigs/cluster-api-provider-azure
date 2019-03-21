@@ -1,0 +1,5 @@
+resources:
+- azureprovider_v1alpha1_azureclusterproviderspec.yaml
+- azureprovider_v1alpha1_azureclusterproviderstatus.yaml
+- azureprovider_v1alpha1_azuremachineproviderspec.yaml
+- azureprovider_v1alpha1_azuremachineproviderstatus.yaml
