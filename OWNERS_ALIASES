@@ -30,6 +30,7 @@ aliases:
     - khenidak
   cluster-api-azure-maintainers:
     - andyzhangx
+    - awesomenix
     - brendandburns
     - feiskyer
     - justaugustus
