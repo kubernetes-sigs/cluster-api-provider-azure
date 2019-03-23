@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -29,7 +30,9 @@ import (
 
 func TestCreateOrUpdateCertificates(t *testing.T) {
 	scope := actuators.Scope{
-		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{},
+		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{
+			Location: "eastus",
+		},
 		ClusterStatus: &v1alpha1.AzureClusterProviderStatus{},
 		Cluster: &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -37,14 +40,17 @@ func TestCreateOrUpdateCertificates(t *testing.T) {
 			},
 		},
 	}
+	scope.Network().APIServerIP.DNSName = "dummydnsname"
 
 	certsSvc := NewService(&scope)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := certsSvc.CreateOrUpdate(ctx); err != nil {
-		t.Errorf("Error creating certificates")
+	if err := certsSvc.CreateOrUpdate(ctx, nil); err != nil {
+		t.Errorf("Error creating certificates: %v", err)
 	}
+
+	caKeyPair := scope.ClusterConfig.CAKeyPair
 
 	if !scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
 		t.Errorf("Error creating ca keypair")
@@ -58,11 +64,19 @@ func TestCreateOrUpdateCertificates(t *testing.T) {
 		t.Errorf("Error creating etcd ca keypair")
 	}
 
-	if scope.ClusterStatus.CertificateStatus.AdminKubeconfig == "" {
+	if scope.ClusterConfig.AdminKubeconfig == "" {
 		t.Errorf("Error generating admin kube config")
 	}
 
-	if len(scope.ClusterStatus.CertificateStatus.DiscoveryHashes) <= 0 {
+	if len(scope.ClusterConfig.DiscoveryHashes) <= 0 {
 		t.Errorf("Error generating discovery hashes")
+	}
+
+	if err := certsSvc.CreateOrUpdate(ctx, nil); err != nil {
+		t.Errorf("Error creating certificates: %v", err)
+	}
+
+	if !reflect.DeepEqual(scope.ClusterConfig.CAKeyPair, caKeyPair) {
+		t.Errorf("Expected ca key pair not be regenerated")
 	}
 }

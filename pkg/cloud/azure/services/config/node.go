@@ -25,7 +25,9 @@ const (
 	*/
 	nodeBashScript = `{{.Header}}
 
-HOSTNAME="$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
+mkdir -p /etc/kubernetes/pki
+
+echo -n '{{.CloudProviderConfig}}' > /etc/kubernetes/azure.json
 
 cat >/tmp/kubeadm-node.yaml <<EOF
 ---
@@ -34,12 +36,14 @@ kind: JoinConfiguration
 discovery:
   bootstrapToken:
     token: "{{.BootstrapToken}}"
-    apiServerEndpoint: "{{.LBAddress}}:6443"
+    apiServerEndpoint: "{{.InternalLBAddress}}:6443"
     caCertHashes:
       - "{{.CACertHash}}"
 nodeRegistration:
-  name: "${HOSTNAME}"
   criSocket: /var/run/containerd/containerd.sock
+  kubeletExtraArgs:
+    cloud-provider: azure
+    cloud-config: /etc/kubernetes/azure.json
 EOF
 
 # Configure containerd prerequisites
@@ -92,10 +96,11 @@ kubeadm join --config /tmp/kubeadm-node.yaml || true
 type NodeInput struct {
 	baseConfig
 
-	CACertHash        string
-	BootstrapToken    string
-	LBAddress         string
-	KubernetesVersion string
+	CACertHash          string
+	BootstrapToken      string
+	InternalLBAddress   string
+	KubernetesVersion   string
+	CloudProviderConfig string
 }
 
 // NewNode returns the user data string to be used on a node instance.
