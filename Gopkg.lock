@@ -571,11 +571,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d89b288fd011699b220fbe569af7c4a408ed2e99fb524b4f443be2153024d6a1"
+  digest = "1:a131201d673f8a7703ce8f171ddd4e88478f9229b8c10d31d86d4d57fbd4368a"
   name = "golang.org/x/crypto"
   packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "internal/chacha20",
+    "internal/subtle",
     "pkcs12",
     "pkcs12/internal/rc2",
+    "poly1305",
+    "ssh",
     "ssh/terminal",
   ]
   pruneopts = "UT"
@@ -625,9 +632,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:32f8c7cc78e478c39ce1cbe83dc4d54e4c4eed86197c50ff28fb935e6a32e090"
+  digest = "1:13e61a98cae36bb124f62767afe411e9238275b563af6d00072e2f2edf94d0d8"
   name = "golang.org/x/sys"
   packages = [
+    "cpu",
     "unix",
     "windows",
   ]
@@ -1266,20 +1274,18 @@
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/spf13/cobra",
+    "golang.org/x/crypto/ssh",
     "k8s.io/api/core/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/util/json",
-    "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/tools/clientcmd",
-    "k8s.io/client-go/tools/clientcmd/api",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/cert",
-    "k8s.io/cluster-bootstrap/token/api",
     "k8s.io/cluster-bootstrap/token/util",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/klog",

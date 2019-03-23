@@ -36,6 +36,7 @@ set -eox
 
 mkdir -p /etc/kubernetes/pki/etcd
 
+echo -n '{{.CloudProviderConfig}}' > /etc/kubernetes/azure.json
 echo -n '{{.CACert}}' > /etc/kubernetes/pki/ca.crt
 echo -n '{{.CAKey}}' > /etc/kubernetes/pki/ca.key
 chmod 600 /etc/kubernetes/pki/ca.key
@@ -53,7 +54,6 @@ echo -n '{{.SaKey}}' > /etc/kubernetes/pki/sa.key
 chmod 600 /etc/kubernetes/pki/sa.key
 
 PRIVATE_IP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/privateIpAddress?api-version=2018-10-01&format=text")
-HOSTNAME="$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
 
 cat >/tmp/kubeadm.yaml <<EOF
 ---
@@ -63,6 +63,24 @@ apiServer:
   certSANs:
     - "$PRIVATE_IP"
     - "{{.LBAddress}}"
+    - "{{.InternalLBAddress}}"
+  extraArgs:
+    cloud-config: /etc/kubernetes/azure.json
+    cloud-provider: azure
+  extraVolumes:
+  - hostPath: /etc/kubernetes/azure.json
+    mountPath: /etc/kubernetes/azure.json
+    name: cloud-config
+    readOnly: true
+controllerManager:
+  extraArgs:
+    cloud-config: /etc/kubernetes/azure.json
+    cloud-provider: azure
+  extraVolumes:
+  - hostPath: /etc/kubernetes/azure.json
+    mountPath: /etc/kubernetes/azure.json
+    name: cloud-config
+    readOnly: true
 controlPlaneEndpoint: "{{.LBAddress}}:6443"
 clusterName: "{{.ClusterName}}"
 networking:
@@ -74,8 +92,10 @@ kubernetesVersion: "{{.KubernetesVersion}}"
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 nodeRegistration:
-  name: ${HOSTNAME}
   criSocket: /var/run/containerd/containerd.sock
+  kubeletExtraArgs:
+    cloud-provider: azure
+    cloud-config: /etc/kubernetes/azure.json
 EOF
 
 # Configure containerd prerequisites
@@ -129,6 +149,7 @@ set -eox
 
 mkdir -p /etc/kubernetes/pki/etcd
 
+echo -n '{{.CloudProviderConfig}}' > /etc/kubernetes/azure.json
 echo -n '{{.CACert}}' > /etc/kubernetes/pki/ca.crt
 echo -n '{{.CAKey}}' > /etc/kubernetes/pki/ca.key
 chmod 600 /etc/kubernetes/pki/ca.key
@@ -146,7 +167,6 @@ echo -n '{{.SaKey}}' > /etc/kubernetes/pki/sa.key
 chmod 600 /etc/kubernetes/pki/sa.key
 
 PRIVATE_IP=$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/privateIpAddress?api-version=2018-10-01&format=text")
-HOSTNAME="$(curl -H Metadata:true "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
 
 cat >/tmp/kubeadm-controlplane-join-config.yaml <<EOF
 ---
@@ -159,8 +179,10 @@ discovery:
     caCertHashes:
       - "{{.CACertHash}}"
 nodeRegistration:
-  name: "${HOSTNAME}"
   criSocket: /var/run/containerd/containerd.sock
+  kubeletExtraArgs:
+    cloud-provider: azure
+    cloud-config: /etc/kubernetes/azure.json
 controlPlane:
   localAPIEndpoint:
     advertiseAddress: "${PRIVATE_IP}"
@@ -221,38 +243,41 @@ func isKeyPairValid(cert, key string) bool {
 type ControlPlaneInput struct {
 	baseConfig
 
-	CACert            string
-	CAKey             string
-	EtcdCACert        string
-	EtcdCAKey         string
-	FrontProxyCACert  string
-	FrontProxyCAKey   string
-	SaCert            string
-	SaKey             string
-	LBAddress         string
-	ClusterName       string
-	PodSubnet         string
-	ServiceDomain     string
-	ServiceSubnet     string
-	KubernetesVersion string
+	CACert              string
+	CAKey               string
+	EtcdCACert          string
+	EtcdCAKey           string
+	FrontProxyCACert    string
+	FrontProxyCAKey     string
+	SaCert              string
+	SaKey               string
+	LBAddress           string
+	InternalLBAddress   string
+	ClusterName         string
+	PodSubnet           string
+	ServiceDomain       string
+	ServiceSubnet       string
+	KubernetesVersion   string
+	CloudProviderConfig string
 }
 
 // ContolPlaneJoinInput defines context to generate controlplane instance user data for controlplane node join.
 type ContolPlaneJoinInput struct {
 	baseConfig
 
-	CACertHash        string
-	CACert            string
-	CAKey             string
-	EtcdCACert        string
-	EtcdCAKey         string
-	FrontProxyCACert  string
-	FrontProxyCAKey   string
-	SaCert            string
-	SaKey             string
-	BootstrapToken    string
-	LBAddress         string
-	KubernetesVersion string
+	CACertHash          string
+	CACert              string
+	CAKey               string
+	EtcdCACert          string
+	EtcdCAKey           string
+	FrontProxyCACert    string
+	FrontProxyCAKey     string
+	SaCert              string
+	SaKey               string
+	BootstrapToken      string
+	LBAddress           string
+	KubernetesVersion   string
+	CloudProviderConfig string
 }
 
 func (cpi *ControlPlaneInput) validateCertificates() error {

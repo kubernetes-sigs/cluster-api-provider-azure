@@ -98,19 +98,15 @@ Here's an example of how to build controller images, if you're interested in tes
 
 ```bash
 # Build the image.
-PREFIX=quay.io/k8s \
-NAME=cluster-api-azure-controller \
-TAG=0.1.0-alpha.3 \
-make docker-build
+STABLE_DOCKER_REPO=quay.io/<name here> make docker-build
 
 # Push the image.
-PREFIX=quay.io/k8s \
-NAME=cluster-api-azure-controller \
-TAG=0.1.0-alpha.3 \
-make docker-push
+STABLE_DOCKER_REPO=quay.io/<name here> make docker-push
 ```
 
 **NOTE:** In order for the created images to be used for testing, you must push them to a public container registry.
+
+MANAGER_IMAGE must point to right repo, to make sure the image is picked up by bootstrap and target cluster
 
 ### Submitting PRs and testing
 

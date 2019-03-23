@@ -42,7 +42,6 @@ items:
     spec:
       versions:
         kubelet: 1.13.4
-        controlPlane: 1.13.4
       providerSpec:
         value:
           apiVersion: azureprovider/v1alpha1

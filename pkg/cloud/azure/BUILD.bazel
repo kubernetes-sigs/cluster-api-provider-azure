@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "defaults.go",
+        "errors.go",
+        "fake_interfaces.go",
+        "interfaces.go",
+    ],
+    importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/Azure/go-autorest/autorest:go_default_library"],
+)
