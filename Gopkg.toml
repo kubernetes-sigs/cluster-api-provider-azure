@@ -46,15 +46,15 @@ required = [
 
 [[constraint]]
   name = "sigs.k8s.io/cluster-api"
-  revision = "af298a2a480fb7143786cf4f9990e741855f08e9"
+  revision = "3f43912fdb392b6f8cf824401e0a3ddb7590adf2"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
-  version = "26.3.0"
+  version = "26.6.0"
 
 [[constraint]]
   name = "github.com/Azure/go-autorest"
-  version = "11.5.1"
+  version = "11.5.2"
 
 # For dependency below: Refer to issue https://github.com/golang/dep/issues/1799
 [[override]]
