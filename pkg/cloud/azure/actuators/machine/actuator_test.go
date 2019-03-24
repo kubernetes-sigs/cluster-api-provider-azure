@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/ghodss/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -114,7 +116,7 @@ func newCluster(t *testing.T) *clusterv1.Cluster {
 		},
 	}
 }
-func createFakeScope(t *testing.T) *actuators.MachineScope {
+func createFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	scope := &actuators.Scope{
 		Context: context.Background(),
 		Cluster: newCluster(t),
@@ -131,7 +133,7 @@ func createFakeScope(t *testing.T) *actuators.MachineScope {
 	}
 	scope.Network().APIServerIP.DNSName = "DummyDNSName"
 	labels := make(map[string]string)
-	labels["set"] = v1alpha1.ControlPlane
+	labels["set"] = label
 	machineConfig := providerv1.AzureMachineProviderSpec{}
 	m := newMachine(t, machineConfig, labels)
 	c := fake.NewSimpleClientset(m).ClusterV1alpha1()
@@ -144,13 +146,46 @@ func createFakeScope(t *testing.T) *actuators.MachineScope {
 	}
 }
 
+// FakeVMService generic vm service
+type FakeVMService struct {
+	Name              string
+	ID                string
+	ProvisioningState string
+}
+
+// Get returns fake success.
+func (s *FakeVMService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+	return compute.VirtualMachine{
+		ID:   to.StringPtr(s.ID),
+		Name: to.StringPtr(s.Name),
+		VirtualMachineProperties: &compute.VirtualMachineProperties{
+			ProvisioningState: to.StringPtr(s.ProvisioningState),
+		},
+	}, nil
+}
+
+// CreateOrUpdate returns fake success.
+func (s *FakeVMService) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+	return nil
+}
+
+// Delete returns fake success.
+func (s *FakeVMService) Delete(ctx context.Context, spec azure.Spec) error {
+	return nil
+}
+
 func TestReconcilerSuccess(t *testing.T) {
 	fakeSuccessSvc := &azure.FakeSuccessService{}
+	fakeVMSuccessSvc := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Succeeded",
+	}
 
 	fakeReconciler := &Reconciler{
-		scope:                 createFakeScope(t),
+		scope:                 createFakeScope(t, v1alpha1.ControlPlane),
 		networkInterfacesSvc:  fakeSuccessSvc,
-		virtualMachinesSvc:    fakeSuccessSvc,
+		virtualMachinesSvc:    fakeVMSuccessSvc,
 		virtualMachinesExtSvc: fakeSuccessSvc,
 	}
 
@@ -158,13 +193,13 @@ func TestReconcilerSuccess(t *testing.T) {
 		t.Errorf("failed to create machine: %+v", err)
 	}
 
-	// if err := fakeReconciler.Update(context.Background()); err != nil {
-	// 	t.Errorf("failed to update machine: %+v", err)
-	// }
+	if err := fakeReconciler.Update(context.Background()); err != nil {
+		t.Errorf("failed to update machine: %+v", err)
+	}
 
-	// if _, err := fakeReconciler.Exists(context.Background()); err != nil {
-	// 	t.Errorf("failed to check if machine exists: %+v", err)
-	// }
+	if _, err := fakeReconciler.Exists(context.Background()); err != nil {
+		t.Errorf("failed to check if machine exists: %+v", err)
+	}
 
 	if err := fakeReconciler.Delete(context.Background()); err != nil {
 		t.Errorf("failed to delete machine: %+v", err)
@@ -176,7 +211,7 @@ func TestReconcileFailure(t *testing.T) {
 	fakeFailureSvc := &azure.FakeFailureService{}
 
 	fakeReconciler := &Reconciler{
-		scope:                 createFakeScope(t),
+		scope:                 createFakeScope(t, v1alpha1.ControlPlane),
 		networkInterfacesSvc:  fakeFailureSvc,
 		virtualMachinesSvc:    fakeFailureSvc,
 		virtualMachinesExtSvc: fakeSuccessSvc,
@@ -196,6 +231,78 @@ func TestReconcileFailure(t *testing.T) {
 
 	if err := fakeReconciler.Delete(context.Background()); err == nil {
 		t.Errorf("expected delete to fail")
+	}
+}
+
+func TestNodeJoinFirstControlPlane(t *testing.T) {
+	fakeSuccessSvc := &azure.FakeSuccessService{}
+	fakeVMSuccessSvc := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Succeeded",
+	}
+
+	fakeReconciler := &Reconciler{
+		scope:                 createFakeScope(t, v1alpha1.ControlPlane),
+		networkInterfacesSvc:  fakeSuccessSvc,
+		virtualMachinesSvc:    fakeVMSuccessSvc,
+		virtualMachinesExtSvc: fakeSuccessSvc,
+	}
+
+	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
+		t.Errorf("isNodeJoin failed to create machine: %+v", err)
+	} else if isNodeJoin {
+		t.Errorf("Expected isNodeJoin to be false since its first VM")
+	}
+}
+
+func TestNodeJoinNode(t *testing.T) {
+	fakeSuccessSvc := &azure.FakeSuccessService{}
+	fakeVMSuccessSvc := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Succeeded",
+	}
+
+	fakeReconciler := &Reconciler{
+		scope:                 createFakeScope(t, v1alpha1.Node),
+		networkInterfacesSvc:  fakeSuccessSvc,
+		virtualMachinesSvc:    fakeVMSuccessSvc,
+		virtualMachinesExtSvc: fakeSuccessSvc,
+	}
+
+	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
+		t.Errorf("isNodeJoin failed to create machine: %+v", err)
+	} else if !isNodeJoin {
+		t.Errorf("Expected isNodeJoin to be true since its a node")
+	}
+}
+
+func TestNodeJoinSecondControlPlane(t *testing.T) {
+	fakeSuccessSvc := &azure.FakeSuccessService{}
+	fakeVMSuccessSvc := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Succeeded",
+	}
+
+	fakeScope := createFakeScope(t, v1alpha1.ControlPlane)
+
+	fakeReconciler := &Reconciler{
+		scope:                 fakeScope,
+		networkInterfacesSvc:  fakeSuccessSvc,
+		virtualMachinesSvc:    fakeVMSuccessSvc,
+		virtualMachinesExtSvc: fakeSuccessSvc,
+	}
+
+	if _, err := fakeScope.MachineClient.Create(fakeScope.Machine); err != nil {
+		t.Errorf("failed to create machine: %+v", err)
+	}
+
+	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
+		t.Errorf("isNodeJoin failed to create machine: %+v", err)
+	} else if !isNodeJoin {
+		t.Errorf("Expected isNodeJoin to be true since its second control plane vm")
 	}
 }
 
