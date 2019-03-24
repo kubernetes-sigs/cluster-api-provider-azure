@@ -1,6 +1,3 @@
-run:
-  skip-files:
-    - build/asm_shim/c.go
 linters-settings:
   govet:
     check-shadowing: true
@@ -26,6 +23,8 @@ linters:
     - nakedret
     - prealloc
     - gosec
+    # TODO: Enable deadcode module once types are cleaned up
+    #- deadcode
   disable-all: true
   # Run with --fast=false for more extensive checks
   fast: true

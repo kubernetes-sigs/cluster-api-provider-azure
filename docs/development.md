@@ -8,14 +8,18 @@
 - [Setting up](#setting-up)
   - [Base requirements](#base-requirements)
   - [Get the source](#get-the-source)
+  - [Get familiar with basic concepts](#get-familiar-with-basic-concepts)
   - [Dev manifest files](#dev-manifest-files)
   - [Dev images](#dev-images)
     - [Container registry](#container-registry)
 - [Developing](#developing)
   - [Manual Testing](#manual-testing)
     - [Setting up the environment](#setting-up-the-environment)
-    - [Dev manifests](#dev-manifests)
-    - [Running clusterctl](#running-clusterctl)
+    - [Building and pushing dev images](#building-and-pushing-dev-images)
+    - [Build manifests](#build-manifests)
+    - [Creating a test cluster](#creating-a-test-cluster)
+  - [Submitting PRs and testing](#submitting-prs-and-testing)
+    - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
     - [Mocks](#mocks)
 
@@ -34,6 +38,7 @@
 4. Install [KIND][kind]
    - `go get sigs.k8s.io/kind`.
 5. Install [bazel][bazel]
+6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
 
 [go]: https://golang.org/doc/install
 
@@ -47,6 +52,11 @@ Ensure you have updated the vendor directory with:
 cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
 make dep-ensure
 ```
+
+### Get familiar with basic concepts
+
+This provider is modeled after the upstream Cluster API project. To get familiar
+with Cluster API resources, concepts and conventions, refer to the [Cluster API gitbook](https://kubernetes-sigs.github.io/cluster-api/).
 
 ### Dev manifest files
 
@@ -71,18 +81,95 @@ Change some code!
 Your environment must have the Azure credentials as outlined in the [getting
 started prerequisites section](./getting-started.md#Prerequisites)
 
-#### Dev manifests
+#### Building and pushing dev images
 
-The dev version of the manifests can be generated with
+1. Login to your container registry using `docker login`.
 
-`make manifests-dev examples-dev`
+    e.g., `docker login quay.io`
+2. To build images with custom tags and push to your custom image registry,
+   run the `make docker-build` as follows:
 
-#### Running clusterctl
+    ```bash
+    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-build
+    ```
+
+3. Push your docker images:
+    ```bash
+    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-push
+    ```
+
+#### Build manifests
+
+**NOTE:** It's expected that some set of Azure credentials are available at the time, either
+as environment variable, or some other SDK-supported method.
+
+Whenever you are working on a branch, you will need to generate manifests
+using:
+
+```bash
+make clean # Clean up any previous manifests
+
+REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" RESOURCE_GROUP="<resource-group>" CLUSTER_NAME="<cluster-name>" make manifests
+```
+
+You will then have a sample cluster and machine manifest in:
+`/cmd/clusterctl/examples/azure/out` and a provider components file to use with clusterctl in
+`cmd/clusterctl/examples/azure/out/provider-components.yaml`
+
+#### Creating a test cluster
+
+Generate custom binaries:
+```bash
+make binaries
+```
+
+Ensure kind has been reset:
+```bash
+make kind-reset
+```
 
 `make create-cluster` will launch a bootstrap cluster and then run the generated
-manifests creating a target cluster in Azure. After this is finished you will have
+manifests creating a target cluster in Azure. 
+
+If you're interested in creating the cluster with verbose logging, you can instead run:
+
+```bash
+time clusterctl create cluster -v 10 \
+--provider azure \
+--bootstrap-type kind \
+-m ./cmd/clusterctl/examples/azure/out/machines.yaml \
+-c ./cmd/clusterctl/examples/azure/out/cluster.yaml \
+-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
+-a ./cmd/clusterctl/examples/azure/out/addons.yaml
+```
+
+While clusterctl is running, you can optionally follow the controller logs in a separate window as follows:
+```bash
+export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")" # Export the kind kubeconfig
+
+time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure-provider-controller-manager-0 is available
+
+kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f # Follow the controller logs
+```
+
+After this is finished you will have
 a kubeconfig copied locally. You can debug most issues by SSHing into the
-instances that have been created and reading `/var/log/startup.log`.
+instances that have been created and reading `/var/lib/waagent/custom-script/download/0/stdout`.
+
+### Submitting PRs and testing
+
+Pull requests and issues are highly encouraged!
+If you're interested in submitting PRs to the project, please be sure to run some initial checks prior to submission:
+
+```bash
+make lint # Runs a suite of quick scripts to check code structure
+make test # Runs tests on the Go code
+```
+
+#### Executing unit tests
+
+`make test` executes the project's unit tests. These tests do not stand up a
+Kubernetes cluster, nor do they have external dependencies.
 
 ### Automated Testing
 
@@ -102,3 +189,4 @@ If you then want to use these mocks with `go test ./...`, run
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [bazel]: https://docs.bazel.build/versions/master/install.html
+[pyenv]: https://github.com/pyenv/pyenv

@@ -59,11 +59,6 @@ spec:
             - "-v=3"
             - "-logtostderr=true"
             - "-stderrthreshold=INFO"
-          volumeMounts:
-            - name: config
-              mountPath: /etc/kubernetes
-            - name: certs
-              mountPath: /etc/ssl/certs
           resources:
             limits:
               cpu: 100m
@@ -76,35 +71,31 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: AZURE_SUBSCRIPTION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: manager-bootstrap-credentials
+                  key: subscription-id
             - name: AZURE_TENANT_ID
               valueFrom:
                 secretKeyRef:
-                  name: azure-controller-secrets
+                  name: manager-bootstrap-credentials
                   key: tenant-id
             - name: AZURE_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: azure-controller-secrets
+                  name: manager-bootstrap-credentials
                   key: client-id
             - name: AZURE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: azure-controller-secrets
+                  name: manager-bootstrap-credentials
                   key: client-secret
-            - name: AZURE_SUBSCRIPTION_ID
-              valueFrom:
-                secretKeyRef:
-                  name: azure-controller-secrets
-                  key: subscription-id
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/ssl/certs
       volumes:
-        - name: config
-          hostPath:
-            path: /etc/kubernetes
         - name: certs
           hostPath:
             path: /etc/ssl/certs
-        # TODO: Investigate Azure bootstrap credentials
-        #- name: credentials
-        #  secret:
-        #    secretName: manager-bootstrap-credentials
       terminationGracePeriodSeconds: 10

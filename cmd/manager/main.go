@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis"
@@ -37,12 +38,24 @@ import (
 func main() {
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "true")
+	watchNamespace := flag.String("namespace", "",
+		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.")
 	flag.Parse()
 
 	cfg := config.GetConfigOrDie()
 
 	// Setup a Manager
-	mgr, err := manager.New(cfg, manager.Options{})
+	syncPeriod := 10 * time.Minute
+	opts := manager.Options{
+		SyncPeriod: &syncPeriod,
+	}
+
+	if *watchNamespace != "" {
+		opts.Namespace = *watchNamespace
+		klog.Infof("Watching cluster-api objects only in namespace %q for reconciliation.", opts.Namespace)
+	}
+
+	mgr, err := manager.New(cfg, opts)
 	if err != nil {
 		klog.Fatalf("Failed to set up overall controller manager: %v", err)
 	}

@@ -9,6 +9,6 @@ go_library(
         "textflag.h",
     ],
     cgo = True,
-    importpath = "sigs.k8s.io/cluster-api-provider-azure/build/asm_shim",
+    importpath = "sigs.k8s.io/cluster-api-provider-azure/build/asmshim",
     visibility = ["//visibility:public"],
 )

@@ -17,10 +17,7 @@
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+cd "${REPO_ROOT}" || exit 1
 
-cd $REPO_ROOT
-bazel test --define='gotags=integration' --test_output all //test/e2e/...
-bazel_status=$?
-python hack/coalesce.py
-exit $bazel_status
+exec scripts/ci-bazel-integration.sh
