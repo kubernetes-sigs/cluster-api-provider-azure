@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
@@ -28,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
 )
@@ -37,6 +39,9 @@ type Spec struct {
 	Name       string
 	NICName    string
 	SSHKeyData string
+	Size       string
+	Image      v1alpha1.Image
+	OSDisk     v1alpha1.OSDisk
 }
 
 // Get provides information about a virtual network.
@@ -101,29 +106,34 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
 			VirtualMachineProperties: &compute.VirtualMachineProperties{
 				HardwareProfile: &compute.HardwareProfile{
-					VMSize: compute.VirtualMachineSizeTypes("Standard_DS2_v2"),
+					VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
 				},
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{
-						Publisher: to.StringPtr("Canonical"),
-						Offer:     to.StringPtr("UbuntuServer"),
-						Sku:       to.StringPtr("18.04-LTS"),
-						Version:   to.StringPtr("latest"),
+						Publisher: to.StringPtr(vmSpec.Image.Publisher),
+						Offer:     to.StringPtr(vmSpec.Image.Offer),
+						Sku:       to.StringPtr(vmSpec.Image.SKU),
+						Version:   to.StringPtr(vmSpec.Image.Version),
 					},
 					OsDisk: &compute.OSDisk{
+						Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmSpec.Name)),
+						OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
 						CreateOption: compute.DiskCreateOptionTypesFromImage,
-						DiskSizeGB:   to.Int32Ptr(64),
+						DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
+						ManagedDisk: &compute.ManagedDiskParameters{
+							StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
+						},
 					},
 				},
 				OsProfile: &compute.OSProfile{
 					ComputerName:  to.StringPtr(vmSpec.Name),
-					AdminUsername: to.StringPtr("azureuser"),
+					AdminUsername: to.StringPtr(azure.DefaultUserName),
 					AdminPassword: to.StringPtr(randomPassword),
 					LinuxConfiguration: &compute.LinuxConfiguration{
 						SSH: &compute.SSHConfiguration{
 							PublicKeys: &[]compute.SSHPublicKey{
 								{
-									Path:    to.StringPtr("/home/azureuser/.ssh/authorized_keys"),
+									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
 									KeyData: to.StringPtr(sshKeyData),
 								},
 							},
