@@ -191,7 +191,11 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		Name:       scope.Machine.Name,
 		NICName:    networkInterfaceSpec.Name,
 		SSHKeyData: string(decoded),
+		Size:       scope.MachineConfig.VMSize,
+		OSDisk:     scope.MachineConfig.OSDisk,
+		Image:      scope.MachineConfig.Image,
 	}
+
 	err = virtualmachines.NewService(scope.Scope).CreateOrUpdate(context.Background(), vmSpec)
 	if err != nil {
 		klog.Errorf("failed to create or get machine: %+v", err)
