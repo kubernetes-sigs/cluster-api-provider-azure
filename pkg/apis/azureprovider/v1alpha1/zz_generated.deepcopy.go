@@ -112,11 +112,6 @@ func (in *AzureMachineProviderSpec) DeepCopyInto(out *AzureMachineProviderSpec) 
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	if in.Roles != nil {
-		in, out := &in.Roles, &out.Roles
-		*out = make([]MachineRole, len(*in))
-		copy(*out, *in)
-	}
 	out.Image = in.Image
 	out.OSDisk = in.OSDisk
 	return

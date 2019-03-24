@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
@@ -52,7 +53,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 
 	// apply values based on the role of the machine
 	switch machine.Role() {
-	case "controlplane":
+	case v1alpha1.ControlPlane:
 		// TODO: Check for existence of control plane subnet & ensure NSG is attached to subnet
 
 		var err error
@@ -108,7 +109,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 			}
 		}
 
-	case "node":
+	case v1alpha1.Node:
 		// TODO: Check for existence of node subnet & ensure NSG is attached to subnet
 		var err error
 		startupScript, err = NewNode(&NodeInput{

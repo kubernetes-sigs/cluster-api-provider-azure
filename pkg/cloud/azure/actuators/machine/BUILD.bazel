@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "actuator.go",
         "annotations.go",
+        "reconciler.go",
     ],
     importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine",
     visibility = ["//visibility:public"],
@@ -29,6 +30,7 @@ go_library(
         "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
         "//vendor/sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1:go_default_library",
         "//vendor/sigs.k8s.io/cluster-api/pkg/controller/error:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/util:go_default_library",
     ],
 )
 
@@ -36,5 +38,17 @@ go_test(
     name = "go_default_test",
     srcs = ["actuator_test.go"],
     embed = [":go_default_library"],
-    deps = ["//vendor/sigs.k8s.io/cluster-api/pkg/controller/machine:go_default_library"],
+    deps = [
+        "//pkg/apis/azureprovider/v1alpha1:go_default_library",
+        "//pkg/cloud/azure:go_default_library",
+        "//pkg/cloud/azure/actuators:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/autorest/to:go_default_library",
+        "//vendor/github.com/ghodss/yaml:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/controller/machine:go_default_library",
+    ],
 )
