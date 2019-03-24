@@ -32,7 +32,7 @@ import (
 type Spec struct {
 	Name       string
 	SubnetName string
-	VNETName   string
+	VnetName   string
 	IPAddress  string
 }
 
@@ -66,7 +66,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	lbName := internalLBSpec.Name
 
 	klog.V(2).Infof("getting subnet %s", internalLBSpec.SubnetName)
-	subnetInterface, err := subnets.NewService(s.Scope).Get(ctx, &subnets.Spec{Name: internalLBSpec.SubnetName, VNETName: internalLBSpec.VNETName})
+	subnetInterface, err := subnets.NewService(s.Scope).Get(ctx, &subnets.Spec{Name: internalLBSpec.SubnetName, VnetName: internalLBSpec.VnetName})
 	if err != nil {
 		return err
 	}

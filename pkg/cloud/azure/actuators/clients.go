@@ -19,7 +19,6 @@ package actuators
 import (
 	"fmt"
 	"hash/fnv"
-	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
@@ -36,7 +35,8 @@ func CreateOrUpdateNetworkAPIServerIP(scope *Scope) {
 	if scope.Network().APIServerIP.Name == "" {
 		h := fnv.New32a()
 		h.Write([]byte(fmt.Sprintf("%s/%s/%s", scope.SubscriptionID, scope.ClusterConfig.ResourceGroup, scope.Cluster.Name)))
-		scope.Network().APIServerIP.Name = strings.ToLower(azure.DefaultPublicIPPrefix + fmt.Sprintf("%x", h.Sum32()))
+		scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(scope.Cluster.Name, fmt.Sprintf("%x", h.Sum32()))
 	}
-	scope.Network().APIServerIP.DNSName = fmt.Sprintf("%s.%s.%s", strings.ToLower(scope.Network().APIServerIP.Name), strings.ToLower(scope.ClusterConfig.Location), azure.DefaultAzureDNSZone)
+
+	scope.Network().APIServerIP.DNSName = azure.GenerateFQDN(scope.Network().APIServerIP.Name, scope.ClusterConfig.Location)
 }

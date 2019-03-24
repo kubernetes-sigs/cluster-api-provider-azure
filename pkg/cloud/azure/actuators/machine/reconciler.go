@@ -74,15 +74,15 @@ func (s *Reconciler) Create(ctx context.Context) error {
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     fmt.Sprintf("%s-nic", s.scope.Machine.Name),
-		VNETName: azure.DefaultVnetName,
+		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
 	}
 	switch set := s.scope.Machine.ObjectMeta.Labels["set"]; set {
 	case v1alpha1.Node:
-		networkInterfaceSpec.SubnetName = azure.DefaultNodeSubnetName
+		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(s.scope.Cluster.Name)
 	case v1alpha1.ControlPlane:
-		networkInterfaceSpec.SubnetName = azure.DefaultControlPlaneSubnetName
-		networkInterfaceSpec.PublicLoadBalancerName = azure.DefaultPublicLBName
-		networkInterfaceSpec.InternalLoadBalancerName = azure.DefaultInternalLBName
+		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(s.scope.Cluster.Name)
+		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.scope.Cluster.Name)
+		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.scope.Cluster.Name)
 		networkInterfaceSpec.NatRule = 0
 	default:
 		return errors.Errorf("Unknown value %s for label `set` on machine %s, skipping machine creation", set, s.scope.Machine.Name)
@@ -226,7 +226,7 @@ func (s *Reconciler) Delete(ctx context.Context) error {
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     fmt.Sprintf("%s-nic", s.scope.Machine.Name),
-		VNETName: azure.DefaultVnetName,
+		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
 	}
 
 	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
