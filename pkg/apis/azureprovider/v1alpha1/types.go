@@ -65,12 +65,11 @@ type AzureMachineProviderCondition struct {
 	Message string `json:"message"`
 }
 
-type MachineRole string
-
 const (
-	// TODO: Change references to "controlplane", instead of "Master" and lowercase both roles.
-	Master MachineRole = "Master"
-	Node   MachineRole = "Node"
+	// ControlPlane machine label
+	ControlPlane string = "controlplane"
+	// Node machine label
+	Node string = "node"
 )
 
 // Network encapsulates Azure networking resources.
@@ -112,10 +111,10 @@ var (
 	SecurityGroupBastion = SecurityGroupRole("bastion")
 
 	// SecurityGroupNode defines a Kubernetes workload node role
-	SecurityGroupNode = SecurityGroupRole("node")
+	SecurityGroupNode = SecurityGroupRole(Node)
 
 	// SecurityGroupControlPlane defines a Kubernetes control plane node role
-	SecurityGroupControlPlane = SecurityGroupRole("controlplane")
+	SecurityGroupControlPlane = SecurityGroupRole(ControlPlane)
 )
 
 // SecurityGroup defines an Azure security group.

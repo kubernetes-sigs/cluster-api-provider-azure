@@ -16,7 +16,10 @@ limitations under the License.
 
 package config
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+)
 
 const (
 	// TODO: Make config Azure specific
@@ -327,7 +330,7 @@ func NewControlPlane(input *ControlPlaneInput) (string, error) {
 		return "", errors.Wrapf(err, "ControlPlaneInput is invalid")
 	}
 
-	config, err := generate("controlplane", controlPlaneBashScript, input)
+	config, err := generate(v1alpha1.ControlPlane, controlPlaneBashScript, input)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to generate user data for new control plane machine")
 	}
@@ -343,7 +346,7 @@ func JoinControlPlane(input *ContolPlaneJoinInput) (string, error) {
 		return "", errors.Wrapf(err, "ControlPlaneInput is invalid")
 	}
 
-	config, err := generate("controlplane", controlPlaneJoinBashScript, input)
+	config, err := generate(v1alpha1.ControlPlane, controlPlaneJoinBashScript, input)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to generate user data for machine joining control plane")
 	}

@@ -56,9 +56,13 @@ func (s *FakeSuccessService) Delete(ctx context.Context, spec Spec) error {
 	return nil
 }
 
+// FakeStruct fakes return for Get
+type FakeStruct struct {
+}
+
 // Get returns fake failure.
 func (s *FakeFailureService) Get(ctx context.Context, spec Spec) (interface{}, error) {
-	return nil, fmt.Errorf("Failed to Get service")
+	return FakeStruct{}, fmt.Errorf("Failed to Get service")
 }
 
 // CreateOrUpdate returns fake failure.

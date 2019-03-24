@@ -16,6 +16,10 @@ limitations under the License.
 
 package config
 
+import (
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+)
+
 const (
 	// TODO: Make config Azure specific
 	// TODO: Add cloud provider config back to InitConfiguration nodeRegistration once we handle Azure AAD auth (either via creds or MSI)
@@ -106,5 +110,5 @@ type NodeInput struct {
 // NewNode returns the user data string to be used on a node instance.
 func NewNode(input *NodeInput) (string, error) {
 	input.Header = defaultHeader
-	return generate("node", nodeBashScript, input)
+	return generate(v1alpha1.Node, nodeBashScript, input)
 }
