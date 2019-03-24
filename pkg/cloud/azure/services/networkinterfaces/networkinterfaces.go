@@ -33,7 +33,7 @@ import (
 type Spec struct {
 	Name                     string
 	SubnetName               string
-	VNETName                 string
+	VnetName                 string
 	StaticIPAddress          string
 	PublicLoadBalancerName   string
 	InternalLoadBalancerName string
@@ -64,7 +64,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 
 	nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
-	subnetInterface, err := subnets.NewService(s.Scope).Get(ctx, &subnets.Spec{Name: nicSpec.SubnetName, VNETName: nicSpec.VNETName})
+	subnetInterface, err := subnets.NewService(s.Scope).Get(ctx, &subnets.Spec{Name: nicSpec.SubnetName, VnetName: nicSpec.VnetName})
 	if err != nil {
 		return err
 	}
