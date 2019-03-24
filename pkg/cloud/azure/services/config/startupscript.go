@@ -172,9 +172,9 @@ func getAzureCloudProviderConfig(machine *actuators.MachineScope) string {
 		os.Getenv("AZURE_CLIENT_SECRET"),
 		machine.Scope.ClusterConfig.ResourceGroup,
 		machine.Scope.ClusterConfig.Location,
-		azure.DefaultNodeSubnetName,
-		azure.DefaultNodeSecurityGroupName,
-		azure.DefaultVnetName,
-		azure.DefaultNodeRouteTableName,
+		azure.GenerateNodeSubnetName(machine.Scope.Cluster.Name),
+		azure.GenerateNodeSecurityGroupName(machine.Scope.Cluster.Name),
+		azure.GenerateVnetName(machine.Scope.Cluster.Name),
+		azure.GenerateNodeRouteTableName(machine.Scope.Cluster.Name),
 	)
 }

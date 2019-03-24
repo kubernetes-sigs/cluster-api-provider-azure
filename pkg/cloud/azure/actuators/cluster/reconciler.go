@@ -75,7 +75,7 @@ func (s *Reconciler) Reconcile() error {
 	}
 
 	vnetSpec := &virtualnetworks.Spec{
-		Name: azure.DefaultVnetName,
+		Name: azure.GenerateVnetName(s.scope.Cluster.Name),
 		CIDR: azure.DefaultVnetCIDR,
 	}
 	if err := s.vnetSvc.CreateOrUpdate(s.scope.Context, vnetSpec); err != nil {
@@ -83,7 +83,7 @@ func (s *Reconciler) Reconcile() error {
 	}
 
 	sgSpec := &securitygroups.Spec{
-		Name:           azure.DefaultControlPlaneSecurityGroupName,
+		Name:           azure.GenerateControlPlaneSecurityGroupName(s.scope.Cluster.Name),
 		IsControlPlane: true,
 	}
 	if err := s.securityGroupSvc.CreateOrUpdate(s.scope.Context, sgSpec); err != nil {
@@ -91,7 +91,7 @@ func (s *Reconciler) Reconcile() error {
 	}
 
 	sgSpec = &securitygroups.Spec{
-		Name:           azure.DefaultNodeSecurityGroupName,
+		Name:           azure.GenerateNodeSecurityGroupName(s.scope.Cluster.Name),
 		IsControlPlane: false,
 	}
 	if err := s.securityGroupSvc.CreateOrUpdate(s.scope.Context, sgSpec); err != nil {
@@ -99,37 +99,37 @@ func (s *Reconciler) Reconcile() error {
 	}
 
 	rtSpec := &routetables.Spec{
-		Name: azure.DefaultNodeRouteTableName,
+		Name: azure.GenerateNodeRouteTableName(s.scope.Cluster.Name),
 	}
 	if err := s.routeTableSvc.CreateOrUpdate(s.scope.Context, rtSpec); err != nil {
 		return errors.Wrapf(err, "failed to createorupdate node route table for cluster %s", s.scope.Cluster.Name)
 	}
 
 	subnetSpec := &subnets.Spec{
-		Name:              azure.DefaultControlPlaneSubnetName,
+		Name:              azure.GenerateControlPlaneSubnetName(s.scope.Cluster.Name),
 		CIDR:              azure.DefaultControlPlaneSubnetCIDR,
-		VNETName:          azure.DefaultVnetName,
-		SecurityGroupName: azure.DefaultControlPlaneSecurityGroupName,
+		VnetName:          azure.GenerateVnetName(s.scope.Cluster.Name),
+		SecurityGroupName: azure.GenerateControlPlaneSecurityGroupName(s.scope.Cluster.Name),
 	}
 	if err := s.subnetsSvc.CreateOrUpdate(s.scope.Context, subnetSpec); err != nil {
 		return errors.Wrapf(err, "failed to createorupdate control plane subnet for cluster %s", s.scope.Cluster.Name)
 	}
 
 	subnetSpec = &subnets.Spec{
-		Name:              azure.DefaultNodeSubnetName,
+		Name:              azure.GenerateNodeSubnetName(s.scope.Cluster.Name),
 		CIDR:              azure.DefaultNodeSubnetCIDR,
-		VNETName:          azure.DefaultVnetName,
-		SecurityGroupName: azure.DefaultControlPlaneSecurityGroupName,
-		RouteTableName:    azure.DefaultNodeRouteTableName,
+		VnetName:          azure.GenerateVnetName(s.scope.Cluster.Name),
+		SecurityGroupName: azure.GenerateControlPlaneSecurityGroupName(s.scope.Cluster.Name),
+		RouteTableName:    azure.GenerateNodeRouteTableName(s.scope.Cluster.Name),
 	}
 	if err := s.subnetsSvc.CreateOrUpdate(s.scope.Context, subnetSpec); err != nil {
 		return errors.Wrapf(err, "failed to createorupdate node subnet for cluster %s", s.scope.Cluster.Name)
 	}
 
 	internalLBSpec := &internalloadbalancers.Spec{
-		Name:       azure.DefaultInternalLBName,
-		SubnetName: azure.DefaultControlPlaneSubnetName,
-		VNETName:   azure.DefaultVnetName,
+		Name:       azure.GenerateInternalLBName(s.scope.Cluster.Name),
+		SubnetName: azure.GenerateControlPlaneSubnetName(s.scope.Cluster.Name),
+		VnetName:   azure.GenerateVnetName(s.scope.Cluster.Name),
 		IPAddress:  azure.DefaultInternalLBIPAddress,
 	}
 	if err := s.internalLBSvc.CreateOrUpdate(s.scope.Context, internalLBSpec); err != nil {
@@ -144,7 +144,7 @@ func (s *Reconciler) Reconcile() error {
 	}
 
 	publicLBSpec := &publicloadbalancers.Spec{
-		Name:         azure.DefaultPublicLBName,
+		Name:         azure.GeneratePublicLBName(s.scope.Cluster.Name),
 		PublicIPName: s.scope.Network().APIServerIP.Name,
 	}
 	if err := s.publicLBSvc.CreateOrUpdate(s.scope.Context, publicLBSpec); err != nil {
@@ -165,11 +165,11 @@ func (s *Reconciler) Delete() error {
 	}
 
 	rtSpec := &routetables.Spec{
-		Name: azure.DefaultNodeRouteTableName,
+		Name: azure.GenerateNodeRouteTableName(s.scope.Cluster.Name),
 	}
 	if err := s.routeTableSvc.Delete(s.scope.Context, rtSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete route table %s for cluster %s", azure.DefaultNodeRouteTableName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete route table %s for cluster %s", azure.GenerateNodeRouteTableName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 
@@ -178,11 +178,11 @@ func (s *Reconciler) Delete() error {
 	}
 
 	vnetSpec := &virtualnetworks.Spec{
-		Name: azure.DefaultVnetName,
+		Name: azure.GenerateVnetName(s.scope.Cluster.Name),
 	}
 	if err := s.vnetSvc.Delete(s.scope.Context, vnetSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete virtual network %s for cluster %s", azure.DefaultVnetName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete virtual network %s for cluster %s", azure.GenerateVnetName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 
@@ -196,11 +196,11 @@ func (s *Reconciler) Delete() error {
 
 func (s *Reconciler) deleteLB() error {
 	publicLBSpec := &publicloadbalancers.Spec{
-		Name: azure.DefaultPublicLBName,
+		Name: azure.GeneratePublicLBName(s.scope.Cluster.Name),
 	}
 	if err := s.publicLBSvc.Delete(s.scope.Context, publicLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", azure.DefaultPublicLBName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", azure.GeneratePublicLBName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 	publicIPSpec := &publicips.Spec{
@@ -213,11 +213,11 @@ func (s *Reconciler) deleteLB() error {
 	}
 
 	internalLBSpec := &internalloadbalancers.Spec{
-		Name: azure.DefaultNodeSubnetName,
+		Name: azure.GenerateNodeSubnetName(s.scope.Cluster.Name),
 	}
 	if err := s.internalLBSvc.Delete(s.scope.Context, internalLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to internal load balancer %s for cluster %s", azure.DefaultNodeSubnetName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to internal load balancer %s for cluster %s", azure.GenerateNodeSubnetName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 	return nil
@@ -225,22 +225,22 @@ func (s *Reconciler) deleteLB() error {
 
 func (s *Reconciler) deleteSubnets() error {
 	subnetSpec := &subnets.Spec{
-		Name:     azure.DefaultNodeSubnetName,
-		VNETName: azure.DefaultVnetName,
+		Name:     azure.GenerateNodeSubnetName(s.scope.Cluster.Name),
+		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
 	}
 	if err := s.subnetsSvc.Delete(s.scope.Context, subnetSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete %s subnet for cluster %s", azure.DefaultNodeSubnetName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete %s subnet for cluster %s", azure.GenerateNodeSubnetName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 
 	subnetSpec = &subnets.Spec{
-		Name:     azure.DefaultControlPlaneSubnetName,
-		VNETName: azure.DefaultVnetName,
+		Name:     azure.GenerateControlPlaneSubnetName(s.scope.Cluster.Name),
+		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
 	}
 	if err := s.subnetsSvc.Delete(s.scope.Context, subnetSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete %s subnet for cluster %s", azure.DefaultControlPlaneSubnetName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete %s subnet for cluster %s", azure.GenerateControlPlaneSubnetName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 	return nil
@@ -248,19 +248,19 @@ func (s *Reconciler) deleteSubnets() error {
 
 func (s *Reconciler) deleteNSG() error {
 	sgSpec := &securitygroups.Spec{
-		Name: azure.DefaultNodeSecurityGroupName,
+		Name: azure.GenerateNodeSecurityGroupName(s.scope.Cluster.Name),
 	}
 	if err := s.securityGroupSvc.Delete(s.scope.Context, sgSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", azure.DefaultNodeSecurityGroupName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", azure.GenerateNodeSecurityGroupName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 	sgSpec = &securitygroups.Spec{
-		Name: azure.DefaultControlPlaneSecurityGroupName,
+		Name: azure.GenerateControlPlaneSecurityGroupName(s.scope.Cluster.Name),
 	}
 	if err := s.securityGroupSvc.Delete(s.scope.Context, sgSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", azure.DefaultControlPlaneSecurityGroupName, s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", azure.GenerateControlPlaneSecurityGroupName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 	return nil
