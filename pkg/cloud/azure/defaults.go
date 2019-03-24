@@ -17,6 +17,8 @@ limitations under the License.
 package azure
 
 const (
+	// DefaultUserName is the default username for created vm
+	DefaultUserName = "capi"
 	// DefaultVnetName is the default name for the cluster's virtual network.
 	DefaultVnetName = "ClusterAPIVnet"
 	// DefaultVnetCIDR is the default Vnet CIDR
