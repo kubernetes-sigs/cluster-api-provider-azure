@@ -33,11 +33,6 @@ export RESOURCE_GROUP="${RESOURCE_GROUP:-capi-${RANDOM_STRING}}"
 export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
 export VNET_NAME="${VNET_NAME:-}"
 
-# TODO: Remove if unused
-# Manager image.
-#export MANAGER_IMAGE="${MANAGER_IMAGE:-quay.io/k8s/cluster-api-azure-controller:0.1.0-alpha.3}"
-#export MANAGER_IMAGE_PULL_POLICY=${MANAGER_IMAGE_PULL_POLICY:-IfNotPresent}
-
 # Machine settings.
 export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
 export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2ms}"

@@ -41,7 +41,7 @@ const (
 
 	// TODO move these into config
 	registry         = "quay.io"
-	managerImageTag  = "0.1.0-alpha.3"
+	managerImageTag  = "0.1.0"
 	managerImageName = "cluster-api-azure-controller"
 	pullPolicy       = "IfNotPresent"
 )
