@@ -35,7 +35,7 @@ As of this writing, we have not produced as a major or minor release.
 Current pre-release versions can be expected to have breaking changes as we move towards declaring a public API version.
 
 Example versions:
-- Pre-release: `v0.1.0-alpha.4`
+- Pre-release: `v0.1.1-alpha.1`
 - Minor release: `v0.1.0`
 - Patch release: `v0.1.1`
 - Major release: `v1.0.0`
