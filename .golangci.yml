@@ -23,8 +23,7 @@ linters:
     - nakedret
     - prealloc
     - gosec
-    # TODO: Enable deadcode module once types are cleaned up
-    #- deadcode
+    - deadcode
   disable-all: true
   # Run with --fast=false for more extensive checks
   fast: true
