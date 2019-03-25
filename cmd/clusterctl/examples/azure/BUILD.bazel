@@ -50,6 +50,7 @@ pkg_tar(
         "addons.yaml",
         "cluster.yaml.template",
         "cluster-network-spec.yaml.template",
+        "credentials.yaml.template",
         "generate-yaml.sh",
         "machines.yaml.template",
         "provider-components-base.yaml",

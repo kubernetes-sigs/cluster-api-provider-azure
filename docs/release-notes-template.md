@@ -21,6 +21,11 @@
 clusterctl is a tool for bootstrapping a cluster for hosting the [cluster-api](https://github.com/kubernetes-sigs/cluster-api) components.
 See the [Getting Started Guide](https://github.com/kubernetes-sigs/cluster-api-provider-azure/tree/$VERSION/docs/getting-started.md).
 
+## Image
+
+<!-- Provide a link to the controller image in the container registry -->
+- [quay.io/k8s/cluster-api-azure-controller:0.x.y](https://quay.io/repository/k8s/cluster-api-azure-controller?tag=0.x.y&tab=tags)
+
 ## Limitations
 
 <!-- List limitations in new functionality -->

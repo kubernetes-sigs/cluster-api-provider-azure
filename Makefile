@@ -238,7 +238,7 @@ binaries-dev: ## Builds and installs all development binaries using go get
 	go get -v ./...
 
 .PHONY: create-cluster
-create-cluster: binaries-dev ## Create a development Kubernetes cluster on AWS using examples
+create-cluster: binaries-dev ## Create a development Kubernetes cluster on Azure using examples
 	clusterctl create cluster -v 4 \
 	--provider azure \
 	--bootstrap-type kind \
