@@ -37,7 +37,7 @@ github token for modifying release
 
 const (
 	// TODO(chuckha): figure this out based on directory name
-	repository = "cluster-api-provider-azure"
+	repository = "k8s"
 
 	// TODO move these into config
 	registry         = "quay.io"

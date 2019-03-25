@@ -1,16 +1,21 @@
 # Release Process
 
-Before beginning the release process, review and discuss any potential modifications to the [support matrix/policy][support-policy].
+## Pre-flight
+
+- Review and discuss any potential modifications to the [support matrix/policy][support-policy]
+- Create a release commit e.g., `Release commit: v0.1.0`, by:
+  - Searching and replacing the previous image versions in the repo, specifically in:
+    - Makefile
+    - Release tool (`cmd/release/main.go`)
 
 ## Semi-automatic
 
 1. Make sure your repo is clean by git's standards
-2. If the controller has changed, it would be good to bump the version of the controller image. Look in `cmd/release/main.go`.
-3. Run `go run cmd/release/main.go -version v0.x.y`, replacing the [version][versioning], as appropriate
+2. Run `go run cmd/release/main.go -remote <upstream-remote-name> -version v0.x.y`, replacing the [version][versioning], as appropriate
+3. Write the [release notes](#release-notes) and make sure the binaries uploaded return the correct version
 4. Push the docker images that were generated with this release tool
-5. Edit the release notes and make sure the binaries uploaded return the correct version
-6. Publish release
-7. [Announce][release-announcement] the release
+5. Publish release
+6. [Announce][release-announcement] the release
 
 ## Manual
 
@@ -21,7 +26,7 @@ Before beginning the release process, review and discuss any potential modificat
 4. Run `make release-artifacts`
 5. Attach the tarball to the drafted release
 6. Attach `clusterctl` to the drafted release (for darwin and linux architectures)
-7. Write the [release notes](#release-notes)
+7. Write the [release notes](#release-notes) and make sure the binaries uploaded return the correct version
 8. Build and push the container image
 9. Publish release
 10. [Announce][release-announcement] the release

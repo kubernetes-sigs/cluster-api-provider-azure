@@ -49,7 +49,6 @@ export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64)"
 CLUSTER_TEMPLATE_FILE=${DIR}/cluster.yaml.template
 CLUSTER_NETWORKSPEC_TEMPLATE_FILE=${DIR}/cluster-network-spec.yaml.template
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
-# TODO: Change the machine template once nodes are implemented
 MACHINES_TEMPLATE_FILE=${DIR}/machines.yaml.template
 MACHINES_GENERATED_FILE=${OUTPUT_DIR}/machines.yaml
 ADDONS_FILE=${OUTPUT_DIR}/addons.yaml
