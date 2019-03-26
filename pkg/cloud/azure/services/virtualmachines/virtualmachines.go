@@ -40,6 +40,7 @@ type Spec struct {
 	NICName    string
 	SSHKeyData string
 	Size       string
+	Zone       string
 	Image      v1alpha1.Image
 	OSDisk     v1alpha1.OSDisk
 }
@@ -98,60 +99,67 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to generate random string")
 	}
 
-	future, err := s.Client.CreateOrUpdate(
-		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
-		vmSpec.Name,
-		compute.VirtualMachine{
-			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
-			VirtualMachineProperties: &compute.VirtualMachineProperties{
-				HardwareProfile: &compute.HardwareProfile{
-					VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
+	virtualMachine := compute.VirtualMachine{
+		Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+		VirtualMachineProperties: &compute.VirtualMachineProperties{
+			HardwareProfile: &compute.HardwareProfile{
+				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
+			},
+			StorageProfile: &compute.StorageProfile{
+				ImageReference: &compute.ImageReference{
+					Publisher: to.StringPtr(vmSpec.Image.Publisher),
+					Offer:     to.StringPtr(vmSpec.Image.Offer),
+					Sku:       to.StringPtr(vmSpec.Image.SKU),
+					Version:   to.StringPtr(vmSpec.Image.Version),
 				},
-				StorageProfile: &compute.StorageProfile{
-					ImageReference: &compute.ImageReference{
-						Publisher: to.StringPtr(vmSpec.Image.Publisher),
-						Offer:     to.StringPtr(vmSpec.Image.Offer),
-						Sku:       to.StringPtr(vmSpec.Image.SKU),
-						Version:   to.StringPtr(vmSpec.Image.Version),
-					},
-					OsDisk: &compute.OSDisk{
-						Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmSpec.Name)),
-						OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
-						CreateOption: compute.DiskCreateOptionTypesFromImage,
-						DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
-						ManagedDisk: &compute.ManagedDiskParameters{
-							StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
-						},
+				OsDisk: &compute.OSDisk{
+					Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmSpec.Name)),
+					OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
+					CreateOption: compute.DiskCreateOptionTypesFromImage,
+					DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
+					ManagedDisk: &compute.ManagedDiskParameters{
+						StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
 					},
 				},
-				OsProfile: &compute.OSProfile{
-					ComputerName:  to.StringPtr(vmSpec.Name),
-					AdminUsername: to.StringPtr(azure.DefaultUserName),
-					AdminPassword: to.StringPtr(randomPassword),
-					LinuxConfiguration: &compute.LinuxConfiguration{
-						SSH: &compute.SSHConfiguration{
-							PublicKeys: &[]compute.SSHPublicKey{
-								{
-									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-									KeyData: to.StringPtr(sshKeyData),
-								},
-							},
-						},
-					},
-				},
-				NetworkProfile: &compute.NetworkProfile{
-					NetworkInterfaces: &[]compute.NetworkInterfaceReference{
-						{
-							ID: nic.ID,
-							NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-								Primary: to.BoolPtr(true),
+			},
+			OsProfile: &compute.OSProfile{
+				ComputerName:  to.StringPtr(vmSpec.Name),
+				AdminUsername: to.StringPtr(azure.DefaultUserName),
+				AdminPassword: to.StringPtr(randomPassword),
+				LinuxConfiguration: &compute.LinuxConfiguration{
+					SSH: &compute.SSHConfiguration{
+						PublicKeys: &[]compute.SSHPublicKey{
+							{
+								Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+								KeyData: to.StringPtr(sshKeyData),
 							},
 						},
 					},
 				},
 			},
-		})
+			NetworkProfile: &compute.NetworkProfile{
+				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
+					{
+						ID: nic.ID,
+						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
+							Primary: to.BoolPtr(true),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if vmSpec.Zone != "" {
+		zones := []string{vmSpec.Zone}
+		virtualMachine.Zones = &zones
+	}
+
+	future, err := s.Client.CreateOrUpdate(
+		ctx,
+		s.Scope.ClusterConfig.ResourceGroup,
+		vmSpec.Name,
+		virtualMachine)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create vm")
 	}

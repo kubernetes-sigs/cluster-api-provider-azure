@@ -77,6 +77,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	}
 	klog.V(2).Infof("successfully got subnet %s", internalLBSpec.SubnetName)
 
+	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	future, err := s.Client.CreateOrUpdate(ctx,
 		s.Scope.ClusterConfig.ResourceGroup,
 		lbName,

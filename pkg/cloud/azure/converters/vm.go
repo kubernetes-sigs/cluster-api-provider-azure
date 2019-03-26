@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
 
+// SDKToVM converts azure representation to internal representation
 func SDKToVM(v compute.VirtualMachine) *v1alpha1.VM {
 	i := &v1alpha1.VM{
 		ID:   *v.ID,
@@ -30,6 +31,10 @@ func SDKToVM(v compute.VirtualMachine) *v1alpha1.VM {
 		//Identity: string(v.Identity),
 		//Tags: v.Tags,
 		//State:    v1alpha1.VMState(*v.State.Name),
+	}
+
+	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
+		i.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
 	}
 
 	/*
