@@ -119,7 +119,7 @@ func (s *Reconciler) Reconcile() error {
 		Name:              azure.GenerateNodeSubnetName(s.scope.Cluster.Name),
 		CIDR:              azure.DefaultNodeSubnetCIDR,
 		VnetName:          azure.GenerateVnetName(s.scope.Cluster.Name),
-		SecurityGroupName: azure.GenerateControlPlaneSecurityGroupName(s.scope.Cluster.Name),
+		SecurityGroupName: azure.GenerateNodeSecurityGroupName(s.scope.Cluster.Name),
 		RouteTableName:    azure.GenerateNodeRouteTableName(s.scope.Cluster.Name),
 	}
 	if err := s.subnetsSvc.CreateOrUpdate(s.scope.Context, subnetSpec); err != nil {
