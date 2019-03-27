@@ -32,6 +32,7 @@
 - [kustomize]
 - make
 - gettext (with `envsubst` in your PATH)
+- md5sum
 - bazel
 
 ### Optional
