@@ -4,7 +4,6 @@ aliases:
   cluster-api-azure-maintainers:
     - justaugustus
     - soggiest
-    - tariq1890
   cluster-api-azure-reviewers:
     - awesomenix
     #- marwanad # inactive
