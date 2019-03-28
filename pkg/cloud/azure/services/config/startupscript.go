@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -73,7 +74,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 				SaKey:               string(machine.Scope.ClusterConfig.SAKeyPair.Key),
 				BootstrapToken:      bootstrapToken,
 				LBAddress:           dnsName,
-				KubernetesVersion:   machine.Machine.Spec.Versions.ControlPlane,
+				KubernetesVersion:   trimKubernetesVersion(machine.Machine.Spec.Versions.ControlPlane),
 				CloudProviderConfig: getAzureCloudProviderConfig(machine),
 			})
 			if err != nil {
@@ -100,7 +101,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 				PodSubnet:           machine.Scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 				ServiceSubnet:       machine.Scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
 				ServiceDomain:       machine.Scope.Cluster.Spec.ClusterNetwork.ServiceDomain,
-				KubernetesVersion:   machine.Machine.Spec.Versions.ControlPlane,
+				KubernetesVersion:   trimKubernetesVersion(machine.Machine.Spec.Versions.ControlPlane),
 				CloudProviderConfig: getAzureCloudProviderConfig(machine),
 			})
 
@@ -116,7 +117,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 			CACertHash:          caCertHash,
 			BootstrapToken:      bootstrapToken,
 			InternalLBAddress:   azure.DefaultInternalLBIPAddress,
-			KubernetesVersion:   machine.Machine.Spec.Versions.Kubelet,
+			KubernetesVersion:  trimKubernetesVersion(machine.Machine.Spec.Versions.Kubelet),
 			CloudProviderConfig: getAzureCloudProviderConfig(machine),
 		})
 
@@ -128,6 +129,11 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 		return "", errors.Errorf("Unknown node role %s", machine.Role())
 	}
 	return startupScript, nil
+}
+
+// trimKubernetesVersion removes "v" from prefix if given in this format: v1.13.4
+func trimKubernetesVersion(version string) string {
+	return strings.TrimPrefix(version, "v")
 }
 
 // getAzureCloudProviderConfig gets azure provider config for control plane and kubelet
