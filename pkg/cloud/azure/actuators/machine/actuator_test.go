@@ -18,17 +18,20 @@ package machine
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
@@ -116,7 +119,7 @@ func newCluster(t *testing.T) *clusterv1.Cluster {
 		},
 	}
 }
-func createFakeScope(t *testing.T, label string) *actuators.MachineScope {
+func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	scope := &actuators.Scope{
 		Context: context.Background(),
 		Cluster: newCluster(t),
@@ -146,15 +149,51 @@ func createFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	}
 }
 
+func newFakeReconciler(t *testing.T) *Reconciler {
+	fakeSuccessSvc := &azure.FakeSuccessService{}
+	fakeVMSuccessSvc := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Succeeded",
+	}
+	return &Reconciler{
+		scope:                 newFakeScope(t, v1alpha1.ControlPlane),
+		availabilityZonesSvc:  fakeSuccessSvc,
+		networkInterfacesSvc:  fakeSuccessSvc,
+		virtualMachinesSvc:    fakeVMSuccessSvc,
+		virtualMachinesExtSvc: fakeSuccessSvc,
+	}
+}
+
+func newFakeReconcilerWithScope(t *testing.T, scope *actuators.MachineScope) *Reconciler {
+	fakeSuccessSvc := &azure.FakeSuccessService{}
+	fakeVMSuccessSvc := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Succeeded",
+	}
+	return &Reconciler{
+		scope:                 scope,
+		availabilityZonesSvc:  fakeSuccessSvc,
+		networkInterfacesSvc:  fakeSuccessSvc,
+		virtualMachinesSvc:    fakeVMSuccessSvc,
+		virtualMachinesExtSvc: fakeSuccessSvc,
+	}
+}
+
 // FakeVMService generic vm service
 type FakeVMService struct {
-	Name              string
-	ID                string
-	ProvisioningState string
+	Name                    string
+	ID                      string
+	ProvisioningState       string
+	GetCallCount            int
+	CreateOrUpdateCallCount int
+	DeleteCallCount         int
 }
 
 // Get returns fake success.
 func (s *FakeVMService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+	s.GetCallCount++
 	return compute.VirtualMachine{
 		ID:   to.StringPtr(s.ID),
 		Name: to.StringPtr(s.Name),
@@ -166,28 +205,18 @@ func (s *FakeVMService) Get(ctx context.Context, spec azure.Spec) (interface{}, 
 
 // CreateOrUpdate returns fake success.
 func (s *FakeVMService) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+	s.CreateOrUpdateCallCount++
 	return nil
 }
 
 // Delete returns fake success.
 func (s *FakeVMService) Delete(ctx context.Context, spec azure.Spec) error {
+	s.DeleteCallCount++
 	return nil
 }
 
 func TestReconcilerSuccess(t *testing.T) {
-	fakeSuccessSvc := &azure.FakeSuccessService{}
-	fakeVMSuccessSvc := &FakeVMService{
-		Name:              "machine-test",
-		ID:                "machine-test-ID",
-		ProvisioningState: "Succeeded",
-	}
-
-	fakeReconciler := &Reconciler{
-		scope:                 createFakeScope(t, v1alpha1.ControlPlane),
-		networkInterfacesSvc:  fakeSuccessSvc,
-		virtualMachinesSvc:    fakeVMSuccessSvc,
-		virtualMachinesExtSvc: fakeSuccessSvc,
-	}
+	fakeReconciler := newFakeReconciler(t)
 
 	if err := fakeReconciler.Create(context.Background()); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
@@ -207,18 +236,14 @@ func TestReconcilerSuccess(t *testing.T) {
 }
 
 func TestReconcileFailure(t *testing.T) {
-	fakeSuccessSvc := &azure.FakeSuccessService{}
 	fakeFailureSvc := &azure.FakeFailureService{}
-
-	fakeReconciler := &Reconciler{
-		scope:                 createFakeScope(t, v1alpha1.ControlPlane),
-		networkInterfacesSvc:  fakeFailureSvc,
-		virtualMachinesSvc:    fakeFailureSvc,
-		virtualMachinesExtSvc: fakeSuccessSvc,
-	}
+	fakeReconciler := newFakeReconciler(t)
+	fakeReconciler.networkInterfacesSvc = fakeFailureSvc
+	fakeReconciler.virtualMachinesSvc = fakeFailureSvc
+	fakeReconciler.virtualMachinesExtSvc = fakeFailureSvc
 
 	if err := fakeReconciler.Create(context.Background()); err == nil {
-		t.Errorf("expected createa to fail")
+		t.Errorf("expected create to fail")
 	}
 
 	if err := fakeReconciler.Update(context.Background()); err == nil {
@@ -234,20 +259,86 @@ func TestReconcileFailure(t *testing.T) {
 	}
 }
 
-func TestNodeJoinFirstControlPlane(t *testing.T) {
-	fakeSuccessSvc := &azure.FakeSuccessService{}
-	fakeVMSuccessSvc := &FakeVMService{
+func TestReconcileVMFailedState(t *testing.T) {
+	fakeReconciler := newFakeReconciler(t)
+	fakeVMService := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Failed",
+	}
+	fakeReconciler.virtualMachinesSvc = fakeVMService
+
+	if err := fakeReconciler.Create(context.Background()); err == nil {
+		t.Errorf("expected create to fail")
+	}
+
+	if fakeVMService.GetCallCount != 1 {
+		t.Errorf("expected get to be called just once")
+	}
+
+	if fakeVMService.DeleteCallCount != 1 {
+		t.Errorf("expected delete to be called just once")
+	}
+
+	if fakeVMService.CreateOrUpdateCallCount != 0 {
+		t.Errorf("expected createorupdate not to be called")
+	}
+}
+
+func TestReconcileVMUpdatingState(t *testing.T) {
+	fakeReconciler := newFakeReconciler(t)
+	fakeVMService := &FakeVMService{
+		Name:              "machine-test",
+		ID:                "machine-test-ID",
+		ProvisioningState: "Updating",
+	}
+	fakeReconciler.virtualMachinesSvc = fakeVMService
+
+	if err := fakeReconciler.Create(context.Background()); err == nil {
+		t.Errorf("expected create to fail")
+	}
+
+	if fakeVMService.GetCallCount != 1 {
+		t.Errorf("expected get to be called just once")
+	}
+
+	if fakeVMService.DeleteCallCount != 0 {
+		t.Errorf("expected delete not to be called")
+	}
+
+	if fakeVMService.CreateOrUpdateCallCount != 0 {
+		t.Errorf("expected createorupdate not to be called")
+	}
+}
+
+func TestReconcileVMSuceededState(t *testing.T) {
+	fakeReconciler := newFakeReconciler(t)
+	fakeVMService := &FakeVMService{
 		Name:              "machine-test",
 		ID:                "machine-test-ID",
 		ProvisioningState: "Succeeded",
 	}
+	fakeReconciler.virtualMachinesSvc = fakeVMService
 
-	fakeReconciler := &Reconciler{
-		scope:                 createFakeScope(t, v1alpha1.ControlPlane),
-		networkInterfacesSvc:  fakeSuccessSvc,
-		virtualMachinesSvc:    fakeVMSuccessSvc,
-		virtualMachinesExtSvc: fakeSuccessSvc,
+	if err := fakeReconciler.Create(context.Background()); err != nil {
+		t.Errorf("failed to create machine: %+v", err)
 	}
+
+	if fakeVMService.GetCallCount != 1 {
+		t.Errorf("expected get to be called just once")
+	}
+
+	if fakeVMService.DeleteCallCount != 0 {
+		t.Errorf("expected delete not to be called")
+	}
+
+	if fakeVMService.CreateOrUpdateCallCount != 0 {
+		t.Errorf("expected createorupdate not to be called")
+	}
+}
+
+func TestNodeJoinFirstControlPlane(t *testing.T) {
+	fakeReconciler := newFakeReconciler(t)
 
 	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
 		t.Errorf("isNodeJoin failed to create machine: %+v", err)
@@ -257,19 +348,8 @@ func TestNodeJoinFirstControlPlane(t *testing.T) {
 }
 
 func TestNodeJoinNode(t *testing.T) {
-	fakeSuccessSvc := &azure.FakeSuccessService{}
-	fakeVMSuccessSvc := &FakeVMService{
-		Name:              "machine-test",
-		ID:                "machine-test-ID",
-		ProvisioningState: "Succeeded",
-	}
-
-	fakeReconciler := &Reconciler{
-		scope:                 createFakeScope(t, v1alpha1.Node),
-		networkInterfacesSvc:  fakeSuccessSvc,
-		virtualMachinesSvc:    fakeVMSuccessSvc,
-		virtualMachinesExtSvc: fakeSuccessSvc,
-	}
+	fakeScope := newFakeScope(t, v1alpha1.Node)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
 
 	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
 		t.Errorf("isNodeJoin failed to create machine: %+v", err)
@@ -279,21 +359,8 @@ func TestNodeJoinNode(t *testing.T) {
 }
 
 func TestNodeJoinSecondControlPlane(t *testing.T) {
-	fakeSuccessSvc := &azure.FakeSuccessService{}
-	fakeVMSuccessSvc := &FakeVMService{
-		Name:              "machine-test",
-		ID:                "machine-test-ID",
-		ProvisioningState: "Succeeded",
-	}
-
-	fakeScope := createFakeScope(t, v1alpha1.ControlPlane)
-
-	fakeReconciler := &Reconciler{
-		scope:                 fakeScope,
-		networkInterfacesSvc:  fakeSuccessSvc,
-		virtualMachinesSvc:    fakeVMSuccessSvc,
-		virtualMachinesExtSvc: fakeSuccessSvc,
-	}
+	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
 
 	if _, err := fakeScope.MachineClient.Create(fakeScope.Machine); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
@@ -303,6 +370,103 @@ func TestNodeJoinSecondControlPlane(t *testing.T) {
 		t.Errorf("isNodeJoin failed to create machine: %+v", err)
 	} else if !isNodeJoin {
 		t.Errorf("Expected isNodeJoin to be true since its second control plane vm")
+	}
+}
+
+// FakeVMCheckZonesService generic fake vm zone service
+type FakeVMCheckZonesService struct {
+	checkZones []string
+}
+
+// Get returns fake success.
+func (s *FakeVMCheckZonesService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+	return nil, errors.New("vm not found")
+}
+
+// CreateOrUpdate returns fake success.
+func (s *FakeVMCheckZonesService) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+	vmSpec, ok := spec.(*virtualmachines.Spec)
+	if !ok {
+		return errors.New("invalid vm specification")
+	}
+
+	if len(s.checkZones) <= 0 {
+		return nil
+	}
+	for _, zone := range s.checkZones {
+		if strings.EqualFold(zone, vmSpec.Zone) {
+			return nil
+		}
+	}
+
+	return errors.New("invalid input zone")
+}
+
+// Delete returns fake success.
+func (s *FakeVMCheckZonesService) Delete(ctx context.Context, spec azure.Spec) error {
+	return nil
+}
+
+// FakeAvailabilityZonesService generic fake availability zones
+type FakeAvailabilityZonesService struct {
+	zonesResponse []string
+}
+
+// Get returns fake success.
+func (s *FakeAvailabilityZonesService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+	return s.zonesResponse, nil
+}
+
+// CreateOrUpdate returns fake success.
+func (s *FakeAvailabilityZonesService) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+	return nil
+}
+
+// Delete returns fake success.
+func (s *FakeAvailabilityZonesService) Delete(ctx context.Context, spec azure.Spec) error {
+	return nil
+}
+
+func TestAvailabilityZones(t *testing.T) {
+	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
+
+	zones := []string{"1", "2", "3"}
+
+	fakeReconciler.availabilityZonesSvc = &FakeAvailabilityZonesService{
+		zonesResponse: zones,
+	}
+
+	fakeReconciler.virtualMachinesSvc = &FakeVMCheckZonesService{
+		checkZones: zones,
+	}
+
+	if err := fakeReconciler.Create(context.Background()); err != nil {
+		t.Errorf("failed to create machine: %+v", err)
+	}
+
+	fakeReconciler.availabilityZonesSvc = &FakeAvailabilityZonesService{
+		zonesResponse: []string{},
+	}
+
+	fakeReconciler.virtualMachinesSvc = &FakeVMCheckZonesService{
+		checkZones: []string{},
+	}
+
+	if err := fakeReconciler.Create(context.Background()); err != nil {
+		t.Errorf("failed to create machine: %+v", err)
+	}
+
+	fakeReconciler.availabilityZonesSvc = &FakeAvailabilityZonesService{
+		zonesResponse: []string{"2"},
+	}
+
+	fakeReconciler.virtualMachinesSvc = &FakeVMCheckZonesService{
+		checkZones: []string{"3"},
+	}
+
+	if err := fakeReconciler.Create(context.Background()); err == nil {
+		t.Errorf("expected create to fail due to zone mismatch")
 	}
 }
 
