@@ -27,7 +27,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func createFakeScope() *actuators.Scope {
+func newFakeScope() *actuators.Scope {
 	return &actuators.Scope{
 		Context: context.Background(),
 		Cluster: &clusterv1.Cluster{
@@ -45,7 +45,7 @@ func TestReconcileSuccess(t *testing.T) {
 	fakeNotFoundSvc := &azure.FakeNotFoundService{}
 
 	fakeReconciler := &Reconciler{
-		scope:            createFakeScope(),
+		scope:            newFakeScope(),
 		groupsSvc:        fakeSuccessSvc,
 		certificatesSvc:  fakeSuccessSvc,
 		vnetSvc:          fakeSuccessSvc,
@@ -77,7 +77,7 @@ func TestReconcileFailure(t *testing.T) {
 	fakeFailureSvc := &azure.FakeFailureService{}
 
 	fakeReconciler := &Reconciler{
-		scope:            createFakeScope(),
+		scope:            newFakeScope(),
 		certificatesSvc:  fakeFailureSvc,
 		groupsSvc:        fakeSuccessSvc,
 		vnetSvc:          fakeSuccessSvc,
@@ -102,7 +102,7 @@ func TestPublicIPNonEmpty(t *testing.T) {
 	fakeSuccessSvc := &azure.FakeSuccessService{}
 
 	fakeReconciler := &Reconciler{
-		scope:            createFakeScope(),
+		scope:            newFakeScope(),
 		groupsSvc:        fakeSuccessSvc,
 		certificatesSvc:  fakeSuccessSvc,
 		vnetSvc:          fakeSuccessSvc,
@@ -138,7 +138,7 @@ func TestServicesCreatedCount(t *testing.T) {
 	fakeSuccessSvc := &azure.FakeCachedService{Cache: &cache}
 
 	fakeReconciler := &Reconciler{
-		scope:            createFakeScope(),
+		scope:            newFakeScope(),
 		groupsSvc:        fakeSuccessSvc,
 		certificatesSvc:  fakeSuccessSvc,
 		vnetSvc:          fakeSuccessSvc,

@@ -55,6 +55,8 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	}
 	ipName := publicIPSpec.Name
 	klog.V(2).Infof("creating public ip %s", ipName)
+
+	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	f, err := s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.ClusterConfig.ResourceGroup,
