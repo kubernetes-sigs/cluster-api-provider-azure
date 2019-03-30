@@ -98,7 +98,7 @@ go_repository(
 
 go_repository(
     name = "io_k8s_sigs_kind",
-    commit = "d4ff13e4808ee5a816ed92bf2d3348bda12413db",
+    commit = "91d92c86cfa4143143841aad7f9b6d0c35e109ea",
     importpath = "sigs.k8s.io/kind",
 )
 
@@ -111,7 +111,7 @@ go_repository(
 go_repository(
     name = "io_k8s_kubernetes",
     importpath = "k8s.io/kubernetes",
-    tag = "v1.13.4",
+    tag = "v1.13.5",
 )
 
 go_repository(
