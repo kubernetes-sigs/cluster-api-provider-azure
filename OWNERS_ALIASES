@@ -6,5 +6,5 @@ aliases:
     - soggiest
   cluster-api-azure-reviewers:
     - awesomenix
-    #- marwanad # inactive
-    #- vannrt # inactive
+    - juan-lee
+    - serbrech
