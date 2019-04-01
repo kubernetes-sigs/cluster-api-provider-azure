@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.11.5 as builder
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.10 as builder
 
 # Copy in the go src
 WORKDIR /go/src/sigs.k8s.io/cluster-api-provider-azure
@@ -25,7 +25,7 @@ COPY vendor/ vendor/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager sigs.k8s.io/cluster-api-provider-azure/cmd/manager
 
 # Copy the controller-manager into a thin image
-FROM alpine:3.9
+FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
 WORKDIR /root/
 COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-azure/manager .
 ENTRYPOINT ["./manager"]
