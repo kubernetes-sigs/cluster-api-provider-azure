@@ -23,28 +23,79 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters"
 )
 
+// Reconcile reconciles information about a resource.
+func (s *Service) Reconcile(ctx context.Context, _ azure.Spec) error {
+	klog.V(2).Infof("reconciling resource group %s", s.Scope.ResourceGroup().Name)
+	rg, err := s.Get(s.Scope.Context)
+	if err != nil {
+		switch {
+		case s.Scope.ResourceGroup().IsProvided():
+			return errors.Wrapf(err, "failed to reconcile resource group %s: an unmanaged resource group was specified, but cannot be found", s.Scope.ResourceGroup().Name)
+		case !s.Scope.ResourceGroup().IsProvided():
+			rg, err = s.CreateOrUpdate(s.Scope.Context)
+			if err != nil {
+				return errors.Wrapf(err, "failed to reconcile resource group %s", s.Scope.ResourceGroup().Name)
+			}
+		default:
+			return errors.Wrapf(err, "failed to reconcile resource group %s", s.Scope.ResourceGroup().Name)
+		}
+	}
+
+	rg.DeepCopyInto(s.Scope.ResourceGroup())
+	klog.V(2).Infof("successfully reconciled resource group %s", s.Scope.ResourceGroup().Name)
+	return nil
+}
+
 // Get provides information about a resource group.
-func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
-	return s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup)
+func (s *Service) Get(ctx context.Context) (rg *v1alpha1.ResourceGroup, err error) {
+	klog.V(2).Infof("checking for resource group %s", s.Scope.ResourceGroup().Name)
+	existingRG, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name)
+	if err != nil && azure.ResourceNotFound(err) {
+		return nil, errors.Wrapf(err, "resource group %s not found", s.Scope.ResourceGroup().Name)
+	} else if err != nil {
+		return rg, err
+	}
+
+	klog.V(2).Infof("successfully retrieved resource group %s", s.Scope.ResourceGroup().Name)
+	return converters.SDKToResourceGroup(existingRG, s.Scope.ResourceGroup().Managed), nil
 }
 
 // CreateOrUpdate creates or updates a resource group.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
-	klog.V(2).Infof("creating resource group %s", s.Scope.ClusterConfig.ResourceGroup)
-	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ClusterConfig.ResourceGroup, resources.Group{Location: to.StringPtr(s.Scope.ClusterConfig.Location)})
-	klog.V(2).Infof("successfully created resource group %s", s.Scope.ClusterConfig.ResourceGroup)
-	return err
+func (s *Service) CreateOrUpdate(ctx context.Context) (*v1alpha1.ResourceGroup, error) {
+	klog.V(2).Infof("creating/updating resource group %s", s.Scope.ResourceGroup().Name)
+	rg, err := s.Client.CreateOrUpdate(
+		ctx,
+		s.Scope.ResourceGroup().Name,
+		resources.Group{
+			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create/update resource group %s", s.Scope.ResourceGroup().Name)
+	}
+
+	klog.V(2).Infof("successfully created/updated resource group %s", s.Scope.ResourceGroup().Name)
+	return converters.SDKToResourceGroup(rg, s.Scope.ResourceGroup().Managed), nil
 }
 
 // Delete deletes the resource group with the provided name.
-func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
-	klog.V(2).Infof("deleting resource group %s", s.Scope.ClusterConfig.ResourceGroup)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup)
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.ClusterConfig.ResourceGroup)
+func (s *Service) Delete(ctx context.Context, _ azure.Spec) error {
+	klog.V(2).Infof("deleting resource group %s", s.Scope.ResourceGroup().Name)
+	if s.Scope.ResourceGroup().IsProvided() {
+		klog.V(2).Infof("resource group %s is unmanaged; skipping deletion", s.Scope.ResourceGroup().Name)
+		return nil
+	}
+
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name)
+	if err != nil && azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "resource group %s may have already been deleted", s.Scope.ResourceGroup().Name)
+	} else if err != nil {
+		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -54,6 +105,6 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 
 	_, err = future.Result(s.Client)
 
-	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.ClusterConfig.ResourceGroup)
+	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.ResourceGroup().Name)
 	return err
 }

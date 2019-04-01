@@ -51,7 +51,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	if !ok {
 		return compute.VirtualMachine{}, errors.New("invalid vm specification")
 	}
-	vm, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, vmSpec.Name, "")
+	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, vmSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm %s not found", vmSpec.Name)
 	} else if err != nil {
@@ -60,8 +60,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return vm, nil
 }
 
-// CreateOrUpdate creates or updates a virtual network.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile creates or updates a virtual network.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm specification")
@@ -157,7 +157,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		vmSpec.Name,
 		virtualMachine)
 	if err != nil {
@@ -185,13 +185,13 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.New("invalid vm Specification")
 	}
 	klog.V(2).Infof("deleting vm %s ", vmSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, vmSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

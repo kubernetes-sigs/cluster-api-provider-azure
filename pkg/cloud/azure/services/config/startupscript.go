@@ -180,7 +180,7 @@ func getAzureCloudProviderConfig(machine *actuators.MachineScope) string {
 		machine.Scope.ClusterConfig.Location,
 		azure.GenerateNodeSubnetName(machine.Scope.Cluster.Name),
 		azure.GenerateNodeSecurityGroupName(machine.Scope.Cluster.Name),
-		azure.GenerateVnetName(machine.Scope.Cluster.Name),
+		machine.Scope.Vnet().Name,
 		azure.GenerateNodeRouteTableName(machine.Scope.Cluster.Name),
 	)
 }

@@ -14,25 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificates
+package converters
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"strings"
+
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service holds a collection of interfaces.
-// The interfaces are broken down like this to group functions together.
-// One alternative is to have a large list of functions from the ec2 client.
-type Service struct {
-	scope *actuators.Scope
-}
-
-// NewService returns a new service given the api clients.
-func NewService(scope *actuators.Scope) *Service {
-	return &Service{
-		scope: scope,
+// SDKToVnet converts azure representation to internal representation
+func SDKToResourceGroup(rg resources.Group, managed string) *v1alpha1.ResourceGroup {
+	return &v1alpha1.ResourceGroup{
+		ID:      *rg.ID,
+		Name:    *rg.Name,
+		Managed: strings.ToLower(managed),
 	}
 }

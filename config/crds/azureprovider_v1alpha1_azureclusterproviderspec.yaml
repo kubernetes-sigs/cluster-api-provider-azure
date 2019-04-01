@@ -466,6 +466,11 @@ spec:
                   description: ID is the identifier of the virtual network this provider
                     should use to create resources.
                   type: string
+                managed:
+                  description: 'Managed specifies if a supplied virtual network should
+                    be managed by Cluster API. Defaults to "yes". TODO: Move managed
+                    logic to tags once tagging is implemented.'
+                  type: string
                 name:
                   description: Name defines a name for the virtual network resource.
                   type: string
@@ -474,7 +479,21 @@ spec:
               type: object
           type: object
         resourceGroup:
-          type: string
+          properties:
+            id:
+              description: ID is the identifier of the resource group.
+              type: string
+            managed:
+              description: 'Managed specifies if a supplied resource group should
+                be managed by Cluster API. Defaults to "yes". TODO: Move managed logic
+                to tags once tagging is implemented.'
+              type: string
+            name:
+              description: Name defines a name for the resource group.
+              type: string
+          required:
+          - name
+          type: object
         saKeyPair:
           description: SAKeyPair is the service account key pair.
           properties:

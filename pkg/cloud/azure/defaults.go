@@ -21,8 +21,6 @@ import "fmt"
 const (
 	// DefaultUserName is the default username for created vm
 	DefaultUserName = "capi"
-	// DefaultVnetCIDR is the default Vnet CIDR
-	DefaultVnetCIDR = "10.0.0.0/8"
 	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
@@ -32,11 +30,6 @@ const (
 	// DefaultAzureDNSZone is the default provided azure dns zone
 	DefaultAzureDNSZone = "cloudapp.azure.com"
 )
-
-// GenerateVnetName generates a virtual network name, based on the cluster name.
-func GenerateVnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "vnet")
-}
 
 // GenerateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
 func GenerateControlPlaneSecurityGroupName(clusterName string) string {

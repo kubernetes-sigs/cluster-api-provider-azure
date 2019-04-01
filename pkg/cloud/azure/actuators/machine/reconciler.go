@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualnetworks"
 	clusterutil "sigs.k8s.io/cluster-api/pkg/util"
 )
 
@@ -52,10 +53,11 @@ const (
 // Reconciler are list of services required by cluster actuator, easy to create a fake
 type Reconciler struct {
 	scope                 *actuators.MachineScope
-	availabilityZonesSvc  azure.Service
+	availabilityZonesSvc  azure.GetterService
 	networkInterfacesSvc  azure.Service
-	virtualMachinesSvc    azure.Service
-	virtualMachinesExtSvc azure.Service
+	virtualMachinesSvc    azure.GetterService
+	virtualMachinesExtSvc azure.GetterService
+	vnetSvc               azure.Service
 }
 
 // NewReconciler populates all the services based on input scope
@@ -66,6 +68,7 @@ func NewReconciler(scope *actuators.MachineScope) *Reconciler {
 		networkInterfacesSvc:  networkinterfaces.NewService(scope.Scope),
 		virtualMachinesSvc:    virtualmachines.NewService(scope.Scope),
 		virtualMachinesExtSvc: virtualmachineextensions.NewService(scope.Scope),
+		vnetSvc:               virtualnetworks.NewService(scope.Scope),
 	}
 }
 
@@ -104,7 +107,7 @@ func (s *Reconciler) Create(ctx context.Context) error {
 		VMName:     s.scope.Machine.Name,
 		ScriptData: base64.StdEncoding.EncodeToString([]byte(scriptData)),
 	}
-	err = s.virtualMachinesExtSvc.CreateOrUpdate(ctx, vmExtSpec)
+	err = s.virtualMachinesExtSvc.Reconcile(ctx, vmExtSpec)
 	if err != nil {
 		return errors.Wrap(err, "failed to create vm extension")
 	}
@@ -202,7 +205,7 @@ func (s *Reconciler) Delete(ctx context.Context) error {
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     fmt.Sprintf("%s-nic", s.scope.Machine.Name),
-		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
+		VnetName: s.scope.Vnet().Name,
 	}
 
 	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
@@ -425,7 +428,7 @@ func (s *Reconciler) getVirtualMachineZone(ctx context.Context) (string, error) 
 func (s *Reconciler) createNetworkInterface(ctx context.Context, nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
-		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
+		VnetName: s.scope.Vnet().Name,
 	}
 	switch set := s.scope.Machine.ObjectMeta.Labels["set"]; set {
 	case v1alpha1.Node:
@@ -439,7 +442,7 @@ func (s *Reconciler) createNetworkInterface(ctx context.Context, nicName string)
 		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", set, s.scope.Machine.Name)
 	}
 
-	err := s.networkInterfacesSvc.CreateOrUpdate(ctx, networkInterfaceSpec)
+	err := s.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrap(err, "unable to create VM network interface")
 	}
@@ -474,7 +477,7 @@ func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 			Zone:       vmZone,
 		}
 
-		err = s.virtualMachinesSvc.CreateOrUpdate(ctx, vmSpec)
+		err = s.virtualMachinesSvc.Reconcile(ctx, vmSpec)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create or get machine")
 		}

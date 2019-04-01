@@ -23,6 +23,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
+var _ azure.Service = (*Service)(nil)
+
 // Service provides operations on availability zones
 type Service struct {
 	Client compute.ResourceSkusClient
@@ -38,7 +40,7 @@ func getResourceSkusClient(subscriptionID string, authorizer autorest.Authorizer
 }
 
 // NewService creates a new availability zones service.
-func NewService(scope *actuators.Scope) azure.Service {
+func NewService(scope *actuators.Scope) *Service {
 	return &Service{
 		Client: getResourceSkusClient(scope.SubscriptionID, scope.Authorizer),
 		Scope:  scope,

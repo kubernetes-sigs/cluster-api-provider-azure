@@ -39,7 +39,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	if !ok {
 		return compute.VirtualMachineExtension{}, errors.New("invalid vm specification")
 	}
-	vmExt, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name, "")
+	vmExt, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, vmExtSpec.VMName, vmExtSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm extension %s not found", vmExtSpec.Name)
 	} else if err != nil {
@@ -48,8 +48,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return vmExt, nil
 }
 
-// CreateOrUpdate creates or updates a virtual network.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile creates or updates a virtual network.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm specification")
@@ -59,7 +59,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		vmExtSpec.VMName,
 		vmExtSpec.Name,
 		compute.VirtualMachineExtension{
@@ -104,13 +104,13 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.New("Invalid VNET Specification")
 	}
 	klog.V(2).Infof("deleting vm extension %s ", vmExtSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, vmExtSpec.VMName, vmExtSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm extension %s in resource group %s", vmExtSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vm extension %s in resource group %s", vmExtSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

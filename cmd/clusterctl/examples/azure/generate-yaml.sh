@@ -28,10 +28,14 @@ RANDOM_STRING=$(date | md5sum | head -c8)
 # Azure settings.
 export LOCATION="${LOCATION:-eastus2}"
 export RESOURCE_GROUP="${RESOURCE_GROUP:-capi-${RANDOM_STRING}}"
+# TODO: Remove once existing resource group logic is handled by tagging.
+export RESOURCE_GROUP_MANAGED="${RESOURCE_GROUP_MANAGED:-yes}"
 
 # Cluster settings.
 export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
 export VNET_NAME="${VNET_NAME:-}"
+# TODO: Remove once existing vnet logic is handled by tagging.
+export VNET_MANAGED="${VNET_MANAGED:-yes}"
 
 # Machine settings.
 export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
@@ -134,13 +138,8 @@ echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 export SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 export SSH_PRIVATE_KEY=$(cat "${SSH_KEY_FILE}" | base64 | tr -d '\r\n')
 
-if [[ -z "${VNET_NAME}" ]]; then
-  $ENVSUBST < "$CLUSTER_TEMPLATE_FILE" > "${CLUSTER_GENERATED_FILE}"
-  echo "Done generating ${CLUSTER_GENERATED_FILE}"
-else
-  $ENVSUBST < "$CLUSTER_NETWORKSPEC_TEMPLATE_FILE" > "${CLUSTER_GENERATED_FILE}"
-  echo "Done generating ${CLUSTER_GENERATED_FILE}"
-fi
+$ENVSUBST < "$CLUSTER_TEMPLATE_FILE" > "${CLUSTER_GENERATED_FILE}"
+echo "Done generating ${CLUSTER_GENERATED_FILE}"
 
 $ENVSUBST < "$MACHINES_TEMPLATE_FILE" > "${MACHINES_GENERATED_FILE}"
 echo "Done generating ${MACHINES_GENERATED_FILE}"

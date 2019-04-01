@@ -34,7 +34,7 @@ type AzureClients struct {
 func CreateOrUpdateNetworkAPIServerIP(scope *Scope) {
 	if scope.Network().APIServerIP.Name == "" {
 		h := fnv.New32a()
-		h.Write([]byte(fmt.Sprintf("%s/%s/%s", scope.SubscriptionID, scope.ClusterConfig.ResourceGroup, scope.Cluster.Name)))
+		h.Write([]byte(fmt.Sprintf("%s/%s/%s", scope.SubscriptionID, scope.ResourceGroup().Name, scope.Cluster.Name)))
 		scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(scope.Cluster.Name, fmt.Sprintf("%x", h.Sum32()))
 	}
 

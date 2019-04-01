@@ -20,6 +20,7 @@ go_library(
         "//pkg/cloud/azure/services/networkinterfaces:go_default_library",
         "//pkg/cloud/azure/services/virtualmachineextensions:go_default_library",
         "//pkg/cloud/azure/services/virtualmachines:go_default_library",
+        "//pkg/cloud/azure/services/virtualnetworks:go_default_library",
         "//pkg/deployer:go_default_library",
         "//vendor/github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",

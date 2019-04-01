@@ -16,9 +16,7 @@ limitations under the License.
 
 package azure
 
-import (
-	"context"
-)
+import "context"
 
 const (
 	// UserAgent used for communicating with azure
@@ -32,7 +30,14 @@ type Spec interface {
 // Service is a generic interface used by components offering a type of service.
 // example: Network service would offer get/createorupdate/delete.
 type Service interface {
+	Reconcile(ctx context.Context, spec Spec) error
+	Delete(ctx context.Context, spec Spec) error
+}
+
+// Service is a generic interface used by components offering a type of service.
+// example: Network service would offer get/createorupdate/delete.
+type GetterService interface {
 	Get(ctx context.Context, spec Spec) (interface{}, error)
-	CreateOrUpdate(ctx context.Context, spec Spec) error
+	Reconcile(ctx context.Context, spec Spec) error
 	Delete(ctx context.Context, spec Spec) error
 }

@@ -28,7 +28,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func TestCreateOrUpdateCertificates(t *testing.T) {
+func TestReconcileCertificates(t *testing.T) {
 	scope := actuators.Scope{
 		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{
 			Location: "eastus",
@@ -46,7 +46,7 @@ func TestCreateOrUpdateCertificates(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := certsSvc.CreateOrUpdate(ctx, nil); err != nil {
+	if err := certsSvc.Reconcile(ctx, nil); err != nil {
 		t.Errorf("Error creating certificates: %v", err)
 	}
 
@@ -72,7 +72,7 @@ func TestCreateOrUpdateCertificates(t *testing.T) {
 		t.Errorf("Error generating discovery hashes")
 	}
 
-	if err := certsSvc.CreateOrUpdate(ctx, nil); err != nil {
+	if err := certsSvc.Reconcile(ctx, nil); err != nil {
 		t.Errorf("Error creating certificates: %v", err)
 	}
 

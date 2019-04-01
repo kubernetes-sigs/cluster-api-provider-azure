@@ -36,7 +36,7 @@ type FakeFailureService struct {
 type FakeNotFoundService struct {
 }
 
-// FakeCachedService updates the cache with name whenefver createorupdate is called
+// FakeCachedService updates the cache with name whenever createorupdate is called
 type FakeCachedService struct {
 	Cache *map[string]int
 }
@@ -46,8 +46,8 @@ func (s *FakeSuccessService) Get(ctx context.Context, spec Spec) (interface{}, e
 	return nil, nil
 }
 
-// CreateOrUpdate returns fake success.
-func (s *FakeSuccessService) CreateOrUpdate(ctx context.Context, spec Spec) error {
+// Reconcile returns fake success.
+func (s *FakeSuccessService) Reconcile(ctx context.Context, spec Spec) error {
 	return nil
 }
 
@@ -65,8 +65,8 @@ func (s *FakeFailureService) Get(ctx context.Context, spec Spec) (interface{}, e
 	return FakeStruct{}, fmt.Errorf("Failed to Get service")
 }
 
-// CreateOrUpdate returns fake failure.
-func (s *FakeFailureService) CreateOrUpdate(ctx context.Context, spec Spec) error {
+// Reconcile returns fake failure.
+func (s *FakeFailureService) Reconcile(ctx context.Context, spec Spec) error {
 	return fmt.Errorf("Failed to Create")
 }
 
@@ -80,8 +80,8 @@ func (s *FakeNotFoundService) Get(ctx context.Context, spec Spec) (interface{}, 
 	return nil, autorest.DetailedError{StatusCode: 404}
 }
 
-// CreateOrUpdate returns fake not found.
-func (s *FakeNotFoundService) CreateOrUpdate(ctx context.Context, spec Spec) error {
+// Reconcile returns fake not found.
+func (s *FakeNotFoundService) Reconcile(ctx context.Context, spec Spec) error {
 	return autorest.DetailedError{StatusCode: 404}
 }
 
@@ -95,8 +95,8 @@ func (s *FakeCachedService) Get(ctx context.Context, spec Spec) (interface{}, er
 	return nil, nil
 }
 
-// CreateOrUpdate returns fake success.
-func (s *FakeCachedService) CreateOrUpdate(ctx context.Context, spec Spec) error {
+// Reconcile returns fake success.
+func (s *FakeCachedService) Reconcile(ctx context.Context, spec Spec) error {
 	if spec == nil {
 		return nil
 	}
