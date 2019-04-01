@@ -42,8 +42,10 @@ var (
 
 func newClusterProviderSpec() v1alpha1.AzureClusterProviderSpec {
 	return v1alpha1.AzureClusterProviderSpec{
-		ResourceGroup: "resource-group-test",
-		Location:      "southcentralus",
+		ResourceGroup: v1alpha1.ResourceGroup{
+			Name: "resource-group-test",
+		},
+		Location: "southcentralus",
 	}
 }
 
@@ -124,7 +126,9 @@ func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 		Context: context.Background(),
 		Cluster: newCluster(t),
 		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{
-			ResourceGroup:       "dummyResourceGroup",
+			ResourceGroup: v1alpha1.ResourceGroup{
+				Name: "dummyResourceGroup",
+			},
 			Location:            "dummyLocation",
 			CAKeyPair:           v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
 			EtcdCAKeyPair:       v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},

@@ -15,6 +15,7 @@
   - [Setting up the environment](#setting-up-the-environment)
   - [Generating cluster manifests and example cluster](#generating-cluster-manifests-and-example-cluster)
     - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
+    - [Supporting existing Azure resources](#supporting-existing-azure-resources)
     - [Running the manifest generation script](#running-the-manifest-generation-script)
   - [Creating a cluster](#creating-a-cluster)
 - [Using the cluster](#using-the-cluster)
@@ -97,6 +98,20 @@ export CLUSTER_NAME="pony-unicorns"
 export CONTROL_PLANE_MACHINE_TYPE="Standard_B2ms"
 export NODE_MACHINE_TYPE="Standard_B2ms"
 ```
+
+#### Supporting existing Azure resources
+
+Environment variables can be optionally set to support existing Azure resources.
+
+The following table describes which resources can be supplied ahead of time.
+
+|Resource|Environment variable to set|
+|---|---|
+|Resource group|`export RESOURCE_GROUP_MANAGED="no"`|
+
+**Note: Be sure to set this variable prior to generating the manifests for the cluster.**
+
+**Any resources without the relevant environment variable(s) set will be assumed to be owned by Cluster API Provider Azure and may be destroyed during delete operations.**
 
 #### Running the manifest generation script
 

@@ -13,8 +13,7 @@ spec:
     value:
       apiVersion: "azureprovider/v1alpha1"
       kind: "AzureClusterProviderSpec"
-      resourceGroup: "${RESOURCE_GROUP}"
       location: "${LOCATION}"
-      networkSpec:
-        vnet:
-          name: "${VNET_NAME}"
+      resourceGroup:
+        name: "${RESOURCE_GROUP}"
+        managed: "${RESOURCE_GROUP_MANAGED}"

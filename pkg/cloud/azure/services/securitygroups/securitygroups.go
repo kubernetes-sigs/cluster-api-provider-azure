@@ -39,7 +39,7 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return network.SecurityGroup{}, errors.New("invalid security groups specification")
 	}
-	securityGroup, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, nsgSpec.Name, "")
+	securityGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, nsgSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "security group %s not found", nsgSpec.Name)
 	} else if err != nil {
@@ -92,7 +92,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		nsgSpec.Name,
 		network.SecurityGroup{
 			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
@@ -102,7 +102,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -125,13 +125,13 @@ func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error 
 		return errors.New("invalid security groups specification")
 	}
 	klog.V(2).Infof("deleting security group %s", nsgSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, nsgSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, nsgSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

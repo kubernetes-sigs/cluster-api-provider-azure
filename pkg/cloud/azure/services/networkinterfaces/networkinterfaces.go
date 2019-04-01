@@ -47,7 +47,7 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return network.Interface{}, errors.New("invalid network interface specification")
 	}
-	nic, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, nicSpec.Name, "")
+	nic, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, nicSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "network interface %s not found", nicSpec.Name)
 	} else if err != nil {
@@ -122,7 +122,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 	future, err := s.Client.CreateOrUpdate(ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		nicSpec.Name,
 		network.Interface{
 			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
@@ -137,7 +137,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		})
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -160,13 +160,13 @@ func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error 
 		return errors.New("invalid network interface Specification")
 	}
 	klog.V(2).Infof("deleting nic %s", nicSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, nicSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, nicSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

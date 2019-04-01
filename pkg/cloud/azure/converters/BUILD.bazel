@@ -2,11 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["vm.go"],
+    srcs = [
+        "resourcegroup.go",
+        "vm.go",
+    ],
     importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/azureprovider/v1alpha1:go_default_library",
         "//vendor/github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources:go_default_library",
     ],
 )

@@ -41,7 +41,7 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return network.LoadBalancer{}, errors.New("invalid public loadbalancer specification")
 	}
-	lb, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, publicLBSpec.Name, "")
+	lb, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, publicLBSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "load balancer %s not found", publicLBSpec.Name)
 	} else if err != nil {
@@ -59,7 +59,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 	probeName := "tcpHTTPSProbe"
 	frontEndIPConfigName := "controlplane-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-backEndPool"
-	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ClusterConfig.ResourceGroup)
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ResourceGroup().Name)
 	lbName := publicLBSpec.Name
 	klog.V(2).Infof("creating public load balancer %s", lbName)
 
@@ -77,7 +77,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	future, err := s.Client.CreateOrUpdate(ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		lbName,
 		network.LoadBalancer{
 			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
@@ -195,13 +195,13 @@ func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error 
 		return errors.New("invalid public loadbalancer specification")
 	}
 	klog.V(2).Infof("deleting public load balancer %s", publicLBSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, publicLBSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, publicLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

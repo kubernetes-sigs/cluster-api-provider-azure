@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmv1beta1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 )
@@ -30,11 +32,11 @@ type AzureClusterProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	ResourceGroup ResourceGroup `json:"resourceGroup"`
+	Location      string        `json:"location"`
+
 	// NetworkSpec encapsulates all things related to Azure network.
 	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
-
-	ResourceGroup string `json:"resourceGroup"`
-	Location      string `json:"location"`
 
 	// CAKeyPair is the key pair for CA certs.
 	CAKeyPair KeyPair `json:"caKeyPair,omitempty"`
@@ -78,6 +80,30 @@ func init() {
 // HasCertAndKey returns whether a keypair contains cert and key of non-zero length.
 func (kp *KeyPair) HasCertAndKey() bool {
 	return len(kp.Cert) != 0 && len(kp.Key) != 0
+}
+
+// ResourceGroup defines an Azure resource group.
+type ResourceGroup struct {
+	// ID is the identifier of the resource group.
+	ID string `json:"id,omitempty"`
+
+	// Name defines a name for the resource group.
+	Name string `json:"name"`
+
+	// Managed specifies if a supplied resource group should be managed by Cluster API.
+	// Defaults to "yes".
+	// TODO: Move managed logic to tags once tagging is implemented.
+	Managed string `json:"managed,omitempty"`
+
+	// Tags is a collection of tags describing the resource.
+	// TODO: Uncomment once tagging is implemented.
+	//Tags tags.Map `json:"tags,omitempty"`
+}
+
+// IsProvided returns true if the virtual network is not managed by Cluster API.
+// TODO: Check for !rg.Tags.HasManaged() once tagging is implemented.
+func (rg *ResourceGroup) IsProvided() bool {
+	return rg.Name != "" && strings.ToLower(rg.Managed) == "no"
 }
 
 // NetworkSpec encapsulates all things related to Azure network.

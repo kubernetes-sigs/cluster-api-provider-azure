@@ -39,7 +39,7 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return network.PublicIPAddress{}, errors.New("Invalid PublicIP Specification")
 	}
-	publicIP, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, publicIPSpec.Name, "")
+	publicIP, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, publicIPSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "publicip %s not found", publicIPSpec.Name)
 	} else if err != nil {
@@ -60,7 +60,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		ipName,
 		network.PublicIPAddress{
 			Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
@@ -101,13 +101,13 @@ func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error 
 		return errors.New("Invalid PublicIP Specification")
 	}
 	klog.V(2).Infof("deleting public ip %s", publicIPSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, publicIPSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, publicIPSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete public ip %s in resource group %s", publicIPSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete public ip %s in resource group %s", publicIPSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

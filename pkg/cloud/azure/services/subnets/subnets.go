@@ -44,7 +44,7 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return network.Subnet{}, errors.New("Invalid Subnet Specification")
 	}
-	subnet, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name, "")
+	subnet, err := s.Client.Get(ctx, s.Scope.ResourceGroup().Name, subnetSpec.VnetName, subnetSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "subnet %s not found", subnetSpec.Name)
 	} else if err != nil {
@@ -91,7 +91,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 	klog.V(2).Infof("creating subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.ResourceGroup().Name,
 		subnetSpec.VnetName,
 		subnetSpec.Name,
 		network.Subnet{
@@ -100,7 +100,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -123,13 +123,13 @@ func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error 
 		return errors.New("Invalid Subnet Specification")
 	}
 	klog.V(2).Infof("deleting subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ResourceGroup().Name, subnetSpec.VnetName, subnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.ResourceGroup().Name)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

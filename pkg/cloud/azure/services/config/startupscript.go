@@ -187,7 +187,7 @@ func getAzureCloudProviderConfig(machine *actuators.MachineScope) string {
 		os.Getenv("AZURE_SUBSCRIPTION_ID"),
 		os.Getenv("AZURE_CLIENT_ID"),
 		os.Getenv("AZURE_CLIENT_SECRET"),
-		machine.ClusterConfig.ResourceGroup,
+		machine.ResourceGroup().Name,
 		machine.Scope.ClusterConfig.Location,
 		azure.GenerateNodeSubnetName(machine.Scope.Cluster.Name),
 		azure.GenerateNodeSecurityGroupName(machine.Scope.Cluster.Name),

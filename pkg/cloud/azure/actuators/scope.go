@@ -89,6 +89,11 @@ type Scope struct {
 	Context       context.Context
 }
 
+// ResourceGroup returns the cluster resource group.
+func (s *Scope) ResourceGroup() *v1alpha1.ResourceGroup {
+	return &s.ClusterConfig.ResourceGroup
+}
+
 // Network returns the cluster network object.
 func (s *Scope) Network() *v1alpha1.Network {
 	return &s.ClusterStatus.Network
@@ -100,8 +105,8 @@ func (s *Scope) Vnet() *v1alpha1.VnetSpec {
 }
 
 // Subnets returns the cluster subnets.
-func (s *Scope) Subnets() v1alpha1.Subnets {
-	return s.ClusterConfig.NetworkSpec.Subnets
+func (s *Scope) Subnets() *v1alpha1.Subnets {
+	return &s.ClusterConfig.NetworkSpec.Subnets
 }
 
 // SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
