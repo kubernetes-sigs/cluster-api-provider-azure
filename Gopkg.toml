@@ -46,7 +46,7 @@ required = [
 
 [[constraint]]
   name = "sigs.k8s.io/cluster-api"
-  revision = "3f43912fdb392b6f8cf824401e0a3ddb7590adf2"
+  version = "0.1.0"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
