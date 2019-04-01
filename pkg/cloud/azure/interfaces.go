@@ -16,9 +16,7 @@ limitations under the License.
 
 package azure
 
-import (
-	"context"
-)
+import "context"
 
 const (
 	// UserAgent used for communicating with azure
@@ -30,9 +28,17 @@ type Spec interface {
 }
 
 // Service is a generic interface used by components offering a type of service.
-// example: Network service would offer get/createorupdate/delete.
+// Example: virtualnetworks service would offer Reconcile/Delete methods.
 type Service interface {
+	Reconcile(ctx context.Context, spec Spec) error
+	Delete(ctx context.Context, spec Spec) error
+}
+
+// GetterService is a temporary interface used by components which still require Get methods.
+// Once all components move to storing provider information within the relevant
+// Cluster/Machine specs, this interface should be removed.
+type GetterService interface {
 	Get(ctx context.Context, spec Spec) (interface{}, error)
-	CreateOrUpdate(ctx context.Context, spec Spec) error
+	Reconcile(ctx context.Context, spec Spec) error
 	Delete(ctx context.Context, spec Spec) error
 }

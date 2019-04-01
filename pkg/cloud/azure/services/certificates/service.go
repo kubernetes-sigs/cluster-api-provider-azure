@@ -17,8 +17,11 @@ limitations under the License.
 package certificates
 
 import (
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
+
+var _ azure.Service = (*Service)(nil)
 
 // Service holds a collection of interfaces.
 // The interfaces are broken down like this to group functions together.

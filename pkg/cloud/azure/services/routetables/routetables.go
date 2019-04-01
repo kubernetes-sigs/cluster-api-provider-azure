@@ -46,14 +46,14 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return routeTable, nil
 }
 
-// CreateOrUpdate creates or updates a route table.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile gets/creates/updates a route table.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid Route Table Specification")
 	}
 	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
-	f, err := s.Client.CreateOrUpdate(
+	future, err := s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.ClusterConfig.ResourceGroup,
 		routeTableSpec.Name,
@@ -66,12 +66,12 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrap(err, "cannot create, future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	if err != nil {
 		return errors.Wrap(err, "result error")
 	}
@@ -86,7 +86,7 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.New("Invalid Route Table Specification")
 	}
 	klog.V(2).Infof("deleting route table %s", routeTableSpec.Name)
-	f, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, routeTableSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, routeTableSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -95,12 +95,12 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrap(err, "cannot create, future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	if err != nil {
 		return errors.Wrap(err, "result error")
 	}

@@ -52,8 +52,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return lb, nil
 }
 
-// CreateOrUpdate creates or updates an internal load balancer.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile gets/creates/updates an internal load balancer.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	internalLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid internal load balancer specification")
@@ -157,7 +157,7 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.New("invalid internal load balancer specification")
 	}
 	klog.V(2).Infof("deleting internal load balancer %s", internalLBSpec.Name)
-	f, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, internalLBSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, internalLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -166,12 +166,12 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to delete internal load balancer %s in resource group %s", internalLBSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrap(err, "cannot create, future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	if err != nil {
 		return errors.Wrap(err, "result error")
 	}

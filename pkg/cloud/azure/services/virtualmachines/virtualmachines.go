@@ -60,8 +60,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return vm, nil
 }
 
-// CreateOrUpdate creates or updates a virtual machine.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile gets/creates/updates a virtual machine.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm specification")

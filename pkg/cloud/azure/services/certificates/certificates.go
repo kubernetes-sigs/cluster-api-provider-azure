@@ -54,8 +54,8 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 	return nil
 }
 
-// CreateOrUpdate Helper function so this can be unittested.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile Helper function so this can be unittested.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	klog.V(2).Infof("generating certificates")
 	clusterName := s.scope.Cluster.Name
 	tmpDirName := "/tmp/cluster-api/" + clusterName

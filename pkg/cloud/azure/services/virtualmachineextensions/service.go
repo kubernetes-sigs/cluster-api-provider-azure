@@ -23,6 +23,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
+var _ azure.Service = (*Service)(nil)
+
 // Service provides operations on resource groups
 type Service struct {
 	Client compute.VirtualMachineExtensionsClient
@@ -38,7 +40,7 @@ func getVirtualMachineExtensionsClient(subscriptionID string, authorizer autores
 }
 
 // NewService creates a new groups service.
-func NewService(scope *actuators.Scope) azure.Service {
+func NewService(scope *actuators.Scope) *Service {
 	return &Service{
 		Client: getVirtualMachineExtensionsClient(scope.SubscriptionID, scope.Authorizer),
 		Scope:  scope,
