@@ -48,7 +48,7 @@ Example versions:
 ## Expected artifacts
 
 1. A container image containing the azure-provider manager binary
-2. A release tarball containing the manifest-templates and a script to generate     the actual manifests
+2. A release tarball containing the manifest-templates and a script to generate the actual manifests
 3. `clusterctl`
 4. Release notes
 
