@@ -36,6 +36,7 @@ export VNET_NAME="${VNET_NAME:-}"
 # Machine settings.
 export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
 export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2ms}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION:-1.13.5}"
 
 # Credentials.
 SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
