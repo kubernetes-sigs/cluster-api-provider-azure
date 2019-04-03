@@ -44,6 +44,7 @@ envfile
 
 # vscode
 .vscode
+.idea
 
 # Ignore output manifests
 cmd/clusterctl/examples/azure/out
