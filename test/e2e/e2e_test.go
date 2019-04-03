@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"testing"
 
@@ -75,7 +76,7 @@ func TestMasterMachineCreated(t *testing.T) {
 func createTestClients(kubeConfig string) (*Clients, error) {
 	kubeClient, err := NewKubeClient(kubeConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes client: %v", err)
+		return nil, errors.Wrap(err, "failed to create kubernetes client")
 	}
 
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
@@ -85,7 +86,7 @@ func createTestClients(kubeConfig string) (*Clients, error) {
 
 	azureServicesClient, err := NewAzureServicesClient(subscriptionID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create azure services client: %v", err)
+		return nil, errors.Wrap(err, "failed to create azure services client")
 	}
 	return &Clients{kube: *kubeClient, azure: *azureServicesClient}, nil
 }
