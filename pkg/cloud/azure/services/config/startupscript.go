@@ -117,7 +117,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 			CACertHash:          caCertHash,
 			BootstrapToken:      bootstrapToken,
 			InternalLBAddress:   azure.DefaultInternalLBIPAddress,
-			KubernetesVersion:  trimKubernetesVersion(machine.Machine.Spec.Versions.Kubelet),
+			KubernetesVersion:   trimKubernetesVersion(machine.Machine.Spec.Versions.Kubelet),
 			CloudProviderConfig: getAzureCloudProviderConfig(machine),
 		})
 
