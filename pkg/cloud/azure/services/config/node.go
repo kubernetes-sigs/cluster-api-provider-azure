@@ -48,6 +48,7 @@ nodeRegistration:
   kubeletExtraArgs:
     cloud-provider: azure
     cloud-config: /etc/kubernetes/azure.json
+    node-labels: "node-role.kubernetes.io/node="
 EOF
 
 # Configure containerd prerequisites
