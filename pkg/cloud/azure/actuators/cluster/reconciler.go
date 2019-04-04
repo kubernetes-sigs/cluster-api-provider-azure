@@ -213,11 +213,11 @@ func (s *Reconciler) deleteLB() error {
 	}
 
 	internalLBSpec := &internalloadbalancers.Spec{
-		Name: azure.GenerateNodeSubnetName(s.scope.Cluster.Name),
+		Name: azure.GenerateInternalLBName(s.scope.Cluster.Name),
 	}
 	if err := s.internalLBSvc.Delete(s.scope.Context, internalLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to internal load balancer %s for cluster %s", azure.GenerateNodeSubnetName(s.scope.Cluster.Name), s.scope.Cluster.Name)
+			return errors.Wrapf(err, "failed to internal load balancer %s for cluster %s", azure.GenerateInternalLBName(s.scope.Cluster.Name), s.scope.Cluster.Name)
 		}
 	}
 	return nil
