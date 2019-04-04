@@ -10,4 +10,4 @@
 
 ## Project Documentation
 
-TODO
+- [Design](design.md)
