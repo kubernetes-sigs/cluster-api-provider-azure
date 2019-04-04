@@ -39,6 +39,9 @@ type AzureMachineProviderSpec struct {
 	// UserData to apply to the instance
 	UserDataSecret *corev1.SecretReference `json:"userDataSecret,omitempty"`
 
+	// CredentialsSecret is a reference to the secret with Azure credentials.
+	CredentialsSecret *corev1.SecretReference `json:"credentialsSecret,omitempty"`
+
 	Location      string `json:"location"`
 	VMSize        string `json:"vmSize"`
 	Image         Image  `json:"image"`

@@ -27,6 +27,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
+	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 //+kubebuilder:rbac:groups=azureprovider.k8s.io,resources=azuremachineproviderconfigs;azuremachineproviderstatuses,verbs=get;list;watch;create;update;patch;delete
@@ -38,27 +39,35 @@ import (
 type Actuator struct {
 	*deployer.Deployer
 
-	client client.ClusterV1alpha1Interface
+	client     client.ClusterV1alpha1Interface
+	coreClient controllerclient.Client
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	Client client.ClusterV1alpha1Interface
+	Client     client.ClusterV1alpha1Interface
+	CoreClient controllerclient.Client
 }
 
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		Deployer: deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter}),
-		client:   params.Client,
+		Deployer:   deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter}),
+		client:     params.Client,
+		coreClient: params.CoreClient,
 	}
 }
 
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	klog.Infof("Creating machine %v for cluster %v", machine.Name, cluster.Name)
+	klog.Infof("Creating machine %v", machine.Name)
 
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
+		Machine:    machine,
+		Cluster:    cluster,
+		Client:     a.client,
+		CoreClient: a.coreClient,
+	})
 	if err != nil {
 		return errors.Errorf("failed to create scope: %+v", err)
 	}
@@ -66,7 +75,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	err = NewReconciler(scope).Create(context.Background())
 	if err != nil {
-		klog.Errorf("failed to reconcile machine %s for cluster %s: %v", machine.Name, cluster.Name, err)
+		klog.Errorf("failed to reconcile machine %s: %v", machine.Name, err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: time.Minute,
 		}
@@ -77,9 +86,14 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 // Delete deletes a machine and is invoked by the Machine Controller.
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	klog.Infof("Deleting machine %v for cluster %v.", machine.Name, cluster.Name)
+	klog.Infof("Deleting machine %v", machine.Name)
 
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
+		Machine:    machine,
+		Cluster:    cluster,
+		Client:     a.client,
+		CoreClient: a.coreClient,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create scope")
 	}
@@ -88,7 +102,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	err = NewReconciler(scope).Delete(context.Background())
 	if err != nil {
-		klog.Errorf("failed to delete machine %s for cluster %s: %v", machine.Name, cluster.Name, err)
+		klog.Errorf("failed to delete machine %s: %v", machine.Name, err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: time.Minute,
 		}
@@ -101,9 +115,14 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 // If the Update attempts to mutate any immutable state, the method will error
 // and no updates will be performed.
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	klog.Infof("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
+	klog.Infof("Updating machine %v", machine.Name)
 
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
+		Machine:    machine,
+		Cluster:    cluster,
+		Client:     a.client,
+		CoreClient: a.coreClient,
+	})
 	if err != nil {
 		return errors.Errorf("failed to create scope: %+v", err)
 	}
@@ -112,7 +131,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	err = NewReconciler(scope).Update(context.Background())
 	if err != nil {
-		klog.Errorf("failed to update machine %s for cluster %s: %v", machine.Name, cluster.Name, err)
+		klog.Errorf("failed to update machine %s: %v", machine.Name, err)
 		return &controllerError.RequeueAfterError{
 			RequeueAfter: time.Minute,
 		}
@@ -123,9 +142,14 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 // Exists test for the existence of a machine and is invoked by the Machine Controller
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	klog.Infof("Checking if machine %v for cluster %v exists", machine.Name, cluster.Name)
+	klog.Infof("Checking if machine %v exists", machine.Name)
 
-	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
+		Machine:    machine,
+		Cluster:    cluster,
+		Client:     a.client,
+		CoreClient: a.coreClient,
+	})
 	if err != nil {
 		return false, errors.Errorf("failed to create scope: %+v", err)
 	}
@@ -134,7 +158,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	isExists, err := NewReconciler(scope).Exists(context.Background())
 	if err != nil {
-		klog.Errorf("failed to check machine %s exists for cluster %s: %v", machine.Name, cluster.Name, err)
+		klog.Errorf("failed to check machine %s exists: %v", machine.Name, err)
 	}
 
 	return isExists, err

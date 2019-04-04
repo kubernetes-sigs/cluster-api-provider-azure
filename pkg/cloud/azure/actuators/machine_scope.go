@@ -17,24 +17,48 @@ limitations under the License.
 package actuators
 
 import (
+	"context"
+
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
+	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
-	controllerconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	// AzureCredsSubscriptionIDKey subcription ID
+	AzureCredsSubscriptionIDKey = "azure_subscription_id"
+	// AzureCredsClientIDKey client id
+	AzureCredsClientIDKey = "azure_client_id"
+	// AzureCredsClientSecretKey client secret
+	AzureCredsClientSecretKey = "azure_client_secret"
+	// AzureCredsTenantIDKey tenant ID
+	AzureCredsTenantIDKey = "azure_tenant_id"
+	// AzureCredsResourceGroupKey resource group
+	AzureCredsResourceGroupKey = "azure_resourcegroup"
+	// AzureCredsRegionKey region
+	AzureCredsRegionKey = "azure_region"
+	// AzureResourcePrefix resource prefix for created azure resources
+	AzureResourcePrefix = "azure_resource_prefix"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
 	AzureClients
-	Cluster *clusterv1.Cluster
-	Machine *clusterv1.Machine
-	Client  client.ClusterV1alpha1Interface
+	Cluster    *clusterv1.Cluster
+	Machine    *clusterv1.Machine
+	Client     client.ClusterV1alpha1Interface
+	CoreClient controllerclient.Client
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -60,21 +84,17 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		machineClient = params.Client.Machines(params.Machine.Namespace)
 	}
 
-	cfg, err := controllerconfig.GetConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "error in get config")
-	}
-
-	coreClient, err := controllerclient.New(cfg, controllerclient.Options{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "error creating new core client")
+	if machineConfig.CredentialsSecret != nil {
+		if err = updateScope(params.CoreClient, machineConfig.CredentialsSecret, scope); err != nil {
+			return nil, errors.Wrap(err, "failed to update cluster")
+		}
 	}
 
 	return &MachineScope{
 		Scope:         scope,
 		Machine:       params.Machine,
 		MachineClient: machineClient,
-		CoreClient:    coreClient,
+		CoreClient:    params.CoreClient,
 		MachineConfig: machineConfig,
 		MachineStatus: machineStatus,
 	}, nil
@@ -190,4 +210,84 @@ func unmarshalProviderSpec(spec *runtime.RawExtension) (*v1alpha1.AzureMachinePr
 	}
 	klog.V(6).Infof("Found ProviderSpec: %+v", config)
 	return &config, nil
+}
+
+func updateScope(coreClient controllerclient.Client, credentialsSecret *apicorev1.SecretReference, scope *Scope) error {
+	if credentialsSecret == nil {
+		return errors.New("provided empty credentials secret")
+	}
+
+	secretType := types.NamespacedName{Namespace: credentialsSecret.Namespace, Name: credentialsSecret.Name}
+	var secret apicorev1.Secret
+	if err := coreClient.Get(
+		context.Background(),
+		secretType,
+		&secret); err != nil {
+		return err
+	}
+
+	subscriptionID, ok := secret.Data[AzureCredsSubscriptionIDKey]
+	if !ok {
+		return errors.Errorf("Azure subscription id %v did not contain key %v",
+			secretType.String(), AzureCredsSubscriptionIDKey)
+	}
+	clientID, ok := secret.Data[AzureCredsClientIDKey]
+	if !ok {
+		return errors.Errorf("Azure client id %v did not contain key %v",
+			secretType.String(), AzureCredsClientIDKey)
+	}
+	clientSecret, ok := secret.Data[AzureCredsClientSecretKey]
+	if !ok {
+		return errors.Errorf("Azure client secret %v did not contain key %v",
+			secretType.String(), AzureCredsClientSecretKey)
+	}
+	tenantID, ok := secret.Data[AzureCredsTenantIDKey]
+	if !ok {
+		return errors.Errorf("Azure tenant id %v did not contain key %v",
+			secretType.String(), AzureCredsTenantIDKey)
+	}
+	resourceGroup, ok := secret.Data[AzureCredsResourceGroupKey]
+	if !ok {
+		return errors.Errorf("Azure resource group %v did not contain key %v",
+			secretType.String(), AzureCredsResourceGroupKey)
+	}
+	region, ok := secret.Data[AzureCredsRegionKey]
+	if !ok {
+		return errors.Errorf("Azure region %v did not contain key %v",
+			secretType.String(), AzureCredsRegionKey)
+	}
+	clusterName, ok := secret.Data[AzureResourcePrefix]
+	if !ok {
+		return errors.Errorf("Azure resource prefix %v did not contain key %v",
+			secretType.String(), AzureResourcePrefix)
+	}
+
+	env, err := azure.EnvironmentFromName("AzurePublicCloud")
+	if err != nil {
+		return err
+	}
+	oauthConfig, err := adal.NewOAuthConfig(
+		env.ActiveDirectoryEndpoint, string(tenantID))
+	if err != nil {
+		return err
+	}
+
+	token, err := adal.NewServicePrincipalToken(
+		*oauthConfig, string(clientID), string(clientSecret), env.ResourceManagerEndpoint)
+	if err != nil {
+		return err
+	}
+
+	authorizer, err := autorest.NewBearerAuthorizer(token), nil
+	if err != nil {
+		return errors.Errorf("failed to create azure session: %v", err)
+	}
+
+	scope.Cluster.ObjectMeta.Name = string(clusterName)
+	scope.Authorizer = authorizer
+	scope.SubscriptionID = string(subscriptionID)
+	scope.ClusterConfig.ResourceGroup = string(resourceGroup)
+	scope.ClusterConfig.Location = string(region)
+
+	return nil
 }

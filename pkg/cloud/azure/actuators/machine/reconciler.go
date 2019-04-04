@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	clusterutil "sigs.k8s.io/cluster-api/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 const (
@@ -296,6 +297,13 @@ func (s *Reconciler) checkControlPlaneMachines() (string, error) {
 }
 
 func coreV1Client(kubeconfig string) (corev1.CoreV1Interface, error) {
+	if kubeconfig == "" {
+		cfg, err := controllerconfig.GetConfig()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get config")
+		}
+		return corev1.NewForConfig(cfg)
+	}
 	clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfig))
 
 	if err != nil {

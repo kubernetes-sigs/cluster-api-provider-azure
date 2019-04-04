@@ -21,13 +21,10 @@ import (
 
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	capicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	capimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -55,18 +52,11 @@ func main() {
 	// Initialize event recorder.
 	record.InitFromRecorder(mgr.GetRecorder("azure-controller"))
 
-	// Initialize cluster actuator.
-	clusterActuator := cluster.NewActuator(cluster.ActuatorParams{
-		Client: cs.ClusterV1alpha1(),
-	})
-
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		Client: cs.ClusterV1alpha1(),
+		Client:     cs.ClusterV1alpha1(),
+		CoreClient: mgr.GetClient(),
 	})
-
-	// Register our cluster deployer (the interface is in clusterctl and we define the Deployer interface on the actuator)
-	common.RegisterClusterProvisioner("azure", clusterActuator)
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.Fatal(err)
@@ -77,7 +67,6 @@ func main() {
 	}
 
 	capimachine.AddWithActuator(mgr, machineActuator)
-	capicluster.AddWithActuator(mgr, clusterActuator)
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		klog.Fatalf("Failed to run manager: %v", err)

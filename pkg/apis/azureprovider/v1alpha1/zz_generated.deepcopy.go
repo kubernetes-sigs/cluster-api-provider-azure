@@ -118,6 +118,11 @@ func (in *AzureMachineProviderSpec) DeepCopyInto(out *AzureMachineProviderSpec) 
 		*out = new(v1.SecretReference)
 		**out = **in
 	}
+	if in.CredentialsSecret != nil {
+		in, out := &in.CredentialsSecret, &out.CredentialsSecret
+		*out = new(v1.SecretReference)
+		**out = **in
+	}
 	out.Image = in.Image
 	out.OSDisk = in.OSDisk
 	return

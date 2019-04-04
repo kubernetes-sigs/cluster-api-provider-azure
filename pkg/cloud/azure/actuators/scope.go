@@ -40,7 +40,14 @@ type ScopeParams struct {
 // This is meant to be called for each different actuator iteration.
 func NewScope(params ScopeParams) (*Scope, error) {
 	if params.Cluster == nil {
-		return nil, errors.New("failed to generate new scope from nil cluster")
+		return &Scope{
+			AzureClients:  params.AzureClients,
+			Cluster:       &clusterv1.Cluster{},
+			ClusterClient: nil,
+			ClusterConfig: &v1alpha1.AzureClusterProviderSpec{},
+			ClusterStatus: &v1alpha1.AzureClusterProviderStatus{},
+			Context:       context.Background(),
+		}, nil
 	}
 
 	clusterConfig, err := v1alpha1.ClusterConfigFromProviderSpec(params.Cluster.Spec.ProviderSpec)
