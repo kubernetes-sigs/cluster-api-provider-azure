@@ -43,6 +43,7 @@ type Spec struct {
 	Zone       string
 	Image      v1alpha1.Image
 	OSDisk     v1alpha1.OSDisk
+	CustomData string
 }
 
 // Get provides information about a virtual network.
@@ -99,6 +100,29 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to generate random string")
 	}
 
+	osProfile := &compute.OSProfile{
+		ComputerName:  to.StringPtr(vmSpec.Name),
+		AdminUsername: to.StringPtr(azure.DefaultUserName),
+		AdminPassword: to.StringPtr(randomPassword),
+	}
+
+	if sshKeyData != "" {
+		osProfile.LinuxConfiguration = &compute.LinuxConfiguration{
+			SSH: &compute.SSHConfiguration{
+				PublicKeys: &[]compute.SSHPublicKey{
+					{
+						Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+						KeyData: to.StringPtr(sshKeyData),
+					},
+				},
+			},
+		}
+	}
+
+	if vmSpec.CustomData != "" {
+		osProfile.CustomData = to.StringPtr(vmSpec.CustomData)
+	}
+
 	virtualMachine := compute.VirtualMachine{
 		Location: to.StringPtr(s.Scope.ClusterConfig.Location),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
@@ -122,21 +146,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 					},
 				},
 			},
-			OsProfile: &compute.OSProfile{
-				ComputerName:  to.StringPtr(vmSpec.Name),
-				AdminUsername: to.StringPtr(azure.DefaultUserName),
-				AdminPassword: to.StringPtr(randomPassword),
-				LinuxConfiguration: &compute.LinuxConfiguration{
-					SSH: &compute.SSHConfiguration{
-						PublicKeys: &[]compute.SSHPublicKey{
-							{
-								Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-								KeyData: to.StringPtr(sshKeyData),
-							},
-						},
-					},
-				},
-			},
+			OsProfile: osProfile,
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 					{

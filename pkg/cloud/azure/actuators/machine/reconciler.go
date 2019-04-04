@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	clusterutil "sigs.k8s.io/cluster-api/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -78,35 +79,35 @@ func (s *Reconciler) Create(ctx context.Context) error {
 		s.scope.Machine.Annotations = map[string]string{}
 	}
 
-	bootstrapToken, err := s.checkControlPlaneMachines()
-	if err != nil {
-		return errors.Wrap(err, "failed to check control plane machines in cluster")
-	}
-
 	nicName := fmt.Sprintf("%s-nic", s.scope.Machine.Name)
-	err = s.createNetworkInterface(ctx, nicName)
-	if err != nil {
+	if err := s.createNetworkInterface(ctx, nicName); err != nil {
 		return errors.Wrapf(err, "failed to create nic %s for machine %s", nicName, s.scope.Machine.Name)
 	}
 
-	err = s.createVirtualMachine(ctx, nicName)
-	if err != nil {
+	if err := s.createVirtualMachine(ctx, nicName); err != nil {
 		return errors.Wrapf(err, "failed to create vm %s ", s.scope.Machine.Name)
 	}
 
-	scriptData, err := config.GetVMStartupScript(s.scope, bootstrapToken)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get vm startup script")
-	}
+	if s.scope.MachineConfig.UserDataSecret == nil {
+		bootstrapToken, err := s.checkControlPlaneMachines()
+		if err != nil {
+			return errors.Wrap(err, "failed to check control plane machines in cluster")
+		}
 
-	vmExtSpec := &virtualmachineextensions.Spec{
-		Name:       "startupScript",
-		VMName:     s.scope.Machine.Name,
-		ScriptData: base64.StdEncoding.EncodeToString([]byte(scriptData)),
-	}
-	err = s.virtualMachinesExtSvc.CreateOrUpdate(ctx, vmExtSpec)
-	if err != nil {
-		return errors.Wrap(err, "failed to create vm extension")
+		scriptData, err := config.GetVMStartupScript(s.scope, bootstrapToken)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get vm startup script")
+		}
+
+		vmExtSpec := &virtualmachineextensions.Spec{
+			Name:       "startupScript",
+			VMName:     s.scope.Machine.Name,
+			ScriptData: base64.StdEncoding.EncodeToString([]byte(scriptData)),
+		}
+		err = s.virtualMachinesExtSvc.CreateOrUpdate(ctx, vmExtSpec)
+		if err != nil {
+			return errors.Wrap(err, "failed to create vm extension")
+		}
 	}
 
 	s.scope.Machine.Annotations["cluster-api-provider-azure"] = "true"
@@ -330,18 +331,20 @@ func (s *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 
 	klog.Infof("Found vm for machine %s", s.scope.Name())
 
-	vmExtSpec := &virtualmachineextensions.Spec{
-		Name:   "startupScript",
-		VMName: s.scope.Name(),
-	}
+	if s.scope.MachineConfig.UserDataSecret == nil {
+		vmExtSpec := &virtualmachineextensions.Spec{
+			Name:   "startupScript",
+			VMName: s.scope.Name(),
+		}
 
-	vmExt, err := s.virtualMachinesExtSvc.Get(ctx, vmExtSpec)
-	if err != nil && vmExt == nil {
-		return false, nil
-	}
+		vmExt, err := s.virtualMachinesExtSvc.Get(ctx, vmExtSpec)
+		if err != nil && vmExt == nil {
+			return false, nil
+		}
 
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get vm extension")
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get vm extension")
+		}
 	}
 
 	vmState := v1alpha1.VMState(*vm.ProvisioningState)
@@ -474,6 +477,15 @@ func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 			Zone:       vmZone,
 		}
 
+		userData, userDataErr := s.getCustomUserData()
+		if userDataErr != nil {
+			return errors.Wrapf(userDataErr, "failed to get custom script data")
+		}
+
+		if userData != "" {
+			vmSpec.CustomData = userData
+		}
+
 		err = s.virtualMachinesSvc.CreateOrUpdate(ctx, vmSpec)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create or get machine")
@@ -502,5 +514,23 @@ func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 		}
 	}
 
-	return err
+	return nil
+}
+
+func (s *Reconciler) getCustomUserData() (string, error) {
+	userData := ""
+	if s.scope.MachineConfig.UserDataSecret != nil {
+		var userDataSecret apicorev1.Secret
+
+		if err := s.scope.CoreClient.Get(context.Background(), client.ObjectKey{Namespace: s.scope.Namespace(), Name: s.scope.MachineConfig.UserDataSecret.Name}, &userDataSecret); err != nil {
+			return "", errors.Wrapf(err, "error getting user data secret %s in namespace %s", s.scope.MachineConfig.UserDataSecret.Name, s.scope.Namespace())
+		}
+		if data, exists := userDataSecret.Data["userData"]; exists {
+			userData = string(data)
+		} else {
+			return "", errors.Errorf("Secret %v/%v does not have userData field set. Thus, no user data applied when creating an instance.", s.scope.Namespace(), s.scope.MachineConfig.UserDataSecret.Name)
+		}
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(userData)), nil
 }

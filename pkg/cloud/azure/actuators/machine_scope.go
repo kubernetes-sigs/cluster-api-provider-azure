@@ -24,6 +24,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
+	controllerconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/yaml"
 )
 
@@ -58,10 +60,21 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		machineClient = params.Client.Machines(params.Machine.Namespace)
 	}
 
+	cfg, err := controllerconfig.GetConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "error in get config")
+	}
+
+	coreClient, err := controllerclient.New(cfg, controllerclient.Options{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "error creating new core client")
+	}
+
 	return &MachineScope{
 		Scope:         scope,
 		Machine:       params.Machine,
 		MachineClient: machineClient,
+		CoreClient:    coreClient,
 		MachineConfig: machineConfig,
 		MachineStatus: machineStatus,
 	}, nil
@@ -73,6 +86,7 @@ type MachineScope struct {
 
 	Machine       *clusterv1.Machine
 	MachineClient client.MachineInterface
+	CoreClient    controllerclient.Client
 	MachineConfig *v1alpha1.AzureMachineProviderSpec
 	MachineStatus *v1alpha1.AzureMachineProviderStatus
 }

@@ -18,6 +18,7 @@ package machine
 
 import (
 	"context"
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
@@ -35,6 +37,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
+	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
@@ -467,6 +470,69 @@ func TestAvailabilityZones(t *testing.T) {
 
 	if err := fakeReconciler.Create(context.Background()); err == nil {
 		t.Errorf("expected create to fail due to zone mismatch")
+	}
+}
+
+func TestCustomUserData(t *testing.T) {
+	fakeScope := newFakeScope(t, v1alpha1.Node)
+	userDataSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testCustomUserData",
+			Namespace: "dummyNamespace",
+		},
+		Data: map[string][]byte{
+			"userData": []byte("test-userdata"),
+		},
+	}
+	fakeScope.CoreClient = controllerfake.NewFakeClient(userDataSecret)
+	fakeScope.MachineConfig.UserDataSecret = &corev1.SecretReference{Name: "testCustomUserData"}
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
+	fakeReconciler.virtualMachinesSvc = &FakeVMCheckZonesService{}
+	if err := fakeReconciler.Create(context.Background()); err != nil {
+		t.Errorf("expected create to succeed %v", err)
+	}
+
+	userData, err := fakeReconciler.getCustomUserData()
+	if err != nil {
+		t.Errorf("expected get custom data to succeed %v", err)
+	}
+
+	if userData != base64.StdEncoding.EncodeToString([]byte("test-userdata")) {
+		t.Errorf("expected userdata to be test-userdata, but found %s", userData)
+	}
+}
+
+func TestCustomDataFailures(t *testing.T) {
+	fakeScope := newFakeScope(t, v1alpha1.Node)
+	userDataSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testCustomUserData",
+			Namespace: "dummyNamespace",
+		},
+		Data: map[string][]byte{
+			"userData": []byte("test-userdata"),
+		},
+	}
+	fakeScope.CoreClient = controllerfake.NewFakeClient(userDataSecret)
+	fakeScope.MachineConfig.UserDataSecret = &corev1.SecretReference{Name: "testCustomUserData"}
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
+	fakeReconciler.virtualMachinesSvc = &FakeVMCheckZonesService{}
+
+	fakeScope.MachineConfig.UserDataSecret = &corev1.SecretReference{Name: "testFailure"}
+	if err := fakeReconciler.Create(context.Background()); err == nil {
+		t.Errorf("expected create to fail")
+	}
+
+	if _, err := fakeReconciler.getCustomUserData(); err == nil {
+		t.Errorf("expected get custom data to fail")
+	}
+
+	userDataSecret.Data = map[string][]byte{
+		"notUserData": []byte("test-notuserdata"),
+	}
+	fakeScope.CoreClient = controllerfake.NewFakeClient(userDataSecret)
+	if _, err := fakeReconciler.getCustomUserData(); err == nil {
+		t.Errorf("expected get custom data to fail, due to missing userdata")
 	}
 }
 
