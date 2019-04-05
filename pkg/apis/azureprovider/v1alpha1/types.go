@@ -67,9 +67,9 @@ type AzureMachineProviderCondition struct {
 
 const (
 	// ControlPlane machine label
-	ControlPlane string = "controlplane"
+	ControlPlane string = "master"
 	// Node machine label
-	Node string = "node"
+	Node string = "worker"
 )
 
 // Network encapsulates Azure networking resources.
