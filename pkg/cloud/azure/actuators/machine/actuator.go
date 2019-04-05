@@ -20,13 +20,13 @@ import (
 	"context"
 	"time"
 
+	clusterv1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	client "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -39,13 +39,13 @@ import (
 type Actuator struct {
 	*deployer.Deployer
 
-	client     client.ClusterV1alpha1Interface
+	client     client.MachineV1beta1Interface
 	coreClient controllerclient.Client
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	Client     client.ClusterV1alpha1Interface
+	Client     client.MachineV1beta1Interface
 	CoreClient controllerclient.Client
 }
 
@@ -64,7 +64,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
 		Machine:    machine,
-		Cluster:    cluster,
+		Cluster:    nil,
 		Client:     a.client,
 		CoreClient: a.coreClient,
 	})
@@ -90,7 +90,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
 		Machine:    machine,
-		Cluster:    cluster,
+		Cluster:    nil,
 		Client:     a.client,
 		CoreClient: a.coreClient,
 	})
@@ -119,7 +119,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
 		Machine:    machine,
-		Cluster:    cluster,
+		Cluster:    nil,
 		Client:     a.client,
 		CoreClient: a.coreClient,
 	})
@@ -146,7 +146,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
 		Machine:    machine,
-		Cluster:    cluster,
+		Cluster:    nil,
 		Client:     a.client,
 		CoreClient: a.coreClient,
 	})

@@ -20,46 +20,50 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
+	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	"github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	providerv1 "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func providerSpecFromMachine(in *providerv1.AzureMachineProviderSpec) (*clusterv1.ProviderSpec, error) {
+func providerSpecFromMachine(in *providerv1.AzureMachineProviderSpec) (*machinev1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderSpec{
+	return &machinev1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
 
-func newMachine(t *testing.T) *clusterv1.Machine {
+func newMachine(t *testing.T) *machinev1.Machine {
 	machineConfig := providerv1.AzureMachineProviderSpec{}
 	providerSpec, err := providerSpecFromMachine(&machineConfig)
 	if err != nil {
 		t.Fatalf("error encoding provider config: %v", err)
 	}
-	return &clusterv1.Machine{
+	return &machinev1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "machine-test",
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: machinev1.MachineSpec{
 			ProviderSpec: *providerSpec,
 		},
 	}
 }
 
 func TestNilClusterScope(t *testing.T) {
+	m := newMachine(t)
 	params := MachineScopeParams{
 		AzureClients: AzureClients{},
 		Cluster:      nil,
 		CoreClient:   nil,
-		Machine:      newMachine(t),
+		Machine:      m,
+		Client:       fake.NewSimpleClientset(m).MachineV1beta1(),
 	}
 	_, err := NewMachineScope(params)
 	if err != nil {

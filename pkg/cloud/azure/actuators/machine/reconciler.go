@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
-	clusterutil "sigs.k8s.io/cluster-api/pkg/util"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
@@ -243,7 +243,7 @@ func (s *Reconciler) isNodeJoin() (bool, error) {
 		return true, nil
 	case v1alpha1.ControlPlane:
 		for _, cm := range clusterMachines.Items {
-			if !clusterutil.IsControlPlaneMachine(&cm) {
+			if cm.Spec.Versions.ControlPlane == "" {
 				continue
 			}
 			vmInterface, err := s.virtualMachinesSvc.Get(context.Background(), &virtualmachines.Spec{Name: cm.Name})

@@ -22,6 +22,9 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
+	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
+	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	"github.com/pkg/errors"
 	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,8 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -56,15 +57,15 @@ const (
 type MachineScopeParams struct {
 	AzureClients
 	Cluster    *clusterv1.Cluster
-	Machine    *clusterv1.Machine
-	Client     client.ClusterV1alpha1Interface
+	Machine    *machinev1.Machine
+	Client     machineclient.MachineV1beta1Interface
 	CoreClient controllerclient.Client
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
 func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
-	scope, err := NewScope(ScopeParams{AzureClients: params.AzureClients, Client: params.Client, Cluster: params.Cluster})
+	scope, err := NewScope(ScopeParams{AzureClients: params.AzureClients, Client: nil, Cluster: params.Cluster})
 	if err != nil {
 		return nil, err
 	}
@@ -79,10 +80,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.Wrap(err, "failed to get machine provider status")
 	}
 
-	var machineClient client.MachineInterface
-	if params.Client != nil {
-		machineClient = params.Client.Machines(params.Machine.Namespace)
-	}
+	machineClient := params.Client.Machines(params.Machine.Namespace)
 
 	if machineConfig.CredentialsSecret != nil {
 		if err = updateScope(params.CoreClient, machineConfig.CredentialsSecret, scope); err != nil {
@@ -104,8 +102,8 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 type MachineScope struct {
 	*Scope
 
-	Machine       *clusterv1.Machine
-	MachineClient client.MachineInterface
+	Machine       *machinev1.Machine
+	MachineClient machineclient.MachineInterface
 	CoreClient    controllerclient.Client
 	MachineConfig *v1alpha1.AzureMachineProviderSpec
 	MachineStatus *v1alpha1.AzureMachineProviderStatus
@@ -131,7 +129,7 @@ func (m *MachineScope) Location() string {
 	return m.Scope.Location()
 }
 
-func (m *MachineScope) storeMachineSpec(machine *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (m *MachineScope) storeMachineSpec(machine *machinev1.Machine) (*machinev1.Machine, error) {
 	ext, err := v1alpha1.EncodeMachineSpec(m.MachineConfig)
 	if err != nil {
 		return nil, err
@@ -141,7 +139,7 @@ func (m *MachineScope) storeMachineSpec(machine *clusterv1.Machine) (*clusterv1.
 	return m.MachineClient.Update(machine)
 }
 
-func (m *MachineScope) storeMachineStatus(machine *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (m *MachineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev1.Machine, error) {
 	ext, err := v1alpha1.EncodeMachineStatus(m.MachineStatus)
 	if err != nil {
 		return nil, err
@@ -171,7 +169,7 @@ func (m *MachineScope) Close() {
 }
 
 // MachineConfigFromProviderSpec tries to decode the JSON-encoded spec, falling back on getting a MachineClass if the value is absent.
-func MachineConfigFromProviderSpec(clusterClient client.MachineClassesGetter, providerConfig clusterv1.ProviderSpec) (*v1alpha1.AzureMachineProviderSpec, error) {
+func MachineConfigFromProviderSpec(clusterClient machineclient.MachineClassesGetter, providerConfig machinev1.ProviderSpec) (*v1alpha1.AzureMachineProviderSpec, error) {
 	var config v1alpha1.AzureMachineProviderSpec
 	if providerConfig.Value != nil {
 		klog.V(4).Info("Decoding ProviderConfig from Value")

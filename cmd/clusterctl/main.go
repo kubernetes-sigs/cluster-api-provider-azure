@@ -17,10 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"github.com/openshift/cluster-api/cmd/clusterctl/cmd"
+	"github.com/openshift/cluster-api/pkg/apis/cluster/common"
 	"sigs.k8s.io/cluster-api-provider-azure/cmd/versioninfo"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/cmd"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 )
 
 func registerCustomCommands() {

@@ -8,8 +8,8 @@ go_library(
     deps = [
         "//cmd/versioninfo:go_default_library",
         "//pkg/cloud/azure/actuators/cluster:go_default_library",
-        "//vendor/sigs.k8s.io/cluster-api/cmd/clusterctl/cmd:go_default_library",
-        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/common:go_default_library",
+        "//vendor/github.com/openshift/cluster-api/cmd/clusterctl/cmd:go_default_library",
+        "//vendor/github.com/openshift/cluster-api/pkg/apis/cluster/common:go_default_library",
     ],
 )
 

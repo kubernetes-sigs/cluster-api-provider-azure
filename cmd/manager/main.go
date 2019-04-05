@@ -19,13 +19,13 @@ package main
 import (
 	"flag"
 
+	clusterapis "github.com/openshift/cluster-api/pkg/apis"
+	"github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset"
+	capimachine "github.com/openshift/cluster-api/pkg/controller/machine"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/record"
-	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	capimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
@@ -54,7 +54,7 @@ func main() {
 
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		Client:     cs.ClusterV1alpha1(),
+		Client:     cs.MachineV1beta1(),
 		CoreClient: mgr.GetClient(),
 	})
 

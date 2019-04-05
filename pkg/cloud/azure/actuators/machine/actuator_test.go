@@ -25,6 +25,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/ghodss/yaml"
+	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
+	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	"github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake"
+	"github.com/openshift/cluster-api/pkg/controller/machine"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,9 +38,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake"
-	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -51,12 +52,12 @@ func newClusterProviderSpec() providerv1.AzureClusterProviderSpec {
 	}
 }
 
-func providerSpecFromMachine(in *providerv1.AzureMachineProviderSpec) (*clusterv1.ProviderSpec, error) {
+func providerSpecFromMachine(in *providerv1.AzureMachineProviderSpec) (*machinev1.ProviderSpec, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterv1.ProviderSpec{
+	return &machinev1.ProviderSpec{
 		Value: &runtime.RawExtension{Raw: bytes},
 	}, nil
 }
@@ -71,19 +72,19 @@ func providerSpecFromCluster(in *providerv1.AzureClusterProviderSpec) (*clusterv
 	}, nil
 }
 
-func newMachine(t *testing.T, machineConfig providerv1.AzureMachineProviderSpec, labels map[string]string) *clusterv1.Machine {
+func newMachine(t *testing.T, machineConfig providerv1.AzureMachineProviderSpec, labels map[string]string) *machinev1.Machine {
 	providerSpec, err := providerSpecFromMachine(&machineConfig)
 	if err != nil {
 		t.Fatalf("error encoding provider config: %v", err)
 	}
-	return &clusterv1.Machine{
+	return &machinev1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "machine-test",
 			Labels: labels,
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: machinev1.MachineSpec{
 			ProviderSpec: *providerSpec,
-			Versions: clusterv1.MachineVersionInfo{
+			Versions: machinev1.MachineVersionInfo{
 				Kubelet:      "1.9.4",
 				ControlPlane: "1.9.4",
 			},
@@ -142,7 +143,7 @@ func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	labels["set"] = label
 	machineConfig := providerv1.AzureMachineProviderSpec{}
 	m := newMachine(t, machineConfig, labels)
-	c := fake.NewSimpleClientset(m).ClusterV1alpha1()
+	c := fake.NewSimpleClientset(m).MachineV1beta1()
 	return &actuators.MachineScope{
 		Scope:         scope,
 		Machine:       m,
