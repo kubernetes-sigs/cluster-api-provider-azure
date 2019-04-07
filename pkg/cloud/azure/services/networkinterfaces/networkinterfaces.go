@@ -38,7 +38,7 @@ type Spec struct {
 	StaticIPAddress          string
 	PublicLoadBalancerName   string
 	InternalLoadBalancerName string
-	NatRule                  int
+	IsBastion                bool
 }
 
 // Get provides information about a network interface.
@@ -94,14 +94,17 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 			return errors.New("public load balancer get returned invalid network interface")
 		}
 
-		backendAddressPools = append(backendAddressPools,
-			network.BackendAddressPool{
-				ID: (*lb.BackendAddressPools)[0].ID,
-			})
-		nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
-			{
-				ID: (*lb.InboundNatRules)[nicSpec.NatRule].ID,
-			},
+		if !nicSpec.IsBastion {
+			backendAddressPools = append(backendAddressPools,
+				network.BackendAddressPool{
+					ID: (*lb.BackendAddressPools)[0].ID,
+				})
+		} else {
+			nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+				{
+					ID: (*lb.InboundNatRules)[0].ID,
+				},
+			}
 		}
 	}
 	if nicSpec.InternalLoadBalancerName != "" {

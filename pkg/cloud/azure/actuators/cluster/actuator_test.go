@@ -45,16 +45,18 @@ func TestReconcileSuccess(t *testing.T) {
 	fakeNotFoundSvc := &azure.FakeNotFoundService{}
 
 	fakeReconciler := &Reconciler{
-		scope:            newFakeScope(),
-		groupsSvc:        fakeSuccessSvc,
-		certificatesSvc:  fakeSuccessSvc,
-		vnetSvc:          fakeSuccessSvc,
-		securityGroupSvc: fakeSuccessSvc,
-		routeTableSvc:    fakeSuccessSvc,
-		subnetsSvc:       fakeSuccessSvc,
-		internalLBSvc:    fakeSuccessSvc,
-		publicIPSvc:      fakeSuccessSvc,
-		publicLBSvc:      fakeSuccessSvc,
+		scope:                newFakeScope(),
+		certificatesSvc:      fakeSuccessSvc,
+		groupsSvc:            fakeSuccessSvc,
+		vnetSvc:              fakeSuccessSvc,
+		securityGroupSvc:     fakeSuccessSvc,
+		routeTableSvc:        fakeSuccessSvc,
+		subnetsSvc:           fakeSuccessSvc,
+		internalLBSvc:        fakeSuccessSvc,
+		publicIPSvc:          fakeSuccessSvc,
+		publicLBSvc:          fakeSuccessSvc,
+		virtualMachineSvc:    fakeSuccessSvc,
+		networkInterfacesSvc: fakeSuccessSvc,
 	}
 
 	if err := fakeReconciler.Reconcile(); err != nil {
@@ -102,16 +104,18 @@ func TestPublicIPNonEmpty(t *testing.T) {
 	fakeSuccessSvc := &azure.FakeSuccessService{}
 
 	fakeReconciler := &Reconciler{
-		scope:            newFakeScope(),
-		groupsSvc:        fakeSuccessSvc,
-		certificatesSvc:  fakeSuccessSvc,
-		vnetSvc:          fakeSuccessSvc,
-		securityGroupSvc: fakeSuccessSvc,
-		routeTableSvc:    fakeSuccessSvc,
-		subnetsSvc:       fakeSuccessSvc,
-		internalLBSvc:    fakeSuccessSvc,
-		publicIPSvc:      fakeSuccessSvc,
-		publicLBSvc:      fakeSuccessSvc,
+		scope:                newFakeScope(),
+		certificatesSvc:      fakeSuccessSvc,
+		groupsSvc:            fakeSuccessSvc,
+		vnetSvc:              fakeSuccessSvc,
+		securityGroupSvc:     fakeSuccessSvc,
+		routeTableSvc:        fakeSuccessSvc,
+		subnetsSvc:           fakeSuccessSvc,
+		internalLBSvc:        fakeSuccessSvc,
+		publicIPSvc:          fakeSuccessSvc,
+		publicLBSvc:          fakeSuccessSvc,
+		virtualMachineSvc:    fakeSuccessSvc,
+		networkInterfacesSvc: fakeSuccessSvc,
 	}
 
 	if err := fakeReconciler.Reconcile(); err != nil {
@@ -138,16 +142,18 @@ func TestServicesCreatedCount(t *testing.T) {
 	fakeSuccessSvc := &azure.FakeCachedService{Cache: &cache}
 
 	fakeReconciler := &Reconciler{
-		scope:            newFakeScope(),
-		groupsSvc:        fakeSuccessSvc,
-		certificatesSvc:  fakeSuccessSvc,
-		vnetSvc:          fakeSuccessSvc,
-		securityGroupSvc: fakeSuccessSvc,
-		routeTableSvc:    fakeSuccessSvc,
-		subnetsSvc:       fakeSuccessSvc,
-		internalLBSvc:    fakeSuccessSvc,
-		publicIPSvc:      fakeSuccessSvc,
-		publicLBSvc:      fakeSuccessSvc,
+		scope:                newFakeScope(),
+		certificatesSvc:      fakeSuccessSvc,
+		groupsSvc:            fakeSuccessSvc,
+		vnetSvc:              fakeSuccessSvc,
+		securityGroupSvc:     fakeSuccessSvc,
+		routeTableSvc:        fakeSuccessSvc,
+		subnetsSvc:           fakeSuccessSvc,
+		internalLBSvc:        fakeSuccessSvc,
+		publicIPSvc:          fakeSuccessSvc,
+		publicLBSvc:          fakeSuccessSvc,
+		virtualMachineSvc:    fakeSuccessSvc,
+		networkInterfacesSvc: fakeSuccessSvc,
 	}
 
 	if err := fakeReconciler.Reconcile(); err != nil {

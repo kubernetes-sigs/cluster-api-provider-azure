@@ -29,8 +29,8 @@ import (
 
 // Spec specification for network security groups
 type Spec struct {
-	Name           string
-	IsControlPlane bool
+	Name string
+	Role string
 }
 
 // Get provides information about a network security group.
@@ -57,8 +57,25 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 
 	securityRules := &[]network.SecurityRule{}
 
-	if nsgSpec.IsControlPlane {
+	if nsgSpec.Role == v1alpha1.ControlPlane {
 		klog.V(2).Infof("using additional rules for control plane %s", nsgSpec.Name)
+		securityRules = &[]network.SecurityRule{
+			{
+				Name: to.StringPtr("allow_6443"),
+				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+					Protocol:                 network.SecurityRuleProtocolTCP,
+					SourceAddressPrefix:      to.StringPtr("*"),
+					SourcePortRange:          to.StringPtr("*"),
+					DestinationAddressPrefix: to.StringPtr("*"),
+					DestinationPortRange:     to.StringPtr("6443"),
+					Access:                   network.SecurityRuleAccessAllow,
+					Direction:                network.SecurityRuleDirectionInbound,
+					Priority:                 to.Int32Ptr(100),
+				},
+			},
+		}
+	} else if nsgSpec.Role == v1alpha1.Bastion {
+		klog.V(2).Infof("using additional rules for bastion %s", nsgSpec.Name)
 		securityRules = &[]network.SecurityRule{
 			{
 				Name: to.StringPtr("allow_ssh"),
@@ -71,19 +88,6 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 					Access:                   network.SecurityRuleAccessAllow,
 					Direction:                network.SecurityRuleDirectionInbound,
 					Priority:                 to.Int32Ptr(100),
-				},
-			},
-			{
-				Name: to.StringPtr("allow_6443"),
-				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Protocol:                 network.SecurityRuleProtocolTCP,
-					SourceAddressPrefix:      to.StringPtr("*"),
-					SourcePortRange:          to.StringPtr("*"),
-					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr("6443"),
-					Access:                   network.SecurityRuleAccessAllow,
-					Direction:                network.SecurityRuleDirectionInbound,
-					Priority:                 to.Int32Ptr(101),
 				},
 			},
 		}

@@ -18,11 +18,17 @@ package certificates
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,6 +88,10 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 
 	if err := CreateSACertificates(cfg); err != nil {
 		return errors.Wrapf(err, "Failed to generate sa certs: %q", err)
+	}
+
+	if err := CreateBastionSSHKeys(s.scope.ClusterConfig); err != nil {
+		return errors.Wrap(err, "Failed to generate ssh keys for bastion host")
 	}
 
 	kubeConfigDir := tmpDirName + "/kubeconfigs"
@@ -297,5 +307,29 @@ func updateClusterConfigKubeConfig(clusterConfig *v1alpha1.AzureClusterProviderS
 		}
 		clusterConfig.DiscoveryHashes = discoveryHashes
 	}
+	return nil
+}
+
+func CreateBastionSSHKeys(clusterConfig *v1alpha1.AzureClusterProviderSpec) error {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	if len(clusterConfig.SSHPublicKey) <= 0 {
+		clusterConfig.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicKey))
+	}
+	if len(clusterConfig.SSHPrivateKey) <= 0 {
+		clusterConfig.SSHPrivateKey = base64.StdEncoding.EncodeToString(pem.EncodeToMemory(&pem.Block{
+			Type:    "RSA PRIVATE KEY",
+			Headers: nil,
+			Bytes:   x509.MarshalPKCS1PrivateKey(privateKey),
+		}))
+	}
+
 	return nil
 }

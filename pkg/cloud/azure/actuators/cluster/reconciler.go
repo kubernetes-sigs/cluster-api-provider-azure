@@ -17,8 +17,14 @@ limitations under the License.
 package cluster
 
 import (
+	"encoding/base64"
+	"fmt"
+
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
@@ -29,36 +35,41 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualnetworks"
 )
 
 // Reconciler are list of services required by cluster actuator, easy to create a fake
 type Reconciler struct {
-	scope            *actuators.Scope
-	certificatesSvc  azure.Service
-	groupsSvc        azure.Service
-	vnetSvc          azure.Service
-	securityGroupSvc azure.Service
-	routeTableSvc    azure.Service
-	subnetsSvc       azure.Service
-	internalLBSvc    azure.Service
-	publicIPSvc      azure.Service
-	publicLBSvc      azure.Service
+	scope                *actuators.Scope
+	certificatesSvc      azure.Service
+	groupsSvc            azure.Service
+	vnetSvc              azure.Service
+	securityGroupSvc     azure.Service
+	routeTableSvc        azure.Service
+	subnetsSvc           azure.Service
+	internalLBSvc        azure.Service
+	publicIPSvc          azure.Service
+	publicLBSvc          azure.Service
+	virtualMachineSvc    azure.Service
+	networkInterfacesSvc azure.Service
 }
 
 // NewReconciler populates all the services based on input scope
 func NewReconciler(scope *actuators.Scope) *Reconciler {
 	return &Reconciler{
-		scope:            scope,
-		certificatesSvc:  certificates.NewService(scope),
-		groupsSvc:        groups.NewService(scope),
-		vnetSvc:          virtualnetworks.NewService(scope),
-		securityGroupSvc: securitygroups.NewService(scope),
-		routeTableSvc:    routetables.NewService(scope),
-		subnetsSvc:       subnets.NewService(scope),
-		internalLBSvc:    internalloadbalancers.NewService(scope),
-		publicIPSvc:      publicips.NewService(scope),
-		publicLBSvc:      publicloadbalancers.NewService(scope),
+		scope:                scope,
+		certificatesSvc:      certificates.NewService(scope),
+		groupsSvc:            groups.NewService(scope),
+		vnetSvc:              virtualnetworks.NewService(scope),
+		securityGroupSvc:     securitygroups.NewService(scope),
+		routeTableSvc:        routetables.NewService(scope),
+		subnetsSvc:           subnets.NewService(scope),
+		internalLBSvc:        internalloadbalancers.NewService(scope),
+		publicIPSvc:          publicips.NewService(scope),
+		publicLBSvc:          publicloadbalancers.NewService(scope),
+		virtualMachineSvc:    virtualmachines.NewService(scope),
+		networkInterfacesSvc: networkinterfaces.NewService(scope),
 	}
 }
 
@@ -84,19 +95,27 @@ func (r *Reconciler) Reconcile() error {
 		return errors.Wrapf(err, "failed to reconcile virtual network for cluster %s", r.scope.Cluster.Name)
 	}
 	sgSpec := &securitygroups.Spec{
-		Name:           azure.GenerateControlPlaneSecurityGroupName(r.scope.Cluster.Name),
-		IsControlPlane: true,
+		Name: azure.GenerateControlPlaneSecurityGroupName(r.scope.Cluster.Name),
+		Role: v1alpha1.ControlPlane,
 	}
 	if err := r.securityGroupSvc.Reconcile(r.scope.Context, sgSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane network security group for cluster %s", r.scope.Cluster.Name)
 	}
 
 	sgSpec = &securitygroups.Spec{
-		Name:           azure.GenerateNodeSecurityGroupName(r.scope.Cluster.Name),
-		IsControlPlane: false,
+		Name: azure.GenerateNodeSecurityGroupName(r.scope.Cluster.Name),
+		Role: v1alpha1.Node,
 	}
 	if err := r.securityGroupSvc.Reconcile(r.scope.Context, sgSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile node network security group for cluster %s", r.scope.Cluster.Name)
+	}
+
+	sgSpec = &securitygroups.Spec{
+		Name: azure.GenerateBastionSecurityGroupName(r.scope.Cluster.Name),
+		Role: v1alpha1.Bastion,
+	}
+	if err := r.securityGroupSvc.Reconcile(r.scope.Context, sgSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile bastion network security group for cluster %s", r.scope.Cluster.Name)
 	}
 
 	rtSpec := &routetables.Spec{
@@ -127,6 +146,16 @@ func (r *Reconciler) Reconcile() error {
 		return errors.Wrapf(err, "failed to reconcile node subnet for cluster %s", r.scope.Cluster.Name)
 	}
 
+	subnetSpec = &subnets.Spec{
+		Name:              azure.GenerateBastionSubnetName(r.scope.Cluster.Name),
+		CIDR:              azure.DefaultBastionSubnetCIDR,
+		VnetName:          azure.GenerateVnetName(r.scope.Cluster.Name),
+		SecurityGroupName: azure.GenerateBastionSecurityGroupName(r.scope.Cluster.Name),
+	}
+	if err := r.subnetsSvc.Reconcile(r.scope.Context, subnetSpec); err != nil {
+		return errors.Wrapf(err, "failed to createorupdate bastion subnet for cluster %s", r.scope.Cluster.Name)
+	}
+
 	internalLBSpec := &internalloadbalancers.Spec{
 		Name:       azure.GenerateInternalLBName(r.scope.Cluster.Name),
 		SubnetName: azure.GenerateControlPlaneSubnetName(r.scope.Cluster.Name),
@@ -152,7 +181,53 @@ func (r *Reconciler) Reconcile() error {
 		return errors.Wrapf(err, "failed to reconcile control plane public load balancer for cluster %s", r.scope.Cluster.Name)
 	}
 
+	if err := reconcileBastion(r); err != nil {
+		return errors.Wrapf(err, "failed to reconcile bastion host for cluster %s", r.scope.Cluster.Name)
+	}
+
 	klog.V(2).Infof("successfully reconciled cluster %s", r.scope.Cluster.Name)
+	return nil
+}
+
+func reconcileBastion(r *Reconciler) error {
+	bastionNicSpec := &networkinterfaces.Spec{
+		Name:                   azure.GenerateBastionNicName(r.scope.Cluster.Name),
+		SubnetName:             azure.GenerateBastionSubnetName(r.scope.Cluster.Name),
+		VnetName:               azure.GenerateVnetName(r.scope.Cluster.Name),
+		PublicLoadBalancerName: azure.GeneratePublicLBName(r.scope.Cluster.Name),
+		IsBastion:              true,
+	}
+
+	if err := r.networkInterfacesSvc.Reconcile(r.scope.Context, bastionNicSpec); err != nil {
+		return errors.Wrapf(err, "failed to createofupdate bastion network interface for cluster %s", r.scope.Cluster.Name)
+	}
+
+	bastionPublicKey, err := base64.StdEncoding.DecodeString(r.scope.ClusterConfig.SSHPublicKey)
+	if err != nil {
+		return errors.Wrap(err, "failed to decode ssh public key for bastion host")
+	}
+
+	bastionSpec := &virtualmachines.Spec{
+		Name:       fmt.Sprintf("%s-bastion", r.scope.Cluster.Name),
+		NICName:    azure.GenerateBastionNicName(r.scope.Cluster.Name),
+		SSHKeyData: string(bastionPublicKey),
+		Size:       "Standard_B1ls",
+		Image: v1alpha1.Image{
+			Publisher: "Canonical",
+			Offer:     "UbuntuServer",
+			SKU:       "18.04-LTS",
+			Version:   "latest",
+		},
+		OSDisk: v1alpha1.OSDisk{
+			OSType:     "Linux",
+			DiskSizeGB: 30,
+		},
+	}
+
+	if err := r.virtualMachineSvc.Reconcile(r.scope.Context, bastionSpec); err != nil {
+		return errors.Wrapf(err, "failed to createorupdate bastion instance for cluster %s", r.scope.Cluster.Name)
+	}
+
 	return nil
 }
 
@@ -186,6 +261,10 @@ func (r *Reconciler) Delete() error {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete virtual network %s for cluster %s", azure.GenerateVnetName(r.scope.Cluster.Name), r.scope.Cluster.Name)
 		}
+	}
+
+	if err := r.deleteBastion(); err != nil {
+		return errors.Wrap(err, "failed to delete bastion")
 	}
 
 	if err := r.groupsSvc.Delete(r.scope.Context, nil); err != nil {
@@ -239,6 +318,16 @@ func (r *Reconciler) deleteSubnets() error {
 	}
 
 	subnetSpec = &subnets.Spec{
+		Name:     azure.GenerateBastionSubnetName(r.scope.Cluster.Name),
+		VnetName: azure.GenerateVnetName(r.scope.Cluster.Name),
+	}
+	if err := r.subnetsSvc.Delete(r.scope.Context, subnetSpec); err != nil {
+		if !azure.ResourceNotFound(err) {
+			return errors.Wrapf(err, "failed to delete %s subnet for cluster %s", azure.GenerateBastionSubnetName(r.scope.Cluster.Name), r.scope.Cluster.Name)
+		}
+	}
+
+	subnetSpec = &subnets.Spec{
 		Name:     azure.GenerateControlPlaneSubnetName(r.scope.Cluster.Name),
 		VnetName: azure.GenerateVnetName(r.scope.Cluster.Name),
 	}
@@ -269,5 +358,35 @@ func (r *Reconciler) deleteNSG() error {
 		}
 	}
 
+	sgSpec = &securitygroups.Spec{
+		Name: azure.GenerateBastionSecurityGroupName(r.scope.Cluster.Name),
+	}
+	if err := r.securityGroupSvc.Delete(r.scope.Context, sgSpec); err != nil {
+		if !azure.ResourceNotFound(err) {
+			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", azure.GenerateBastionSecurityGroupName(r.scope.Cluster.Name), r.scope.Cluster.Name)
+		}
+	}
+	return nil
+}
+
+func (s *Reconciler) deleteBastion() error {
+	vmSpec := &virtualmachines.Spec{
+		Name: azure.GenerateBastionVMName(s.scope.Cluster.Name),
+	}
+
+	err := s.virtualMachineSvc.Delete(s.scope.Context, vmSpec)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete machine")
+	}
+
+	networkInterfaceSpec := &networkinterfaces.Spec{
+		Name:     azure.GenerateBastionNicName(s.scope.Cluster.Name),
+		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
+	}
+
+	err = s.networkInterfacesSvc.Delete(s.scope.Context, networkInterfaceSpec)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to delete network interface")
+	}
 	return nil
 }

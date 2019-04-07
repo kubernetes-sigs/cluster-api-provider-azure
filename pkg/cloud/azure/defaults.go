@@ -27,6 +27,8 @@ const (
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
+	// DefaultBastionSubnetCIDR is the default Bastion Subnet CIDR
+	DefaultBastionSubnetCIDR = "10.2.0.0/16"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultAzureDNSZone is the default provided azure dns zone
@@ -50,6 +52,11 @@ func GenerateNodeSecurityGroupName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-nsg")
 }
 
+// GenerateNodeSecurityGroupName generates a node security group name, based on the cluster name.
+func GenerateBastionSecurityGroupName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "bastion-nsg")
+}
+
 // GenerateNodeRouteTableName generates a node route table name, based on the cluster name.
 func GenerateNodeRouteTableName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
@@ -63,6 +70,16 @@ func GenerateControlPlaneSubnetName(clusterName string) string {
 // GenerateNodeSubnetName generates a node subnet name, based on the cluster name.
 func GenerateNodeSubnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
+}
+
+// GenerateBastionSubnetName generates a node subnet name, based on the cluster name.
+func GenerateBastionSubnetName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "bastion-subnet")
+}
+
+// GenerateBastionNicName generates a bastion network interface name, based on the cluster name.
+func GenerateBastionNicName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "bastion-nic")
 }
 
 // GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
@@ -88,4 +105,9 @@ func GenerateFQDN(publicIPName, location string) string {
 // GenerateOSDiskName generates the name of an OS disk based on the name of a VM.
 func GenerateOSDiskName(clusterName string) string {
 	return fmt.Sprintf("%s_OSDisk", clusterName)
+}
+
+// GenerateBastionVMName generates a name of the vm for bastion host
+func GenerateBastionVMName(clusterName string) string {
+	return fmt.Sprintf("%s-bastion", clusterName)
 }

@@ -144,32 +144,6 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 							},
 						},
 					},
-					{
-						Name: to.StringPtr("natRule2"),
-						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
-							Protocol:             network.TransportProtocolTCP,
-							FrontendPort:         to.Int32Ptr(2201),
-							BackendPort:          to.Int32Ptr(22),
-							EnableFloatingIP:     to.BoolPtr(false),
-							IdleTimeoutInMinutes: to.Int32Ptr(4),
-							FrontendIPConfiguration: &network.SubResource{
-								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
-							},
-						},
-					},
-					{
-						Name: to.StringPtr("natRule3"),
-						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
-							Protocol:             network.TransportProtocolTCP,
-							FrontendPort:         to.Int32Ptr(2202),
-							BackendPort:          to.Int32Ptr(22),
-							EnableFloatingIP:     to.BoolPtr(false),
-							IdleTimeoutInMinutes: to.Int32Ptr(4),
-							FrontendIPConfiguration: &network.SubResource{
-								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
-							},
-						},
-					},
 				},
 			},
 		})

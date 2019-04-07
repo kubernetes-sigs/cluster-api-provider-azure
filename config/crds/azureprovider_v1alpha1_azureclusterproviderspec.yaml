@@ -489,9 +489,17 @@ spec:
           - cert
           - key
           type: object
+        sshPrivateKey:
+          description: SSHPrivateKey is the ssh private key for the bastion host
+          type: string
+        sshPublicKey:
+          description: SSHPublicKey is the ssh public key for the bastion host
+          type: string
       required:
       - resourceGroup
       - location
+      - sshPublicKey
+      - sshPrivateKey
   version: v1alpha1
 status:
   acceptedNames:

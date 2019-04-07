@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"encoding/base64"
 	"reflect"
 	"testing"
 	"time"
@@ -78,5 +79,41 @@ func TestReconcileCertificates(t *testing.T) {
 
 	if !reflect.DeepEqual(scope.ClusterConfig.CAKeyPair, caKeyPair) {
 		t.Errorf("Expected ca key pair not be regenerated")
+	}
+}
+
+func TestCreateBastionSSHKeys(t *testing.T) {
+	type args struct {
+		clusterConfig *v1alpha1.AzureClusterProviderSpec
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "create ssh key-pairs",
+			args: args{
+				clusterConfig: &v1alpha1.AzureClusterProviderSpec{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := CreateBastionSSHKeys(tt.args.clusterConfig); (err != nil) != tt.wantErr {
+				t.Errorf("CreateBastionSSHKeys() error = %v, wantErr %v", err, tt.wantErr)
+			} else {
+				b, _ := base64.StdEncoding.DecodeString(tt.args.clusterConfig.SSHPublicKey)
+				if len(b) <= 0 {
+					t.Errorf("ssh public key can't be empty")
+				}
+
+				b, _ = base64.StdEncoding.DecodeString(tt.args.clusterConfig.SSHPrivateKey)
+				if len(b) <= 0 {
+					t.Errorf("ssh private key can't be empty")
+				}
+			}
+		})
 	}
 }

@@ -36,6 +36,11 @@ type AzureClusterProviderSpec struct {
 	ResourceGroup string `json:"resourceGroup"`
 	Location      string `json:"location"`
 
+	// SSHPublicKey is the ssh public key for the bastion host
+	SSHPublicKey string `json:"sshPublicKey"`
+	// SSHPrivateKey is the ssh private key for the bastion host
+	SSHPrivateKey string `json:"sshPrivateKey"`
+
 	// CAKeyPair is the key pair for CA certs.
 	CAKeyPair KeyPair `json:"caKeyPair,omitempty"`
 

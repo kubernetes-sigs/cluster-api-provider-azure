@@ -74,6 +74,8 @@ const (
 	ControlPlane string = "controlplane"
 	// Node machine label
 	Node string = "node"
+	// Bastion matching label
+	Bastion string = "bastion"
 )
 
 // Network encapsulates Azure networking resources.

@@ -13,6 +13,7 @@ go_library(
         "//pkg/cloud/azure:go_default_library",
         "//pkg/cloud/azure/actuators:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/golang.org/x/crypto/ssh:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/client-go/kubernetes:go_default_library",
         "//vendor/k8s.io/client-go/tools/clientcmd:go_default_library",
