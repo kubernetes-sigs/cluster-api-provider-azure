@@ -17,10 +17,10 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
@@ -81,7 +81,7 @@ func createTestClients(kubeConfig string) (*Clients, error) {
 
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
-		return nil, fmt.Errorf("AZURE_SUBSCRIPTION_ID environment variable is not set")
+		return nil, errors.New("AZURE_SUBSCRIPTION_ID environment variable is not set")
 	}
 
 	azureServicesClient, err := NewAzureServicesClient(subscriptionID)

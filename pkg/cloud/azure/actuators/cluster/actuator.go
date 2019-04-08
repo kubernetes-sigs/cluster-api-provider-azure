@@ -55,7 +55,7 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 
 	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client})
 	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
+		return errors.Wrap(err, "failed to create scope")
 	}
 
 	defer scope.Close()
@@ -74,7 +74,7 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 
 	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client})
 	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
+		return errors.Wrap(err, "failed to create scope")
 	}
 
 	defer scope.Close()

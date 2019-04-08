@@ -121,7 +121,7 @@ func (s *Reconciler) Update(ctx context.Context) error {
 	}
 	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil {
-		return errors.Errorf("failed to get vm: %+v", err)
+		return errors.Wrap(err, "failed to get vm")
 	}
 
 	vm, ok := vmInterface.(compute.VirtualMachine)
@@ -133,7 +133,7 @@ func (s *Reconciler) Update(ctx context.Context) error {
 	// We will check immutable state first, in order to fail quickly before
 	// moving on to state that we can mutate.
 	if isMachineOutdated(s.scope.MachineConfig, converters.SDKToVM(vm)) {
-		return errors.Errorf("found attempt to change immutable state")
+		return errors.New("found attempt to change immutable state")
 	}
 
 	// TODO: Uncomment after implementing tagging.
@@ -141,7 +141,7 @@ func (s *Reconciler) Update(ctx context.Context) error {
 	/*
 		_, err = a.ensureTags(computeSvc, machine, scope.MachineStatus.VMID, scope.MachineConfig.AdditionalTags)
 		if err != nil {
-			return errors.Errorf("failed to ensure tags: %+v", err)
+			return errors.Wrap(err, "failed to ensure tags")
 		}
 	*/
 
@@ -284,7 +284,7 @@ func (s *Reconciler) checkControlPlaneMachines() (string, error) {
 	var bootstrapToken string
 	if isJoin {
 		if s.scope.ClusterConfig == nil {
-			return "", errors.Errorf("failed to retrieve corev1 client for empty kubeconfig")
+			return "", errors.New("failed to retrieve corev1 client for empty kubeconfig")
 		}
 		bootstrapToken, err = certificates.CreateNewBootstrapToken(s.scope.ClusterConfig.AdminKubeconfig, DefaultBootstrapTokenTTL)
 		if err != nil {
@@ -450,7 +450,7 @@ func (s *Reconciler) createNetworkInterface(ctx context.Context, nicName string)
 func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) error {
 	decoded, err := base64.StdEncoding.DecodeString(s.scope.MachineConfig.SSHPublicKey)
 	if err != nil {
-		errors.Wrapf(err, "failed to decode ssh public key")
+		return errors.Wrapf(err, "failed to decode ssh public key")
 	}
 
 	vmSpec := &virtualmachines.Spec{

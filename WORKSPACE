@@ -119,4 +119,3 @@ go_repository(
     importpath = "github.com/a8m/envsubst",
     tag = "v1.1.0",
 )
-
