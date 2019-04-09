@@ -17,9 +17,10 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
 	"os"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
@@ -75,17 +76,17 @@ func TestMasterMachineCreated(t *testing.T) {
 func createTestClients(kubeConfig string) (*Clients, error) {
 	kubeClient, err := NewKubeClient(kubeConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes client: %v", err)
+		return nil, errors.Wrap(err, "failed to create kubernetes client")
 	}
 
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
-		return nil, fmt.Errorf("AZURE_SUBSCRIPTION_ID environment variable is not set")
+		return nil, errors.New("AZURE_SUBSCRIPTION_ID environment variable is not set")
 	}
 
 	azureServicesClient, err := NewAzureServicesClient(subscriptionID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create azure services client: %v", err)
+		return nil, errors.Wrap(err, "failed to create azure services client")
 	}
 	return &Clients{kube: *kubeClient, azure: *azureServicesClient}, nil
 }

@@ -134,7 +134,7 @@ func GetDiscoveryHashes(kubeConfigFile string) ([]string, error) {
 	// load the default cluster config
 	clusterConfig := kubeconfigutil.GetClusterFromKubeConfig(config)
 	if clusterConfig == nil {
-		return nil, fmt.Errorf("failed to get default cluster config")
+		return nil, errors.New("failed to get default cluster config")
 	}
 
 	// load CA certificates from the kubeconfig (either from PEM data or by file path)
@@ -150,7 +150,7 @@ func GetDiscoveryHashes(kubeConfigFile string) ([]string, error) {
 			return nil, err
 		}
 	} else {
-		return nil, fmt.Errorf("no CA certificates found in kubeconfig")
+		return nil, errors.New("no CA certificates found in kubeconfig")
 	}
 
 	// hash all the CA certs and include their public key pins as trusted values

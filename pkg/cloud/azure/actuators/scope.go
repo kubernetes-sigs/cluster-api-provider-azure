@@ -18,7 +18,6 @@ package actuators
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -45,23 +44,23 @@ func NewScope(params ScopeParams) (*Scope, error) {
 
 	clusterConfig, err := v1alpha1.ClusterConfigFromProviderSpec(params.Cluster.Spec.ProviderSpec)
 	if err != nil {
-		return nil, errors.Errorf("failed to load cluster provider config: %v", err)
+		return nil, errors.Wrap(err, "failed to load cluster provider config")
 	}
 
 	clusterStatus, err := v1alpha1.ClusterStatusFromProviderStatus(params.Cluster.Status.ProviderStatus)
 	if err != nil {
-		return nil, errors.Errorf("failed to load cluster provider status: %v", err)
+		return nil, errors.Wrap(err, "failed to load cluster provider status")
 	}
 
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-		return nil, errors.Errorf("failed to create azure session: %v", err)
+		return nil, errors.Wrap(err, "failed to create azure session")
 	}
 	params.AzureClients.Authorizer = authorizer
 
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
-		return nil, fmt.Errorf("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
+		return nil, errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
 	}
 	params.AzureClients.SubscriptionID = subscriptionID
 

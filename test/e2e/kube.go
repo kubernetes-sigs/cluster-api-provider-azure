@@ -17,7 +17,7 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,11 +38,11 @@ type KubeClient struct {
 func NewKubeClient(kubeconfig string) (*KubeClient, error) {
 	kubeClientSet, err := clientcmd.NewCoreClientSetForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
 	if err != nil {
-		return nil, fmt.Errorf("error creating core clientset: %v", err)
+		return nil, errors.Wrap(err, "error creating core clientset")
 	}
 	clusterapiClientset, err := clientcmd.NewClusterAPIClientForDefaultSearchPath(kubeconfig, clientcmd.NewConfigOverrides())
 	if err != nil {
-		return nil, fmt.Errorf("error creating rest config: %v", err)
+		return nil, errors.Wrap(err, "error creating rest config")
 	}
 	return &KubeClient{
 		Kube:            kubeClientSet,

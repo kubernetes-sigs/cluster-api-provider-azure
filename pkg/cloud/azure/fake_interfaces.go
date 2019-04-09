@@ -18,7 +18,7 @@ package azure
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"reflect"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -62,17 +62,17 @@ type FakeStruct struct {
 
 // Get returns fake failure.
 func (s *FakeFailureService) Get(ctx context.Context, spec Spec) (interface{}, error) {
-	return FakeStruct{}, fmt.Errorf("Failed to Get service")
+	return FakeStruct{}, errors.New("Failed to Get service")
 }
 
 // CreateOrUpdate returns fake failure.
 func (s *FakeFailureService) CreateOrUpdate(ctx context.Context, spec Spec) error {
-	return fmt.Errorf("Failed to Create")
+	return errors.New("Failed to Create")
 }
 
 // Delete returns fake failure.
 func (s *FakeFailureService) Delete(ctx context.Context, spec Spec) error {
-	return fmt.Errorf("Failed to Delete")
+	return errors.New("Failed to Delete")
 }
 
 // Get returns fake not found.

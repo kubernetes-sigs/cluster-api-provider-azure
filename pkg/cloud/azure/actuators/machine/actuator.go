@@ -60,7 +60,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
+		return errors.Wrap(err, "failed to create scope")
 	}
 	defer scope.Close()
 
@@ -105,7 +105,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return errors.Errorf("failed to create scope: %+v", err)
+		return errors.Wrap(err, "failed to create scope")
 	}
 
 	defer scope.Close()
@@ -127,7 +127,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{Machine: machine, Cluster: cluster, Client: a.client})
 	if err != nil {
-		return false, errors.Errorf("failed to create scope: %+v", err)
+		return false, errors.Wrap(err, "failed to create scope")
 	}
 
 	defer scope.Close()
