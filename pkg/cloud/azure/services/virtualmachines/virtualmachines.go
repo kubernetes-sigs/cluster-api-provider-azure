@@ -100,6 +100,18 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to generate random string")
 	}
 
+	imageReference := &compute.ImageReference{
+		Publisher: to.StringPtr(vmSpec.Image.Publisher),
+		Offer:     to.StringPtr(vmSpec.Image.Offer),
+		Sku:       to.StringPtr(vmSpec.Image.SKU),
+		Version:   to.StringPtr(vmSpec.Image.Version),
+	}
+	if vmSpec.Image.ResourceID != "" {
+		imageReference = &compute.ImageReference{
+			ID: to.StringPtr(fmt.Sprintf("/subscriptions/%s%s", s.Scope.SubscriptionID, vmSpec.Image.ResourceID)),
+		}
+	}
+
 	osProfile := &compute.OSProfile{
 		ComputerName:  to.StringPtr(vmSpec.Name),
 		AdminUsername: to.StringPtr(azure.DefaultUserName),
@@ -130,12 +142,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
 			},
 			StorageProfile: &compute.StorageProfile{
-				ImageReference: &compute.ImageReference{
-					Publisher: to.StringPtr(vmSpec.Image.Publisher),
-					Offer:     to.StringPtr(vmSpec.Image.Offer),
-					Sku:       to.StringPtr(vmSpec.Image.SKU),
-					Version:   to.StringPtr(vmSpec.Image.Version),
-				},
+				ImageReference: imageReference,
 				OsDisk: &compute.OSDisk{
 					Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmSpec.Name)),
 					OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),

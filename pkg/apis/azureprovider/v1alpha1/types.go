@@ -368,11 +368,15 @@ type VM struct {
 	//AvailabilitySet *SubResource `json:"availabilitySet,omitempty"`
 }
 
+// Image is a mirror of azure sdk compute.ImageReference
 type Image struct {
+	// Fields below refer to os images in marketplace
 	Publisher string `json:"publisher"`
 	Offer     string `json:"offer"`
 	SKU       string `json:"sku"`
 	Version   string `json:"version"`
+	// ResourceID represents the location of OS Image in azure subscription
+	ResourceID string `json:"resourceID"`
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.
