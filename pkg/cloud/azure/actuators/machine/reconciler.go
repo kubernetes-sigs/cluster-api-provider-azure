@@ -518,19 +518,18 @@ func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 }
 
 func (s *Reconciler) getCustomUserData() (string, error) {
-	userData := ""
-	if s.scope.MachineConfig.UserDataSecret != nil {
-		var userDataSecret apicorev1.Secret
+	if s.scope.MachineConfig.UserDataSecret == nil {
+		return "", nil
+	}
+	var userDataSecret apicorev1.Secret
 
-		if err := s.scope.CoreClient.Get(context.Background(), client.ObjectKey{Namespace: s.scope.Namespace(), Name: s.scope.MachineConfig.UserDataSecret.Name}, &userDataSecret); err != nil {
-			return "", errors.Wrapf(err, "error getting user data secret %s in namespace %s", s.scope.MachineConfig.UserDataSecret.Name, s.scope.Namespace())
-		}
-		if data, exists := userDataSecret.Data["userData"]; exists {
-			userData = string(data)
-		} else {
-			return "", errors.Errorf("Secret %v/%v does not have userData field set. Thus, no user data applied when creating an instance.", s.scope.Namespace(), s.scope.MachineConfig.UserDataSecret.Name)
-		}
+	if err := s.scope.CoreClient.Get(context.Background(), client.ObjectKey{Namespace: s.scope.Namespace(), Name: s.scope.MachineConfig.UserDataSecret.Name}, &userDataSecret); err != nil {
+		return "", errors.Wrapf(err, "error getting user data secret %s in namespace %s", s.scope.MachineConfig.UserDataSecret.Name, s.scope.Namespace())
+	}
+	data, exists := userDataSecret.Data["userData"]
+	if !exists {
+		return "", errors.Errorf("Secret %v/%v does not have userData field set. Thus, no user data applied when creating an instance.", s.scope.Namespace(), s.scope.MachineConfig.UserDataSecret.Name)
 	}
 
-	return base64.StdEncoding.EncodeToString([]byte(userData)), nil
+	return base64.StdEncoding.EncodeToString(data), nil
 }
