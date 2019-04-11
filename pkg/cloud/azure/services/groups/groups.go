@@ -31,8 +31,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup)
 }
 
-// CreateOrUpdate creates or updates a resource group.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// // Reconcile gets/creates/updates a resource group.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	klog.V(2).Infof("creating resource group %s", s.Scope.ClusterConfig.ResourceGroup)
 	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ClusterConfig.ResourceGroup, resources.Group{Location: to.StringPtr(s.Scope.ClusterConfig.Location)})
 	klog.V(2).Infof("successfully created resource group %s", s.Scope.ClusterConfig.ResourceGroup)

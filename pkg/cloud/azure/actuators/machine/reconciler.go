@@ -52,10 +52,10 @@ const (
 // Reconciler are list of services required by cluster actuator, easy to create a fake
 type Reconciler struct {
 	scope                 *actuators.MachineScope
-	availabilityZonesSvc  azure.Service
+	availabilityZonesSvc  azure.GetterService
 	networkInterfacesSvc  azure.Service
-	virtualMachinesSvc    azure.Service
-	virtualMachinesExtSvc azure.Service
+	virtualMachinesSvc    azure.GetterService
+	virtualMachinesExtSvc azure.GetterService
 }
 
 // NewReconciler populates all the services based on input scope
@@ -70,56 +70,56 @@ func NewReconciler(scope *actuators.MachineScope) *Reconciler {
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (s *Reconciler) Create(ctx context.Context) error {
+func (r *Reconciler) Create(ctx context.Context) error {
 	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
 	// the stack that provisions it.
-	if s.scope.Machine.Annotations == nil {
-		s.scope.Machine.Annotations = map[string]string{}
+	if r.scope.Machine.Annotations == nil {
+		r.scope.Machine.Annotations = map[string]string{}
 	}
 
-	bootstrapToken, err := s.checkControlPlaneMachines()
+	bootstrapToken, err := r.checkControlPlaneMachines()
 	if err != nil {
 		return errors.Wrap(err, "failed to check control plane machines in cluster")
 	}
 
-	nicName := fmt.Sprintf("%s-nic", s.scope.Machine.Name)
-	err = s.createNetworkInterface(ctx, nicName)
+	nicName := fmt.Sprintf("%s-nic", r.scope.Machine.Name)
+	err = r.createNetworkInterface(ctx, nicName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create nic %s for machine %s", nicName, s.scope.Machine.Name)
+		return errors.Wrapf(err, "failed to create nic %s for machine %s", nicName, r.scope.Machine.Name)
 	}
 
-	err = s.createVirtualMachine(ctx, nicName)
+	err = r.createVirtualMachine(ctx, nicName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create vm %s ", s.scope.Machine.Name)
+		return errors.Wrapf(err, "failed to create vm %s ", r.scope.Machine.Name)
 	}
 
-	scriptData, err := config.GetVMStartupScript(s.scope, bootstrapToken)
+	scriptData, err := config.GetVMStartupScript(r.scope, bootstrapToken)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get vm startup script")
 	}
 
 	vmExtSpec := &virtualmachineextensions.Spec{
 		Name:       "startupScript",
-		VMName:     s.scope.Machine.Name,
+		VMName:     r.scope.Machine.Name,
 		ScriptData: base64.StdEncoding.EncodeToString([]byte(scriptData)),
 	}
-	err = s.virtualMachinesExtSvc.CreateOrUpdate(ctx, vmExtSpec)
+	err = r.virtualMachinesExtSvc.Reconcile(ctx, vmExtSpec)
 	if err != nil {
 		return errors.Wrap(err, "failed to create vm extension")
 	}
 
-	s.scope.Machine.Annotations["cluster-api-provider-azure"] = "true"
+	r.scope.Machine.Annotations["cluster-api-provider-azure"] = "true"
 
 	return nil
 }
 
 // Update updates machine if and only if machine exists, handled by cluster-api
-func (s *Reconciler) Update(ctx context.Context) error {
+func (r *Reconciler) Update(ctx context.Context) error {
 	vmSpec := &virtualmachines.Spec{
-		Name: s.scope.Machine.Name,
+		Name: r.scope.Machine.Name,
 	}
-	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
+	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil {
 		return errors.Wrap(err, "failed to get vm")
 	}
@@ -132,7 +132,7 @@ func (s *Reconciler) Update(ctx context.Context) error {
 	// We can now compare the various Azure state to the state we were passed.
 	// We will check immutable state first, in order to fail quickly before
 	// moving on to state that we can mutate.
-	if isMachineOutdated(s.scope.MachineConfig, converters.SDKToVM(vm)) {
+	if isMachineOutdated(r.scope.MachineConfig, converters.SDKToVM(vm)) {
 		return errors.New("found attempt to change immutable state")
 	}
 
@@ -149,63 +149,63 @@ func (s *Reconciler) Update(ctx context.Context) error {
 }
 
 // Exists checks if machine exists
-func (s *Reconciler) Exists(ctx context.Context) (bool, error) {
-	exists, err := s.isVMExists(ctx)
+func (r *Reconciler) Exists(ctx context.Context) (bool, error) {
+	exists, err := r.isVMExists(ctx)
 	if err != nil {
 		return false, err
 	} else if !exists {
 		return false, nil
 	}
 
-	switch *s.scope.MachineStatus.VMState {
+	switch *r.scope.MachineStatus.VMState {
 	case v1alpha1.VMStateSucceeded:
-		klog.Infof("Machine %v is running", *s.scope.MachineStatus.VMID)
+		klog.Infof("Machine %v is running", *r.scope.MachineStatus.VMID)
 	case v1alpha1.VMStateUpdating:
-		klog.Infof("Machine %v is updating", *s.scope.MachineStatus.VMID)
+		klog.Infof("Machine %v is updating", *r.scope.MachineStatus.VMID)
 	default:
 		return false, nil
 	}
 
-	if s.scope.Machine.Spec.ProviderID == nil || *s.scope.Machine.Spec.ProviderID == "" {
+	if r.scope.Machine.Spec.ProviderID == nil || *r.scope.Machine.Spec.ProviderID == "" {
 		// TODO: This should be unified with the logic for getting the nodeRef, and
 		// should potentially leverage the code that already exists in
 		// kubernetes/cloud-provider-azure
-		providerID := fmt.Sprintf("azure:////%s", *s.scope.MachineStatus.VMID)
-		s.scope.Machine.Spec.ProviderID = &providerID
+		providerID := fmt.Sprintf("azure:////%s", *r.scope.MachineStatus.VMID)
+		r.scope.Machine.Spec.ProviderID = &providerID
 	}
 
 	// Set the Machine NodeRef.
-	if s.scope.Machine.Status.NodeRef == nil {
-		nodeRef, err := getNodeReference(s.scope)
+	if r.scope.Machine.Status.NodeRef == nil {
+		nodeRef, err := getNodeReference(r.scope)
 		if err != nil {
 			klog.Warningf("Failed to set nodeRef: %v", err)
 			return true, nil
 		}
 
-		s.scope.Machine.Status.NodeRef = nodeRef
-		klog.Infof("Setting machine %s nodeRef to %s", s.scope.Name(), nodeRef.Name)
+		r.scope.Machine.Status.NodeRef = nodeRef
+		klog.Infof("Setting machine %s nodeRef to %s", r.scope.Name(), nodeRef.Name)
 	}
 
 	return true, nil
 }
 
 // Delete reconciles all the services in pre determined order
-func (s *Reconciler) Delete(ctx context.Context) error {
+func (r *Reconciler) Delete(ctx context.Context) error {
 	vmSpec := &virtualmachines.Spec{
-		Name: s.scope.Machine.Name,
+		Name: r.scope.Machine.Name,
 	}
 
-	err := s.virtualMachinesSvc.Delete(ctx, vmSpec)
+	err := r.virtualMachinesSvc.Delete(ctx, vmSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete machine")
 	}
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:     fmt.Sprintf("%s-nic", s.scope.Machine.Name),
-		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
+		Name:     fmt.Sprintf("%s-nic", r.scope.Machine.Name),
+		VnetName: azure.GenerateVnetName(r.scope.Cluster.Name),
 	}
 
-	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
+	err = r.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
@@ -230,13 +230,13 @@ func isMachineOutdated(machineSpec *v1alpha1.AzureMachineProviderSpec, vm *v1alp
 	return false
 }
 
-func (s *Reconciler) isNodeJoin() (bool, error) {
-	clusterMachines, err := s.scope.MachineClient.List(metav1.ListOptions{})
+func (r *Reconciler) isNodeJoin() (bool, error) {
+	clusterMachines, err := r.scope.MachineClient.List(metav1.ListOptions{})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to retrieve machines in cluster")
 	}
 
-	switch set := s.scope.Machine.ObjectMeta.Labels["set"]; set {
+	switch set := r.scope.Machine.ObjectMeta.Labels["set"]; set {
 	case v1alpha1.Node:
 		return true, nil
 	case v1alpha1.ControlPlane:
@@ -244,9 +244,9 @@ func (s *Reconciler) isNodeJoin() (bool, error) {
 			if !clusterutil.IsControlPlaneMachine(&cm) {
 				continue
 			}
-			vmInterface, err := s.virtualMachinesSvc.Get(context.Background(), &virtualmachines.Spec{Name: cm.Name})
+			vmInterface, err := r.virtualMachinesSvc.Get(context.Background(), &virtualmachines.Spec{Name: cm.Name})
 			if err != nil && vmInterface == nil {
-				klog.V(2).Infof("Machine %s should join the controlplane: false", s.scope.Name())
+				klog.V(2).Infof("Machine %s should join the controlplane: false", r.scope.Name())
 				return false, nil
 			}
 
@@ -259,34 +259,34 @@ func (s *Reconciler) isNodeJoin() (bool, error) {
 				VMName: cm.Name,
 			}
 
-			vmExt, err := s.virtualMachinesExtSvc.Get(context.Background(), vmExtSpec)
+			vmExt, err := r.virtualMachinesExtSvc.Get(context.Background(), vmExtSpec)
 			if err != nil && vmExt == nil {
 				klog.V(2).Infof("Machine %s should join the controlplane: false", cm.Name)
 				return false, nil
 			}
 
-			klog.V(2).Infof("Machine %s should join the controlplane: true", s.scope.Name())
+			klog.V(2).Infof("Machine %s should join the controlplane: true", r.scope.Name())
 			return true, nil
 		}
 
 		return false, nil
 	default:
-		return false, errors.Errorf("Unknown value %s for label `set` on machine %s, skipping machine creation", set, s.scope.Name())
+		return false, errors.Errorf("Unknown value %s for label `set` on machine %s, skipping machine creation", set, r.scope.Name())
 	}
 }
 
-func (s *Reconciler) checkControlPlaneMachines() (string, error) {
-	isJoin, err := s.isNodeJoin()
+func (r *Reconciler) checkControlPlaneMachines() (string, error) {
+	isJoin, err := r.isNodeJoin()
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to determine whether machine should join cluster")
 	}
 
 	var bootstrapToken string
 	if isJoin {
-		if s.scope.ClusterConfig == nil {
+		if r.scope.ClusterConfig == nil {
 			return "", errors.New("failed to retrieve corev1 client for empty kubeconfig")
 		}
-		bootstrapToken, err = certificates.CreateNewBootstrapToken(s.scope.ClusterConfig.AdminKubeconfig, DefaultBootstrapTokenTTL)
+		bootstrapToken, err = certificates.CreateNewBootstrapToken(r.scope.ClusterConfig.AdminKubeconfig, DefaultBootstrapTokenTTL)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to create new bootstrap token")
 		}
@@ -309,11 +309,11 @@ func coreV1Client(kubeconfig string) (corev1.CoreV1Interface, error) {
 	return corev1.NewForConfig(cfg)
 }
 
-func (s *Reconciler) isVMExists(ctx context.Context) (bool, error) {
+func (r *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 	vmSpec := &virtualmachines.Spec{
-		Name: s.scope.Name(),
+		Name: r.scope.Name(),
 	}
-	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
+	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
 
 	if err != nil && vmInterface == nil {
 		return false, nil
@@ -328,14 +328,14 @@ func (s *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 		return false, errors.New("returned incorrect vm interface")
 	}
 
-	klog.Infof("Found vm for machine %s", s.scope.Name())
+	klog.Infof("Found vm for machine %s", r.scope.Name())
 
 	vmExtSpec := &virtualmachineextensions.Spec{
 		Name:   "startupScript",
-		VMName: s.scope.Name(),
+		VMName: r.scope.Name(),
 	}
 
-	vmExt, err := s.virtualMachinesExtSvc.Get(ctx, vmExtSpec)
+	vmExt, err := r.virtualMachinesExtSvc.Get(ctx, vmExtSpec)
 	if err != nil && vmExt == nil {
 		return false, nil
 	}
@@ -346,8 +346,8 @@ func (s *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 
 	vmState := v1alpha1.VMState(*vm.ProvisioningState)
 
-	s.scope.MachineStatus.VMID = vm.ID
-	s.scope.MachineStatus.VMState = &vmState
+	r.scope.MachineStatus.VMID = vm.ID
+	r.scope.MachineStatus.VMState = &vmState
 	return true, nil
 }
 
@@ -397,13 +397,13 @@ func getNodeReference(scope *actuators.MachineScope) (*apicorev1.ObjectReference
 
 // getVirtualMachineZone gets a random availability zones from available set,
 // this will hopefully be an input from upstream machinesets so all the vms are balanced
-func (s *Reconciler) getVirtualMachineZone(ctx context.Context) (string, error) {
+func (r *Reconciler) getVirtualMachineZone(ctx context.Context) (string, error) {
 	zonesSpec := &availabilityzones.Spec{
-		VMSize: s.scope.MachineConfig.VMSize,
+		VMSize: r.scope.MachineConfig.VMSize,
 	}
-	zonesInterface, err := s.availabilityZonesSvc.Get(ctx, zonesSpec)
+	zonesInterface, err := r.availabilityZonesSvc.Get(ctx, zonesSpec)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", s.scope.MachineConfig.VMSize, s.scope.ClusterConfig.Location)
+		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", r.scope.MachineConfig.VMSize, r.scope.ClusterConfig.Location)
 	}
 	if zonesInterface == nil {
 		// if its nil, probably means no zones found
@@ -422,24 +422,24 @@ func (s *Reconciler) getVirtualMachineZone(ctx context.Context) (string, error) 
 	return zones[rand.Intn(len(zones))], nil
 }
 
-func (s *Reconciler) createNetworkInterface(ctx context.Context, nicName string) error {
+func (r *Reconciler) createNetworkInterface(ctx context.Context, nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
-		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
+		VnetName: azure.GenerateVnetName(r.scope.Cluster.Name),
 	}
-	switch set := s.scope.Machine.ObjectMeta.Labels["set"]; set {
+	switch set := r.scope.Machine.ObjectMeta.Labels["set"]; set {
 	case v1alpha1.Node:
-		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(s.scope.Cluster.Name)
+		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(r.scope.Cluster.Name)
 	case v1alpha1.ControlPlane:
-		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(s.scope.Cluster.Name)
-		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.scope.Cluster.Name)
-		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.scope.Cluster.Name)
+		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(r.scope.Cluster.Name)
+		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(r.scope.Cluster.Name)
+		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(r.scope.Cluster.Name)
 		networkInterfaceSpec.NatRule = 0
 	default:
-		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", set, s.scope.Machine.Name)
+		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", set, r.scope.Machine.Name)
 	}
 
-	err := s.networkInterfacesSvc.CreateOrUpdate(ctx, networkInterfaceSpec)
+	err := r.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrap(err, "unable to create VM network interface")
 	}
@@ -447,38 +447,38 @@ func (s *Reconciler) createNetworkInterface(ctx context.Context, nicName string)
 	return err
 }
 
-func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) error {
-	decoded, err := base64.StdEncoding.DecodeString(s.scope.MachineConfig.SSHPublicKey)
+func (r *Reconciler) createVirtualMachine(ctx context.Context, nicName string) error {
+	decoded, err := base64.StdEncoding.DecodeString(r.scope.MachineConfig.SSHPublicKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed to decode ssh public key")
 	}
 
 	vmSpec := &virtualmachines.Spec{
-		Name: s.scope.Machine.Name,
+		Name: r.scope.Machine.Name,
 	}
 
-	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
+	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil && vmInterface == nil {
-		vmZone, zoneErr := s.getVirtualMachineZone(ctx)
+		vmZone, zoneErr := r.getVirtualMachineZone(ctx)
 		if zoneErr != nil {
 			return errors.Wrap(zoneErr, "failed to get availability zone")
 		}
 
 		vmSpec = &virtualmachines.Spec{
-			Name:       s.scope.Machine.Name,
+			Name:       r.scope.Machine.Name,
 			NICName:    nicName,
 			SSHKeyData: string(decoded),
-			Size:       s.scope.MachineConfig.VMSize,
-			OSDisk:     s.scope.MachineConfig.OSDisk,
-			Image:      s.scope.MachineConfig.Image,
+			Size:       r.scope.MachineConfig.VMSize,
+			OSDisk:     r.scope.MachineConfig.OSDisk,
+			Image:      r.scope.MachineConfig.Image,
 			Zone:       vmZone,
 		}
 
-		err = s.virtualMachinesSvc.CreateOrUpdate(ctx, vmSpec)
+		err = r.virtualMachinesSvc.Reconcile(ctx, vmSpec)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create or get machine")
 		}
-		s.scope.Machine.Annotations["availability-zone"] = vmZone
+		r.scope.Machine.Annotations["availability-zone"] = vmZone
 	} else if err != nil {
 		return errors.Wrap(err, "failed to get vm")
 	} else {
@@ -487,18 +487,18 @@ func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 			return errors.New("returned incorrect vm interface")
 		}
 		if vm.ProvisioningState == nil {
-			return errors.Errorf("vm %s is nil provisioning state, reconcile", s.scope.Machine.Name)
+			return errors.Errorf("vm %s is nil provisioning state, reconcile", r.scope.Machine.Name)
 		}
 
 		if *vm.ProvisioningState == "Failed" {
 			// If VM failed provisioning, delete it so it can be recreated
-			err = s.virtualMachinesSvc.Delete(ctx, vmSpec)
+			err = r.virtualMachinesSvc.Delete(ctx, vmSpec)
 			if err != nil {
 				return errors.Wrapf(err, "failed to delete machine")
 			}
-			return errors.Errorf("vm %s is deleted, retry creating in next reconcile", s.scope.Machine.Name)
+			return errors.Errorf("vm %s is deleted, retry creating in next reconcile", r.scope.Machine.Name)
 		} else if *vm.ProvisioningState != "Succeeded" {
-			return errors.Errorf("vm %s is still in provisioningstate %s, reconcile", s.scope.Machine.Name, *vm.ProvisioningState)
+			return errors.Errorf("vm %s is still in provisioningstate %s, reconcile", r.scope.Machine.Name, *vm.ProvisioningState)
 		}
 	}
 

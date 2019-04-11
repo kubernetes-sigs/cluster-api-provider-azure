@@ -55,8 +55,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return nic, nil
 }
 
-// CreateOrUpdate creates or updates a network interface.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile gets/creates/updates a network interface.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	nicSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid network interface specification")
@@ -120,7 +120,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	}
 	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
-	f, err := s.Client.CreateOrUpdate(ctx,
+	future, err := s.Client.CreateOrUpdate(ctx,
 		s.Scope.ClusterConfig.ResourceGroup,
 		nicSpec.Name,
 		network.Interface{
@@ -139,12 +139,12 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrap(err, "cannot create, future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	if err != nil {
 		return errors.Wrap(err, "result error")
 	}
@@ -159,7 +159,7 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.New("invalid network interface Specification")
 	}
 	klog.V(2).Infof("deleting nic %s", nicSpec.Name)
-	f, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, nicSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, nicSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -168,12 +168,12 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrap(err, "cannot create, future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	if err != nil {
 		return errors.Wrap(err, "result error")
 	}

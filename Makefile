@@ -165,11 +165,16 @@ gazelle: ## Run Bazel Gazelle
 generate: ## Generate mocks, CRDs and runs `go generate` through Bazel
 	GOPATH=$(shell go env GOPATH) bazel run //:generate $(BAZEL_ARGS)
 	$(MAKE) dep-ensure
+	$(MAKE) generate-deepcopy
 #	bazel build $(BAZEL_ARGS) //pkg/cloud/azure/services/mocks:go_mock_interfaces \
 #		//pkg/cloud/azure/services/ec2/mock_ec2iface:go_default_library \
 #		//pkg/cloud/azure/services/elb/mock_elbiface:go_default_library
 #	cp -Rf bazel-genfiles/pkg/* pkg/
 	$(MAKE) generate-crds
+
+.PHONY: generate-deepcopy
+generate-deepcopy:
+	cd pkg/apis && go run ../../vendor/k8s.io/code-generator/cmd/deepcopy-gen/main.go -O zz_generated.deepcopy -i ./... -h ../../hack/boilerplate/boilerplate.go.txt
 
 .PHONY: generate-crds
 generate-crds:
@@ -248,12 +253,11 @@ create-cluster: binaries-dev ## Create a development Kubernetes cluster on Azure
 	-a ./cmd/clusterctl/examples/azure/out/addons.yaml
 
 .PHONY: delete-cluster
-delete-cluster: binaries-dev ## Deletes the development Kubernetes Cluster (CLUSTER_NAME required)
+delete-cluster: binaries-dev ## Deletes the development Kubernetes Cluster
 	clusterctl delete cluster -v 4 \
 	--bootstrap-type kind \
-	--cluster $(CLUSTER_NAME) \
 	--kubeconfig ./kubeconfig \
-	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
+	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml
 
 kind-reset: ## Destroys the "clusterapi" kind cluster.
 	kind delete cluster --name=clusterapi || true

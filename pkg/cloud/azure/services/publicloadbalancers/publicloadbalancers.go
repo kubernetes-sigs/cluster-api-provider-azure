@@ -49,8 +49,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return lb, nil
 }
 
-// CreateOrUpdate creates or updates a public load balancer.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile gets/creates/updates a public load balancer.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")
@@ -75,7 +75,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
-	f, err := s.Client.CreateOrUpdate(ctx,
+	future, err := s.Client.CreateOrUpdate(ctx,
 		s.Scope.ClusterConfig.ResourceGroup,
 		lbName,
 		network.LoadBalancer{
@@ -177,12 +177,12 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrap(err, "cannot create public load balancer")
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get public load balancer create or update future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	klog.V(2).Infof("successfully created public load balancer %s", lbName)
 	return err
 }
@@ -194,7 +194,7 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.New("invalid public loadbalancer specification")
 	}
 	klog.V(2).Infof("deleting public load balancer %s", publicLBSpec.Name)
-	f, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, publicLBSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, publicLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -203,12 +203,12 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
+	err = future.WaitForCompletionRef(ctx, s.Client.Client)
 	if err != nil {
 		return errors.Wrap(err, "cannot create, future response")
 	}
 
-	_, err = f.Result(s.Client)
+	_, err = future.Result(s.Client)
 	if err != nil {
 		return errors.Wrap(err, "result error")
 	}

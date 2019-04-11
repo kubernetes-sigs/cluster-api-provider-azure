@@ -47,8 +47,8 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return vnet, nil
 }
 
-// CreateOrUpdate creates or updates a virtual network.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
+// Reconcile gets/creates/updates a virtual network.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 	// Following should be created upstream and provided as an input to NewService
 	// A vnet has following dependencies
 	//    * Vnet Cidr

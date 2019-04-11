@@ -54,9 +54,9 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return zones, nil
 }
 
-// CreateOrUpdate no-op.
-func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
-	// Not implemented since there is nothing to create or update
+// Reconcile no-op.
+func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
+	// Not implemented since there is nothing to reconcile
 	return nil
 }
 

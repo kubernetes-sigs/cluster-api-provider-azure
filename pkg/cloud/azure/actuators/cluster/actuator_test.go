@@ -157,27 +157,35 @@ func TestServicesCreatedCount(t *testing.T) {
 	if cache[azure.GenerateVnetName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateVnetName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GenerateControlPlaneSecurityGroupName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateControlPlaneSecurityGroupName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GenerateNodeSecurityGroupName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateNodeSecurityGroupName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GenerateNodeRouteTableName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateNodeRouteTableName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GenerateControlPlaneSubnetName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateControlPlaneSubnetName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GenerateNodeSubnetName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateNodeSubnetName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GenerateInternalLBName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GenerateInternalLBName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[azure.GeneratePublicLBName(fakeReconciler.scope.Cluster.Name)] != 1 {
 		t.Errorf("Expected 1 count of %s service", azure.GeneratePublicLBName(fakeReconciler.scope.Cluster.Name))
 	}
+
 	if cache[fakeReconciler.scope.Network().APIServerIP.Name] != 1 {
 		t.Errorf("Expected 1 count of %s service", fakeReconciler.scope.Network().APIServerIP.Name)
 	}
