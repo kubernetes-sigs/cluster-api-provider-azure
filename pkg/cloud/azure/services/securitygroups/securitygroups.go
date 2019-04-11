@@ -32,7 +32,7 @@ type Spec struct {
 	IsControlPlane bool
 }
 
-// Get provides information about a route table.
+// Get provides information about a network security group.
 func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {
@@ -47,7 +47,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return securityGroup, nil
 }
 
-// CreateOrUpdate creates or updates a route table.
+// CreateOrUpdate creates or updates a network security group.
 func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {
@@ -117,7 +117,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	return err
 }
 
-// Delete deletes the route table with the provided name.
+// Delete deletes the network security group with the provided name.
 func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {

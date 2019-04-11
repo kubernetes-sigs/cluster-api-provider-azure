@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 )
 
-// Spec specification for routetable
+// Spec specification for route table.
 type Spec struct {
 	Name string
 }
