@@ -32,7 +32,7 @@ type Spec struct {
 	Name string
 }
 
-// Get provides information about a route table.
+// Get provides information about a public ip.
 func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
@@ -47,7 +47,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return publicIP, nil
 }
 
-// CreateOrUpdate creates or updates a public ip
+// CreateOrUpdate creates or updates a public ip.
 func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {

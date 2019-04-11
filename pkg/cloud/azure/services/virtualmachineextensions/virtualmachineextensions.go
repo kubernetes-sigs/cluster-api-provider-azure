@@ -33,7 +33,7 @@ type Spec struct {
 	ScriptData string
 }
 
-// Get provides information about a virtual network.
+// Get provides information about a virtual machine extension.
 func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
@@ -48,7 +48,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return vmExt, nil
 }
 
-// CreateOrUpdate creates or updates a virtual network.
+// CreateOrUpdate creates or updates a virtual machine extension.
 func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
@@ -97,7 +97,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	return err
 }
 
-// Delete deletes the virtual network with the provided name.
+// Delete deletes the virtual machine extension with the provided name.
 func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {

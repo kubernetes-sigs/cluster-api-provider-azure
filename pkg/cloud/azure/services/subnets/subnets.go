@@ -37,7 +37,7 @@ type Spec struct {
 	SecurityGroupName string
 }
 
-// Get provides information about a route table.
+// Get provides information about a subnet.
 func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
 	subnetSpec, ok := spec.(*Spec)
 	if !ok {
@@ -52,7 +52,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return subnet, nil
 }
 
-// CreateOrUpdate creates or updates a route table.
+// CreateOrUpdate creates or updates a subnet.
 func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	subnetSpec, ok := spec.(*Spec)
 	if !ok {
@@ -115,7 +115,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	return err
 }
 
-// Delete deletes the route table with the provided name.
+// Delete deletes the subnet with the provided name.
 func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 	subnetSpec, ok := spec.(*Spec)
 	if !ok {
@@ -128,7 +128,7 @@ func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", subnetSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
 	}
 
 	err = f.WaitForCompletionRef(ctx, s.Client.Client)

@@ -34,7 +34,7 @@ type Spec struct {
 	PublicIPName string
 }
 
-// Get provides information about a route table.
+// Get provides information about a public load balancer.
 func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
@@ -49,7 +49,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 	return lb, nil
 }
 
-// CreateOrUpdate creates or updates a route table.
+// CreateOrUpdate creates or updates a public load balancer.
 func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
@@ -187,7 +187,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 	return err
 }
 
-// Delete deletes the route table with the provided name.
+// Delete deletes the public load balancer with the provided name.
 func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
