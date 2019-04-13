@@ -194,7 +194,7 @@ type FakeVMService struct {
 }
 
 // Get returns fake success.
-func (s *FakeVMService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *FakeVMService) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	s.GetCallCount++
 	return compute.VirtualMachine{
 		ID:   to.StringPtr(s.ID),
@@ -206,13 +206,13 @@ func (s *FakeVMService) Get(ctx context.Context, spec azure.Spec) (interface{}, 
 }
 
 // Reconcile returns fake success.
-func (s *FakeVMService) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *FakeVMService) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	s.CreateOrUpdateCallCount++
 	return nil
 }
 
 // Delete returns fake success.
-func (s *FakeVMService) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *FakeVMService) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	s.DeleteCallCount++
 	return nil
 }
@@ -381,12 +381,12 @@ type FakeVMCheckZonesService struct {
 }
 
 // Get returns fake success.
-func (s *FakeVMCheckZonesService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *FakeVMCheckZonesService) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	return nil, errors.New("vm not found")
 }
 
 // Reconcile returns fake success.
-func (s *FakeVMCheckZonesService) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *FakeVMCheckZonesService) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	vmSpec, ok := spec.(*virtualmachines.Spec)
 	if !ok {
 		return errors.New("invalid vm specification")
@@ -405,7 +405,7 @@ func (s *FakeVMCheckZonesService) Reconcile(ctx context.Context, spec azure.Spec
 }
 
 // Delete returns fake success.
-func (s *FakeVMCheckZonesService) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *FakeVMCheckZonesService) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	return nil
 }
 
@@ -415,17 +415,17 @@ type FakeAvailabilityZonesService struct {
 }
 
 // Get returns fake success.
-func (s *FakeAvailabilityZonesService) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *FakeAvailabilityZonesService) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	return s.zonesResponse, nil
 }
 
 // Reconcile returns fake success.
-func (s *FakeAvailabilityZonesService) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *FakeAvailabilityZonesService) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	return nil
 }
 
 // Delete returns fake success.
-func (s *FakeAvailabilityZonesService) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *FakeAvailabilityZonesService) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	return nil
 }
 

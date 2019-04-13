@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/publicips"
 )
@@ -35,7 +36,7 @@ type Spec struct {
 }
 
 // Get provides information about a public load balancer.
-func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.LoadBalancer{}, errors.New("invalid public loadbalancer specification")
@@ -50,7 +51,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 }
 
 // Reconcile gets/creates/updates a public load balancer.
-func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")
@@ -188,7 +189,7 @@ func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 }
 
 // Delete deletes the public load balancer with the provided name.
-func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")

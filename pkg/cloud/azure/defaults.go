@@ -31,6 +31,8 @@ const (
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultAzureDNSZone is the default provided azure dns zone
 	DefaultAzureDNSZone = "cloudapp.azure.com"
+	// UserAgent used for communicating with azure
+	UserAgent = "cluster-api-azure-services"
 )
 
 // GenerateVnetName generates a virtual network name, based on the cluster name.

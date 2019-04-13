@@ -46,7 +46,7 @@ type Spec struct {
 }
 
 // Get provides information about a virtual machine.
-func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return compute.VirtualMachine{}, errors.New("invalid vm specification")
@@ -61,7 +61,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 }
 
 // Reconcile gets/creates/updates a virtual machine.
-func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm specification")
@@ -179,7 +179,7 @@ func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 }
 
 // Delete deletes the virtual machine with the provided name.
-func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm Specification")

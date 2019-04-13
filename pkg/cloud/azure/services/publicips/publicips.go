@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 )
 
@@ -33,7 +34,7 @@ type Spec struct {
 }
 
 // Get provides information about a public ip.
-func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.PublicIPAddress{}, errors.New("Invalid PublicIP Specification")
@@ -48,7 +49,7 @@ func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error)
 }
 
 // Reconcile gets/creates/updates a public ip.
-func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid PublicIP Specification")
@@ -94,7 +95,7 @@ func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
 }
 
 // Delete deletes the public ip with the provided scope.
-func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid PublicIP Specification")
