@@ -118,8 +118,8 @@ apt-get install -y libseccomp2
 
 # Install containerd
 # Export required environment variables.
-export CONTAINERD_VERSION="1.2.4"
-export CONTAINERD_SHA256="3391758c62d17a56807ddac98b05487d9e78e5beb614a0602caab747b0eda9e0"
+export CONTAINERD_VERSION="{{.ContainerdVersion}}"
+export CONTAINERD_SHA256="{{.ContainerdSHA256}}"
 
 # Download containerd tar.
 wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
@@ -210,8 +210,8 @@ apt-get install -y libseccomp2
 
 # Install containerd
 # Export required environment variables.
-export CONTAINERD_VERSION="1.2.4"
-export CONTAINERD_SHA256="3391758c62d17a56807ddac98b05487d9e78e5beb614a0602caab747b0eda9e0"
+export CONTAINERD_VERSION="{{.ContainerdVersion}}"
+export CONTAINERD_SHA256="{{.ContainerdSHA256}}"
 
 # Download containerd tar.
 wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
@@ -264,6 +264,8 @@ type ControlPlaneInput struct {
 	ServiceSubnet       string
 	KubernetesVersion   string
 	CloudProviderConfig string
+	ContainerdVersion   string
+	ContainerdSHA256    string
 }
 
 // ContolPlaneJoinInput defines context to generate controlplane instance user data for controlplane node join.
@@ -283,6 +285,8 @@ type ContolPlaneJoinInput struct {
 	LBAddress           string
 	KubernetesVersion   string
 	CloudProviderConfig string
+	ContainerdVersion   string
+	ContainerdSHA256    string
 }
 
 func (cpi *ControlPlaneInput) validateCertificates() error {

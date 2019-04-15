@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/pkg/errors"
 	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -379,9 +379,10 @@ func getNodeReference(scope *actuators.MachineScope) (*apicorev1.ObjectReference
 			// TODO(vincepri): Improve this comparison without relying on substrings.
 			if strings.Contains(node.Spec.ProviderID, instanceID) {
 				return &apicorev1.ObjectReference{
-					Kind:       node.Kind,
-					APIVersion: node.APIVersion,
+					Kind:       "Node",
+					APIVersion: apicorev1.SchemeGroupVersion.String(),
 					Name:       node.Name,
+					UID:        node.UID,
 				}, nil
 			}
 		}
