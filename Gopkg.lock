@@ -18,17 +18,17 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:5819e60351a77a1aa5a18dc0dca0e68eab9de0eb41408505d9e6a549d662a130"
+  digest = "1:5e96accf9973db68f174a33076000853f9295f5b7d53a56f8933f4bbd8d4d4d1"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
-    "services/compute/mgmt/2018-10-01/compute",
+    "services/compute/mgmt/2019-03-01/compute",
     "services/network/mgmt/2018-12-01/network",
     "services/resources/mgmt/2018-05-01/resources",
     "version",
   ]
   pruneopts = "UT"
-  revision = "3cd86d9cfda8d44225747bb5633234fcdf842b94"
-  version = "v26.6.0"
+  revision = "5a6ac4ede9746cf350374156f521aa2e8499b5a9"
+  version = "v27.1.0"
 
 [[projects]]
   digest = "1:fba2e406fcc84390635561788d9d1682ad52fe2a9293da16d6c4af678b0a3d62"
@@ -1266,7 +1266,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute",
+    "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute",
     "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network",
     "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources",
     "github.com/Azure/go-autorest/autorest",

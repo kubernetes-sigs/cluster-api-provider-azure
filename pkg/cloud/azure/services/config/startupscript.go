@@ -28,6 +28,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 )
 
+const (
+	ContainerdVersion = "1.2.6"
+	ContainerdSHA256  = "3c23bc34c7c0cb2e45fe469f5fcfdb3829aab8e51a425b1efb702f00f215c4c6"
+)
+
 // GetVMStartupScript returns startup script based on role
 func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) (string, error) {
 	var startupScript string
@@ -76,6 +81,8 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 				LBAddress:           dnsName,
 				KubernetesVersion:   trimKubernetesVersion(machine.Machine.Spec.Versions.ControlPlane),
 				CloudProviderConfig: getAzureCloudProviderConfig(machine),
+				ContainerdVersion:   ContainerdVersion,
+				ContainerdSHA256:    ContainerdSHA256,
 			})
 			if err != nil {
 				return "", err
@@ -103,6 +110,8 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 				ServiceDomain:       machine.Scope.Cluster.Spec.ClusterNetwork.ServiceDomain,
 				KubernetesVersion:   trimKubernetesVersion(machine.Machine.Spec.Versions.ControlPlane),
 				CloudProviderConfig: getAzureCloudProviderConfig(machine),
+				ContainerdVersion:   ContainerdVersion,
+				ContainerdSHA256:    ContainerdSHA256,
 			})
 
 			if err != nil {
@@ -119,6 +128,8 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 			InternalLBAddress:   azure.DefaultInternalLBIPAddress,
 			KubernetesVersion:   trimKubernetesVersion(machine.Machine.Spec.Versions.Kubelet),
 			CloudProviderConfig: getAzureCloudProviderConfig(machine),
+			ContainerdVersion:   ContainerdVersion,
+			ContainerdSHA256:    ContainerdSHA256,
 		})
 
 		if err != nil {

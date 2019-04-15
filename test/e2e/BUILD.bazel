@@ -26,8 +26,8 @@ go_test(
     deps = [
         "//pkg/cloud/azure/actuators:go_default_library",
         "//pkg/cloud/azure/actuators/machine:go_default_library",
-        "//pkg/cloud/azure/services/resources:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/resources:go_default_library",
     ],
 )

@@ -66,16 +66,8 @@ func (client DisksClient) CreateOrUpdate(ctx context.Context, resourceGroupName 
 					Chain: []validation.Constraint{{Target: "disk.DiskProperties.CreationData.ImageReference", Name: validation.Null, Rule: false,
 						Chain: []validation.Constraint{{Target: "disk.DiskProperties.CreationData.ImageReference.ID", Name: validation.Null, Rule: true, Chain: nil}}},
 					}},
-					{Target: "disk.DiskProperties.EncryptionSettings", Name: validation.Null, Rule: false,
-						Chain: []validation.Constraint{{Target: "disk.DiskProperties.EncryptionSettings.DiskEncryptionKey", Name: validation.Null, Rule: false,
-							Chain: []validation.Constraint{{Target: "disk.DiskProperties.EncryptionSettings.DiskEncryptionKey.SourceVault", Name: validation.Null, Rule: true, Chain: nil},
-								{Target: "disk.DiskProperties.EncryptionSettings.DiskEncryptionKey.SecretURL", Name: validation.Null, Rule: true, Chain: nil},
-							}},
-							{Target: "disk.DiskProperties.EncryptionSettings.KeyEncryptionKey", Name: validation.Null, Rule: false,
-								Chain: []validation.Constraint{{Target: "disk.DiskProperties.EncryptionSettings.KeyEncryptionKey.SourceVault", Name: validation.Null, Rule: true, Chain: nil},
-									{Target: "disk.DiskProperties.EncryptionSettings.KeyEncryptionKey.KeyURL", Name: validation.Null, Rule: true, Chain: nil},
-								}},
-						}},
+					{Target: "disk.DiskProperties.EncryptionSettingsCollection", Name: validation.Null, Rule: false,
+						Chain: []validation.Constraint{{Target: "disk.DiskProperties.EncryptionSettingsCollection.Enabled", Name: validation.Null, Rule: true, Chain: nil}}},
 				}}}}}); err != nil {
 		return result, validation.NewError("compute.DisksClient", "CreateOrUpdate", err.Error())
 	}
@@ -103,7 +95,7 @@ func (client DisksClient) CreateOrUpdatePreparer(ctx context.Context, resourceGr
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -184,7 +176,7 @@ func (client DisksClient) DeletePreparer(ctx context.Context, resourceGroupName 
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -268,7 +260,7 @@ func (client DisksClient) GetPreparer(ctx context.Context, resourceGroupName str
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -348,7 +340,7 @@ func (client DisksClient) GrantAccessPreparer(ctx context.Context, resourceGroup
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -429,7 +421,7 @@ func (client DisksClient) ListPreparer(ctx context.Context) (*http.Request, erro
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -542,7 +534,7 @@ func (client DisksClient) ListByResourceGroupPreparer(ctx context.Context, resou
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -652,7 +644,7 @@ func (client DisksClient) RevokeAccessPreparer(ctx context.Context, resourceGrou
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
@@ -731,7 +723,7 @@ func (client DisksClient) UpdatePreparer(ctx context.Context, resourceGroupName 
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
 	}
 
-	const APIVersion = "2018-06-01"
+	const APIVersion = "2018-09-30"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
 	}
