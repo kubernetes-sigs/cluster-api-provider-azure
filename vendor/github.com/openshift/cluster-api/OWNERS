@@ -1,0 +1,10 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+approvers:
+  - enxebre
+  - frobware
+  - ingvagabund
+  - bison
+  - paulfantom
+  - spangenberg
+  - vikaschoudhary16

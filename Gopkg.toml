@@ -44,9 +44,9 @@ required = [
   name = "github.com/golang/mock"
   version = "1.2.0"
 
-[[constraint]]
-  name = "sigs.k8s.io/cluster-api"
-  revision = "3f43912fdb392b6f8cf824401e0a3ddb7590adf2"
+[[override]]
+  name = "github.com/openshift/cluster-api"
+  branch = "openshift-4.0-cluster-api-0.0.0-alpha.4"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
@@ -67,5 +67,5 @@ required = [
   unused-packages = true
 
   [[prune.project]]
-  name = "sigs.k8s.io/cluster-api"
+  name = "github.com/openshift/cluster-api"
   unused-packages = false
