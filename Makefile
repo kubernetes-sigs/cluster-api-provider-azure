@@ -160,16 +160,25 @@ dep-ensure: check-install ## Ensure dependencies are up to date
 gazelle: ## Run Bazel Gazelle
 	bazel run //:gazelle $(BAZEL_ARGS)
 
-# TODO: Uncomment mock generation once mocks exist
 .PHONY: generate
 generate: ## Generate mocks, CRDs and runs `go generate` through Bazel
 	GOPATH=$(shell go env GOPATH) bazel run //:generate $(BAZEL_ARGS)
 	$(MAKE) dep-ensure
+	bazel build $(BAZEL_ARGS) //pkg/cloud/azure/mocks:mocks \
+		//pkg/cloud/azure/services/availabilityzones/mock_availabilityzones:mocks \
+		//pkg/cloud/azure/services/groups/mock_groups:mocks \
+		//pkg/cloud/azure/services/internalloadbalancers/mock_internalloadbalancers:mocks \
+		//pkg/cloud/azure/services/networkinterfaces/mock_networkinterfaces:mocks \
+		//pkg/cloud/azure/services/publicips/mock_publicips:mocks \
+		//pkg/cloud/azure/services/publicloadbalancers/mock_publicloadbalancers:mocks \
+		//pkg/cloud/azure/services/routetables/mock_routetables:mocks \
+		//pkg/cloud/azure/services/securitygroups/mock_securitygroups:mocks \
+		//pkg/cloud/azure/services/subnets/mock_subnets:mocks \
+		//pkg/cloud/azure/services/virtualmachineextensions/mock_virtualmachineextensions:mocks \
+		//pkg/cloud/azure/services/virtualmachines/mock_virtualmachines:mocks \
+		//pkg/cloud/azure/services/virtualnetworks/mock_virtualnetworks:mocks
+	./hack/copy-bazel-mocks.sh
 	$(MAKE) generate-deepcopy
-#	bazel build $(BAZEL_ARGS) //pkg/cloud/azure/services/mocks:go_mock_interfaces \
-#		//pkg/cloud/azure/services/ec2/mock_ec2iface:go_default_library \
-#		//pkg/cloud/azure/services/elb/mock_elbiface:go_default_library
-#	cp -Rf bazel-genfiles/pkg/* pkg/
 	$(MAKE) generate-crds
 
 .PHONY: generate-deepcopy

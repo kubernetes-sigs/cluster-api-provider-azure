@@ -13,7 +13,6 @@
 # limitations under the License.
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 http_archive(
     name = "io_bazel_rules_go",
@@ -94,6 +93,12 @@ go_repository(
     build_file_generation = "on",
     importpath = "github.com/golang/mock",
     tag = "v1.2.0",
+)
+
+go_repository(
+    name = "bazel_gomock",
+    commit = "08cc809a2f68f6d810c2013987970a9a5c1181b4",
+    importpath = "github.com/jmhodges/bazel_gomock",
 )
 
 go_repository(

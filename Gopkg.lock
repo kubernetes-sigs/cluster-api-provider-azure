@@ -18,12 +18,15 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:5e96accf9973db68f174a33076000853f9295f5b7d53a56f8933f4bbd8d4d4d1"
+  digest = "1:84942ae55e514f0208479a7d57cb018ff9eb33e99c56820fac37f487b8a0f2d9"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "services/compute/mgmt/2019-03-01/compute",
+    "services/compute/mgmt/2019-03-01/compute/computeapi",
     "services/network/mgmt/2018-12-01/network",
+    "services/network/mgmt/2018-12-01/network/networkapi",
     "services/resources/mgmt/2018-05-01/resources",
+    "services/resources/mgmt/2018-05-01/resources/resourcesapi",
     "version",
   ]
   pruneopts = "UT"
@@ -171,6 +174,17 @@
   packages = ["lru"]
   pruneopts = "UT"
   revision = "5b532d6fd5efaf7fa130d4e859a2fde0fc3a9e1b"
+
+[[projects]]
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  name = "github.com/golang/mock"
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
+  pruneopts = "UT"
+  revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:e1b86a55f22a21007da87160a3e0897a35392af410d33ae82a4f165f1eec13cf"
@@ -1267,13 +1281,18 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute",
+    "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute/computeapi",
     "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network",
+    "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network/networkapi",
     "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources",
+    "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources/resourcesapi",
     "github.com/Azure/go-autorest/autorest",
     "github.com/Azure/go-autorest/autorest/azure/auth",
     "github.com/Azure/go-autorest/autorest/to",
     "github.com/emicklei/go-restful",
     "github.com/ghodss/yaml",
+    "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/pkg/errors",

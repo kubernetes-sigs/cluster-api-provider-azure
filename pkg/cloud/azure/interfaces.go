@@ -16,29 +16,24 @@ limitations under the License.
 
 package azure
 
-import "context"
+import (
+	"context"
 
-const (
-	// UserAgent used for communicating with azure
-	UserAgent = "cluster-api-azure-services"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
-
-// Spec defines a generic interface which all services should conform to
-type Spec interface {
-}
 
 // Service is a generic interface used by components offering a type of service.
 // Example: virtualnetworks service would offer Reconcile/Delete methods.
 type Service interface {
-	Reconcile(ctx context.Context, spec Spec) error
-	Delete(ctx context.Context, spec Spec) error
+	Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error
+	Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error
 }
 
 // GetterService is a temporary interface used by components which still require Get methods.
 // Once all components move to storing provider information within the relevant
 // Cluster/Machine specs, this interface should be removed.
 type GetterService interface {
-	Get(ctx context.Context, spec Spec) (interface{}, error)
-	Reconcile(ctx context.Context, spec Spec) error
-	Delete(ctx context.Context, spec Spec) error
+	Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error)
+	Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error
+	Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error
 }

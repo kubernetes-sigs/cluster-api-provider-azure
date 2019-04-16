@@ -45,17 +45,17 @@ import (
 )
 
 // Get should implement returning certs and kubeconfigs.
-func (s *Service) Get(ctx context.Context, spec azure.Spec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
 	return nil, errors.New("Not implemented")
 }
 
 // Delete cleans up and generated certificates, could be useful for renewal.
-func (s *Service) Delete(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	return nil
 }
 
 // Reconcile Helper function so this can be unittested.
-func (s *Service) Reconcile(ctx context.Context, spec azure.Spec) error {
+func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
 	klog.V(2).Infof("generating certificates")
 	clusterName := s.scope.Cluster.Name
 	tmpDirName := "/tmp/cluster-api/" + clusterName

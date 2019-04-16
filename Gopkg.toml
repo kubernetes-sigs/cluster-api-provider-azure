@@ -25,6 +25,12 @@
 #   unused-packages = true
 
 required = [
+    "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute/computeapi",
+    "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network/networkapi",
+    "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources/resourcesapi",
+    "github.com/Azure/go-autorest/autorest",
+    "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/emicklei/go-restful",
     "github.com/onsi/ginkgo", # for test framework
     "github.com/onsi/gomega", # for test matchers

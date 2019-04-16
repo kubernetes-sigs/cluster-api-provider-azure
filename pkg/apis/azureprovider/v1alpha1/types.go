@@ -23,6 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ResourceSpec defines a generic spec that can used to define Azure resources.
+// TODO: ResourceSpec should be removed once concrete specs have been defined for all Azure resources in use.
+type ResourceSpec interface{}
+
 // TODO: Write type tests
 
 // AzureResourceReference is a reference to a specific Azure resource by ID
