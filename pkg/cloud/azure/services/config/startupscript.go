@@ -30,7 +30,7 @@ import (
 
 const (
 	ContainerdVersion = "1.2.6"
-	ContainerdSHA256  = "3c23bc34c7c0cb2e45fe469f5fcfdb3829aab8e51a425b1efb702f00f215c4c6"
+	ContainerdSHA256  = "841bdd6965d43b118a4fe3b8b757cc2453b67356af3684fc3ef25f60688a199d"
 )
 
 // GetVMStartupScript returns startup script based on role
