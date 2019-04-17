@@ -238,7 +238,7 @@ func (s *Reconciler) isNodeJoin() (bool, error) {
 		return false, errors.Wrapf(err, "failed to retrieve machines in cluster")
 	}
 
-	switch set := s.scope.Machine.ObjectMeta.Labels["machine.openshift.io/cluster-api-machine-role"]; set {
+	switch set := s.scope.Machine.ObjectMeta.Labels[v1alpha1.MachineRoleLabel]; set {
 	case v1alpha1.Node:
 		return true, nil
 	case v1alpha1.ControlPlane:
@@ -438,7 +438,7 @@ func (s *Reconciler) createNetworkInterface(ctx context.Context, nicName string)
 		Name:     nicName,
 		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
 	}
-	switch set := s.scope.Machine.ObjectMeta.Labels["machine.openshift.io/cluster-api-machine-role"]; set {
+	switch set := s.scope.Machine.ObjectMeta.Labels[v1alpha1.MachineRoleLabel]; set {
 	case v1alpha1.Node:
 		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(s.scope.Cluster.Name)
 	case v1alpha1.ControlPlane:

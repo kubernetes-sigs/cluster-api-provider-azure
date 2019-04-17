@@ -121,7 +121,7 @@ func (m *MachineScope) Namespace() string {
 
 // Role returns the machine role from the labels.
 func (m *MachineScope) Role() string {
-	return m.Machine.Labels["machine.openshift.io/cluster-api-machine-role"]
+	return m.Machine.Labels[v1alpha1.MachineRoleLabel]
 }
 
 // Location returns the machine location.

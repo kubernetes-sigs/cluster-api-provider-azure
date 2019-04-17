@@ -70,6 +70,8 @@ const (
 	ControlPlane string = "master"
 	// Node machine label
 	Node string = "worker"
+	// MachineRoleLabel machine label to determine the role
+	MachineRoleLabel = "machine.openshift.io/cluster-api-machine-role"
 )
 
 // Network encapsulates Azure networking resources.
