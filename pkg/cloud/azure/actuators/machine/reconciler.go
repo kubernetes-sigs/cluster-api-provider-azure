@@ -57,7 +57,7 @@ type Reconciler struct {
 	networkInterfacesSvc  azure.Service
 	virtualMachinesSvc    azure.GetterService
 	virtualMachinesExtSvc azure.GetterService
-	disksSvc azure.GetterService
+	disksSvc              azure.GetterService
 }
 
 // NewReconciler populates all the services based on input scope
@@ -68,7 +68,7 @@ func NewReconciler(scope *actuators.MachineScope) *Reconciler {
 		networkInterfacesSvc:  networkinterfaces.NewService(scope.Scope),
 		virtualMachinesSvc:    virtualmachines.NewService(scope.Scope),
 		virtualMachinesExtSvc: virtualmachineextensions.NewService(scope.Scope),
-		disksSvc: disks.NewService(scope.Scope),
+		disksSvc:              disks.NewService(scope.Scope),
 	}
 }
 
@@ -214,7 +214,7 @@ func (r *Reconciler) Delete(ctx context.Context) error {
 	}
 
 	OSDiskSpec := &disks.Spec{
-		Name: fmt.Sprintf("%s_OSDisk", r.scope.Machine.Name),
+		Name: azure.GenerateOSDiskName(r.scope.Machine.Name),
 	}
 	err = r.disksSvc.Delete(ctx, OSDiskSpec)
 	if err != nil {
