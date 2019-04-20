@@ -163,6 +163,7 @@ func newFakeReconciler(t *testing.T) *Reconciler {
 		networkInterfacesSvc:  fakeSuccessSvc,
 		virtualMachinesSvc:    fakeVMSuccessSvc,
 		virtualMachinesExtSvc: fakeSuccessSvc,
+		disksSvc:              fakeSuccessSvc,
 	}
 }
 
@@ -180,6 +181,7 @@ func newFakeReconcilerWithScope(t *testing.T, scope *actuators.MachineScope) *Re
 		networkInterfacesSvc:  fakeSuccessSvc,
 		virtualMachinesSvc:    fakeVMSuccessSvc,
 		virtualMachinesExtSvc: fakeSuccessSvc,
+		disksSvc:              fakeSuccessSvc,
 	}
 }
 
