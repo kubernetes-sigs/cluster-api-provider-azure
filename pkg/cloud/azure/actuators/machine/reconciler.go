@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
@@ -56,6 +57,7 @@ type Reconciler struct {
 	networkInterfacesSvc  azure.Service
 	virtualMachinesSvc    azure.GetterService
 	virtualMachinesExtSvc azure.GetterService
+	disksSvc azure.GetterService
 }
 
 // NewReconciler populates all the services based on input scope
@@ -66,6 +68,7 @@ func NewReconciler(scope *actuators.MachineScope) *Reconciler {
 		networkInterfacesSvc:  networkinterfaces.NewService(scope.Scope),
 		virtualMachinesSvc:    virtualmachines.NewService(scope.Scope),
 		virtualMachinesExtSvc: virtualmachineextensions.NewService(scope.Scope),
+		disksSvc: disks.NewService(scope.Scope),
 	}
 }
 
@@ -208,6 +211,14 @@ func (r *Reconciler) Delete(ctx context.Context) error {
 	err = r.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
+	}
+
+	OSDiskSpec := &disks.Spec{
+		Name: fmt.Sprintf("%s_OSDisk", r.scope.Machine.Name),
+	}
+	err = r.disksSvc.Delete(ctx, OSDiskSpec)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", r.scope.Machine.Name)
 	}
 
 	return nil
@@ -435,7 +446,6 @@ func (r *Reconciler) createNetworkInterface(ctx context.Context, nicName string)
 		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(r.scope.Cluster.Name)
 		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(r.scope.Cluster.Name)
 		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(r.scope.Cluster.Name)
-		networkInterfaceSpec.NatRule = 0
 	default:
 		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", set, r.scope.Machine.Name)
 	}
