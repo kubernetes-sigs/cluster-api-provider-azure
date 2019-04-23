@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func TestHash(t *testing.T) {
+func TestContainerdSHA256(t *testing.T) {
 	fileName := fmt.Sprintf("/tmp/test-%s", util.RandomString(6))
 	defer os.Remove(fileName)
 
