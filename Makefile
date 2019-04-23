@@ -165,6 +165,7 @@ generate: ## Generate mocks, CRDs and runs `go generate` through Bazel
 	GOPATH=$(shell go env GOPATH) bazel run //:generate $(BAZEL_ARGS)
 	$(MAKE) dep-ensure
 	bazel build $(BAZEL_ARGS) //pkg/cloud/azure/mocks:mocks \
+		//pkg/cloud/azure/services/disks/mock_disks:mocks \
 		//pkg/cloud/azure/services/availabilityzones/mock_availabilityzones:mocks \
 		//pkg/cloud/azure/services/groups/mock_groups:mocks \
 		//pkg/cloud/azure/services/internalloadbalancers/mock_internalloadbalancers:mocks \

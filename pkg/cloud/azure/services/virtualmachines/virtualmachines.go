@@ -113,7 +113,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 					Version:   to.StringPtr(vmSpec.Image.Version),
 				},
 				OsDisk: &compute.OSDisk{
-					Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmSpec.Name)),
+					Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
 					OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
 					CreateOption: compute.DiskCreateOptionTypesFromImage,
 					DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),

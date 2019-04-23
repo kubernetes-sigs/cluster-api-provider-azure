@@ -17,6 +17,7 @@ go_library(
         "//pkg/cloud/azure/services/availabilityzones:go_default_library",
         "//pkg/cloud/azure/services/certificates:go_default_library",
         "//pkg/cloud/azure/services/config:go_default_library",
+        "//pkg/cloud/azure/services/disks:go_default_library",
         "//pkg/cloud/azure/services/networkinterfaces:go_default_library",
         "//pkg/cloud/azure/services/virtualmachineextensions:go_default_library",
         "//pkg/cloud/azure/services/virtualmachines:go_default_library",

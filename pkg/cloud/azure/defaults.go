@@ -84,3 +84,8 @@ func GeneratePublicIPName(clusterName, hash string) string {
 func GenerateFQDN(publicIPName, location string) string {
 	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
 }
+
+// GenerateOSDiskName generates the name of an OS disk based on the name of a VM.
+func GenerateOSDiskName(clusterName string) string {
+	return fmt.Sprintf("%s_OSDisk", clusterName)
+}
