@@ -84,10 +84,6 @@ func newMachine(t *testing.T, machineConfig providerv1.AzureMachineProviderSpec,
 		},
 		Spec: machinev1.MachineSpec{
 			ProviderSpec: *providerSpec,
-			Versions: machinev1.MachineVersionInfo{
-				Kubelet:      "1.9.4",
-				ControlPlane: "1.9.4",
-			},
 		},
 	}
 }
@@ -369,6 +365,8 @@ func TestNodeJoinSecondControlPlane(t *testing.T) {
 	if _, err := fakeScope.MachineClient.Create(fakeScope.Machine); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
 	}
+
+	t.Logf("%+v", fakeScope.Machine)
 
 	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
 		t.Errorf("isNodeJoin failed to create machine: %+v", err)

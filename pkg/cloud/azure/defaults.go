@@ -82,3 +82,12 @@ func GeneratePublicIPName(clusterName, hash string) string {
 func GenerateFQDN(publicIPName, location string) string {
 	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
 }
+
+// GenerateManagedIdentityName generates managed identity name.
+func GenerateManagedIdentityName(subscriptionID, resourceGroupName, clusterName string) string {
+	return fmt.Sprintf(
+		"/subscriptions/%s/resourcegroups/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s-identity",
+		subscriptionID,
+		resourceGroupName,
+		clusterName)
+}

@@ -36,14 +36,15 @@ import (
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
-	Name       string
-	NICName    string
-	SSHKeyData string
-	Size       string
-	Zone       string
-	Image      v1alpha1.Image
-	OSDisk     v1alpha1.OSDisk
-	CustomData string
+	Name            string
+	NICName         string
+	SSHKeyData      string
+	Size            string
+	Zone            string
+	Image           v1alpha1.Image
+	OSDisk          v1alpha1.OSDisk
+	CustomData      string
+	ManagedIdentity string
 }
 
 // Get provides information about a virtual network.
@@ -165,6 +166,15 @@ func (s *Service) CreateOrUpdate(ctx context.Context, spec azure.Spec) error {
 				},
 			},
 		},
+	}
+
+	if vmSpec.ManagedIdentity != "" {
+		virtualMachine.Identity = &compute.VirtualMachineIdentity{
+			Type: compute.ResourceIdentityTypeUserAssigned,
+			UserAssignedIdentities: map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{
+				vmSpec.ManagedIdentity: &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{},
+			},
+		}
 	}
 
 	if vmSpec.Zone != "" {

@@ -243,7 +243,7 @@ func (s *Reconciler) isNodeJoin() (bool, error) {
 		return true, nil
 	case v1alpha1.ControlPlane:
 		for _, cm := range clusterMachines.Items {
-			if cm.Spec.Versions.ControlPlane == "" {
+			if cm.ObjectMeta.Labels[v1alpha1.MachineRoleLabel] == v1alpha1.ControlPlane {
 				continue
 			}
 			vmInterface, err := s.virtualMachinesSvc.Get(context.Background(), &virtualmachines.Spec{Name: cm.Name})
@@ -271,7 +271,7 @@ func (s *Reconciler) isNodeJoin() (bool, error) {
 			return true, nil
 		}
 
-		return false, nil
+		return len(clusterMachines.Items) > 0, nil
 	default:
 		return false, errors.Errorf("Unknown value %s for label `set` on machine %s, skipping machine creation", set, s.scope.Name())
 	}
@@ -475,14 +475,17 @@ func (s *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 			return errors.Wrap(zoneErr, "failed to get availability zone")
 		}
 
+		managedIdentity := azure.GenerateManagedIdentityName(s.scope.SubscriptionID, s.scope.ClusterConfig.ResourceGroup, s.scope.Cluster.Name)
+
 		vmSpec = &virtualmachines.Spec{
-			Name:       s.scope.Machine.Name,
-			NICName:    nicName,
-			SSHKeyData: string(decoded),
-			Size:       s.scope.MachineConfig.VMSize,
-			OSDisk:     s.scope.MachineConfig.OSDisk,
-			Image:      s.scope.MachineConfig.Image,
-			Zone:       vmZone,
+			Name:            s.scope.Machine.Name,
+			NICName:         nicName,
+			SSHKeyData:      string(decoded),
+			Size:            s.scope.MachineConfig.VMSize,
+			OSDisk:          s.scope.MachineConfig.OSDisk,
+			Image:           s.scope.MachineConfig.Image,
+			Zone:            vmZone,
+			ManagedIdentity: managedIdentity,
 		}
 
 		userData, userDataErr := s.getCustomUserData()

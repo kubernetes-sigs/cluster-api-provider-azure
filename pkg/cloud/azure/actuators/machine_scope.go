@@ -27,7 +27,6 @@ import (
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	"github.com/pkg/errors"
 	apicorev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
@@ -174,26 +173,6 @@ func MachineConfigFromProviderSpec(clusterClient machineclient.MachineClassesGet
 	if providerConfig.Value != nil {
 		klog.V(4).Info("Decoding ProviderConfig from Value")
 		return unmarshalProviderSpec(providerConfig.Value)
-	}
-
-	if providerConfig.ValueFrom != nil && providerConfig.ValueFrom.MachineClass != nil {
-		ref := providerConfig.ValueFrom.MachineClass
-		klog.V(4).Info("Decoding ProviderConfig from MachineClass")
-		klog.V(6).Infof("ref: %v", ref)
-		if ref.Provider != "" && ref.Provider != "azure" {
-			return nil, errors.Errorf("Unsupported provider: %q", ref.Provider)
-		}
-
-		if len(ref.Namespace) > 0 && len(ref.Name) > 0 {
-			klog.V(4).Infof("Getting MachineClass: %s/%s", ref.Namespace, ref.Name)
-			mc, err := clusterClient.MachineClasses(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
-			klog.V(6).Infof("Retrieved MachineClass: %+v", mc)
-			if err != nil {
-				return nil, err
-			}
-			providerConfig.Value = &mc.ProviderSpec
-			return unmarshalProviderSpec(&mc.ProviderSpec)
-		}
 	}
 
 	return &config, nil

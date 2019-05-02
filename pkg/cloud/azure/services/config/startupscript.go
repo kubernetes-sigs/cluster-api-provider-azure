@@ -73,7 +73,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 				SaKey:               string(machine.Scope.ClusterConfig.SAKeyPair.Key),
 				BootstrapToken:      bootstrapToken,
 				LBAddress:           dnsName,
-				KubernetesVersion:   machine.Machine.Spec.Versions.ControlPlane,
+				KubernetesVersion:   "1.13.4",
 				CloudProviderConfig: getAzureCloudProviderConfig(machine),
 			})
 			if err != nil {
@@ -100,7 +100,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 				PodSubnet:           machine.Scope.Cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 				ServiceSubnet:       machine.Scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0],
 				ServiceDomain:       machine.Scope.Cluster.Spec.ClusterNetwork.ServiceDomain,
-				KubernetesVersion:   machine.Machine.Spec.Versions.ControlPlane,
+				KubernetesVersion:   "1.13.4",
 				CloudProviderConfig: getAzureCloudProviderConfig(machine),
 			})
 
@@ -116,7 +116,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 			CACertHash:          caCertHash,
 			BootstrapToken:      bootstrapToken,
 			InternalLBAddress:   azure.DefaultInternalLBIPAddress,
-			KubernetesVersion:   machine.Machine.Spec.Versions.Kubelet,
+			KubernetesVersion:   "1.13.4",
 			CloudProviderConfig: getAzureCloudProviderConfig(machine),
 		})
 

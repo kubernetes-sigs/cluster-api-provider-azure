@@ -20,7 +20,8 @@ import (
 	"context"
 	"time"
 
-	clusterv1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
+	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	client "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
 	"github.com/pkg/errors"
@@ -59,7 +60,7 @@ func NewActuator(params ActuatorParams) *Actuator {
 }
 
 // Create creates a machine and is invoked by the machine controller.
-func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("Creating machine %v", machine.Name)
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
@@ -85,7 +86,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 // Delete deletes a machine and is invoked by the Machine Controller.
-func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("Deleting machine %v", machine.Name)
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
@@ -114,7 +115,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 // Update updates a machine and is invoked by the Machine Controller.
 // If the Update attempts to mutate any immutable state, the method will error
 // and no updates will be performed.
-func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("Updating machine %v", machine.Name)
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
@@ -141,7 +142,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 // Exists test for the existence of a machine and is invoked by the Machine Controller
-func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("Checking if machine %v exists", machine.Name)
 
 	scope, err := actuators.NewMachineScope(actuators.MachineScopeParams{
