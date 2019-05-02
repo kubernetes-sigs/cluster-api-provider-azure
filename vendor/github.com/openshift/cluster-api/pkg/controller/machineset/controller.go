@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	clusterv1alpha1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	"github.com/openshift/cluster-api/pkg/util"
 	"github.com/pkg/errors"
@@ -265,6 +266,10 @@ func (r *ReconcileMachineSet) reconcile(ctx context.Context, machineSet *machine
 		return reconcile.Result{}, errors.Wrap(err, "failed to update machine set status")
 	}
 
+	if syncErr != nil {
+		return reconcile.Result{}, errors.Wrapf(syncErr, "failed to sync machines")
+	}
+
 	var replicas int32
 	if updatedMS.Spec.Replicas != nil {
 		replicas = *updatedMS.Spec.Replicas
@@ -277,7 +282,7 @@ func (r *ReconcileMachineSet) reconcile(ctx context.Context, machineSet *machine
 	// exceeds MinReadySeconds could be incorrect.
 	// To avoid an available replica stuck in the ready state, we force a reconcile after MinReadySeconds,
 	// at which point it should confirm any available replica to be available.
-	if syncErr == nil && updatedMS.Spec.MinReadySeconds > 0 &&
+	if updatedMS.Spec.MinReadySeconds > 0 &&
 		updatedMS.Status.ReadyReplicas == replicas &&
 		updatedMS.Status.AvailableReplicas != replicas {
 
@@ -287,13 +292,13 @@ func (r *ReconcileMachineSet) reconcile(ctx context.Context, machineSet *machine
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileMachineSet) getCluster(ms *machinev1beta1.MachineSet) (*machinev1beta1.Cluster, error) {
+func (r *ReconcileMachineSet) getCluster(ms *machinev1beta1.MachineSet) (*clusterv1alpha1.Cluster, error) {
 	if ms.Spec.Template.Labels[machinev1beta1.MachineClusterLabelName] == "" {
-		klog.Infof("MachineSet %q in namespace %q doesn't specify %q label, assuming nil cluster", ms.Name, machinev1beta1.MachineClusterLabelName, ms.Namespace)
+		klog.Infof("MachineSet %q in namespace %q doesn't specify %q label, assuming nil cluster", ms.Name, ms.Namespace, machinev1beta1.MachineClusterLabelName)
 		return nil, nil
 	}
 
-	cluster := &machinev1beta1.Cluster{}
+	cluster := &clusterv1alpha1.Cluster{}
 	key := client.ObjectKey{
 		Namespace: ms.Namespace,
 		Name:      ms.Spec.Template.Labels[machinev1beta1.MachineClusterLabelName],
