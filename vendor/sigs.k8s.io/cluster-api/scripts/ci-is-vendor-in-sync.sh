@@ -18,8 +18,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
 
-cd "$REPO_ROOT"
+cd $REPO_ROOT
 find vendor -name 'BUILD.bazel' -delete
 dep check
