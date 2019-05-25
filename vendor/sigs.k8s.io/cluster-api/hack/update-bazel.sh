@@ -17,9 +17,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-KUBE_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-export KUBE_ROOT
+export KUBE_ROOT=$(dirname "${BASH_SOURCE}")/..
 
-cd "${KUBE_ROOT}"
-find "${KUBE_ROOT}/vendor" -name 'BUILD' -delete
+cd $KUBE_ROOT
+find $KUBE_ROOT/vendor -name 'BUILD' -delete
 bazel run //:gazelle
