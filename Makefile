@@ -29,7 +29,7 @@ PULL_POLICY ?= Always
 MANAGER_IMAGE_NAME ?= cluster-api-azure-controller
 
 # A release should define this with the next version after 0.1.0
-MANAGER_IMAGE_TAG ?= 0.1.1
+MANAGER_IMAGE_TAG ?= dev
 
 MANAGER_IMAGE ?= $(REGISTRY)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)
 
