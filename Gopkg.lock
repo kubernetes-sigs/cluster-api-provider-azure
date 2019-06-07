@@ -1170,7 +1170,7 @@
   revision = "21c4ce38f2a793ec01e925ddc31216500183b773"
 
 [[projects]]
-  digest = "1:07bf69e67f3e57593c9d9f70be97b11dfb61b53e51cf5c5380437821f6983142"
+  digest = "1:1aff817d3537e74f08cc2cb278c953fff9d103bbd259e3e257920ec5fab7a7da"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "cmd/clusterctl/clientcmd",
@@ -1200,11 +1200,11 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "0f911c1f65a59b65791a1afb6e66a9503801f59f"
-  version = "0.1.1"
+  revision = "95a2a8cf2c586592538f823bbb02c00cbcce8a9c"
+  version = "0.1.2"
 
 [[projects]]
-  digest = "1:743eebdcc3e564ed574b3fa0c10c223f5edeba6ee2e3c625c345c1604432a8f1"
+  digest = "1:cdf0d8bd1e51c567911d0e8caab0c30db1d5caa1853fcfddd9ffeadb8ff001f2"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
     "pkg/cache",
@@ -1217,6 +1217,7 @@
     "pkg/handler",
     "pkg/internal/controller",
     "pkg/internal/controller/metrics",
+    "pkg/internal/objectutil",
     "pkg/internal/recorder",
     "pkg/leaderelection",
     "pkg/manager",
@@ -1242,8 +1243,8 @@
     "pkg/webhook/types",
   ]
   pruneopts = "UT"
-  revision = "12d98582e72927b6cd0123e2b4e819f9341ce62c"
-  version = "v0.1.10"
+  revision = "477bf4f046c31c351b46fa00262bc814ac0bbca1"
+  version = "v0.1.11"
 
 [[projects]]
   digest = "1:992675a6714d511089a0b7ffb7063d36e5423089cda610642de7a0cfbbf673ab"
