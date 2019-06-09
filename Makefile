@@ -77,9 +77,10 @@ test-go: ## Run tests
 
 # TODO: Enable e2e tests
 #JANITOR_ENABLED ?= 0
-#.PHONY: e2e
-#e2e: generate verify ## Run e2e tests
-#	JANITOR_ENABLED=$(JANITOR_ENABLED) ./hack/e2e.sh  $(BAZEL_BUILD_ARGS)
+.PHONY: e2e
+e2e: generate verify ## Run e2e tests
+	bazel test --define='gotags=e2e' --test_output all //test/e2e/... $(BAZEL_BUILD_ARGS)
+#	JANITOR_ENABLED=$(JANITOR_ENABLED) ./hack/e2e.sh $(BAZEL_BUILD_ARGS)
 
 #.PHONY: e2e-janitor
 #e2e-janitor:
@@ -232,7 +233,7 @@ create-cluster-ha: binaries ## Create a development Kubernetes cluster on Azure 
 	bin/clusterctl create cluster -v 4 \
 	--provider azure \
 	--bootstrap-type kind \
-	-m ./cmd/clusterctl/examples/azure/out/machines-ha.yaml \
+	-m ./cmd/clusterctl/examples/azure/out/controlplane-machines-ha.yaml \
 	-c ./cmd/clusterctl/examples/azure/out/cluster.yaml \
 	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
 	-a ./cmd/clusterctl/examples/azure/out/addons.yaml
