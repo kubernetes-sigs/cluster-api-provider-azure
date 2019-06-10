@@ -30,7 +30,7 @@
 ### Base requirements
 
 1. Install [go][go]
-   - Get the latest patch version for go v1.12.5.
+   - Get the latest patch version for go v1.12.
 2. Install [jq][jq]
    - `brew install jq` on MacOS.
 3. Install [gettext][gettext] package
