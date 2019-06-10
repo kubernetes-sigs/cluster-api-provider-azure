@@ -30,15 +30,16 @@
 ### Base requirements
 
 1. Install [go][go]
-   - Get the latest patch version for go v1.11.
+   - Get the latest patch version for go v1.12.5.
 2. Install [jq][jq]
    - `brew install jq` on MacOS.
 3. Install [gettext][gettext] package
    - `brew install gettext && brew link --force gettext` on MacOS.
 4. Install [KIND][kind]
-   - `go get sigs.k8s.io/kind`.
+   - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0`.
 5. Install [bazel][bazel]
 6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
+7. Install make.
 
 [go]: https://golang.org/doc/install
 
