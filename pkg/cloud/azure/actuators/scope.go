@@ -21,8 +21,10 @@ import (
 	"os"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -33,6 +35,7 @@ type ScopeParams struct {
 	AzureClients
 	Cluster *clusterv1.Cluster
 	Client  client.ClusterV1alpha1Interface
+	Logger  logr.Logger
 }
 
 // NewScope creates a new Scope from the supplied parameters.
@@ -44,12 +47,12 @@ func NewScope(params ScopeParams) (*Scope, error) {
 
 	clusterConfig, err := v1alpha1.ClusterConfigFromProviderSpec(params.Cluster.Spec.ProviderSpec)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load cluster provider config")
+		return nil, errors.Errorf("failed to load cluster provider config: %v", err)
 	}
 
 	clusterStatus, err := v1alpha1.ClusterStatusFromProviderStatus(params.Cluster.Status.ProviderStatus)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load cluster provider status")
+		return nil, errors.Errorf("failed to load cluster provider status: %v", err)
 	}
 
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
@@ -69,6 +72,10 @@ func NewScope(params ScopeParams) (*Scope, error) {
 		clusterClient = params.Client.Clusters(params.Cluster.Namespace)
 	}
 
+	if params.Logger == nil {
+		params.Logger = klogr.New().WithName("default-logger")
+	}
+
 	return &Scope{
 		AzureClients:  params.AzureClients,
 		Cluster:       params.Cluster,
@@ -76,6 +83,7 @@ func NewScope(params ScopeParams) (*Scope, error) {
 		ClusterConfig: clusterConfig,
 		ClusterStatus: clusterStatus,
 		Context:       context.Background(),
+		Logger:        params.Logger.WithName(params.Cluster.APIVersion).WithName(params.Cluster.Namespace).WithName(params.Cluster.Name),
 	}, nil
 }
 
@@ -87,6 +95,7 @@ type Scope struct {
 	ClusterConfig *v1alpha1.AzureClusterProviderSpec
 	ClusterStatus *v1alpha1.AzureClusterProviderStatus
 	Context       context.Context
+	logr.Logger
 }
 
 // Network returns the cluster network object.
