@@ -230,7 +230,7 @@ The kubeconfig for the new cluster is created in the directory from where the ab
 
 Run the following command to point `kubectl` to the kubeconfig of the new cluster:
 ```bash
-export KUBECONFIG=$(PWD)/kubeconfig
+export KUBECONFIG=$(pwd)/kubeconfig
 ```
 
 Alternatively, move the kubeconfig file to a desired location and set the `KUBECONFIG` environment variable accordingly.
