@@ -117,7 +117,7 @@ We also use the issue tracker to track features. If you have an idea for a featu
 [slack]: https://kubernetes.slack.com/messages/CEX9HENG7
 [good_first_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
 [prow]:
-https://github.com/kubernetes/test-infra/blob/master/commands.md
+https://go.k8s.io/bot-commands
 [bug_report]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=feature_request.md
 [slack_info]: https://github.com/kubernetes/community/blob/master/communication.md#social-media
