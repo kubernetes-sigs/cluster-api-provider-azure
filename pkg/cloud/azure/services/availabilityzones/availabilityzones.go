@@ -36,12 +36,14 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return zones, errors.New("invalid availability zones specification")
 	}
-	res, err := s.Client.List(ctx)
+	// Prefer ListComplete() over List() to automatically traverse pages via iterator.
+	res, err := s.Client.ListComplete(ctx)
 	if err != nil {
 		return zones, err
 	}
 
-	for _, resSku := range res.Values() {
+	for res.NotDone() {
+		resSku := res.Value()
 		if strings.EqualFold(*resSku.Name, skusSpec.VMSize) {
 			for _, locationInfo := range *resSku.LocationInfo {
 				if strings.EqualFold(*locationInfo.Location, s.Scope.ClusterConfig.Location) {
