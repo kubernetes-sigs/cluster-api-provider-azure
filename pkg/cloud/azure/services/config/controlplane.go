@@ -122,7 +122,7 @@ export CONTAINERD_VERSION="{{.ContainerdVersion}}"
 export CONTAINERD_SHA256="{{.ContainerdSHA256}}"
 
 # Download containerd tar.
-wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+wget --tries 10 https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
 
 # Check hash.
 echo "${CONTAINERD_SHA256} cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz" | sha256sum --check -
@@ -214,7 +214,7 @@ export CONTAINERD_VERSION="{{.ContainerdVersion}}"
 export CONTAINERD_SHA256="{{.ContainerdSHA256}}"
 
 # Download containerd tar.
-wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+wget --tries 10 https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
 
 # Check hash.
 echo "${CONTAINERD_SHA256} cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz" | sha256sum --check -
