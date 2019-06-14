@@ -34,7 +34,6 @@ envfile
 
 # Example and binary output directory
 /out
-/azure
 
 # bazel
 /bazel-bin
