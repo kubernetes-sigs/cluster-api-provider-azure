@@ -18,8 +18,10 @@ package availabilityzones
 
 import (
 	"context"
+	"sort"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 )
@@ -36,16 +38,40 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 	if !ok {
 		return zones, errors.New("invalid availability zones specification")
 	}
-	res, err := s.Client.List(ctx)
+	// Prefer ListComplete() over List() to automatically traverse pages via iterator.
+	res, err := s.Client.ListComplete(ctx)
 	if err != nil {
 		return zones, err
 	}
 
-	for _, resSku := range res.Values() {
+	for res.NotDone() {
+		resSku := res.Value()
 		if strings.EqualFold(*resSku.Name, skusSpec.VMSize) {
+			// Use map for easy deletion and iteration
+			availableZones := make(map[string]bool)
 			for _, locationInfo := range *resSku.LocationInfo {
+				for _, zone := range *locationInfo.Zones {
+					availableZones[zone] = true
+				}
 				if strings.EqualFold(*locationInfo.Location, s.Scope.ClusterConfig.Location) {
-					zones = *locationInfo.Zones
+					for _, restriction := range *resSku.Restrictions {
+						// Can't deploy anything in this subscription in this location. Bail out.
+						if restriction.Type == compute.Location {
+							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", skusSpec.VMSize, s.Scope.ClusterConfig.Location)
+						}
+						// May be able to deploy one or more zones to this location.
+						for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
+							delete(availableZones, restrictedZone)
+						}
+					}
+					// Back to slice. Empty is fine, and will deploy the VM to some FD/UD (no point in configuring this until supported at higher levels)
+					result := make([]string, 0)
+					for availableZone := range availableZones {
+						result = append(result, availableZone)
+					}
+					// Lexical sort so comparisons work in tests
+					sort.Strings(result)
+					zones = result
 				}
 			}
 		}
