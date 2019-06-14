@@ -57,7 +57,7 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 					for _, restriction := range *resSku.Restrictions {
 						// Can't deploy anything in this subscription in this location. Bail out.
 						if restriction.Type == compute.Location {
-							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", skusSpec.VMSize, s.Scope.ClusteConfig.Location)
+							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", skusSpec.VMSize, s.Scope.ClusterConfig.Location)
 						}
 						// May be able to deploy one or more zones to this location.
 						for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
