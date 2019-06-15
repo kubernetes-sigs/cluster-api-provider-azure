@@ -247,4 +247,8 @@ export KUBECONFIG=$(kind get kubeconfig-path --name="clusterapi")
 kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f
 ```
 
+### Resources are created but control plane is taking a long time to become ready
+
+You can check the custom script logs by SSHing into the VM created and reading `/var/lib/waagent/custom-script/download/0/{stdout,stderr}`.
+
 [development]: /docs/development.md
