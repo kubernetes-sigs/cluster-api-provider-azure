@@ -75,6 +75,10 @@ func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interfac
 				}
 			}
 		}
+		err = res.NextWithContext(ctx)
+		if err != nil {
+			return zones, errors.Wrap(err, "could not iterate availability zones")
+		}
 	}
 
 	return zones, nil
