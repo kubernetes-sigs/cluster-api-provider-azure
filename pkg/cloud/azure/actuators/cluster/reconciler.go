@@ -237,6 +237,10 @@ func (r *Reconciler) Delete() error {
 		return errors.Wrap(err, "failed to delete load balancer")
 	}
 
+	if err := r.deleteBastion(); err != nil {
+		return errors.Wrap(err, "failed to delete bastion")
+	}
+
 	if err := r.deleteSubnets(); err != nil {
 		return errors.Wrap(err, "failed to delete subnets")
 	}
@@ -261,10 +265,6 @@ func (r *Reconciler) Delete() error {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete virtual network %s for cluster %s", azure.GenerateVnetName(r.scope.Cluster.Name), r.scope.Cluster.Name)
 		}
-	}
-
-	if err := r.deleteBastion(); err != nil {
-		return errors.Wrap(err, "failed to delete bastion")
 	}
 
 	if err := r.groupsSvc.Delete(r.scope.Context, nil); err != nil {
