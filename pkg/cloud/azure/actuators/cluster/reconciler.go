@@ -369,22 +369,22 @@ func (r *Reconciler) deleteNSG() error {
 	return nil
 }
 
-func (s *Reconciler) deleteBastion() error {
+func (r *Reconciler) deleteBastion() error {
 	vmSpec := &virtualmachines.Spec{
-		Name: azure.GenerateBastionVMName(s.scope.Cluster.Name),
+		Name: azure.GenerateBastionVMName(r.scope.Cluster.Name),
 	}
 
-	err := s.virtualMachineSvc.Delete(s.scope.Context, vmSpec)
+	err := r.virtualMachineSvc.Delete(r.scope.Context, vmSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete machine")
 	}
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:     azure.GenerateBastionNicName(s.scope.Cluster.Name),
-		VnetName: azure.GenerateVnetName(s.scope.Cluster.Name),
+		Name:     azure.GenerateBastionNicName(r.scope.Cluster.Name),
+		VnetName: azure.GenerateVnetName(r.scope.Cluster.Name),
 	}
 
-	err = s.networkInterfacesSvc.Delete(s.scope.Context, networkInterfaceSpec)
+	err = r.networkInterfacesSvc.Delete(r.scope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
