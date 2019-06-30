@@ -26,7 +26,7 @@ ENVSUBST=${ENVSUBST:-envsubst}
 RANDOM_STRING=$(date | md5sum | head -c8)
 
 # Azure settings.
-export LOCATION="${LOCATION:-eastus2}"
+export LOCATION="${LOCATION:-eastus}"
 export RESOURCE_GROUP="${RESOURCE_GROUP:-capi-${RANDOM_STRING}}"
 
 # Cluster settings.
@@ -34,7 +34,7 @@ export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
 export VNET_NAME="${VNET_NAME:-}"
 
 # Machine settings.
-export KUBERNETES_VERSION="${KUBERNETES_VERSION:-1.14.3}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION:-1.15.0}"
 export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
 export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2ms}"
 

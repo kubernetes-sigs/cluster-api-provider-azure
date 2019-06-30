@@ -119,7 +119,7 @@ go_repository(
 go_repository(
     name = "io_k8s_kubernetes",
     importpath = "k8s.io/kubernetes",
-    tag = "v1.14.3",
+    tag = "v1.15.0",
 )
 
 go_repository(
