@@ -72,7 +72,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		if !rOk {
 			return errors.New("error getting route table")
 		}
-		klog.V(2).Infof("sucessfully got route table %s", subnetSpec.RouteTableName)
+		klog.V(2).Infof("successfully got route table %s", subnetSpec.RouteTableName)
 		subnetProperties.RouteTable = &rt
 	}
 
