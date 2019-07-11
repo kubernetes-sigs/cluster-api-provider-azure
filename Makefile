@@ -36,7 +36,6 @@ MANAGER_IMAGE ?= $(REGISTRY)/$(MANAGER_IMAGE_NAME):$(MANAGER_IMAGE_TAG)
 CLUSTER_NAME ?= test1
 
 ## Image URL to use all building/pushing image targets
-DEPCACHEAGE ?= 24h # Enables caching for Dep
 BAZEL_ARGS ?=
 
 BAZEL_BUILD_ARGS := --define=REGISTRY=$(REGISTRY)\
@@ -47,7 +46,6 @@ $(BAZEL_ARGS)
 
 # Bazel variables
 BAZEL_VERSION := $(shell command -v bazel 2> /dev/null)
-DEP ?= bazel run dep
 
 # Determine the OS
 HOSTOS := $(shell go env GOHOSTOS)
@@ -151,19 +149,17 @@ cmd/clusterctl/examples/azure/provider-components-base.yaml:
 ## Generate
 ## --------------------------------------
 
-.PHONY: dep-ensure
-dep-ensure: check-install ## Ensure dependencies are up to date
-	@${DEP} ensure
-	$(MAKE) gazelle
+.PHONY: vendor
+vendor: ## Runs go mod to ensure proper vendoring.
+	./hack/update-vendor.sh
 
 .PHONY: gazelle
 gazelle: ## Run Bazel Gazelle
-	bazel run //:gazelle $(BAZEL_ARGS)
+	(which bazel && ./hack/update-bazel.sh) || true
 
 .PHONY: generate
 generate: ## Generate mocks, CRDs and runs `go generate` through Bazel
 	GOPATH=$(shell go env GOPATH) bazel run //:generate $(BAZEL_ARGS)
-	$(MAKE) dep-ensure
 	bazel build $(BAZEL_ARGS) //pkg/cloud/azure/mocks:mocks \
 		//pkg/cloud/azure/services/disks/mock_disks:mocks \
 		//pkg/cloud/azure/services/availabilityzones/mock_availabilityzones:mocks \
@@ -197,10 +193,10 @@ generate-crds:
 ## --------------------------------------
 
 .PHONY: lint
-lint: dep-ensure ## Lint codebase
+lint: ## Lint codebase
 	bazel run //:lint $(BAZEL_ARGS)
 
-lint-full: dep-ensure ## Run slower linters to detect possible issues
+lint-full: ## Run slower linters to detect possible issues
 	bazel run //:lint-full $(BAZEL_ARGS)
 
 ## --------------------------------------

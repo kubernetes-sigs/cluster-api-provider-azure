@@ -14,6 +14,7 @@ go_library(
         "loganalytics.go",
         "models.go",
         "operations.go",
+        "proximityplacementgroups.go",
         "resourceskus.go",
         "snapshots.go",
         "usage.go",

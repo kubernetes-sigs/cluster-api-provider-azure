@@ -16,11 +16,11 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "io_bazel_rules_go",
+    sha256 = "f04d2373bcaf8aa09bccb08a98a57e721306c8f6043a2a0ee610fd6853dcde3d",
     urls = [
         "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/0.18.6/rules_go-0.18.6.tar.gz",
         "https://github.com/bazelbuild/rules_go/releases/download/0.18.6/rules_go-0.18.6.tar.gz",
     ],
-    sha256 = "f04d2373bcaf8aa09bccb08a98a57e721306c8f6043a2a0ee610fd6853dcde3d",
 )
 
 http_archive(
@@ -56,10 +56,6 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 gazelle_dependencies()
 
 load(
-    "@io_bazel_rules_docker//toolchains/docker:toolchain.bzl",
-    docker_toolchain_configure = "toolchain_configure",
-)
-load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
@@ -67,22 +63,11 @@ load(
 container_repositories()
 
 load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
-)
-load(
     "@io_bazel_rules_docker//go:image.bzl",
     _go_image_repos = "repositories",
 )
 
 _go_image_repos()
-
-go_repository(
-    name = "com_github_golang_dep",
-    build_file_generation = "on",
-    importpath = "github.com/golang/dep",
-    tag = "v0.5.1",
-)
 
 go_repository(
     name = "com_github_golangci_golangci-lint",
