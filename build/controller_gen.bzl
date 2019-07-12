@@ -14,13 +14,12 @@
 
 # TODO: Move this to Kubebuilder repository
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_kubernetes_build//defs:go.bzl", "go_genrule")
 
 CONTROLLER_GEN = "//vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 
 def _qualified_genfile(label):
-  return "$$GO_GENRULE_EXECROOT/$(location %s)" % label
+    return "$$GO_GENRULE_EXECROOT/$(location %s)" % label
 
 # controller_gen generates CRD and RBAC manifests for Kubernetes
 # controllers based on controller runtime
@@ -30,8 +29,8 @@ def _qualified_genfile(label):
 # within the projects genfiles.
 def controller_gen(name, importpath, api, visibility, deps = []):
     outs = [
-      "rbac/rbac_role.yaml",
-      "rbac/rbac_role_binding.yaml",
+        "rbac/rbac_role.yaml",
+        "rbac/rbac_role_binding.yaml",
     ]
 
     real_deps = [
@@ -41,27 +40,27 @@ def controller_gen(name, importpath, api, visibility, deps = []):
     ] + deps
 
     for g in api:
-      group = g["group"]
-      version = g["version"].lower()
-      types = g["types"]
-      prefix = group.split(".")[0].lower()
-      real_deps += [ "//pkg/apis/%s:go_default_library" % prefix]
-      for t in types:
-        basename = t.lower()
-        out = "crds/%s_%s_%s.yaml" % (prefix, version, basename)
-        outs += [out]
+        group = g["group"]
+        version = g["version"].lower()
+        types = g["types"]
+        prefix = group.split(".")[0].lower()
+        real_deps += ["//pkg/apis/%s:go_default_library" % prefix]
+        for t in types:
+            basename = t.lower()
+            out = "crds/%s_%s_%s.yaml" % (prefix, version, basename)
+            outs += [out]
 
     cmd = """mkdir -p {source_package} && \\
              cd {source_package} && \\
              cp -f {project} {source_package} && \\
              GENDIR=$$(dirname {gendir})/../.. && \\
-             {controller_gen} all && \\
-             cp -fR config $$GENDIR
+            {controller_gen} all && \\
+            cp -fR config $$GENDIR
           """.format(
-      controller_gen = _qualified_genfile(CONTROLLER_GEN),
-      project = _qualified_genfile("//:PROJECT"),
-      gendir = _qualified_genfile(outs[0]),
-      source_package =  "$$GOPATH/src/%s" % importpath
+        controller_gen = _qualified_genfile(CONTROLLER_GEN),
+        project = _qualified_genfile("//:PROJECT"),
+        gendir = _qualified_genfile(outs[0]),
+        source_package = "$$GOPATH/src/%s" % importpath,
     )
 
     go_genrule(
@@ -72,5 +71,5 @@ def controller_gen(name, importpath, api, visibility, deps = []):
         go_deps = real_deps,
         visibility = visibility,
         tools = [CONTROLLER_GEN],
-        tags = [ "generated" ],
+        tags = ["generated"],
     )

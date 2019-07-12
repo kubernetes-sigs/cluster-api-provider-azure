@@ -51,7 +51,7 @@ Ensure you have updated the vendor directory with:
 
 ``` shell
 cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
-make dep-ensure
+make vendor
 ```
 
 ### Get familiar with basic concepts
@@ -74,6 +74,20 @@ Any public container registry can be leveraged for storing cluster-api-provider-
 ## Developing
 
 Change some code!
+
+### Modules and dependencies
+
+This repositories uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track and vendor dependencies.
+
+To pin a new dependency:
+- Run `go get <repository>@<version>`.
+- (Optional) Add a `replace` statement in `go.mod`.
+- Run `make vendor`.
+
+A few Makefile and scripts are offered to work with go modules:
+- `make vendor` runs `hack/update-vendor.sh`, which uses a combination of `go mod` commands to store this project's dependencies under `vendor/`.
+   - This step uses the `go.vendor` file to store a full copy of some imports/repositories. This is necessary given that go modules prunes non-Go files by default.
+- `hack/ensure-go.sh` file checks that the Go version and environment variables are properly set.
 
 ### Manual Testing
 
@@ -130,7 +144,7 @@ make kind-reset
 ```
 
 `make create-cluster` will launch a bootstrap cluster and then run the generated
-manifests creating a target cluster in Azure. 
+manifests creating a target cluster in Azure.
 
 If you're interested in creating the cluster with verbose logging, you can instead run:
 
