@@ -84,12 +84,6 @@ go_repository(
 )
 
 go_repository(
-    name = "bazel_gomock",
-    commit = "08cc809a2f68f6d810c2013987970a9a5c1181b4",
-    importpath = "github.com/jmhodges/bazel_gomock",
-)
-
-go_repository(
     name = "io_k8s_sigs_kind",
     commit = "161151a26faf0dbe962ac9f323cc0cdebac79ba8",
     importpath = "sigs.k8s.io/kind",
@@ -111,4 +105,14 @@ go_repository(
     name = "com_github_a8m_envsubst",
     importpath = "github.com/a8m/envsubst",
     tag = "v1.1.0",
+)
+
+# Use a fork until https://github.com/jmhodges/bazel_gomock/pull/19
+# has merged
+go_repository(
+    name = "bazel_gomock",
+    commit = "d5cc12f6eca65d5b6b99f88b5551c37a3a47a65b",
+    importpath = "github.com/jmhodges/bazel_gomock",
+    remote = "https://github.com/detiber/bazel_gomock",
+    vcs = "git",
 )
