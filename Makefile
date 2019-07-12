@@ -152,13 +152,14 @@ cmd/clusterctl/examples/azure/provider-components-base.yaml:
 .PHONY: vendor
 vendor: ## Runs go mod to ensure proper vendoring.
 	./hack/update-vendor.sh
+	$(MAKE) gazelle
 
 .PHONY: gazelle
 gazelle: ## Run Bazel Gazelle
 	(which bazel && ./hack/update-bazel.sh) || true
 
 .PHONY: generate
-generate: ## Generate mocks, CRDs and runs `go generate` through Bazel
+generate: vendor ## Generate mocks, CRDs and runs `go generate` through Bazel
 	GOPATH=$(shell go env GOPATH) bazel run //:generate $(BAZEL_ARGS)
 	bazel build $(BAZEL_ARGS) //pkg/cloud/azure/mocks:mocks \
 		//pkg/cloud/azure/services/disks/mock_disks:mocks \
