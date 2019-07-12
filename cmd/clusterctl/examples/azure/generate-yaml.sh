@@ -17,6 +17,12 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Verify the required Environment Variables are present.
+echo "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+echo "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+echo "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+echo "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
+
 # Directories.
 SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 DIR=${DIR:=${SOURCE_DIR}}
