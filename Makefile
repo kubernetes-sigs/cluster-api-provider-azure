@@ -37,21 +37,15 @@ CLUSTER_NAME ?= test1
 
 ## Image URL to use all building/pushing image targets
 BAZEL_ARGS ?=
-
 BAZEL_BUILD_ARGS := --define=REGISTRY=$(REGISTRY)\
  --define=PULL_POLICY=$(PULL_POLICY)\
  --define=MANAGER_IMAGE_NAME=$(MANAGER_IMAGE_NAME)\
  --define=MANAGER_IMAGE_TAG=$(MANAGER_IMAGE_TAG)\
+ --host_force_python=PY2\
 $(BAZEL_ARGS)
 
 # Bazel variables
 BAZEL_VERSION := $(shell command -v bazel 2> /dev/null)
-
-# Determine the OS
-HOSTOS := $(shell go env GOHOSTOS)
-HOSTARCH := $(shell go env GOARCH)
-BINARYPATHPATTERN :=${HOSTOS}_${HOSTARCH}_*
-
 ifndef BAZEL_VERSION
     $(error "Bazel is not available. \
 		Installation instructions can be found at \
@@ -59,7 +53,7 @@ ifndef BAZEL_VERSION
 endif
 
 .PHONY: all
-all: check-install test binaries
+all: verify-install test binaries
 
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -70,10 +64,13 @@ help:  ## Display this help
 ## --------------------------------------
 
 .PHONY: test
-test: generate verify ## Run tests
-	bazel test --nosandbox_debug //pkg/... //cmd/... $(BAZEL_ARGS)
+test: generate lint ## Run tests
+	$(MAKE) test-go
 
-# TODO: Enable integration tests
+.PHONY: test-go
+test-go: ## Run tests
+	go test -v -tags=integration ./pkg/... ./cmd/...
+
 #.PHONY: integration
 #integration: generate verify ## Run integraion tests
 #	bazel test --define='gotags=integration' --test_output all //test/integration/...
@@ -82,9 +79,8 @@ test: generate verify ## Run tests
 #JANITOR_ENABLED ?= 0
 #.PHONY: e2e
 #e2e: generate verify ## Run e2e tests
-#	JANITOR_ENABLED=$(JANITOR_ENABLED) ./hack/e2e.sh
+#	JANITOR_ENABLED=$(JANITOR_ENABLED) ./hack/e2e.sh  $(BAZEL_BUILD_ARGS)
 
-# TODO: Enable e2e tests
 #.PHONY: e2e-janitor
 #e2e-janitor:
 #	./hack/e2e-azure-janitor.sh
@@ -112,32 +108,11 @@ docker-push-new: ## Push production docker image
 	bazel run //cmd/manager:manager-push $(BAZEL_BUILD_ARGS)
 
 ## --------------------------------------
-## Cleanup / Verification
-## --------------------------------------
-
-.PHONY: clean
-clean: ## Remove all generated files
-	rm -rf cmd/clusterctl/examples/azure/out/
-	rm -f kubeconfig
-	rm -f minikube.kubeconfig
-	rm -f bazel-*
-	rm -rf out/
-	rm -f cmd/clusterctl/examples/azure/provider-components-base.yaml
-
-.PHONY: check-install
-check-install: ## Checks that you've installed this repository correctly
-	@./scripts/check-install.sh
-
-.PHONY: verify
-verify: ## Runs verification scripts to ensure correct execution
-	./hack/verify_boilerplate.py
-
-## --------------------------------------
 ## Manifests
 ## --------------------------------------
 
 .PHONY: manifests
-manifests: cmd/clusterctl/examples/azure/provider-components-base.yaml
+manifests: cmd/clusterctl/examples/azure/provider-components-base.yaml ## Build example set of manifests from the current source
 	./cmd/clusterctl/examples/azure/generate-yaml.sh
 
 .PHONY: cmd/clusterctl/examples/azure/provider-components-base.yaml
@@ -206,23 +181,20 @@ lint-full: ## Run slower linters to detect possible issues
 
 # TODO: Add clusterazureadm target once it exists
 .PHONY: binaries
-binaries: generate manager clusterctl ## Builds and installs all binaries
+binaries: manager clusterctl ## Builds and installs all binaries
 
 .PHONY: manager
 manager: ## Build manager binary.
-	bazel build //cmd/manager $(BAZEL_ARGS)
-	install bazel-bin/cmd/manager/${BINARYPATHPATTERN}/manager $(shell go env GOPATH)/bin/azure-manager
+	go build -o bin/manager ./cmd/manager
 
 .PHONY: clusterctl
 clusterctl: ## Build clusterctl binary.
-	bazel build --workspace_status_command=./hack/print-workspace-status.sh //cmd/clusterctl $(BAZEL_ARGS)
-	install bazel-bin/cmd/clusterctl/${BINARYPATHPATTERN}/clusterctl $(shell go env GOPATH)/bin/clusterctl
+	go build -o bin/clusterctl ./cmd/clusterctl
 
 # TODO: Uncomment clusterazureadm once it exists
 #.PHONY: clusterazureadm
 #clusterazureadm: ## Build clusterazureadm binary.
-#	bazel build --workspace_status_command=./hack/print-workspace-status.sh //cmd/clusterazureadm $(BAZEL_ARGS)
-#	install bazel-bin/cmd/clusterazureadm/${BINARYPATHPATTERN}/clusterazureadm $(shell go env GOPATH)/bin/clusterazureadm
+#	go build -o bin/clusterazureadm ./cmd/clusterazureadm
 
 ## --------------------------------------
 ## Release
@@ -245,13 +217,9 @@ release-artifacts: ## Build release artifacts
 ## Define local development targets here
 ## --------------------------------------
 
-.PHONY: binaries-dev
-binaries-dev: ## Builds and installs all development binaries using go get
-	go get -v ./...
-
 .PHONY: create-cluster
-create-cluster: binaries-dev ## Create a development Kubernetes cluster on Azure using examples
-	clusterctl create cluster -v 4 \
+create-cluster: binaries ## Create a development Kubernetes cluster on Azure using examples
+	bin/clusterctl create cluster -v 4 \
 	--provider azure \
 	--bootstrap-type kind \
 	-m ./cmd/clusterctl/examples/azure/out/machines.yaml \
@@ -259,16 +227,87 @@ create-cluster: binaries-dev ## Create a development Kubernetes cluster on Azure
 	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
 	-a ./cmd/clusterctl/examples/azure/out/addons.yaml
 
-.PHONY: delete-cluster
-delete-cluster: binaries-dev ## Deletes the development Kubernetes Cluster
-	clusterctl delete cluster -v 4 \
+.PHONY: create-cluster-ha
+create-cluster-ha: binaries ## Create a development Kubernetes cluster on Azure using HA examples
+	bin/clusterctl create cluster -v 4 \
+	--provider azure \
 	--bootstrap-type kind \
+	-m ./cmd/clusterctl/examples/azure/out/machines-ha.yaml \
+	-c ./cmd/clusterctl/examples/azure/out/cluster.yaml \
+	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
+	-a ./cmd/clusterctl/examples/azure/out/addons.yaml
+
+.PHONY: create-cluster-management
+create-cluster-management: ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
+	kind create cluster --name=clusterapi
+	# Apply provider-components.
+	kubectl \
+		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
+		create -f cmd/clusterctl/examples/azure/out/provider-components.yaml
+	# Create Cluster.
+	kubectl \
+		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
+		create -f cmd/clusterctl/examples/azure/out/cluster.yaml
+	# Create control plane machine.
+	kubectl \
+		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
+		create -f cmd/clusterctl/examples/azure/out/controlplane-machine.yaml
+	# Get KubeConfig using clusterctl.
+	bin/clusterctl alpha phases get-kubeconfig -v=3 \
+		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
+		--provider=azure \
+		--cluster-name=test1
+	# Apply addons on the target cluster, waiting for the control-plane to become available.
+	bin/clusterctl alpha phases apply-addons -v=3 \
+		--kubeconfig=./kubeconfig \
+		-a cmd/clusterctl/examples/azure/out/addons.yaml
+	# Create a worker node with MachineDeployment.
+	kubectl \
+		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
+		create -f cmd/clusterctl/examples/azure/out/machine-deployment.yaml
+
+.PHONY: delete-cluster
+delete-cluster: binaries ## Deletes the development Kubernetes Cluster "test1"
+	bin/clusterctl delete cluster -v 4 \
+	--bootstrap-type kind \
+	--cluster test1 \
 	--kubeconfig ./kubeconfig \
-	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml
+	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
 
 kind-reset: ## Destroys the "clusterapi" kind cluster.
 	kind delete cluster --name=clusterapi || true
 
-.PHONY: reset-bazel
-reset-bazel: ## Deep cleaning for bazel
-	bazel clean --expunge
+## --------------------------------------
+## Cleanup / Verification
+## --------------------------------------
+
+.PHONY: clean
+clean: ## Remove all generated files
+	$(MAKE) clean-bazel
+	$(MAKE) clean-bin
+	$(MAKE) clean-temporary
+
+.PHONY: clean-bazel
+clean-bazel: ## Remove all generated bazel symlinks
+	bazel clean
+
+.PHONY: clean-bin
+clean-bin: ## Remove all generated binaries
+	rm -rf bin
+
+.PHONY: clean-temporary
+clean-temporary: ## Remove all temporary files and folders
+	rm -f minikube.kubeconfig
+	rm -f kubeconfig
+	rm -rf out/
+	rm -rf cmd/clusterctl/examples/azure/out/
+	rm -f cmd/clusterctl/examples/azure/provider-components-base.yaml
+
+.PHONY: verify
+verify: ## Runs verification scripts to ensure correct execution
+	./hack/verify-boilerplate.sh
+	./hack/verify-bazel.sh
+
+.PHONY: verify-install
+verify-install: ## Checks that you've installed this repository correctly
+	./hack/verify-install.sh
