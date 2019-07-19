@@ -7,7 +7,7 @@ gomock(
     interfaces = [
         "GroupsClientAPI",
     ],
-    library = "//vendor/github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources/resourcesapi:go_default_library",
+    library = "//vendor/github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources/resourcesapi:go_default_library",
     package = "mock_groups",
     visibility = ["//visibility:public"],
 )
@@ -18,7 +18,7 @@ go_library(
     importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/groups/mock_groups",
     visibility = ["//visibility:public"],
     deps = [
-        "//vendor/github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
         "//vendor/github.com/golang/mock/gomock:go_default_library",
     ],
