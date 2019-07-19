@@ -35,7 +35,7 @@ require (
 	k8s.io/kube-proxy v0.0.0-20190711111910-7518d09d5a98 // indirect
 	k8s.io/kubelet v0.0.0-20190711112132-7f0a9f55a012 // indirect
 	k8s.io/kubernetes v1.13.3
-	sigs.k8s.io/cluster-api v0.1.7
+	sigs.k8s.io/cluster-api v0.1.8-0.20190718211619-3cde5b4dd0d0
 	sigs.k8s.io/controller-runtime v0.1.12
 	sigs.k8s.io/controller-tools v0.1.11
 	sigs.k8s.io/testing_frameworks v0.1.1
