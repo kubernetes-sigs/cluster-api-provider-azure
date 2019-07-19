@@ -28,7 +28,7 @@ go mod vendor
 for dep in $(cat ${KUBE_ROOT}/go.vendor); do
     src=$(go mod download -json ${dep} | jq -r .Dir)
     dst="${KUBE_ROOT}/vendor/${dep}"
-    cp -af "${src}/" "${dst}"
+    cp -af "${src}"/* "${dst}"
     chmod -R +w ${dst}
 done
 
