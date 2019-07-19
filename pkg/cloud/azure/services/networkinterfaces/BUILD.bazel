@@ -15,7 +15,7 @@ go_library(
         "//pkg/cloud/azure/services/internalloadbalancers:go_default_library",
         "//pkg/cloud/azure/services/publicloadbalancers:go_default_library",
         "//pkg/cloud/azure/services/subnets:go_default_library",
-        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-04-01/network:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest/to:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",

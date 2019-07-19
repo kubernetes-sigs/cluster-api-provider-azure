@@ -7,7 +7,7 @@ gomock(
     interfaces = [
         "SecurityGroupsClientAPI",
     ],
-    library = "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network/networkapi:go_default_library",
+    library = "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-04-01/network/networkapi:go_default_library",
     package = "mock_securitygroups",
     visibility = ["//visibility:public"],
 )
@@ -18,7 +18,7 @@ go_library(
     importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/securitygroups/mock_securitygroups",
     visibility = ["//visibility:public"],
     deps = [
-        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-04-01/network:go_default_library",
         "//vendor/github.com/golang/mock/gomock:go_default_library",
     ],
 )

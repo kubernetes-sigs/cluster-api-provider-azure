@@ -19,8 +19,8 @@ package tools
 
 import (
 	_ "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute/computeapi"       //nolint
-	_ "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network/networkapi"       //nolint
-	_ "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources/resourcesapi" //nolint
+	_ "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-04-01/network/networkapi"       //nolint
+	_ "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources/resourcesapi" //nolint
 	_ "k8s.io/code-generator/cmd/client-gen"                                                        //nolint
 	_ "k8s.io/code-generator/cmd/conversion-gen"                                                    //nolint
 	_ "k8s.io/code-generator/cmd/deepcopy-gen"                                                      //nolint
