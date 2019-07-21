@@ -435,9 +435,24 @@ func (r *Reconciler) getVirtualMachineZone(ctx context.Context) (string, error) 
 }
 
 func (r *Reconciler) createNetworkInterface(ctx context.Context, nicName string) error {
+	machineList, err := r.scope.MachineClient.List(actuators.ListOptionsForCluster(r.scope.Cluster.Name))
+	if err != nil {
+		return err
+	}
+
+	controlPlaneMachines := GetControlPlaneMachines(machineList)
+
+	var natRule int
+	if len(controlPlaneMachines) == 0 {
+		natRule = 0
+	} else {
+		natRule = len(controlPlaneMachines) - 1
+	}
+
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
 		VnetName: azure.GenerateVnetName(r.scope.Cluster.Name),
+		NatRule:  natRule,
 	}
 	switch set := r.scope.Machine.ObjectMeta.Labels["set"]; set {
 	case v1alpha1.Node:
@@ -450,7 +465,7 @@ func (r *Reconciler) createNetworkInterface(ctx context.Context, nicName string)
 		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", set, r.scope.Machine.Name)
 	}
 
-	err := r.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
+	err = r.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrap(err, "unable to create VM network interface")
 	}

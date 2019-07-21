@@ -98,6 +98,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 			network.BackendAddressPool{
 				ID: (*lb.BackendAddressPools)[0].ID,
 			})
+
 		nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 			{
 				ID: (*lb.InboundNatRules)[nicSpec.NatRule].ID,
