@@ -34,12 +34,11 @@ type AzureMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Location      string `json:"location"`
-	VMSize        string `json:"vmSize"`
-	Image         Image  `json:"image"`
-	OSDisk        OSDisk `json:"osDisk"`
-	SSHPublicKey  string `json:"sshPublicKey"`
-	SSHPrivateKey string `json:"sshPrivateKey"`
+	Location     string `json:"location"`
+	VMSize       string `json:"vmSize"`
+	Image        Image  `json:"image"`
+	OSDisk       OSDisk `json:"osDisk"`
+	SSHPublicKey string `json:"sshPublicKey"`
 }
 
 // KubeadmConfiguration holds the various configurations that kubeadm uses.

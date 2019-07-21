@@ -174,7 +174,6 @@ func makeMachine() *capi.Machine {
 	machineSpec, err := actuators.MachineConfigFromProviderSpec(nil, machine.Spec.ProviderSpec, &cloudtest.Log{})
 	Expect(err).To(BeNil())
 	machineSpec.Location = defaultLocation
-	machineSpec.SSHPrivateKey = ""
 	machineSpec.SSHPublicKey = ""
 	machine.Spec.ProviderSpec.Value, err = capz.EncodeMachineSpec(machineSpec)
 	Expect(err).To(BeNil())

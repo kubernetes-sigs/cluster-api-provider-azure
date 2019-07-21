@@ -31,4 +31,3 @@ items:
               storageAccountType: "Premium_LRS"
             diskSizeGB: 30
           sshPublicKey: ${SSH_PUBLIC_KEY}
-          sshPrivateKey: ${SSH_PRIVATE_KEY}

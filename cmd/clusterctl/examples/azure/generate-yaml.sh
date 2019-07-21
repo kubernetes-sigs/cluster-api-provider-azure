@@ -144,7 +144,6 @@ ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 
 export SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
-export SSH_PRIVATE_KEY=$(cat "${SSH_KEY_FILE}" | base64 | tr -d '\r\n')
 
 if [[ -z "${VNET_NAME}" ]]; then
   $ENVSUBST < "$CLUSTER_TEMPLATE_FILE" > "${CLUSTER_GENERATED_FILE}"

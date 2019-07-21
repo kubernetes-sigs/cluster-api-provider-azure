@@ -63,8 +63,6 @@ spec:
           - managedDisk
           - diskSizeGB
           type: object
-        sshPrivateKey:
-          type: string
         sshPublicKey:
           type: string
         vmSize:
@@ -75,7 +73,6 @@ spec:
       - image
       - osDisk
       - sshPublicKey
-      - sshPrivateKey
   version: v1alpha1
 status:
   acceptedNames:
