@@ -35,6 +35,7 @@ package(default_visibility = ["//visibility:public"])
 # gazelle:exclude vendor/golang.org/x/tools/go/ssa/interp/testdata
 # gazelle:exclude vendor/k8s.io/gengo/testdata
 # gazelle:resolve go github.com/grpc-ecosystem/grpc-gateway/internal //vendor/github.com/grpc-ecosystem/grpc-gateway/internal:go_default_library
+
 gazelle(
     name = "gazelle",
     command = "fix",
