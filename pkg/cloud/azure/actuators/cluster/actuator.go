@@ -65,11 +65,12 @@ func NewActuator(params ActuatorParams) *Actuator {
 
 // Reconcile reconciles a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
-	klog.Infof("Reconciling cluster %v", cluster.Name)
+	log := a.log.WithValues("cluster-name", cluster.Name, "cluster-namespace", cluster.Namespace)
+	log.Info("Reconciling Cluster")
 
-	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client, Logger: a.log})
 	if err != nil {
-		return errors.Wrap(err, "failed to create scope")
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
 
 	defer scope.Close()
@@ -84,11 +85,15 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 
 // Delete deletes a cluster and is invoked by the Cluster Controller.
 func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
-	klog.Infof("Reconciling cluster %v", cluster.Name)
+	a.log.Info("Deleting cluster", "cluster-name", cluster.Name, "cluster-namespace", cluster.Namespace)
 
-	scope, err := actuators.NewScope(actuators.ScopeParams{Cluster: cluster, Client: a.client})
+	scope, err := actuators.NewScope(actuators.ScopeParams{
+		Cluster: cluster,
+		Client:  a.client,
+		Logger:  a.log,
+	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create scope")
+		return errors.Errorf("failed to create scope: %+v", err)
 	}
 
 	defer scope.Close()
