@@ -3,7 +3,6 @@ module sigs.k8s.io/cluster-api-provider-azure
 go 1.12
 
 require (
-	cloud.google.com/go v0.36.0 // indirect
 	github.com/Azure/azure-sdk-for-go v31.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.5.0
 	github.com/Azure/go-autorest/autorest/azure/auth v0.1.0
@@ -15,7 +14,6 @@ require (
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/mock v1.2.0
-	github.com/gophercloud/gophercloud v0.0.0-20190303224450-f83aee3da90f // indirect
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/onsi/ginkgo v1.8.0

@@ -6,7 +6,6 @@ go_library(
         "providerid.go",
         "util.go",
     ],
-    importmap = "sigs.k8s.io/cluster-api-provider-azure/vendor/sigs.k8s.io/cluster-api/pkg/controller/noderefutil",
     importpath = "sigs.k8s.io/cluster-api/pkg/controller/noderefutil",
     visibility = ["//visibility:public"],
     deps = [
