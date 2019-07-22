@@ -359,6 +359,12 @@ func (r *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 
 	r.scope.MachineStatus.VMID = vm.ID
 	r.scope.MachineStatus.VMState = &vmState
+
+	if r.scope.Machine.Spec.ProviderID == nil || *r.scope.Machine.Spec.ProviderID == "" {
+		providerID := fmt.Sprintf("azure:////%s", *r.scope.MachineStatus.VMID)
+		r.scope.Machine.Spec.ProviderID = &providerID
+	}
+
 	return true, nil
 }
 
