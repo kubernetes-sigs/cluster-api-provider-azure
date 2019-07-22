@@ -157,7 +157,7 @@ func MachineConfigFromProviderSpec(clusterClient client.MachineClassesGetter, pr
 		ref := providerConfig.ValueFrom.MachineClass
 		log.V(4).Info("Decoding ProviderConfig from MachineClass")
 		log.V(6).Info("Machine class reference", "ref", fmt.Sprintf("%+v", ref))
-		if ref.Provider != "" && ref.Provider != "aws" {
+		if ref.Provider != "" && ref.Provider != "azure" {
 			return nil, errors.Errorf("Unsupported provider: %q", ref.Provider)
 		}
 

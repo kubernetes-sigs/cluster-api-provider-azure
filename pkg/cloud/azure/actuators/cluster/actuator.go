@@ -17,8 +17,11 @@ limitations under the License.
 package cluster
 
 import (
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
+	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -26,26 +29,37 @@ import (
 	controllerError "sigs.k8s.io/cluster-api/pkg/controller/error"
 )
 
+// TODO: Backfill logic
+//const waitForControlPlaneMachineDuration = 15 * time.Second
+
 //+kubebuilder:rbac:groups=azureprovider.k8s.io,resources=azureclusterproviderconfigs;azureclusterproviderstatuses,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cluster.k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=,resources=secrets,verbs=create;get;watch;list
+//+kubebuilder:rbac:groups=,resources=configmaps,verbs=create;get;delete
 
 // Actuator is responsible for performing cluster reconciliation
 type Actuator struct {
 	*deployer.Deployer
 
-	client client.ClusterV1alpha1Interface
+	coreClient corev1.CoreV1Interface
+	client     client.ClusterV1alpha1Interface
+	log        logr.Logger
 }
 
 // ActuatorParams holds parameter information for Actuator
 type ActuatorParams struct {
-	Client client.ClusterV1alpha1Interface
+	CoreClient     corev1.CoreV1Interface
+	Client         client.ClusterV1alpha1Interface
+	LoggingContext string
 }
 
 // NewActuator creates a new Actuator
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		Deployer: deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter}),
-		client:   params.Client,
+		client:     params.Client,
+		coreClient: params.CoreClient,
+		log:        klogr.New().WithName(params.LoggingContext),
+		Deployer:   deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter}),
 	}
 }
 
