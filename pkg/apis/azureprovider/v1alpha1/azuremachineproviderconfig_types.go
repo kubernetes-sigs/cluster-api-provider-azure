@@ -39,6 +39,11 @@ type AzureMachineProviderSpec struct {
 	Image        Image  `json:"image"`
 	OSDisk       OSDisk `json:"osDisk"`
 	SSHPublicKey string `json:"sshPublicKey"`
+
+	// KubeadmConfiguration holds the kubeadm configuration options
+	// TODO: Backfill logic
+	// +optional
+	KubeadmConfiguration KubeadmConfiguration `json:"kubeadmConfiguration,omitempty"`
 }
 
 // KubeadmConfiguration holds the various configurations that kubeadm uses.
