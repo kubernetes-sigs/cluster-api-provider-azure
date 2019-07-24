@@ -20,6 +20,7 @@
 - [Using the cluster](#using-the-cluster)
 - [Troubleshooting](#troubleshooting)
   - [Bootstrap running, but resources aren't being created](#bootstrap-running-but-resources-arent-being-created)
+  - [Resources are created but control plane is taking a long time to become ready](#resources-are-created-but-control-plane-is-taking-a-long-time-to-become-ready)
 
 <!-- /TOC -->
 
@@ -87,7 +88,7 @@ A set of sane defaults are utilized when generating manifests via `./azure/gener
 Here is a list of commonly overriden configuration parameters (the full list is available in `./azure/generate-yaml.sh`):
 ```bash
 # Azure settings.
-export LOCATION="eastus2"
+export LOCATION="eastus"
 export RESOURCE_GROUP="kubecuddles"
 
 # Cluster settings.
@@ -106,9 +107,11 @@ Now that the deployment has been customized, the next step is to generate the re
 ./azure/generate-yaml.sh
 ```
 
+**Please review `manifests.md` to understand which manifests to use for various cluster scenarios.**
+
 Manually editing the generated manifests should not be required, but this is the stage where final customizations can be done.
 
-Verify that `./azure/out/cluster.yaml` and `./azure/out/machine.yaml` reflect the expected settings before continuing.
+Verify that the manifests reflect the expected settings before continuing.
 
 ### Creating a cluster
 
@@ -118,11 +121,17 @@ You can now start the Cluster API controllers and deploy a new cluster in Azure:
 clusterctl create cluster -v 4 \
   --bootstrap-type kind \
   --provider azure \
-  -m ./azure/out/machines.yaml \
-  -c ./azure/out/cluster.yaml \
+  -m ./azure/out/<machine-manifest> \
+  -c ./azure/out/<cluster-manifest> \
   -p ./azure/out/provider-components.yaml \
   -a ./azure/out/addons.yaml
+```
 
+Here is some example output from `clusterctl`:
+
+<details>
+
+```
 I0324 23:19:37.110948   27739 decoder.go:224] decoding stream as YAML
 I0324 23:19:37.111615   27739 decoder.go:224] decoding stream as YAML
 I0324 23:19:37.115835   27739 createbootstrapcluster.go:27] Creating bootstrap cluster
@@ -219,6 +228,7 @@ I0324 23:53:58.997892   27739 createbootstrapcluster.go:36] Cleaning up bootstra
 I0324 23:53:58.997937   27739 kind.go:69] Running: kind [delete cluster --name=clusterapi]
 I0324 23:54:00.260254   27739 kind.go:72] Ran: kind [delete cluster --name=clusterapi] Output: Deleting cluster "clusterapi" ...
 ```
+</details>
 
 The created KIND cluster is ephemeral and is cleaned up automatically when done. During the cluster creation, the KIND configuration is written to a local directory and can be retrieved using `kind get kubeconfig-path --name="clusterapi"`.
 

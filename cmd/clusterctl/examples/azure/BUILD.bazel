@@ -62,6 +62,7 @@ pkg_tar(
         "machine-deployment.yaml.template",
         "provider-components-base.yaml",
         "//docs:getting-started.md",
+        "//docs:manifests.md",
     ],
     modes = {
         "addons.yaml": "0644",
@@ -75,6 +76,7 @@ pkg_tar(
         "machine-deployment.yaml.template": "0644",
         "provider-components-base.yaml": "0644",
         "//docs:getting-started.md": "0644",
+        "//docs:manifests.md": "0644",
         ".gitignore": "0644",
     },
     package_dir = "azure",
