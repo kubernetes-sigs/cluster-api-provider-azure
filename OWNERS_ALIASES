@@ -2,9 +2,11 @@
 
 aliases:
   cluster-api-azure-maintainers:
+    - awesomenix
     - justaugustus
     - soggiest
   cluster-api-azure-reviewers:
-    - awesomenix
+    - CecileRobertMichon
     - juan-lee
     - serbrech
+    - vincepri
