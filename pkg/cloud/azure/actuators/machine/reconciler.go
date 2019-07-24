@@ -491,9 +491,17 @@ func (r *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 
 	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil && vmInterface == nil {
-		vmZone, zoneErr := r.getVirtualMachineZone(ctx)
-		if zoneErr != nil {
-			return errors.Wrap(zoneErr, "failed to get availability zone")
+		var vmZone string
+		var zoneErr error
+
+		vmZone = r.scope.MachineConfig.AvailabilityZone
+
+		if r.scope.MachineConfig.AvailabilityZone == "" {
+			vmZone, zoneErr = r.getVirtualMachineZone(ctx)
+			if zoneErr != nil {
+				return errors.Wrap(zoneErr, "failed to get availability zone")
+			}
+			klog.Info("No availability zone set, selecting random availability zone:", vmZone)
 		}
 
 		vmSpec = &virtualmachines.Spec{

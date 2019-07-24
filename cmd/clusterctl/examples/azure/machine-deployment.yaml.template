@@ -25,6 +25,7 @@ spec:
           roles:
           - Node
           location: ${LOCATION}
+          availabilityZone: ${AVAILABILITY_ZONE}
           vmSize: ${NODE_MACHINE_TYPE}
           image:
             publisher: "Canonical"
