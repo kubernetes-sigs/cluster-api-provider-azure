@@ -13,6 +13,7 @@
   - [Dev images](#dev-images)
     - [Container registry](#container-registry)
 - [Developing](#developing)
+  - [Modules and dependencies](#modules-and-dependencies)
   - [Manual Testing](#manual-testing)
     - [Setting up the environment](#setting-up-the-environment)
     - [Building and pushing dev images](#building-and-pushing-dev-images)
@@ -143,17 +144,20 @@ Ensure kind has been reset:
 make kind-reset
 ```
 
-`make create-cluster` will launch a bootstrap cluster and then run the generated
-manifests creating a target cluster in Azure.
+**Before continuing, please review the [documentation on manifests][manifests] to understand which manifests to use for various cluster scenarios.**
 
-If you're interested in creating the cluster with verbose logging, you can instead run:
+Launch a bootstrap cluster and then run the generated manifests creating a target cluster in Azure:
+- Use `make create-cluster` to create a single control plane, single node cluster
+- Use `make create-cluster-ha` to create a multi-node control plane, with no nodes
+
+If you're interested in creating the cluster with verbose logging or further customize the manifests, you can instead run:
 
 ```bash
 time clusterctl create cluster -v 10 \
 --provider azure \
 --bootstrap-type kind \
--m ./cmd/clusterctl/examples/azure/out/machines.yaml \
--c ./cmd/clusterctl/examples/azure/out/cluster.yaml \
+-m ./cmd/clusterctl/examples/azure/out/<machine-manifest> \
+-c ./cmd/clusterctl/examples/azure/out/<cluster-manifest> \
 -p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
 -a ./cmd/clusterctl/examples/azure/out/addons.yaml
 ```
@@ -204,4 +208,5 @@ If you then want to use these mocks with `go test ./...`, run
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [bazel]: https://docs.bazel.build/versions/master/install.html
+[manifests]: /docs/manifests.md
 [pyenv]: https://github.com/pyenv/pyenv

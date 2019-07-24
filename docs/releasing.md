@@ -2,13 +2,32 @@
 
 ## Pre-flight
 
+- Identify a known good commit on the release branch
+- Tag the repository with a release candidate tag and push the tag
+   - An [OWNER](/OWNERS) runs `git tag -s <version>-rc.n`, inserts the changelog and pushes the tag with `git push <version>-rc.n`
 - Review and discuss any potential modifications to the [support matrix/policy][support-policy]
-- Create a release commit e.g., `Release commit: v0.1.0`, by:
-  - Searching and replacing the previous image versions in the repo, specifically in:
-    - Makefile
-    - Release tool (`cmd/release/main.go`)
+- Review the development, getting started documentation, generation scripts, and update as necessary
+- Run `make release-artifacts`, with the appropriate environment variables:
+  ```
+  REGISTRY="quay.io/k8s-staging" \
+  PULL_POLICY="IfNotPresent" \
+  MANAGER_IMAGE_TAG="<version>-rc.n" \
+  make release-artifacts
+  ```
+- Build and push a container image to the staging repository using the release candidate tag (`<version>-rc.n`):
+  ```
+  REGISTRY="quay.io/k8s-staging" \
+  MANAGER_IMAGE_TAG="<version>-rc.n" \
+  time make docker-build
 
-## Semi-automatic
+  REGISTRY="quay.io/k8s-staging" \
+  MANAGER_IMAGE_TAG="<version>-rc.n" \
+  time make docker-push
+  ```
+- Run through the "Getting Started" instructions using the artifacts generated in these steps to validate that they result in a working cluster
+- Commit and PR any required changes before continuing the release process ([example](https://github.com/kubernetes-sigs/cluster-api-provider-azure/pull/249))
+
+## (Unused) Semi-automatic
 
 1. Make sure your repo is clean by git's standards
 2. Run `go run cmd/release/main.go -remote <upstream-remote-name> -version v0.x.y`, replacing the [version][versioning], as appropriate
@@ -20,16 +39,31 @@
 ## Manual
 
 1. Tag the repository and push the tag
-   - An [OWNER](/OWNERS) runs `git tag -s $VERSION` and inserts the changelog and pushes the tag with `git push $VERSION`
+   - An [OWNER](/OWNERS) runs `git tag -s <version>` and inserts the changelog and pushes the tag with `git push <version>`
 2. Create a draft release in GitHub and associate it with the tag that was just created
 3. Checkout the tag and make sure git is in a clean state
-4. Run `make release-artifacts`
+4. Run `make release-artifacts`, with the appropriate environment variables:
+   ```
+   REGISTRY="quay.io/k8s" \
+   PULL_POLICY="IfNotPresent" \
+   MANAGER_IMAGE_TAG="<version>" \
+   make release-artifacts
+   ```
 5. Attach the tarball to the drafted release
 6. Attach `clusterctl` to the drafted release (for darwin and linux architectures)
-7. Write the [release notes](#release-notes) and make sure the binaries uploaded return the correct version
-8. Build and push the container image
-9. Publish release
-10. [Announce][release-announcement] the release
+7.  Write the [release notes](#release-notes) and make sure the binaries uploaded return the correct version
+8.  Build and push a container image to the staging repository using the release candidate tag (`<version>`):
+    ```
+    REGISTRY="quay.io/k8s" \
+    MANAGER_IMAGE_TAG="<version>" \
+    time make docker-build
+
+    REGISTRY="quay.io/k8s" \
+    MANAGER_IMAGE_TAG="<version>" \
+    time make docker-push
+    ```
+11. Publish release
+12. [Announce][release-announcement] the release
 
 ## Versioning
 
@@ -85,12 +119,12 @@ The markdown is shared in the Kubernetes slack in the channel #cluster-api-azure
 ### Minor/Patch Releases
 
 1. Announce the release in Kubernetes Slack on the #cluster-api-azure channel.
-2. An announcement email is sent to `kubernetes-sig-azure@googlegroups.com` and `kubernetes-sig-cluster-lifecycle@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure $VERSION has been released`
+2. An announcement email is sent to `kubernetes-sig-azure@googlegroups.com` and `kubernetes-sig-cluster-lifecycle@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure <version> has been released`
 
 ### Major Releases
 
 1. Follow the communications process for [pre-releases](#pre-releases)
-2. An announcement email is sent to `kubernetes-dev@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure $VERSION has been released`
+2. An announcement email is sent to `kubernetes-dev@googlegroups.com` with the subject `[ANNOUNCE] cluster-api-provider-azure <version> has been released`
 
 
 [release-announcement]: #communication
