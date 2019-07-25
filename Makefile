@@ -268,12 +268,11 @@ create-cluster-management: ## Create a development Kubernetes cluster on Azure i
 		create -f cmd/clusterctl/examples/azure/out/machine-deployment.yaml
 
 .PHONY: delete-cluster
-delete-cluster: binaries ## Deletes the development Kubernetes Cluster "test1"
+delete-cluster: binaries ## Deletes the development Kubernetes Cluster
 	bin/clusterctl delete cluster -v 4 \
 	--bootstrap-type kind \
-	--cluster test1 \
 	--kubeconfig ./kubeconfig \
-	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
+	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml
 
 kind-reset: ## Destroys the "clusterapi" kind cluster.
 	kind delete cluster --name=clusterapi || true
