@@ -970,42 +970,6 @@ func TestReconcileVMSuceededState(t *testing.T) {
 	}
 }
 
-func TestNodeJoinFirstControlPlane(t *testing.T) {
-	fakeReconciler := newFakeReconciler(t)
-
-	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
-		t.Errorf("isNodeJoin failed to create machine: %+v", err)
-	} else if isNodeJoin {
-		t.Errorf("Expected isNodeJoin to be false since its first VM")
-	}
-}
-
-func TestNodeJoinNode(t *testing.T) {
-	fakeScope := newFakeScope(t, v1alpha1.Node)
-	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
-
-	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
-		t.Errorf("isNodeJoin failed to create machine: %+v", err)
-	} else if !isNodeJoin {
-		t.Errorf("Expected isNodeJoin to be true since its a node")
-	}
-}
-
-func TestNodeJoinSecondControlPlane(t *testing.T) {
-	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
-	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
-
-	if _, err := fakeScope.MachineClient.Create(fakeScope.Machine); err != nil {
-		t.Errorf("failed to create machine: %+v", err)
-	}
-
-	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
-		t.Errorf("isNodeJoin failed to create machine: %+v", err)
-	} else if !isNodeJoin {
-		t.Errorf("Expected isNodeJoin to be true since its second control plane vm")
-	}
-}
-
 // FakeVMCheckZonesService generic fake vm zone service
 type FakeVMCheckZonesService struct {
 	checkZones []string

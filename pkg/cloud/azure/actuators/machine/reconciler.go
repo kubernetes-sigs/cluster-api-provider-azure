@@ -26,7 +26,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
@@ -38,7 +37,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
-	clusterutil "sigs.k8s.io/cluster-api/pkg/util"
 )
 
 const (
@@ -214,51 +212,6 @@ func isMachineOutdated(machineSpec *v1alpha1.AzureMachineProviderSpec, vm *v1alp
 
 	// No immutable state changes found.
 	return false
-}
-
-func (r *Reconciler) isNodeJoin() (bool, error) {
-	clusterMachines, err := r.scope.MachineClient.List(metav1.ListOptions{})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to retrieve machines in cluster")
-	}
-
-	switch set := r.scope.Machine.ObjectMeta.Labels["set"]; set {
-	case v1alpha1.Node:
-		return true, nil
-	case v1alpha1.ControlPlane:
-		for _, cm := range clusterMachines.Items {
-			if !clusterutil.IsControlPlaneMachine(&cm) {
-				continue
-			}
-			vmInterface, err := r.virtualMachinesSvc.Get(context.Background(), &virtualmachines.Spec{Name: cm.Name})
-			if err != nil && vmInterface == nil {
-				klog.V(2).Infof("Machine %s should join the controlplane: false", r.scope.Name())
-				return false, nil
-			}
-
-			if err != nil {
-				return false, errors.Wrapf(err, "failed to verify existence of machine %s", cm.Name)
-			}
-
-			vmExtSpec := &virtualmachineextensions.Spec{
-				Name:   "startupScript",
-				VMName: cm.Name,
-			}
-
-			vmExt, err := r.virtualMachinesExtSvc.Get(context.Background(), vmExtSpec)
-			if err != nil && vmExt == nil {
-				klog.V(2).Infof("Machine %s should join the controlplane: false", cm.Name)
-				return false, nil
-			}
-
-			klog.V(2).Infof("Machine %s should join the controlplane: true", r.scope.Name())
-			return true, nil
-		}
-
-		return false, nil
-	default:
-		return false, errors.Errorf("Unknown value %s for label `set` on machine %s, skipping machine creation", set, r.scope.Name())
-	}
 }
 
 func (r *Reconciler) isVMExists(ctx context.Context) (bool, error) {
