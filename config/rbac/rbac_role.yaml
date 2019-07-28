@@ -100,9 +100,3 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - list

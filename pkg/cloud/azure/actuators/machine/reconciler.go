@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/availabilityzones"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/config"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/networkinterfaces"
@@ -73,7 +72,7 @@ func NewReconciler(scope *actuators.MachineScope) *Reconciler {
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (r *Reconciler) Create(ctx context.Context) error {
+func (r *Reconciler) Create(ctx context.Context, bootstrapToken string) error {
 	// TODO: update once machine controllers have a way to indicate a machine has been provisoned. https://github.com/kubernetes-sigs/cluster-api/issues/253
 	// Seeing a node cannot be purely relied upon because the provisioned control plane will not be registering with
 	// the stack that provisions it.
@@ -81,20 +80,15 @@ func (r *Reconciler) Create(ctx context.Context) error {
 		r.scope.Machine.Annotations = map[string]string{}
 	}
 
-	bootstrapToken, err := r.checkControlPlaneMachines()
-	if err != nil {
-		return errors.Wrap(err, "failed to check control plane machines in cluster")
-	}
-
 	nicName := fmt.Sprintf("%s-nic", r.scope.Machine.Name)
-	err = r.createNetworkInterface(ctx, nicName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create nic %s for machine %s", nicName, r.scope.Machine.Name)
+	nicErr := r.createNetworkInterface(ctx, nicName)
+	if nicErr != nil {
+		return errors.Wrapf(nicErr, "failed to create nic %s for machine %s", nicName, r.scope.Machine.Name)
 	}
 
-	err = r.createVirtualMachine(ctx, nicName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create vm %s ", r.scope.Machine.Name)
+	vmErr := r.createVirtualMachine(ctx, nicName)
+	if vmErr != nil {
+		return errors.Wrapf(vmErr, "failed to create vm %s ", r.scope.Machine.Name)
 	}
 
 	scriptData, err := config.GetVMStartupScript(r.scope, bootstrapToken)
@@ -111,6 +105,10 @@ func (r *Reconciler) Create(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create vm extension")
 	}
+
+	// TODO: Store VM ID and VM State
+	//r.scope.MachineStatus.VMID = &vm.ID
+	//r.scope.MachineStatus.VMState = &vm.State
 
 	r.scope.Machine.Annotations["cluster-api-provider-azure"] = "true"
 
@@ -284,25 +282,6 @@ func (r *Reconciler) isNodeJoin() (bool, error) {
 	default:
 		return false, errors.Errorf("Unknown value %s for label `set` on machine %s, skipping machine creation", set, r.scope.Name())
 	}
-}
-
-func (r *Reconciler) checkControlPlaneMachines() (string, error) {
-	isJoin, err := r.isNodeJoin()
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to determine whether machine should join cluster")
-	}
-
-	var bootstrapToken string
-	if isJoin {
-		if r.scope.ClusterConfig == nil {
-			return "", errors.New("failed to retrieve corev1 client for empty kubeconfig")
-		}
-		bootstrapToken, err = certificates.CreateNewBootstrapToken(r.scope.ClusterConfig.AdminKubeconfig, DefaultBootstrapTokenTTL)
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to create new bootstrap token")
-		}
-	}
-	return bootstrapToken, nil
 }
 
 func coreV1Client(kubeconfig string) (corev1.CoreV1Interface, error) {
