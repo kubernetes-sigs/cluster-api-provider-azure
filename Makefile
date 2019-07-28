@@ -44,6 +44,11 @@ BAZEL_BUILD_ARGS := --define=REGISTRY=$(REGISTRY)\
  --host_force_python=PY2\
 $(BAZEL_ARGS)
 
+# Determine the OS
+HOSTOS := $(shell go env GOHOSTOS)
+HOSTARCH := $(shell go env GOARCH)
+BINARYPATHPATTERN :=${HOSTOS}_${HOSTARCH}_*
+
 # Bazel variables
 BAZEL_VERSION := $(shell command -v bazel 2> /dev/null)
 ifndef BAZEL_VERSION
@@ -182,20 +187,23 @@ lint-full: ## Run slower linters to detect possible issues
 
 # TODO: Add clusterazureadm target once it exists
 .PHONY: binaries
-binaries: manager clusterctl ## Builds and installs all binaries
+binaries: generate manager clusterctl ## Builds and installs all binaries
 
 .PHONY: manager
 manager: ## Build manager binary.
-	go build -o bin/manager ./cmd/manager
+	bazel build //cmd/manager $(BAZEL_ARGS)
+	install bazel-bin/cmd/manager/${BINARYPATHPATTERN}/manager $(shell go env GOPATH)/bin/azure-manager
 
 .PHONY: clusterctl
 clusterctl: ## Build clusterctl binary.
-	go build -o bin/clusterctl ./cmd/clusterctl
+	bazel build --workspace_status_command=./hack/print-workspace-status.sh //cmd/clusterctl $(BAZEL_ARGS)
+	install bazel-bin/cmd/clusterctl/${BINARYPATHPATTERN}/clusterctl $(shell go env GOPATH)/bin/clusterctl
 
 # TODO: Uncomment clusterazureadm once it exists
 #.PHONY: clusterazureadm
 #clusterazureadm: ## Build clusterazureadm binary.
-#	go build -o bin/clusterazureadm ./cmd/clusterazureadm
+#	bazel build --workspace_status_command=./hack/print-workspace-status.sh //cmd/clusterazureadm $(BAZEL_ARGS)
+#	install bazel-bin/cmd/clusterazureadm/${BINARYPATHPATTERN}/clusterazureadm $(shell go env GOPATH)/bin/clusterazureadm
 
 ## --------------------------------------
 ## Release
@@ -218,9 +226,12 @@ release-artifacts: ## Build release artifacts
 ## Define local development targets here
 ## --------------------------------------
 
+.PHONY: binaries-dev
+binaries-dev: generate manager clusterctl
+
 .PHONY: create-cluster
-create-cluster: binaries ## Create a development Kubernetes cluster on Azure using examples
-	bin/clusterctl create cluster -v 4 \
+create-cluster: binaries-dev ## Create a development Kubernetes cluster on Azure using examples
+	clusterctl create cluster -v 4 \
 	--provider azure \
 	--bootstrap-type kind \
 	-m ./cmd/clusterctl/examples/azure/out/machines.yaml \
@@ -229,8 +240,8 @@ create-cluster: binaries ## Create a development Kubernetes cluster on Azure usi
 	-a ./cmd/clusterctl/examples/azure/out/addons.yaml
 
 .PHONY: create-cluster-ha
-create-cluster-ha: binaries ## Create a development Kubernetes cluster on Azure using HA examples
-	bin/clusterctl create cluster -v 4 \
+create-cluster-ha: binaries-dev ## Create a development Kubernetes cluster on Azure using HA examples
+	clusterctl create cluster -v 4 \
 	--provider azure \
 	--bootstrap-type kind \
 	-m ./cmd/clusterctl/examples/azure/out/controlplane-machines-ha.yaml \
@@ -254,12 +265,12 @@ create-cluster-management: ## Create a development Kubernetes cluster on Azure i
 		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f cmd/clusterctl/examples/azure/out/controlplane-machine.yaml
 	# Get KubeConfig using clusterctl.
-	bin/clusterctl alpha phases get-kubeconfig -v=3 \
+	clusterctl alpha phases get-kubeconfig -v=3 \
 		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		--provider=azure \
 		--cluster-name=test1
 	# Apply addons on the target cluster, waiting for the control-plane to become available.
-	bin/clusterctl alpha phases apply-addons -v=3 \
+	clusterctl alpha phases apply-addons -v=3 \
 		--kubeconfig=./kubeconfig \
 		-a cmd/clusterctl/examples/azure/out/addons.yaml
 	# Create a worker node with MachineDeployment.
@@ -269,7 +280,7 @@ create-cluster-management: ## Create a development Kubernetes cluster on Azure i
 
 .PHONY: delete-cluster
 delete-cluster: binaries ## Deletes the development Kubernetes Cluster
-	bin/clusterctl delete cluster -v 4 \
+	clusterctl delete cluster -v 4 \
 	--bootstrap-type kind \
 	--kubeconfig ./kubeconfig \
 	-p ./cmd/clusterctl/examples/azure/out/provider-components.yaml

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package flag
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cmd/versioninfo"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/cmd"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	goflag "flag"
+	"github.com/spf13/pflag"
 )
 
-func registerCustomCommands() {
-	cmd.RootCmd.AddCommand(versioninfo.VersionCmd())
+// NoOp implements goflag.Value and plfag.Value,
+// but has a noop Set implementation
+type NoOp struct{}
+
+var _ goflag.Value = NoOp{}
+var _ pflag.Value = NoOp{}
+
+func (NoOp) String() string {
+	return ""
 }
 
-func main() {
-	clusterActuator := cluster.NewActuator(cluster.ActuatorParams{})
-	common.RegisterClusterProvisioner("azure", clusterActuator)
-	registerCustomCommands()
-	cmd.Execute()
+func (NoOp) Set(val string) error {
+	return nil
+}
+
+func (NoOp) Type() string {
+	return "NoOp"
 }
