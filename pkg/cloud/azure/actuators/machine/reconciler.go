@@ -26,10 +26,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/pkg/errors"
-	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
@@ -167,26 +164,6 @@ func (r *Reconciler) Exists(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	if r.scope.Machine.Spec.ProviderID == nil || *r.scope.Machine.Spec.ProviderID == "" {
-		// TODO: This should be unified with the logic for getting the nodeRef, and
-		// should potentially leverage the code that already exists in
-		// kubernetes/cloud-provider-azure
-		providerID := fmt.Sprintf("azure:////%s", *r.scope.MachineStatus.VMID)
-		r.scope.Machine.Spec.ProviderID = &providerID
-	}
-
-	// Set the Machine NodeRef.
-	if r.scope.Machine.Status.NodeRef == nil {
-		nodeRef, err := getNodeReference(r.scope)
-		if err != nil {
-			klog.Warningf("Failed to set nodeRef: %v", err)
-			return true, nil
-		}
-
-		r.scope.Machine.Status.NodeRef = nodeRef
-		klog.Infof("Setting machine %s nodeRef to %s", r.scope.Name(), nodeRef.Name)
-	}
-
 	return true, nil
 }
 
@@ -284,21 +261,6 @@ func (r *Reconciler) isNodeJoin() (bool, error) {
 	}
 }
 
-func coreV1Client(kubeconfig string) (corev1.CoreV1Interface, error) {
-	clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfig))
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get client config for cluster")
-	}
-
-	cfg, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get client config for cluster")
-	}
-
-	return corev1.NewForConfig(cfg)
-}
-
 func (r *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 	vmSpec := &virtualmachines.Spec{
 		Name: r.scope.Name(),
@@ -345,51 +307,6 @@ func (r *Reconciler) isVMExists(ctx context.Context) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func getNodeReference(scope *actuators.MachineScope) (*apicorev1.ObjectReference, error) {
-	if scope.MachineStatus.VMID == nil {
-		return nil, errors.Errorf("instance id is empty for machine %s", scope.Machine.Name)
-	}
-
-	instanceID := *scope.MachineStatus.VMID
-
-	if scope.ClusterConfig == nil {
-		return nil, errors.Errorf("failed to retrieve corev1 client for empty kubeconfig %s", scope.Cluster.Name)
-	}
-
-	coreClient, err := coreV1Client(scope.ClusterConfig.AdminKubeconfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve corev1 client for cluster %s", scope.Cluster.Name)
-	}
-
-	listOpt := metav1.ListOptions{}
-
-	for {
-		nodeList, err := coreClient.Nodes().List(listOpt)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to query cluster nodes")
-		}
-
-		for _, node := range nodeList.Items {
-			// TODO(vincepri): Improve this comparison without relying on substrings.
-			if strings.Contains(node.Spec.ProviderID, instanceID) {
-				return &apicorev1.ObjectReference{
-					Kind:       "Node",
-					APIVersion: apicorev1.SchemeGroupVersion.String(),
-					Name:       node.Name,
-					UID:        node.UID,
-				}, nil
-			}
-		}
-
-		listOpt.Continue = nodeList.Continue
-		if listOpt.Continue == "" {
-			break
-		}
-	}
-
-	return nil, errors.Errorf("no node found for machine %s", scope.Name())
 }
 
 // getVirtualMachineZone gets a random availability zones from available set,
