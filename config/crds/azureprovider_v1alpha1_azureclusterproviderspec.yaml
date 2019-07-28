@@ -14,11 +14,6 @@ spec:
   validation:
     openAPIV3Schema:
       properties:
-        adminKubeconfig:
-          description: AdminKubeconfig generated using the certificates part of the
-            spec do not move to status, since it uses on disk ca certs, which causes
-            issues during regeneration
-          type: string
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
@@ -333,14 +328,6 @@ spec:
           - certificatesDir
           - imageRepository
           type: object
-        discoveryHashes:
-          description: DiscoveryHashes generated using the certificates part of the
-            spec, used by master and nodes bootstrapping this never changes until
-            ca is rotated do not move to status, since it uses on disk ca certs, which
-            causes issues during regeneration
-          items:
-            type: string
-          type: array
         etcdCAKeyPair:
           description: EtcdCAKeyPair is the key pair for etcd.
           properties:
