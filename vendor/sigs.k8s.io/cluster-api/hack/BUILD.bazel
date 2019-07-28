@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["tools.go"],
+    importmap = "sigs.k8s.io/cluster-api-provider-azure/vendor/sigs.k8s.io/cluster-api/hack",
     importpath = "sigs.k8s.io/cluster-api/hack",
     visibility = ["//visibility:public"],
     deps = [

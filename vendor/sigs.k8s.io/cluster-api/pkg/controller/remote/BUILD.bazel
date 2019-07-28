@@ -6,16 +6,17 @@ go_library(
         "cluster.go",
         "util.go",
     ],
+    importmap = "sigs.k8s.io/cluster-api-provider-azure/vendor/sigs.k8s.io/cluster-api/pkg/controller/remote",
     importpath = "sigs.k8s.io/cluster-api/pkg/controller/remote",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/cluster/v1alpha1:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/client-go/kubernetes/typed/core/v1:go_default_library",
         "//vendor/k8s.io/client-go/rest:go_default_library",
         "//vendor/k8s.io/client-go/tools/clientcmd:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/client:go_default_library",
     ],
 )
@@ -28,10 +29,10 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/apis/cluster/v1alpha1:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/client/fake:go_default_library",
     ],
 )

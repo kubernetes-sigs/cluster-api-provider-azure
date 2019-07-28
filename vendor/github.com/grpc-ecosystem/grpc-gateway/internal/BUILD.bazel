@@ -17,6 +17,11 @@ go_proto_library(
 
 go_library(
     name = "go_default_library",
-    embed = [":internal_go_proto"],
+    srcs = ["stream_chunk.pb.go"],
+    importmap = "sigs.k8s.io/cluster-api-provider-azure/vendor/github.com/grpc-ecosystem/grpc-gateway/internal",
     importpath = "github.com/grpc-ecosystem/grpc-gateway/internal",
+    deps = [
+        "//vendor/github.com/golang/protobuf/proto:go_default_library",
+        "//vendor/github.com/golang/protobuf/ptypes/any:go_default_library",
+    ],
 )
