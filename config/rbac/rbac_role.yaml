@@ -31,6 +31,23 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - delete
+- apiGroups:
   - azureprovider.k8s.io
   resources:
   - azuremachineproviderconfigs

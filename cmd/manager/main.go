@@ -18,8 +18,11 @@ package main
 
 import (
 	"flag"
+	"net/http"
+	_ "net/http/pprof"
 	"time"
 
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/cluster"
@@ -38,11 +41,22 @@ import (
 func main() {
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "true")
+
 	watchNamespace := flag.String("namespace", "",
 		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.")
+
+	profilerAddress := flag.String("profiler-address", "", "Bind address to expose the pprof profiler (e.g. localhost:6060)")
+
 	flag.Parse()
 
 	cfg := config.GetConfigOrDie()
+
+	if *profilerAddress != "" {
+		klog.Infof("Profiler listening for requests at %s", *profilerAddress)
+		go func() {
+			klog.Info(http.ListenAndServe(*profilerAddress, nil))
+		}()
+	}
 
 	// Setup a Manager
 	syncPeriod := 10 * time.Minute
@@ -65,17 +79,26 @@ func main() {
 		klog.Fatalf("Failed to create client from configuration: %v", err)
 	}
 
+	coreClient, err := corev1.NewForConfig(cfg)
+	if err != nil {
+		klog.Fatalf("Failed to create corev1 client from configuration: %v", err)
+	}
+
 	// Initialize event recorder.
 	record.InitFromRecorder(mgr.GetRecorder("azure-controller"))
 
 	// Initialize cluster actuator.
 	clusterActuator := cluster.NewActuator(cluster.ActuatorParams{
-		Client: cs.ClusterV1alpha1(),
+		CoreClient:     coreClient,
+		Client:         cs.ClusterV1alpha1(),
+		LoggingContext: "[cluster-actuator]",
 	})
 
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		Client: cs.ClusterV1alpha1(),
+		CoreClient:     coreClient,
+		ClusterClient:  cs.ClusterV1alpha1(),
+		LoggingContext: "[machine-actuator]",
 	})
 
 	// Register our cluster deployer (the interface is in clusterctl and we define the Deployer interface on the actuator)

@@ -1,9 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.31.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
+cloud.google.com/go v0.35.1 h1:LMe/Btq0Eijsc97JyBwMc0KMXOe0orqAMdg7/EkywN8=
 cloud.google.com/go v0.35.1/go.mod h1:wfjPZNvXCBYESy3fIynybskMP48KVPrjSPCnXiK7Prg=
-cloud.google.com/go v0.36.0 h1:+aCSj7tOo2LODWVEuZDZeGCckdt6MlSF+X/rB3wUiS8=
-cloud.google.com/go v0.36.0/go.mod h1:RUoy9p/M4ge0HzT8L+SDZ8jg+Q6fth0CiBuhFJpSV40=
 contrib.go.opencensus.io/exporter/ocagent v0.2.0 h1:Q/jXnVbliDYozuWJni9452xsSUuo+y8yrioxRgofBhE=
 contrib.go.opencensus.io/exporter/ocagent v0.2.0/go.mod h1:0fnkYHF+ORKj7HWzOExKkUHeFX79gXSKUQbpnAM+wzo=
 contrib.go.opencensus.io/exporter/ocagent v0.4.12 h1:jGFvw3l57ViIVEPKKEUXPcLYIXJmQxLUh6ey1eJhwyc=
@@ -307,9 +306,8 @@ github.com/googleapis/gax-go v2.0.0+incompatible/go.mod h1:SFVmujtThgffbyetf+mdk
 github.com/googleapis/gax-go/v2 v2.0.3/go.mod h1:LLvjysVCY1JZeum8Z6l8qUty8fiNwE08qbEPm1M08qg=
 github.com/googleapis/gnostic v0.2.0 h1:l6N3VoaVzTncYYW+9yOz2LJJammFZGBO13sqgEhpy9g=
 github.com/googleapis/gnostic v0.2.0/go.mod h1:sJBsCZ4ayReDTBIg8b9dl28c5xFWyhBTVRp3pOg5EKY=
+github.com/gophercloud/gophercloud v0.0.0-20190221164956-3f3cc5a566b2 h1:UVNu/91ffTOzayxrORCp4UVGrYH05xTq8DuNR7ILW1Q=
 github.com/gophercloud/gophercloud v0.0.0-20190221164956-3f3cc5a566b2/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
-github.com/gophercloud/gophercloud v0.0.0-20190303224450-f83aee3da90f h1:hdmcBhTsp/vubg7Wg079F2ZaAQx5wV6ait8oFifj0WA=
-github.com/gophercloud/gophercloud v0.0.0-20190303224450-f83aee3da90f/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
@@ -688,7 +686,6 @@ google.golang.org/genproto v0.0.0-20180831171423-11092d34479b/go.mod h1:JiN7NxoA
 google.golang.org/genproto v0.0.0-20181029155118-b69ba1387ce2/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
 google.golang.org/genproto v0.0.0-20181202183823-bd91e49a0898/go.mod h1:7Ep/1NZk928CDR8SjdVbjWNpdIf6nzjE3BTgJDr2Atg=
 google.golang.org/genproto v0.0.0-20190122154452-ba6ebe99b011/go.mod h1:7Ep/1NZk928CDR8SjdVbjWNpdIf6nzjE3BTgJDr2Atg=
-google.golang.org/genproto v0.0.0-20190201180003-4b09977fb922/go.mod h1:L3J43x8/uS+qIUoksaLKe6OS3nUKxOKuIFz1sl2/jx4=
 google.golang.org/genproto v0.0.0-20190219182410-082222b4a5c5 h1:SdCO7As+ChE1iV3IjBleIIWlj8VjZWuYEUF5pjELOOQ=
 google.golang.org/genproto v0.0.0-20190219182410-082222b4a5c5/go.mod h1:L3J43x8/uS+qIUoksaLKe6OS3nUKxOKuIFz1sl2/jx4=
 google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19 h1:Lj2SnHtxkRGJDqnGaSjo+CCdIieEnwVazbOXILwQemk=
@@ -743,6 +740,7 @@ k8s.io/cluster-bootstrap v0.0.0-20190223141759-fab9a0a63c55/go.mod h1:iBSm2nwo3O
 k8s.io/code-generator v0.0.0-20181117043124-c2090bec4d9b/go.mod h1:MYiN+ZJZ9HkETbgVZdWw2AsuAi9PZ4V80cwfuf2axe8=
 k8s.io/code-generator v0.0.0-20190711102700-42c1e9a4dc7a h1:0nFMsZuuBPPyJuUmCfOGd+Tv16xmO8haXwTAZLezFQM=
 k8s.io/code-generator v0.0.0-20190711102700-42c1e9a4dc7a/go.mod h1:gZ0mjdzfPz3P+cILxibAJ25xFoZ1Kf0xQrFUHy66AEs=
+k8s.io/component-base v0.0.0-20190703210340-65d72cfeb85d h1:rnHKkkKa8rR4DkemPeIzuL+/Ks2zZj6d3OV/HYD0t/E=
 k8s.io/component-base v0.0.0-20190703210340-65d72cfeb85d/go.mod h1:lD66vYoxfIYwZTZunUYSg/e6fEj0fcgked2esAmsIfA=
 k8s.io/component-base v0.0.0-20190711104712-4ad84870f76c h1:PdthTG2Xxd1eDxcGuww0hgJPSlMWKTxAvff4Bd4xX/A=
 k8s.io/component-base v0.0.0-20190711104712-4ad84870f76c/go.mod h1:yHi8nnYgJn3NxM9NE+ohCGKltBvgqw69dHs0g+QGIPY=

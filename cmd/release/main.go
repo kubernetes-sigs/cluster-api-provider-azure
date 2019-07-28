@@ -17,11 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 )
 
 /*
@@ -41,7 +43,6 @@ const (
 
 	// TODO move these into config
 	registry         = "quay.io"
-	managerImageTag  = "0.1.0"
 	managerImageName = "cluster-api-azure-controller"
 	pullPolicy       = "IfNotPresent"
 )
@@ -79,29 +80,33 @@ func main() {
 		},
 		registry:         fmt.Sprintf("%s/%s", registry, repository),
 		imageName:        managerImageName,
-		imageTag:         managerImageTag,
 		pullPolicy:       pullPolicy,
 		githubRepository: repository,
 		githubUser:       user,
 		gitRemote:        remote,
 	}
 
+	logger := &stdoutlogger{}
 	run := &runner{
 		builder: makebuilder{
 			registry:   cfg.registry,
-			imageTag:   cfg.imageTag,
+			imageTag:   cfg.version,
 			pullPolicy: cfg.pullPolicy,
+			logger:     logger,
 		},
 		releaser: gothubReleaser{
 			artifactsDir: cfg.artifactDir,
 			user:         cfg.githubUser,
 			repository:   cfg.githubRepository,
+			logger:       logger,
 		},
 		tagger: git{
 			repository: cfg.githubRepository,
 			remote:     cfg.gitRemote,
+			logger:     logger,
 		},
 		config: cfg,
+		logger: logger,
 	}
 
 	if err := run.run(); err != nil {
@@ -204,8 +209,6 @@ type config struct {
 	registry string
 	// imageName is the name of the container image
 	imageName string
-	// imageTag is the name of the image tag *this is intentionally not version*
-	imageTag string
 	// pullPolicy defines the pull policy of the manager in the provider-components
 	pullPolicy string
 	// githubRepository is the name of the repository on github https://github.com/<org or user>/<repository>
@@ -221,48 +224,40 @@ type runner struct {
 	releaser releaser
 	tagger   tagger
 	config   config
+	logger   logger
 }
 
 // TODO sha512 the artifacts!
-// TODO move fmt.Println into a logr interface
-
 func (r runner) run() error {
-	fmt.Printf("tagging repository %q ", r.config.version)
+	r.logger.Infof("tagging repository %q\n", r.config.version)
 	if err := r.tagger.tag(r.config.version); err != nil {
 		return err
 	}
-	fmt.Println("🐲")
-	fmt.Printf("checking out tag %q ", r.config.version)
+	r.logger.Infof("checking out tag %q\n", r.config.version)
 	if err := r.tagger.checkout(r.config.version); err != nil {
 		return err
 	}
-	fmt.Println("🐲")
-	fmt.Printf("building artifacts %v ", r.config.artifacts)
+	r.logger.Infof("building artifacts %v\n", r.config.artifacts)
 	if err := r.builder.build(); err != nil {
 		return err
 	}
-	fmt.Println("🐲")
-	fmt.Printf("building container image: %s/%s:%s ", r.config.registry, r.config.imageName, r.config.imageTag)
+	r.logger.Infof("building container image: %s/%s:%s\n", r.config.registry, r.config.imageName, r.config.version)
 	if err := r.builder.images(); err != nil {
 		return err
 	}
-	fmt.Println("🐲")
-	fmt.Printf("pushing tag %q ", r.config.version)
+	r.logger.Infof("pushing tag %q\n", r.config.version)
 	if err := r.tagger.pushTag(r.config.version); err != nil {
 		return err
 	}
-	fmt.Println("🐲")
-	fmt.Printf("drafting a release for tag %q ", r.config.version)
+	r.logger.Infof("drafting a release for tag %q\n", r.config.version)
 	if err := r.releaser.draft(r.config.version); err != nil {
 		return err
 	}
-	fmt.Println("🐲")
 	for _, artifact := range r.config.artifacts {
-		fmt.Printf("uploading %q ", artifact)
+		r.logger.Infof("uploading %q\n", artifact)
 		if err := r.releaser.upload(r.config.version, artifact); err != nil {
 			return err
 		}
-		fmt.Println("🐲")
 	}
 	return nil
 }
@@ -279,13 +274,14 @@ type gothubReleaser struct {
 	repository string
 
 	artifactsDir string
+	logger       logger
 }
 
 func (g gothubReleaser) draft(version string) error {
 	cmd := exec.Command("gothub", "release", "--tag", version, "--user", g.user, "--repo", g.repository, "--draft")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(string(out))
+		g.logger.Info(string(out))
 	}
 	return err
 }
@@ -293,7 +289,7 @@ func (g gothubReleaser) upload(version, file string) error {
 	cmd := exec.Command("gothub", "upload", "--tag", version, "--user", g.user, "--repo", g.repository, "--file", path.Join(g.artifactsDir, file), "--name", file)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(string(out))
+		g.logger.Info(string(out))
 	}
 	return err
 }
@@ -310,40 +306,111 @@ type git struct {
 
 	// remote is the local name of the remote
 	remote string
+	logger logger
+}
+
+func (g git) gitCommand(args ...string) error {
+	cmd := exec.Command("git", args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		g.logger.Info(string(out))
+	}
+	return err
+}
+
+func (g git) getUserConfirmation(message string) {
+	g.logger.Info(message)
+	reader := bufio.NewReader(os.Stdin)
+	g.logger.Info("Press return to confirm.")
+	// throwing away the error
+	reader.ReadString('\n')
+}
+
+func (g git) forceUpdateTag(version string) error {
+	g.getUserConfirmation(fmt.Sprintf("You are about to force update the tag %v to reference HEAD.", version))
+	return g.updateTag(version, "-f")
+}
+
+func (g git) updateTag(version string, extraArgs ...string) error {
+	args := append([]string{"tag"}, extraArgs...)
+	args = append(args, "-s", "-m", g.tagMessage(version), version)
+	return g.gitCommand(args...)
+}
+
+func (g git) tagMessage(version string) string {
+	return fmt.Sprintf("A release of %q for version %q", g.repository, version)
 }
 
 func (g git) tag(version string) error {
-	// if the tag exists then return nil; if it doesn't create it
-	cmd := exec.Command("git", "rev-parse", "--quiet", "--verify", version)
-	_, err := cmd.CombinedOutput()
+	oldRev, err := g.tagCommit(version)
+	// an error getting the tag commit implies the tag does not exist
 	if err != nil {
-		// TODO: in go 1.12 use ExitError and ExitCode()
-		// assume this means it doesn't exist
-		cmd = exec.Command("git", "tag", "-s", "-m", fmt.Sprintf("A release of %q for version %q", g.repository, version), version)
-		out, err2 := cmd.CombinedOutput()
-		if err2 != nil {
-			fmt.Println(string(out))
+		if err := g.updateTag(version); err != nil {
+			g.logger.Infof("failed to create a new tag: %v", version)
+			return err
 		}
-		return err2
+		return nil
+	}
+
+	// if there is no error getting the tag commit that means the tag exists and must be force updated
+	g.logger.Infof("Tag %q references commit %q\n", version, oldRev)
+	if err := g.forceUpdateTag(version); err != nil {
+		g.logger.Infof("failed to force update tag: %v", version)
+		return err
 	}
 	return nil
 }
 
-func (g git) pushTag(version string) error {
-	// TODO(chuckha): this shouldn't exit if it fails because the tag already
-	cmd := exec.Command("git", "push", g.remote, version)
-	out, err := cmd.CombinedOutput()
+func (g git) tagCommit(version string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", version)
+	out, err := cmd.Output()
 	if err != nil {
-		fmt.Println(string(out))
+		// TODO print stderr as well
+		return "", err
 	}
-	return err
+
+	return strings.TrimSpace(string(out)), err
+}
+
+func (g git) remoteTagExists(version string) bool {
+	cmd := exec.Command("git", "ls-remote", "--tags", "--exit-code", g.remote, version)
+	// the output is unimportant for now. It will contain the ref of the tag if it exists.
+	_, err := cmd.Output()
+	return err == nil
+}
+
+func (g git) push(version string, extraArgs ...string) error {
+	args := append([]string{"push"}, extraArgs...)
+	args = append(args, g.remote, version)
+	return g.gitCommand(args...)
+}
+
+func (g git) forcePush(version string) error {
+	g.getUserConfirmation(fmt.Sprintf("You are about to force push the tag %v.", version))
+	return g.push(version, "-f")
+}
+
+func (g git) pushTag(version string) error {
+	if g.remoteTagExists(version) {
+		if err := g.forcePush(version); err != nil {
+			g.logger.Infof("failed to force push the tag %q", version)
+			return err
+		}
+		return nil
+	}
+
+	if err := g.push(version); err != nil {
+		g.logger.Infof("failed to push tag %q", version)
+		return err
+	}
+	return nil
 }
 
 func (g git) checkout(version string) error {
 	cmd := exec.Command("git", "checkout", version)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(string(out))
+		g.logger.Info(string(out))
 	}
 	return err
 }
@@ -357,6 +424,7 @@ type makebuilder struct {
 	registry   string
 	imageTag   string
 	pullPolicy string
+	logger     logger
 }
 
 func (m makebuilder) cmdWithEnv(command string, args ...string) error {
@@ -368,7 +436,7 @@ func (m makebuilder) cmdWithEnv(command string, args ...string) error {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println(string(out))
+		m.logger.Info(string(out))
 	}
 	return err
 }
@@ -379,4 +447,18 @@ func (m makebuilder) build() error {
 
 func (m makebuilder) images() error {
 	return m.cmdWithEnv("make", "docker-build")
+}
+
+type logger interface {
+	Infof(string, ...interface{})
+	Info(...interface{})
+}
+
+type stdoutlogger struct{}
+
+func (s *stdoutlogger) Infof(msg string, args ...interface{}) {
+	fmt.Printf(msg, args...)
+}
+func (s *stdoutlogger) Info(msgs ...interface{}) {
+	fmt.Println(msgs...)
 }

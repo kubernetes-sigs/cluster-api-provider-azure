@@ -114,6 +114,7 @@ func (in *AzureMachineProviderSpec) DeepCopyInto(out *AzureMachineProviderSpec) 
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	out.Image = in.Image
 	out.OSDisk = in.OSDisk
+	in.KubeadmConfiguration.DeepCopyInto(&out.KubeadmConfiguration)
 	return
 }
 

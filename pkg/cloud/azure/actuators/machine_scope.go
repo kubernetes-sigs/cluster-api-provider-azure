@@ -17,16 +17,19 @@ limitations under the License.
 package actuators
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/patch"
 	"sigs.k8s.io/yaml"
 )
 
@@ -66,10 +69,11 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.Client != nil {
 		machineClient = params.Client.Machines(params.Machine.Namespace)
 	}
-
+	scope.Logger = scope.Logger.WithName(params.Machine.Name)
 	return &MachineScope{
 		Scope:         scope,
 		Machine:       params.Machine,
+		MachineCopy:   params.Machine.DeepCopy(),
 		MachineClient: machineClient,
 		MachineConfig: machineConfig,
 		MachineStatus: machineStatus,
@@ -80,7 +84,9 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 type MachineScope struct {
 	*Scope
 
-	Machine       *clusterv1.Machine
+	Machine *clusterv1.Machine
+	// MachineCopy is used to generate a patch diff at the end of the scope's lifecycle.
+	MachineCopy   *clusterv1.Machine
 	MachineClient client.MachineInterface
 	MachineConfig *v1alpha1.AzureMachineProviderSpec
 	MachineStatus *v1alpha1.AzureMachineProviderStatus
@@ -106,25 +112,14 @@ func (m *MachineScope) Location() string {
 	return m.Scope.Location()
 }
 
-func (m *MachineScope) storeMachineSpec(machine *clusterv1.Machine) (*clusterv1.Machine, error) {
-	ext, err := v1alpha1.EncodeMachineSpec(m.MachineConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	machine.Spec.ProviderSpec.Value = ext
-	return m.MachineClient.Update(machine)
+// GetMachine returns the machine wrapped in the scope.
+func (m *MachineScope) GetMachine() *clusterv1.Machine {
+	return m.Machine
 }
 
-func (m *MachineScope) storeMachineStatus(machine *clusterv1.Machine) (*clusterv1.Machine, error) {
-	ext, err := v1alpha1.EncodeMachineStatus(m.MachineStatus)
-	if err != nil {
-		return nil, err
-	}
-
-	m.Machine.Status.DeepCopyInto(&machine.Status)
-	machine.Status.ProviderStatus = ext
-	return m.MachineClient.UpdateStatus(machine)
+// GetScope returns the scope that is wrapping the machine.
+func (m *MachineScope) GetScope() *Scope {
+	return m.Scope
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
@@ -133,15 +128,57 @@ func (m *MachineScope) Close() {
 		return
 	}
 
-	latestMachine, err := m.storeMachineSpec(m.Machine)
+	ext, err := v1alpha1.EncodeMachineSpec(m.MachineConfig)
 	if err != nil {
-		klog.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", m.Machine.Name, m.Machine.Namespace, err)
+		m.Error(err, "failed to encode machine spec")
+		return
+	}
+	newStatus, err := v1alpha1.EncodeMachineStatus(m.MachineStatus)
+	if err != nil {
+		m.Error(err, "failed to encode machine status")
+		return
+	}
+	oldStatus, err := v1alpha1.MachineStatusFromProviderStatus(m.MachineCopy.Status.ProviderStatus)
+	if err != nil {
+		m.Error(err, "failed to get machine status from provider status")
 		return
 	}
 
-	_, err = m.storeMachineStatus(latestMachine)
+	m.Machine.Spec.ProviderSpec.Value = ext
+
+	p, err := patch.NewJSONPatch(m.MachineCopy, m.Machine)
 	if err != nil {
-		klog.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", m.Machine.Name, m.Machine.Namespace, err)
+		m.Error(err, "failed to create new JSONPatch for machine")
+		return
+	}
+
+	if len(p) != 0 {
+		pb, err := json.MarshalIndent(p, "", "  ")
+		if err != nil {
+			m.Error(err, "failed to json marshal patch for machine")
+			return
+		}
+
+		m.Logger.V(1).Info("Patching machine")
+		result, err := m.MachineClient.Patch(m.Machine.Name, types.JSONPatchType, pb)
+		if err != nil {
+			m.Error(err, "failed to patch machine")
+			return
+		}
+		// Keep the resource version updated so the status update can succeed
+		m.Machine.ResourceVersion = result.ResourceVersion
+	}
+
+	// Do not update status if the statuses are the same
+	if reflect.DeepEqual(m.MachineStatus, oldStatus) {
+		return
+	}
+
+	m.Logger.V(1).Info("Updating machine status")
+	m.Machine.Status.ProviderStatus = newStatus
+	if _, err := m.MachineClient.UpdateStatus(m.Machine); err != nil {
+		m.Error(err, "failed to update machine status")
+		return
 	}
 }
 
@@ -157,7 +194,7 @@ func MachineConfigFromProviderSpec(clusterClient client.MachineClassesGetter, pr
 		ref := providerConfig.ValueFrom.MachineClass
 		log.V(4).Info("Decoding ProviderConfig from MachineClass")
 		log.V(6).Info("Machine class reference", "ref", fmt.Sprintf("%+v", ref))
-		if ref.Provider != "" && ref.Provider != "aws" {
+		if ref.Provider != "" && ref.Provider != "azure" {
 			return nil, errors.Errorf("Unsupported provider: %q", ref.Provider)
 		}
 
