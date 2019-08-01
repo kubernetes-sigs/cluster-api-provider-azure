@@ -9,7 +9,6 @@ go_library(
         "availableendpointservices.go",
         "availableprivateendpointtypes.go",
         "availableresourcegroupdelegations.go",
-        "availableresourcegroupprivateendpointtypes.go",
         "azurefirewallfqdntags.go",
         "azurefirewalls.go",
         "bastionhosts.go",
