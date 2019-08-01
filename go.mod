@@ -3,11 +3,12 @@ module sigs.k8s.io/cluster-api-provider-azure
 go 1.12
 
 require (
-	github.com/Azure/azure-sdk-for-go v31.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v32.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.5.0
 	github.com/Azure/go-autorest/autorest/azure/auth v0.1.0
 	github.com/Azure/go-autorest/autorest/to v0.2.0
 	github.com/Azure/go-autorest/autorest/validation v0.1.0 // indirect
+	github.com/Azure/go-autorest/tracing v0.2.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
@@ -43,7 +44,7 @@ require (
 )
 
 replace (
-	github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.3.0+incompatible
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.4.1+incompatible
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 	k8s.io/api => k8s.io/api v0.0.0-20190222213804-5cb15d344471
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
