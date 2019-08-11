@@ -19,6 +19,7 @@ items:
           roles:
           - Master
           location: ${LOCATION}
+          availabilityZone: ${AVAILABILITY_ZONE}
           vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
           image:
             publisher: "Canonical"

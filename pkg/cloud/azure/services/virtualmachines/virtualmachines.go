@@ -150,6 +150,8 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		},
 	}
 
+	klog.V(2).Infof("Setting zone %s ", vmSpec.Zone)
+
 	if vmSpec.Zone != "" {
 		zones := []string{vmSpec.Zone}
 		virtualMachine.Zones = &zones

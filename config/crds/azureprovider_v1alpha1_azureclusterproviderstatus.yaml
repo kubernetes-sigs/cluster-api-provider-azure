@@ -21,6 +21,8 @@ spec:
           type: string
         bastion:
           properties:
+            availabilityZone:
+              type: string
             id:
               type: string
             identity:

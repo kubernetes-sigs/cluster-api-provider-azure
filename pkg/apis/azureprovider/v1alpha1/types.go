@@ -339,6 +339,8 @@ type VM struct {
 	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 
+	AvailabilityZone string `json:"availabilityZone,omitempty"`
+
 	// Hardware profile
 	VMSize string `json:"vmSize,omitempty"`
 
