@@ -95,7 +95,7 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 	// Store KubeConfig for Cluster API NodeRef controller to use.
 	kubeConfigSecretName := remote.KubeConfigSecretName(cluster.Name)
 	secretClient := a.coreClient.Secrets(cluster.Namespace)
-	if _, secretErr := secretClient.Get(kubeConfigSecretName, metav1.GetOptions{}); secretErr != nil && apierrors.IsNotFound(err) {
+	if _, secretClientErr := secretClient.Get(kubeConfigSecretName, metav1.GetOptions{}); secretClientErr != nil && apierrors.IsNotFound(secretClientErr) {
 		kubeConfig, kubeconfigErr := a.Deployer.GetKubeConfig(cluster, nil)
 		if kubeconfigErr != nil {
 			return errors.Wrapf(kubeconfigErr, "failed to get kubeconfig for cluster %q", cluster.Name)
@@ -118,35 +118,12 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 			},
 		}
 
-		if _, secretCreateErr := secretClient.Create(kubeConfigSecret); secretCreateErr != nil {
-			return errors.Wrapf(secretCreateErr, "failed to create kubeconfig secret for cluster %q", cluster.Name)
+		if _, secretClientErr = secretClient.Create(kubeConfigSecret); secretClientErr != nil {
+			return errors.Wrapf(secretClientErr, "failed to create kubeconfig secret for cluster %q", cluster.Name)
 		}
-	} else if secretErr != nil {
-		return errors.Wrapf(secretErr, "failed to get kubeconfig secret for cluster %q", cluster.Name)
+	} else if secretClientErr != nil {
+		return errors.Wrapf(secretClientErr, "failed to get kubeconfig secret for cluster %q", cluster.Name)
 	}
-
-	// If the control plane is ready, try to delete the control plane configmap lock, if it exists, and return.
-	if cluster.Annotations[v1alpha1.AnnotationControlPlaneReady] == v1alpha1.ValueReady {
-		configMapName := actuators.ControlPlaneConfigMapName(cluster)
-		log.Info("Checking for existence of control plane configmap lock", "configmap-name", configMapName)
-
-		_, cmErr := a.coreClient.ConfigMaps(cluster.Namespace).Get(configMapName, metav1.GetOptions{})
-		switch {
-		case apierrors.IsNotFound(err):
-			// It doesn't exist - no-op
-		case cmErr != nil:
-			return errors.Wrapf(cmErr, "Error retrieving control plane configmap lock %q", configMapName)
-		default:
-			if cmErr := a.coreClient.ConfigMaps(cluster.Namespace).Delete(configMapName, nil); cmErr != nil {
-				return errors.Wrapf(err, "Error deleting control plane configmap lock %q", configMapName)
-			}
-		}
-
-		// Nothing more to reconcile - return early.
-		return nil
-	}
-
-	log.Info("Cluster does not have ready annotation - checking for ready control plane machines")
 
 	machines, err := a.client.Machines(cluster.Namespace).List(actuators.ListOptionsForCluster(cluster.Name))
 	if err != nil {
@@ -163,12 +140,44 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 		}
 	}
 
+	if cluster.Annotations[v1alpha1.AnnotationControlPlaneReady] == v1alpha1.ValueReady {
+		log.Info("Cluster has the control plane ready annotation")
+
+		// If no control plane machine is ready, remove the annotation
+		if !machineReady {
+			log.Info("No control plane machines are ready - removing the control plane ready annotation")
+			delete(cluster.Annotations, v1alpha1.AnnotationControlPlaneReady)
+			return &controllerError.RequeueAfterError{RequeueAfter: waitForControlPlaneMachineDuration}
+		}
+
+		// Try to delete the control plane configmap lock, if it exists
+		configMapName := actuators.ControlPlaneConfigMapName(cluster)
+		log.Info("Checking for existence of control plane configmap lock", "configmap-name", configMapName)
+
+		_, err := a.coreClient.ConfigMaps(cluster.Namespace).Get(configMapName, metav1.GetOptions{})
+		switch {
+		case apierrors.IsNotFound(err):
+			// It doesn't exist - no-op
+		case err != nil:
+			return errors.Wrapf(err, "Error retrieving control plane configmap lock %q", configMapName)
+		default:
+			if err := a.coreClient.ConfigMaps(cluster.Namespace).Delete(configMapName, nil); err != nil {
+				return errors.Wrapf(err, "Error deleting control plane configmap lock %q", configMapName)
+			}
+		}
+
+		// Nothing more to reconcile - return early.
+		return nil
+	}
+
+	log.Info("Cluster does not have the control plane ready annotation - checking for ready control plane machines")
+
 	if !machineReady {
 		log.Info("No control plane machines are ready - requeuing cluster")
 		return &controllerError.RequeueAfterError{RequeueAfter: waitForControlPlaneMachineDuration}
 	}
 
-	log.Info("Setting cluster ready annotation")
+	log.Info("Setting control plane ready annotation")
 	cluster.Annotations[v1alpha1.AnnotationControlPlaneReady] = v1alpha1.ValueReady
 
 	klog.V(2).Infof("successfully reconciled cluster %s", cluster.Name)
