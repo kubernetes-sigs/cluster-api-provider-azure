@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake"
@@ -728,7 +729,8 @@ func newCluster(t *testing.T) *clusterv1.Cluster {
 			Kind: "Cluster",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-test",
+			Name:      "cluster-test",
+			Namespace: "dummy-namespace",
 		},
 		Spec: clusterv1.ClusterSpec{
 			ClusterNetwork: clusterv1.ClusterNetworkingConfig{
@@ -750,20 +752,21 @@ func newCluster(t *testing.T) *clusterv1.Cluster {
 
 func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	scope := &actuators.Scope{
-		Context: context.Background(),
 		Cluster: newCluster(t),
 		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{
-			ResourceGroup:       "dummyResourceGroup",
-			Location:            "dummyLocation",
-			CAKeyPair:           v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			EtcdCAKeyPair:       v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			FrontProxyCAKeyPair: v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			SAKeyPair:           v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			DiscoveryHashes:     []string{"discoveryhash0"},
+			ResourceGroup: "dummyResourceGroup",
+			Location:      "dummyLocation",
 		},
 		ClusterStatus: &v1alpha1.AzureClusterProviderStatus{},
+		Context:       context.Background(),
 	}
-	scope.Network().APIServerIP.DNSName = "DummyDNSName"
+
+	if scope.Logger == nil {
+		scope.Logger = klogr.New().WithName("default-logger")
+	}
+
+	scope.Network().APIServerIP.DNSName = "fakecluster.example.com"
+
 	labels := make(map[string]string)
 	labels["set"] = label
 	machineConfig := v1alpha1.AzureMachineProviderSpec{}
@@ -772,7 +775,7 @@ func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	return &actuators.MachineScope{
 		Scope:         scope,
 		Machine:       m,
-		MachineClient: c.Machines("dummyNamespace"),
+		MachineClient: c.Machines(scope.Cluster.Namespace),
 		MachineConfig: &v1alpha1.AzureMachineProviderSpec{},
 		MachineStatus: &v1alpha1.AzureMachineProviderStatus{},
 	}
@@ -849,7 +852,11 @@ func (s *FakeVMService) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) 
 }
 
 func TestReconcilerSuccess(t *testing.T) {
-	fakeReconciler := newFakeReconciler(t)
+	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
+
+	certSvc := certificates.NewService(fakeScope.Scope)
+	certSvc.Reconcile(fakeScope.Context, nil)
 
 	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
@@ -944,14 +951,18 @@ func TestReconcileVMUpdatingState(t *testing.T) {
 	}
 }
 
-func TestReconcileVMSuceededState(t *testing.T) {
-	fakeReconciler := newFakeReconciler(t)
+func TestReconcileVMSucceededState(t *testing.T) {
+	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
 	fakeVMService := &FakeVMService{
 		Name:              "machine-test",
 		ID:                "machine-test-ID",
 		ProvisioningState: "Succeeded",
 	}
 	fakeReconciler.virtualMachinesSvc = fakeVMService
+
+	certSvc := certificates.NewService(fakeScope.Scope)
+	certSvc.Reconcile(fakeScope.Context, nil)
 
 	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
@@ -1037,6 +1048,9 @@ func TestAvailabilityZones(t *testing.T) {
 	fakeReconciler.virtualMachinesSvc = &FakeVMCheckZonesService{
 		checkZones: zones,
 	}
+
+	certSvc := certificates.NewService(fakeScope.Scope)
+	certSvc.Reconcile(fakeScope.Context, nil)
 
 	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)

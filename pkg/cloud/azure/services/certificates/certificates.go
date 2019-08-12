@@ -88,6 +88,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		}
 		s.scope.ClusterConfig.EtcdCAKeyPair = etcdCAKeyPair
 	}
+
 	if !s.scope.ClusterConfig.FrontProxyCAKeyPair.HasCertAndKey() {
 		s.scope.V(2).Info("Generating keypair", "user", frontProxyCA)
 		fpCAKeyPair, err := generateCACert(&s.scope.ClusterConfig.FrontProxyCAKeyPair, frontProxyCA)
@@ -105,6 +106,7 @@ func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) err
 		}
 		s.scope.ClusterConfig.SAKeyPair = saKeyPair
 	}
+
 	return nil
 }
 
