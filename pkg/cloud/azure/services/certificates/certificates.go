@@ -18,284 +18,329 @@ package certificates
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/hex"
+	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"math"
+	"math/big"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcertutil "k8s.io/client-go/util/cert"
-	bootstraputil "k8s.io/cluster-bootstrap/token/util"
-	"k8s.io/klog"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
-	kubeadmscheme "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/scheme"
-	kubeadmv1beta1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
-	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	tokenphase "k8s.io/kubernetes/cmd/kubeadm/app/phases/bootstraptoken/node"
-	certsphase "k8s.io/kubernetes/cmd/kubeadm/app/phases/certs"
-	kubeconfigphase "k8s.io/kubernetes/cmd/kubeadm/app/phases/kubeconfig"
-	kubeconfigutil "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 )
 
-// Get should implement returning certs and kubeconfigs.
-func (s *Service) Get(ctx context.Context, spec v1alpha1.ResourceSpec) (interface{}, error) {
-	return nil, errors.New("Not implemented")
+const (
+	rsaKeySize     = 2048
+	duration365d   = time.Hour * 24 * 365
+	clusterCA      = "cluster-ca"
+	etcdCA         = "etcd-ca"
+	frontProxyCA   = "front-proxy-ca"
+	serviceAccount = "service-account"
+)
+
+// NewPrivateKey creates an RSA private key
+func NewPrivateKey() (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, rsaKeySize)
 }
+
+// AltNames contains the domain names and IP addresses that will be added
+// to the API Server's x509 certificate SubAltNames field. The values will
+// be passed directly to the x509.Certificate object.
+type AltNames struct {
+	DNSNames []string
+	IPs      []net.IP
+}
+
+// Config contains the basic fields required for creating a certificate
+type Config struct {
+	CommonName   string
+	Organization []string
+	AltNames     AltNames
+	Usages       []x509.ExtKeyUsage
+}
+
+// Reconcile generate certificates if none exists.
+func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
+	s.scope.V(2).Info("Reconciling certificates", "cluster-name", s.scope.Cluster.Name, "cluster-namespace", s.scope.Cluster.Namespace)
+
+	if !s.scope.ClusterConfig.CAKeyPair.HasCertAndKey() {
+		s.scope.V(2).Info("Generating keypair for", "user", clusterCA)
+		clusterCAKeyPair, err := generateCACert(&s.scope.ClusterConfig.CAKeyPair, clusterCA)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate certs for %q", clusterCA)
+		}
+		s.scope.ClusterConfig.CAKeyPair = clusterCAKeyPair
+	}
+
+	if !s.scope.ClusterConfig.EtcdCAKeyPair.HasCertAndKey() {
+		s.scope.V(2).Info("Generating keypair", "user", etcdCA)
+		etcdCAKeyPair, err := generateCACert(&s.scope.ClusterConfig.EtcdCAKeyPair, etcdCA)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate certs for %q", etcdCA)
+		}
+		s.scope.ClusterConfig.EtcdCAKeyPair = etcdCAKeyPair
+	}
+
+	if !s.scope.ClusterConfig.FrontProxyCAKeyPair.HasCertAndKey() {
+		s.scope.V(2).Info("Generating keypair", "user", frontProxyCA)
+		fpCAKeyPair, err := generateCACert(&s.scope.ClusterConfig.FrontProxyCAKeyPair, frontProxyCA)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate certs for %q", frontProxyCA)
+		}
+		s.scope.ClusterConfig.FrontProxyCAKeyPair = fpCAKeyPair
+	}
+
+	if !s.scope.ClusterConfig.SAKeyPair.HasCertAndKey() {
+		s.scope.V(2).Info("Generating service account keys", "user", serviceAccount)
+		saKeyPair, err := generateServiceAccountKeys(&s.scope.ClusterConfig.SAKeyPair, serviceAccount)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate keyPair for %q", serviceAccount)
+		}
+		s.scope.ClusterConfig.SAKeyPair = saKeyPair
+	}
+
+	return nil
+}
+
+func generateCACert(kp *v1alpha1.KeyPair, user string) (v1alpha1.KeyPair, error) {
+	x509Cert, privKey, err := NewCertificateAuthority()
+	if err != nil {
+		return v1alpha1.KeyPair{}, errors.Wrapf(err, "failed to generate CA cert for %q", user)
+	}
+	if kp == nil {
+		return v1alpha1.KeyPair{
+			Cert: EncodeCertPEM(x509Cert),
+			Key:  EncodePrivateKeyPEM(privKey),
+		}, nil
+	}
+	kp.Cert = EncodeCertPEM(x509Cert)
+	kp.Key = EncodePrivateKeyPEM(privKey)
+	return *kp, nil
+}
+
+func generateServiceAccountKeys(kp *v1alpha1.KeyPair, user string) (v1alpha1.KeyPair, error) {
+	saCreds, err := NewPrivateKey()
+	if err != nil {
+		return v1alpha1.KeyPair{}, errors.Wrapf(err, "failed to create service account public and private keys")
+	}
+	saPub, err := EncodePublicKeyPEM(&saCreds.PublicKey)
+	if err != nil {
+		return v1alpha1.KeyPair{}, errors.Wrapf(err, "failed to encode service account public key to PEM")
+	}
+	if kp == nil {
+		return v1alpha1.KeyPair{
+			Cert: saPub,
+			Key:  EncodePrivateKeyPEM(saCreds),
+		}, nil
+	}
+	kp.Cert = saPub
+	kp.Key = EncodePrivateKeyPEM(saCreds)
+	return *kp, nil
+}
+
+// NewSignedCert creates a signed certificate using the given CA certificate and key
+func (cfg *Config) NewSignedCert(key *rsa.PrivateKey, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*x509.Certificate, error) {
+	serial, err := rand.Int(rand.Reader, new(big.Int).SetInt64(math.MaxInt64))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate random integer for signed cerficate")
+	}
+
+	if len(cfg.CommonName) == 0 {
+		return nil, errors.New("must specify a CommonName")
+	}
+
+	if len(cfg.Usages) == 0 {
+		return nil, errors.New("must specify at least one ExtKeyUsage")
+	}
+
+	tmpl := x509.Certificate{
+		Subject: pkix.Name{
+			CommonName:   cfg.CommonName,
+			Organization: cfg.Organization,
+		},
+		DNSNames:     cfg.AltNames.DNSNames,
+		IPAddresses:  cfg.AltNames.IPs,
+		SerialNumber: serial,
+		NotBefore:    caCert.NotBefore,
+		NotAfter:     time.Now().Add(duration365d).UTC(),
+		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  cfg.Usages,
+	}
+
+	b, err := x509.CreateCertificate(rand.Reader, &tmpl, caCert, key.Public(), caKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create signed certificate: %+v", tmpl)
+	}
+
+	return x509.ParseCertificate(b)
+}
+
+// NewCertificateAuthority creates new certificate and private key for the certificate authority
+func NewCertificateAuthority() (*x509.Certificate, *rsa.PrivateKey, error) {
+	key, err := NewPrivateKey()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "unable to create private key")
+	}
+
+	cert, err := NewSelfSignedCACert(key)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "unable to create self-signed certificate")
+	}
+
+	return cert, key, nil
+}
+
+// NewSelfSignedCACert creates a CA certificate.
+func NewSelfSignedCACert(key *rsa.PrivateKey) (*x509.Certificate, error) {
+	cfg := Config{
+		CommonName: "kubernetes",
+	}
+
+	now := time.Now().UTC()
+
+	tmpl := x509.Certificate{
+		SerialNumber: new(big.Int).SetInt64(0),
+		Subject: pkix.Name{
+			CommonName:   cfg.CommonName,
+			Organization: cfg.Organization,
+		},
+		NotBefore:             now,
+		NotAfter:              now.Add(duration365d * 10),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		MaxPathLenZero:        true,
+		BasicConstraintsValid: true,
+		MaxPathLen:            0,
+		IsCA:                  true,
+	}
+
+	b, err := x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, key.Public(), key)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create self signed CA certificate: %+v", tmpl)
+	}
+
+	return x509.ParseCertificate(b)
+}
+
+// NewKubeconfig creates a new Kubeconfig where endpoint is the ELB endpoint.
+func NewKubeconfig(clusterName, endpoint string, caCert *x509.Certificate, caKey *rsa.PrivateKey) (*api.Config, error) {
+	cfg := &Config{
+		CommonName:   "kubernetes-admin",
+		Organization: []string{"system:masters"},
+		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+
+	clientKey, err := NewPrivateKey()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create private key")
+	}
+
+	clientCert, err := cfg.NewSignedCert(clientKey, caCert, caKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to sign certificate")
+	}
+
+	userName := "kubernetes-admin"
+	contextName := fmt.Sprintf("%s@%s", userName, clusterName)
+
+	return &api.Config{
+		Clusters: map[string]*api.Cluster{
+			clusterName: {
+				Server:                   endpoint,
+				CertificateAuthorityData: EncodeCertPEM(caCert),
+			},
+		},
+		Contexts: map[string]*api.Context{
+			contextName: {
+				Cluster:  clusterName,
+				AuthInfo: userName,
+			},
+		},
+		AuthInfos: map[string]*api.AuthInfo{
+			userName: {
+				ClientKeyData:         EncodePrivateKeyPEM(clientKey),
+				ClientCertificateData: EncodeCertPEM(clientCert),
+			},
+		},
+		CurrentContext: contextName,
+	}, nil
+}
+
+// EncodeCertPEM returns PEM-endcoded certificate data.
+func EncodeCertPEM(cert *x509.Certificate) []byte {
+	block := pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert.Raw,
+	}
+	return pem.EncodeToMemory(&block)
+}
+
+// EncodePrivateKeyPEM returns PEM-encoded private key data.
+func EncodePrivateKeyPEM(key *rsa.PrivateKey) []byte {
+	block := pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}
+
+	return pem.EncodeToMemory(&block)
+}
+
+// EncodePublicKeyPEM returns PEM-encoded public key data.
+func EncodePublicKeyPEM(key *rsa.PublicKey) ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return []byte{}, err
+	}
+	block := pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: der,
+	}
+	return pem.EncodeToMemory(&block), nil
+}
+
+// DecodeCertPEM attempts to return a decoded certificate or nil
+// if the encoded input does not contain a certificate.
+func DecodeCertPEM(encoded []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(encoded)
+	if block == nil {
+		return nil, nil
+	}
+
+	return x509.ParseCertificate(block.Bytes)
+}
+
+// DecodePrivateKeyPEM attempts to return a decoded key or nil
+// if the encoded input does not contain a private key.
+func DecodePrivateKeyPEM(encoded []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(encoded)
+	if block == nil {
+		return nil, nil
+	}
+
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+// GenerateCertificateHash returns the encoded sha256 hash for the certificate provided
+func GenerateCertificateHash(encoded []byte) (string, error) {
+	cert, err := DecodeCertPEM(encoded)
+	if err != nil || cert == nil {
+		return "", errors.Errorf("failed to parse PEM block containing the public key")
+	}
+
+	certHash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
+	return "sha256:" + strings.ToLower(hex.EncodeToString(certHash[:])), nil
+}
+
+// Dummy methods to satisfy azure.Service
 
 // Delete cleans up and generated certificates, could be useful for renewal.
 func (s *Service) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) error {
-	return nil
-}
-
-// Reconcile Helper function so this can be unittested.
-func (s *Service) Reconcile(ctx context.Context, spec v1alpha1.ResourceSpec) error {
-	klog.V(2).Infof("generating certificates")
-	clusterName := s.scope.Cluster.Name
-	tmpDirName := "/tmp/cluster-api/" + clusterName
-
-	defer os.RemoveAll(tmpDirName)
-
-	v1beta1cfg := &kubeadmv1beta1.InitConfiguration{}
-	kubeadmscheme.Scheme.Default(v1beta1cfg)
-	v1beta1cfg.CertificatesDir = tmpDirName + "/certs"
-	v1beta1cfg.Etcd.Local = &kubeadmv1beta1.LocalEtcd{}
-	// 10.0.0.1 is fake api server address, since this is also generated on control plane
-	v1beta1cfg.LocalAPIEndpoint = kubeadmv1beta1.APIEndpoint{AdvertiseAddress: "10.0.0.1", BindPort: 6443}
-	v1beta1cfg.ControlPlaneEndpoint = fmt.Sprintf("%s:6443", s.scope.Network().APIServerIP.DNSName)
-	v1beta1cfg.APIServer.CertSANs = []string{azure.DefaultInternalLBIPAddress}
-	// require a fake node name for now, this will be regenerated when it runs on node anyways
-	v1beta1cfg.NodeRegistration.Name = "fakenode" + clusterName
-	cfg := &kubeadmapi.InitConfiguration{}
-	kubeadmscheme.Scheme.Default(cfg)
-	kubeadmscheme.Scheme.Convert(v1beta1cfg, cfg, nil)
-
-	if err := CreatePKICertificates(cfg); err != nil {
-		return errors.Wrapf(err, "Failed to generate pki certs: %q", err)
-	}
-
-	if err := CreateSACertificates(cfg); err != nil {
-		return errors.Wrapf(err, "Failed to generate sa certs: %q", err)
-	}
-
-	kubeConfigDir := tmpDirName + "/kubeconfigs"
-	if err := CreateKubeconfigs(cfg, kubeConfigDir); err != nil {
-		return errors.Wrapf(err, "Failed to generate kubeconfigs: %q", err)
-	}
-
-	if err := updateClusterConfigKeyPairs(s.scope.ClusterConfig, tmpDirName); err != nil {
-		return errors.Wrapf(err, "Failed to update certificates: %q", err)
-	}
-
-	if err := updateClusterConfigKubeConfig(s.scope.ClusterConfig, tmpDirName); err != nil {
-		return errors.Wrapf(err, "Failed to update kubeconfigs and discoveryhashes: %q", err)
-	}
-
-	klog.V(2).Infof("successfully created certificates")
-
-	return nil
-}
-
-// CreatePKICertificates creates base pki assets in cfg.CertDir directory.
-func CreatePKICertificates(cfg *kubeadmapi.InitConfiguration) error {
-	klog.V(2).Infof("CreatePKIAssets")
-	if err := certsphase.CreatePKIAssets(cfg); err != nil {
-		return err
-	}
-	klog.V(2).Infof("CreatePKIAssets success")
-	return nil
-}
-
-// CreateSACertificates creates sa certificates in cfg.CertDir directory.
-func CreateSACertificates(cfg *kubeadmapi.InitConfiguration) error {
-	klog.V(2).Infof("CreateSACertificates")
-	if err := certsphase.CreateServiceAccountKeyAndPublicKeyFiles(cfg); err != nil {
-		return err
-	}
-	klog.V(2).Infof("CreateSACertificates success")
-	return nil
-}
-
-// GetDiscoveryHashes returns discovery hashes from a given kubeconfig file.
-func GetDiscoveryHashes(kubeConfigFile string) ([]string, error) {
-	klog.V(2).Infof("GetDiscoveryHashes")
-	// load the kubeconfig file to get the CA certificate and endpoint
-	config, err := clientcmd.LoadFromFile(kubeConfigFile)
-	if err != nil {
-		return nil, err
-	}
-
-	// load the default cluster config
-	clusterConfig := kubeconfigutil.GetClusterFromKubeConfig(config)
-	if clusterConfig == nil {
-		return nil, errors.New("failed to get default cluster config")
-	}
-
-	// load CA certificates from the kubeconfig (either from PEM data or by file path)
-	var caCerts []*x509.Certificate
-	if clusterConfig.CertificateAuthorityData != nil {
-		caCerts, err = clientcertutil.ParseCertsPEM(clusterConfig.CertificateAuthorityData)
-		if err != nil {
-			return nil, err
-		}
-	} else if clusterConfig.CertificateAuthority != "" {
-		caCerts, err = clientcertutil.CertsFromFile(clusterConfig.CertificateAuthority)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		return nil, errors.New("no CA certificates found in kubeconfig")
-	}
-
-	// hash all the CA certs and include their public key pins as trusted values
-	publicKeyPins := make([]string, 0, len(caCerts))
-	for _, caCert := range caCerts {
-		publicKeyPins = append(publicKeyPins, pubkeypin.Hash(caCert))
-	}
-	klog.V(2).Infof("GetDiscoveryHashes success")
-	return publicKeyPins, nil
-}
-
-// CreateNewBootstrapToken creates new bootstrap token using in cluster config.
-func CreateNewBootstrapToken(kubeconfig string, tokenTTL time.Duration) (string, error) {
-	klog.V(2).Infof("CreateNewBootstrapToken")
-	token, err := bootstraputil.GenerateBootstrapToken()
-	if err != nil {
-		return token, err
-	}
-
-	config, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfig))
-	if err != nil {
-		return token, err
-	}
-
-	cfg, err := config.ClientConfig()
-	if err != nil {
-		return token, err
-	}
-
-	kclientset, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		return token, err
-	}
-
-	tokenString, err := kubeadmapi.NewBootstrapTokenString(token)
-	if err != nil {
-		return token, err
-	}
-
-	bootstrapTokens := []kubeadmapi.BootstrapToken{
-		{
-			Token:  tokenString,
-			TTL:    &metav1.Duration{Duration: tokenTTL},
-			Groups: []string{"system:bootstrappers:kubeadm:default-node-token"},
-			Usages: []string{"signing", "authentication"},
-		},
-	}
-
-	if err := tokenphase.CreateNewTokens(kclientset, bootstrapTokens); err != nil {
-		return token, err
-	}
-
-	klog.V(2).Infof("CreateNewBootstrapToken success %s", token)
-	return token, nil
-}
-
-// CreateKubeconfigs creates kubeconfigs for all profiles.
-func CreateKubeconfigs(cfg *kubeadmapi.InitConfiguration, kubeConfigDir string) error {
-	klog.V(2).Infof("CreateKubeconfigs admin kubeconfig")
-	if err := kubeconfigphase.CreateKubeConfigFile(kubeadmconstants.AdminKubeConfigFileName, kubeConfigDir, cfg); err != nil {
-		return err
-	}
-	// if err := kubeconfigphase.CreateKubeConfigFile(kubeadmconstants.KubeletKubeConfigFileName, kubeConfigDir, cfg); err != nil {
-	// 	return err
-	// }
-	// if err := kubeconfigphase.CreateKubeConfigFile(kubeadmconstants.ControllerManagerKubeConfigFileName, kubeConfigDir, cfg); err != nil {
-	// 	return err
-	// }
-	// if err := kubeconfigphase.CreateKubeConfigFile(kubeadmconstants.SchedulerKubeConfigFileName, kubeConfigDir, cfg); err != nil {
-	// 	return err
-	// }
-	klog.V(2).Infof("CreateKubeconfigs admin kubeconfig success")
-	return nil
-}
-
-// updateClusterConfigKeyPairs populates clusterConfig with all the requisite certs.
-func updateClusterConfigKeyPairs(clusterConfig *v1alpha1.AzureClusterProviderSpec, tmpDirName string) error {
-	certsDir := tmpDirName + "/certs"
-
-	if err := updateCertKeyPair(&clusterConfig.CAKeyPair, certsDir+"/ca"); err != nil {
-		return err
-	}
-
-	if err := updateCertKeyPair(&clusterConfig.FrontProxyCAKeyPair, certsDir+"/front-proxy-ca"); err != nil {
-		return err
-	}
-
-	if err := updateCertKeyPair(&clusterConfig.EtcdCAKeyPair, certsDir+"/etcd/ca"); err != nil {
-		return err
-	}
-
-	if len(clusterConfig.SAKeyPair.Key) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/sa.key")
-		if err != nil {
-			return err
-		}
-		clusterConfig.SAKeyPair.Key = buf
-	}
-	if len(clusterConfig.SAKeyPair.Cert) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + "/sa.pub")
-		if err != nil {
-			return err
-		}
-		clusterConfig.SAKeyPair.Cert = buf
-	}
-
-	return nil
-}
-
-func updateCertKeyPair(keyPair *v1alpha1.KeyPair, certsDir string) error {
-	if len(keyPair.Cert) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + ".crt")
-		if err != nil {
-			return err
-		}
-		keyPair.Cert = buf
-	}
-	if len(keyPair.Key) <= 0 {
-		buf, err := ioutil.ReadFile(certsDir + ".key")
-		if err != nil {
-			return err
-		}
-		keyPair.Key = buf
-	}
-	return nil
-}
-
-func updateClusterConfigKubeConfig(clusterConfig *v1alpha1.AzureClusterProviderSpec, tmpDirName string) error {
-	kubeConfigsDir := tmpDirName + "/kubeconfigs"
-
-	if len(clusterConfig.AdminKubeconfig) <= 0 {
-		buf, err := ioutil.ReadFile(kubeConfigsDir + "/admin.conf")
-		if err != nil {
-			return err
-		}
-		clusterConfig.AdminKubeconfig = string(buf)
-	}
-
-	// // Discovery hashes typically never changes
-	if len(clusterConfig.DiscoveryHashes) <= 0 {
-		discoveryHashes, err := GetDiscoveryHashes(kubeConfigsDir + "/admin.conf")
-		if err != nil {
-			return err
-		}
-		clusterConfig.DiscoveryHashes = discoveryHashes
-	}
 	return nil
 }

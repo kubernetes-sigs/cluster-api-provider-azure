@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 )
 
 const (
@@ -47,14 +48,11 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 
 	dnsName := machine.Scope.Network().APIServerIP.DNSName
 
+	machine.Scope.V(3).Info("Generating CA key pair")
 	caCertHash := ""
-
-	if len(machine.Scope.ClusterConfig.DiscoveryHashes) > 0 {
-		caCertHash = machine.Scope.ClusterConfig.DiscoveryHashes[0]
-	}
-
-	if caCertHash == "" {
-		return "", errors.New("failed to run controlplane, missing discovery hashes")
+	caCertHash, err := certificates.GenerateCertificateHash(machine.Scope.ClusterConfig.CAKeyPair.Cert)
+	if err != nil {
+		return "", err
 	}
 
 	// apply values based on the role of the machine
@@ -67,7 +65,7 @@ func GetVMStartupScript(machine *actuators.MachineScope, bootstrapToken string) 
 		if bootstrapToken != "" {
 			klog.V(2).Infof("Allowing machine %s to join control plane for cluster %s", machine.Name(), machine.Scope.Name())
 
-			startupScript, err = JoinControlPlane(&ContolPlaneJoinInput{
+			startupScript, err = JoinControlPlane(&ControlPlaneJoinInput{
 				CACert:              string(machine.Scope.ClusterConfig.CAKeyPair.Cert),
 				CAKey:               string(machine.Scope.ClusterConfig.CAKeyPair.Key),
 				CACertHash:          caCertHash,

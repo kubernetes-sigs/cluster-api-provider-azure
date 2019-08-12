@@ -128,6 +128,11 @@ func (m *MachineScope) Close() {
 		return
 	}
 
+	if m.MachineStatus.VMID != nil && (m.Machine.Spec.ProviderID == nil || *m.Machine.Spec.ProviderID == "") {
+		providerID := fmt.Sprintf("azure:////%s", *m.MachineStatus.VMID)
+		m.Machine.Spec.ProviderID = &providerID
+	}
+
 	ext, err := v1alpha1.EncodeMachineSpec(m.MachineConfig)
 	if err != nil {
 		m.Error(err, "failed to encode machine spec")

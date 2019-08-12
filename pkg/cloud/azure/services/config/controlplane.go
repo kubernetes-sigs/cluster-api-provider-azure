@@ -214,7 +214,7 @@ export CONTAINERD_VERSION="{{.ContainerdVersion}}"
 export CONTAINERD_SHA256="{{.ContainerdSHA256}}"
 
 # Download containerd tar.
-wget --tries 10 https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+curl --connect-timeout 5 --retry 20 --retry-delay 0 --retry-max-time 120 -O https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
 
 # Check hash.
 echo "${CONTAINERD_SHA256} cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz" | sha256sum --check -
@@ -244,7 +244,7 @@ func isKeyPairValid(cert, key string) bool {
 	return cert != "" && key != ""
 }
 
-// ControlPlaneInput defines the context to generate a controlplane instance user data.
+// ControlPlaneInput defines the context to generate a control plane instance user data.
 type ControlPlaneInput struct {
 	baseConfig
 
@@ -268,8 +268,8 @@ type ControlPlaneInput struct {
 	ContainerdSHA256    string
 }
 
-// ContolPlaneJoinInput defines context to generate controlplane instance user data for controlplane node join.
-type ContolPlaneJoinInput struct {
+// ControlPlaneJoinInput defines context to generate control plane instance user data for control plane node join.
+type ControlPlaneJoinInput struct {
 	baseConfig
 
 	CACertHash          string
@@ -295,41 +295,41 @@ func (cpi *ControlPlaneInput) validateCertificates() error {
 	}
 
 	if !isKeyPairValid(cpi.EtcdCACert, cpi.EtcdCAKey) {
-		return errors.New("ETCD CA cert material in the ControlPlaneInput is missing cert/key")
+		return errors.New("etcd CA cert material in the ControlPlaneInput is missing cert/key")
 	}
 
 	if !isKeyPairValid(cpi.FrontProxyCACert, cpi.FrontProxyCAKey) {
-		return errors.New("FrontProxy CA cert material in ControlPlaneInput is missing cert/key")
+		return errors.New("Front proxy CA cert material in ControlPlaneInput is missing cert/key")
 	}
 
 	if !isKeyPairValid(cpi.SaCert, cpi.SaKey) {
-		return errors.New("ServiceAccount cert material in ControlPlaneInput is missing cert/key")
+		return errors.New("Service account cert material in ControlPlaneInput is missing cert/key")
 	}
 
 	return nil
 }
 
-func (cpi *ContolPlaneJoinInput) validateCertificates() error {
+func (cpi *ControlPlaneJoinInput) validateCertificates() error {
 	if !isKeyPairValid(cpi.CACert, cpi.CAKey) {
-		return errors.New("CA cert material in the ContolPlaneJoinInput is missing cert/key")
+		return errors.New("CA cert material in the ControlPlaneInput is missing cert/key")
 	}
 
 	if !isKeyPairValid(cpi.EtcdCACert, cpi.EtcdCAKey) {
-		return errors.New("ETCD cert material in the ContolPlaneJoinInput is missing cert/key")
+		return errors.New("etcd CA cert material in the ControlPlaneInput is missing cert/key")
 	}
 
 	if !isKeyPairValid(cpi.FrontProxyCACert, cpi.FrontProxyCAKey) {
-		return errors.New("FrontProxy cert material in ContolPlaneJoinInput is missing cert/key")
+		return errors.New("Front proxy CA cert material in ControlPlaneInput is missing cert/key")
 	}
 
 	if !isKeyPairValid(cpi.SaCert, cpi.SaKey) {
-		return errors.New("ServiceAccount cert material in ContolPlaneJoinInput is missing cert/key")
+		return errors.New("Service account cert material in ControlPlaneInput is missing cert/key")
 	}
 
 	return nil
 }
 
-// NewControlPlane returns the user data string to be used on a controlplane instance.
+// NewControlPlane returns the user data string to be used on a control plane instance.
 func NewControlPlane(input *ControlPlaneInput) (string, error) {
 	input.Header = defaultHeader
 	if err := input.validateCertificates(); err != nil {
@@ -344,8 +344,8 @@ func NewControlPlane(input *ControlPlaneInput) (string, error) {
 	return config, err
 }
 
-// JoinControlPlane returns the user data string to be used on a new contrplplane instance.
-func JoinControlPlane(input *ContolPlaneJoinInput) (string, error) {
+// JoinControlPlane returns the user data string to be used on a new control plane instance.
+func JoinControlPlane(input *ControlPlaneJoinInput) (string, error) {
 	input.Header = defaultHeader
 
 	if err := input.validateCertificates(); err != nil {

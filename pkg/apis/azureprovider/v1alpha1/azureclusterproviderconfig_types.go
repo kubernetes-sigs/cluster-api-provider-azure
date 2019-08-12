@@ -48,18 +48,14 @@ type AzureClusterProviderSpec struct {
 	// SAKeyPair is the service account key pair.
 	SAKeyPair KeyPair `json:"saKeyPair,omitempty"`
 
-	// AdminKubeconfig generated using the certificates part of the spec
-	// do not move to status, since it uses on disk ca certs, which causes issues during regeneration
-	AdminKubeconfig string `json:"adminKubeconfig,omitempty"`
-
-	// DiscoveryHashes generated using the certificates part of the spec, used by master and nodes bootstrapping
-	// this never changes until ca is rotated
-	// do not move to status, since it uses on disk ca certs, which causes issues during regeneration
-	DiscoveryHashes []string `json:"discoveryHashes,omitempty"`
-
 	// ClusterConfiguration holds the cluster-wide information used during a
 	// kubeadm init call.
 	ClusterConfiguration kubeadmv1beta1.ClusterConfiguration `json:"clusterConfiguration,omitempty"`
+
+	// TODO: Add support for userdata
+	// AdditionalUserDataFiles specifies extra files to be passed to all Machines' user_data upon creation.
+	// +optional
+	//AdditionalUserDataFiles []userdata.Files `json:"additionalUserDataFiles,omitempty"`
 }
 
 // KeyPair is how operators can supply custom keypairs for kubeadm to use.

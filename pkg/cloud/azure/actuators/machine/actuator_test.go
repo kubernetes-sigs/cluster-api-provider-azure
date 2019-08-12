@@ -20,6 +20,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -27,9 +28,11 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/fake"
@@ -39,6 +42,633 @@ import (
 var (
 	_ machine.Actuator = (*Actuator)(nil)
 )
+
+func contains(s []*clusterv1.Machine, e clusterv1.Machine) bool {
+	exists := false
+	for _, em := range s {
+		if em.Name == e.Name && em.Namespace == e.Namespace {
+			exists = true
+			break
+		}
+	}
+	return exists
+}
+
+func TestGetControlPlaneMachines(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       *clusterv1.MachineList
+		expectedOut []clusterv1.Machine
+	}{
+		{
+			name: "0 machines",
+			input: &clusterv1.MachineList{
+				Items: []clusterv1.Machine{},
+			},
+			expectedOut: []clusterv1.Machine{},
+		},
+		{
+			name: "only 2 controlplane machines",
+			input: &clusterv1.MachineList{
+				Items: []clusterv1.Machine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-0",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-1",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+				},
+			},
+			expectedOut: []clusterv1.Machine{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "master-0",
+						Namespace: "awesome-ns",
+					},
+					Spec: clusterv1.MachineSpec{
+						Versions: clusterv1.MachineVersionInfo{
+							Kubelet:      "v1.13.0",
+							ControlPlane: "v1.13.0",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "master-1",
+						Namespace: "awesome-ns",
+					},
+					Spec: clusterv1.MachineSpec{
+						Versions: clusterv1.MachineVersionInfo{
+							Kubelet:      "v1.13.0",
+							ControlPlane: "v1.13.0",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "2 controlplane machines, 1 deleted",
+			input: &clusterv1.MachineList{
+				Items: []clusterv1.Machine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-0",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-1",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-2",
+							Namespace: "awesome-ns",
+							DeletionTimestamp: &metav1.Time{
+								Time: time.Now(),
+							},
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+				},
+			},
+			expectedOut: []clusterv1.Machine{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "master-0",
+						Namespace: "awesome-ns",
+					},
+					Spec: clusterv1.MachineSpec{
+						Versions: clusterv1.MachineVersionInfo{
+							Kubelet:      "v1.13.0",
+							ControlPlane: "v1.13.0",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "master-1",
+						Namespace: "awesome-ns",
+					},
+					Spec: clusterv1.MachineSpec{
+						Versions: clusterv1.MachineVersionInfo{
+							Kubelet:      "v1.13.0",
+							ControlPlane: "v1.13.0",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "2 controlplane machines and 2 worker machines",
+			input: &clusterv1.MachineList{
+				Items: []clusterv1.Machine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-0",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "master-1",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet:      "v1.13.0",
+								ControlPlane: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "worker-0",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "worker-1",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet: "v1.13.0",
+							},
+						},
+					},
+				},
+			},
+			expectedOut: []clusterv1.Machine{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "master-0",
+						Namespace: "awesome-ns",
+					},
+					Spec: clusterv1.MachineSpec{
+						Versions: clusterv1.MachineVersionInfo{
+							Kubelet:      "v1.13.0",
+							ControlPlane: "v1.13.0",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "master-1",
+						Namespace: "awesome-ns",
+					},
+					Spec: clusterv1.MachineSpec{
+						Versions: clusterv1.MachineVersionInfo{
+							Kubelet:      "v1.13.0",
+							ControlPlane: "v1.13.0",
+						},
+					},
+				}},
+		},
+		{
+			name: "only 2 worker machines",
+			input: &clusterv1.MachineList{
+				Items: []clusterv1.Machine{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "worker-0",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet: "v1.13.0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "worker-1",
+							Namespace: "awesome-ns",
+						},
+						Spec: clusterv1.MachineSpec{
+							Versions: clusterv1.MachineVersionInfo{
+								Kubelet: "v1.13.0",
+							},
+						},
+					},
+				},
+			},
+			expectedOut: []clusterv1.Machine{},
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := GetControlPlaneMachines(tc.input)
+		if len(actual) != len(tc.expectedOut) {
+			t.Fatalf("[%s] Unexpected number of controlplane machines returned. Got: %d, Want: %d", tc.name, len(actual), len(tc.expectedOut))
+		}
+		if len(tc.expectedOut) > 1 {
+			for _, em := range tc.expectedOut {
+				if !contains(actual, em) {
+					t.Fatalf("[%s] Expected controlplane machine %q in namespace %q not found", tc.name, em.Name, em.Namespace)
+				}
+			}
+		}
+	}
+}
+
+func TestMachineEqual(t *testing.T) {
+	testCases := []struct {
+		name          string
+		inM1          clusterv1.Machine
+		inM2          clusterv1.Machine
+		expectedEqual bool
+	}{
+		{
+			name: "machines are equal",
+			inM1: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "machine1",
+					Namespace: "my-awesome-ns",
+				},
+			},
+			inM2: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "machine1",
+					Namespace: "my-awesome-ns",
+				},
+			},
+			expectedEqual: true,
+		},
+		{
+			name: "machines are not equal: names are different",
+			inM1: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "machine 1",
+					Namespace: "my-awesome-ns",
+				},
+			},
+			inM2: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "machine 2",
+					Namespace: "my-azureesome-ns",
+				},
+			},
+			expectedEqual: false,
+		},
+		{
+			name: "machines are not equal: namespace are different",
+			inM1: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "machine1",
+					Namespace: "my-awesome-ns",
+				},
+			},
+			inM2: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "machine1",
+					Namespace: "your-azureesome-ns",
+				},
+			},
+			expectedEqual: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		actualEqual := machinesEqual(&tc.inM1, &tc.inM2)
+		if tc.expectedEqual {
+			if !actualEqual {
+				t.Fatalf("[%s] Expected Machine1 [Name:%q, Namespace:%q], Equal Machine2 [Name:%q, Namespace:%q]",
+					tc.name, tc.inM1.Name, tc.inM1.Namespace, tc.inM2.Name, tc.inM2.Namespace)
+			}
+		} else {
+			if actualEqual {
+				t.Fatalf("[%s] Expected Machine1 [Name:%q, Namespace:%q], NOT Equal Machine2 [Name:%q, Namespace:%q]",
+					tc.name, tc.inM1.Name, tc.inM1.Namespace, tc.inM2.Name, tc.inM2.Namespace)
+			}
+		}
+	}
+}
+
+// TODO: Add immutable state change tests
+/*
+func TestImmutableStateChange(t *testing.T) {
+	testCases := []struct {
+		name        string
+		machineSpec v1alpha1.AzureMachineProviderSpec
+		instance    v1alpha1.VM
+		// expected length of returned errors
+		expected int
+	}{
+		{
+			name: "instance type is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				InstanceType: "t2.micro",
+			},
+			instance: v1alpha1.VM{
+				Type: "t2.micro",
+			},
+			expected: 0,
+		},
+		{
+			name: "instance type is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				InstanceType: "m5.large",
+			},
+			instance: v1alpha1.VM{
+				Type: "t2.micro",
+			},
+			expected: 1,
+		},
+		{
+			name: "iam profile is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				IAMInstanceProfile: "test-profile",
+			},
+			instance: v1alpha1.VM{
+				IAMProfile: "test-profile",
+			},
+			expected: 0,
+		},
+		{
+			name: "iam profile is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				IAMInstanceProfile: "test-profile-updated",
+			},
+			instance: v1alpha1.VM{
+				IAMProfile: "test-profile",
+			},
+			expected: 1,
+		},
+		{
+			name: "keyname is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				KeyName: "SSHKey",
+			},
+			instance: v1alpha1.VM{
+				KeyName: azure.String("SSHKey"),
+			},
+			expected: 0,
+		},
+		{
+			name: "keyname is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				KeyName: "SSHKey2",
+			},
+			instance: v1alpha1.VM{
+				KeyName: azure.String("SSHKey"),
+			},
+			expected: 1,
+		},
+		{
+			name: "instance with public ip is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				PublicIP: azure.Bool(true),
+			},
+			instance: v1alpha1.VM{
+				// This IP chosen from RFC5737 TEST-NET-1
+				PublicIP: azure.String("192.0.2.1"),
+			},
+			expected: 0,
+		},
+		{
+			name: "instance with public ip is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				PublicIP: azure.Bool(false),
+			},
+			instance: v1alpha1.VM{
+				// This IP chosen from RFC5737 TEST-NET-1
+				PublicIP: azure.String("192.0.2.1"),
+			},
+			expected: 1,
+		},
+		{
+			name: "instance without public ip is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				PublicIP: azure.Bool(false),
+			},
+			instance: v1alpha1.VM{
+				PublicIP: azure.String(""),
+			},
+			expected: 0,
+		},
+		{
+			name: "instance without public ip is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				PublicIP: azure.Bool(true),
+			},
+			instance: v1alpha1.VM{
+				PublicIP: azure.String(""),
+			},
+			expected: 1,
+		},
+		{
+			name: "subnetid is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				Subnet: &v1alpha1.AzureResourceReference{
+					ID: azure.String("subnet-abcdef"),
+				},
+			},
+			instance: v1alpha1.VM{
+				SubnetID: "subnet-abcdef",
+			},
+			expected: 0,
+		},
+		{
+			name: "subnetid is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				Subnet: &v1alpha1.AzureResourceReference{
+					ID: azure.String("subnet-123456"),
+				},
+			},
+			instance: v1alpha1.VM{
+				SubnetID: "subnet-abcdef",
+			},
+			expected: 1,
+		},
+		{
+			name:        "root device size is omitted",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{},
+			instance: v1alpha1.VM{
+				// All instances have a root device size, even when we don't set one
+				RootDeviceSize: 12,
+			},
+			expected: 0,
+		},
+		{
+			name: "root device size is unchanged",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				RootDeviceSize: 12,
+			},
+			instance: v1alpha1.VM{
+				RootDeviceSize: 12,
+			},
+			expected: 0,
+		},
+		{
+			name: "root device size is changed",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				RootDeviceSize: 12,
+			},
+			instance: v1alpha1.VM{
+				RootDeviceSize: 16,
+			},
+			expected: 1,
+		},
+		{
+			name: "multiple immutable changes",
+			machineSpec: v1alpha1.AzureMachineProviderSpec{
+				IAMInstanceProfile: "test-profile-updated",
+				PublicIP:           azure.Bool(false),
+			},
+			instance: v1alpha1.VM{
+				IAMProfile: "test-profile",
+				// This IP chosen from RFC5737 TEST-NET-1
+				PublicIP: azure.String("192.0.2.1"),
+			},
+			expected: 2,
+		},
+	}
+
+	testActuator := NewActuator(ActuatorParams{})
+
+	for _, tc := range testCases {
+		changed := len(testActuator.isMachineOutdated(&tc.machineSpec, &tc.instance))
+
+		if tc.expected != changed {
+			t.Fatalf("[%s] Expected MachineSpec [%+v], NOT Equal Instance [%+v]",
+				tc.name, tc.machineSpec, tc.instance)
+		}
+	}
+}
+*/
+
+func TestIsNodeJoin(t *testing.T) {
+	tests := []struct {
+		name          string
+		cluster       *clusterv1.Cluster
+		machine       *clusterv1.Machine
+		actualAcquire bool
+		expectJoin    bool
+		expectError   bool
+	}{
+		{
+			name: "control plane already ready",
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{v1alpha1.AnnotationControlPlaneReady: v1alpha1.ValueReady},
+				},
+			},
+			machine:     &clusterv1.Machine{},
+			expectJoin:  true,
+			expectError: false,
+		},
+		{
+			name:        "not a control plane machine",
+			cluster:     &clusterv1.Cluster{},
+			machine:     &clusterv1.Machine{},
+			expectJoin:  true,
+			expectError: true,
+		},
+		{
+			name:    "able to acquire lock",
+			cluster: &clusterv1.Cluster{},
+			machine: &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"set": "controlplane"},
+				},
+			},
+			actualAcquire: true,
+			expectJoin:    false,
+			expectError:   false,
+		},
+		{
+			name:    "unable to acquire lock",
+			cluster: &clusterv1.Cluster{},
+			machine: &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"set": "controlplane"},
+				},
+			},
+			actualAcquire: false,
+			expectError:   true,
+			expectJoin:    true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			log := klogr.New()
+
+			a := &Actuator{
+				controlPlaneInitLocker: &fakeControlPlaneInitLocker{succeed: tc.actualAcquire},
+			}
+
+			actual, err := a.isNodeJoin(log, tc.cluster, tc.machine)
+			if tc.expectError && err == nil {
+				t.Fatal("expected error but got nil")
+			} else if !tc.expectError && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tc.expectJoin != actual {
+				t.Errorf("join: expected %t, got %t", tc.expectJoin, actual)
+			}
+		})
+	}
+}
+
+type fakeControlPlaneInitLocker struct {
+	succeed bool
+}
+
+func (f *fakeControlPlaneInitLocker) Acquire(cluster *clusterv1.Cluster) bool {
+	return f.succeed
+}
 
 func newClusterProviderSpec() v1alpha1.AzureClusterProviderSpec {
 	return v1alpha1.AzureClusterProviderSpec{
@@ -80,8 +710,8 @@ func newMachine(t *testing.T, machineConfig v1alpha1.AzureMachineProviderSpec, l
 		Spec: clusterv1.MachineSpec{
 			ProviderSpec: *providerSpec,
 			Versions: clusterv1.MachineVersionInfo{
-				Kubelet:      "1.15.1",
-				ControlPlane: "1.15.1",
+				Kubelet:      "1.15.2",
+				ControlPlane: "1.15.2",
 			},
 		},
 	}
@@ -99,7 +729,8 @@ func newCluster(t *testing.T) *clusterv1.Cluster {
 			Kind: "Cluster",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-test",
+			Name:      "cluster-test",
+			Namespace: "dummy-namespace",
 		},
 		Spec: clusterv1.ClusterSpec{
 			ClusterNetwork: clusterv1.ClusterNetworkingConfig{
@@ -121,20 +752,21 @@ func newCluster(t *testing.T) *clusterv1.Cluster {
 
 func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	scope := &actuators.Scope{
-		Context: context.Background(),
 		Cluster: newCluster(t),
 		ClusterConfig: &v1alpha1.AzureClusterProviderSpec{
-			ResourceGroup:       "dummyResourceGroup",
-			Location:            "dummyLocation",
-			CAKeyPair:           v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			EtcdCAKeyPair:       v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			FrontProxyCAKeyPair: v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			SAKeyPair:           v1alpha1.KeyPair{Cert: []byte("cert"), Key: []byte("key")},
-			DiscoveryHashes:     []string{"discoveryhash0"},
+			ResourceGroup: "dummyResourceGroup",
+			Location:      "dummyLocation",
 		},
 		ClusterStatus: &v1alpha1.AzureClusterProviderStatus{},
+		Context:       context.Background(),
 	}
-	scope.Network().APIServerIP.DNSName = "DummyDNSName"
+
+	if scope.Logger == nil {
+		scope.Logger = klogr.New().WithName("default-logger")
+	}
+
+	scope.Network().APIServerIP.DNSName = "fakecluster.example.com"
+
 	labels := make(map[string]string)
 	labels["set"] = label
 	machineConfig := v1alpha1.AzureMachineProviderSpec{}
@@ -143,7 +775,7 @@ func newFakeScope(t *testing.T, label string) *actuators.MachineScope {
 	return &actuators.MachineScope{
 		Scope:         scope,
 		Machine:       m,
-		MachineClient: c.Machines("dummyNamespace"),
+		MachineClient: c.Machines(scope.Cluster.Namespace),
 		MachineConfig: &v1alpha1.AzureMachineProviderSpec{},
 		MachineStatus: &v1alpha1.AzureMachineProviderStatus{},
 	}
@@ -220,9 +852,13 @@ func (s *FakeVMService) Delete(ctx context.Context, spec v1alpha1.ResourceSpec) 
 }
 
 func TestReconcilerSuccess(t *testing.T) {
-	fakeReconciler := newFakeReconciler(t)
+	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
 
-	if err := fakeReconciler.Create(context.Background()); err != nil {
+	certSvc := certificates.NewService(fakeScope.Scope)
+	certSvc.Reconcile(fakeScope.Context, nil)
+
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
 	}
 
@@ -246,7 +882,7 @@ func TestReconcileFailure(t *testing.T) {
 	fakeReconciler.virtualMachinesSvc = fakeFailureSvc
 	fakeReconciler.virtualMachinesExtSvc = fakeFailureSvc
 
-	if err := fakeReconciler.Create(context.Background()); err == nil {
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err == nil {
 		t.Errorf("expected create to fail")
 	}
 
@@ -272,7 +908,7 @@ func TestReconcileVMFailedState(t *testing.T) {
 	}
 	fakeReconciler.virtualMachinesSvc = fakeVMService
 
-	if err := fakeReconciler.Create(context.Background()); err == nil {
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err == nil {
 		t.Errorf("expected create to fail")
 	}
 
@@ -298,7 +934,7 @@ func TestReconcileVMUpdatingState(t *testing.T) {
 	}
 	fakeReconciler.virtualMachinesSvc = fakeVMService
 
-	if err := fakeReconciler.Create(context.Background()); err == nil {
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err == nil {
 		t.Errorf("expected create to fail")
 	}
 
@@ -315,8 +951,9 @@ func TestReconcileVMUpdatingState(t *testing.T) {
 	}
 }
 
-func TestReconcileVMSuceededState(t *testing.T) {
-	fakeReconciler := newFakeReconciler(t)
+func TestReconcileVMSucceededState(t *testing.T) {
+	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
+	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
 	fakeVMService := &FakeVMService{
 		Name:              "machine-test",
 		ID:                "machine-test-ID",
@@ -324,7 +961,10 @@ func TestReconcileVMSuceededState(t *testing.T) {
 	}
 	fakeReconciler.virtualMachinesSvc = fakeVMService
 
-	if err := fakeReconciler.Create(context.Background()); err != nil {
+	certSvc := certificates.NewService(fakeScope.Scope)
+	certSvc.Reconcile(fakeScope.Context, nil)
+
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
 	}
 
@@ -338,42 +978,6 @@ func TestReconcileVMSuceededState(t *testing.T) {
 
 	if fakeVMService.CreateOrUpdateCallCount != 0 {
 		t.Errorf("expected reconcile not to be called")
-	}
-}
-
-func TestNodeJoinFirstControlPlane(t *testing.T) {
-	fakeReconciler := newFakeReconciler(t)
-
-	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
-		t.Errorf("isNodeJoin failed to create machine: %+v", err)
-	} else if isNodeJoin {
-		t.Errorf("Expected isNodeJoin to be false since its first VM")
-	}
-}
-
-func TestNodeJoinNode(t *testing.T) {
-	fakeScope := newFakeScope(t, v1alpha1.Node)
-	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
-
-	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
-		t.Errorf("isNodeJoin failed to create machine: %+v", err)
-	} else if !isNodeJoin {
-		t.Errorf("Expected isNodeJoin to be true since its a node")
-	}
-}
-
-func TestNodeJoinSecondControlPlane(t *testing.T) {
-	fakeScope := newFakeScope(t, v1alpha1.ControlPlane)
-	fakeReconciler := newFakeReconcilerWithScope(t, fakeScope)
-
-	if _, err := fakeScope.MachineClient.Create(fakeScope.Machine); err != nil {
-		t.Errorf("failed to create machine: %+v", err)
-	}
-
-	if isNodeJoin, err := fakeReconciler.isNodeJoin(); err != nil {
-		t.Errorf("isNodeJoin failed to create machine: %+v", err)
-	} else if !isNodeJoin {
-		t.Errorf("Expected isNodeJoin to be true since its second control plane vm")
 	}
 }
 
@@ -445,7 +1049,10 @@ func TestAvailabilityZones(t *testing.T) {
 		checkZones: zones,
 	}
 
-	if err := fakeReconciler.Create(context.Background()); err != nil {
+	certSvc := certificates.NewService(fakeScope.Scope)
+	certSvc.Reconcile(fakeScope.Context, nil)
+
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
 	}
 
@@ -457,7 +1064,7 @@ func TestAvailabilityZones(t *testing.T) {
 		checkZones: []string{},
 	}
 
-	if err := fakeReconciler.Create(context.Background()); err != nil {
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err != nil {
 		t.Errorf("failed to create machine: %+v", err)
 	}
 
@@ -469,7 +1076,7 @@ func TestAvailabilityZones(t *testing.T) {
 		checkZones: []string{"3"},
 	}
 
-	if err := fakeReconciler.Create(context.Background()); err == nil {
+	if err := fakeReconciler.Create(context.Background(), "fake-bootstrap-token"); err == nil {
 		t.Errorf("expected create to fail due to zone mismatch")
 	}
 }

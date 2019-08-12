@@ -394,7 +394,6 @@ type ManagedDisk struct {
 	StorageAccountType string `json:"storageAccountType"`
 }
 
-// TODO: Backfill logic
 const (
 	AnnotationClusterInfrastructureReady = "azure.cluster.sigs.k8s.io/infrastructure-ready"
 	ValueReady                           = "true"

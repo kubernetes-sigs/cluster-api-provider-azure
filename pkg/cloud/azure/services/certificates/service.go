@@ -23,14 +23,13 @@ import (
 
 var _ azure.Service = (*Service)(nil)
 
-// Service holds a collection of interfaces.
-// The interfaces are broken down like this to group functions together.
-// One alternative is to have a large list of functions from the ec2 client.
+// Service groups certificate related operations together and allows
+// certificate updates to be applied to the actuator scope.
 type Service struct {
 	scope *actuators.Scope
 }
 
-// NewService returns a new service given the api clients.
+// NewService returns a new certificates service for the given actuators scope.
 func NewService(scope *actuators.Scope) *Service {
 	return &Service{
 		scope: scope,

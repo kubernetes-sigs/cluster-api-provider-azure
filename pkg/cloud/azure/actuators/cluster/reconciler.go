@@ -152,7 +152,6 @@ func (r *Reconciler) Reconcile() error {
 		return errors.Wrapf(err, "failed to reconcile control plane public load balancer for cluster %s", r.scope.Cluster.Name)
 	}
 
-	klog.V(2).Infof("successfully reconciled cluster %s", r.scope.Cluster.Name)
 	return nil
 }
 
