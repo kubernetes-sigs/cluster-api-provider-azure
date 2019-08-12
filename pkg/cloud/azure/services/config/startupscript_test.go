@@ -36,9 +36,17 @@ func TestContainerdSHA256(t *testing.T) {
 
 	klog.Infof("saving to %s", fileName)
 
-	cmd := exec.Command("wget",
+	cmd := exec.Command("curl",
+		"--connect-timeout",
+		"5",
+		"--retry",
+		"20",
+		"--retry-delay",
+		"0",
+		"--retry-max-time",
+		"120",
 		url,
-		"-O",
+		"-o",
 		fileName)
 
 	var buf bytes.Buffer
@@ -49,7 +57,7 @@ func TestContainerdSHA256(t *testing.T) {
 	err := cmd.Wait()
 
 	if err != nil {
-		t.Errorf("Error dowinloading containerd: %v", buf.String())
+		t.Errorf("Error downloading containerd: %v", buf.String())
 	}
 	cmd = exec.Command("sha256sum", "--check", "-")
 
