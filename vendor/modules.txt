@@ -58,6 +58,8 @@ github.com/go-logr/logr
 github.com/go-logr/zapr
 # github.com/gobuffalo/envy v1.6.12
 github.com/gobuffalo/envy
+# github.com/gobuffalo/flect v0.0.0-20190104192022-4af577e09bf2
+github.com/gobuffalo/flect
 # github.com/gogo/protobuf v1.2.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
@@ -120,8 +122,6 @@ github.com/inconshreveable/mousetrap
 github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
-# github.com/markbates/inflect v1.0.4
-github.com/markbates/inflect
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-homedir v1.1.0
@@ -406,15 +406,15 @@ k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/util/net
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/pkg/api/meta
+k8s.io/apimachinery/pkg/labels
+k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/conversion
 k8s.io/apimachinery/pkg/conversion/queryparams
-k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/util/naming
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/util/intstr
-k8s.io/apimachinery/pkg/labels
 k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/apis/meta/v1/validation
 k8s.io/apimachinery/pkg/util/validation/field
@@ -431,6 +431,7 @@ k8s.io/apimachinery/pkg/runtime/serializer/streaming
 k8s.io/apimachinery/pkg/apis/meta/v1/unstructured
 k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/apis/meta/v1beta1
+k8s.io/apimachinery/pkg/apis/meta/internalversion
 k8s.io/apimachinery/pkg/util/uuid
 k8s.io/apimachinery/third_party/forked/golang/reflect
 k8s.io/apimachinery/pkg/util/framer
@@ -439,7 +440,6 @@ k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/pkg/util/cache
 k8s.io/apimachinery/pkg/util/diff
 k8s.io/apimachinery/pkg/apis/config
-k8s.io/apimachinery/pkg/apis/meta/internalversion
 # k8s.io/client-go v10.0.0+incompatible
 k8s.io/client-go/kubernetes/typed/core/v1
 k8s.io/client-go/tools/clientcmd
@@ -451,6 +451,7 @@ k8s.io/client-go/kubernetes/scheme
 k8s.io/client-go/tools/reference
 k8s.io/client-go/discovery
 k8s.io/client-go/util/flowcontrol
+k8s.io/client-go/tools/pager
 k8s.io/client-go/util/retry
 k8s.io/client-go/tools/leaderelection
 k8s.io/client-go/tools/leaderelection/resourcelock
@@ -511,7 +512,6 @@ k8s.io/client-go/plugin/pkg/client/auth/azure
 k8s.io/client-go/plugin/pkg/client/auth/gcp
 k8s.io/client-go/plugin/pkg/client/auth/oidc
 k8s.io/client-go/plugin/pkg/client/auth/openstack
-k8s.io/client-go/tools/pager
 k8s.io/client-go/util/buffer
 k8s.io/client-go/util/jsonpath
 k8s.io/client-go/third_party/forked/golang/template
@@ -576,7 +576,7 @@ k8s.io/kubernetes/pkg/apis/core
 k8s.io/kubernetes/pkg/registry/core/service/allocator
 # k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a
 k8s.io/utils/exec
-# sigs.k8s.io/cluster-api v0.1.8
+# sigs.k8s.io/cluster-api v0.1.9
 sigs.k8s.io/cluster-api/cmd/clusterctl/cmd
 sigs.k8s.io/cluster-api/pkg/apis/cluster/common
 sigs.k8s.io/cluster-api/pkg/apis
@@ -633,7 +633,7 @@ sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
 sigs.k8s.io/controller-runtime/pkg/webhook/types
 sigs.k8s.io/controller-runtime/pkg/internal/controller/metrics
 sigs.k8s.io/controller-runtime/pkg/internal/objectutil
-# sigs.k8s.io/controller-tools v0.1.11
+# sigs.k8s.io/controller-tools v0.1.12
 sigs.k8s.io/controller-tools/cmd/controller-gen
 sigs.k8s.io/controller-tools/pkg/crd/generator
 sigs.k8s.io/controller-tools/pkg/rbac
