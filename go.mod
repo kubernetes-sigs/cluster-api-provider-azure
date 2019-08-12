@@ -31,9 +31,9 @@ require (
 	k8s.io/component-base v0.0.0-20190711104712-4ad84870f76c // indirect
 	k8s.io/klog v0.3.2
 	k8s.io/kubernetes v1.13.3
-	sigs.k8s.io/cluster-api v0.1.8
+	sigs.k8s.io/cluster-api v0.1.9
 	sigs.k8s.io/controller-runtime v0.1.12
-	sigs.k8s.io/controller-tools v0.1.11
+	sigs.k8s.io/controller-tools v0.1.12
 	sigs.k8s.io/testing_frameworks v0.1.1
 	sigs.k8s.io/yaml v1.1.0
 )
