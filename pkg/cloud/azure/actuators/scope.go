@@ -141,6 +141,11 @@ func (s *Scope) Location() string {
 	return s.ClusterConfig.Location
 }
 
+// ControlPlaneAZScores returns the score of the availability zones selected for control planes.
+func (s *Scope) ControlPlaneAZScores() *v1alpha1.AvailabilityZoneScores {
+	return &s.ClusterStatus.ControlPlaneAvailabilityZoneScores
+}
+
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *Scope) Close() {
 	if s.ClusterClient == nil {

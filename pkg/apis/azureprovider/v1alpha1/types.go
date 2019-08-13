@@ -399,3 +399,8 @@ const (
 	ValueReady                           = "true"
 	AnnotationControlPlaneReady          = "azure.cluster.sigs.k8s.io/control-plane-ready"
 )
+
+// AvailabilityZoneScores assigns a score to an availability zone based on how many times
+// it is used in a cluster. AvailabilityZoneScores is defined as a map with availability zones (string)
+// as the key and a score (int) as the value.
+type AvailabilityZoneScores map[string]int

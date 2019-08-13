@@ -286,7 +286,27 @@ func (r *Reconciler) getVirtualMachineZone(ctx context.Context) (string, error) 
 	}
 
 	rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
-	return zones[rand.Intn(len(zones))], nil
+	selectedAZ := zones[rand.Intn(len(zones))]
+
+	azScores := r.scope.ClusterStatus.ControlPlaneAvailabilityZoneScores
+	if azScores == nil {
+		azScores = make(v1alpha1.AvailabilityZoneScores)
+		azScores[selectedAZ] = 1
+
+		return selectedAZ, nil
+	}
+
+	currentScore := 10
+	for az, score := range azScores {
+		if score < currentScore {
+			currentScore = score
+			selectedAZ = az
+		}
+	}
+
+	azScores[selectedAZ]++
+
+	return selectedAZ, nil
 }
 
 func (r *Reconciler) createNetworkInterface(ctx context.Context, nicName string) error {
@@ -345,12 +365,12 @@ func (r *Reconciler) createVirtualMachine(ctx context.Context, nicName string) e
 
 		vmZone = r.scope.MachineConfig.AvailabilityZone
 
-		if r.scope.MachineConfig.AvailabilityZone == "" {
+		if vmZone == "" {
 			vmZone, zoneErr = r.getVirtualMachineZone(ctx)
 			if zoneErr != nil {
 				return errors.Wrap(zoneErr, "failed to get availability zone")
 			}
-			klog.Info("No availability zone set, selecting random availability zone:", vmZone)
+			klog.Info("No availability zone set, selecting availability zone: ", vmZone)
 		}
 
 		vmSpec = &virtualmachines.Spec{

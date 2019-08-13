@@ -32,6 +32,8 @@ type AzureClusterProviderStatus struct {
 
 	Network Network `json:"network,omitempty"`
 	Bastion VM      `json:"bastion,omitempty"`
+
+	ControlPlaneAvailabilityZoneScores AvailabilityZoneScores `json:"controlPlaneAvailabilityZoneScores,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
