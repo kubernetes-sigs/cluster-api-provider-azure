@@ -710,8 +710,8 @@ func newMachine(t *testing.T, machineConfig v1alpha1.AzureMachineProviderSpec, l
 		Spec: clusterv1.MachineSpec{
 			ProviderSpec: *providerSpec,
 			Versions: clusterv1.MachineVersionInfo{
-				Kubelet:      "1.15.2",
-				ControlPlane: "1.15.2",
+				Kubelet:      "1.15.3",
+				ControlPlane: "1.15.3",
 			},
 		},
 	}
