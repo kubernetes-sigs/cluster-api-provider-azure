@@ -7,7 +7,7 @@ gomock(
     interfaces = [
         "RouteTablesClientAPI",
     ],
-    library = "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-04-01/network/networkapi:go_default_library",
+    library = "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network/networkapi:go_default_library",
     package = "mock_routetables",
     visibility = ["//visibility:public"],
 )
@@ -18,7 +18,7 @@ go_library(
     importpath = "sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/services/routetables/mock_routetables",
     visibility = ["//visibility:public"],
     deps = [
-        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-04-01/network:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network:go_default_library",
         "//vendor/github.com/golang/mock/gomock:go_default_library",
     ],
 )
