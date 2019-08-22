@@ -1,0 +1,77 @@
+/*
+Copyright 2018 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha2
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// AzureClusterSpec defines the desired state of AzureCluster
+type AzureClusterSpec struct {
+	// NetworkSpec encapsulates all things related to Azure network.
+	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
+
+	ResourceGroup string `json:"resourceGroup"`
+	Location      string `json:"location"`
+
+	// CAKeyPair is the key pair for CA certs.
+	CAKeyPair KeyPair `json:"caKeyPair,omitempty"`
+
+	// EtcdCAKeyPair is the key pair for etcd.
+	EtcdCAKeyPair KeyPair `json:"etcdCAKeyPair,omitempty"`
+
+	// FrontProxyCAKeyPair is the key pair for the front proxy.
+	FrontProxyCAKeyPair KeyPair `json:"frontProxyCAKeyPair,omitempty"`
+
+	// SAKeyPair is the service account key pair.
+	SAKeyPair KeyPair `json:"saKeyPair,omitempty"`
+}
+
+// AzureClusterStatus defines the observed state of AzureCluster
+type AzureClusterStatus struct {
+	Network Network `json:"network,omitempty"`
+	Bastion VM      `json:"bastion,omitempty"`
+}
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// AzureCluster is the Schema for the azureclusters API
+// +k8s:openapi-gen=true
+type AzureCluster struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   AzureClusterSpec   `json:"spec,omitempty"`
+	Status AzureClusterStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// AzureClusterList contains a list of AzureCluster
+type AzureClusterList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []AzureCluster `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&AzureCluster{}, &AzureClusterList{})
+}

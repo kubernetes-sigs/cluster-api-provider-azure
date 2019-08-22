@@ -200,6 +200,7 @@ golang.org/x/crypto/pkcs12/internal/rc2
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/internal/subtle
 # golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
+golang.org/x/net/context
 golang.org/x/net/http2
 golang.org/x/net/html/charset
 golang.org/x/net/http/httpguts
@@ -208,7 +209,6 @@ golang.org/x/net/idna
 golang.org/x/net/html
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html/atom
-golang.org/x/net/context
 # golang.org/x/oauth2 v0.0.0-20190115181402-5dab4167f31c
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
@@ -309,7 +309,10 @@ k8s.io/api/storage/v1beta1
 k8s.io/api/admission/v1beta1
 # k8s.io/apiextensions-apiserver v0.0.0-20190228180357-d002e88f6236
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 # k8s.io/apimachinery v0.0.0-20190711103026-7bf792636534 => k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
 k8s.io/apimachinery/pkg/runtime
 k8s.io/apimachinery/pkg/apis/meta/v1
@@ -541,6 +544,7 @@ sigs.k8s.io/controller-runtime/pkg/recorder
 sigs.k8s.io/controller-runtime/pkg/runtime/inject
 sigs.k8s.io/controller-runtime/pkg/webhook/admission
 sigs.k8s.io/controller-runtime/pkg/webhook/admission/types
+sigs.k8s.io/controller-runtime/pkg/envtest
 sigs.k8s.io/controller-runtime/pkg/internal/controller
 sigs.k8s.io/controller-runtime/pkg/predicate
 sigs.k8s.io/controller-runtime/pkg/event
@@ -548,6 +552,7 @@ sigs.k8s.io/controller-runtime/pkg/source/internal
 sigs.k8s.io/controller-runtime/pkg/cache/internal
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
 sigs.k8s.io/controller-runtime/pkg/webhook/types
+sigs.k8s.io/controller-runtime/pkg/envtest/printer
 sigs.k8s.io/controller-runtime/pkg/internal/controller/metrics
 sigs.k8s.io/controller-runtime/pkg/internal/objectutil
 # sigs.k8s.io/controller-tools v0.1.12

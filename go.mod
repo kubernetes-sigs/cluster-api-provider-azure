@@ -22,6 +22,7 @@ require (
 	github.com/prometheus/procfs v0.0.0-20190227231451-bbced9601137 // indirect
 	github.com/spf13/cobra v0.0.3
 	golang.org/x/crypto v0.0.0-20190418165655-df01cb2cc480
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
 	k8s.io/api v0.0.0-20190711103429-37c3b8b1ca65
 	k8s.io/apimachinery v0.0.0-20190711103026-7bf792636534
 	k8s.io/client-go v10.0.0+incompatible
