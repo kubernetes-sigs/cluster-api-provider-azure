@@ -31,16 +31,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachinerytypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	capz "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	capi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	capz "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
-	//capa "sigs.k8s.io/cluster-api-provider-aws/pkg/apis/awsprovider/v1alpha1"
 )
 
 const (
-	workerClusterK8sVersion = "v1.15.1"
+	workerClusterK8sVersion = "v1.15.3"
 )
 
 var _ = Describe("functional tests", func() {
@@ -80,17 +78,17 @@ var _ = Describe("functional tests", func() {
 
 			fmt.Fprintf(GinkgoWriter, "Ensuring first control plane Machine is ready\n")
 			Eventually(
-				func() (*capa.AWSMachineProviderStatus, error) {
+				func() (*capz.AzureMachineProviderStatus, error) {
 					machine := &capi.Machine{}
 					if err := kindClient.Get(context.TODO(), apimachinerytypes.NamespacedName{Namespace: namespace, Name: machineName}, machine); err != nil {
 						return nil, err
 					}
 					if machine.Status.ProviderStatus == nil {
-						return &capa.AWSMachineProviderStatus{
-							InstanceState: &capa.InstanceStatePending,
+						return &capz.AzureMachineProviderStatus{
+							VMState: &capz.VMStateCreating,
 						}, nil
 					}
-					return capa.MachineStatusFromProviderStatus(machine.Status.ProviderStatus)
+					return capz.MachineStatusFromProviderStatus(machine.Status.ProviderStatus)
 				},
 				10*time.Minute, 15*time.Second,
 			).Should(beHealthy())
@@ -118,7 +116,7 @@ var _ = Describe("functional tests", func() {
 					return cluster.Annotations, nil
 				},
 				10*time.Minute, 15*time.Second,
-			).Should(HaveKeyWithValue(capa.AnnotationControlPlaneReady, capa.ValueReady))
+			).Should(HaveKeyWithValue(capz.AnnotationControlPlaneReady, capz.ValueReady))
 
 			// TODO: Retrieve Cluster kubeconfig
 			// TODO: Deploy Addons
@@ -161,15 +159,14 @@ func noOptionsDelete() crclient.DeleteOptionFunc {
 func beHealthy() types.GomegaMatcher {
 	return PointTo(
 		MatchFields(IgnoreExtras, Fields{
-			"InstanceState": PointTo(Equal(capz.InstanceStateRunning)),
+			"VMState": PointTo(Equal(capz.VMStateSucceeded)),
 		}),
 	)
 }
 
 func makeCluster(name string) *capi.Cluster {
 	providerSpecValue, err := capz.EncodeClusterSpec(&capz.AzureClusterProviderSpec{
-		SSHKeyName: keyPairName,
-		Region:     region,
+		// TODO: Determine bare minimum cluster spec to define here
 	})
 	Expect(err).To(BeNil())
 
@@ -207,14 +204,13 @@ func makeMachine(name, clusterName, role, k8sVersion string) *capi.Machine {
 		instanceRole = "control-plane.cluster-api-provider-azure.sigs.k8s.io"
 		machineVersionInfo.ControlPlane = k8sVersion
 	case "node":
-		instanceRole = "nodes.cluster-api-provider-aws.sigs.k8s.io"
+		instanceRole = "nodes.cluster-api-provider-azure.sigs.k8s.io"
 	}
 	Expect(instanceRole).ToNot(BeEmpty())
 
 	providerSpecValue, err := capz.EncodeMachineSpec(&capz.AzureMachineProviderSpec{
-		//		KeyName:            keyPairName,
-		//		IAMInstanceProfile: instanceRole,
-		VMSize: "m5.large", //LOOK UP ACTUAL AZURE VM SIZES
+		// TODO: Determine bare minimum machine spec to define here
+		VMSize: "Standard_B2ms",
 	})
 	Expect(err).To(BeNil())
 
