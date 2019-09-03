@@ -103,7 +103,7 @@ func initLocation() error {
 	if locationFile != nil && *locationFile != "" {
 		data, err := ioutil.ReadFile(*locationFile)
 		if err != nil {
-			return fmt.Errorf("error reading AWS location file: %v", err)
+			return fmt.Errorf("error reading Azure location file: %v", err)
 		}
 		location = string(bytes.TrimSpace(data))
 		return nil
