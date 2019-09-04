@@ -18,20 +18,28 @@ package e2e_test
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"os"
+	"strings"
 	"time"
+
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachinerytypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	capz "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/util/kind"
 	capi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,18 +47,67 @@ import (
 
 const (
 	workerClusterK8sVersion = "v1.15.3"
+	setupTimeout            = 10 * 60
+	capzProviderNamespace   = "azure-provider-system"
+	capzStatefulSetName     = "azure-provider-controller-manager"
+	defaultLocation         = "eastus"
 )
 
-var _ = Describe("functional tests", func() {
+var (
+	// TODO: Do we want to do file-based auth? Not suggested. If we determine no, remove this deadcode
+	//credFile               = flag.String("credFile", "", "path to an Azure credentials file")
+	providerComponentsYAML = flag.String("providerComponentsYAML", "", "path to the provider components YAML for the cluster API")
+
+	kindClient crclient.Client
+	location   string
+)
+
+func initLocation() {
+	val, ok := os.LookupEnv("AZURE_LOCATION")
+	if !ok {
+		fmt.Fprintf(GinkgoWriter, "Environment variable AZURE_LOCATION not found, using default location %s\n", defaultLocation)
+		location = defaultLocation
+	}
+	location = strings.TrimSpace(val)
+}
+
+var _ = Describe("Azure", func() {
 	var (
+		kindCluster kind.Cluster
 		namespace   string
 		clusterName string
 	)
 	BeforeEach(func() {
-		namespace = "test-" + util.RandomString(6)
-		fmt.Fprintf(GinkgoWriter, "creating namespace %q\n", namespace)
-		createNamespace(kindCluster.KubeClient(), namespace)
-		clusterName = "test-" + util.RandomString(6)
+		fmt.Fprintf(GinkgoWriter, "Running in Azure location: %s\n", location)
+		fmt.Fprintf(GinkgoWriter, "Setting up kind cluster\n")
+		kindCluster = kind.Cluster{
+			Name: "capz-test-" + util.RandomString(6),
+		}
+		kindCluster.Setup()
+
+		fmt.Fprintf(GinkgoWriter, "Applying Provider Components to the kind cluster\n")
+		applyProviderComponents(kindCluster)
+		cfg := kindCluster.RestConfig()
+		var err error
+		kindClient, err = crclient.New(cfg, crclient.Options{})
+		Expect(err).To(BeNil())
+
+		fmt.Fprintf(GinkgoWriter, "Ensuring ProviderComponents are deployed\n")
+		Eventually(
+			func() (int32, error) {
+				statefulSet := &appsv1.StatefulSet{}
+				if err := kindClient.Get(context.TODO(), apimachinerytypes.NamespacedName{Namespace: capzProviderNamespace, Name: capzStatefulSetName}, statefulSet); err != nil {
+					return 0, err
+				}
+				return statefulSet.Status.ReadyReplicas, nil
+			}, 5*time.Minute, 15*time.Second,
+		).ShouldNot(BeZero())
+
+	}, setupTimeout)
+
+	AfterEach(func() {
+		fmt.Fprintf(GinkgoWriter, "Tearing down kind cluster\n")
+		kindCluster.Teardown()
 	})
 
 	Describe("workload cluster lifecycle", func() {
@@ -240,4 +297,17 @@ func createNamespace(client kubernetes.Interface, namespace string) {
 		},
 	})
 	Expect(err).To(BeNil())
+}
+
+func getAzureAuthorizer() autorest.Authorizer {
+	// create an authorizer from env vars or Azure Managed Service Idenity
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	Expect(err).To(BeNil())
+	return authorizer
+}
+
+func applyProviderComponents(kindCluster kind.Cluster) {
+	Expect(providerComponentsYAML).ToNot(BeNil())
+	Expect(*providerComponentsYAML).ToNot(BeEmpty())
+	kindCluster.ApplyYAML(*providerComponentsYAML)
 }

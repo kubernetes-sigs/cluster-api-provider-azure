@@ -45,8 +45,9 @@ func init() {
 }
 
 var (
-	kindBinary    = flag.String("kindBinary", "kind", "path to the kind binary")
-	kubectlBinary = flag.String("kubectlBinary", "kubectl", "path to the kubectl binary")
+	managerImageTar = flag.String("managerImageTar", "", "a script to load the manager Docker image into Docker")
+	kindBinary      = flag.String("kindBinary", "kind", "path to the kind binary")
+	kubectlBinary   = flag.String("kubectlBinary", "kubectl", "path to the kubectl binary")
 )
 
 // Cluster represents the running state of a KIND cluster.
@@ -68,21 +69,20 @@ func (c *Cluster) Setup() {
 	c.kubepath = strings.TrimSpace(string(path))
 	fmt.Fprintf(ginkgo.GinkgoWriter, "kubeconfig path: %q. Can use the following to access the cluster:\n", c.kubepath)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "export KUBECONFIG=%s\n", c.kubepath)
+
+	if *managerImageTar != "" {
+		fmt.Fprintf(
+			ginkgo.GinkgoWriter,
+			"loading image %q into Kind node\n",
+			*managerImageTar)
+		c.run(exec.Command(*kindBinary, "load", "image-archive", "--name", c.Name, *managerImageTar))
+	}
 }
 
 // Teardown attempts to delete the KIND cluster
 func (c *Cluster) Teardown() {
 	c.run(exec.Command(*kindBinary, "delete", "cluster", "--name", c.Name))
 	os.RemoveAll(c.tmpDir)
-}
-
-// LoadImageArchive loads the specified image archive into the kind cluster
-func (c *Cluster) LoadImageArchive(imageArchivePath string) {
-	fmt.Fprintf(
-		ginkgo.GinkgoWriter,
-		"loading image %q into Kind node\n",
-		imageArchivePath)
-	c.run(exec.Command(*kindBinary, "load", "image-archive", "--name", c.Name, imageArchivePath))
 }
 
 // ApplyYAML applies the provided manifest to the kind cluster

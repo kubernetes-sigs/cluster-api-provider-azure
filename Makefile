@@ -83,16 +83,9 @@ test-go: ## Run tests
 #integration: generate verify ## Run integraion tests
 #	bazel test --define='gotags=integration' --test_output all //test/integration/...
 
-# TODO: Enable e2e tests
-#JANITOR_ENABLED ?= 0
-.PHONY: e2e
-e2e: generate verify ## Run e2e tests
-	bazel test --define='gotags=e2e' --test_output all //test/e2e/... $(BAZEL_BUILD_ARGS)
-#	JANITOR_ENABLED=$(JANITOR_ENABLED) ./hack/e2e.sh $(BAZEL_BUILD_ARGS)
-
-#.PHONY: e2e-janitor
-#e2e-janitor:
-#	./hack/e2e-azure-janitor.sh
+.PHONY: test-e2e
+test-e2e: ## Run e2e tests
+	go test -v -tags=e2e ./test/e2e/...
 
 ## --------------------------------------
 ## Docker
