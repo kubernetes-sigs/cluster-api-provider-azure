@@ -45,9 +45,10 @@ func init() {
 }
 
 var (
-	managerImageTar = flag.String("managerImageTar", "", "a script to load the manager Docker image into Docker")
-	kindBinary      = flag.String("kindBinary", "kind", "path to the kind binary")
-	kubectlBinary   = flag.String("kubectlBinary", "kubectl", "path to the kubectl binary")
+	managerImageTar        = flag.String("managerImageTar", "", "a script to load the manager Docker image into Docker")
+	kindBinary             = flag.String("kindBinary", "kind", "path to the kind binary")
+	kubectlBinary          = flag.String("kubectlBinary", "kubectl", "path to the kubectl binary")
+	providerComponentsYAML = "config/base/provider-components.yaml"
 )
 
 // Cluster represents the running state of a KIND cluster.
@@ -77,6 +78,8 @@ func (c *Cluster) Setup() {
 			*managerImageTar)
 		c.run(exec.Command(*kindBinary, "load", "image-archive", "--name", c.Name, *managerImageTar))
 	}
+	fmt.Fprintf(ginkgo.GinkgoWriter, "Applying Provider Components to the kind cluster: %s\n", providerComponentsYAML)
+	c.ApplyYAML(providerComponentsYAML)
 }
 
 // Teardown attempts to delete the KIND cluster

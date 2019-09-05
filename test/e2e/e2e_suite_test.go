@@ -24,7 +24,10 @@ import (
 )
 
 func TestE2e(t *testing.T) {
-	initLocation()
+	err := initConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "e2e Suite")
 }
