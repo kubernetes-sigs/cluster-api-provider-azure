@@ -21,11 +21,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -48,6 +46,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloudtest"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/config"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/util/kind"
 	capi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clientset "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
@@ -56,35 +55,14 @@ import (
 )
 
 const (
-	workerClusterK8sVersion = "v1.15.3"
-	setupTimeout            = 10 * 60
-	capzProviderNamespace   = "azure-provider-system"
-	capzStatefulSetName     = "azure-provider-controller-manager"
-	defaultLocation         = "eastus"
-	keyPairName             = "cluster-api-provider-azure-sigs-k8s-io"
+	capzProviderNamespace = "azure-provider-system"
+	capzStatefulSetName   = "azure-provider-controller-manager"
 )
 
 var (
-	clusterConfigPath string
-	machineConfigPath string
-	kindClient        crclient.Client
-	location          string
+	kindClient crclient.Client
+	testConfig config.Config
 )
-
-func initConfig() error {
-	clusterConfigPath = os.Getenv("CLUSTERCONFIG_PATH")
-	machineConfigPath = os.Getenv("MACHINECONFIG_PATH")
-	if clusterConfigPath == "" || machineConfigPath == "" {
-		return errors.New("missing parameters: CLUSTERCONFIG_PATH and MACHINECONFIG_PATH must be set")
-	}
-	val, ok := os.LookupEnv("AZURE_LOCATION")
-	if !ok {
-		fmt.Fprintf(GinkgoWriter, "Environment variable AZURE_LOCATION not found, using default location %s\n", defaultLocation)
-		location = defaultLocation
-	}
-	location = strings.TrimSpace(val)
-	return nil
-}
 
 var _ = Describe("Azure", func() {
 	var (
@@ -92,7 +70,9 @@ var _ = Describe("Azure", func() {
 		client      *clientset.Clientset
 	)
 	BeforeEach(func() {
-		fmt.Fprintf(GinkgoWriter, "Running in Azure location: %s\n", location)
+		testConfig, err := config.ParseConfig()
+		Expect(err).To(BeNil())
+		fmt.Fprintf(GinkgoWriter, "Running in Azure location: %s\n", testConfig.Location)
 		fmt.Fprintf(GinkgoWriter, "Setting up kind cluster\n")
 		kindCluster = kind.Cluster{
 			Name: "capz-test-" + util.RandomString(6),
@@ -100,22 +80,9 @@ var _ = Describe("Azure", func() {
 		kindCluster.Setup()
 
 		cfg := kindCluster.RestConfig()
-		var err error
 		client, err = clientset.NewForConfig(cfg)
 		Expect(err).To(BeNil())
-
-		// fmt.Fprintf(GinkgoWriter, "Ensuring ProviderComponents are deployed\n")
-		// Eventually(
-		// 	func() (int32, error) {
-		// 		statefulSet := &appsv1.StatefulSet{}
-		// 		if err := kindClient.Get(context.TODO(), apimachinerytypes.NamespacedName{Namespace: capzProviderNamespace, Name: capzStatefulSetName}, statefulSet); err != nil {
-		// 			return 0, err
-		// 		}
-		// 		return statefulSet.Status.ReadyReplicas, nil
-		// 	}, 5*time.Minute, 15*time.Second,
-		// ).ShouldNot(BeZero())
-
-	}, setupTimeout)
+	}, testConfig.Timeout)
 
 	AfterEach(func() {
 		fmt.Fprintf(GinkgoWriter, "Tearing down kind cluster\n")
@@ -124,36 +91,21 @@ var _ = Describe("Azure", func() {
 
 	Describe("control plane node", func() {
 		It("should be running", func() {
-
-			//authorizer := getAzureAuthorizer()
-
 			namespace := "test-" + util.RandomString(6)
 			createNamespace(kindCluster.KubeClient(), namespace)
 
 			By("Creating a Cluster resource")
-			clusterName := "test-" + util.RandomString(6)
+			clusterName := "capz-e2e-" + util.RandomString(6)
 			fmt.Fprintf(GinkgoWriter, "Creating Cluster named %q\n", clusterName)
 			clusterapi := client.ClusterV1alpha1().Clusters(namespace)
 			_, err := clusterapi.Create(makeClusterFromConfig(clusterName))
 			Expect(err).To(BeNil())
 
-			// fmt.Fprintf(GinkgoWriter, "Ensuring cluster infrastructure is ready\n")
-			// Eventually(
-			// 	func() (map[string]string, error) {
-			// 		cluster := &capi.Cluster{}
-			// 		if err := kindClient.Get(context.TODO(), apimachinerytypes.NamespacedName{Namespace: namespace, Name: clusterName}, cluster); err != nil {
-			// 			return nil, err
-			// 		}
-			// 		return cluster.Annotations, nil
-			// 	},
-			// 	10*time.Minute, 15*time.Second,
-			// ).Should(HaveKeyWithValue(capz.AnnotationClusterInfrastructureReady, capz.ValueReady))
-
 			By("Creating a machine")
-			machineName := "cp-1"
+			machineName := clusterName + "-cp-0"
 			fmt.Fprintf(GinkgoWriter, "Creating Machine named %q for Cluster %q\n", machineName, clusterName)
 			machineapi := client.ClusterV1alpha1().Machines(namespace)
-			_, err = machineapi.Create(makeMachineFromConfig(machineName, clusterName))
+			_, err = machineapi.Create(makeControlPlaneMachineFromConfig(machineName, clusterName))
 			Expect(err).To(BeNil())
 
 			// Make sure that the Machine eventually reports that the VM state is running
@@ -250,7 +202,7 @@ func beHealthy() types.GomegaMatcher {
 func makeClusterFromConfig(name string) *capi.Cluster {
 	wd, _ := os.Getwd()
 	fmt.Fprintf(GinkgoWriter, "%s\n", wd)
-	bytes, err := ioutil.ReadFile(clusterConfigPath)
+	bytes, err := ioutil.ReadFile(testConfig.ClusterConfigPath)
 	if err != nil {
 		fmt.Fprintf(GinkgoWriter, "%s\n", err)
 	}
@@ -267,23 +219,24 @@ func makeClusterFromConfig(name string) *capi.Cluster {
 
 	azureSpec, err := capz.ClusterConfigFromProviderSpec(cluster.Spec.ProviderSpec)
 	Expect(err).To(BeNil())
-	//azureSpec.SAKeyPair = keyPairName
-	azureSpec.Location = location
+	azureSpec.ResourceGroup = name
+	azureSpec.Location = testConfig.Location
+	azureSpec.NetworkSpec.Vnet.Name = name + "-vnet"
 	cluster.Spec.ProviderSpec.Value, err = capz.EncodeClusterSpec(azureSpec)
 	Expect(err).To(BeNil())
 
 	return cluster
 }
 
-func makeMachineFromConfig(name, clusterName string) *capi.Machine {
-	bytes, err := ioutil.ReadFile(machineConfigPath)
+func makeControlPlaneMachineFromConfig(name, clusterName string) *capi.Machine {
+	bytes, err := ioutil.ReadFile(testConfig.MachineConfigPath)
 	Expect(err).To(BeNil())
 
 	deserializer := serializer.NewCodecFactory(getScheme()).UniversalDeserializer()
 	obj, _, err := deserializer.Decode(bytes, nil, &capi.MachineList{})
 	Expect(err).To(BeNil())
 	machineList, ok := obj.(*capi.MachineList)
-	Expect(ok).To(BeTrue(), "Wanted machine, got %T", obj)
+	Expect(ok).To(BeTrue(), "Wanted MachineList, got %T", obj)
 
 	machines := machine.GetControlPlaneMachines(machineList)
 	Expect(machines).NotTo(BeEmpty())
@@ -291,15 +244,19 @@ func makeMachineFromConfig(name, clusterName string) *capi.Machine {
 	machine := machines[0]
 	machine.ObjectMeta.Name = name
 	machine.ObjectMeta.Labels[capi.MachineClusterLabelName] = clusterName
+	machine.Spec.Versions.Kubelet = testConfig.KubernetesVersion
+	machine.Spec.Versions.ControlPlane = testConfig.KubernetesVersion
 
 	azureSpec, err := actuators.MachineConfigFromProviderSpec(nil, machine.Spec.ProviderSpec, &cloudtest.Log{})
 	Expect(err).To(BeNil())
-
-	azureSpec.VMSize = "Standard_B2ms"
-
-	publicKey, _, err := genKeyPairs()
-	Expect(err).To(BeNil())
-	azureSpec.SSHPublicKey = base64.StdEncoding.EncodeToString(publicKey)
+	azureSpec.Location = testConfig.Location
+	if testConfig.PublicSSHKey != "" {
+		azureSpec.SSHPublicKey = testConfig.PublicSSHKey
+	} else {
+		publicKey, _, err := genKeyPairs()
+		Expect(err).To(BeNil())
+		azureSpec.SSHPublicKey = base64.StdEncoding.EncodeToString(publicKey)
+	}
 
 	machine.Spec.ProviderSpec.Value, err = capz.EncodeMachineSpec(azureSpec)
 	Expect(err).To(BeNil())
