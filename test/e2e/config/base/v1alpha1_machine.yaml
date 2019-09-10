@@ -19,7 +19,6 @@ items:
           roles:
           - Master
           location: location
-          availabilityZone: 1
           vmSize: "Standard_B2ms"
           image:
             publisher: "Canonical"

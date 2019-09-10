@@ -57,11 +57,12 @@ import (
 const (
 	capzProviderNamespace = "azure-provider-system"
 	capzStatefulSetName   = "azure-provider-controller-manager"
+	setupTimeout          = 10 * 60
 )
 
 var (
 	kindClient crclient.Client
-	testConfig config.Config
+	testConfig *config.Config
 )
 
 var _ = Describe("Azure", func() {
@@ -70,7 +71,8 @@ var _ = Describe("Azure", func() {
 		client      *clientset.Clientset
 	)
 	BeforeEach(func() {
-		testConfig, err := config.ParseConfig()
+		var err error
+		testConfig, err = config.ParseConfig()
 		Expect(err).To(BeNil())
 		fmt.Fprintf(GinkgoWriter, "Running in Azure location: %s\n", testConfig.Location)
 		fmt.Fprintf(GinkgoWriter, "Setting up kind cluster\n")
@@ -82,7 +84,7 @@ var _ = Describe("Azure", func() {
 		cfg := kindCluster.RestConfig()
 		client, err = clientset.NewForConfig(cfg)
 		Expect(err).To(BeNil())
-	}, testConfig.Timeout)
+	}, setupTimeout)
 
 	AfterEach(func() {
 		fmt.Fprintf(GinkgoWriter, "Tearing down kind cluster\n")
@@ -93,6 +95,9 @@ var _ = Describe("Azure", func() {
 		It("should be running", func() {
 			namespace := "test-" + util.RandomString(6)
 			createNamespace(kindCluster.KubeClient(), namespace)
+
+			fmt.Fprintf(GinkgoWriter, "ClusterConfigPath: %s\n", testConfig.ClusterConfigPath)
+			fmt.Fprintf(GinkgoWriter, "Location: %s\n", testConfig.Location)
 
 			By("Creating a Cluster resource")
 			clusterName := "capz-e2e-" + util.RandomString(6)
@@ -202,6 +207,9 @@ func beHealthy() types.GomegaMatcher {
 func makeClusterFromConfig(name string) *capi.Cluster {
 	wd, _ := os.Getwd()
 	fmt.Fprintf(GinkgoWriter, "%s\n", wd)
+	fmt.Fprintf(GinkgoWriter, "ClusterConfigPath: %s\n", testConfig.ClusterConfigPath)
+	fmt.Fprintf(GinkgoWriter, "Location: %s\n", testConfig.Location)
+
 	bytes, err := ioutil.ReadFile(testConfig.ClusterConfigPath)
 	if err != nil {
 		fmt.Fprintf(GinkgoWriter, "%s\n", err)
