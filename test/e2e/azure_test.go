@@ -17,7 +17,6 @@ limitations under the License.
 package e2e_test
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -58,10 +57,10 @@ const (
 	capzProviderNamespace = "azure-provider-system"
 	capzStatefulSetName   = "azure-provider-controller-manager"
 	setupTimeout          = 10 * 60
+	addonsYAML            = "config/base/addons.yaml"
 )
 
 var (
-	kindClient crclient.Client
 	testConfig *config.Config
 )
 
@@ -114,7 +113,7 @@ var _ = Describe("Azure", func() {
 			Expect(err).To(BeNil())
 
 			// Make sure that the Machine eventually reports that the VM state is running
-			fmt.Fprintf(GinkgoWriter, "Ensuring first control plane Machine is ready\n")
+			fmt.Fprintf(GinkgoWriter, "Ensuring first control plane Machine VM is running\n")
 			Eventually(
 				func() (*capz.AzureMachineProviderStatus, error) {
 					machine, err := machineapi.Get(machineName, metav1.GetOptions{})
@@ -145,21 +144,22 @@ var _ = Describe("Azure", func() {
 				10*time.Minute, 15*time.Second,
 			).ShouldNot(BeNil())
 
-			// Make sure that the Cluster reports the Control Plane is ready
-			fmt.Fprintf(GinkgoWriter, "Ensuring Cluster reports the Control Plane is ready\n")
-			Eventually(
-				func() (map[string]string, error) {
-					cluster, err := clusterapi.Get(clusterName, metav1.GetOptions{})
-					if err != nil {
-						return nil, err
-					}
-					return cluster.Annotations, nil
-				},
-				10*time.Minute, 15*time.Second,
-			).Should(HaveKeyWithValue(capz.AnnotationControlPlaneReady, capz.ValueReady))
-
 			// TODO: Retrieve Cluster kubeconfig
 			// TODO: Deploy Addons
+
+			// Make sure that the Cluster reports the Control Plane is ready
+			// fmt.Fprintf(GinkgoWriter, "Ensuring Cluster reports the Control Plane is ready\n")
+			// Eventually(
+			// 	func() (map[string]string, error) {
+			// 		cluster, err := clusterapi.Get(clusterName, metav1.GetOptions{})
+			// 		if err != nil {
+			// 			return nil, err
+			// 		}
+			// 		return cluster.Annotations, nil
+			// 	},
+			// 	10*time.Minute, 15*time.Second,
+			// ).Should(HaveKeyWithValue(capz.AnnotationControlPlaneReady, capz.ValueReady))
+
 			// TODO: Validate Node Ready
 			// TODO: Deploy additional Control Plane Nodes
 			// TODO: Deploy a MachineDeployment
@@ -168,12 +168,8 @@ var _ = Describe("Azure", func() {
 
 			By("Deleting cluster")
 			fmt.Fprintf(GinkgoWriter, "Deleting Cluster named %q\n", clusterName)
-			Expect(kindClient.Delete(context.TODO(), &capi.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: namespace,
-					Name:      clusterName,
-				},
-			}, noOptionsDelete())).To(BeNil())
+			err = client.ClusterV1alpha1().Clusters(namespace).Delete(clusterName, nil)
+			Expect(err).To(BeNil())
 
 			Eventually(
 				func() *capi.Cluster {
