@@ -11,6 +11,7 @@ items:
     spec:
       versions:
         kubelet: ${KUBERNETES_VERSION}
+        controlPlane: ${KUBERNETES_VERSION}
       providerSpec:
         value:
           apiVersion: azureprovider/v1alpha1

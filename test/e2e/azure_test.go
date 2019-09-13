@@ -27,8 +27,6 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -50,14 +48,13 @@ import (
 	capi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clientset "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	"sigs.k8s.io/cluster-api/pkg/util"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	capzProviderNamespace = "azure-provider-system"
-	capzStatefulSetName   = "azure-provider-controller-manager"
-	setupTimeout          = 10 * 60
-	addonsYAML            = "config/base/addons.yaml"
+	// capzProviderNamespace = "azure-provider-system"
+	// capzStatefulSetName   = "azure-provider-controller-manager"
+	setupTimeout = 10 * 60
+	// addonsYAML   = "config/base/addons.yaml"
 )
 
 var (
@@ -113,7 +110,8 @@ var _ = Describe("Azure", func() {
 			fmt.Fprintf(GinkgoWriter, "Ensuring first control plane Machine VM is running\n")
 			Eventually(
 				func() (*capz.AzureMachineProviderStatus, error) {
-					machine, err := machineapi.Get(machineName, metav1.GetOptions{})
+					var machine *capi.Machine
+					machine, err = machineapi.Get(machineName, metav1.GetOptions{})
 					if err != nil {
 						return nil, err
 					}
@@ -131,7 +129,8 @@ var _ = Describe("Azure", func() {
 			fmt.Fprintf(GinkgoWriter, "Ensuring first control plane Machine NodeRef is set\n")
 			Eventually(
 				func() (*corev1.ObjectReference, error) {
-					machine, err := machineapi.Get(machineName, metav1.GetOptions{})
+					var machine *capi.Machine
+					machine, err = machineapi.Get(machineName, metav1.GetOptions{})
 					if err != nil {
 						return nil, err
 					}
@@ -185,9 +184,9 @@ var _ = Describe("Azure", func() {
 	})
 })
 
-func noOptionsDelete() crclient.DeleteOptionFunc {
-	return func(opts *crclient.DeleteOptions) {}
-}
+// func noOptionsDelete() crclient.DeleteOptionFunc {
+// 	return func(opts *crclient.DeleteOptions) {}
+// }
 
 func beHealthy() types.GomegaMatcher {
 	return PointTo(
@@ -254,7 +253,8 @@ func makeControlPlaneMachineFromConfig(name, clusterName string) *capi.Machine {
 	if testConfig.PublicSSHKey != "" {
 		azureSpec.SSHPublicKey = testConfig.PublicSSHKey
 	} else {
-		publicKey, _, err := genKeyPairs()
+		var publicKey []byte
+		publicKey, _, err = genKeyPairs()
 		Expect(err).To(BeNil())
 		azureSpec.SSHPublicKey = base64.StdEncoding.EncodeToString(publicKey)
 	}
@@ -274,12 +274,12 @@ func createNamespace(client kubernetes.Interface, namespace string) {
 	Expect(err).To(BeNil())
 }
 
-func getAzureAuthorizer() autorest.Authorizer {
-	// create an authorizer from env vars or Azure Managed Service Idenity
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
-	Expect(err).To(BeNil())
-	return authorizer
-}
+// func getAzureAuthorizer() autorest.Authorizer {
+// 	// create an authorizer from env vars or Azure Managed Service Idenity
+// 	authorizer, err := auth.NewAuthorizerFromEnvironment()
+// 	Expect(err).To(BeNil())
+// 	return authorizer
+// }
 
 func getScheme() *runtime.Scheme {
 	s := runtime.NewScheme()

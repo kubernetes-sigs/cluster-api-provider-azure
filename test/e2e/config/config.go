@@ -26,24 +26,17 @@ import (
 )
 
 // Config holds global test configuration
-type Config struct {
-	Timeout           float64  `envconfig:"TIMEOUT" default:"600"`
-	SkipTest          bool     `envconfig:"SKIP_TEST" default:"false"`
-	ClusterName       string   `envconfig:"CLUSTER_NAME"`                                                   // ClusterName allows you to set the name of a cluster already created
+type Config struct { // ClusterName allows you to set the name of a cluster already created
 	Location          string   `envconfig:"LOCATION"`                                                       // Location where you want to create the cluster
-	Regions           []string `envconfig:"REGIONS"`                                                        // A whitelist of available regions
 	ClusterConfigPath string   `envconfig:"CLUSTERCONFIG_PATH" default:"config/base/v1alpha1_cluster.yaml"` // path to the YAML for the cluster we're creating
 	MachineConfigPath string   `envconfig:"MACHINECONFIG_PATH" default:"config/base/v1alpha1_machine.yaml"` // path to the YAML describing the machines we're creating
-	CleanUpOnExit     bool     `envconfig:"CLEANUP_ON_EXIT" default:"true"`                                 // if true the tests will clean up rgs when tests finish
-	// CleanUpIfFail     bool     `envconfig:"CLEANUP_IF_FAIL" default:"true"`
-	GinkgoFocus       string `envconfig:"GINKGO_FOCUS"`
-	GinkgoSkip        string `envconfig:"GINKGO_SKIP"`
-	ClientID          string `envconfig:"CLIENT_ID" required:"true"`
-	ClientSecret      string `envconfig:"CLIENT_SECRET" required:"true"`
-	PublicSSHKey      string `envconfig:"PUBLIC_SSH_KEY"`
-	SubscriptionID    string `envconfig:"SUBSCRIPTION_ID" required:"true"`
-	TenantID          string `envconfig:"TENANT_ID" required:"true"`
-	KubernetesVersion string `envconfig:"KUBERNETES_VERSION" required:"true"`
+	ClientID          string   `envconfig:"CLIENT_ID" required:"true"`
+	ClientSecret      string   `envconfig:"CLIENT_SECRET" required:"true"`
+	PublicSSHKey      string   `envconfig:"PUBLIC_SSH_KEY"`
+	SubscriptionID    string   `envconfig:"SUBSCRIPTION_ID" required:"true"`
+	TenantID          string   `envconfig:"TENANT_ID" required:"true"`
+	KubernetesVersion string   `envconfig:"KUBERNETES_VERSION" required:"true"`
+	Regions           []string `envconfig:"REGIONS"` // A whitelist of available regions
 }
 
 // ParseConfig will parse needed environment variables for running the tests
