@@ -85,7 +85,7 @@ test-go: ## Run tests
 
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests
-	go test -v -timeout 30m -tags=e2e ./test/e2e/...
+	ginkgo -v -r -timeout 30m test/e2e	
 
 ## --------------------------------------
 ## Docker

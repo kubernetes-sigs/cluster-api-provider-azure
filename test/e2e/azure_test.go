@@ -95,9 +95,6 @@ var _ = Describe("Azure", func() {
 			namespace := "test-" + util.RandomString(6)
 			createNamespace(kindCluster.KubeClient(), namespace)
 
-			fmt.Fprintf(GinkgoWriter, "ClusterConfigPath: %s\n", testConfig.ClusterConfigPath)
-			fmt.Fprintf(GinkgoWriter, "Location: %s\n", testConfig.Location)
-
 			By("Creating a Cluster resource")
 			clusterName := "capz-e2e-" + util.RandomString(6)
 			fmt.Fprintf(GinkgoWriter, "Creating Cluster named %q\n", clusterName)

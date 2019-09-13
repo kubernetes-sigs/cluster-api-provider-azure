@@ -16,7 +16,7 @@ items:
           apiVersion: azureprovider/v1alpha1
           kind: AzureMachineProviderSpec
           roles:
-          - Node
+          - Master
           location: ${LOCATION}
           vmSize: "Standard_B2ms"
           image:
