@@ -10,15 +10,14 @@ items:
         set: controlplane
     spec:
       versions:
-        kubelet: k8s_version
-        controlPlane: k8s_version
+        kubelet: ${KUBERNETES_VERSION}
       providerSpec:
         value:
           apiVersion: azureprovider/v1alpha1
           kind: AzureMachineProviderSpec
           roles:
-          - Master
-          location: location
+          - Node
+          location: ${LOCATION}
           vmSize: "Standard_B2ms"
           image:
             publisher: "Canonical"
@@ -48,7 +47,6 @@ items:
           roles:
           - Node
           location: ${LOCATION}
-          availabilityZone: ${AVAILABILITY_ZONE}
           vmSize: "Standard_B2ms"
           image:
             publisher: "Canonical"
