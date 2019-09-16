@@ -39,10 +39,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	capz "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloudtest"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/deployer"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/config"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/util/kind"
 	capi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -54,7 +57,7 @@ const (
 	// capzProviderNamespace = "azure-provider-system"
 	// capzStatefulSetName   = "azure-provider-controller-manager"
 	setupTimeout = 10 * 60
-	// addonsYAML   = "config/base/addons.yaml"
+	addonsYAML   = "config/base/addons.yaml"
 )
 
 var (
@@ -141,7 +144,24 @@ var _ = Describe("Azure", func() {
 			).ShouldNot(BeNil())
 
 			// TODO: Retrieve Cluster kubeconfig
-			// TODO: Deploy Addons
+			fmt.Fprintf(GinkgoWriter, "Getting the cluster kubeconfig\n")
+			deployer := deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter})
+			cluster, err := clusterapi.Get(clusterName, metav1.GetOptions{})
+			machine, err := machineapi.Get(machineName, metav1.GetOptions{})
+			kubeconfig, err := deployer.GetKubeConfig(cluster, machine)
+			Expect(err).To(BeNil())
+
+			//runCommand(getNodes(kubeconfig))
+			k8sClient, err := getKubernetesClient(kubeconfig)
+			Expect(err).To(BeNil())
+
+			nodeList, err := k8sClient.CoreV1().Nodes().List(metav1.ListOptions{})
+			Expect(err).To(BeNil())
+			for _, node := range nodeList.Items {
+				fmt.Fprintf(GinkgoWriter, "%s\n", node.Name)
+			}
+
+			//runCommand(applyYAML(kubeconfig, addonsYAML))
 
 			// Make sure that the Cluster reports the Control Plane is ready
 			// fmt.Fprintf(GinkgoWriter, "Ensuring Cluster reports the Control Plane is ready\n")
@@ -303,3 +323,42 @@ func genKeyPairs() (publicKey []byte, privateKey []byte, err error) {
 
 	return publicKeyBytes, privateKeyBytes, err
 }
+
+func getKubernetesClient(kubeConfig string) (kubernetes.Interface, error) {
+	// creates the clientset
+	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) { return clientcmd.Load([]byte(kubeConfig)) })
+	if err != nil {
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// func applyYAML(kubeconfig string, manifestPath string) *exec.Cmd {
+// 	return exec.Command(
+// 		"kubectl",
+// 		"create",
+// 		"--kubeconfig="+kubeconfig,
+// 		"-f", manifestPath,
+// 	)
+// }
+
+// func getNodes(kubeconfig string) *exec.Cmd {
+// 	return exec.Command(
+// 		"kubectl",
+// 		"get",
+// 		"nodes",
+// 		"--kubeconfig="+kubeconfig,
+// 	)
+
+// }
+
+// func runCommand(cmd *exec.Cmd) {
+// 	fmt.Printf("\n$ %s\n", strings.Join(cmd.Args, " "))
+// 	out, err := cmd.CombinedOutput()
+// 	Expect(err).To(BeNil())
+// 	fmt.Fprintf(GinkgoWriter, "Output:%s\n", out)
+// }

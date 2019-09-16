@@ -30,10 +30,10 @@ type Config struct { // ClusterName allows you to set the name of a cluster alre
 	Location          string   `envconfig:"LOCATION"`                                                       // Location where you want to create the cluster
 	ClusterConfigPath string   `envconfig:"CLUSTERCONFIG_PATH" default:"config/base/v1alpha1_cluster.yaml"` // path to the YAML for the cluster we're creating
 	MachineConfigPath string   `envconfig:"MACHINECONFIG_PATH" default:"config/base/v1alpha1_machine.yaml"` // path to the YAML describing the machines we're creating
-	ClientID          string   `envconfig:"CLIENT_ID" required:"true"`
-	ClientSecret      string   `envconfig:"CLIENT_SECRET" required:"true"`
+	ClientID          string   `envconfig:"AZURE_CLIENT_ID" required:"true"`
+	ClientSecret      string   `envconfig:"AZURE_CLIENT_SECRET" required:"true"`
 	PublicSSHKey      string   `envconfig:"PUBLIC_SSH_KEY"`
-	SubscriptionID    string   `envconfig:"SUBSCRIPTION_ID" required:"true"`
+	SubscriptionID    string   `envconfig:"AZURE_SUBSCRIPTION_ID" required:"true"`
 	TenantID          string   `envconfig:"TENANT_ID" required:"true"`
 	KubernetesVersion string   `envconfig:"KUBERNETES_VERSION" required:"true"`
 	Regions           []string `envconfig:"REGIONS"` // A whitelist of available regions
