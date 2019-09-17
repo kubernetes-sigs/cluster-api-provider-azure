@@ -100,6 +100,8 @@ github.com/inconshreveable/mousetrap
 github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
+# github.com/kelseyhightower/envconfig v1.4.0
+github.com/kelseyhightower/envconfig
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mitchellh/go-homedir v1.1.0
@@ -486,6 +488,7 @@ k8s.io/kubernetes/cmd/kubeadm/app/util
 k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm
 k8s.io/kubernetes/cmd/kubeadm/app/constants
 k8s.io/kubernetes/pkg/version
+k8s.io/kubernetes/pkg/ssh
 k8s.io/kubernetes/pkg/kubelet/apis/config
 k8s.io/kubernetes/pkg/proxy/apis/config
 k8s.io/kubernetes/pkg/registry/core/service/ipallocator

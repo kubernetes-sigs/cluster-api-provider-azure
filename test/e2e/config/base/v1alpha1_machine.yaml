@@ -1,0 +1,62 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: MachineList
+items:
+  - apiVersion: "cluster.k8s.io/v1alpha1"
+    kind: Machine
+    metadata:
+      name: cp_name
+      labels:
+        cluster.k8s.io/cluster-name: cluster_name
+        set: controlplane
+    spec:
+      versions:
+        kubelet: ${KUBERNETES_VERSION}
+        controlPlane: ${KUBERNETES_VERSION}
+      providerSpec:
+        value:
+          apiVersion: azureprovider/v1alpha1
+          kind: AzureMachineProviderSpec
+          roles:
+          - Master
+          location: ${LOCATION}
+          vmSize: "Standard_B2ms"
+          image:
+            publisher: "Canonical"
+            offer: "UbuntuServer"
+            sku: "18.04-LTS"
+            version: "latest"
+          osDisk:
+            osType: "Linux"
+            managedDisk:
+              storageAccountType: "Premium_LRS"
+            diskSizeGB: 30
+          sshPublicKey: ${SSH_PUBLIC_KEY}
+  - apiVersion: "cluster.k8s.io/v1alpha1"
+    kind: Machine
+    metadata:
+      generateName: ${CLUSTER_NAME}-node-
+      labels:
+        cluster.k8s.io/cluster-name: ${CLUSTER_NAME}
+        set: node
+    spec:
+      versions:
+        kubelet: ${KUBERNETES_VERSION}
+      providerSpec:
+        value:
+          apiVersion: azureprovider/v1alpha1
+          kind: AzureMachineProviderSpec
+          roles:
+          - Node
+          location: ${LOCATION}
+          vmSize: "Standard_B2ms"
+          image:
+            publisher: "Canonical"
+            offer: "UbuntuServer"
+            sku: "18.04-LTS"
+            version: "latest"
+          osDisk:
+            osType: "Linux"
+            managedDisk:
+              storageAccountType: "Premium_LRS"
+            diskSizeGB: 30
+          sshPublicKey: ${SSH_PUBLIC_KEY}
