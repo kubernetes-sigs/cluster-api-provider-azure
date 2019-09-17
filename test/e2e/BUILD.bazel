@@ -58,6 +58,7 @@ go_test(
         "//pkg/cloud/azure/actuators:go_default_library",
         "//pkg/cloud/azure/actuators/machine:go_default_library",
         "//pkg/cloudtest:go_default_library",
+        "//pkg/deployer:go_default_library",
         "//test/e2e/config:go_default_library",
         "//test/e2e/util/kind:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
