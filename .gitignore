@@ -27,6 +27,7 @@ envfile
 /kind.kubeconfig
 /minikube.kubeconfig
 /kubeconfig
+/test/e2e/kubeconfig/*
 
 # binaries
 /manager

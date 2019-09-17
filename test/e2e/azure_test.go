@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -39,8 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	capz "sigs.k8s.io/cluster-api-provider-azure/pkg/apis/azureprovider/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/cloud/azure/actuators/machine"
@@ -56,8 +56,9 @@ import (
 const (
 	// capzProviderNamespace = "azure-provider-system"
 	// capzStatefulSetName   = "azure-provider-controller-manager"
-	setupTimeout = 10 * 60
-	addonsYAML   = "config/base/addons.yaml"
+	setupTimeout  = 10 * 60
+	addonsYAML    = "config/base/addons.yaml"
+	kubeconfigDir = "kubeconfig/"
 )
 
 var (
@@ -106,7 +107,8 @@ var _ = Describe("Azure", func() {
 			machineName := clusterName + "-cp-0"
 			fmt.Fprintf(GinkgoWriter, "Creating Machine named %q for Cluster %q\n", machineName, clusterName)
 			machineapi := client.ClusterV1alpha1().Machines(namespace)
-			_, err = machineapi.Create(makeControlPlaneMachineFromConfig(machineName, clusterName))
+			machineList := getMachineListFromConfig()
+			_, err = machineapi.Create(createControlPlaneMachine(machineList, machineName, clusterName))
 			Expect(err).To(BeNil())
 
 			// Make sure that the Machine eventually reports that the VM state is running
@@ -143,7 +145,7 @@ var _ = Describe("Azure", func() {
 				10*time.Minute, 15*time.Second,
 			).ShouldNot(BeNil())
 
-			// TODO: Retrieve Cluster kubeconfig
+			// Retrieve Cluster kubeconfig
 			fmt.Fprintf(GinkgoWriter, "Getting the cluster kubeconfig\n")
 			deployer := deployer.New(deployer.Params{ScopeGetter: actuators.DefaultScopeGetter})
 			cluster, err := clusterapi.Get(clusterName, metav1.GetOptions{})
@@ -151,30 +153,27 @@ var _ = Describe("Azure", func() {
 			kubeconfig, err := deployer.GetKubeConfig(cluster, machine)
 			Expect(err).To(BeNil())
 
-			//runCommand(getNodes(kubeconfig))
-			k8sClient, err := getKubernetesClient(kubeconfig)
+			kubeconfigFilepath := kubeconfigDir + clusterName
+			err = writeKubeconfig(kubeconfig, kubeconfigFilepath)
 			Expect(err).To(BeNil())
 
-			nodeList, err := k8sClient.CoreV1().Nodes().List(metav1.ListOptions{})
-			Expect(err).To(BeNil())
-			for _, node := range nodeList.Items {
-				fmt.Fprintf(GinkgoWriter, "%s\n", node.Name)
-			}
+			runCommand(getNodes(kubeconfigFilepath))
 
-			//runCommand(applyYAML(kubeconfig, addonsYAML))
+			runCommand(applyYAML(kubeconfigFilepath, addonsYAML))
 
 			// Make sure that the Cluster reports the Control Plane is ready
-			// fmt.Fprintf(GinkgoWriter, "Ensuring Cluster reports the Control Plane is ready\n")
-			// Eventually(
-			// 	func() (map[string]string, error) {
-			// 		cluster, err := clusterapi.Get(clusterName, metav1.GetOptions{})
-			// 		if err != nil {
-			// 			return nil, err
-			// 		}
-			// 		return cluster.Annotations, nil
-			// 	},
-			// 	10*time.Minute, 15*time.Second,
-			// ).Should(HaveKeyWithValue(capz.AnnotationControlPlaneReady, capz.ValueReady))
+			fmt.Fprintf(GinkgoWriter, "Ensuring Cluster reports the Control Plane is ready\n")
+			Eventually(
+				func() (map[string]string, error) {
+					var cluster *capi.Cluster
+					cluster, err = clusterapi.Get(clusterName, metav1.GetOptions{})
+					if err != nil {
+						return nil, err
+					}
+					return cluster.Annotations, nil
+				},
+				10*time.Minute, 15*time.Second,
+			).Should(HaveKeyWithValue(capz.AnnotationControlPlaneReady, capz.ValueReady))
 
 			// TODO: Validate Node Ready
 			// TODO: Deploy additional Control Plane Nodes
@@ -204,10 +203,6 @@ var _ = Describe("Azure", func() {
 	})
 })
 
-// func noOptionsDelete() crclient.DeleteOptionFunc {
-// 	return func(opts *crclient.DeleteOptions) {}
-// }
-
 func beHealthy() types.GomegaMatcher {
 	return PointTo(
 		MatchFields(IgnoreExtras, Fields{
@@ -217,11 +212,6 @@ func beHealthy() types.GomegaMatcher {
 }
 
 func makeClusterFromConfig(name string) *capi.Cluster {
-	wd, _ := os.Getwd()
-	fmt.Fprintf(GinkgoWriter, "%s\n", wd)
-	fmt.Fprintf(GinkgoWriter, "ClusterConfigPath: %s\n", testConfig.ClusterConfigPath)
-	fmt.Fprintf(GinkgoWriter, "Location: %s\n", testConfig.Location)
-
 	bytes, err := ioutil.ReadFile(testConfig.ClusterConfigPath)
 	if err != nil {
 		fmt.Fprintf(GinkgoWriter, "%s\n", err)
@@ -248,7 +238,7 @@ func makeClusterFromConfig(name string) *capi.Cluster {
 	return cluster
 }
 
-func makeControlPlaneMachineFromConfig(name, clusterName string) *capi.Machine {
+func getMachineListFromConfig() *capi.MachineList {
 	bytes, err := ioutil.ReadFile(testConfig.MachineConfigPath)
 	Expect(err).To(BeNil())
 
@@ -257,7 +247,10 @@ func makeControlPlaneMachineFromConfig(name, clusterName string) *capi.Machine {
 	Expect(err).To(BeNil())
 	machineList, ok := obj.(*capi.MachineList)
 	Expect(ok).To(BeTrue(), "Wanted MachineList, got %T", obj)
+	return machineList
+}
 
+func createControlPlaneMachine(machineList *capi.MachineList, name, clusterName string) *capi.Machine {
 	machines := machine.GetControlPlaneMachines(machineList)
 	Expect(machines).NotTo(BeEmpty())
 
@@ -294,13 +287,6 @@ func createNamespace(client kubernetes.Interface, namespace string) {
 	Expect(err).To(BeNil())
 }
 
-// func getAzureAuthorizer() autorest.Authorizer {
-// 	// create an authorizer from env vars or Azure Managed Service Idenity
-// 	authorizer, err := auth.NewAuthorizerFromEnvironment()
-// 	Expect(err).To(BeNil())
-// 	return authorizer
-// }
-
 func getScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	capi.SchemeBuilder.AddToScheme(s)
@@ -324,41 +310,35 @@ func genKeyPairs() (publicKey []byte, privateKey []byte, err error) {
 	return publicKeyBytes, privateKeyBytes, err
 }
 
-func getKubernetesClient(kubeConfig string) (kubernetes.Interface, error) {
-	// creates the clientset
-	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) { return clientcmd.Load([]byte(kubeConfig)) })
-	if err != nil {
-		return nil, err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	return clientset, nil
+func writeKubeconfig(kubeconfig string, kubeconfigOutput string) error {
+	os.MkdirAll(kubeconfigDir, 0755)
+	const fileMode = 0660
+	os.Remove(kubeconfigOutput)
+	return ioutil.WriteFile(kubeconfigOutput, []byte(kubeconfig), fileMode)
 }
 
-// func applyYAML(kubeconfig string, manifestPath string) *exec.Cmd {
-// 	return exec.Command(
-// 		"kubectl",
-// 		"create",
-// 		"--kubeconfig="+kubeconfig,
-// 		"-f", manifestPath,
-// 	)
-// }
+func applyYAML(kubeconfig string, manifestPath string) *exec.Cmd {
+	return exec.Command(
+		"kubectl",
+		"create",
+		"--kubeconfig="+kubeconfig,
+		"-f", manifestPath,
+	)
+}
 
-// func getNodes(kubeconfig string) *exec.Cmd {
-// 	return exec.Command(
-// 		"kubectl",
-// 		"get",
-// 		"nodes",
-// 		"--kubeconfig="+kubeconfig,
-// 	)
+func getNodes(kubeconfig string) *exec.Cmd {
+	return exec.Command(
+		"kubectl",
+		"get",
+		"nodes",
+		"--kubeconfig="+kubeconfig,
+	)
 
-// }
+}
 
-// func runCommand(cmd *exec.Cmd) {
-// 	fmt.Printf("\n$ %s\n", strings.Join(cmd.Args, " "))
-// 	out, err := cmd.CombinedOutput()
-// 	Expect(err).To(BeNil())
-// 	fmt.Fprintf(GinkgoWriter, "Output:%s\n", out)
-// }
+func runCommand(cmd *exec.Cmd) {
+	fmt.Printf("\n$ %s\n", strings.Join(cmd.Args, " "))
+	out, err := cmd.CombinedOutput()
+	Expect(err).To(BeNil())
+	fmt.Fprintf(GinkgoWriter, "Output:%s\n", out)
+}
