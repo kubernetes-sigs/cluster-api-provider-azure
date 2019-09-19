@@ -1,0 +1,124 @@
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Machine
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-0
+  labels:
+    cluster.x-k8s.io/control-plane: "true"
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+spec:
+  version: ${KUBERNETES_VERSION}
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      kind: KubeadmConfig
+      name: ${CLUSTER_NAME}-controlplane-0
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    kind: AzureMachine
+    name: ${CLUSTER_NAME}-controlplane-0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+kind: AzureMachine
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-0
+spec:
+  zone: ${Azure_REGION}-a
+  instanceType: ${CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-0
+spec:
+  initConfiguration:
+    nodeRegistration:
+      name: '{{ ds.meta_data["local_hostname"] }}'
+      kubeletExtraArgs:
+        cloud-provider: gce
+  clusterConfiguration:
+    apiServer:
+      timeoutForControlPlane: 20m
+      extraArgs:
+        cloud-provider: gce
+    controllerManager:
+      extraArgs:
+        cloud-provider: gce
+        allocate-node-cidrs: "false"
+---
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Machine
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-1
+  labels:
+    cluster.x-k8s.io/control-plane: "true"
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+spec:
+  version: ${KUBERNETES_VERSION}
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      kind: KubeadmConfig
+      name: ${CLUSTER_NAME}-controlplane-1
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    kind: AzureMachine
+    name: ${CLUSTER_NAME}-controlplane-1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+kind: AzureMachine
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-1
+spec:
+  zone: ${Azure_REGION}-b
+  instanceType: ${CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-1
+spec:
+  joinConfiguration:
+    controlPlane: {}
+    nodeRegistration:
+      name: '{{ ds.meta_data["local_hostname"] }}'
+      kubeletExtraArgs:
+        cloud-provider: gce
+---
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Machine
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-2
+  labels:
+    cluster.x-k8s.io/control-plane: "true"
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+spec:
+  version: ${KUBERNETES_VERSION}
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      kind: KubeadmConfig
+      name: ${CLUSTER_NAME}-controlplane-2
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    kind: AzureMachine
+    name: ${CLUSTER_NAME}-controlplane-2
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+kind: AzureMachine
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-2
+spec:
+  zone: ${Azure_REGION}-c
+  instanceType: ${CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+kind: KubeadmConfig
+metadata:
+  name: ${CLUSTER_NAME}-controlplane-2
+spec:
+  joinConfiguration:
+    controlPlane: {}
+    nodeRegistration:
+      name: '{{ ds.meta_data["local_hostname"] }}'
+      kubeletExtraArgs:
+        cloud-provider: gce
