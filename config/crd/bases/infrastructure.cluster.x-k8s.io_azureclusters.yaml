@@ -11,7 +11,9 @@ spec:
     categories:
     - cluster-api
     kind: AzureCluster
+    listKind: AzureClusterList
     plural: azureclusters
+    singular: azurecluster
   scope: Namespaced
   subresources:
     status: {}
@@ -34,71 +36,117 @@ spec:
         spec:
           description: AzureClusterSpec defines the desired state of AzureCluster
           properties:
-            additionalLabels:
-              additionalProperties:
-                type: string
-              description: AdditionalLabels is an optional set of tags to add to Azure
-                resources managed by the Azure provider, in addition to the ones added
-                by default.
-              type: object
-            network:
-              description: The Network zone to create instances in. If empty, the
-                Azure default network is used.
+            location:
               type: string
             networkSpec:
               description: NetworkSpec encapsulates all things related to Azure network.
               properties:
-                id:
-                  description: Name is the name of the network to be used.
-                  type: string
                 subnets:
                   description: Subnets configuration.
                   items:
-                    description: SubnetSpec configures an Azure Subnet.
+                    description: SubnetSpec configures an Azure subnet.
                     properties:
                       cidrBlock:
-                        description: CidrBlock is the CIDR block assigned to this
-                          subnet.
+                        description: CidrBlock is the CIDR block to be used when the
+                          provider creates a managed Vnet.
                         type: string
-                      description:
-                        description: Description is an optional description associated
-                          with the resource.
+                      id:
+                        description: ID defines a unique identifier to reference this
+                          resource.
                         type: string
                       name:
-                        description: Name defines a unique identifier to reference
-                          this resource.
+                        description: Name defines a name for the subnet resource.
                         type: string
-                      privateGoogleAccess:
-                        description: PrivateGoogleAccess defines whether VMs in this
-                          subnet can access Google services without assigning external
-                          IP addresses
-                        type: boolean
-                      region:
-                        description: Region defines the region to use for this subnet
-                          in the cluster's region.
-                        type: string
-                      routeTableId:
-                        description: FlowLogs turns on the VPC flow logging.
-                        type: boolean
-                      secondaryCidrBlocks:
-                        additionalProperties:
-                          type: string
-                        description: SecondaryCidrBlocks defines secondary CIDR ranges,
-                          from which secondary IP ranges of a VM may be allocated
+                      securityGroup:
+                        description: SecurityGroup defines the NSG (network security
+                          group) that should be attached to this subnet.
+                        properties:
+                          id:
+                            type: string
+                          ingressRule:
+                            description: TODO IngressRules is a slice of Azure ingress
+                              rules for security groups.
+                            items:
+                              description: TODO IngressRule defines an Azure ingress
+                                rule for security groups.
+                              properties:
+                                description:
+                                  type: string
+                                destination:
+                                  description: Destination - The destination address
+                                    prefix. CIDR or destination IP range. Asterix
+                                    '*' can also be used to match all source IPs.
+                                    Default tags such as 'VirtualNetwork', 'AzureLoadBalancer'
+                                    and 'Internet' can also be used.
+                                  type: string
+                                destinationPorts:
+                                  description: DestinationPorts - The destination
+                                    port or range. Integer or range between 0 and
+                                    65535. Asterix '*' can also be used to match all
+                                    ports.
+                                  type: string
+                                protocol:
+                                  description: SecurityGroupProtocol defines the protocol
+                                    type for a security group rule.
+                                  type: string
+                                source:
+                                  description: Source - The CIDR or source IP range.
+                                    Asterix '*' can also be used to match all source
+                                    IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer'
+                                    and 'Internet' can also be used. If this is an
+                                    ingress rule, specifies where network traffic
+                                    originates from.
+                                  type: string
+                                sourcePorts:
+                                  description: SourcePorts - The source port or range.
+                                    Integer or range between 0 and 65535. Asterix
+                                    '*' can also be used to match all ports.
+                                  type: string
+                              required:
+                              - description
+                              - protocol
+                              type: object
+                            type: array
+                          name:
+                            type: string
+                        required:
+                        - id
+                        - ingressRule
+                        - name
                         type: object
+                      vnetId:
+                        description: VnetID defines the ID of the virtual network
+                          this subnet should be built in.
+                        type: string
+                    required:
+                    - name
+                    - securityGroup
+                    - vnetId
                     type: object
                   type: array
+                vnet:
+                  description: Vnet configuration.
+                  properties:
+                    cidrBlock:
+                      description: CidrBlock is the CIDR block to be used when the
+                        provider creates a managed virtual network.
+                      type: string
+                    id:
+                      description: ID is the identifier of the virtual network this
+                        provider should use to create resources.
+                      type: string
+                    name:
+                      description: Name defines a name for the virtual network resource.
+                      type: string
+                  required:
+                  - name
+                  type: object
               type: object
-            project:
-              description: Project is the name of the project to deploy the cluster
-                to.
-              type: string
-            region:
-              description: The Azure Region the cluster lives in.
+            resourceGroup:
               type: string
           required:
-          - project
-          - region
+          - location
+          - resourceGroup
           type: object
         status:
           description: AzureClusterStatus defines the observed state of AzureCluster
@@ -120,45 +168,162 @@ spec:
                 - port
                 type: object
               type: array
+            bastion:
+              description: VM describes an Azure virtual machine.
+              properties:
+                availabilityZone:
+                  type: string
+                id:
+                  type: string
+                identity:
+                  description: VMIdentity defines the identity of the virtual machine,
+                    if configured.
+                  type: string
+                image:
+                  description: Storage profile
+                  properties:
+                    offer:
+                      type: string
+                    publisher:
+                      type: string
+                    sku:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - offer
+                  - publisher
+                  - sku
+                  - version
+                  type: object
+                name:
+                  type: string
+                osDisk:
+                  properties:
+                    diskSizeGB:
+                      format: int32
+                      type: integer
+                    managedDisk:
+                      properties:
+                        storageAccountType:
+                          type: string
+                      required:
+                      - storageAccountType
+                      type: object
+                    osType:
+                      type: string
+                  required:
+                  - diskSizeGB
+                  - managedDisk
+                  - osType
+                  type: object
+                startupScript:
+                  type: string
+                vmSize:
+                  description: Hardware profile
+                  type: string
+                vmState:
+                  description: State - The provisioning state, which only appears
+                    in the response.
+                  type: string
+              type: object
             network:
               description: Network encapsulates Azure networking resources.
               properties:
-                apiServerBackendService:
-                  description: APIServerBackendService is the full reference to the
-                    backend service created for the API Server.
-                  type: string
-                apiServerForwardingRule:
-                  description: APIServerForwardingRule is the full reference to the
-                    forwarding rule created for the API Server.
-                  type: string
-                apiServerHealthCheck:
-                  description: APIServerHealthCheck is the full reference to the health
-                    check created for the API Server.
-                  type: string
-                apiServerInstanceGroups:
-                  additionalProperties:
-                    type: string
-                  description: APIServerInstanceGroups is a map from zone to the full
-                    reference to the instance groups created for the control plane
-                    nodes created in the same zone.
+                apiServerIp:
+                  description: APIServerIP is the Kubernetes API server public IP
+                    address.
+                  properties:
+                    dnsName:
+                      type: string
+                    id:
+                      type: string
+                    ipAddress:
+                      type: string
+                    name:
+                      type: string
                   type: object
-                apiServerIpAddress:
-                  description: APIServerAddress is the IPV4 global address assigned
-                    to the load balancer created for the API Server.
-                  type: string
-                apiServerTargetProxy:
-                  description: APIServerTargetProxy is the full reference to the target
-                    proxy created for the API Server.
-                  type: string
-                firewallRules:
+                apiServerLb:
+                  description: APIServerLB is the Kubernetes API server load balancer.
+                  properties:
+                    backendPool:
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      type: object
+                    frontendIpConfig:
+                      type: object
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    sku:
+                      description: LoadBalancerSKU enumerates the values for load
+                        balancer sku name.
+                      type: string
+                  type: object
+                securityGroups:
                   additionalProperties:
-                    type: string
-                  description: FirewallRules is a map from the name of the rule to
-                    its full reference.
+                    description: SecurityGroup defines an Azure security group.
+                    properties:
+                      id:
+                        type: string
+                      ingressRule:
+                        description: TODO IngressRules is a slice of Azure ingress
+                          rules for security groups.
+                        items:
+                          description: TODO IngressRule defines an Azure ingress rule
+                            for security groups.
+                          properties:
+                            description:
+                              type: string
+                            destination:
+                              description: Destination - The destination address prefix.
+                                CIDR or destination IP range. Asterix '*' can also
+                                be used to match all source IPs. Default tags such
+                                as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet'
+                                can also be used.
+                              type: string
+                            destinationPorts:
+                              description: DestinationPorts - The destination port
+                                or range. Integer or range between 0 and 65535. Asterix
+                                '*' can also be used to match all ports.
+                              type: string
+                            protocol:
+                              description: SecurityGroupProtocol defines the protocol
+                                type for a security group rule.
+                              type: string
+                            source:
+                              description: Source - The CIDR or source IP range. Asterix
+                                '*' can also be used to match all source IPs. Default
+                                tags such as 'VirtualNetwork', 'AzureLoadBalancer'
+                                and 'Internet' can also be used. If this is an ingress
+                                rule, specifies where network traffic originates from.
+                              type: string
+                            sourcePorts:
+                              description: SourcePorts - The source port or range.
+                                Integer or range between 0 and 65535. Asterix '*'
+                                can also be used to match all ports.
+                              type: string
+                          required:
+                          - description
+                          - protocol
+                          type: object
+                        type: array
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - ingressRule
+                    - name
+                    type: object
+                  description: SecurityGroups is a map from the role/kind of the security
+                    group to its unique name, if any.
                   type: object
               type: object
             ready:
-              description: Bastion Instance `json:"bastion,omitempty"`
               type: boolean
           required:
           - ready

@@ -31,28 +31,17 @@ type AzureClusterSpec struct {
 	// NetworkSpec encapsulates all things related to Azure network.
 	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
 
-	// Project is the name of the project to deploy the cluster to.
-	Project string `json:"project"`
+	ResourceGroup string `json:"resourceGroup"`
 
-	// The Azure Region the cluster lives in.
-	Region string `json:"region"`
-
-	// The Network zone to create instances in.
-	// If empty, the Azure default network is used.
-	// +optional
-	Network *string `json:"network,omitempty"`
-
-	// AdditionalLabels is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
-	// ones added by default.
-	// +optional
-	AdditionalLabels Labels `json:"additionalLabels,omitempty"`
+	Location string `json:"location"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster
 type AzureClusterStatus struct {
 	Network Network `json:"network,omitempty"`
 
-	// Bastion Instance `json:"bastion,omitempty"`
+	Bastion VM `json:"bastion,omitempty"`
+
 	Ready bool `json:"ready"`
 
 	// APIEndpoints represents the endpoints to communicate with the control plane.

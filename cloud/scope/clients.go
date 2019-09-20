@@ -17,10 +17,11 @@ limitations under the License.
 package scope
 
 import (
-	"google.golang.org/api/compute/v1"
+	"github.com/Azure/go-autorest/autorest"
 )
 
-// AzureClients contains all the azure clients used by the scopes.
+// AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	Compute *compute.Service
+	SubscriptionID string
+	Authorizer     autorest.Authorizer
 }

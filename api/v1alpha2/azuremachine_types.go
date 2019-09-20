@@ -30,60 +30,17 @@ const (
 
 // AzureMachineSpec defines the desired state of AzureMachine
 type AzureMachineSpec struct {
-	// Zone is references the Azure zone to use for this instance.
-	Zone string `json:"zone"`
+	AvailabilityZone string `json:"availabilityZone"`
 
-	// InstanceType is the type of instance to create. Example: n1.standard-2
-	InstanceType string `json:"instanceType"`
+	VMSize string `json:"vmSize"`
 
-	// Subnet is a reference to the subnetwork to use for this instance. If not specified,
-	// the first subnetwork retrieved from the Cluster Region and Network is picked.
-	// +optional
-	Subnet *string `json:"subnet,omitempty"`
+	Image Image `json:"image"`
 
-	// ProviderID is the unique identifier as specified by the cloud provider.
-	// +optional
-	ProviderID *string `json:"providerID,omitempty"`
+	OSDisk OSDisk `json:"osDisk"`
 
-	// ImageFamily is the full reference to a valid image family to be used for this machine.
-	// +optional
-	ImageFamily *string `json:"imageFamily,omitempty"`
+	Location string `json:"location"`
 
-	// Image is the full reference to a valid image to be used for this machine.
-	// Takes precedence over ImageFamily.
-	// +optional
-	Image *string `json:"image,omitempty"`
-
-	// AdditionalLabels is an optional set of tags to add to an instance, in addition to the ones added by default by the
-	// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
-	// AzureMachine's value takes precedence.
-	// +optional
-	AdditionalLabels Labels `json:"additionalLabels,omitempty"`
-
-	// IAMInstanceProfile is a name of an IAM instance profile to assign to the instance
-	// +optional
-	// IAMInstanceProfile string `json:"iamInstanceProfile,omitempty"`
-
-	// PublicIP specifies whether the instance should get a public IP.
-	// Set this to true if you don't have a NAT instances or Cloud Nat setup.
-	// +optional
-	PublicIP *bool `json:"publicIP,omitempty"`
-
-	// AdditionalNetworkTags is an array of references to security groups that should be applied to the
-	// instance. These security groups would be set in addition to any security groups defined
-	// at the cluster level or in the actuator.
-	// +optional
-	AdditionalNetworkTags []string `json:"additionalNetworkTags,omitempty"`
-
-	// RootDeviceSize is the size of the root volume in GB.
-	// Defaults to 30.
-	// +optional
-	RootDeviceSize int64 `json:"rootDeviceSize,omitempty"`
-
-	// ServiceAccount specifies the service account email and which scopes to assign to the machine.
-	// Defaults to: email: "default", scope: []{compute.CloudPlatformScope}
-	// +optional
-	ServiceAccount *ServiceAccount `json:"serviceAccounts,omitempty"`
+	SSHPublicKey string `json:"sshPublicKey"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine
@@ -95,9 +52,13 @@ type AzureMachineStatus struct {
 	// Addresses contains the Azure instance associated addresses.
 	Addresses []v1.NodeAddress `json:"addresses,omitempty"`
 
-	// InstanceStatus is the status of the Azure instance for this machine.
+	// VMState is the provisioning state of the Azure virtual machine.
 	// +optional
-	InstanceStatus *InstanceStatus `json:"instanceState,omitempty"`
+	VMState *VMState `json:"vmState,omitempty"`
+
+	// VMID is the ID of the virtual machine created in Azure.
+	// +optional
+	VMID *string `json:"vmId,omitempty"`
 
 	// ErrorReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable

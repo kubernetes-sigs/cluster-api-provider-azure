@@ -18,11 +18,10 @@ package scope
 
 import (
 	"context"
-	"fmt"
+	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"google.golang.org/api/compute/v1"
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
@@ -33,10 +32,11 @@ import (
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
 	AzureClients
-	Client     client.Client
-	Logger     logr.Logger
-	Cluster    *clusterv1.Cluster
+	Client       client.Client
+	Logger       logr.Logger
+	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
+	Context      context.Context
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -53,26 +53,30 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.Logger = klogr.New()
 	}
 
-	computeSvc, err := compute.NewService(context.TODO())
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-		return nil, errors.Errorf("failed to create azure compute client: %v", err)
+		return nil, errors.Wrap(err, "failed to create azure session")
 	}
+	params.AzureClients.Authorizer = authorizer
 
-	if params.AzureClients.Compute == nil {
-		params.AzureClients.Compute = computeSvc
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if subscriptionID == "" {
+		return nil, errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
 	}
+	params.AzureClients.SubscriptionID = subscriptionID
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &ClusterScope{
-		Logger:      params.Logger,
-		client:      params.Client,
-		AzureClients:  params.AzureClients,
-		Cluster:     params.Cluster,
-		AzureCluster:  params.AzureCluster,
-		patchHelper: helper,
+		Logger:       params.Logger,
+		client:       params.Client,
+		AzureClients: params.AzureClients,
+		Cluster:      params.Cluster,
+		AzureCluster: params.AzureCluster,
+		patchHelper:  helper,
+		Context:      context.Background(),
 	}, nil
 }
 
@@ -83,18 +87,9 @@ type ClusterScope struct {
 	patchHelper *patch.Helper
 
 	AzureClients
-	Cluster    *clusterv1.Cluster
+	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
-}
-
-// Project returns the current project name.
-func (s *ClusterScope) Project() string {
-	return s.AzureCluster.Spec.Project
-}
-
-// Network returns the cluster network unique identifier.
-func (s *ClusterScope) NetworkID() string {
-	return s.AzureCluster.Spec.NetworkSpec.Name
+	Context      context.Context
 }
 
 // Network returns the cluster network object.
@@ -102,9 +97,19 @@ func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
 }
 
+// Vnet returns the cluster Vnet.
+func (s *ClusterScope) Vnet() infrav1.Vnet {
+	return s.AzureCluster.Spec.NetworkSpec.Vnet
+}
+
 // Subnets returns the cluster subnets.
 func (s *ClusterScope) Subnets() infrav1.Subnets {
 	return s.AzureCluster.Spec.NetworkSpec.Subnets
+}
+
+// SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
+func (s *ClusterScope) SecurityGroups() map[infrav1.SecurityGroupRole]*infrav1.SecurityGroup {
+	return s.AzureCluster.Status.SecurityGroups
 }
 
 // Name returns the cluster name.
@@ -117,15 +122,9 @@ func (s *ClusterScope) Namespace() string {
 	return s.Cluster.Namespace
 }
 
-// Region returns the cluster region.
-func (s *ClusterScope) Region() string {
-	return s.AzureCluster.Spec.Region
-}
-
-// ControlPlaneConfigMapName returns the name of the ConfigMap used to
-// coordinate the bootstrapping of control plane nodes.
-func (s *ClusterScope) ControlPlaneConfigMapName() string {
-	return fmt.Sprintf("%s-controlplane", s.Cluster.UID)
+// Location returns the cluster location.
+func (s *ClusterScope) Location() string {
+	return s.AzureCluster.Spec.Location
 }
 
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
