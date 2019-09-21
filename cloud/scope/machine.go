@@ -35,10 +35,10 @@ import (
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
 	AzureClients
-	Client     client.Client
-	Logger     logr.Logger
-	Cluster    *clusterv1.Cluster
-	Machine    *clusterv1.Machine
+	Client       client.Client
+	Logger       logr.Logger
+	Cluster      *clusterv1.Cluster
+	Machine      *clusterv1.Machine
 	AzureCluster *infrav1.AzureCluster
 	AzureMachine *infrav1.AzureMachine
 }
@@ -71,13 +71,13 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &MachineScope{
-		client:      params.Client,
-		Cluster:     params.Cluster,
-		Machine:     params.Machine,
-		AzureCluster:  params.AzureCluster,
-		AzureMachine:  params.AzureMachine,
-		Logger:      params.Logger,
-		patchHelper: helper,
+		client:       params.Client,
+		Cluster:      params.Cluster,
+		Machine:      params.Machine,
+		AzureCluster: params.AzureCluster,
+		AzureMachine: params.AzureMachine,
+		Logger:       params.Logger,
+		patchHelper:  helper,
 	}, nil
 }
 
@@ -87,8 +87,8 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	Cluster    *clusterv1.Cluster
-	Machine    *clusterv1.Machine
+	Cluster      *clusterv1.Cluster
+	Machine      *clusterv1.Machine
 	AzureCluster *infrav1.AzureCluster
 	AzureMachine *infrav1.AzureMachine
 }

@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	gcompute "google.golang.org/api/compute/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
@@ -124,9 +123,9 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:     r.Client,
-		Logger:     logger,
-		Cluster:    cluster,
+		Client:       r.Client,
+		Logger:       logger,
+		Cluster:      cluster,
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
@@ -135,10 +134,10 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Create the machine scope
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-		Logger:     logger,
-		Client:     r.Client,
-		Cluster:    cluster,
-		Machine:    machine,
+		Logger:       logger,
+		Client:       r.Client,
+		Cluster:      cluster,
+		Machine:      machine,
 		AzureCluster: azureCluster,
 		AzureMachine: azureMachine,
 	})

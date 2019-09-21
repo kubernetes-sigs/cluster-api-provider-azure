@@ -26,7 +26,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/compute"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -87,9 +86,9 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:     r.Client,
-		Logger:     log,
-		Cluster:    cluster,
+		Client:       r.Client,
+		Logger:       log,
+		Cluster:      cluster,
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
@@ -122,20 +121,12 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 		azureCluster.Finalizers = append(azureCluster.Finalizers, infrav1.ClusterFinalizer)
 	}
 
-	computeSvc := compute.NewService(clusterScope)
-
-	if err := computeSvc.ReconcileFirewalls(); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile firewalls for AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
+	err := NewReconciler(clusterScope).Reconcile()
+	if err != nil {
+		return errors.Wrap(err, "failed to reconcile cluster services")
 	}
 
-	if err := computeSvc.ReconcileInstanceGroups(); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile instance groups for AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
-	}
-
-	if err := computeSvc.ReconcileLoadbalancers(); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile load balancers for AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
-	}
-
+	// TODO: figure out what to expose in this endpoint
 	if azureCluster.Status.Network.APIServerAddress == nil {
 		clusterScope.Info("Waiting on API server Global IP Address")
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
@@ -157,19 +148,13 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 func (r *AzureClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	clusterScope.Info("Reconciling AzureCluster delete")
 
-	computeSvc := compute.NewService(clusterScope)
 	azureCluster := clusterScope.AzureCluster
 
-	if err := computeSvc.DeleteLoadbalancers(); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting load balancer for AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
-	}
-
-	if err := computeSvc.DeleteInstanceGroups(); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting instance groups for AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
-	}
-
-	if err := computeSvc.DeleteFirewalls(); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting firewall rules for AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
+	if err := NewReconciler(clusterScope).Delete(); err != nil {
+		klog.Errorf("Error deleting resource group: %v.", err)
+		return &controllerError.RequeueAfterError{
+			RequeueAfter: 5 * time.Second,
+		}
 	}
 
 	// Cluster is deleted so remove the finalizer.

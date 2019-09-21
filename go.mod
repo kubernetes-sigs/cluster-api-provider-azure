@@ -16,7 +16,8 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.3
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
-	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/tools/gopls v0.1.7 // indirect
 	google.golang.org/api v0.10.0
 	k8s.io/api v0.0.0-20190831074750-7364b6bdad65
 	k8s.io/apimachinery v0.0.0-20190831074630-461753078381
