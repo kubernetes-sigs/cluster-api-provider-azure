@@ -1,23 +1,15 @@
-linters-settings:
-  govet:
-    check-shadowing: true
-  gocyclo:
-    min-complexity: 19
-  maligned:
-    suggest-new: true
 linters:
   enable:
     - golint
     - govet
     - gofmt
-    - goimports
     - structcheck
     - varcheck
     - interfacer
     - unconvert
     - ineffassign
     - goconst
-    - gocyclo
+    # - gocyclo
     - maligned
     - misspell
     - nakedret

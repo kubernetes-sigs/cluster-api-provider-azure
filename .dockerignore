@@ -1,5 +1,10 @@
-generatedconfigs/
-.env
-kubeconfig
-minikube.kubeconfig
-.travis.yml
+.git
+.github
+.vscode
+bin/
+config/
+hack/
+docs/
+examples/
+scripts/
+**/.md
