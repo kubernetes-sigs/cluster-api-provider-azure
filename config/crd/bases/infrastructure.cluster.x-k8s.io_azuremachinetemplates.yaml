@@ -82,6 +82,10 @@ spec:
                       - managedDisk
                       - osType
                       type: object
+                    providerID:
+                      description: ProviderID is the unique identifier as specified
+                        by the cloud provider.
+                      type: string
                     sshPublicKey:
                       type: string
                     vmSize:

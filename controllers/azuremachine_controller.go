@@ -180,18 +180,11 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 		return reconcile.Result{}, nil
 	}
 
-	reconciler := NewAzureMachineReconciler(machineScope, clusterScope)
+	reconciler := newAzureMachineReconciler(machineScope, clusterScope)
 
-	exists, err := reconciler.Exists()
+	vm, err := reconciler.GetOrCreate()
 	if err != nil {
 		return reconcile.Result{}, err
-	}
-
-	if !exists {
-		err = reconciler.Create()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 	}
 
 	err = reconciler.Update()
@@ -199,13 +192,22 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 		return reconcile.Result{}, err
 	}
 
+	// Make sure Spec.ProviderID is always set.
+	machineScope.SetProviderID(fmt.Sprintf("azure:////%s", *machineScope.GetVMID()))
+
+	// Proceed to reconcile the AzureMachine state.
+	machineScope.SetVMState(infrav1.VMState(vm.Status))
+
+	// TODO(vincepri): Remove this annotation when clusterctl is no longer relevant.
+	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
+
 	return reconcile.Result{}, nil
 }
 
 func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
 
-	if err := NewAzureMachineReconciler(machineScope, clusterScope).Delete(); err != nil {
+	if err := newAzureMachineReconciler(machineScope, clusterScope).Delete(); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
 	}
 
@@ -216,4 +218,42 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 	}()
 
 	return reconcile.Result{}, nil
+}
+
+// AzureClusterToAzureMachine is a handler.ToRequestsFunc to be used to enqeue requests for reconciliation
+// of AzureMachines.
+func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject) []ctrl.Request {
+	result := []ctrl.Request{}
+
+	c, ok := o.Object.(*infrav1.AzureCluster)
+	if !ok {
+		r.Log.Error(errors.Errorf("expected a AzureCluster but got a %T", o.Object), "failed to get AzureMachine for AzureCluster")
+		return nil
+	}
+	log := r.Log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
+
+	cluster, err := util.GetOwnerCluster(context.TODO(), r.Client, c.ObjectMeta)
+	switch {
+	case apierrors.IsNotFound(err) || cluster == nil:
+		return result
+	case err != nil:
+		log.Error(err, "failed to get owning cluster")
+		return result
+	}
+
+	labels := map[string]string{clusterv1.MachineClusterLabelName: cluster.Name}
+	machineList := &clusterv1.MachineList{}
+	if err := r.List(context.TODO(), machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
+		log.Error(err, "failed to list Machines")
+		return nil
+	}
+	for _, m := range machineList.Items {
+		if m.Spec.InfrastructureRef.Name == "" {
+			continue
+		}
+		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.InfrastructureRef.Name}
+		result = append(result, ctrl.Request{NamespacedName: name})
+	}
+
+	return result
 }

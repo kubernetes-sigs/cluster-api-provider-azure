@@ -121,13 +121,13 @@ func (m *MachineScope) IsControlPlane() bool {
 // Role returns the machine role from the labels.
 func (m *MachineScope) Role() string {
 	if util.IsControlPlaneMachine(m.Machine) {
-		return "control-plane"
+		return infrav1.ControlPlane
 	}
-	return "node"
+	return infrav1.Node
 }
 
-// GetInstanceID returns the AzureMachine instance id by parsing Spec.ProviderID.
-func (m *MachineScope) GetInstanceID() *string {
+// GetVMID returns the AzureMachine instance id by parsing Spec.ProviderID.
+func (m *MachineScope) GetVMID() *string {
 	parsed, err := noderefutil.NewProviderID(m.GetProviderID())
 	if err != nil {
 		return nil
@@ -148,14 +148,14 @@ func (m *MachineScope) SetProviderID(v string) {
 	m.AzureMachine.Spec.ProviderID = pointer.StringPtr(v)
 }
 
-// GetInstanceStatus returns the AzureMachine instance status.
-func (m *MachineScope) GetInstanceStatus() *infrav1.InstanceStatus {
-	return m.AzureMachine.Status.InstanceStatus
+// GetVMState returns the AzureMachine VM state.
+func (m *MachineScope) GetVMState() *infrav1.VMState {
+	return m.AzureMachine.Status.VMState
 }
 
-// SetInstanceStatus sets the AzureMachine instance status.
-func (m *MachineScope) SetInstanceStatus(v infrav1.InstanceStatus) {
-	m.AzureMachine.Status.InstanceStatus = &v
+// SetVMState sets the AzureMachine VM state.
+func (m *MachineScope) SetVMState(v infrav1.VMState) {
+	m.AzureMachine.Status.VMState = &v
 }
 
 // SetReady sets the AzureMachine Ready Status

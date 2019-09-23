@@ -75,6 +75,10 @@ spec:
               - managedDisk
               - osType
               type: object
+            providerID:
+              description: ProviderID is the unique identifier as specified by the
+                cloud provider.
+              type: string
             sshPublicKey:
               type: string
             vmSize:
@@ -140,9 +144,6 @@ spec:
             ready:
               description: Ready is true when the provider resource is ready.
               type: boolean
-            vmId:
-              description: VMID is the ID of the virtual machine created in Azure.
-              type: string
             vmState:
               description: VMState is the provisioning state of the Azure virtual
                 machine.

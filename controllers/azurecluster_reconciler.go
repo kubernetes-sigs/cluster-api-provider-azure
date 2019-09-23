@@ -24,7 +24,6 @@ import (
 	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/certificates"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
@@ -38,7 +37,6 @@ import (
 // azureClusterReconciler are list of services required by cluster controller
 type azureClusterReconciler struct {
 	scope            *scope.ClusterScope
-	certificatesSvc  azure.Service
 	groupsSvc        azure.Service
 	vnetSvc          azure.Service
 	securityGroupSvc azure.Service
@@ -49,11 +47,10 @@ type azureClusterReconciler struct {
 	publicLBSvc      azure.Service
 }
 
-// NewAzureClusterReconciler populates all the services based on input scope
-func NewAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
+// newAzureClusterReconciler populates all the services based on input scope
+func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
 	return &azureClusterReconciler{
 		scope:            scope,
-		certificatesSvc:  certificates.NewService(scope),
 		groupsSvc:        groups.NewService(scope),
 		vnetSvc:          virtualnetworks.NewService(scope),
 		securityGroupSvc: securitygroups.NewService(scope),
@@ -69,11 +66,6 @@ func NewAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 func (r *azureClusterReconciler) Reconcile() error {
 	klog.V(2).Infof("reconciling cluster %s", r.scope.Name())
 	r.createOrUpdateNetworkAPIServerIP()
-
-	// Store cert material in spec.
-	if err := r.certificatesSvc.Reconcile(r.scope.Context, nil); err != nil {
-		return errors.Wrapf(err, "failed to reconcile certificates for cluster %s", r.scope.Name())
-	}
 
 	if err := r.groupsSvc.Reconcile(r.scope.Context, nil); err != nil {
 		return errors.Wrapf(err, "failed to reconcile resource group for cluster %s", r.scope.Name())

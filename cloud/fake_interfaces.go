@@ -22,7 +22,6 @@ import (
 	"reflect"
 
 	"github.com/Azure/go-autorest/autorest"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
 // FakeSuccessService generic service which always returns success.
@@ -43,17 +42,17 @@ type FakeCachedService struct {
 }
 
 // Get returns fake success.
-func (s *FakeSuccessService) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *FakeSuccessService) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	return nil, nil
 }
 
 // Reconcile returns fake success.
-func (s *FakeSuccessService) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeSuccessService) Reconcile(ctx context.Context, spec interface{}) error {
 	return nil
 }
 
 // Delete returns fake success.
-func (s *FakeSuccessService) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeSuccessService) Delete(ctx context.Context, spec interface{}) error {
 	return nil
 }
 
@@ -62,42 +61,42 @@ type FakeStruct struct {
 }
 
 // Get returns fake failure.
-func (s *FakeFailureService) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *FakeFailureService) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	return FakeStruct{}, errors.New("Failed to Get service")
 }
 
 // Reconcile returns fake failure.
-func (s *FakeFailureService) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeFailureService) Reconcile(ctx context.Context, spec interface{}) error {
 	return errors.New("Failed to Create")
 }
 
 // Delete returns fake failure.
-func (s *FakeFailureService) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeFailureService) Delete(ctx context.Context, spec interface{}) error {
 	return errors.New("Failed to Delete")
 }
 
 // Get returns fake not found.
-func (s *FakeNotFoundService) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *FakeNotFoundService) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	return nil, autorest.DetailedError{StatusCode: 404}
 }
 
 // Reconcile returns fake not found.
-func (s *FakeNotFoundService) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeNotFoundService) Reconcile(ctx context.Context, spec interface{}) error {
 	return autorest.DetailedError{StatusCode: 404}
 }
 
 // Delete returns fake not found.
-func (s *FakeNotFoundService) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeNotFoundService) Delete(ctx context.Context, spec interface{}) error {
 	return autorest.DetailedError{StatusCode: 404}
 }
 
 // Get returns fake success.
-func (s *FakeCachedService) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *FakeCachedService) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	return nil, nil
 }
 
 // Reconcile returns fake success.
-func (s *FakeCachedService) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeCachedService) Reconcile(ctx context.Context, spec interface{}) error {
 	if spec == nil {
 		return nil
 	}
@@ -107,6 +106,6 @@ func (s *FakeCachedService) Reconcile(ctx context.Context, spec infrav1.Resource
 }
 
 // Delete returns fake success.
-func (s *FakeCachedService) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *FakeCachedService) Delete(ctx context.Context, spec interface{}) error {
 	return nil
 }

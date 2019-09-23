@@ -121,7 +121,7 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 		azureCluster.Finalizers = append(azureCluster.Finalizers, infrav1.ClusterFinalizer)
 	}
 
-	err := NewAzureClusterReconciler(clusterScope).Reconcile()
+	err := newAzureClusterReconciler(clusterScope).Reconcile()
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
@@ -150,7 +150,7 @@ func (r *AzureClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScop
 
 	azureCluster := clusterScope.AzureCluster
 
-	if err := NewAzureClusterReconciler(clusterScope).Delete(); err != nil {
+	if err := newAzureClusterReconciler(clusterScope).Delete(); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 	}
 

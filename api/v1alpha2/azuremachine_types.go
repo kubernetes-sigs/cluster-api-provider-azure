@@ -32,6 +32,10 @@ const (
 type AzureMachineSpec struct {
 	AvailabilityZone string `json:"availabilityZone"`
 
+	// ProviderID is the unique identifier as specified by the cloud provider.
+	// +optional
+	ProviderID *string `json:"providerID,omitempty"`
+
 	VMSize string `json:"vmSize"`
 
 	Image Image `json:"image"`
@@ -55,10 +59,6 @@ type AzureMachineStatus struct {
 	// VMState is the provisioning state of the Azure virtual machine.
 	// +optional
 	VMState *VMState `json:"vmState,omitempty"`
-
-	// VMID is the ID of the virtual machine created in Azure.
-	// +optional
-	VMID *string `json:"vmId,omitempty"`
 
 	// ErrorReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable

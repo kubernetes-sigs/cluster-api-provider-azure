@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
