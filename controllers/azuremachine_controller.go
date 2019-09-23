@@ -19,19 +19,14 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"path"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/compute"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -185,51 +180,23 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 		return reconcile.Result{}, nil
 	}
 
-	computeSvc := compute.NewService(clusterScope)
+	reconciler := NewAzureMachineReconciler(machineScope, clusterScope)
 
-	// Get or create the instance.
-	instance, err := r.getOrCreate(machineScope, computeSvc)
+	exists, err := reconciler.Exists()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Set an error message if we couldn't find the instance.
-	if instance == nil {
-		machineScope.SetErrorReason(capierrors.UpdateMachineError)
-		machineScope.SetErrorMessage(errors.New("EC2 instance cannot be found"))
-		return reconcile.Result{}, nil
+	if !exists {
+		err = reconciler.Create()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
-	// TODO(ncdc): move this validation logic into a validating webhook
-	if errs := r.validateUpdate(&machineScope.AzureMachine.Spec, instance); len(errs) > 0 {
-		agg := kerrors.NewAggregate(errs)
-		record.Warnf(machineScope.AzureMachine, "InvalidUpdate", "Invalid update: %s", agg.Error())
-		machineScope.Error(err, "Invalid update")
-		return reconcile.Result{}, nil
-	}
-
-	// Make sure Spec.ProviderID is always set.
-	machineScope.SetProviderID(fmt.Sprintf("gce://%s/%s/%s", clusterScope.Project(), machineScope.Zone(), instance.Name))
-
-	// Proceed to reconcile the AzureMachine state.
-	machineScope.SetInstanceStatus(infrav1.InstanceStatus(instance.Status))
-
-	// TODO(vincepri): Remove this annotation when clusterctl is no longer relevant.
-	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
-
-	switch infrav1.InstanceStatus(instance.Status) {
-	case infrav1.InstanceStatusRunning:
-		machineScope.Info("Machine instance is running", "instance-id", *machineScope.GetInstanceID())
-		machineScope.SetReady()
-	case infrav1.InstanceStatusProvisioning, infrav1.InstanceStatusStaging:
-		machineScope.Info("Machine instance is pending", "instance-id", *machineScope.GetInstanceID())
-	default:
-		machineScope.SetErrorReason(capierrors.UpdateMachineError)
-		machineScope.SetErrorMessage(errors.Errorf("EC2 instance state %q is unexpected", instance.Status))
-	}
-
-	if err := r.reconcileLBAttachment(machineScope, clusterScope, instance); err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to reconcile LB attachment: %+v", err)
+	err = reconciler.Update()
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
@@ -238,11 +205,8 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
 
-	computeSvc := compute.NewService(clusterScope)
-
-	instance, err := r.findInstance(machineScope, computeSvc)
-	if err != nil {
-		return reconcile.Result{}, err
+	if err := NewAzureMachineReconciler(machineScope, clusterScope).Delete(); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
 	}
 
 	defer func() {
@@ -251,129 +215,5 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 		}
 	}()
 
-	if instance == nil {
-		// The machine was never created or was deleted by some other entity
-		machineScope.V(3).Info("Unable to locate instance by ID or tags")
-		return reconcile.Result{}, nil
-	}
-
-	// Check the instance state. If it's already shutting down or terminated,
-	// do nothing. Otherwise attempt to delete it.
-	switch infrav1.InstanceStatus(instance.Status) {
-	case infrav1.InstanceStatusTerminated:
-		machineScope.Info("Instance is shutting down or already terminated")
-	default:
-		machineScope.Info("Terminating instance")
-		if err := computeSvc.TerminateInstanceAndWait(machineScope); err != nil {
-			record.Warnf(machineScope.AzureMachine, "FailedTerminate", "Failed to terminate instance %q: %v", instance.Name, err)
-			return reconcile.Result{}, errors.Errorf("failed to terminate instance: %+v", err)
-		}
-		record.Eventf(machineScope.AzureMachine, "SuccessfulTerminate", "Terminated instance %q", instance.Name)
-	}
-
 	return reconcile.Result{}, nil
-}
-
-// findInstance queries the EC2 apis and retrieves the instance if it exists, returns nil otherwise.
-func (r *AzureMachineReconciler) findInstance(scope *scope.MachineScope, computeSvc *compute.Service) (*gcompute.Instance, error) {
-	instance, err := computeSvc.InstanceIfExists(scope)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query AzureMachine instance")
-	}
-	return instance, nil
-}
-
-func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, computeSvc *compute.Service) (*gcompute.Instance, error) {
-	instance, err := r.findInstance(scope, computeSvc)
-	if err != nil {
-		return nil, err
-	}
-
-	if instance == nil {
-		// Create a new AzureMachine instance if we couldn't find a running instance.
-		instance, err = computeSvc.CreateInstance(scope)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create AzureMachine instance")
-		}
-	}
-
-	return instance, nil
-}
-
-func (r *AzureMachineReconciler) reconcileLBAttachment(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, i *gcompute.Instance) error {
-	if !machineScope.IsControlPlane() {
-		return nil
-	}
-	computeSvc := compute.NewService(clusterScope)
-	groupName := fmt.Sprintf("%s-%s-%s", clusterScope.Name(), infrav1.APIServerRoleTagValue, machineScope.Zone())
-
-	// Get the instance group, or create if necessary.
-	group, err := computeSvc.GetOrCreateInstanceGroup(machineScope.Zone(), groupName)
-	if err != nil {
-		return err
-	}
-
-	// Make sure the instance is registered.
-	if err := computeSvc.EnsureInstanceGroupMember(machineScope.Zone(), group.Name, i); err != nil {
-		return err
-	}
-
-	// Update the backend service.
-	return computeSvc.UpdateBackendServices()
-}
-
-// validateUpdate checks that no immutable fields have been updated and
-// returns a slice of errors representing attempts to change immutable state.
-func (r *AzureMachineReconciler) validateUpdate(spec *infrav1.AzureMachineSpec, i *gcompute.Instance) (errs []error) {
-	// Instance Type
-	if spec.InstanceType != path.Base(i.MachineType) {
-		errs = append(errs, errors.Errorf("instance type cannot be mutated from %q to %q", i.MachineType, spec.InstanceType))
-	}
-
-	// Root Device Size
-	if len(i.Disks) > 0 && spec.RootDeviceSize > 0 && spec.RootDeviceSize != i.Disks[0].InitializeParams.DiskSizeGb {
-		errs = append(errs, errors.Errorf("Root volume size cannot be mutated from %v to %v",
-			i.Disks[0].InitializeParams.DiskSizeGb, spec.RootDeviceSize))
-	}
-
-	// TODO(vincepri): Validate other fields.
-	return errs
-}
-
-// AzureClusterToAzureMachine is a handler.ToRequestsFunc to be used to enqeue requests for reconciliation
-// of AzureMachines.
-func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject) []ctrl.Request {
-	result := []ctrl.Request{}
-
-	c, ok := o.Object.(*infrav1.AzureCluster)
-	if !ok {
-		r.Log.Error(errors.Errorf("expected a AzureCluster but got a %T", o.Object), "failed to get AzureMachine for AzureCluster")
-		return nil
-	}
-	log := r.Log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
-
-	cluster, err := util.GetOwnerCluster(context.TODO(), r.Client, c.ObjectMeta)
-	switch {
-	case apierrors.IsNotFound(err) || cluster == nil:
-		return result
-	case err != nil:
-		log.Error(err, "failed to get owning cluster")
-		return result
-	}
-
-	labels := map[string]string{clusterv1.MachineClusterLabelName: cluster.Name}
-	machineList := &clusterv1.MachineList{}
-	if err := r.List(context.TODO(), machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
-		log.Error(err, "failed to list Machines")
-		return nil
-	}
-	for _, m := range machineList.Items {
-		if m.Spec.InfrastructureRef.Name == "" {
-			continue
-		}
-		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.InfrastructureRef.Name}
-		result = append(result, ctrl.Request{NamespacedName: name})
-	}
-
-	return result
 }

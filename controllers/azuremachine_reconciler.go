@@ -36,6 +36,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -54,8 +57,8 @@ type azureMachineReconciler struct {
 	disksSvc              azure.GetterService
 }
 
-// newAzureMachineReconciler populates all the services based on input scope
-func newAzureMachineReconciler(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineReconciler {
+// NewAzureMachineReconciler populates all the services based on input scope
+func NewAzureMachineReconciler(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineReconciler {
 	return &azureMachineReconciler{
 		machineScope:          machineScope,
 		clusterScope:          clusterScope,
@@ -68,14 +71,14 @@ func newAzureMachineReconciler(machineScope *scope.MachineScope, clusterScope *s
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (r *azureMachineReconciler) Create(ctx context.Context) error {
+func (r *azureMachineReconciler) Create() error {
 	nicName := fmt.Sprintf("%s-nic", r.machineScope.Machine.Spec.Name)
-	nicErr := r.createNetworkInterface(ctx, nicName)
+	nicErr := r.createNetworkInterface(nicName)
 	if nicErr != nil {
 		return errors.Wrapf(nicErr, "failed to create nic %s for machine %s", nicName, r.machineScope.Machine.Spec.Name)
 	}
 
-	vmErr := r.createVirtualMachine(ctx, nicName)
+	vmErr := r.createVirtualMachine(nicName)
 	if vmErr != nil {
 		return errors.Wrapf(vmErr, "failed to create vm %s ", r.machineScope.Machine.Spec.Name)
 	}
@@ -85,7 +88,7 @@ func (r *azureMachineReconciler) Create(ctx context.Context) error {
 		VMName:     r.machineScope.Machine.Spec.Name,
 		ScriptData: *r.machineScope.Machine.Spec.Bootstrap.Data,
 	}
-	err := r.virtualMachinesExtSvc.Reconcile(ctx, vmExtSpec)
+	err := r.virtualMachinesExtSvc.Reconcile(r.clusterScope.Context, vmExtSpec)
 	if err != nil {
 		return errors.Wrap(err, "failed to create vm extension")
 	}
@@ -98,11 +101,11 @@ func (r *azureMachineReconciler) Create(ctx context.Context) error {
 }
 
 // Update updates machine if and only if machine exists, handled by cluster-api
-func (r *azureMachineReconciler) Update(ctx context.Context) error {
+func (r *azureMachineReconciler) Update() error {
 	vmSpec := &virtualmachines.Spec{
 		Name: r.machineScope.Machine.Spec.Name,
 	}
-	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
+	vmInterface, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
 	if err != nil {
 		return errors.Wrap(err, "failed to get vm")
 	}
@@ -132,8 +135,8 @@ func (r *azureMachineReconciler) Update(ctx context.Context) error {
 }
 
 // Exists checks if machine exists
-func (r *azureMachineReconciler) Exists(ctx context.Context) (bool, error) {
-	exists, err := r.isVMExists(ctx)
+func (r *azureMachineReconciler) Exists() (bool, error) {
+	exists, err := r.isVMExists()
 	if err != nil {
 		return false, err
 	} else if !exists {
@@ -153,12 +156,12 @@ func (r *azureMachineReconciler) Exists(ctx context.Context) (bool, error) {
 }
 
 // Delete reconciles all the services in pre determined order
-func (r *azureMachineReconciler) Delete(ctx context.Context) error {
+func (r *azureMachineReconciler) Delete() error {
 	vmSpec := &virtualmachines.Spec{
 		Name: r.machineScope.Machine.Spec.Name,
 	}
 
-	err := r.virtualMachinesSvc.Delete(ctx, vmSpec)
+	err := r.virtualMachinesSvc.Delete(r.clusterScope.Context, vmSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete machine")
 	}
@@ -168,7 +171,7 @@ func (r *azureMachineReconciler) Delete(ctx context.Context) error {
 		VnetName: azure.GenerateVnetName(r.clusterScope.Name()),
 	}
 
-	err = r.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
+	err = r.networkInterfacesSvc.Delete(r.clusterScope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
@@ -176,7 +179,7 @@ func (r *azureMachineReconciler) Delete(ctx context.Context) error {
 	OSDiskSpec := &disks.Spec{
 		Name: azure.GenerateOSDiskName(r.machineScope.Machine.Spec.Name),
 	}
-	err = r.disksSvc.Delete(ctx, OSDiskSpec)
+	err = r.disksSvc.Delete(r.clusterScope.Context, OSDiskSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", r.machineScope.Machine.Spec.Name)
 	}
@@ -201,11 +204,11 @@ func isMachineOutdated(machineSpec *infrav1.AzureMachineSpec, vm infrav1.VM) boo
 	return false
 }
 
-func (r *azureMachineReconciler) isVMExists(ctx context.Context) (bool, error) {
+func (r *azureMachineReconciler) isVMExists() (bool, error) {
 	vmSpec := &virtualmachines.Spec{
 		Name: r.machineScope.Name(),
 	}
-	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
+	vmInterface, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
 
 	if err != nil && vmInterface == nil {
 		return false, nil
@@ -227,7 +230,7 @@ func (r *azureMachineReconciler) isVMExists(ctx context.Context) (bool, error) {
 		VMName: r.machineScope.Name(),
 	}
 
-	vmExt, err := r.virtualMachinesExtSvc.Get(ctx, vmExtSpec)
+	vmExt, err := r.virtualMachinesExtSvc.Get(r.clusterScope.Context, vmExtSpec)
 	if err != nil && vmExt == nil {
 		return false, nil
 	}
@@ -251,11 +254,11 @@ func (r *azureMachineReconciler) isVMExists(ctx context.Context) (bool, error) {
 
 // getVirtualMachineZone gets a random availability zones from available set,
 // this will hopefully be an input from upstream machinesets so all the vms are balanced
-func (r *azureMachineReconciler) getVirtualMachineZone(ctx context.Context) (string, error) {
+func (r *azureMachineReconciler) getVirtualMachineZone() (string, error) {
 	zonesSpec := &availabilityzones.Spec{
 		VMSize: r.machineScope.AzureMachine.Spec.VMSize,
 	}
-	zonesInterface, err := r.availabilityZonesSvc.Get(ctx, zonesSpec)
+	zonesInterface, err := r.availabilityZonesSvc.Get(r.clusterScope.Context, zonesSpec)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", r.machineScope.AzureMachine.Spec.VMSize, r.clusterScope.AzureCluster.Spec.Location)
 	}
@@ -276,11 +279,12 @@ func (r *azureMachineReconciler) getVirtualMachineZone(ctx context.Context) (str
 	return zones[rand.Intn(len(zones))], nil
 }
 
-func (r *azureMachineReconciler) createNetworkInterface(ctx context.Context, nicName string) error {
-	// machineList, err := r.machineScope.MachineClient.List(actuators.ListOptionsForCluster(r.scope.Cluster.Name))
-	// if err != nil {
-	// 	return err
-	// }
+func (r *azureMachineReconciler) createNetworkInterface(nicName string) error {
+	machineList := &clusterv1.MachineList{}
+	labels := map[string]string{clusterv1.MachineClusterLabelName: r.clusterScope.Name()}
+	if err := r.List(context.TODO(), machineList, client.InNamespace(r.clusterScope.Namespace()), client.MatchingLabels(labels)); err != nil {
+		return errors.Wrap(err, "failed to list Machines")
+	}
 
 	controlPlaneMachines := GetControlPlaneMachines(machineList)
 
@@ -307,7 +311,7 @@ func (r *azureMachineReconciler) createNetworkInterface(ctx context.Context, nic
 		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", set, r.machineScope.Machine.Spec.Name)
 	}
 
-	err := r.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
+	err := r.networkInterfacesSvc.Reconcile(r.clusterScope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrap(err, "unable to create VM network interface")
 	}
@@ -315,7 +319,7 @@ func (r *azureMachineReconciler) createNetworkInterface(ctx context.Context, nic
 	return err
 }
 
-func (r *azureMachineReconciler) createVirtualMachine(ctx context.Context, nicName string) error {
+func (r *azureMachineReconciler) createVirtualMachine(nicName string) error {
 	decoded, err := base64.StdEncoding.DecodeString(r.machineScope.AzureMachine.Spec.SSHPublicKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed to decode ssh public key")
@@ -325,7 +329,7 @@ func (r *azureMachineReconciler) createVirtualMachine(ctx context.Context, nicNa
 		Name: r.machineScope.Machine.Spec.Name,
 	}
 
-	vmInterface, err := r.virtualMachinesSvc.Get(ctx, vmSpec)
+	vmInterface, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
 	if err != nil && vmInterface == nil {
 		var vmZone string
 		var zoneErr error
@@ -333,7 +337,7 @@ func (r *azureMachineReconciler) createVirtualMachine(ctx context.Context, nicNa
 		vmZone = r.machineScope.AzureMachine.Spec.AvailabilityZone
 
 		if vmZone == "" {
-			vmZone, zoneErr = r.getVirtualMachineZone(ctx)
+			vmZone, zoneErr = r.getVirtualMachineZone(r.clusterScope.Context)
 			if zoneErr != nil {
 				return errors.Wrap(zoneErr, "failed to get availability zone")
 			}
@@ -350,7 +354,7 @@ func (r *azureMachineReconciler) createVirtualMachine(ctx context.Context, nicNa
 			Zone:       vmZone,
 		}
 
-		err = r.virtualMachinesSvc.Reconcile(ctx, vmSpec)
+		err = r.virtualMachinesSvc.Reconcile(r.clusterScope.Context, vmSpec)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create or get machine")
 		}
@@ -368,7 +372,7 @@ func (r *azureMachineReconciler) createVirtualMachine(ctx context.Context, nicNa
 
 		if *vm.ProvisioningState == "Failed" {
 			// If VM failed provisioning, delete it so it can be recreated
-			err = r.virtualMachinesSvc.Delete(ctx, vmSpec)
+			err = r.virtualMachinesSvc.Delete(r.clusterScope.Context, vmSpec)
 			if err != nil {
 				return errors.Wrapf(err, "failed to delete machine")
 			}
@@ -379,4 +383,15 @@ func (r *azureMachineReconciler) createVirtualMachine(ctx context.Context, nicNa
 	}
 
 	return err
+}
+
+// GetControlPlaneMachines retrieves all non-deleted control plane nodes from a MachineList
+func GetControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Machine {
+	var cpm []*clusterv1.Machine
+	for _, m := range machineList.Items {
+		if util.IsControlPlaneMachine(&m) {
+			cpm = append(cpm, m.DeepCopy())
+		}
+	}
+	return cpm
 }

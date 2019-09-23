@@ -25,7 +25,7 @@ import (
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/actuators"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/certificates"
 )
 

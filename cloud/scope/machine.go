@@ -93,14 +93,14 @@ type MachineScope struct {
 	AzureMachine *infrav1.AzureMachine
 }
 
-// Region returns the AzureMachine region.
-func (m *MachineScope) Region() string {
-	return m.AzureCluster.Spec.Region
+// Location returns the AzureMachine location.
+func (m *MachineScope) Location() string {
+	return m.AzureCluster.Spec.Location
 }
 
-// Zone returns the AzureMachine zone.
-func (m *MachineScope) Zone() string {
-	return m.AzureMachine.Spec.Zone
+// AvailabilityZone returns the AzureMachine Availability Zone.
+func (m *MachineScope) AvailabilityZone() string {
+	return m.AzureMachine.Spec.AvailabilityZone
 }
 
 // Name returns the AzureMachine name.
