@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
@@ -42,12 +41,12 @@ type Spec struct {
 }
 
 // Get provides information about a network interface.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	nicSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.Interface{}, errors.New("invalid network interface specification")
 	}
-	nic, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, nicSpec.Name, "")
+	nic, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "network interface %s not found", nicSpec.Name)
 	} else if err != nil {
@@ -57,7 +56,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a network interface.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	nicSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid network interface specification")
@@ -123,10 +122,10 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 	future, err := s.Client.CreateOrUpdate(ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		nicSpec.Name,
 		network.Interface{
-			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+			Location: to.StringPtr(s.Scope.Location()),
 			InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 				IPConfigurations: &[]network.InterfaceIPConfiguration{
 					{
@@ -138,7 +137,7 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 		})
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -155,19 +154,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the network interface with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	nicSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid network interface Specification")
 	}
 	klog.V(2).Infof("deleting nic %s", nicSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, nicSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

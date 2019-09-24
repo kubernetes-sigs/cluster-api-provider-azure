@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -35,12 +34,12 @@ type Spec struct {
 }
 
 // Get provides information about a virtual machine extension.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
 		return compute.VirtualMachineExtension{}, errors.New("invalid vm specification")
 	}
-	vmExt, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name, "")
+	vmExt, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm extension %s not found", vmExtSpec.Name)
 	} else if err != nil {
@@ -50,7 +49,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a virtual machine extension.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm specification")
@@ -60,12 +59,12 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		vmExtSpec.VMName,
 		vmExtSpec.Name,
 		compute.VirtualMachineExtension{
 			Name:     to.StringPtr(vmExtSpec.Name),
-			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+			Location: to.StringPtr(s.Scope.Location()),
 			VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
 				Type:                    to.StringPtr("CustomScript"),
 				TypeHandlerVersion:      to.StringPtr("2.0"),
@@ -99,19 +98,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the virtual machine extension with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid VNET Specification")
 	}
 	klog.V(2).Infof("deleting vm extension %s ", vmExtSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm extension %s in resource group %s", vmExtSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vm extension %s in resource group %s", vmExtSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

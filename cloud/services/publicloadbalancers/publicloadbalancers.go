@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 )
@@ -36,12 +35,12 @@ type Spec struct {
 }
 
 // Get provides information about a public load balancer.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.LoadBalancer{}, errors.New("invalid public loadbalancer specification")
 	}
-	lb, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, publicLBSpec.Name, "")
+	lb, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "load balancer %s not found", publicLBSpec.Name)
 	} else if err != nil {
@@ -51,7 +50,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a public load balancer.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")
@@ -59,7 +58,7 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 	probeName := "tcpHTTPSProbe"
 	frontEndIPConfigName := "controlplane-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-backEndPool"
-	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ClusterConfig.ResourceGroup)
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.AzureCluster.Spec.ResourceGroup)
 	lbName := publicLBSpec.Name
 	klog.V(2).Infof("creating public load balancer %s", lbName)
 
@@ -77,11 +76,11 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	future, err := s.Client.CreateOrUpdate(ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		lbName,
 		network.LoadBalancer{
 			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+			Location: to.StringPtr(s.Scope.Location()),
 			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
 				FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
 					{
@@ -189,19 +188,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the public load balancer with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	publicLBSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")
 	}
 	klog.V(2).Infof("deleting public load balancer %s", publicLBSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, publicLBSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

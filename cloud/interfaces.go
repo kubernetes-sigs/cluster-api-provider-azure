@@ -18,22 +18,20 @@ package azure
 
 import (
 	"context"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
 // Service is a generic interface used by components offering a type of service.
 // Example: virtualnetworks service would offer Reconcile/Delete methods.
 type Service interface {
-	Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error
-	Delete(ctx context.Context, spec infrav1.ResourceSpec) error
+	Reconcile(ctx context.Context, spec interface{}) error
+	Delete(ctx context.Context, spec interface{}) error
 }
 
 // GetterService is a temporary interface used by components which still require Get methods.
 // Once all components move to storing provider information within the relevant
 // Cluster/Machine specs, this interface should be removed.
 type GetterService interface {
-	Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error)
-	Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error
-	Delete(ctx context.Context, spec infrav1.ResourceSpec) error
+	Get(ctx context.Context, spec interface{}) (interface{}, error)
+	Reconcile(ctx context.Context, spec interface{}) error
+	Delete(ctx context.Context, spec interface{}) error
 }

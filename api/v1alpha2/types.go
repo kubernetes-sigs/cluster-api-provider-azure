@@ -71,7 +71,7 @@ type AzureMachineProviderCondition struct {
 
 const (
 	// ControlPlane machine label
-	ControlPlane string = "controlplane"
+	ControlPlane string = "control-plane"
 	// Node machine label
 	Node string = "node"
 )

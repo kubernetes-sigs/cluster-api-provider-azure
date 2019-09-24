@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -33,12 +32,12 @@ type Spec struct {
 }
 
 // Get provides information about a route table.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.RouteTable{}, errors.New("Invalid Route Table Specification")
 	}
-	routeTable, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, routeTableSpec.Name, "")
+	routeTable, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, routeTableSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "route table %s not found", routeTableSpec.Name)
 	} else if err != nil {
@@ -48,7 +47,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a route table.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid Route Table Specification")
@@ -56,15 +55,15 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		routeTableSpec.Name,
 		network.RouteTable{
-			Location:                   to.StringPtr(s.Scope.ClusterConfig.Location),
+			Location:                   to.StringPtr(s.Scope.Location()),
 			RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -81,19 +80,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the route table with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid Route Table Specification")
 	}
 	klog.V(2).Infof("deleting route table %s", routeTableSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, routeTableSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, routeTableSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

@@ -23,28 +23,27 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
 // Get provides information about a resource group.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
-	return s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup)
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
+	return s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
 }
 
 // // Reconcile gets/creates/updates a resource group.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
-	klog.V(2).Infof("creating resource group %s", s.Scope.ClusterConfig.ResourceGroup)
-	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ClusterConfig.ResourceGroup, resources.Group{Location: to.StringPtr(s.Scope.ClusterConfig.Location)})
-	klog.V(2).Infof("successfully created resource group %s", s.Scope.ClusterConfig.ResourceGroup)
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+	klog.V(2).Infof("creating resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, resources.Group{Location: to.StringPtr(s.Scope.Location())})
+	klog.V(2).Infof("successfully created resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	return err
 }
 
 // Delete deletes the resource group with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
-	klog.V(2).Infof("deleting resource group %s", s.Scope.ClusterConfig.ResourceGroup)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup)
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+	klog.V(2).Infof("deleting resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -54,6 +53,6 @@ func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
 
 	_, err = future.Result(s.Client)
 
-	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.ClusterConfig.ResourceGroup)
+	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	return err
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -34,12 +33,12 @@ type Spec struct {
 }
 
 // Get provides information about a public ip.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.PublicIPAddress{}, errors.New("Invalid PublicIP Specification")
 	}
-	publicIP, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, publicIPSpec.Name, "")
+	publicIP, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "publicip %s not found", publicIPSpec.Name)
 	} else if err != nil {
@@ -49,7 +48,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a public ip.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid PublicIP Specification")
@@ -60,12 +59,12 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		ipName,
 		network.PublicIPAddress{
 			Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 			Name:     to.StringPtr(ipName),
-			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+			Location: to.StringPtr(s.Scope.Location()),
 			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 				PublicIPAddressVersion:   network.IPv4,
 				PublicIPAllocationMethod: network.Static,
@@ -95,19 +94,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the public ip with the provided scope.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid PublicIP Specification")
 	}
 	klog.V(2).Infof("deleting public ip %s", publicIPSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, publicIPSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete public ip %s in resource group %s", publicIPSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete public ip %s in resource group %s", publicIPSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

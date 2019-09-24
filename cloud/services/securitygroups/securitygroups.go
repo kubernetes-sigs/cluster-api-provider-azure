@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -34,12 +33,12 @@ type Spec struct {
 }
 
 // Get provides information about a network security group.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {
 		return network.SecurityGroup{}, errors.New("invalid security groups specification")
 	}
-	securityGroup, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, nsgSpec.Name, "")
+	securityGroup, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nsgSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "security group %s not found", nsgSpec.Name)
 	} else if err != nil {
@@ -49,7 +48,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a network security group.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid security groups specification")
@@ -92,17 +91,17 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		nsgSpec.Name,
 		network.SecurityGroup{
-			Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+			Location: to.StringPtr(s.Scope.Location()),
 			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 				SecurityRules: securityRules,
 			},
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)
@@ -119,19 +118,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the network security group with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid security groups specification")
 	}
 	klog.V(2).Infof("deleting security group %s", nsgSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, nsgSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nsgSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

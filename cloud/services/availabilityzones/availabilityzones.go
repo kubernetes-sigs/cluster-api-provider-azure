@@ -23,7 +23,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
@@ -32,7 +31,7 @@ type Spec struct {
 }
 
 // Get provides information about a availability zones.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	var zones []string
 	skusSpec, ok := spec.(*Spec)
 	if !ok {
@@ -53,11 +52,11 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 				for _, zone := range *locationInfo.Zones {
 					availableZones[zone] = true
 				}
-				if strings.EqualFold(*locationInfo.Location, s.Scope.ClusterConfig.Location) {
+				if strings.EqualFold(*locationInfo.Location, s.Scope.Location()) {
 					for _, restriction := range *resSku.Restrictions {
 						// Can't deploy anything in this subscription in this location. Bail out.
 						if restriction.Type == compute.Location {
-							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", skusSpec.VMSize, s.Scope.ClusterConfig.Location)
+							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", skusSpec.VMSize, s.Scope.Location())
 						}
 						// May be able to deploy one or more zones to this location.
 						for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
@@ -85,13 +84,13 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile no-op.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	// Not implemented since there is nothing to reconcile
 	return nil
 }
 
 // Delete no-op.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	// Not implemented since there is nothing to delete
 	return nil
 }

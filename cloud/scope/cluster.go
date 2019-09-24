@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
@@ -98,7 +99,7 @@ func (s *ClusterScope) Network() *infrav1.Network {
 }
 
 // Vnet returns the cluster Vnet.
-func (s *ClusterScope) Vnet() infrav1.Vnet {
+func (s *ClusterScope) Vnet() infrav1.VnetSpec {
 	return s.AzureCluster.Spec.NetworkSpec.Vnet
 }
 
@@ -108,8 +109,8 @@ func (s *ClusterScope) Subnets() infrav1.Subnets {
 }
 
 // SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
-func (s *ClusterScope) SecurityGroups() map[infrav1.SecurityGroupRole]*infrav1.SecurityGroup {
-	return s.AzureCluster.Status.SecurityGroups
+func (s *ClusterScope) SecurityGroups() map[infrav1.SecurityGroupRole]infrav1.SecurityGroup {
+	return s.AzureCluster.Status.Network.SecurityGroups
 }
 
 // Name returns the cluster name.

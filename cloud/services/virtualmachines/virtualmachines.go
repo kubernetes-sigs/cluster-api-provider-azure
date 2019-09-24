@@ -46,12 +46,12 @@ type Spec struct {
 }
 
 // Get provides information about a virtual machine.
-func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return compute.VirtualMachine{}, errors.New("invalid vm specification")
 	}
-	vm, err := s.Client.Get(ctx, s.Scope.ClusterConfig.ResourceGroup, vmSpec.Name, "")
+	vm, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name, "")
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm %s not found", vmSpec.Name)
 	} else if err != nil {
@@ -61,7 +61,7 @@ func (s *Service) Get(ctx context.Context, spec infrav1.ResourceSpec) (interface
 }
 
 // Reconcile gets/creates/updates a virtual machine.
-func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm specification")
@@ -100,7 +100,7 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 	}
 
 	virtualMachine := compute.VirtualMachine{
-		Location: to.StringPtr(s.Scope.ClusterConfig.Location),
+		Location: to.StringPtr(s.Scope.Location()),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
@@ -159,7 +159,7 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 
 	future, err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ClusterConfig.ResourceGroup,
+		s.Scope.AzureCluster.Spec.ResourceGroup,
 		vmSpec.Name,
 		virtualMachine)
 	if err != nil {
@@ -181,19 +181,19 @@ func (s *Service) Reconcile(ctx context.Context, spec infrav1.ResourceSpec) erro
 }
 
 // Delete deletes the virtual machine with the provided name.
-func (s *Service) Delete(ctx context.Context, spec infrav1.ResourceSpec) error {
+func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid vm Specification")
 	}
 	klog.V(2).Infof("deleting vm %s ", vmSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.ClusterConfig.ResourceGroup, vmSpec.Name)
+	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.ClusterConfig.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
 	err = future.WaitForCompletionRef(ctx, s.Client.Client)

@@ -121,13 +121,13 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 		azureCluster.Finalizers = append(azureCluster.Finalizers, infrav1.ClusterFinalizer)
 	}
 
-	err := NewReconciler(clusterScope).Reconcile()
+	err := newAzureClusterReconciler(clusterScope).Reconcile()
 	if err != nil {
-		return errors.Wrap(err, "failed to reconcile cluster services")
+		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
 
 	// TODO: figure out what to expose in this endpoint
-	if azureCluster.Status.Network.APIServerAddress == nil {
+	if azureCluster.Status.Network.APIServerIP.IPAddress == "" {
 		clusterScope.Info("Waiting on API server Global IP Address")
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
@@ -135,7 +135,7 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
 		{
-			Host: *azureCluster.Status.Network.APIServerAddress,
+			Host: azureCluster.Status.Network.APIServerIP.IPAddress,
 			Port: 443,
 		},
 	}
@@ -150,11 +150,8 @@ func (r *AzureClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScop
 
 	azureCluster := clusterScope.AzureCluster
 
-	if err := NewReconciler(clusterScope).Delete(); err != nil {
-		klog.Errorf("Error deleting resource group: %v.", err)
-		return &controllerError.RequeueAfterError{
-			RequeueAfter: 5 * time.Second,
-		}
+	if err := newAzureClusterReconciler(clusterScope).Delete(); err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 	}
 
 	// Cluster is deleted so remove the finalizer.

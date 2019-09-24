@@ -25,7 +25,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
 // MockService is a mock of Service interface
@@ -52,7 +51,7 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // Delete mocks base method
-func (m *MockService) Delete(arg0 context.Context, arg1 infrav1.ResourceSpec) error {
+func (m *MockService) Delete(arg0 context.Context, arg1 interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -66,7 +65,7 @@ func (mr *MockServiceMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // Reconcile mocks base method
-func (m *MockService) Reconcile(arg0 context.Context, arg1 infrav1.ResourceSpec) error {
+func (m *MockService) Reconcile(arg0 context.Context, arg1 interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reconcile", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -103,7 +102,7 @@ func (m *MockGetterService) EXPECT() *MockGetterServiceMockRecorder {
 }
 
 // Delete mocks base method
-func (m *MockGetterService) Delete(arg0 context.Context, arg1 infrav1.ResourceSpec) error {
+func (m *MockGetterService) Delete(arg0 context.Context, arg1 interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -117,7 +116,7 @@ func (mr *MockGetterServiceMockRecorder) Delete(arg0, arg1 interface{}) *gomock.
 }
 
 // Get mocks base method
-func (m *MockGetterService) Get(arg0 context.Context, arg1 infrav1.ResourceSpec) (interface{}, error) {
+func (m *MockGetterService) Get(arg0 context.Context, arg1 interface{}) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(interface{})
@@ -132,7 +131,7 @@ func (mr *MockGetterServiceMockRecorder) Get(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // Reconcile mocks base method
-func (m *MockGetterService) Reconcile(arg0 context.Context, arg1 infrav1.ResourceSpec) error {
+func (m *MockGetterService) Reconcile(arg0 context.Context, arg1 interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reconcile", arg0, arg1)
 	ret0, _ := ret[0].(error)
