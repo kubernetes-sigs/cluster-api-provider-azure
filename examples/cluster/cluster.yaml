@@ -17,8 +17,8 @@ kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
 spec:
-      resourceGroup: "${AZURE_RESOURCE_GROUP}"
-      location: "${AZURE_LOCATION}"
-      networkSpec:
-        vnet:
-          name: "${VNET_NAME}"
+    resourceGroup: "${AZURE_RESOURCE_GROUP}"
+    location: "${AZURE_LOCATION}"
+    networkSpec:
+      vnet:
+        name: "${VNET_NAME}"
