@@ -80,20 +80,25 @@ fi
 
 mkdir -p "${OUTPUT_DIR}"
 
-AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:?}
-export AZURE_SUBSCRIPTION_ID
+# Verify the required Environment Variables are present.
+: "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+: "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
-AZURE_CLIENT_ID=${AZURE_CLIENT_ID:?}
-export AZURE_CLIENT_ID
-
-AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:?}
-export AZURE_CLIENT_SECRET
 
 AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:?}
 export AZURE_RESOURCE_GROUP
 
 AZURE_LOCATION=${AZURE_LOCATION:?}
 export AZURE_LOCATION
+
+# Azure Credentials.
+SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
+export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64)"
+export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64)"
+export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64)"
+export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64)"
 
 # Generate cluster resources.
 kustomize build "${SOURCE_DIR}/cluster" | envsubst > "${CLUSTER_GENERATED_FILE}"
