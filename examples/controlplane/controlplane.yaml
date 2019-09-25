@@ -22,8 +22,7 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-0
 spec:
-  zone: ${Azure_REGION}-a
-  instanceType: ${CONTROL_PLANE_MACHINE_TYPE}
+  vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfig
@@ -34,15 +33,15 @@ spec:
     nodeRegistration:
       name: '{{ ds.meta_data["local_hostname"] }}'
       kubeletExtraArgs:
-        cloud-provider: gce
+        cloud-provider: azure
   clusterConfiguration:
     apiServer:
       timeoutForControlPlane: 20m
       extraArgs:
-        cloud-provider: gce
+        cloud-provider: azure
     controllerManager:
       extraArgs:
-        cloud-provider: gce
+        cloud-provider: azure
         allocate-node-cidrs: "false"
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
@@ -69,8 +68,7 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-1
 spec:
-  zone: ${Azure_REGION}-b
-  instanceType: ${CONTROL_PLANE_MACHINE_TYPE}
+  vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfig
@@ -82,7 +80,7 @@ spec:
     nodeRegistration:
       name: '{{ ds.meta_data["local_hostname"] }}'
       kubeletExtraArgs:
-        cloud-provider: gce
+        cloud-provider: azure
 ---
 apiVersion: cluster.x-k8s.io/v1alpha2
 kind: Machine
@@ -108,8 +106,7 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-2
 spec:
-  zone: ${Azure_REGION}-c
-  instanceType: ${CONTROL_PLANE_MACHINE_TYPE}
+  vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfig
@@ -121,4 +118,4 @@ spec:
     nodeRegistration:
       name: '{{ ds.meta_data["local_hostname"] }}'
       kubeletExtraArgs:
-        cloud-provider: gce
+        cloud-provider: azure

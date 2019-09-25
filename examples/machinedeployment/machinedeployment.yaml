@@ -35,8 +35,7 @@ metadata:
 spec:
   template:
     spec:
-      zone: ${Azure_REGION}-a
-      instanceType: ${NODE_MACHINE_TYPE}
+      vmSize: ${NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfigTemplate
@@ -49,4 +48,4 @@ spec:
         nodeRegistration:
           name: '{{ ds.meta_data["local_hostname"] }}'
           kubeletExtraArgs:
-            cloud-provider: gce
+            cloud-provider: azure

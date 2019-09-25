@@ -29,8 +29,8 @@ export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
 export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.15.3}"
 
 # Machine settings.
-export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-n1-standard-2}"
-export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-n1-standard-2}"
+export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
+export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2ms}"
 export SSH_KEY_NAME="${SSH_KEY_NAME:-default}"
 
 # Outputs.
@@ -80,14 +80,25 @@ fi
 
 mkdir -p "${OUTPUT_DIR}"
 
-# Generate Azure Credentials.
-Azure_B64ENCODED_CREDENTIALS="$(base64 -i "${GOOGLE_APPLICATION_CREDENTIALS}" | tr -d '\n')"
-export Azure_B64ENCODED_CREDENTIALS
+# Verify the required Environment Variables are present.
+: "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+: "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
-Azure_REGION=${Azure_REGION:?}
-export Azure_REGION
-Azure_PROJECT=${Azure_PROJECT:?}
-export Azure_PROJECT
+
+AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:?}
+export AZURE_RESOURCE_GROUP
+
+AZURE_LOCATION=${AZURE_LOCATION:?}
+export AZURE_LOCATION
+
+# Azure Credentials.
+SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
+export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
 
 # Generate cluster resources.
 kustomize build "${SOURCE_DIR}/cluster" | envsubst > "${CLUSTER_GENERATED_FILE}"

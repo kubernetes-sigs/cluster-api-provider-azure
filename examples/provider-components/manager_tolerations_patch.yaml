@@ -16,8 +16,8 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: capg-controller-manager
-  namespace: capg-system
+  name: capz-controller-manager
+  namespace: capz-system
 spec:
   template:
     spec:
