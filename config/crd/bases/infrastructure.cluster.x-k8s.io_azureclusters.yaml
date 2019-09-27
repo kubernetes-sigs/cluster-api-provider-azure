@@ -324,9 +324,8 @@ spec:
                   type: object
               type: object
             ready:
+              description: Ready is true when the provider resource is ready.
               type: boolean
-          required:
-          - ready
           type: object
       type: object
   version: v1alpha2
