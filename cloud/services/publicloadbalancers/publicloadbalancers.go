@@ -182,6 +182,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "cannot get public load balancer create or update future response")
 	}
 
+	s.Scope.Network().APIServerIP.IPAddress = *pip.IPAddress
+
 	_, err = future.Result(s.Client)
 	klog.V(2).Infof("successfully created public load balancer %s", lbName)
 	return err
