@@ -136,24 +136,21 @@ func (r *azureMachineReconciler) findVM() (*compute.VirtualMachine, error) {
 		return vm, err
 	}
 
-	if r.machineScope != nil && r.machineScope.AzureMachine != nil && r.machineScope.AzureMachine.Status != nil {
-		return nil, nil
-	}
-
-	switch *r.machineScope.AzureMachine.Status.VMState {
-	case infrav1.VMStateSucceeded:
-		klog.Infof("Machine %v is running", r.machineScope.GetVMID())
-	case infrav1.VMStateUpdating:
-		klog.Infof("Machine %v is updating", r.machineScope.GetVMID())
-	case infrav1.VMStateFailed:
-		klog.Infof("Machine %v is in failed state", r.machineScope.GetVMID())
-		return nil, nil
-	case infrav1.VMStateDeleting:
-		klog.Infof("Machine %v is deleting", r.machineScope.GetVMID())
-		return nil, nil
-	default:
-		return vm, nil
-	}
+	// TODO: determine if we need this and fix the nil pointer error
+	// switch *r.machineScope.AzureMachine.Status.VMState {
+	// case infrav1.VMStateSucceeded:
+	// 	klog.Infof("Machine %v is running", r.machineScope.GetVMID())
+	// case infrav1.VMStateUpdating:
+	// 	klog.Infof("Machine %v is updating", r.machineScope.GetVMID())
+	// case infrav1.VMStateFailed:
+	// 	klog.Infof("Machine %v is in failed state", r.machineScope.GetVMID())
+	// 	return nil, nil
+	// case infrav1.VMStateDeleting:
+	// 	klog.Infof("Machine %v is deleting", r.machineScope.GetVMID())
+	// 	return nil, nil
+	// default:
+	// 	return vm, nil
+	// }
 
 	return vm, nil
 }
@@ -346,7 +343,7 @@ func (r *azureMachineReconciler) createVirtualMachine(nicName string) (*compute.
 			Size:       r.machineScope.AzureMachine.Spec.VMSize,
 			OSDisk:     r.machineScope.AzureMachine.Spec.OSDisk,
 			Image:      r.machineScope.AzureMachine.Spec.Image,
-			// Zone:       vmZone,
+			// Zone:       vmZone,  // TODO: figure out if how to re-enable this
 		}
 
 		err = r.virtualMachinesSvc.Reconcile(r.clusterScope.Context, vmSpec)
