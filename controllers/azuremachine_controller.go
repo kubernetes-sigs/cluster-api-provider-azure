@@ -193,7 +193,9 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 	}
 
 	// Make sure Spec.ProviderID is always set.
-	machineScope.SetProviderID(fmt.Sprintf("azure:////%s", *machineScope.GetVMID()))
+	if machineScope.GetVMID() != nil {
+		machineScope.SetProviderID(fmt.Sprintf("azure:////%s", *machineScope.GetVMID()))
+	}
 
 	// Proceed to reconcile the AzureMachine state.
 	machineScope.SetVMState(infrav1.VMState(vm.Status))
