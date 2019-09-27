@@ -44,9 +44,9 @@ spec:
         version: "latest"
       osDisk:
         osType: "Linux"
+        diskSizeGB: 30
         managedDisk:
           storageAccountType: "Premium_LRS"
-        diskSizeGB: 30
       sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2

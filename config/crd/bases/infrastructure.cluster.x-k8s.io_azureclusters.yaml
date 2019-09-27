@@ -182,19 +182,24 @@ spec:
                 image:
                   description: Storage profile
                   properties:
+                    gallery:
+                      type: string
+                    id:
+                      type: string
+                    name:
+                      type: string
                     offer:
                       type: string
                     publisher:
                       type: string
+                    resourceGroup:
+                      type: string
                     sku:
+                      type: string
+                    subscriptionID:
                       type: string
                     version:
                       type: string
-                  required:
-                  - offer
-                  - publisher
-                  - sku
-                  - version
                   type: object
                 name:
                   type: string

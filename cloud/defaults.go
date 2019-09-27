@@ -16,7 +16,9 @@ limitations under the License.
 
 package azure
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	// DefaultUserName is the default username for created vm

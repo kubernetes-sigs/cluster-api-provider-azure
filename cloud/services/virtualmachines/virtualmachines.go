@@ -70,6 +70,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid vm specification")
 	}
 
+	storageProfile, err := generateStorageProfile(*vmSpec)
+	if err != nil {
+		return err
+	}
+
 	klog.V(2).Infof("getting nic %s", vmSpec.NICName)
 	nicInterface, err := networkinterfaces.NewService(s.Scope).Get(ctx, &networkinterfaces.Spec{Name: vmSpec.NICName})
 	if err != nil {
@@ -108,23 +113,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
 			},
-			StorageProfile: &compute.StorageProfile{
-				ImageReference: &compute.ImageReference{
-					Publisher: to.StringPtr(vmSpec.Image.Publisher),
-					Offer:     to.StringPtr(vmSpec.Image.Offer),
-					Sku:       to.StringPtr(vmSpec.Image.SKU),
-					Version:   to.StringPtr(vmSpec.Image.Version),
-				},
-				OsDisk: &compute.OSDisk{
-					Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
-					OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
-					CreateOption: compute.DiskCreateOptionTypesFromImage,
-					DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
-					ManagedDisk: &compute.ManagedDiskParameters{
-						StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
-					},
-				},
-			},
+			StorageProfile: storageProfile,
 			OsProfile: &compute.OSProfile{
 				ComputerName:  to.StringPtr(vmSpec.Name),
 				AdminUsername: to.StringPtr(azure.DefaultUserName),
@@ -209,6 +198,91 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 
 	klog.V(2).Infof("successfully deleted vm %s ", vmSpec.Name)
 	return err
+}
+
+// generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
+func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
+	// TODO: Validate parameters before building storage profile
+	storageProfile := &compute.StorageProfile{
+		OsDisk: &compute.OSDisk{
+			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
+			OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
+			CreateOption: compute.DiskCreateOptionTypesFromImage,
+			DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
+			ManagedDisk: &compute.ManagedDiskParameters{
+				StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
+			},
+		},
+	}
+
+	imageRef, err := generateImageReference(vmSpec.Image)
+	if err != nil {
+		return nil, err
+	}
+
+	storageProfile.ImageReference = imageRef
+
+	return storageProfile, nil
+}
+
+// generateImageReference generates a pointer to a compute.ImageReference which can utilized for VM creation.
+func generateImageReference(image infrav1.Image) (*compute.ImageReference, error) {
+	imageRef := &compute.ImageReference{}
+
+	if image.ID != nil {
+		imageRef.ID = to.StringPtr(*image.ID)
+
+		// return early since we should only need the image ID
+		return imageRef, nil
+	} else if image.SubscriptionID != nil && image.ResourceGroup != nil && image.Gallery != nil && image.Name != nil && image.Version != nil {
+		imageID, err := generateImageID(image)
+		if err != nil {
+			return nil, err
+		}
+
+		imageRef.ID = to.StringPtr(imageID)
+
+		// return early since we're referencing an image that may not be published
+		return imageRef, nil
+	}
+
+	if image.Publisher != nil {
+		imageRef.Publisher = image.Publisher
+	}
+	if image.Offer != nil {
+		imageRef.Offer = image.Offer
+	}
+	if image.SKU != nil {
+		imageRef.Sku = image.SKU
+	}
+	if image.Version != nil {
+		imageRef.Version = image.Version
+
+		return imageRef, nil
+	}
+
+	return nil, errors.Errorf("Image reference cannot be generated, as fields are missing: %+v", *imageRef)
+}
+
+// generateImageID generates the resource ID for an image stored in an Azure Shared Image Gallery.
+func generateImageID(image infrav1.Image) (string, error) {
+	if image.SubscriptionID == nil {
+		return "", errors.New("Image subscription ID cannot be nil when specifying an image from an Azure Shared Image Gallery")
+	}
+	if image.ResourceGroup == nil {
+		return "", errors.New("Image resource group cannot be nil when specifying an image from an Azure Shared Image Gallery")
+	}
+	if image.Gallery == nil {
+		return "", errors.New("Image gallery cannot be nil when specifying an image from an Azure Shared Image Gallery")
+	}
+	if image.Name == nil {
+		return "", errors.New("Image name cannot be nil when specifying an image from an Azure Shared Image Gallery")
+	}
+	if image.Version == nil {
+		return "", errors.New("Image version cannot be nil when specifying an image from an Azure Shared Image Gallery")
+	}
+
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s", *image.SubscriptionID, *image.ResourceGroup, *image.Gallery, *image.Name, *image.Version), nil
 }
 
 // GenerateRandomString returns a URL-safe, base64 encoded
