@@ -42,6 +42,8 @@ type AzureClusterStatus struct {
 
 	Bastion VM `json:"bastion,omitempty"`
 
+	// Ready is true when the provider resource is ready.
+	// +optional
 	Ready bool `json:"ready"`
 
 	// APIEndpoints represents the endpoints to communicate with the control plane.

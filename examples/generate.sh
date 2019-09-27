@@ -24,14 +24,18 @@ OUTPUT_DIR=${OUTPUT_DIR:-${SOURCE_DIR}/_out}
 ENVSUBST=${ENVSUBST:-envsubst}
 command -v "${ENVSUBST}" >/dev/null 2>&1 || echo -v "Cannot find ${ENVSUBST} in path."
 
+RANDOM_STRING=$(date | md5sum | head -c8)
+
 # Cluster.
-export CLUSTER_NAME="${CLUSTER_NAME:-test1}"
+export CLUSTER_NAME="${CLUSTER_NAME:-capz-${RANDOM_STRING}}"
+export VNET_NAME="${VNET_NAME:-}"
 export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.15.3}"
+export AVAILABILITY_ZONE="${AVAILABILITY_ZONE:-}"
+
 
 # Machine settings.
 export CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_B2ms}"
 export NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_B2ms}"
-export SSH_KEY_NAME="${SSH_KEY_NAME:-default}"
 
 # Outputs.
 COMPONENTS_CLUSTER_API_GENERATED_FILE=${SOURCE_DIR}/provider-components/provider-components-cluster-api.yaml
@@ -87,7 +91,7 @@ mkdir -p "${OUTPUT_DIR}"
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
 
-AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:?}
+AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-${CLUSTER_NAME}}
 export AZURE_RESOURCE_GROUP
 
 AZURE_LOCATION=${AZURE_LOCATION:?}
@@ -95,6 +99,12 @@ export AZURE_LOCATION
 
 # Azure Credentials.
 SSH_KEY_FILE=${OUTPUT_DIR}/sshkey
+rm -f "${SSH_KEY_FILE}" 2>/dev/null
+ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
+
+echo "Machine SSH key generated in ${SSH_KEY_FILE}"
+
+export SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
 export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
 export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
@@ -113,7 +123,8 @@ kustomize build "${SOURCE_DIR}/machinedeployment" | envsubst >> "${MACHINEDEPLOY
 echo "Generated ${MACHINEDEPLOYMENT_GENERATED_FILE}"
 
 # Generate Cluster API provider components file.
-kustomize build "github.com/kubernetes-sigs/cluster-api//config/default/?ref=v0.2.0" > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+# kustomize build "github.com/kubernetes-sigs/cluster-api//config/default/?ref=v0.2.0" > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+wget https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.3/cluster-api-components.yaml -O "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
 echo "Generated ${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
 
 # Generate Kubeadm Bootstrap Provider components file.

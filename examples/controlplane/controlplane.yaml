@@ -22,7 +22,20 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-0
 spec:
+  location: ${AZURE_LOCATION}
+  availabilityZone: ""
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
+  image:
+    publisher: "Canonical"
+    offer: "UbuntuServer"
+    sku: "18.04-LTS"
+    version: "latest"
+  osDisk:
+    osType: "Linux"
+    managedDisk:
+      storageAccountType: "Premium_LRS"
+    diskSizeGB: 30
+  sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfig
@@ -68,7 +81,20 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-1
 spec:
+  location: ${AZURE_LOCATION}
+  availabilityZone: ""
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
+  image:
+    publisher: "Canonical"
+    offer: "UbuntuServer"
+    sku: "18.04-LTS"
+    version: "latest"
+  osDisk:
+    osType: "Linux"
+    managedDisk:
+      storageAccountType: "Premium_LRS"
+    diskSizeGB: 30
+  sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfig
@@ -106,7 +132,20 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-2
 spec:
+  location: ${AZURE_LOCATION}
+  availabilityZone: ""
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
+  image:
+    publisher: "Canonical"
+    offer: "UbuntuServer"
+    sku: "18.04-LTS"
+    version: "latest"
+  osDisk:
+    osType: "Linux"
+    managedDisk:
+      storageAccountType: "Premium_LRS"
+    diskSizeGB: 30
+  sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
 kind: KubeadmConfig
