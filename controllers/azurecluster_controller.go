@@ -126,17 +126,18 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
 
-	// TODO: figure out what to expose in this endpoint
-	if azureCluster.Status.Network.APIServerIP.IPAddress == "" {
-		clusterScope.Info("Waiting on API server Global IP Address")
+	// TODO: We may need to use azureCluster.Status.Network.APIServerIP.IPAddress
+	//       instead when we look at configuring private clusters.
+	if azureCluster.Status.Network.APIServerIP.DNSName == "" {
+		clusterScope.Info("Waiting for API server endpoint to exist")
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
 		{
-			Host: azureCluster.Status.Network.APIServerIP.IPAddress,
-			Port: 443,
+			Host: azureCluster.Status.Network.APIServerIP.DNSName,
+			Port: int(clusterScope.APIServerPort()),
 		},
 	}
 

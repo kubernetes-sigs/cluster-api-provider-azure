@@ -139,3 +139,11 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 func (s *ClusterScope) Close() error {
 	return s.patchHelper.Patch(context.TODO(), s.AzureCluster)
 }
+
+// APIServerPort returns the APIServerPort to use when creating the load balancer.
+func (s *ClusterScope) APIServerPort() int32 {
+	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
+		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
+	}
+	return 6443
+}
