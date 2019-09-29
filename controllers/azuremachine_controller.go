@@ -65,10 +65,7 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 
 func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
-	logger := r.Log.
-		WithName(controllerName).
-		WithName(fmt.Sprintf("namespace=%s", req.Namespace)).
-		WithName(fmt.Sprintf("azureMachine=%s", req.Name))
+	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 
 	// Fetch the AzureMachine instance.
 	azureMachine := &infrav1.AzureMachine{}
@@ -80,8 +77,6 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, err
 	}
 
-	logger = logger.WithName(azureMachine.APIVersion)
-
 	// Fetch the Machine.
 	machine, err := util.GetOwnerMachine(ctx, r.Client, azureMachine.ObjectMeta)
 	if err != nil {
@@ -92,7 +87,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, nil
 	}
 
-	logger = logger.WithName(fmt.Sprintf("machine=%s", machine.Name))
+	logger = logger.WithValues("machine", machine.Name)
 
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
@@ -101,7 +96,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, nil
 	}
 
-	logger = logger.WithName(fmt.Sprintf("cluster=%s", cluster.Name))
+	logger = logger.WithValues("cluster", cluster.Name)
 
 	azureCluster := &infrav1.AzureCluster{}
 
@@ -114,7 +109,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, nil
 	}
 
-	logger = logger.WithName(fmt.Sprintf("azureCluster=%s", azureCluster.Name))
+	logger = logger.WithValues("azureCluster", azureCluster.Name)
 
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{

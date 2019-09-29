@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -31,10 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-)
-
-const (
-	controllerName = "azurecluster-controller"
 )
 
 // AzureClusterReconciler reconciles a AzureCluster object
@@ -56,9 +51,7 @@ func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 
 func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
-	log := r.Log.WithName(controllerName).
-		WithName(fmt.Sprintf("namespace=%s", req.Namespace)).
-		WithName(fmt.Sprintf("azureCluster=%s", req.Name))
+	log := r.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
 	// Fetch the AzureCluster instance
 	azureCluster := &infrav1.AzureCluster{}
@@ -70,8 +63,6 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, err
 	}
 
-	log = log.WithName(azureCluster.APIVersion)
-
 	// Fetch the Cluster.
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, azureCluster.ObjectMeta)
 	if err != nil {
@@ -82,7 +73,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, nil
 	}
 
-	log = log.WithName(fmt.Sprintf("cluster=%s", cluster.Name))
+	log = log.WithValues("cluster", cluster.Name)
 
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
