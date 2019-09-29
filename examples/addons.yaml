@@ -10,7 +10,7 @@ data:
   # Typha is disabled.
   typha_service_name: "none"
   # Configure the backend to use.
-  calico_backend: "bird"
+  calico_backend: "vxlan"
 
   # Configure the MTU to use
   veth_mtu: "1440"
@@ -603,15 +603,9 @@ spec:
             # Auto-detect the BGP IP address.
             - name: IP
               value: "autodetect"
-            # Enable IPIP
-            - name: CALICO_IPV4POOL_IPIP
+            # Enable VXLAN
+            - name: CALICO_IPV4POOL_VXLAN
               value: "Always"
-            # Set MTU for tunnel device used if ipip is enabled
-            - name: FELIX_IPINIPMTU
-              valueFrom:
-                configMapKeyRef:
-                  name: calico-config
-                  key: veth_mtu
             # The default IPv4 pool to create on startup if none exists. Pod IPs will be
             # chosen from this range. Changing this value after installation will have
             # no effect. This should fall within `--cluster-cidr`.
@@ -648,7 +642,6 @@ spec:
             exec:
               command:
               - /bin/calico-node
-              - -bird-ready
               - -felix-ready
             periodSeconds: 10
           volumeMounts:

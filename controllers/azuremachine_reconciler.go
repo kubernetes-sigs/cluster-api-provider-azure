@@ -81,17 +81,18 @@ func (r *azureMachineReconciler) Create() (*compute.VirtualMachine, error) {
 		return nil, errors.Wrapf(vmErr, "failed to create vm %s ", r.machineScope.Name())
 	}
 
-	vmExtSpec := &virtualmachineextensions.Spec{
-		Name:       "startupScript",
-		VMName:     r.machineScope.Name(),
-		ScriptData: *r.machineScope.Machine.Spec.Bootstrap.Data,
-	}
-	// TODO: handle failures/retries better
-	err := r.virtualMachinesExtSvc.Reconcile(r.clusterScope.Context, vmExtSpec)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create vm extension")
-	}
-
+	/*
+		vmExtSpec := &virtualmachineextensions.Spec{
+			Name:       "startupScript",
+			VMName:     r.machineScope.Name(),
+			ScriptData: *r.machineScope.Machine.Spec.Bootstrap.Data,
+		}
+		// TODO: handle failures/retries better
+		err := r.virtualMachinesExtSvc.Reconcile(r.clusterScope.Context, vmExtSpec)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create vm extension")
+		}
+	*/
 	return vm, nil
 }
 
@@ -225,19 +226,21 @@ func (r *azureMachineReconciler) VMIfExists() (*compute.VirtualMachine, error) {
 
 	klog.Infof("Found vm for machine %s", r.machineScope.Name())
 
-	vmExtSpec := &virtualmachineextensions.Spec{
-		Name:   "startupScript",
-		VMName: r.machineScope.Name(),
-	}
+	/*
+		vmExtSpec := &virtualmachineextensions.Spec{
+			Name:   "startupScript",
+			VMName: r.machineScope.Name(),
+		}
 
-	vmExt, err := r.virtualMachinesExtSvc.Get(r.clusterScope.Context, vmExtSpec)
-	if err != nil && vmExt == nil {
-		return nil, nil
-	}
+		vmExt, err := r.virtualMachinesExtSvc.Get(r.clusterScope.Context, vmExtSpec)
+		if err != nil && vmExt == nil {
+			return nil, nil
+		}
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get vm extension")
-	}
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get vm extension")
+		}
+	*/
 
 	return &vm, nil
 }
@@ -343,6 +346,7 @@ func (r *azureMachineReconciler) createVirtualMachine(nicName string) (*compute.
 			Size:       r.machineScope.AzureMachine.Spec.VMSize,
 			OSDisk:     r.machineScope.AzureMachine.Spec.OSDisk,
 			Image:      r.machineScope.AzureMachine.Spec.Image,
+			CustomData: *r.machineScope.Machine.Spec.Bootstrap.Data,
 			// Zone:       vmZone,  // TODO: figure out if how to re-enable this
 		}
 

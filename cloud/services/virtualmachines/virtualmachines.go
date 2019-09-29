@@ -43,6 +43,7 @@ type Spec struct {
 	Zone       string
 	Image      infrav1.Image
 	OSDisk     infrav1.OSDisk
+	CustomData string
 }
 
 // Get provides information about a virtual machine.
@@ -126,6 +127,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				ComputerName:  to.StringPtr(vmSpec.Name),
 				AdminUsername: to.StringPtr(azure.DefaultUserName),
 				AdminPassword: to.StringPtr(randomPassword),
+				CustomData:    to.StringPtr(vmSpec.CustomData),
 				LinuxConfiguration: &compute.LinuxConfiguration{
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
