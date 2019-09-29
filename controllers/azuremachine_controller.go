@@ -198,7 +198,12 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 	}
 
 	// Proceed to reconcile the AzureMachine state.
-	machineScope.SetVMState(infrav1.VMState(vm.Status))
+	vmState := vm.ProvisioningState
+	if vmState == nil {
+		return reconcile.Result{}, err
+	}
+
+	machineScope.SetVMState(infrav1.VMState(*vmState))
 
 	// TODO(vincepri): Remove this annotation when clusterctl is no longer relevant.
 	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
@@ -222,7 +227,7 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 	return reconcile.Result{}, nil
 }
 
-// AzureClusterToAzureMachine is a handler.ToRequestsFunc to be used to enqeue requests for reconciliation
+// AzureClusterToAzureMachine is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
 // of AzureMachines.
 func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject) []ctrl.Request {
 	result := []ctrl.Request{}
