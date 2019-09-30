@@ -105,7 +105,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						Name: &probeName,
 						ProbePropertiesFormat: &network.ProbePropertiesFormat{
 							Protocol:          network.ProbeProtocolTCP,
-							Port:              to.Int32Ptr(6443),
+							Port:              to.Int32Ptr(s.Scope.APIServerPort()),
 							IntervalInSeconds: to.Int32Ptr(15),
 							NumberOfProbes:    to.Int32Ptr(4),
 						},
@@ -116,8 +116,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						Name: to.StringPtr("LBRuleHTTPS"),
 						LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 							Protocol:             network.TransportProtocolTCP,
-							FrontendPort:         to.Int32Ptr(6443),
-							BackendPort:          to.Int32Ptr(6443),
+							FrontendPort:         to.Int32Ptr(s.Scope.APIServerPort()),
+							BackendPort:          to.Int32Ptr(s.Scope.APIServerPort()),
 							IdleTimeoutInMinutes: to.Int32Ptr(4),
 							EnableFloatingIP:     to.BoolPtr(false),
 							LoadDistribution:     network.LoadDistributionDefault,

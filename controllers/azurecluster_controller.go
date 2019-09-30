@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -31,10 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-)
-
-const (
-	controllerName = "azurecluster-controller"
 )
 
 // AzureClusterReconciler reconciles a AzureCluster object
@@ -56,9 +51,7 @@ func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 
 func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
-	log := r.Log.WithName(controllerName).
-		WithName(fmt.Sprintf("namespace=%s", req.Namespace)).
-		WithName(fmt.Sprintf("azureCluster=%s", req.Name))
+	log := r.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
 	// Fetch the AzureCluster instance
 	azureCluster := &infrav1.AzureCluster{}
@@ -70,8 +63,6 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, err
 	}
 
-	log = log.WithName(azureCluster.APIVersion)
-
 	// Fetch the Cluster.
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, azureCluster.ObjectMeta)
 	if err != nil {
@@ -82,7 +73,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, nil
 	}
 
-	log = log.WithName(fmt.Sprintf("cluster=%s", cluster.Name))
+	log = log.WithValues("cluster", cluster.Name)
 
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
@@ -108,10 +99,10 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcile(clusterScope)
+	return r.reconcileNormal(clusterScope)
 }
 
-func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	clusterScope.Info("Reconciling AzureCluster")
 
 	azureCluster := clusterScope.AzureCluster
@@ -126,22 +117,24 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
 
-	// TODO: figure out what to expose in this endpoint
-	if azureCluster.Status.Network.APIServerIP.IPAddress == "" {
-		clusterScope.Info("Waiting on API server Global IP Address")
+	// TODO: We may need to use azureCluster.Status.Network.APIServerIP.IPAddress
+	//       instead when we look at configuring private clusters.
+	if azureCluster.Status.Network.APIServerIP.DNSName == "" {
+		clusterScope.Info("Waiting for API server endpoint to exist")
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
 		{
-			Host: azureCluster.Status.Network.APIServerIP.IPAddress,
-			Port: 443,
+			Host: azureCluster.Status.Network.APIServerIP.DNSName,
+			Port: int(clusterScope.APIServerPort()),
 		},
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	azureCluster.Status.Ready = true
+
 	return reconcile.Result{}, nil
 }
 

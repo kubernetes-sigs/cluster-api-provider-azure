@@ -18,30 +18,25 @@ package converters
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
-// SDKToVM converts azure representation to internal representation
-func SDKToVM(v compute.VirtualMachine) *infrav1.VM {
-	i := &infrav1.VM{
-		ID:   *v.ID,
-		Name: *v.Name,
-
-		// TODO: Add more conversions once types are updated.
-		//Identity: string(v.Identity),
-		//Tags: v.Tags,
-		//State:    infrav1.VMState(*v.State.Name),
+// SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
+func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
+	vm := &infrav1.VM{
+		ID:    to.String(v.ID),
+		Name:  to.String(v.Name),
+		State: infrav1.VMState(to.String(v.ProvisioningState)),
 	}
 
 	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
-		i.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
+		vm.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
 	}
 
-	/*
-		if len(v.Tags) > 0 {
-			i.Tags = TagsToMap(v.Tags)
-		}
-	*/
+	if v.Zones != nil && len(*v.Zones) > 0 {
+		vm.AvailabilityZone = to.StringSlice(v.Zones)[0]
+	}
 
-	return i
+	return vm, nil
 }

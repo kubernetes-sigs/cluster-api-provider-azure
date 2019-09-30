@@ -18,6 +18,7 @@ package securitygroups
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -79,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 					SourceAddressPrefix:      to.StringPtr("*"),
 					SourcePortRange:          to.StringPtr("*"),
 					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr("6443"),
+					DestinationPortRange:     to.StringPtr(strconv.Itoa(int(s.Scope.APIServerPort()))),
 					Access:                   network.SecurityRuleAccessAllow,
 					Direction:                network.SecurityRuleDirectionInbound,
 					Priority:                 to.Int32Ptr(101),
