@@ -99,10 +99,10 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcile(clusterScope)
+	return r.reconcileNormal(clusterScope)
 }
 
-func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	clusterScope.Info("Reconciling AzureCluster")
 
 	azureCluster := clusterScope.AzureCluster
@@ -134,6 +134,7 @@ func (r *AzureClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (re
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	azureCluster.Status.Ready = true
+
 	return reconcile.Result{}, nil
 }
 

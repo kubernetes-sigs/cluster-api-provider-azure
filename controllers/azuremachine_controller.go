@@ -23,9 +23,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/controllers/noderefutil"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +70,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	ctx := context.TODO()
 	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 
-	// Fetch the AzureMachine instance.
+	// Fetch the AzureMachine VM.
 	azureMachine := &infrav1.AzureMachine{}
 	err := r.Get(ctx, req.NamespacedName, azureMachine)
 	if err != nil {
@@ -148,10 +151,36 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	}
 
 	// Handle non-deleted machines
-	return r.reconcile(ctx, machineScope, clusterScope)
+	return r.reconcileNormal(ctx, machineScope, clusterScope)
 }
 
-func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+// findVM queries the Azure APIs and retrieves the VM if it exists, returns nil otherwise.
+func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, reconciler *azureMachineReconciler) (*infrav1.VM, error) {
+	// Parse the ProviderID.
+	pid, err := noderefutil.NewProviderID(scope.GetProviderID())
+	if err != nil && err != noderefutil.ErrEmptyProviderID {
+		return nil, errors.Wrapf(err, "failed to parse Spec.ProviderID")
+	}
+
+	// If the ProviderID is populated, describe the VM using the ID.
+	if err == nil {
+		vm, err := reconciler.VMIfExists(pointer.StringPtr(pid.ID()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
+		}
+		return vm, nil
+	}
+
+	// If the ProviderID is empty, try to query the VM using tags.
+	vm, err := reconciler.GetRunningVMByTags(scope)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query AzureMachine VM by tags")
+	}
+
+	return vm, nil
+}
+
+func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	machineScope.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
 	if machineScope.AzureMachine.Status.ErrorReason != nil || machineScope.AzureMachine.Status.ErrorMessage != nil {
@@ -177,33 +206,69 @@ func (r *AzureMachineReconciler) reconcile(ctx context.Context, machineScope *sc
 
 	reconciler := newAzureMachineReconciler(machineScope, clusterScope)
 
-	vm, err := reconciler.GetOrCreate()
+	// Get or create the virtual machine.
+	vm, err := r.getOrCreate(machineScope, reconciler)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = reconciler.Update()
-	if err != nil {
-		return reconcile.Result{}, err
-	}
+	// Set an error message if we couldn't find the VM.
+	// TODO: Nodes are getting marked failed. Need to debug this.
+	//       Should we set a requeue above? CAPA doesn't seem to need the requeue.
+	/*
+		if vm == nil {
+			machineScope.SetErrorReason(capierrors.UpdateMachineError)
+			machineScope.SetErrorMessage(errors.New("Azure virtual machine cannot be found"))
+			return reconcile.Result{}, nil
+		}
+	*/
+
+	// TODO: Handle update logic
+	/*
+		err = reconciler.Update()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	*/
 
 	// Make sure Spec.ProviderID is always set.
-	if machineScope.GetVMID() != nil {
-		machineScope.SetProviderID(fmt.Sprintf("azure:////%s", *machineScope.GetVMID()))
-	}
+	machineScope.SetProviderID(fmt.Sprintf("azure:////%s", vm.ID))
 
 	// Proceed to reconcile the AzureMachine state.
-	vmState := vm.ProvisioningState
-	if vmState == nil {
-		return reconcile.Result{}, err
-	}
-
-	machineScope.SetVMState(infrav1.VMState(*vmState))
+	machineScope.SetVMState(vm.State)
 
 	// TODO(vincepri): Remove this annotation when clusterctl is no longer relevant.
 	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
 
+	switch vm.State {
+	case infrav1.VMStateSucceeded:
+		machineScope.Info("Machine VM is running", "instance-id", *machineScope.GetVMID())
+		machineScope.SetReady()
+	case infrav1.VMStateUpdating:
+		machineScope.Info("Machine VM is updating", "instance-id", *machineScope.GetVMID())
+	default:
+		machineScope.SetErrorReason(capierrors.UpdateMachineError)
+		machineScope.SetErrorMessage(errors.Errorf("Azure VM state %q is unexpected", vm.State))
+	}
+
 	return reconcile.Result{}, nil
+}
+
+func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, reconciler *azureMachineReconciler) (*infrav1.VM, error) {
+	vm, err := r.findVM(scope, reconciler)
+	if err != nil {
+		return nil, err
+	}
+
+	if vm == nil {
+		// Create a new AzureMachine VM if we couldn't find a running VM.
+		vm, err = reconciler.Create()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create AzureMachine VM")
+		}
+	}
+
+	return vm, nil
 }
 
 func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {

@@ -31,6 +31,7 @@ import (
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 )
 
@@ -58,7 +59,8 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	} else if err != nil {
 		return vm, err
 	}
-	return vm, nil
+
+	return converters.SDKToVM(vm)
 }
 
 // Reconcile gets/creates/updates a virtual machine.
