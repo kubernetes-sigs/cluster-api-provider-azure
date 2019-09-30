@@ -28,8 +28,6 @@ func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
 		ID:    to.String(v.ID),
 		Name:  to.String(v.Name),
 		State: infrav1.VMState(to.String(v.ProvisioningState)),
-		// TODO: Add more conversions once types are updated.
-		//Identity: string(v.Identity),
 	}
 
 	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
@@ -39,22 +37,6 @@ func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
 	if v.Zones != nil && len(*v.Zones) > 0 {
 		vm.AvailabilityZone = to.StringSlice(v.Zones)[0]
 	}
-
-	// TODO: Determine if we need any of this logic
-	/*
-		for _, sg := range v.SecurityGroups {
-			i.SecurityGroupIDs = append(i.SecurityGroupIDs, *sg.GroupId)
-		}
-
-		if len(v.Tags) > 0 {
-			i.Tags = converters.TagsToMap(v.Tags)
-		}
-
-		rootSize, err := s.getInstanceRootDeviceSize(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get root volume size for instance: %q", aws.StringValue(v.InstanceId))
-		}
-	*/
 
 	return vm, nil
 }

@@ -161,6 +161,8 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 // findVM queries the Azure APIs and retrieves the VM if it exists, returns nil otherwise.
 func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
+	var vm *infrav1.VM
+
 	// Parse the ProviderID.
 	pid, err := noderefutil.NewProviderID(scope.GetProviderID())
 	if err != nil && err != noderefutil.ErrEmptyProviderID {
@@ -177,10 +179,13 @@ func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, ams *azureMac
 	}
 
 	// If the ProviderID is empty, try to query the VM using tags.
-	vm, err := ams.GetRunningVMByTags(scope)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query AzureMachine VM by tags")
-	}
+	// TODO: Uncomment once tag building is in place
+	/*
+		vm, err := ams.GetRunningVMByTags(scope)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to query AzureMachine VM by tags")
+		}
+	*/
 
 	return vm, nil
 }
