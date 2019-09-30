@@ -155,7 +155,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 }
 
 // findVM queries the Azure APIs and retrieves the VM if it exists, returns nil otherwise.
-func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, reconciler *azureMachineReconciler) (*infrav1.VM, error) {
+func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
 	// Parse the ProviderID.
 	pid, err := noderefutil.NewProviderID(scope.GetProviderID())
 	if err != nil && err != noderefutil.ErrEmptyProviderID {
@@ -164,7 +164,7 @@ func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, reconciler *a
 
 	// If the ProviderID is populated, describe the VM using the ID.
 	if err == nil {
-		vm, err := reconciler.VMIfExists(pointer.StringPtr(pid.ID()))
+		vm, err := ams.VMIfExists(pointer.StringPtr(pid.ID()))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
 		}
@@ -172,7 +172,7 @@ func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, reconciler *a
 	}
 
 	// If the ProviderID is empty, try to query the VM using tags.
-	vm, err := reconciler.GetRunningVMByTags(scope)
+	vm, err := ams.GetRunningVMByTags(scope)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query AzureMachine VM by tags")
 	}
@@ -204,10 +204,10 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		return reconcile.Result{}, nil
 	}
 
-	reconciler := newAzureMachineReconciler(machineScope, clusterScope)
+	ams := newAzureMachineService(machineScope, clusterScope)
 
 	// Get or create the virtual machine.
-	vm, err := r.getOrCreate(machineScope, reconciler)
+	vm, err := r.getOrCreate(machineScope, ams)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -225,7 +225,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 	// TODO: Handle update logic
 	/*
-		err = reconciler.Update()
+		err = ams.Update()
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -254,15 +254,15 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, reconciler *azureMachineReconciler) (*infrav1.VM, error) {
-	vm, err := r.findVM(scope, reconciler)
+func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
+	vm, err := r.findVM(scope, ams)
 	if err != nil {
 		return nil, err
 	}
 
 	if vm == nil {
 		// Create a new AzureMachine VM if we couldn't find a running VM.
-		vm, err = reconciler.Create()
+		vm, err = ams.Create()
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create AzureMachine VM")
 		}
@@ -274,7 +274,7 @@ func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, reconcil
 func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
 
-	if err := newAzureMachineReconciler(machineScope, clusterScope).Delete(); err != nil {
+	if err := newAzureMachineService(machineScope, clusterScope).Delete(); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
 	}
 

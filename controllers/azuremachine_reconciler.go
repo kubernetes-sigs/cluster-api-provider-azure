@@ -43,9 +43,9 @@ const (
 	DefaultBootstrapTokenTTL = 10 * time.Minute
 )
 
-// azureMachineReconciler are list of services required by cluster actuator, easy to create a fake
-// TODO: We should decide if we want to keep this. It's confusing for this struct name to shadow AzureMachineReconciler.
-type azureMachineReconciler struct {
+// azureMachineService are list of services required by cluster actuator, easy to create a fake
+// TODO: We should decide if we want to keep this
+type azureMachineService struct {
 	machineScope          *scope.MachineScope
 	clusterScope          *scope.ClusterScope
 	availabilityZonesSvc  azure.GetterService
@@ -55,9 +55,9 @@ type azureMachineReconciler struct {
 	disksSvc              azure.GetterService
 }
 
-// newAzureMachineReconciler populates all the services based on input scope
-func newAzureMachineReconciler(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineReconciler {
-	return &azureMachineReconciler{
+// newAzureMachineService populates all the services based on input scope
+func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
+	return &azureMachineService{
 		machineScope:          machineScope,
 		clusterScope:          clusterScope,
 		availabilityZonesSvc:  availabilityzones.NewService(clusterScope),
@@ -69,26 +69,26 @@ func newAzureMachineReconciler(machineScope *scope.MachineScope, clusterScope *s
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (r *azureMachineReconciler) Create() (*infrav1.VM, error) {
-	nicName := fmt.Sprintf("%s-nic", r.machineScope.Name())
-	nicErr := r.createNetworkInterface(nicName)
+func (s *azureMachineService) Create() (*infrav1.VM, error) {
+	nicName := fmt.Sprintf("%s-nic", s.machineScope.Name())
+	nicErr := s.createNetworkInterface(nicName)
 	if nicErr != nil {
-		return nil, errors.Wrapf(nicErr, "failed to create nic %s for machine %s", nicName, r.machineScope.Name())
+		return nil, errors.Wrapf(nicErr, "failed to create nic %s for machine %s", nicName, s.machineScope.Name())
 	}
 
-	vm, vmErr := r.createVirtualMachine(nicName)
+	vm, vmErr := s.createVirtualMachine(nicName)
 	if vmErr != nil {
-		return nil, errors.Wrapf(vmErr, "failed to create vm %s ", r.machineScope.Name())
+		return nil, errors.Wrapf(vmErr, "failed to create vm %s ", s.machineScope.Name())
 	}
 
 	/*
 		vmExtSpec := &virtualmachineextensions.Spec{
 			Name:       "startupScript",
-			VMName:     r.machineScope.Name(),
-			ScriptData: *r.machineScope.Machine.Spec.Bootstrap.Data,
+			VMName:     s.machineScope.Name(),
+			ScriptData: *s.machineScope.Machine.Spec.Bootstrap.Data,
 		}
 		// TODO: handle failures/retries better
-		err := r.virtualMachinesExtSvc.Reconcile(r.clusterScope.Context, vmExtSpec)
+		err := s.virtualMachinesExtSvc.Reconcile(s.clusterScope.Context, vmExtSpec)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create vm extension")
 		}
@@ -97,11 +97,11 @@ func (r *azureMachineReconciler) Create() (*infrav1.VM, error) {
 }
 
 // Update updates machine if and only if machine exists, handled by cluster-api
-func (r *azureMachineReconciler) Update() error {
+func (s *azureMachineService) Update() error {
 	vmSpec := &virtualmachines.Spec{
-		Name: r.machineScope.Name(),
+		Name: s.machineScope.Name(),
 	}
-	vmInterface, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
+	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
 	if err != nil {
 		return errors.Wrap(err, "failed to get vm")
 	}
@@ -114,7 +114,7 @@ func (r *azureMachineReconciler) Update() error {
 		// We can now compare the various Azure state to the state we were passed.
 		// We will check immutable state first, in order to fail quickly before
 		// moving on to state that we can mutate.
-		if isMachineOutdated(&r.machineScope.AzureMachine.Spec, vm) {
+		if isMachineOutdated(&s.machineScope.AzureMachine.Spec, vm) {
 			return errors.New("found attempt to change immutable state")
 		}
 	*/
@@ -131,32 +131,32 @@ func (r *azureMachineReconciler) Update() error {
 }
 
 // Delete reconciles all the services in pre determined order
-func (r *azureMachineReconciler) Delete() error {
+func (s *azureMachineService) Delete() error {
 	vmSpec := &virtualmachines.Spec{
-		Name: r.machineScope.Name(),
+		Name: s.machineScope.Name(),
 	}
 
-	err := r.virtualMachinesSvc.Delete(r.clusterScope.Context, vmSpec)
+	err := s.virtualMachinesSvc.Delete(s.clusterScope.Context, vmSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete machine")
 	}
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:     fmt.Sprintf("%s-nic", r.machineScope.Name()),
-		VnetName: azure.GenerateVnetName(r.clusterScope.Name()),
+		Name:     fmt.Sprintf("%s-nic", s.machineScope.Name()),
+		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
 	}
 
-	err = r.networkInterfacesSvc.Delete(r.clusterScope.Context, networkInterfaceSpec)
+	err = s.networkInterfacesSvc.Delete(s.clusterScope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
 
 	OSDiskSpec := &disks.Spec{
-		Name: azure.GenerateOSDiskName(r.machineScope.Name()),
+		Name: azure.GenerateOSDiskName(s.machineScope.Name()),
 	}
-	err = r.disksSvc.Delete(r.clusterScope.Context, OSDiskSpec)
+	err = s.disksSvc.Delete(s.clusterScope.Context, OSDiskSpec)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", r.machineScope.Name())
+		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", s.machineScope.Name())
 	}
 
 	return nil
@@ -181,16 +181,16 @@ func isMachineOutdated(machineSpec *infrav1.AzureMachineSpec, vm infrav1.VM) boo
 }
 */
 
-func (r *azureMachineReconciler) VMIfExists(id *string) (*infrav1.VM, error) {
+func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 	if id == nil {
-		r.clusterScope.Info("VM does not have an id")
+		s.clusterScope.Info("VM does not have an id")
 		return nil, nil
 	}
 
 	vmSpec := &virtualmachines.Spec{
-		Name: r.machineScope.Name(),
+		Name: s.machineScope.Name(),
 	}
-	vmInterface, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
+	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
 
 	if err != nil && vmInterface == nil {
 		return nil, nil
@@ -205,15 +205,15 @@ func (r *azureMachineReconciler) VMIfExists(id *string) (*infrav1.VM, error) {
 		return nil, errors.New("returned incorrect vm interface")
 	}
 
-	klog.Infof("Found vm for machine %s", r.machineScope.Name())
+	klog.Infof("Found vm for machine %s", s.machineScope.Name())
 
 	/*
 		vmExtSpec := &virtualmachineextensions.Spec{
 			Name:   "startupScript",
-			VMName: r.machineScope.Name(),
+			VMName: s.machineScope.Name(),
 		}
 
-		vmExt, err := r.virtualMachinesExtSvc.Get(r.clusterScope.Context, vmExtSpec)
+		vmExt, err := s.virtualMachinesExtSvc.Get(s.clusterScope.Context, vmExtSpec)
 		if err != nil && vmExt == nil {
 			return nil, nil
 		}
@@ -228,13 +228,13 @@ func (r *azureMachineReconciler) VMIfExists(id *string) (*infrav1.VM, error) {
 
 // getVirtualMachineZone gets a random availability zones from available set,
 // this will hopefully be an input from upstream machinesets so all the vms are balanced
-func (r *azureMachineReconciler) getVirtualMachineZone() (string, error) {
+func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 	zonesSpec := &availabilityzones.Spec{
-		VMSize: r.machineScope.AzureMachine.Spec.VMSize,
+		VMSize: s.machineScope.AzureMachine.Spec.VMSize,
 	}
-	zonesInterface, err := r.availabilityZonesSvc.Get(r.clusterScope.Context, zonesSpec)
+	zonesInterface, err := s.availabilityZonesSvc.Get(s.clusterScope.Context, zonesSpec)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", r.machineScope.AzureMachine.Spec.VMSize, r.clusterScope.AzureCluster.Spec.Location)
+		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", s.machineScope.AzureMachine.Spec.VMSize, s.clusterScope.AzureCluster.Spec.Location)
 	}
 	if zonesInterface == nil {
 		// if its nil, probably means no zones found
@@ -253,17 +253,17 @@ func (r *azureMachineReconciler) getVirtualMachineZone() (string, error) {
 	return zones[rand.Intn(len(zones))], nil
 }
 
-func (r *azureMachineReconciler) createNetworkInterface(nicName string) error {
+func (s *azureMachineService) createNetworkInterface(nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
-		VnetName: azure.GenerateVnetName(r.clusterScope.Name()),
+		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
 	}
-	switch role := r.machineScope.Role(); role {
+	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:
-		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(r.clusterScope.Name())
+		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(s.clusterScope.Name())
 	case infrav1.ControlPlane:
 		// TODO: Come up with a better way to determine the control plane NAT rule
-		natRuleString := strings.TrimPrefix(nicName, fmt.Sprintf("%s-controlplane-", r.clusterScope.Name()))
+		natRuleString := strings.TrimPrefix(nicName, fmt.Sprintf("%s-controlplane-", s.clusterScope.Name()))
 		natRuleString = strings.TrimSuffix(natRuleString, "-nic")
 		natRule, err := strconv.Atoi(natRuleString)
 		if err != nil {
@@ -271,14 +271,14 @@ func (r *azureMachineReconciler) createNetworkInterface(nicName string) error {
 		}
 
 		networkInterfaceSpec.NatRule = natRule
-		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(r.clusterScope.Name())
-		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(r.clusterScope.Name())
-		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(r.clusterScope.Name())
+		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(s.clusterScope.Name())
+		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
+		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.Name())
 	default:
-		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", role, r.machineScope.Name())
+		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", role, s.machineScope.Name())
 	}
 
-	err := r.networkInterfacesSvc.Reconcile(r.clusterScope.Context, networkInterfaceSpec)
+	err := s.networkInterfacesSvc.Reconcile(s.clusterScope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrap(err, "unable to create VM network interface")
 	}
@@ -286,26 +286,26 @@ func (r *azureMachineReconciler) createNetworkInterface(nicName string) error {
 	return err
 }
 
-func (r *azureMachineReconciler) createVirtualMachine(nicName string) (*infrav1.VM, error) {
+func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM, error) {
 	var vm *infrav1.VM
-	decoded, err := base64.StdEncoding.DecodeString(r.machineScope.AzureMachine.Spec.SSHPublicKey)
+	decoded, err := base64.StdEncoding.DecodeString(s.machineScope.AzureMachine.Spec.SSHPublicKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode ssh public key")
 	}
 
 	vmSpec := &virtualmachines.Spec{
-		Name: r.machineScope.Name(),
+		Name: s.machineScope.Name(),
 	}
 
-	vmInterface, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
+	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
 	if err != nil && vmInterface == nil {
 		var vmZone string
 		var zoneErr error
 
-		vmZone = r.machineScope.AzureMachine.Spec.AvailabilityZone
+		vmZone = s.machineScope.AzureMachine.Spec.AvailabilityZone
 
 		if vmZone == "" {
-			vmZone, zoneErr = r.getVirtualMachineZone()
+			vmZone, zoneErr = s.getVirtualMachineZone()
 			if zoneErr != nil {
 				return nil, errors.Wrap(zoneErr, "failed to get availability zone")
 			}
@@ -313,26 +313,26 @@ func (r *azureMachineReconciler) createVirtualMachine(nicName string) (*infrav1.
 		}
 
 		vmSpec = &virtualmachines.Spec{
-			Name:       r.machineScope.Name(),
+			Name:       s.machineScope.Name(),
 			NICName:    nicName,
 			SSHKeyData: string(decoded),
-			Size:       r.machineScope.AzureMachine.Spec.VMSize,
-			OSDisk:     r.machineScope.AzureMachine.Spec.OSDisk,
-			Image:      r.machineScope.AzureMachine.Spec.Image,
-			CustomData: *r.machineScope.Machine.Spec.Bootstrap.Data,
+			Size:       s.machineScope.AzureMachine.Spec.VMSize,
+			OSDisk:     s.machineScope.AzureMachine.Spec.OSDisk,
+			Image:      s.machineScope.AzureMachine.Spec.Image,
+			CustomData: *s.machineScope.Machine.Spec.Bootstrap.Data,
 			// Zone:       vmZone,  // TODO: figure out if how to re-enable this
 		}
 
-		err = r.virtualMachinesSvc.Reconcile(r.clusterScope.Context, vmSpec)
+		err = s.virtualMachinesSvc.Reconcile(s.clusterScope.Context, vmSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create or get machine")
 		}
-		// r.scope.Machine.Annotations["availability-zone"] = vmZone
+		// s.scope.Machine.Annotations["availability-zone"] = vmZone
 	} else if err != nil {
 		return nil, errors.Wrap(err, "failed to get vm")
 	}
 
-	newVM, err := r.virtualMachinesSvc.Get(r.clusterScope.Context, vmSpec)
+	newVM, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get vm")
 	}
@@ -342,18 +342,18 @@ func (r *azureMachineReconciler) createVirtualMachine(nicName string) (*infrav1.
 		return nil, errors.New("returned incorrect vm interface")
 	}
 	if vm.State == "" {
-		return nil, errors.Errorf("vm %s is nil provisioning state, reconcile", r.machineScope.Name())
+		return nil, errors.Errorf("vm %s is nil provisioning state, reconcile", s.machineScope.Name())
 	}
 
 	if vm.State == infrav1.VMStateFailed {
 		// If VM failed provisioning, delete it so it can be recreated
-		err = r.virtualMachinesSvc.Delete(r.clusterScope.Context, vmSpec)
+		err = s.virtualMachinesSvc.Delete(s.clusterScope.Context, vmSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to delete machine")
 		}
-		return nil, errors.Errorf("vm %s is deleted, retry creating in next reconcile", r.machineScope.Name())
+		return nil, errors.Errorf("vm %s is deleted, retry creating in next reconcile", s.machineScope.Name())
 	} else if vm.State != infrav1.VMStateSucceeded {
-		return nil, errors.Errorf("vm %s is still in provisioningstate %s, reconcile", r.machineScope.Name(), vm.State)
+		return nil, errors.Errorf("vm %s is still in provisioningstate %s, reconcile", s.machineScope.Name(), vm.State)
 	}
 
 	return vm, nil
@@ -371,8 +371,8 @@ func GetControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Ma
 }
 
 // GetRunningVMByTags returns the existing VM or nothing if it doesn't exist.
-func (r *azureMachineReconciler) GetRunningVMByTags(scope *scope.MachineScope) (*infrav1.VM, error) {
-	r.clusterScope.V(2).Info("Looking for existing machine VM by tags")
+func (s *azureMachineService) GetRunningVMByTags(scope *scope.MachineScope) (*infrav1.VM, error) {
+	s.clusterScope.V(2).Info("Looking for existing machine VM by tags")
 	// TODO: Build tag getting logic
 
 	return nil, nil
