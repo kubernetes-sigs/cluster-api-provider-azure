@@ -23,7 +23,6 @@ metadata:
   name: ${CLUSTER_NAME}-controlplane-0
 spec:
   location: ${AZURE_LOCATION}
-  availabilityZone: ""
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
   image:
     publisher: "Canonical"
@@ -187,7 +186,6 @@ metadata:
   name: ${CLUSTER_NAME}-controlplane-1
 spec:
   location: ${AZURE_LOCATION}
-  availabilityZone: ""
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
   image:
     publisher: "Canonical"
@@ -331,7 +329,6 @@ metadata:
   name: ${CLUSTER_NAME}-controlplane-2
 spec:
   location: ${AZURE_LOCATION}
-  availabilityZone: ""
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
   image:
     publisher: "Canonical"

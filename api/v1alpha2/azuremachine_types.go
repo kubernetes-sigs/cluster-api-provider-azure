@@ -30,13 +30,12 @@ const (
 
 // AzureMachineSpec defines the desired state of AzureMachine
 type AzureMachineSpec struct {
-	AvailabilityZone string `json:"availabilityZone"`
-
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
 
-	VMSize string `json:"vmSize"`
+	VMSize           string           `json:"vmSize"`
+	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	Image Image `json:"image"`
 
