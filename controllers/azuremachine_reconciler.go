@@ -70,8 +70,8 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (s *azureMachineService) Create() (*infrav1.VM, error) {
-	nicName := fmt.Sprintf("%s-nic", s.machineScope.Name())
-	nicErr := s.createNetworkInterface(nicName)
+	nicName := azure.GenerateNICName(s.machineScope.Name())
+	nicErr := s.reconcileNetworkInterface(nicName)
 	if nicErr != nil {
 		return nil, errors.Wrapf(nicErr, "failed to create nic %s for machine %s", nicName, s.machineScope.Name())
 	}
@@ -96,40 +96,6 @@ func (s *azureMachineService) Create() (*infrav1.VM, error) {
 	return vm, nil
 }
 
-// Update updates machine if and only if machine exists, handled by cluster-api
-func (s *azureMachineService) Update() error {
-	vmSpec := &virtualmachines.Spec{
-		Name: s.machineScope.Name(),
-	}
-	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
-	if err != nil {
-		return errors.Wrap(err, "failed to get vm")
-	}
-
-	_, ok := vmInterface.(*infrav1.VM)
-	if !ok {
-		return errors.New("returned incorrect vm interface")
-	}
-	/*
-		// We can now compare the various Azure state to the state we were passed.
-		// We will check immutable state first, in order to fail quickly before
-		// moving on to state that we can mutate.
-		if isMachineOutdated(&s.machineScope.AzureMachine.Spec, vm) {
-			return errors.New("found attempt to change immutable state")
-		}
-	*/
-	// TODO: Uncomment after implementing tagging.
-	// Ensure that the tags are correct.
-	/*
-		_, err = a.ensureTags(computeSvc, machine, scope.MachineStatus.VMID, scope.MachineConfig.AdditionalTags)
-		if err != nil {
-			return errors.Wrap(err, "failed to ensure tags")
-		}
-	*/
-
-	return nil
-}
-
 // Delete reconciles all the services in pre determined order
 func (s *azureMachineService) Delete() error {
 	vmSpec := &virtualmachines.Spec{
@@ -142,7 +108,7 @@ func (s *azureMachineService) Delete() error {
 	}
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:     fmt.Sprintf("%s-nic", s.machineScope.Name()),
+		Name:     azure.GenerateNICName(s.machineScope.Name()),
 		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
 	}
 
@@ -253,11 +219,12 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 	return zones[rand.Intn(len(zones))], nil
 }
 
-func (s *azureMachineService) createNetworkInterface(nicName string) error {
+func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
 		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
 	}
+
 	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:
 		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(s.clusterScope.Name())

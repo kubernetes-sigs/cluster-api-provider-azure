@@ -22,9 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
@@ -41,7 +45,8 @@ import (
 // AzureMachineReconciler reconciles a AzureMachine object
 type AzureMachineReconciler struct {
 	client.Client
-	Log logr.Logger
+	Log      logr.Logger
+	Recorder record.EventRecorder
 }
 
 func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
@@ -223,13 +228,12 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	*/
 
-	// TODO: Handle update logic
-	/*
-		err = ams.Update()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	*/
+	// TODO(ncdc): move this validation logic into a validating webhook
+	if errs := r.validateUpdate(&machineScope.AzureMachine.Spec, vm); len(errs) > 0 {
+		agg := kerrors.NewAggregate(errs)
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "InvalidUpdate", "Invalid update: %s", agg.Error())
+		return reconcile.Result{}, nil
+	}
 
 	// Make sure Spec.ProviderID is always set.
 	machineScope.SetProviderID(fmt.Sprintf("azure:////%s", vm.ID))
@@ -250,6 +254,19 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		machineScope.SetErrorReason(capierrors.UpdateMachineError)
 		machineScope.SetErrorMessage(errors.Errorf("Azure VM state %q is unexpected", vm.State))
 	}
+
+	if err := ams.reconcileNetworkInterface(azure.GenerateNICName(machineScope.Name())); err != nil {
+		return reconcile.Result{}, errors.Errorf("failed to reconcile NIC: %+v", err)
+	}
+
+	// Ensure that the tags are correct.
+	// TODO: Uncomment once tagging is implemented
+	/*
+		_, err = r.ensureTags(ams, machineScope.AzureMachine, machineScope.GetVMID(), machineScope.AdditionalTags())
+		if err != nil {
+			return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
+		}
+	*/
 
 	return reconcile.Result{}, nil
 }
@@ -285,6 +302,13 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 	}()
 
 	return reconcile.Result{}, nil
+}
+
+// validateUpdate checks that no immutable fields have been updated and
+// returns a slice of errors representing attempts to change immutable state.
+func (r *AzureMachineReconciler) validateUpdate(spec *infrav1.AzureMachineSpec, i *infrav1.VM) (errs []error) {
+	// TODO: Add comparison logic for immutable fields
+	return errs
 }
 
 // AzureClusterToAzureMachine is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation

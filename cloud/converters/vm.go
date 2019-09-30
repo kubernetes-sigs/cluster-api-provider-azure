@@ -24,18 +24,20 @@ import (
 
 // SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
 func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
-	i := &infrav1.VM{
-		ID:               to.String(v.ID),
-		Name:             to.String(v.Name),
-		State:            infrav1.VMState(to.String(v.ProvisioningState)),
-		AvailabilityZone: to.StringSlice(v.Zones)[0],
-
+	vm := &infrav1.VM{
+		ID:    to.String(v.ID),
+		Name:  to.String(v.Name),
+		State: infrav1.VMState(to.String(v.ProvisioningState)),
 		// TODO: Add more conversions once types are updated.
 		//Identity: string(v.Identity),
 	}
 
 	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
-		i.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
+		vm.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
+	}
+
+	if v.Zones != nil && len(*v.Zones) > 0 {
+		vm.AvailabilityZone = to.StringSlice(v.Zones)[0]
 	}
 
 	// TODO: Determine if we need any of this logic
@@ -54,5 +56,5 @@ func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
 		}
 	*/
 
-	return i, nil
+	return vm, nil
 }

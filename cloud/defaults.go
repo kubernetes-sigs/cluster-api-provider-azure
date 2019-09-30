@@ -85,7 +85,12 @@ func GenerateFQDN(publicIPName, location string) string {
 	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
 }
 
+// GenerateNICName generates the name of a network interface based on the name of a VM.
+func GenerateNICName(machineName string) string {
+	return fmt.Sprintf("%s-nic", machineName)
+}
+
 // GenerateOSDiskName generates the name of an OS disk based on the name of a VM.
-func GenerateOSDiskName(clusterName string) string {
-	return fmt.Sprintf("%s_OSDisk", clusterName)
+func GenerateOSDiskName(machineName string) string {
+	return fmt.Sprintf("%s_OSDisk", machineName)
 }
