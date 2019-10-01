@@ -15,6 +15,9 @@
 # If you update this file, please follow
 # https://suva.sh/posts/well-documented-makefiles
 
+# Ensure Make is run with bash shell as some syntax below is bash-specific
+SHELL:=/usr/bin/env bash
+
 .DEFAULT_GOAL:=help
 
 # Use GOPROXY environment variable if set
@@ -27,13 +30,6 @@ export GOPROXY
 # Active module mode, as we use go modules to manage dependencies
 export GO111MODULE=on
 
-# Default timeout for starting/stopping the Kubebuilder test control plane
-export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?=60s
-export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?=60s
-
-# This option is for running docker manifest command
-export DOCKER_CLI_EXPERIMENTAL := enabled
-
 # Directories.
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
@@ -44,6 +40,7 @@ CLUSTERCTL := $(BIN_DIR)/clusterctl
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
+CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -60,7 +57,6 @@ MANIFEST_ROOT ?= config
 CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
-CLUSTER_NAME ?= test1
 
 ## --------------------------------------
 ## Help
@@ -112,6 +108,9 @@ $(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod # Build golangci-lint from tools folder.
 $(MOCKGEN): $(TOOLS_DIR)/go.mod # Build mockgen from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mockgen github.com/golang/mock/mockgen
 
+$(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
+	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
+
 
 ## --------------------------------------
 ## Linting
@@ -139,11 +138,16 @@ generate: ## Generate code
 	$(MAKE) generate-manifests
 
 .PHONY: generate-go
-generate-go: $(CONTROLLER_GEN) $(MOCKGEN) ## Runs Go related generate targets
+generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
 	go generate ./...
 	$(CONTROLLER_GEN) \
 		paths=./api/... \
 		object:headerFile=./hack/boilerplate/boilerplate.generatego.txt
+
+	$(CONVERSION_GEN) \
+		--input-dirs=./api/v1alpha2 \
+		--output-file-base=zz_generated.conversion \
+		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
 
 .PHONY: generate-manifests
 generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
@@ -225,7 +229,6 @@ release: clean-release  ## Builds and push container images using the latest git
 	MANIFEST_IMG=$(PROD_REGISTRY)/$(IMAGE_NAME) MANIFEST_TAG=$(RELEASE_TAG) \
 		$(MAKE) set-manifest-image
 	$(MAKE) release-manifests
-	$(MAKE) release-binaries
 
 .PHONY: release-manifests
 release-manifests: $(RELEASE_DIR) ## Builds the manifests to publish with a release
@@ -259,7 +262,19 @@ release-tag-latest: ## Adds the latest tag to the last build tag.
 ## --------------------------------------
 
 .PHONY: create-cluster
-create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
+create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
+	$(CLUSTERCTL) \
+	create cluster -v 4 \
+	--bootstrap-flags="name=clusterapi" \
+	--bootstrap-type kind \
+	-m ./examples/_out/controlplane.yaml \
+	-c ./examples/_out/cluster.yaml \
+	-p ./examples/_out/provider-components.yaml \
+	-a ./examples/addons.yaml
+
+
+.PHONY: create-cluster-management
+create-cluster-management: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
 	kind create cluster --name=clusterapi
 	# Apply provider-components.
 	kubectl \
@@ -337,6 +352,14 @@ clean-examples: ## Remove all the temporary files generated in the examples fold
 	rm -f examples/provider-components/provider-components-*.yaml
 
 .PHONY: verify
-verify: ## Runs verification scripts to ensure correct execution
+verify: verify-boilerplate verify-modules
+
+.PHONY: verify-boilerplate
+verify-boilerplate:
 	./hack/verify-boilerplate.sh
-	./hack/verify-generated-files.sh
+
+.PHONY: verify-modules
+verify-modules: modules
+	@if !(git diff --quiet HEAD -- go.sum go.mod hack/tools/go.mod hack/tools/go.sum); then \
+		echo "go module files are out of date"; exit 1; \
+	fi

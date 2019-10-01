@@ -11,9 +11,7 @@ spec:
     categories:
     - cluster-api
     kind: AzureMachineTemplate
-    listKind: AzureMachineTemplateList
     plural: azuremachinetemplates
-    singular: azuremachinetemplate
   scope: Namespaced
   validation:
     openAPIV3Schema:
