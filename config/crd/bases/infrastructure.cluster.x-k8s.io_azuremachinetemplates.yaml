@@ -1,0 +1,122 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: azuremachinetemplates.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: AzureMachineTemplate
+    listKind: AzureMachineTemplateList
+    plural: azuremachinetemplates
+    singular: azuremachinetemplate
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: AzureMachineTemplate is the Schema for the azuremachinetemplates
+        API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate
+          properties:
+            template:
+              description: AzureMachineTemplateResource describes the data needed
+                to create am AzureMachine from a template
+              properties:
+                spec:
+                  description: Spec is the specification of the desired behavior of
+                    the machine.
+                  properties:
+                    availabilityZone:
+                      properties:
+                        enabled:
+                          type: boolean
+                        id:
+                          type: string
+                      type: object
+                    image:
+                      properties:
+                        offer:
+                          type: string
+                        publisher:
+                          type: string
+                        sku:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - offer
+                      - publisher
+                      - sku
+                      - version
+                      type: object
+                    location:
+                      type: string
+                    osDisk:
+                      properties:
+                        diskSizeGB:
+                          format: int32
+                          type: integer
+                        managedDisk:
+                          properties:
+                            storageAccountType:
+                              type: string
+                          required:
+                          - storageAccountType
+                          type: object
+                        osType:
+                          type: string
+                      required:
+                      - diskSizeGB
+                      - managedDisk
+                      - osType
+                      type: object
+                    providerID:
+                      description: ProviderID is the unique identifier as specified
+                        by the cloud provider.
+                      type: string
+                    sshPublicKey:
+                      type: string
+                    vmSize:
+                      type: string
+                  required:
+                  - image
+                  - location
+                  - osDisk
+                  - sshPublicKey
+                  - vmSize
+                  type: object
+              required:
+              - spec
+              type: object
+          required:
+          - template
+          type: object
+      type: object
+  version: v1alpha2
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -13,19 +13,32 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.12 as builder
+FROM golang:1.12.9 as builder
+WORKDIR /workspace
 
-# Copy in the go src
-WORKDIR /go/src/sigs.k8s.io/cluster-api-provider-azure
-COPY pkg/    pkg/
-COPY cmd/    cmd/
-COPY vendor/ vendor/
+# Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
+ARG goproxy=https://proxy.golang.org
+ENV GOPROXY=$goproxy
+
+# Copy the Go Modules manifests
+COPY go.mod go.mod
+COPY go.sum go.sum
+# Cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
+# Copy the sources
+COPY ./ ./
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager sigs.k8s.io/cluster-api-provider-azure/cmd/manager
+ARG ARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
+    go build -a -ldflags '-extldflags "-static"' \
+    -o manager .
 
 # Copy the controller-manager into a thin image
-FROM gcr.io/distroless/base
-WORKDIR /root/
-COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-azure/manager .
-ENTRYPOINT ["./manager"]
+FROM gcr.io/distroless/static:latest
+WORKDIR /
+COPY --from=builder /workspace/manager .
+USER nobody
+ENTRYPOINT ["/manager"]

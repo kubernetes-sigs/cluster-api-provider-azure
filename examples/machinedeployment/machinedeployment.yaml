@@ -1,0 +1,156 @@
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+    nodepool: nodepool-0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+      nodepool: nodepool-0
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+        nodepool: nodepool-0
+    spec:
+      version: ${KUBERNETES_VERSION}
+      bootstrap:
+        configRef:
+          name: ${CLUSTER_NAME}-md-0
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: ${CLUSTER_NAME}-md-0
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+        kind: AzureMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      location: ${AZURE_LOCATION}
+      vmSize: ${NODE_MACHINE_TYPE}
+      image:
+        publisher: "Canonical"
+        offer: "UbuntuServer"
+        sku: "18.04-LTS"
+        version: "latest"
+      osDisk:
+        osType: "Linux"
+        managedDisk:
+          storageAccountType: "Premium_LRS"
+        diskSizeGB: 30
+      sshPublicKey: ${SSH_PUBLIC_KEY}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          kubeletExtraArgs:
+            cloud-provider: azure
+            cloud-config: /etc/kubernetes/azure.json
+      preKubeadmCommands:
+      - bash -c /tmp/kubeadm-bootstrap.sh
+      files:
+      - path: /tmp/kubeadm-bootstrap.sh
+        owner: "root:root"
+        permissions: "0744"
+        content: |
+          #!/bin/bash
+
+          set -euxo pipefail
+
+          function containerd_prereq() {
+            cat > /etc/modules-load.d/containerd.conf <<EOF
+          overlay
+          br_netfilter
+          EOF
+
+          modprobe overlay
+          modprobe br_netfilter
+
+            # Setup required sysctl params, these persist across reboots.
+            cat > /etc/sysctl.d/99-kubernetes-cri.conf <<EOF
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          EOF
+
+            sysctl --system
+          }
+
+          function containerd_install() {
+            # Install containerd
+            ## Set up the repository
+            ### Install packages to allow apt to use a repository over HTTPS
+            apt-get update && apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+            ### Add Docker's official GPG key
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+
+            ### Add Docker apt repository.
+            add-apt-repository \
+              "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+              $(lsb_release -cs) \
+              stable"
+
+            ## Install containerd
+            apt-get update && apt-get install -y containerd.io
+
+            # Configure containerd
+            mkdir -p /etc/containerd
+            containerd config default > /etc/containerd/config.toml
+
+            # Restart containerd
+            systemctl restart containerd
+          }
+
+          function kubernetes_install() {
+            apt-get update && apt-get install -y apt-transport-https curl
+            curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+            cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+          EOF
+            apt-get update
+            apt-get install -y kubelet="${KUBERNETES_SEMVER}-00" kubeadm="${KUBERNETES_SEMVER}-00" kubectl="${KUBERNETES_SEMVER}-00"
+            apt-mark hold kubelet kubeadm kubectl
+          }
+
+          containerd_prereq
+          containerd_install
+          kubernetes_install
+      - path: /etc/kubernetes/azure.json
+        owner: "root:root"
+        permissions: "0644"
+        content: |
+          {
+            "cloud": "AzurePublicCloud",
+            "tenantID": "${AZURE_TENANT_ID}",
+            "subscriptionID": "${AZURE_SUBSCRIPTION_ID}",
+            "resourceGroup": "${CLUSTER_NAME}",
+            "securityGroupName": "${CLUSTER_NAME}-node-nsg",
+            "location": "${AZURE_LOCATION}",
+            "vmType": "vmss",
+            "vnetName": "${CLUSTER_NAME}",
+            "vnetResourceGroup": "${CLUSTER_NAME}",
+            "subnetName": "${CLUSTER_NAME}-node-subnet",
+            "routeTableName": "${CLUSTER_NAME}-node-routetable",
+            "userAssignedID": "${CLUSTER_NAME}",
+            "loadBalancerSku": "Standard",
+            "maximumLoadBalancerRuleCount": 250,
+            "useManagedIdentityExtension": true,
+            "useInstanceMetadata": true
+          }

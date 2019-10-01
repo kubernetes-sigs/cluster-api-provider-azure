@@ -24,32 +24,22 @@ bin
 envfile
 
 # kubeconfigs
-/kind.kubeconfig
-/minikube.kubeconfig
-/kubeconfig
-
-# binaries
-/manager
-/clusterctl
-/clusterazureadm
+kind.kubeconfig
+minikube.kubeconfig
+kubeconfig
 
 # Example and binary output directory
 /out
 
-# bazel
-/bazel-bin
-/bazel-cluster-api-provider-azure
-/bazel-genfiles
-/bazel-out
-/bazel-testlogs
-
 # vscode
 .vscode
-.idea
 
 # goland
 .idea
 
 # Ignore output manifests
-cmd/clusterctl/examples/azure/out
-cmd/clusterctl/examples/azure/provider-components-base.yaml
+examples/_out
+examples/provider-components-base.yaml
+examples/provider-components/provider-components-*.yaml
+config/samples
+manager_image_patch.yaml-e

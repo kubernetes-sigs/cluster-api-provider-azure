@@ -1,0 +1,24 @@
+---
+apiVersion: cluster.x-k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  resourceGroup: "${AZURE_RESOURCE_GROUP}"
+  location: "${AZURE_LOCATION}"
+  networkSpec:
+    vnet:
+      name: "${VNET_NAME}"
