@@ -280,8 +280,13 @@ create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azur
 		--namespace=default \
 		--cluster-name=$(CLUSTER_NAME)
 	# Apply addons on the target cluster, waiting for the control-plane to become available.
-	$(CLUSTERCTL) \
-		alpha phases apply-addons -v=3 \
+# TODO: Uncomment this once we've enabled image building: https://github.com/kubernetes-sigs/image-builder/pull/49
+#       Addons (CNI) currently fail to deploy, likely due to a timeout with API server availability.
+#       Without a pre-built image, capz takes longer for the control plane to come up.
+#       In the meantime, we'll use a `postKubeadmCommands` in controlplane-0 (examples/controlplane/controlplane.yaml).
+#       Please also remove that command once we confirm the create-cluster target works again.
+#	$(CLUSTERCTL) \
+		alpha phases apply-addons -v=10 \
 		--kubeconfig=./kubeconfig \
 		-a examples/addons.yaml
 	# Create a worker node with MachineDeployment.
