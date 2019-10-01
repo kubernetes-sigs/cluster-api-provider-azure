@@ -71,7 +71,7 @@ spec:
   preKubeadmCommands:
   - bash -c /tmp/kubeadm-bootstrap.sh
   postKubeadmCommands:
-  - kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/v1alpha2/examples/addons.yaml
+  - kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/examples/addons.yaml
   files:
   - path: /tmp/kubeadm-bootstrap.sh
     owner: "root:root"
