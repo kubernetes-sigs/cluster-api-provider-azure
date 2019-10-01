@@ -92,13 +92,13 @@ func main() {
 	flag.IntVar(&azureClusterConcurrency,
 		"azurecluster-concurrency",
 		10,
-		"Number of AWSClusters to process simultaneously",
+		"Number of AzureClusters to process simultaneously",
 	)
 
 	flag.IntVar(&azureMachineConcurrency,
 		"azuremachine-concurrency",
 		10,
-		"Number of AWSMachines to process simultaneously",
+		"Number of AzureMachines to process simultaneously",
 	)
 
 	flag.DurationVar(&syncPeriod,
