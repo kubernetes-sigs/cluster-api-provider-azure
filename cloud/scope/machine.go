@@ -100,7 +100,7 @@ func (m *MachineScope) Location() string {
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
 func (m *MachineScope) AvailabilityZone() string {
-	return m.AzureMachine.Spec.AvailabilityZone
+	return *m.AzureMachine.Spec.AvailabilityZone.ID
 }
 
 // Name returns the AzureMachine name.

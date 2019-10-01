@@ -37,7 +37,12 @@ spec:
           description: AzureMachineSpec defines the desired state of AzureMachine
           properties:
             availabilityZone:
-              type: string
+              properties:
+                enabled:
+                  type: boolean
+                id:
+                  type: string
+              type: object
             image:
               properties:
                 offer:
@@ -84,7 +89,6 @@ spec:
             vmSize:
               type: string
           required:
-          - availabilityZone
           - image
           - location
           - osDisk

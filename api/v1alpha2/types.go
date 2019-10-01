@@ -401,6 +401,11 @@ type VM struct {
 	//AvailabilitySet *SubResource `json:"availabilitySet,omitempty"`
 }
 
+type AvailabilityZone struct {
+	ID      *string `json:"id,omitempty"`
+	Enabled *bool   `json:"enabled,omitempty"`
+}
+
 type Image struct {
 	Publisher string `json:"publisher"`
 	Offer     string `json:"offer"`

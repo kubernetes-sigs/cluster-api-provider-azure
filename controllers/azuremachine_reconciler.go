@@ -19,7 +19,6 @@ package controllers
 import (
 	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -128,25 +127,6 @@ func (s *azureMachineService) Delete() error {
 	return nil
 }
 
-/*
-// isMachineOutdated checks that no immutable fields have been updated in an
-// Update request.
-// Returns a bool indicating if an attempt to change immutable state occurred.
-//  - true:  An attempt to change immutable state occurred.
-//  - false: Immutable state was untouched.
-func isMachineOutdated(machineSpec *infrav1.AzureMachineSpec, vm infrav1.VM) bool {
-	// VM Size
-	if !strings.EqualFold(machineSpec.VMSize, vm.VMSize) {
-		return true
-	}
-
-	// TODO: Add additional checks for immutable fields
-
-	// No immutable state changes found.
-	return false
-}
-*/
-
 func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 	if id == nil {
 		s.clusterScope.Info("VM does not have an id")
@@ -195,12 +175,16 @@ func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 // getVirtualMachineZone gets a random availability zones from available set,
 // this will hopefully be an input from upstream machinesets so all the vms are balanced
 func (s *azureMachineService) getVirtualMachineZone() (string, error) {
+	vmName := s.machineScope.AzureMachine.Name
+	vmSize := s.machineScope.AzureMachine.Spec.VMSize
+	location := s.machineScope.AzureMachine.Spec.Location
+
 	zonesSpec := &availabilityzones.Spec{
-		VMSize: s.machineScope.AzureMachine.Spec.VMSize,
+		VMSize: vmSize,
 	}
 	zonesInterface, err := s.availabilityZonesSvc.Get(s.clusterScope.Context, zonesSpec)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", s.machineScope.AzureMachine.Spec.VMSize, s.clusterScope.AzureCluster.Spec.Location)
+		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", vmSize, location)
 	}
 	if zonesInterface == nil {
 		// if its nil, probably means no zones found
@@ -215,8 +199,27 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 		return "", nil
 	}
 
-	rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
-	return zones[rand.Intn(len(zones))], nil
+	var zone string
+	var selectedZone string
+	if s.machineScope.AzureMachine.Spec.AvailabilityZone.ID != nil {
+		zone = *s.machineScope.AzureMachine.Spec.AvailabilityZone.ID
+	}
+
+	if zone != "" {
+		for _, allowedZone := range zones {
+			if allowedZone == zone {
+				selectedZone = zone
+				break
+			}
+		}
+	} else {
+		klog.Infof("Selecting first available AZ as no availability zone was set or user-provided availability zone is not supported for VM size %s in location %s", vmSize, location)
+		selectedZone = zones[0]
+	}
+
+	klog.Infof("Selected availability zone %s for %s", selectedZone, vmName)
+
+	return selectedZone, nil
 }
 
 func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
@@ -267,16 +270,18 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
 	if err != nil && vmInterface == nil {
 		var vmZone string
-		var zoneErr error
+		useAZ := true
 
-		vmZone = s.machineScope.AzureMachine.Spec.AvailabilityZone
+		if s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled != nil {
+			useAZ = *s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled
+		}
 
-		if vmZone == "" {
+		if useAZ {
+			var zoneErr error
 			vmZone, zoneErr = s.getVirtualMachineZone()
 			if zoneErr != nil {
 				return nil, errors.Wrap(zoneErr, "failed to get availability zone")
 			}
-			klog.Info("No availability zone set, selecting random availability zone:", vmZone)
 		}
 
 		vmSpec = &virtualmachines.Spec{
@@ -287,14 +292,13 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			OSDisk:     s.machineScope.AzureMachine.Spec.OSDisk,
 			Image:      s.machineScope.AzureMachine.Spec.Image,
 			CustomData: *s.machineScope.Machine.Spec.Bootstrap.Data,
-			// Zone:       vmZone,  // TODO: figure out if how to re-enable this
+			Zone:       vmZone,
 		}
 
 		err = s.virtualMachinesSvc.Reconcile(s.clusterScope.Context, vmSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create or get machine")
 		}
-		// s.scope.Machine.Annotations["availability-zone"] = vmZone
 	} else if err != nil {
 		return nil, errors.Wrap(err, "failed to get vm")
 	}
