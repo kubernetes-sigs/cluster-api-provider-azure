@@ -58,6 +58,9 @@ CRD_ROOT ?= $(MANIFEST_ROOT)/crd/bases
 WEBHOOK_ROOT ?= $(MANIFEST_ROOT)/webhook
 RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 
+# Allow overriding the imagePullPolicy
+PULL_POLICY ?= Always
+
 ## --------------------------------------
 ## Help
 ## --------------------------------------
@@ -79,7 +82,8 @@ test-integration: ## Run integration tests
 
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests
-	go test -v -tags=e2e ./test/e2e/...
+	PULL_POLICY=IfNotPresent $(MAKE) docker-build
+	go test -v -tags=e2e -timeout=1h ./test/e2e/... -args --managerImage $(CONTROLLER_IMG)-$(ARCH):$(TAG)
 
 ## --------------------------------------
 ## Binaries
@@ -111,6 +115,8 @@ $(MOCKGEN): $(TOOLS_DIR)/go.mod # Build mockgen from tools folder.
 $(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
 
+$(RELEASE_NOTES) : $(TOOLS_DIR)/go.mod
+	cd $(TOOLS_DIR) && go build -tags tools -o $(BIN_DIR)/release-notes sigs.k8s.io/cluster-api/hack/tools/release
 
 ## --------------------------------------
 ## Linting
@@ -174,6 +180,7 @@ generate-examples: clean-examples ## Generate examples configurations to run a c
 docker-build: ## Build the docker image for controller-manager
 	docker build --pull --build-arg ARCH=$(ARCH) . -t $(CONTROLLER_IMG)-$(ARCH):$(TAG)
 	MANIFEST_IMG=$(CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
+	$(MAKE) set-manifest-pull-policy
 
 .PHONY: docker-push
 docker-push: ## Push the docker image
@@ -203,11 +210,17 @@ docker-push-manifest: ## Push the fat manifest docker image.
 	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
 	docker manifest push --purge ${CONTROLLER_IMG}:${TAG}
 	MANIFEST_IMG=$(CONTROLLER_IMG) MANIFEST_TAG=$(TAG) $(MAKE) set-manifest-image
+	$(MAKE) set-manifest-pull-policy
 
 .PHONY: set-manifest-image
 set-manifest-image:
 	$(info Updating kustomize image patch file for manager resource)
 	sed -i'' -e 's@image: .*@image: '"${MANIFEST_IMG}:$(MANIFEST_TAG)"'@' ./config/default/manager_image_patch.yaml
+
+.PHONY: set-manifest-pull-policy
+set-manifest-pull-policy:
+	$(info Updating kustomize pull policy file for manager resource)
+	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' ./config/default/manager_pull_policy.yaml
 
 ## --------------------------------------
 ## Release
@@ -228,6 +241,7 @@ release: clean-release  ## Builds and push container images using the latest git
 	# Set the manifest image to the production bucket.
 	MANIFEST_IMG=$(PROD_REGISTRY)/$(IMAGE_NAME) MANIFEST_TAG=$(RELEASE_TAG) \
 		$(MAKE) set-manifest-image
+	PULL_POLICY=IfNotPresent $(MAKE) set-manifest-pull-policy
 	$(MAKE) release-manifests
 
 .PHONY: release-manifests
@@ -249,21 +263,30 @@ release-binary: $(RELEASE_DIR)
 
 .PHONY: release-staging
 release-staging: ## Builds and push container images to the staging bucket.
-	REGISTRY=$(STAGING_REGISTRY) $(MAKE) docker-build-all docker-push-all release-tag-latest
+	REGISTRY=$(STAGING_REGISTRY) $(MAKE) docker-build-all docker-push-all release-alias-tag
 
+RELEASE_ALIAS_TAG=$(shell if [ "$(PULL_BASE_REF)" = "master" ]; then echo "latest"; else echo "$(PULL_BASE_REF)"; fi)
 
-.PHONY: release-tag-latest
-release-tag-latest: ## Adds the latest tag to the last build tag.
-	## TODO(vincepri): Only do this when we're on master.
-	gcloud container images add-tag $(CONTROLLER_IMG):$(TAG) $(CONTROLLER_IMG):latest
+.PHONY: release-alias-tag
+release-alias-tag: # Adds the tag to the last build tag.
+	gcloud container images add-tag $(CONTROLLER_IMG):$(TAG) $(CONTROLLER_IMG):$(RELEASE_ALIAS_TAG)
+
+.PHONY: release-notes
+release-notes: $(RELEASE_NOTES)
+	$(RELEASE_NOTES)
 
 ## --------------------------------------
 ## Development
 ## --------------------------------------
 
+# TODO: Uncomment this once we've enabled image building: https://github.com/kubernetes-sigs/image-builder/pull/49
+#       Addons (CNI) currently fail to deploy, likely due to a timeout with API server availability.
+#       Without a pre-built image, capz takes longer for the control plane to come up.
+#       In the meantime, we'll use a `postKubeadmCommands` in controlplane-0 (examples/controlplane/controlplane.yaml).
+#       Please also remove that command once we confirm the create-cluster target works again.
 .PHONY: create-cluster
-create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
-	$(CLUSTERCTL) \
+#create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
+#	$(CLUSTERCTL) \
 	create cluster -v 4 \
 	--bootstrap-flags="name=clusterapi" \
 	--bootstrap-type kind \
@@ -271,7 +294,14 @@ create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azur
 	-c ./examples/_out/cluster.yaml \
 	-p ./examples/_out/provider-components.yaml \
 	-a ./examples/addons.yaml
-
+create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
+	$(CLUSTERCTL) \
+	create cluster -v 4 \
+	--bootstrap-flags="name=clusterapi" \
+	--bootstrap-type kind \
+	-m ./examples/_out/controlplane.yaml \
+	-c ./examples/_out/cluster.yaml \
+	-p ./examples/_out/provider-components.yaml
 
 .PHONY: create-cluster-management
 create-cluster-management: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
