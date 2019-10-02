@@ -122,13 +122,12 @@ kustomize build "${SOURCE_DIR}/machinedeployment" | envsubst >> "${MACHINEDEPLOY
 echo "Generated ${MACHINEDEPLOYMENT_GENERATED_FILE}"
 
 # Generate Cluster API provider components file.
-# kustomize build "github.com/kubernetes-sigs/cluster-api//config/default/?ref=v0.2.0" > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
-wget https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.3/cluster-api-components.yaml -O "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
-echo "Generated ${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.3/cluster-api-components.yaml > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+echo "Downloaded ${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
 
 # Generate Kubeadm Bootstrap Provider components file.
-kustomize build "github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm//config/default/?ref=v0.1.0" > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
-echo "Generated ${COMPONENTS_KUBEADM_GENERATED_FILE}"
+curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm/releases/download/v0.1.1/bootstrap-components.yaml > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
+echo "Downloaded ${COMPONENTS_KUBEADM_GENERATED_FILE}"
 
 # Generate Azure Infrastructure Provider components file.
 kustomize build "${SOURCE_DIR}/../config/default" | envsubst > "${COMPONENTS_Azure_GENERATED_FILE}"

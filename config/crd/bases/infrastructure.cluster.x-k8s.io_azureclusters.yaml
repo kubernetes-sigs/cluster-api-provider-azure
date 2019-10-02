@@ -11,7 +11,9 @@ spec:
     categories:
     - cluster-api
     kind: AzureCluster
+    listKind: AzureClusterList
     plural: azureclusters
+    singular: azurecluster
   scope: Namespaced
   subresources:
     status: {}
