@@ -45,10 +45,10 @@ func init() {
 }
 
 var (
-	managerImageTar        = flag.String("managerImageTar", "", "a script to load the manager Docker image into Docker")
 	kindBinary             = flag.String("kindBinary", "kind", "path to the kind binary")
 	kubectlBinary          = flag.String("kubectlBinary", "kubectl", "path to the kubectl binary")
-	providerComponentsYAML = "config/base/provider-components.yaml"
+	providerComponentsYAML = flag.String("providerComponentsYAML", "", "path to the provider components YAML for the cluster API")
+	managerImageTar        = flag.String("managerImageTar", "", "a script to load the manager Docker image into Docker")
 )
 
 // Cluster represents the running state of a KIND cluster.
@@ -78,8 +78,8 @@ func (c *Cluster) Setup() {
 			*managerImageTar)
 		c.run(exec.Command(*kindBinary, "load", "image-archive", "--name", c.Name, *managerImageTar))
 	}
-	fmt.Fprintf(ginkgo.GinkgoWriter, "Applying Provider Components to the kind cluster: %s\n", providerComponentsYAML)
-	c.ApplyYAML(providerComponentsYAML)
+
+	c.applyYAML()
 }
 
 // Teardown attempts to delete the KIND cluster
@@ -88,13 +88,13 @@ func (c *Cluster) Teardown() {
 	os.RemoveAll(c.tmpDir)
 }
 
-// ApplyYAML applies the provided manifest to the kind cluster
-func (c *Cluster) ApplyYAML(manifestPath string) {
+// applyYAML takes the provided providerComponentsYAML applies them to a cluster given by the kubeconfig path kubeConfig.
+func (c *Cluster) applyYAML() {
 	c.run(exec.Command(
 		*kubectlBinary,
 		"create",
 		"--kubeconfig="+c.kubepath,
-		"-f", manifestPath,
+		"-f", *providerComponentsYAML,
 	))
 }
 
