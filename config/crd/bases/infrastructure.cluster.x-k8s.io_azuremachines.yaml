@@ -11,7 +11,9 @@ spec:
     categories:
     - cluster-api
     kind: AzureMachine
+    listKind: AzureMachineList
     plural: azuremachines
+    singular: azuremachine
   scope: Namespaced
   subresources:
     status: {}
