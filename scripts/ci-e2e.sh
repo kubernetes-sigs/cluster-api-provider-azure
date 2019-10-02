@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,4 @@ REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 source "${REPO_ROOT}/hack/ensure-go.sh"
 cd "${REPO_ROOT}" || exit 1
 
-bazel test --define='gotags=integration' --test_output all //test/integration/...
-bazel_status="${?}"
-python hack/coalesce.py
-exit "${bazel_status}"
+exec scripts/ci-integration.sh

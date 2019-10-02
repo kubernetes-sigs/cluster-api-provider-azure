@@ -312,7 +312,7 @@ clean-temporary: ## Remove all temporary files and folders
 
 .PHONY: verify
 verify: ## Runs verification scripts to ensure correct execution
-	./hack/verify-boilerplate.sh
+	./hack/verify_boilerplate.py
 	./hack/verify-bazel.sh
 
 .PHONY: verify-install
