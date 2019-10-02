@@ -1,6 +1,21 @@
 # See the OWNERS_ALIASES docs: https://git.k8s.io/community/contributors/guide/owners.md#owners_aliases
 
 aliases:
+  sig-cluster-lifecycle-leads:
+    - luxas
+    - justinsb
+    - timothysc
+  cluster-api-admins:
+    - justinsb
+    - detiber
+    - davidewatson
+    - vincepri
+  cluster-api-maintainers:
+    - justinsb
+    - detiber
+    - ncdc
+    - vincepri
+    - chuckha
   cluster-api-azure-maintainers:
     - awesomenix
     - justaugustus
