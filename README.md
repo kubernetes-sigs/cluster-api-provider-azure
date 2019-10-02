@@ -30,7 +30,7 @@ TODO
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|  | Cluster API `v1alpha1` (`v0.1.x`) | Cluster API `v1alpha2` (`v0.2.x`) (unreleased) |
+|  | Cluster API `v1alpha1` (`v0.1.x`) | Cluster API `v1alpha2` (`v0.2.x`) |
 |---|---|---|
 |Azure Provider `v0.2.x` | ✓ |  |
 |Azure Provider `v0.3.x` |  | ✓ |
@@ -42,6 +42,7 @@ This provider's versions are able to install and manage the following versions o
 | Kubernetes 1.13 | ✓ |  |
 | Kubernetes 1.14 | ✓ | ✓ |
 | Kubernetes 1.15 | ✓ | ✓ |
+| Kubernetes 1.16 |  | ✓ |
 
 
 Each version of Cluster API for Azure will attempt to support two Kubernetes versions e.g., Cluster API for Azure `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
