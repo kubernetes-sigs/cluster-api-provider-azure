@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Get provides information about a resource group.
@@ -42,6 +43,10 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("deleting resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
+	if err != nil && azure.ResourceNotFound(err) {
+		// already deleted
+		return nil
+	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
