@@ -43,7 +43,7 @@ export CONTAINERD_SHA256="${CONTAINERD_SHA256:-47653ab55b58668ce93704e47b727b41f
 # Outputs.
 COMPONENTS_CLUSTER_API_GENERATED_FILE=${SOURCE_DIR}/provider-components/provider-components-cluster-api.yaml
 COMPONENTS_KUBEADM_GENERATED_FILE=${SOURCE_DIR}/provider-components/provider-components-kubeadm.yaml
-COMPONENTS_Azure_GENERATED_FILE=${SOURCE_DIR}/provider-components/provider-components-azure.yaml
+COMPONENTS_AZURE_GENERATED_FILE=${SOURCE_DIR}/provider-components/provider-components-azure.yaml
 
 PROVIDER_COMPONENTS_GENERATED_FILE=${OUTPUT_DIR}/provider-components.yaml
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
@@ -134,8 +134,8 @@ curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubead
 echo "Downloaded ${COMPONENTS_KUBEADM_GENERATED_FILE}"
 
 # Generate Azure Infrastructure Provider components file.
-kustomize build "${SOURCE_DIR}/../config/default" | envsubst > "${COMPONENTS_Azure_GENERATED_FILE}"
-echo "Generated ${COMPONENTS_Azure_GENERATED_FILE}"
+kustomize build "${SOURCE_DIR}/../config/default" | envsubst > "${COMPONENTS_AZURE_GENERATED_FILE}"
+echo "Generated ${COMPONENTS_AZURE_GENERATED_FILE}"
 
 # Generate a single provider components file.
 kustomize build "${SOURCE_DIR}/provider-components" | envsubst > "${PROVIDER_COMPONENTS_GENERATED_FILE}"
