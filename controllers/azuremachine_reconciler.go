@@ -270,17 +270,22 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
 	if err != nil && vmInterface == nil {
 		var vmZone string
-		useAZ := true
 
-		if s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled != nil {
-			useAZ = *s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled
-		}
+		azSupported := s.isAvailabilityZoneSupported()
 
-		if useAZ {
-			var zoneErr error
-			vmZone, zoneErr = s.getVirtualMachineZone()
-			if zoneErr != nil {
-				return nil, errors.Wrap(zoneErr, "failed to get availability zone")
+		if azSupported {
+			useAZ := true
+
+			if s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled != nil {
+				useAZ = *s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled
+			}
+
+			if useAZ {
+				var zoneErr error
+				vmZone, zoneErr = s.getVirtualMachineZone()
+				if zoneErr != nil {
+					return nil, errors.Wrap(zoneErr, "failed to get availability zone")
+				}
 			}
 		}
 
@@ -347,4 +352,21 @@ func (s *azureMachineService) GetRunningVMByTags(scope *scope.MachineScope) (*in
 	// TODO: Build tag getting logic
 
 	return nil, nil
+}
+
+// isAvailabilityZoneSupported determines if Availability Zones are supported in a selected location
+// based on SupportedAvailabilityZoneLocations. Returns true if supported.
+func (s *azureMachineService) isAvailabilityZoneSupported() bool {
+	azSupported := false
+
+	for _, supportedLocation := range azure.SupportedAvailabilityZoneLocations {
+		if s.machineScope.Location() == supportedLocation {
+			azSupported = true
+
+			return azSupported
+		}
+	}
+
+	s.machineScope.V(2).Info("Availability Zones are not supported in the selected location", "location", s.machineScope.Location())
+	return azSupported
 }

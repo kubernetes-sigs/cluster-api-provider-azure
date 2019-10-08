@@ -37,6 +37,27 @@ const (
 	UserAgent = "cluster-api-azure-services"
 )
 
+// SupportedAvailabilityZoneLocations is a slice of the locations where Availability Zones are supported.
+// This is used to validate whether a virtual machine should leverage an Availability Zone.
+// Based on the Availability Zones listed in https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
+var SupportedAvailabilityZoneLocations = []string{
+	// Americas
+	"centralus",
+	"eastus",
+	"eastus2",
+	"westus2",
+
+	// Europe
+	"francecentral",
+	"northeurope",
+	"uksouth",
+	"westeurope",
+
+	// Asia Pacific
+	"japaneast",
+	"southeastasia",
+}
+
 // GenerateVnetName generates a virtual network name, based on the cluster name.
 func GenerateVnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "vnet")
