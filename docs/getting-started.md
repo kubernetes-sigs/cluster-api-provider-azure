@@ -88,8 +88,8 @@ A set of sane defaults are utilized when generating manifests via `./azure/gener
 Here is a list of commonly overriden configuration parameters (the full list is available in `./azure/generate-yaml.sh`):
 ```bash
 # Azure settings.
-export LOCATION="eastus"
-export RESOURCE_GROUP="kubecuddles"
+export AZURE_LOCATION="eastus"
+export AZURE_RESOURCE_GROUP="kubecuddles"
 
 # Cluster settings.
 export CLUSTER_NAME="pony-unicorns"
@@ -98,6 +98,16 @@ export CLUSTER_NAME="pony-unicorns"
 export CONTROL_PLANE_MACHINE_TYPE="Standard_B2ms"
 export NODE_MACHINE_TYPE="Standard_B2ms"
 ```
+
+#### Using images
+
+To be able to use the Marketplace cluster-api offer for the first time, you need to run the following Azure CLI command:
+
+```bash
+az vm image accept-terms --publisher cncf-upstream --offer cluster-api --plan k8s-1dot16-ubuntu-180
+```
+
+Otherwise, you can also [build your own image](https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure) and specify the image ID in the manifests generated in the next step.
 
 #### Running the manifest generation script
 

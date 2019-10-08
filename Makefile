@@ -279,21 +279,7 @@ release-notes: $(RELEASE_NOTES)
 ## Development
 ## --------------------------------------
 
-# TODO: Uncomment this once we've enabled image building: https://github.com/kubernetes-sigs/image-builder/pull/49
-#       Addons (CNI) currently fail to deploy, likely due to a timeout with API server availability.
-#       Without a pre-built image, capz takes longer for the control plane to come up.
-#       In the meantime, we'll use a `postKubeadmCommands` in controlplane-0 (examples/controlplane/controlplane.yaml).
-#       Please also remove that command once we confirm the create-cluster target works again.
 .PHONY: create-cluster
-#create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
-#	$(CLUSTERCTL) \
-	create cluster -v 4 \
-	--bootstrap-flags="name=clusterapi" \
-	--bootstrap-type kind \
-	-m ./examples/_out/controlplane.yaml \
-	-c ./examples/_out/cluster.yaml \
-	-p ./examples/_out/provider-components.yaml \
-	-a ./examples/addons.yaml
 create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
 	$(CLUSTERCTL) \
 	create cluster -v 4 \
@@ -301,7 +287,8 @@ create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azur
 	--bootstrap-type kind \
 	-m ./examples/_out/controlplane.yaml \
 	-c ./examples/_out/cluster.yaml \
-	-p ./examples/_out/provider-components.yaml
+	-p ./examples/_out/provider-components.yaml \
+	-a ./examples/addons.yaml
 
 .PHONY: create-cluster-management
 create-cluster-management: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
@@ -325,12 +312,7 @@ create-cluster-management: $(CLUSTERCTL) ## Create a development Kubernetes clus
 		--namespace=default \
 		--cluster-name=$(CLUSTER_NAME)
 	# Apply addons on the target cluster, waiting for the control-plane to become available.
-# TODO: Uncomment this once we've enabled image building: https://github.com/kubernetes-sigs/image-builder/pull/49
-#       Addons (CNI) currently fail to deploy, likely due to a timeout with API server availability.
-#       Without a pre-built image, capz takes longer for the control plane to come up.
-#       In the meantime, we'll use a `postKubeadmCommands` in controlplane-0 (examples/controlplane/controlplane.yaml).
-#       Please also remove that command once we confirm the create-cluster target works again.
-#	$(CLUSTERCTL) \
+	$(CLUSTERCTL) \
 		alpha phases apply-addons -v=10 \
 		--kubeconfig=./kubeconfig \
 		-a examples/addons.yaml
