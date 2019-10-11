@@ -80,18 +80,6 @@ func (s *azureMachineService) Create() (*infrav1.VM, error) {
 		return nil, errors.Wrapf(vmErr, "failed to create vm %s ", s.machineScope.Name())
 	}
 
-	/*
-		vmExtSpec := &virtualmachineextensions.Spec{
-			Name:       "startupScript",
-			VMName:     s.machineScope.Name(),
-			ScriptData: *s.machineScope.Machine.Spec.Bootstrap.Data,
-		}
-		// TODO: handle failures/retries better
-		err := s.virtualMachinesExtSvc.Reconcile(s.clusterScope.Context, vmExtSpec)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create vm extension")
-		}
-	*/
 	return vm, nil
 }
 
@@ -152,22 +140,6 @@ func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 	}
 
 	klog.Infof("Found vm for machine %s", s.machineScope.Name())
-
-	/*
-		vmExtSpec := &virtualmachineextensions.Spec{
-			Name:   "startupScript",
-			VMName: s.machineScope.Name(),
-		}
-
-		vmExt, err := s.virtualMachinesExtSvc.Get(s.clusterScope.Context, vmExtSpec)
-		if err != nil && vmExt == nil {
-			return nil, nil
-		}
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get vm extension")
-		}
-	*/
 
 	return vm, nil
 }
