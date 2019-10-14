@@ -3,15 +3,15 @@ module sigs.k8s.io/cluster-api-provider-azure
 go 1.12
 
 require (
-	github.com/Azure/azure-sdk-for-go v33.4.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.9.0
-	github.com/Azure/go-autorest/autorest/azure/auth v0.3.0
+	github.com/Azure/azure-sdk-for-go v34.1.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.9.2
+	github.com/Azure/go-autorest/autorest/azure/auth v0.4.0
 	github.com/Azure/go-autorest/autorest/to v0.3.0
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
-	github.com/golang/mock v1.2.0
+	github.com/golang/mock v1.3.1
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/onsi/ginkgo v1.10.1
@@ -40,6 +40,9 @@ require (
 )
 
 replace (
+	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.9.2
+	github.com/Azure/go-autorest/autorest/azure/auth => github.com/Azure/go-autorest/autorest/azure/auth v0.4.0
+	github.com/Azure/go-autorest/autorest/to => github.com/Azure/go-autorest/autorest/to v0.3.0
 	k8s.io/api => k8s.io/api v0.0.0-20190704095032-f4ca3d3bdf1d
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190704094733-8f6ac2502e51
 )
