@@ -257,7 +257,7 @@ release-binary: $(RELEASE_DIR)
 		-e GOARCH=$(GOARCH) \
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
-		golang:1.12.10 \
+		golang:1.12.11 \
 		go build -a -ldflags '-extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
