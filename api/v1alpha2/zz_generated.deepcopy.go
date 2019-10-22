@@ -97,7 +97,7 @@ func (in *AzureCluster) DeepCopyObject() runtime.Object {
 func (in *AzureClusterList) DeepCopyInto(out *AzureClusterList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureCluster, len(*in))
@@ -194,7 +194,7 @@ func (in *AzureMachine) DeepCopyObject() runtime.Object {
 func (in *AzureMachineList) DeepCopyInto(out *AzureMachineList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureMachine, len(*in))
@@ -327,7 +327,7 @@ func (in *AzureMachineTemplate) DeepCopyObject() runtime.Object {
 func (in *AzureMachineTemplateList) DeepCopyInto(out *AzureMachineTemplateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AzureMachineTemplate, len(*in))

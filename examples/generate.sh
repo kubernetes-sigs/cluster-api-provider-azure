@@ -28,7 +28,7 @@ RANDOM_STRING=$(date | md5sum | head -c8)
 
 # Cluster.
 export CLUSTER_NAME="${CLUSTER_NAME:-capz-${RANDOM_STRING}}"
-export VNET_NAME="${VNET_NAME:-}"
+export VNET_NAME="${VNET_NAME:-${CLUSTER_NAME}-vnet}"
 export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.16.1}"
 export KUBERNETES_SEMVER="${KUBERNETES_VERSION#v}"
 

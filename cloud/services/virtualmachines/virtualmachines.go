@@ -109,6 +109,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	virtualMachine := compute.VirtualMachine{
 		Location: to.StringPtr(s.Scope.Location()),
+		Plan:     generateImagePlan(*vmSpec),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
@@ -223,6 +224,20 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 	storageProfile.ImageReference = imageRef
 
 	return storageProfile, nil
+}
+
+// generateImagePlan generates a pointer to a compute.Plan which can utilized for VM creation.
+func generateImagePlan(vmSpec Spec) *compute.Plan {
+	image := vmSpec.Image
+	if image.Publisher == nil || image.SKU == nil || image.Offer == nil {
+		return nil
+	}
+
+	return &compute.Plan{
+		Publisher: image.Publisher,
+		Name:      image.SKU,
+		Product:   image.Offer,
+	}
 }
 
 // generateImageReference generates a pointer to a compute.ImageReference which can utilized for VM creation.
