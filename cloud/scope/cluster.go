@@ -99,8 +99,8 @@ func (s *ClusterScope) Network() *infrav1.Network {
 }
 
 // Vnet returns the cluster Vnet.
-func (s *ClusterScope) Vnet() infrav1.VnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.Vnet
+func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
+	return &s.AzureCluster.Spec.NetworkSpec.Vnet
 }
 
 // Subnets returns the cluster subnets.
@@ -138,6 +138,15 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close() error {
 	return s.patchHelper.Patch(context.TODO(), s.AzureCluster)
+}
+
+// AdditionalTags returns AdditionalTags from the scope's AzureCluster.
+func (s *ClusterScope) AdditionalTags() infrav1.Tags {
+	tags := make(infrav1.Tags)
+	if s.AzureCluster.Spec.AdditionalTags != nil {
+		tags = s.AzureCluster.Spec.AdditionalTags.DeepCopy()
+	}
+	return tags
 }
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.

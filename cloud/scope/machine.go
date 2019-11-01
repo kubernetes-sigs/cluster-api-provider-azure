@@ -185,3 +185,16 @@ func (m *MachineScope) SetAnnotation(key, value string) {
 func (m *MachineScope) Close() error {
 	return m.patchHelper.Patch(context.TODO(), m.AzureMachine)
 }
+
+// AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachine. If the same key is present in both,
+// the value from AzureMachine takes precedence.
+func (m *MachineScope) AdditionalTags() infrav1.Tags {
+	tags := make(infrav1.Tags)
+
+	// Start with the cluster-wide tags...
+	tags.Merge(m.AzureCluster.Spec.AdditionalTags)
+	// ... and merge in the Machine's
+	tags.Merge(m.AzureMachine.Spec.AdditionalTags)
+
+	return tags
+}

@@ -1,3 +1,7 @@
+run:
+  deadline: 3m
+  skip-dirs:
+    - mock*
 linters:
   enable:
     - golint

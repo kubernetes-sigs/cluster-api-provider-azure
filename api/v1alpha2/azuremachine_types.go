@@ -44,6 +44,12 @@ type AzureMachineSpec struct {
 	Location string `json:"location"`
 
 	SSHPublicKey string `json:"sshPublicKey"`
+
+	// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
+	// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
+	// AzureMachine's value takes precedence.
+	// +optional
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine

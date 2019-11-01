@@ -34,6 +34,11 @@ type AzureClusterSpec struct {
 	ResourceGroup string `json:"resourceGroup"`
 
 	Location string `json:"location"`
+
+	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
+	// ones added by default.
+	// +optional
+	AdditionalTags Tags `json:"additionalTags,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster

@@ -61,7 +61,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		clusterScope:          clusterScope,
 		availabilityZonesSvc:  availabilityzones.NewService(clusterScope),
 		networkInterfacesSvc:  networkinterfaces.NewService(clusterScope),
-		virtualMachinesSvc:    virtualmachines.NewService(clusterScope),
+		virtualMachinesSvc:    virtualmachines.NewService(clusterScope, machineScope),
 		virtualMachinesExtSvc: virtualmachineextensions.NewService(clusterScope),
 		disksSvc:              disks.NewService(clusterScope),
 	}
@@ -316,14 +316,6 @@ func GetControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Ma
 		}
 	}
 	return cpm
-}
-
-// GetRunningVMByTags returns the existing VM or nothing if it doesn't exist.
-func (s *azureMachineService) GetRunningVMByTags(scope *scope.MachineScope) (*infrav1.VM, error) {
-	s.clusterScope.V(2).Info("Looking for existing machine VM by tags")
-	// TODO: Build tag getting logic
-
-	return nil, nil
 }
 
 // isAvailabilityZoneSupported determines if Availability Zones are supported in a selected location

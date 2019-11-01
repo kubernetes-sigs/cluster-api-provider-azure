@@ -26,12 +26,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -163,29 +161,11 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
 	var vm *infrav1.VM
 
-	// Parse the ProviderID.
-	pid, err := noderefutil.NewProviderID(scope.GetProviderID())
-	if err != nil && err != noderefutil.ErrEmptyProviderID {
-		return nil, errors.Wrapf(err, "failed to parse Spec.ProviderID")
+	// If the ProviderID is populated, describe the VM using its name and resource group name.
+	vm, err := ams.VMIfExists(scope.GetVMID())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
 	}
-
-	// If the ProviderID is populated, describe the VM using the ID.
-	if err == nil {
-		vm, err := ams.VMIfExists(pointer.StringPtr(pid.ID()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
-		}
-		return vm, nil
-	}
-
-	// If the ProviderID is empty, try to query the VM using tags.
-	// TODO: Uncomment once tag building is in place
-	/*
-		vm, err := ams.GetRunningVMByTags(scope)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to query AzureMachine VM by tags")
-		}
-	*/
 
 	return vm, nil
 }
@@ -265,13 +245,10 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	}
 
 	// Ensure that the tags are correct.
-	// TODO: Uncomment once tagging is implemented
-	/*
-		_, err = r.ensureTags(ams, machineScope.AzureMachine, machineScope.GetVMID(), machineScope.AdditionalTags())
-		if err != nil {
-			return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
-		}
-	*/
+	err = r.reconcileTags(machineScope, clusterScope, machineScope.AdditionalTags())
+	if err != nil {
+		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
+	}
 
 	return reconcile.Result{}, nil
 }

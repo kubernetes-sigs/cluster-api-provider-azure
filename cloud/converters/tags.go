@@ -17,30 +17,28 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
-// SDKToVM converts an Azure SDK VirtualMachine to the CAPZ VM type.
-func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
-	vm := &infrav1.VM{
-		ID:    to.String(v.ID),
-		Name:  to.String(v.Name),
-		State: infrav1.VMState(to.String(v.ProvisioningState)),
+// MapToTags converts a map[string]*string into a infrav1.Tags.
+func MapToTags(src map[string]*string) infrav1.Tags {
+	tags := make(infrav1.Tags, len(src))
+
+	for k, v := range src {
+		tags[k] = to.String(v)
 	}
 
-	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {
-		vm.VMSize = string(v.VirtualMachineProperties.HardwareProfile.VMSize)
+	return tags
+}
+
+// TagsToMap converts infrav1.Tags into a map[string]*string.
+func TagsToMap(src infrav1.Tags) map[string]*string {
+	tags := make(map[string]*string, len(src))
+
+	for k, v := range src {
+		tags[k] = to.StringPtr(v)
 	}
 
-	if v.Zones != nil && len(*v.Zones) > 0 {
-		vm.AvailabilityZone = to.StringSlice(v.Zones)[0]
-	}
-
-	if len(v.Tags) > 0 {
-		vm.Tags = MapToTags(v.Tags)
-	}
-
-	return vm, nil
+	return tags
 }

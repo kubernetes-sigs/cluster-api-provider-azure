@@ -23,7 +23,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
 
 // Get provides information about a resource group.
@@ -34,7 +36,17 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 // // Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
-	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, resources.Group{Location: to.StringPtr(s.Scope.Location())})
+	group := resources.Group{
+		Location: to.StringPtr(s.Scope.Location()),
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.Scope.Name(),
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(s.Scope.AzureCluster.Spec.ResourceGroup),
+			Role:        to.StringPtr(infrav1.CommonRoleTagValue),
+			Additional:  s.Scope.AdditionalTags(),
+		})),
+	}
+	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, group)
 	klog.V(2).Infof("successfully created resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	return err
 }
