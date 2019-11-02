@@ -111,20 +111,17 @@ type VnetSpec struct {
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
 	// Tags is a collection of tags describing the resource.
-	// TODO: Uncomment once tagging is implemented.
-	//Tags tags.Map `json:"tags,omitempty"`
+	Tags Tags `json:"tags,omitempty"`
 }
 
-// TODO: Implement tagging
-/*
-// Tags defines resource tags.
-type Tags map[string]*string
-*/
+// IsManaged returns true if the vnet is unmanaged.
+func (v *VnetSpec) IsManaged(clusterName string) bool {
+	return v.ID != "" && !v.Tags.HasOwned(clusterName)
+}
 
 // Subnets is a slice of Subnet.
 type Subnets []*SubnetSpec
 
-// TODO
 // ToMap returns a map from id to subnet.
 func (s Subnets) ToMap() map[string]*SubnetSpec {
 	res := make(map[string]*SubnetSpec)
@@ -153,8 +150,7 @@ type SecurityGroup struct {
 	ID           string       `json:"id"`
 	Name         string       `json:"name"`
 	IngressRules IngressRules `json:"ingressRule"`
-	// TODO: Uncomment once tagging is implemented.
-	//Tags         *Tags        `json:"tags"`
+	Tags         Tags         `json:"tags,omitempty"`
 }
 
 /*
@@ -179,7 +175,6 @@ var (
 	SecurityGroupProtocolUDP = SecurityGroupProtocol("Udp")
 )
 
-// TODO
 // IngressRule defines an Azure ingress rule for security groups.
 type IngressRule struct {
 	Description string                `json:"description"`
@@ -206,7 +201,6 @@ func (i *IngressRule) String() string {
 }
 */
 
-// TODO
 // IngressRules is a slice of Azure ingress rules for security groups.
 type IngressRules []*IngressRule
 
@@ -245,7 +239,6 @@ type PublicIP struct {
 	DNSName   string `json:"dnsName,omitempty"`
 }
 
-// TODO
 // LoadBalancer defines an Azure load balancer.
 type LoadBalancer struct {
 	ID               string           `json:"id,omitempty"`
@@ -253,8 +246,7 @@ type LoadBalancer struct {
 	SKU              SKU              `json:"sku,omitempty"`
 	FrontendIPConfig FrontendIPConfig `json:"frontendIpConfig,omitempty"`
 	BackendPool      BackendPool      `json:"backendPool,omitempty"`
-	// TODO: Uncomment once tagging is implemented.
-	//Tags             Tags             `json:"tags,omitempty"`
+	Tags             Tags             `json:"tags,omitempty"`
 	/*
 		// FrontendIPConfigurations - Object representing the frontend IPs to be used for the load balancer
 		FrontendIPConfigurations *[]FrontendIPConfiguration `json:"frontendIPConfigurations,omitempty"`
@@ -305,11 +297,9 @@ type BackendPool struct {
 	ID   string `json:"id,omitempty"`
 }
 
-// TODO
 // LoadBalancerProtocol defines listener protocols for a load balancer.
 type LoadBalancerProtocol string
 
-// TODO
 var (
 	// LoadBalancerProtocolTCP defines the LB API string representing the TCP protocol
 	LoadBalancerProtocolTCP = LoadBalancerProtocol("TCP")
@@ -324,7 +314,6 @@ var (
 	LoadBalancerProtocolHTTPS = LoadBalancerProtocol("HTTPS")
 )
 
-// TODO
 // LoadBalancerListener defines an Azure load balancer listener.
 type LoadBalancerListener struct {
 	Protocol         LoadBalancerProtocol `json:"protocol"`
@@ -333,7 +322,6 @@ type LoadBalancerListener struct {
 	InstancePort     int64                `json:"instancePort"`
 }
 
-// TODO
 // LoadBalancerHealthCheck defines an Azure load balancer health check.
 type LoadBalancerHealthCheck struct {
 	Target             string        `json:"target"`
@@ -363,26 +351,19 @@ var (
 
 // VM describes an Azure virtual machine.
 type VM struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
-
+	ID               string `json:"id,omitempty"`
+	Name             string `json:"name,omitempty"`
 	AvailabilityZone string `json:"availabilityZone,omitempty"`
-
 	// Hardware profile
 	VMSize string `json:"vmSize,omitempty"`
-
 	// Storage profile
-	Image  Image  `json:"image,omitempty"`
-	OSDisk OSDisk `json:"osDisk,omitempty"`
-
+	Image         Image  `json:"image,omitempty"`
+	OSDisk        OSDisk `json:"osDisk,omitempty"`
 	StartupScript string `json:"startupScript,omitempty"`
-
 	// State - The provisioning state, which only appears in the response.
 	State    VMState    `json:"vmState,omitempty"`
 	Identity VMIdentity `json:"identity,omitempty"`
-
-	// TODO: Uncomment once tagging is implemented.
-	//Tags Tags `json:"tags,omitempty"`
+	Tags     Tags       `json:"tags,omitempty"`
 
 	// HardwareProfile - Specifies the hardware settings for the virtual machine.
 	//HardwareProfile *HardwareProfile `json:"hardwareProfile,omitempty"`
@@ -465,10 +446,6 @@ type SubnetSpec struct {
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
 	SecurityGroup SecurityGroup `json:"securityGroup"`
-
-	// Tags is a collection of tags describing the resource.
-	// TODO: Uncomment once tagging is implemented.
-	//Tags tags.Map `json:"tags,omitempty"`
 }
 
 const (

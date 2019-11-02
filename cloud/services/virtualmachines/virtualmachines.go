@@ -107,9 +107,21 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to generate random string")
 	}
 
+	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
+	additionalTags := s.MachineScope.AdditionalTags()
+	// Set the cloud provider tag
+	additionalTags[infrav1.ClusterAzureCloudProviderTagKey(s.MachineScope.Name())] = string(infrav1.ResourceLifecycleOwned)
+
 	virtualMachine := compute.VirtualMachine{
 		Location: to.StringPtr(s.Scope.Location()),
 		Plan:     generateImagePlan(*vmSpec),
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.Scope.Name(),
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(s.MachineScope.Name()),
+			Role:        to.StringPtr(s.MachineScope.Role()),
+			Additional:  additionalTags,
+		})),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),

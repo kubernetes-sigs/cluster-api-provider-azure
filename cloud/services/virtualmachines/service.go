@@ -27,8 +27,9 @@ var _ azure.Service = (*Service)(nil)
 
 // Service provides operations on resource groups
 type Service struct {
-	Client compute.VirtualMachinesClient
-	Scope  *scope.ClusterScope
+	Client       compute.VirtualMachinesClient
+	Scope        *scope.ClusterScope
+	MachineScope *scope.MachineScope
 }
 
 // getVirtualNetworksClient creates a new groups client from subscriptionid.
@@ -39,10 +40,11 @@ func getVirtualMachinesClient(subscriptionID string, authorizer autorest.Authori
 	return vmClient
 }
 
-// NewService creates a new groups service.
-func NewService(scope *scope.ClusterScope) *Service {
+// NewService creates a new virtualmachines service.
+func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
 	return &Service{
-		Client: getVirtualMachinesClient(scope.SubscriptionID, scope.Authorizer),
-		Scope:  scope,
+		Client:       getVirtualMachinesClient(scope.SubscriptionID, scope.Authorizer),
+		Scope:        scope,
+		MachineScope: machineScope,
 	}
 }

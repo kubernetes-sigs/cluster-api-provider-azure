@@ -24,7 +24,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 )
 
@@ -79,6 +81,12 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		lbName,
 		network.LoadBalancer{
+			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+				ClusterName: s.Scope.Name(),
+				Lifecycle:   infrav1.ResourceLifecycleOwned,
+				Role:        to.StringPtr(infrav1.APIServerRoleTagValue),
+				Additional:  s.Scope.AdditionalTags(),
+			})),
 			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
 			Location: to.StringPtr(s.Scope.Location()),
 			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{

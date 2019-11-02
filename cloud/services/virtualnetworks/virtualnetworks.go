@@ -18,12 +18,15 @@ package virtualnetworks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
@@ -70,6 +73,13 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating vnet %s ", vnetSpec.Name)
 	f, err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name,
 		network.VirtualNetwork{
+			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+				ClusterName: s.Scope.Name(),
+				Lifecycle:   infrav1.ResourceLifecycleOwned,
+				Name:        to.StringPtr(fmt.Sprintf("%s-vnet", s.Scope.Name())),
+				Role:        to.StringPtr(infrav1.CommonRoleTagValue),
+				Additional:  s.Scope.AdditionalTags(),
+			})),
 			Location: to.StringPtr(s.Scope.Location()),
 			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 				AddressSpace: &network.AddressSpace{

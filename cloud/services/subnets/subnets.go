@@ -117,6 +117,10 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the subnet with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+	if s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+		s.Scope.V(4).Info("Skipping subnets deletion in unmanaged mode")
+		return nil
+	}
 	subnetSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid Subnet Specification")

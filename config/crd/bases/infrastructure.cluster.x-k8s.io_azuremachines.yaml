@@ -36,6 +36,14 @@ spec:
         spec:
           description: AzureMachineSpec defines the desired state of AzureMachine
           properties:
+            additionalTags:
+              additionalProperties:
+                type: string
+              description: AdditionalTags is an optional set of tags to add to an
+                instance, in addition to the ones added by default by the Azure provider.
+                If both the AzureCluster and the AzureMachine specify the same tag
+                name with different values, the AzureMachine's value takes precedence.
+              type: object
             availabilityZone:
               properties:
                 enabled:
