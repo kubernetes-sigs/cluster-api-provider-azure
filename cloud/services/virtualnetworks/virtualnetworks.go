@@ -18,7 +18,6 @@ package virtualnetworks
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -31,23 +30,38 @@ import (
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
-	Name string
-	CIDR string
+	ResourceGroup string
+	Name          string
+	CIDR          string
 }
 
 // Get provides information about a virtual network.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.VnetSpec, error) {
 	vnetSpec, ok := spec.(*Spec)
 	if !ok {
-		return network.VirtualNetwork{}, errors.New("Invalid VNET Specification")
+		return nil, errors.New("Invalid VNET Specification")
 	}
-	vnet, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "vnet %s not found", vnetSpec.Name)
-	} else if err != nil {
-		return vnet, err
+	vnet, err := s.Client.Get(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
+	if err != nil {
+		if azure.ResourceNotFound(err) {
+			return nil, err
+		}
+		return nil, errors.Wrapf(err, "failed to get vnet %s", vnetSpec.Name)
 	}
-	return vnet, nil
+	cidr := ""
+	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
+		prefixes := to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
+		if prefixes != nil && len(prefixes) > 0 {
+			cidr = prefixes[0]
+		}
+	}
+	return &infrav1.VnetSpec{
+		ResourceGroup: vnetSpec.ResourceGroup,
+		ID:            to.String(vnet.ID),
+		Name:          to.String(vnet.Name),
+		CidrBlock:     cidr,
+		Tags:          converters.MapToTags(vnet.Tags),
+	}, nil
 }
 
 // Reconcile gets/creates/updates a virtual network.
@@ -65,17 +79,26 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid VNET Specification")
 	}
 
-	if _, err := s.Get(ctx, vnetSpec); err == nil {
-		// vnet already exists, cannot update since its immutable
+	vnet, err := s.Get(ctx, vnetSpec)
+	if !azure.ResourceNotFound(err) {
+		if err != nil {
+			return errors.Wrap(err, "failed to get vnet")
+		}
+
+		if !vnet.IsManaged(s.Scope.Name()) {
+			s.Scope.V(2).Info("Working on custom vnet", "vnet-id", vnet.ID)
+		}
+		// vnet already exists, cannot update since it's immutable
+		// TODO: ensure tags & other managed vnet attributes
+		vnet.DeepCopyInto(s.Scope.Vnet())
 		return nil
 	}
-
 	klog.V(2).Infof("creating vnet %s ", vnetSpec.Name)
-	vnet := network.VirtualNetwork{
+	vnetProperties := network.VirtualNetwork{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.Scope.Name(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(fmt.Sprintf("%s-vnet", s.Scope.Name())),
+			Name:        to.StringPtr(vnetSpec.Name),
 			Role:        to.StringPtr(infrav1.CommonRoleTagValue),
 			Additional:  s.Scope.AdditionalTags(),
 		})),
@@ -86,7 +109,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			},
 		},
 	}
-	err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name, vnet)
+	err = s.Client.CreateOrUpdate(ctx, vnetSpec.ResourceGroup, vnetSpec.Name, vnetProperties)
 	if err != nil {
 		return err
 	}
@@ -97,18 +120,22 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+		s.Scope.V(4).Info("Skipping vnet deletion in custom vnet mode")
+		return nil
+	}
 	vnetSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid VNET Specification")
 	}
 	klog.V(2).Infof("deleting vnet %s ", vnetSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name)
+	err := s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vnet %s in resource group %s", vnetSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vnet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
 	}
 
 	klog.V(2).Infof("successfully deleted vnet %s ", vnetSpec.Name)

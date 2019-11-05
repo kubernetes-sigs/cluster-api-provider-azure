@@ -29,6 +29,7 @@ type Client interface {
 	Get(context.Context, string, string) (network.VirtualNetwork, error)
 	CreateOrUpdate(context.Context, string, string, network.VirtualNetwork) error
 	Delete(context.Context, string, string) error
+	CheckIPAddressAvailability(context.Context, string, string, string) (network.IPAddressAvailabilityResult, error)
 }
 
 // AzureClient contains the Azure go-sdk Client
@@ -83,4 +84,9 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vnetName s
 	}
 	_, err = future.Result(ac.virtualnetworks)
 	return err
+}
+
+// CheckIPAddressAvailability checks whether a private IP address is available for use.
+func (ac *AzureClient) CheckIPAddressAvailability(ctx context.Context, resourceGroupName, vnetName, ip string) (network.IPAddressAvailabilityResult, error) {
+	return ac.virtualnetworks.CheckIPAddressAvailability(ctx, resourceGroupName, vnetName, ip)
 }

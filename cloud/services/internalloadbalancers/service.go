@@ -19,20 +19,23 @@ package internalloadbalancers
 import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 )
 
 // Service provides operations on azure resources
 type Service struct {
 	Scope *scope.ClusterScope
 	Client
-	SubnetsClient subnets.Client
+	SubnetsClient         subnets.Client
+	VirtualNetworksClient virtualnetworks.Client
 }
 
 // NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
-		Scope:         scope,
-		Client:        NewClient(scope.SubscriptionID, scope.Authorizer),
-		SubnetsClient: subnets.NewClient(scope.SubscriptionID, scope.Authorizer),
+		Scope:                 scope,
+		Client:                NewClient(scope.SubscriptionID, scope.Authorizer),
+		SubnetsClient:         subnets.NewClient(scope.SubscriptionID, scope.Authorizer),
+		VirtualNetworksClient: virtualnetworks.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }
