@@ -29,12 +29,16 @@ import (
 )
 
 // Get provides information about a resource group.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (resources.Group, error) {
 	return s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
 }
 
-// // Reconcile gets/creates/updates a resource group.
+// Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+	if _, err := s.Get(ctx, spec); err == nil {
+		// resource group already exists, skip creation
+		return nil
+	}
 	klog.V(2).Infof("creating resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	group := resources.Group{
 		Location: to.StringPtr(s.Scope.Location()),
@@ -53,6 +57,15 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the resource group with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+	managed, err := s.isGroupManaged(ctx, spec)
+	if err != nil {
+		return errors.Wrap(err, "could not get resource group management state")
+	}
+
+	if !managed {
+		s.Scope.V(4).Info("Skipping resource group deletion in unmanaged mode")
+		return nil
+	}
 	klog.V(2).Infof("deleting resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
 	if err != nil && azure.ResourceNotFound(err) {
@@ -69,7 +82,17 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	}
 
 	_, err = future.Result(s.Client)
-
-	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	if err != nil {
+		klog.V(2).Infof("successfully deleted resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	}
 	return err
+}
+
+func (s *Service) isGroupManaged(ctx context.Context, spec interface{}) (bool, error) {
+	group, err := s.Get(ctx, spec)
+	if err != nil {
+		return false, err
+	}
+	tags := converters.MapToTags(group.Tags)
+	return tags.HasOwned(s.Scope.Name()), nil
 }
