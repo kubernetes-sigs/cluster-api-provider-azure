@@ -75,20 +75,22 @@ spec:
     content: |
       {
         "cloud": "AzurePublicCloud",
-        "tenantID": "${AZURE_TENANT_ID}",
-        "subscriptionID": "${AZURE_SUBSCRIPTION_ID}",
+        "tenantId": "${AZURE_TENANT_ID}",
+        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+        "aadClientId": "${AZURE_CLIENT_ID}",
+        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
         "resourceGroup": "${CLUSTER_NAME}",
         "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
         "location": "${AZURE_LOCATION}",
-        "vmType": "vmss",
+        "vmType": "standard",
         "vnetName": "${CLUSTER_NAME}",
         "vnetResourceGroup": "${CLUSTER_NAME}",
         "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
         "routeTableName": "${CLUSTER_NAME}-node-routetable",
         "userAssignedID": "${CLUSTER_NAME}",
-        "loadBalancerSku": "Standard",
+        "loadBalancerSku": "standard",
         "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": true,
+        "useManagedIdentityExtension": false,
         "useInstanceMetadata": true
       }
 ---
@@ -150,19 +152,20 @@ spec:
       {
         "cloud": "AzurePublicCloud",
         "tenantID": "${AZURE_TENANT_ID}",
-        "subscriptionID": "${AZURE_SUBSCRIPTION_ID}",
+        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+        "aadClientId": "${AZURE_CLIENT_ID}",
+        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
         "resourceGroup": "${CLUSTER_NAME}",
         "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
         "location": "${AZURE_LOCATION}",
-        "vmType": "vmss",
+        "vmType": "standard",
         "vnetName": "${CLUSTER_NAME}",
         "vnetResourceGroup": "${CLUSTER_NAME}",
         "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
         "routeTableName": "${CLUSTER_NAME}-node-routetable",
-        "userAssignedID": "${CLUSTER_NAME}",
-        "loadBalancerSku": "Standard",
+        "loadBalancerSku": "standard",
         "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": true,
+        "useManagedIdentityExtension": false,
         "useInstanceMetadata": true
       }
 ---
@@ -223,19 +226,20 @@ spec:
     content: |
       {
         "cloud": "AzurePublicCloud",
-        "tenantID": "${AZURE_TENANT_ID}",
-        "subscriptionID": "${AZURE_SUBSCRIPTION_ID}",
+        "tenantId": "${AZURE_TENANT_ID}",
+        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+        "aadClientId": "${AZURE_CLIENT_ID}",
+        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
         "resourceGroup": "${CLUSTER_NAME}",
         "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
         "location": "${AZURE_LOCATION}",
-        "vmType": "vmss",
+        "vmType": "standard",
         "vnetName": "${CLUSTER_NAME}",
         "vnetResourceGroup": "${CLUSTER_NAME}",
         "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
         "routeTableName": "${CLUSTER_NAME}-node-routetable",
-        "userAssignedID": "${CLUSTER_NAME}",
-        "loadBalancerSku": "Standard",
+        "loadBalancerSku": "standard",
         "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": true,
+        "useManagedIdentityExtension": false,
         "useInstanceMetadata": true
       }
