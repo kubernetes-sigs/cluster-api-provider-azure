@@ -20,8 +20,8 @@ aliases:
     - awesomenix
     - justaugustus
     - soggiest
-  cluster-api-azure-reviewers:
     - CecileRobertMichon
+  cluster-api-azure-reviewers:
     - juan-lee
     - serbrech
     - vincepri
