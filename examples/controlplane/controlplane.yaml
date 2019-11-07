@@ -26,9 +26,9 @@ spec:
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
   image:
     publisher: "cncf-upstream"
-    offer: "cluster-api"
+    offer: "capi"
     sku: "k8s-1dot16-ubuntu-1804"
-    version: "2019.10.11"
+    version: "latest"
   osDisk:
     osType: "Linux"
     diskSizeGB: 30
@@ -120,9 +120,9 @@ spec:
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
   image:
     publisher: "cncf-upstream"
-    offer: "cluster-api"
+    offer: "capi"
     sku: "k8s-1dot16-ubuntu-1804"
-    version: "2019.10.11"
+    version: "latest"
   osDisk:
     osType: "Linux"
     diskSizeGB: 30
@@ -194,9 +194,9 @@ spec:
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
   image:
     publisher: "cncf-upstream"
-    offer: "cluster-api"
+    offer: "capi"
     sku: "k8s-1dot16-ubuntu-1804"
-    version: "2019.10.11"
+    version: "latest"
   osDisk:
     osType: "Linux"
     diskSizeGB: 30

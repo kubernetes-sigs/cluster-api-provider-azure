@@ -101,13 +101,9 @@ export NODE_MACHINE_TYPE="Standard_B2ms"
 
 #### Using images
 
-To be able to use the Marketplace cluster-api offer for the first time, you need to run the following Azure CLI command:
+By default, the code will use the Azure Marketplace "capi" offer.
 
-```bash
-az vm image accept-terms --publisher cncf-upstream --offer cluster-api --plan k8s-1dot16-ubuntu-180
-```
-
-Otherwise, you can also [build your own image](https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure) and specify the image ID in the manifests generated in the next step.
+You can also [build your own image](https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure) and specify the image ID in the manifests generated in the next step.
 
 #### Running the manifest generation script
 
