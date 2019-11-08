@@ -22,17 +22,20 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
@@ -60,7 +63,19 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 		return vm, err
 	}
 
-	return converters.SDKToVM(vm)
+	convertedVM, err := converters.SDKToVM(vm)
+	if err != nil {
+		return convertedVM, err
+	}
+
+	// Discover addresses for nics associated with the VM
+	// and add them to our converted vm struct
+	addresses, err := s.getAddresses(ctx, vm)
+	if err != nil {
+		return convertedVM, err
+	}
+	convertedVM.Addresses = addresses
+	return convertedVM, nil
 }
 
 // Reconcile gets/creates/updates a virtual machine.
@@ -210,6 +225,89 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 
 	klog.V(2).Infof("successfully deleted vm %s ", vmSpec.Name)
 	return err
+}
+
+func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) ([]corev1.NodeAddress, error) {
+
+	addresses := []corev1.NodeAddress{}
+
+	if vm.NetworkProfile.NetworkInterfaces == nil {
+		return addresses, nil
+	}
+	for _, nicRef := range *vm.NetworkProfile.NetworkInterfaces {
+
+		// The full ID includes the name at the very end. Split the string and pull the last element
+		// Ex: /subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME
+		// We'll check to see if ID is nil and bail early if we don't have it
+		if nicRef.ID == nil {
+			continue
+		}
+		nicName := getResourceNameByID(to.String(nicRef.ID))
+
+		// Fetch nic and append its addresses
+		nicInterface, err := networkinterfaces.NewService(s.Scope).Get(ctx, &networkinterfaces.Spec{Name: nicName})
+		if err != nil {
+			return addresses, err
+		}
+		nic, ok := nicInterface.(network.Interface)
+		if !ok {
+			return addresses, errors.New("unexpected type for network interface")
+		}
+
+		if nic.IPConfigurations == nil {
+			continue
+		}
+		for _, ipConfig := range *nic.IPConfigurations {
+			if ipConfig.PrivateIPAddress != nil {
+				addresses = append(addresses,
+					corev1.NodeAddress{
+						Type:    corev1.NodeInternalIP,
+						Address: to.String(ipConfig.PrivateIPAddress),
+					},
+				)
+			}
+
+			if ipConfig.PublicIPAddress == nil {
+				continue
+			}
+			// For some reason, the ID seems to be the only field populated in PublicIPAddress.
+			// Thus, we have to go fetch the publicIP with the name.
+			publicIPName := getResourceNameByID(to.String(ipConfig.PublicIPAddress.ID))
+			publicNodeAddress, err := s.getPublicIPAddress(ctx, publicIPName)
+			if err != nil {
+				return addresses, err
+			}
+			addresses = append(addresses, publicNodeAddress)
+		}
+	}
+
+	return addresses, nil
+}
+
+// getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation
+func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
+	retAddress := corev1.NodeAddress{}
+	publicIPResult, err := publicips.NewService(s.Scope).Get(ctx, &publicips.Spec{Name: publicIPAddressName})
+	if err != nil {
+		return retAddress, err
+	}
+	publicIP, ok := publicIPResult.(network.PublicIPAddress)
+	if !ok {
+		return retAddress, errors.New("unexpected type for public ip address")
+	}
+	retAddress.Type = corev1.NodeExternalIP
+	retAddress.Address = to.String(publicIP.IPAddress)
+
+	return retAddress, nil
+}
+
+// getResourceNameById takes a resource ID like
+// `/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME`
+// and parses out the string after the last slash.
+func getResourceNameByID(resourceID string) string {
+	explodedResourceID := strings.Split(resourceID, "/")
+	resourceName := explodedResourceID[len(explodedResourceID)-1]
+	return resourceName
 }
 
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
