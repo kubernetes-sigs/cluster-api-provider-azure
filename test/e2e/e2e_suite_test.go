@@ -34,9 +34,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	apimachinerytypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha2"
 	common "sigs.k8s.io/cluster-api/test/helpers/components"
 	capiFlag "sigs.k8s.io/cluster-api/test/helpers/flag"
 	"sigs.k8s.io/cluster-api/test/helpers/kind"
@@ -54,19 +56,14 @@ func TestE2e(t *testing.T) {
 }
 
 const (
-	capiNamespace       = "capi-system"
-	capiDeploymentName  = "capi-controller-manager"
-	capzNamespace       = "capz-system"
-	capzDeploymentName  = "capz-controller-manager"
-	cabpkNamespace      = "cabpk-system"
-	cabpkDeploymentName = "cabpk-controller-manager"
-	setupTimeout        = 10 * 60
-	//capa
-	// stackName   = "cluster-api-provider-aws-sigs-k8s-io"
-	// keyPairName = "cluster-api-provider-aws-sigs-k8s-io"
-	//capz
-	// capzProviderNamespace = "azure-provider-system"
-	// capzStatefulSetName   = "azure-provider-controller-manager"
+	capiNamespace        = "capi-system"
+	capiDeploymentName   = "capi-controller-manager"
+	capzNamespace        = "capz-system"
+	capzDeploymentName   = "capz-controller-manager"
+	cabpkNamespace       = "cabpk-system"
+	cabpkDeploymentName  = "cabpk-controller-manager"
+	credentialsConfigMap = "capz-manager-bootstrap-credentials"
+	setupTimeout         = 10 * 60
 )
 
 var (
@@ -75,6 +72,11 @@ var (
 	kindCluster kind.Cluster
 	kindClient  crclient.Client
 	clientSet   *kubernetes.Clientset
+
+	TenantID       string
+	SubscriptionID string
+	ClientID       string
+	ClientSecret   string
 )
 
 var _ = BeforeSuite(func() {
@@ -93,6 +95,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	applyManifests(kindCluster, providerComponentsYAML)
+
+	err = bootstrapCredentials()
+	Expect(err).NotTo(HaveOccurred())
 
 	common.WaitDeployment(kindClient, capiNamespace, capiDeploymentName)
 	go func() {
@@ -130,7 +135,21 @@ func setupScheme() *runtime.Scheme {
 	s := scheme.SetupScheme()
 	Expect(clusterv1.AddToScheme(s)).To(Succeed())
 	Expect(infrav1.AddToScheme(s)).To(Succeed())
+	Expect(bootstrapv1.AddToScheme(s)).To(Succeed())
 	return s
+}
+
+func bootstrapCredentials() error {
+	ns := apimachinerytypes.NamespacedName{Namespace: capzNamespace, Name: credentialsConfigMap}
+	s := &corev1.Secret{}
+	if err := kindClient.Get(context.TODO(), ns, s); err != nil {
+		return err
+	}
+	TenantID = string(s.Data["tenant-id"])
+	SubscriptionID = string(s.Data["subscription-id"])
+	ClientID = string(s.Data["client-id"])
+	ClientSecret = string(s.Data["client-secret"])
+	return nil
 }
 
 func watchLogs(namespace, deploymentName, logDir string) {

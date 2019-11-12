@@ -81,10 +81,11 @@ var _ = Describe("functional tests", func() {
 			By("Ensuring Cluster infrastructure")
 			ensureClusterInfrastructure(namespace, clusterName)
 
-			// By("Creating first control plane Machine")
-			// createFirstControlPlaneMachine("cp-1", clusterName, controlplane, k8sVersion)
-			// By("Ensuring first control plane Machine")
-			// ensureMachine(namespace, clusterName+"-controlplane-0")
+			By("Creating first control plane Machine")
+			machineName := clusterName + "-controlplane-0"
+			createFirstControlPlaneMachine(namespace, clusterName, machineName, k8sVersion)
+			By("Ensuring first control plane Machine")
+			ensureMachine(namespace, machineName)
 
 			// TODO: Retrieve Cluster kubeconfig
 			// TODO: Deploy Addons
@@ -204,9 +205,9 @@ func createAzureMachine(namespace, name string) {
 			Namespace: namespace,
 		},
 		Spec: capz.AzureMachineSpec{
-			VMSize:       "Standard_B2ms",
-			Location:     "westus2",
-			SSHPublicKey: "TODO",
+			VMSize:   "Standard_B2ms",
+			Location: "westus2",
+			//SSHPublicKey: "TODO",
 			Image: capz.Image{
 				Offer:     &imageOffer,
 				Publisher: &imagePublisher,
@@ -225,11 +226,11 @@ func createAzureMachine(namespace, name string) {
 	Expect(kindClient.Create(context.TODO(), azureMachine)).To(Succeed())
 }
 
-func createKubeadmConfig(namespace, name string) {
-	fmt.Fprintf(GinkgoWriter, "Creating Init KubeadmConfig %s/%s\n", namespace, name)
+func createKubeadmConfig(namespace, clusterName string) {
+	fmt.Fprintf(GinkgoWriter, "Creating Init KubeadmConfig %s/%s\n", namespace, clusterName)
 	config := &bootstrapv1.KubeadmConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      clusterName,
 			Namespace: namespace,
 		},
 		Spec: bootstrapv1.KubeadmConfigSpec{
@@ -272,7 +273,7 @@ func createKubeadmConfig(namespace, name string) {
 					Owner:       "root:root",
 					Path:        "/etc/kubernetes/azure.json",
 					Permissions: "0644",
-					Content:     AzureJson(),
+					Content:     azureJson(clusterName),
 				},
 			},
 			InitConfiguration: &kubeadmv1beta1.InitConfiguration{
@@ -326,11 +327,37 @@ func ensureMachine(namespace, name string) {
 	Eventually(
 		func() (bool, error) {
 			ns := apimachinerytypes.NamespacedName{Namespace: namespace, Name: name}
+			machine := &capz.AzureMachine{}
+			if err := kindClient.Get(context.TODO(), ns, machine); err != nil {
+				return false, err
+			}
+			return machine.Status.Ready, nil
+		},
+		5*time.Minute, 15*time.Second,
+	).Should(BeTrue())
+
+	fmt.Fprintf(GinkgoWriter, "Ensuring control plane initialized for cluster %s/%s\n", namespace, name)
+	Eventually(
+		func() (bool, error) {
+			ns := apimachinerytypes.NamespacedName{Namespace: namespace, Name: name}
+			bootstrap := &bootstrapv1.KubeadmConfig{}
+			if err := kindClient.Get(context.TODO(), ns, bootstrap); err != nil {
+				return false, err
+			}
+			return bootstrap.Status.Ready, nil
+		},
+		5*time.Minute, 15*time.Second,
+	).Should(BeTrue())
+
+	fmt.Fprintf(GinkgoWriter, "Ensuring control plane initialized for cluster %s/%s\n", namespace, name)
+	Eventually(
+		func() (bool, error) {
+			ns := apimachinerytypes.NamespacedName{Namespace: namespace, Name: name}
 			machine := &capi.Machine{}
 			if err := kindClient.Get(context.TODO(), ns, machine); err != nil {
 				return false, err
 			}
-			return machine.Status.Phase == "Running", nil
+			return machine.Status.Phase == "provisioned", nil
 		},
 		5*time.Minute, 15*time.Second,
 	).Should(BeTrue())
@@ -399,26 +426,26 @@ func watchEvents(ctx context.Context, namespace string) {
 	stopInformer <- struct{}{}
 }
 
-func AzureJson() string {
-	return `
+func azureJson(cn string) string {
+	return fmt.Sprintf(`
 {
     "cloud": "AzurePublicCloud",
-    "tenantId": "",
-    "subscriptionId": "",
-    "aadClientId": "",
-    "aadClientSecret": "",
-    "resourceGroup": "capz2",
-    "securityGroupName": "capz2-controlplane-nsg",
-    "location": "redmond",
+    "tenantId": "%s",
+    "subscriptionId": "%s",
+    "aadClientId": "%s",
+    "aadClientSecret": "%s",
+    "resourceGroup": "%s",
+    "securityGroupName": "%s-controlplane-nsg",
+    "location": "westus2",
     "vmType": "standard",
-    "vnetName": "capz2",
-    "vnetResourceGroup": "capz2",
-    "subnetName": "capz2-controlplane-subnet",
-    "routeTableName": "capz2-node-routetable",
-    "userAssignedID": "capz2",
+    "vnetName": "%s",
+    "vnetResourceGroup": "%s",
+    "subnetName": "%s-controlplane-subnet",
+    "routeTableName": "%s-node-routetable",
+    "userAssignedID": "%s",
     "loadBalancerSku": "standard",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
-}`
+}`, TenantID, SubscriptionID, ClientID, ClientSecret, cn, cn, cn, cn, cn, cn, cn)
 }
