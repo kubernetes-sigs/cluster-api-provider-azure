@@ -24,11 +24,6 @@ metadata:
 spec:
   location: ${AZURE_LOCATION}
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
-  image:
-    publisher: "cncf-upstream"
-    offer: "capi"
-    sku: "k8s-1dot16-ubuntu-1804"
-    version: "latest"
   osDisk:
     osType: "Linux"
     diskSizeGB: 30
@@ -120,11 +115,6 @@ metadata:
 spec:
   location: ${AZURE_LOCATION}
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
-  image:
-    publisher: "cncf-upstream"
-    offer: "capi"
-    sku: "k8s-1dot16-ubuntu-1804"
-    version: "latest"
   osDisk:
     osType: "Linux"
     diskSizeGB: 30
@@ -195,11 +185,6 @@ metadata:
 spec:
   location: ${AZURE_LOCATION}
   vmSize: ${CONTROL_PLANE_MACHINE_TYPE}
-  image:
-    publisher: "cncf-upstream"
-    offer: "capi"
-    sku: "k8s-1dot16-ubuntu-1804"
-    version: "latest"
   osDisk:
     osType: "Linux"
     diskSizeGB: 30
