@@ -82,10 +82,22 @@ var _ = Describe("functional tests", func() {
 			ensureClusterInfrastructure(namespace, clusterName)
 
 			By("Creating first control plane Machine")
-			machineName := clusterName + "-controlplane-0"
-			createFirstControlPlaneMachine(namespace, clusterName, machineName, k8sVersion)
-			By("Ensuring first control plane Machine")
-			ensureMachine(namespace, machineName)
+			cp0 := clusterName + "-controlplane-0"
+			createFirstControlPlaneMachine(namespace, clusterName, cp0, k8sVersion)
+			By("Ensuring control plane Machine")
+			ensureMachine(namespace, cp0)
+
+			By("Creating second control plane Machine")
+			cp1 := clusterName + "-controlplane-1"
+			addControlPlaneMachine(namespace, clusterName, cp1, k8sVersion)
+			By("Ensuring control plane Machine")
+			ensureMachine(namespace, cp1)
+
+			By("Creating third control plane Machine")
+			cp2 := clusterName + "-controlplane-2"
+			addControlPlaneMachine(namespace, clusterName, cp2, k8sVersion)
+			By("Ensuring control plane Machine")
+			ensureMachine(namespace, cp2)
 
 			// TODO: Retrieve Cluster kubeconfig
 			// TODO: Deploy Addons
@@ -189,7 +201,13 @@ func ensureClusterInfrastructure(namespace, clusterName string) {
 
 func createFirstControlPlaneMachine(namespace, clusterName, machineName, k8sVersion string) {
 	createAzureMachine(namespace, machineName)
-	createKubeadmConfig(namespace, machineName)
+	createKubeadmConfig(namespace, machineName, true)
+	createMachine(namespace, machineName, clusterName, k8sVersion)
+}
+
+func addControlPlaneMachine(namespace, clusterName, machineName, k8sVersion string) {
+	createAzureMachine(namespace, machineName)
+	createKubeadmConfig(namespace, machineName, false)
 	createMachine(namespace, machineName, clusterName, k8sVersion)
 }
 
@@ -205,9 +223,9 @@ func createAzureMachine(namespace, name string) {
 			Namespace: namespace,
 		},
 		Spec: capz.AzureMachineSpec{
-			VMSize:   "Standard_B2ms",
-			Location: "westus2",
-			//SSHPublicKey: "TODO",
+			VMSize:       "Standard_B2ms",
+			Location:     "westus2",
+			SSHPublicKey: "c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCQVFEYUhTODQyRWMvU1V5OCszaVVXT28vdlU3UzhicXNMOE9uOTFxYlVYN3RKcSs1SG9aNnlsWldWTHRZb0xkR25ld0NWRVZoQmJxK1M1T0wvOUVyOS9wMDZyUU1URVlzZEhCc0tneFZxWmRjMEE2bEEyQVV1YUVFUEhtNXlYQWlXUHlISTVhR2lDaFY0TnFyRW12NWV3OWROLzkySnhRZXhmVFNxRVNFTk5BN2hiZmtvM1F1bUVaZ0JkVFViSm91MTloOWJtVklRZTNCN3ZFTi9KbWxQWUJzaHVkUkE2bWZDL3FWTWZ2eTAxSnZqUEN1eS9wZ3FHSUlTb1JyaStmeVZ0WVN2MWJUMnQwOFdFTlR4Vks3VlBvZ0NjL3RKNTJwQlpack1DamsvWXcwQnpHcjY0Nk91NGtjOFFiSFQ1bUlEejZwbVcvcGNIT3VkeGtZcFgvVzNEOUogamFkYXJzaWVASmF2aWVycy1NQlAuZ3Vlc3QuY29ycC5taWNyb3NvZnQuY29tCg==",
 			Image: capz.Image{
 				Offer:     &imageOffer,
 				Publisher: &imagePublisher,
@@ -226,37 +244,31 @@ func createAzureMachine(namespace, name string) {
 	Expect(kindClient.Create(context.TODO(), azureMachine)).To(Succeed())
 }
 
-func createKubeadmConfig(namespace, clusterName string) {
+func createKubeadmConfig(namespace, clusterName string, firstControlPlane bool) {
 	fmt.Fprintf(GinkgoWriter, "Creating Init KubeadmConfig %s/%s\n", namespace, clusterName)
-	config := &bootstrapv1.KubeadmConfig{
+	kc := &bootstrapv1.KubeadmConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: namespace,
 		},
 		Spec: bootstrapv1.KubeadmConfigSpec{
-			ClusterConfiguration: &kubeadmv1beta1.ClusterConfiguration{
-				APIServer: kubeadmv1beta1.APIServer{
-					ControlPlaneComponent: kubeadmv1beta1.ControlPlaneComponent{
-						ExtraArgs: map[string]string{
-							"cloud-provider": "azure",
-							"cloud-config":   "/etc/kubernetes/azure.json",
-						},
-						ExtraVolumes: []kubeadmv1beta1.HostPathMount{
-							{
-								Name:      "cloud-config",
-								HostPath:  "/etc/kubernetes/azure.json",
-								MountPath: "/etc/kubernetes/azure.json",
-								ReadOnly:  true,
-							},
-						},
-					},
-					TimeoutForControlPlane: &metav1.Duration{20 * time.Minute},
+			Files: []bootstrapv1.File{
+				{
+					Owner:       "root:root",
+					Path:        "/etc/kubernetes/azure.json",
+					Permissions: "0644",
+					Content:     azureJson(clusterName),
 				},
-				ControllerManager: kubeadmv1beta1.ControlPlaneComponent{
+			},
+		},
+	}
+	if firstControlPlane {
+		kc.Spec.ClusterConfiguration = &kubeadmv1beta1.ClusterConfiguration{
+			APIServer: kubeadmv1beta1.APIServer{
+				ControlPlaneComponent: kubeadmv1beta1.ControlPlaneComponent{
 					ExtraArgs: map[string]string{
-						"allocate-node-cidrs": "false",
-						"cloud-provider":      "azure",
-						"cloud-config":        "/etc/kubernetes/azure.json",
+						"cloud-provider": "azure",
+						"cloud-config":   "/etc/kubernetes/azure.json",
 					},
 					ExtraVolumes: []kubeadmv1beta1.HostPathMount{
 						{
@@ -267,27 +279,38 @@ func createKubeadmConfig(namespace, clusterName string) {
 						},
 					},
 				},
+				TimeoutForControlPlane: &metav1.Duration{20 * time.Minute},
 			},
-			Files: []bootstrapv1.File{
-				{
-					Owner:       "root:root",
-					Path:        "/etc/kubernetes/azure.json",
-					Permissions: "0644",
-					Content:     azureJson(clusterName),
+			ControllerManager: kubeadmv1beta1.ControlPlaneComponent{
+				ExtraArgs: map[string]string{
+					"allocate-node-cidrs": "false",
+					"cloud-provider":      "azure",
+					"cloud-config":        "/etc/kubernetes/azure.json",
 				},
-			},
-			InitConfiguration: &kubeadmv1beta1.InitConfiguration{
-				NodeRegistration: kubeadmv1beta1.NodeRegistrationOptions{
-					Name: "{{ ds.meta_data.hostname }}",
-					KubeletExtraArgs: map[string]string{
-						"cloud-provider": "azure",
-						"cloud-config":   "/etc/kubernetes/azure.json",
+				ExtraVolumes: []kubeadmv1beta1.HostPathMount{
+					{
+						Name:      "cloud-config",
+						HostPath:  "/etc/kubernetes/azure.json",
+						MountPath: "/etc/kubernetes/azure.json",
+						ReadOnly:  true,
 					},
 				},
 			},
+		}
+	}
+	nd := kubeadmv1beta1.NodeRegistrationOptions{
+		Name: "{{ ds.meta_data[\"local_hostname\"] }}",
+		KubeletExtraArgs: map[string]string{
+			"cloud-provider": "azure",
+			"cloud-config":   "/etc/kubernetes/azure.json",
 		},
 	}
-	Expect(kindClient.Create(context.TODO(), config)).To(Succeed())
+	if firstControlPlane {
+		kc.Spec.InitConfiguration = &kubeadmv1beta1.InitConfiguration{NodeRegistration: nd}
+	} else {
+		kc.Spec.JoinConfiguration = &kubeadmv1beta1.JoinConfiguration{NodeRegistration: nd, ControlPlane: nil}
+	}
+	Expect(kindClient.Create(context.TODO(), kc)).To(Succeed())
 }
 
 func createMachine(namespace, name, clusterName, k8sVersion string) {
@@ -334,7 +357,7 @@ func ensureMachine(namespace, name string) {
 			return machine.Status.Ready, nil
 		},
 		5*time.Minute, 15*time.Second,
-	).Should(BeTrue())
+	).Should(BeTrue(), fmt.Sprintf("You run out of time AzureMachine %s", name))
 
 	fmt.Fprintf(GinkgoWriter, "Ensuring control plane initialized for cluster %s/%s\n", namespace, name)
 	Eventually(
@@ -347,7 +370,7 @@ func ensureMachine(namespace, name string) {
 			return bootstrap.Status.Ready, nil
 		},
 		5*time.Minute, 15*time.Second,
-	).Should(BeTrue())
+	).Should(BeTrue(), fmt.Sprintf("You run out of time KubeadmConfig %s", name))
 
 	fmt.Fprintf(GinkgoWriter, "Ensuring control plane initialized for cluster %s/%s\n", namespace, name)
 	Eventually(
@@ -360,7 +383,7 @@ func ensureMachine(namespace, name string) {
 			return machine.Status.Phase == "provisioned", nil
 		},
 		5*time.Minute, 15*time.Second,
-	).Should(BeTrue())
+	).Should(BeTrue(), fmt.Sprintf("You run out of time Machine %s", name))
 }
 
 func deleteCluster(namespace, clusterName string) {
