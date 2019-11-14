@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
@@ -179,6 +180,11 @@ func (m *MachineScope) SetAnnotation(key, value string) {
 		m.AzureMachine.Annotations = map[string]string{}
 	}
 	m.AzureMachine.Annotations[key] = value
+}
+
+// SetAddresses sets the Azure address status.
+func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
+	m.AzureMachine.Status.Addresses = addrs
 }
 
 // Close the MachineScope by updating the machine spec, machine status.

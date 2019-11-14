@@ -229,6 +229,8 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	// TODO(vincepri): Remove this annotation when clusterctl is no longer relevant.
 	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
 
+	machineScope.SetAddresses(vm.Addresses)
+
 	switch vm.State {
 	case infrav1.VMStateSucceeded:
 		machineScope.Info("Machine VM is running", "instance-id", *machineScope.GetVMID())
