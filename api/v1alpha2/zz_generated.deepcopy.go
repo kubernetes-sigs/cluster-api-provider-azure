@@ -255,7 +255,11 @@ func (in *AzureMachineSpec) DeepCopyInto(out *AzureMachineSpec) {
 		**out = **in
 	}
 	in.AvailabilityZone.DeepCopyInto(&out.AvailabilityZone)
-	in.Image.DeepCopyInto(&out.Image)
+	if in.Image != nil {
+		in, out := &in.Image, &out.Image
+		*out = new(Image)
+		(*in).DeepCopyInto(*out)
+	}
 	out.OSDisk = in.OSDisk
 	if in.AdditionalTags != nil {
 		in, out := &in.AdditionalTags, &out.AdditionalTags

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
@@ -267,7 +268,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			SSHKeyData: string(decoded),
 			Size:       s.machineScope.AzureMachine.Spec.VMSize,
 			OSDisk:     s.machineScope.AzureMachine.Spec.OSDisk,
-			Image:      s.machineScope.AzureMachine.Spec.Image,
+			Image:      getVMImage(s.machineScope),
 			CustomData: *s.machineScope.Machine.Spec.Bootstrap.Data,
 			Zone:       vmZone,
 		}
@@ -333,4 +334,13 @@ func (s *azureMachineService) isAvailabilityZoneSupported() bool {
 
 	s.machineScope.V(2).Info("Availability Zones are not supported in the selected location", "location", s.machineScope.Location())
 	return azSupported
+}
+
+// Pick image from the machine configuration, or use a default one.
+func getVMImage(scope *scope.MachineScope) infrav1.Image {
+	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
+	if scope.AzureMachine.Spec.Image != nil {
+		return *scope.AzureMachine.Spec.Image
+	}
+	return azure.GetDefaultUbuntuImage(to.String(scope.Machine.Spec.Version))
 }

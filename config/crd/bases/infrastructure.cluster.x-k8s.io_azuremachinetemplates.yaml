@@ -118,7 +118,6 @@ spec:
                     vmSize:
                       type: string
                   required:
-                  - image
                   - location
                   - osDisk
                   - sshPublicKey

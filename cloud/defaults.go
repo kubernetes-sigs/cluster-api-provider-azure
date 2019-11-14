@@ -18,6 +18,10 @@ package azure
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/Azure/go-autorest/autorest/to"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
 const (
@@ -35,6 +39,15 @@ const (
 	DefaultAzureDNSZone = "cloudapp.azure.com"
 	// UserAgent used for communicating with azure
 	UserAgent = "cluster-api-azure-services"
+)
+
+const (
+	// DefaultImageOfferID is the default Azure Marketplace offer ID
+	DefaultImageOfferID = "capi"
+	// DefaultImagePublisherID is the default Azure Marketplace publisher ID
+	DefaultImagePublisherID = "cncf-upstream"
+	// LatestVersion is the image version latest
+	LatestVersion = "latest"
 )
 
 // SupportedAvailabilityZoneLocations is a slice of the locations where Availability Zones are supported.
@@ -116,4 +129,31 @@ func GenerateNICName(machineName string) string {
 // GenerateOSDiskName generates the name of an OS disk based on the name of a VM.
 func GenerateOSDiskName(machineName string) string {
 	return fmt.Sprintf("%s_OSDisk", machineName)
+}
+
+// GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
+func getDefaultImageSKUID(k8sVersion string) string {
+	if strings.HasPrefix(k8sVersion, "v1.16") {
+		return "k8s-1dot16-ubuntu-1804"
+	}
+	if strings.HasPrefix(k8sVersion, "v1.15") {
+		return "k8s-1dot15-ubuntu-1804"
+	}
+	if strings.HasPrefix(k8sVersion, "v1.14") {
+		return "k8s-1dot14-ubuntu-1804"
+	}
+	if strings.HasPrefix(k8sVersion, "v1.13") {
+		return "k8s-1dot13-ubuntu-1804"
+	}
+	return ""
+}
+
+// GetDefaultUbuntuImage returns the default image spec for Ubuntu.
+func GetDefaultUbuntuImage(k8sVersion string) infrav1.Image {
+	return infrav1.Image{
+		Publisher: to.StringPtr(DefaultImagePublisherID),
+		Offer:     to.StringPtr(DefaultImageOfferID),
+		SKU:       to.StringPtr(getDefaultImageSKUID(k8sVersion)),
+		Version:   to.StringPtr(LatestVersion),
+	}
 }

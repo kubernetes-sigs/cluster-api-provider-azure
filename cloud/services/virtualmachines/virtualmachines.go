@@ -242,42 +242,24 @@ func generateImageReference(image infrav1.Image) (*compute.ImageReference, error
 	imageRef := &compute.ImageReference{}
 
 	if image.ID != nil {
-		imageRef.ID = to.StringPtr(*image.ID)
-
-		// return early since we should only need the image ID
+		imageRef.ID = image.ID
+		// return early if an image ID is provided
 		return imageRef, nil
-	} else if image.SubscriptionID != nil && image.ResourceGroup != nil && image.Gallery != nil && image.Name != nil && image.Version != nil {
-		imageID, err := generateImageID(image)
-		if err != nil {
-			return nil, err
-		}
+	}
 
+	imageID, err := generateSIGImageID(image)
+	if err == nil {
 		imageRef.ID = to.StringPtr(imageID)
-
-		// return early since we're referencing an image that may not be published
+		// return early if an image in a shared image gallery is provided
 		return imageRef, nil
 	}
 
-	if image.Publisher != nil {
-		imageRef.Publisher = image.Publisher
-	}
-	if image.Offer != nil {
-		imageRef.Offer = image.Offer
-	}
-	if image.SKU != nil {
-		imageRef.Sku = image.SKU
-	}
-	if image.Version != nil {
-		imageRef.Version = image.Version
-
-		return imageRef, nil
-	}
-
-	return nil, errors.Errorf("Image reference cannot be generated, as fields are missing: %+v", *imageRef)
+	// otherwise use the Azure Marketplace image
+	return generateImagePlan(image)
 }
 
-// generateImageID generates the resource ID for an image stored in an Azure Shared Image Gallery.
-func generateImageID(image infrav1.Image) (string, error) {
+// generateSIGImageID generates the resource ID for an image stored in an Azure Shared Image Gallery.
+func generateSIGImageID(image infrav1.Image) (string, error) {
 	if image.SubscriptionID == nil {
 		return "", errors.New("Image subscription ID cannot be nil when specifying an image from an Azure Shared Image Gallery")
 	}
@@ -295,6 +277,30 @@ func generateImageID(image infrav1.Image) (string, error) {
 	}
 
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s", *image.SubscriptionID, *image.ResourceGroup, *image.Gallery, *image.Name, *image.Version), nil
+}
+
+// generateImagePlan generates an image reference based on the image spec's Publisher, Offer, SKU and Version
+func generateImagePlan(image infrav1.Image) (*compute.ImageReference, error) {
+	if image.Publisher == nil {
+		return nil, errors.New("Image reference cannot be generated, as Publisher field is missing")
+	}
+	if image.Offer == nil {
+		return nil, errors.New("Image reference cannot be generated, as Offer field is missing")
+	}
+	if image.SKU == nil {
+		return nil, errors.New("Image reference cannot be generated, as SKU field is missing")
+	}
+	if image.Version == nil {
+		return nil, errors.New("Image reference cannot be generated, as Version field is missing")
+	}
+
+	return &compute.ImageReference{
+		Publisher: image.Publisher,
+		Offer:     image.Offer,
+		Sku:       image.SKU,
+		Version:   image.Version,
+	}, nil
+
 }
 
 // GenerateRandomString returns a URL-safe, base64 encoded
