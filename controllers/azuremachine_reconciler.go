@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
@@ -50,6 +51,7 @@ type azureMachineService struct {
 	clusterScope          *scope.ClusterScope
 	availabilityZonesSvc  azure.GetterService
 	networkInterfacesSvc  azure.Service
+	publicIPSvc           azure.GetterService
 	virtualMachinesSvc    azure.GetterService
 	virtualMachinesExtSvc azure.GetterService
 	disksSvc              azure.GetterService
@@ -62,6 +64,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		clusterScope:          clusterScope,
 		availabilityZonesSvc:  availabilityzones.NewService(clusterScope),
 		networkInterfacesSvc:  networkinterfaces.NewService(clusterScope),
+		publicIPSvc:           publicips.NewService(clusterScope),
 		virtualMachinesSvc:    virtualmachines.NewService(clusterScope, machineScope),
 		virtualMachinesExtSvc: virtualmachineextensions.NewService(clusterScope),
 		disksSvc:              disks.NewService(clusterScope),
@@ -103,6 +106,15 @@ func (s *azureMachineService) Delete() error {
 	err = s.networkInterfacesSvc.Delete(s.clusterScope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
+	}
+
+	publicIPSpec := &publicips.Spec{
+		Name: azure.GenerateNICName(s.machineScope.Name()) + "-public-ip",
+	}
+
+	err = s.publicIPSvc.Delete(s.clusterScope.Context, publicIPSpec)
+	if err != nil {
+		return errors.Wrap(err, "unable to delete publicIP")
 	}
 
 	OSDiskSpec := &disks.Spec{
@@ -195,10 +207,31 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 	return selectedZone, nil
 }
 
+func (s *azureMachineService) reconcilePublicIP(publicIPName string) error {
+	publicIPSpec := &publicips.Spec{
+		Name: publicIPName,
+	}
+	err := s.publicIPSvc.Reconcile(s.clusterScope.Context, publicIPSpec)
+	if err != nil {
+		return errors.Wrap(err, "unable to create public IP")
+	}
+
+	return nil
+}
+
 func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
 		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
+	}
+
+	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
+		publicIPName := nicName + "-public-ip"
+		err := s.reconcilePublicIP(publicIPName)
+		if err != nil {
+			return errors.Wrap(err, "unable to reconcile publicIP")
+		}
+		networkInterfaceSpec.PublicIPName = publicIPName
 	}
 
 	switch role := s.machineScope.Role(); role {
