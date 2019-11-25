@@ -44,6 +44,10 @@ spec:
                 If both the AzureCluster and the AzureMachine specify the same tag
                 name with different values, the AzureMachine's value takes precedence.
               type: object
+            allocatePublicIP:
+              description: AllocatePublicIP allows the ability to create dynamic public
+                ips for machines where this value is true.
+              type: boolean
             availabilityZone:
               properties:
                 enabled:
@@ -109,7 +113,6 @@ spec:
             vmSize:
               type: string
           required:
-          - image
           - location
           - osDisk
           - sshPublicKey

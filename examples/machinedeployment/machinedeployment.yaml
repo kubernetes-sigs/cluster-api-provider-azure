@@ -37,11 +37,6 @@ spec:
     spec:
       location: ${AZURE_LOCATION}
       vmSize: ${NODE_MACHINE_TYPE}
-      image:
-        publisher: "cncf-upstream"
-        offer: "capi"
-        sku: "k8s-1dot16-ubuntu-1804"
-        version: "latest"
       osDisk:
         osType: "Linux"
         diskSizeGB: 30

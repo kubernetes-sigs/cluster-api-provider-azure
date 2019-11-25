@@ -365,6 +365,9 @@ type VM struct {
 	Identity VMIdentity `json:"identity,omitempty"`
 	Tags     Tags       `json:"tags,omitempty"`
 
+	// Addresses contains the Azure instance associated addresses.
+	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
+
 	// HardwareProfile - Specifies the hardware settings for the virtual machine.
 	//HardwareProfile *HardwareProfile `json:"hardwareProfile,omitempty"`
 

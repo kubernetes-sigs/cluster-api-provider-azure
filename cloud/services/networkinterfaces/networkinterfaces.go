@@ -25,6 +25,7 @@ import (
 	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
@@ -37,6 +38,7 @@ type Spec struct {
 	StaticIPAddress          string
 	PublicLoadBalancerName   string
 	InternalLoadBalancerName string
+	PublicIPName             string
 	NatRule                  int
 }
 
@@ -120,6 +122,18 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			})
 	}
 	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
+
+	if nicSpec.PublicIPName != "" {
+		publicIPInterface, err := publicips.NewService(s.Scope).Get(ctx, &publicips.Spec{Name: nicSpec.PublicIPName})
+		if err != nil {
+			return errors.Wrap(err, "failed to get publicIP")
+		}
+		publicIP, ok := publicIPInterface.(network.PublicIPAddress)
+		if !ok {
+			return errors.Wrap(err, "unexpected type for publicIP")
+		}
+		nicConfig.PublicIPAddress = &publicIP
+	}
 
 	future, err := s.Client.CreateOrUpdate(ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,

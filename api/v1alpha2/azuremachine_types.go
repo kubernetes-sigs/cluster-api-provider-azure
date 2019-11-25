@@ -37,7 +37,7 @@ type AzureMachineSpec struct {
 	VMSize           string           `json:"vmSize"`
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
-	Image Image `json:"image"`
+	Image *Image `json:"image,omitempty"`
 
 	OSDisk OSDisk `json:"osDisk"`
 
@@ -50,6 +50,10 @@ type AzureMachineSpec struct {
 	// AzureMachine's value takes precedence.
 	// +optional
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
+
+	// AllocatePublicIP allows the ability to create dynamic public ips for machines where this value is true.
+	// +optional
+	AllocatePublicIP bool `json:"allocatePublicIP,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine
