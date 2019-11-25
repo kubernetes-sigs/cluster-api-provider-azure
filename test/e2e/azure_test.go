@@ -122,13 +122,13 @@ func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 	Expect(err).NotTo(HaveOccurred())
 
 	firstControlPlane := n.counter == 0
-	generatedName := fmt.Sprintf("controlplane-%d", n.counter)
+	name := fmt.Sprintf("controlplane-%d", n.counter)
 	n.counter++
 
 	infraMachine := &infrav1.AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      generatedName,
+			Name:      name,
 		},
 		Spec: infrav1.AzureMachineSpec{
 			VMSize:       vmSize,
@@ -153,7 +153,7 @@ func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 	bootstrapConfig := &bootstrapv1.KubeadmConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      generatedName,
+			Name:      name,
 		},
 		Spec: bootstrapv1.KubeadmConfigSpec{
 			Files: []bootstrapv1.File{
@@ -185,10 +185,10 @@ func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 	machine := &capiv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      generatedName,
+			Name:      name,
 			Labels: map[string]string{
 				capiv1.MachineControlPlaneLabelName: "true",
-				capiv1.MachineClusterLabelName:      generatedName,
+				capiv1.MachineClusterLabelName:      clusterName,
 			},
 		},
 		Spec: capiv1.MachineSpec{
