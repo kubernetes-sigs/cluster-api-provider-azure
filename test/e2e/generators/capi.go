@@ -36,7 +36,7 @@ type ClusterAPI struct {
 
 // GetName returns the name of the components being generated.
 func (g *ClusterAPI) GetName() string {
-	return fmt.Sprintf("Cluster API version %s", g.Version)
+	return fmt.Sprintf("Cluster API %s", g.Version)
 }
 
 func (g *ClusterAPI) kustomizePath(path string) string {

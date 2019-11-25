@@ -50,6 +50,7 @@ func (o *OneNodeClusterInput) SetDefaults() {
 // OneNodeCluster creates a single control plane node.
 // Assertions:
 //   * The created cluster has exactly one node.
+//   * The created machines reach the 'running' state.
 func OneNodeCluster(input *OneNodeClusterInput) {
 	input.SetDefaults()
 	ctx := context.Background()
@@ -58,17 +59,12 @@ func OneNodeCluster(input *OneNodeClusterInput) {
 	mgmtClient, err := input.Management.GetClient()
 	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
 
-	By("creating an InfrastructureCluster resource")
+	By("Creating infra cluster resource")
 	Expect(mgmtClient.Create(ctx, input.InfraCluster)).NotTo(HaveOccurred())
 
-	By("creating a Cluster resource linked to the InfrastructureCluster resource")
+	By("Creating cluster resource that owns the infra cluster")
 	Expect(mgmtClient.Create(ctx, input.Cluster)).NotTo(HaveOccurred())
 
-	// export KUBECONFIG=$(kind get kubeconfig-path --name mgmt)
-	// k logs -l control-plane=capz-controller-manager -n capz-system
-	// k logs -l control-plane=cluster-api-controller-manager -n capi-system
-
-	// Wait for the cluster infrastructure
 	Eventually(func() string {
 		cluster := &clusterv1.Cluster{}
 		key := client.ObjectKey{
@@ -81,13 +77,13 @@ func OneNodeCluster(input *OneNodeClusterInput) {
 		return cluster.Status.Phase
 	}, input.CreateTimeout, 10*time.Second).Should(Equal(string(clusterv1.ClusterPhaseProvisioned)))
 
-	By("creating an InfrastructureMachine resource")
+	By("Creating infra machine resource")
 	Expect(mgmtClient.Create(ctx, input.Node.InfraMachine)).NotTo(HaveOccurred())
 
-	By("creating a bootstrap config")
+	By("Creating bootstrap config resource")
 	Expect(mgmtClient.Create(ctx, input.Node.BootstrapConfig)).NotTo(HaveOccurred())
 
-	By("creating a core Machine resource with a linked InfrastructureMachine and BootstrapConfig")
+	By("Creating machine resource that owns infra machine and its bootstrap")
 	Expect(mgmtClient.Create(ctx, input.Node.Machine)).NotTo(HaveOccurred())
 
 	Eventually(func() string {
@@ -102,7 +98,7 @@ func OneNodeCluster(input *OneNodeClusterInput) {
 		return machine.Status.Phase
 	}, input.CreateTimeout, 20*time.Second).Should(Equal(string(clusterv1.MachinePhaseRunning)))
 
-	By("waiting for the nodes to exist")
+	By("Waiting for the nodes to exist")
 	Eventually(func() []v1.Node {
 		nodes := v1.NodeList{}
 		err := wait.PollImmediate(10*time.Second, 5*time.Minute, func() (bool, error) {

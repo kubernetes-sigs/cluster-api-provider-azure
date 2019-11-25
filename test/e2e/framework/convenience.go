@@ -28,7 +28,7 @@ import (
 func InstallComponents(ctx context.Context, mgmt Applier, components ...ComponentGenerator) {
 	Describe("Installing the provider components", func() {
 		for _, component := range components {
-			By(fmt.Sprintf("installing %s", component.GetName()))
+			By(fmt.Sprintf("Installing %s", component.GetName()))
 			c, err := component.Manifests(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mgmt.Apply(ctx, c)).NotTo(HaveOccurred())

@@ -31,7 +31,7 @@ type Bootstrap struct {
 
 // GetName returns the name of the components being generated.
 func (g *Bootstrap) GetName() string {
-	return fmt.Sprintf("Cluster API Bootstrap Provider Kubeadm version %s", g.Version)
+	return fmt.Sprintf("Cluster API Bootstrap Provider Kubeadm %s", g.Version)
 }
 
 func (g *Bootstrap) releaseYAMLPath() string {

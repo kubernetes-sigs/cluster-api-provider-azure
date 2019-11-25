@@ -31,7 +31,7 @@ type Infra struct{}
 
 // GetName returns the name of the components being generated.
 func (g *Infra) GetName() string {
-	return "Cluster API Provider Azure version: Local files"
+	return "Cluster API Provider Azure: file system"
 }
 
 func (g *Infra) kustomizePath(path string) string {

@@ -34,9 +34,9 @@ import (
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 )
 
-func TestE2e(t *testing.T) {
+func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "capz e2e suite")
+	RunSpecs(t, "CAPZ e2e suite")
 }
 
 var (
@@ -61,7 +61,7 @@ var _ = BeforeSuite(func() {
 		managerImage = "us.gcr.io/k8s-artifacts-prod/cluster-api-azure/cluster-api-azure-controller:v0.3.0-alpha.1"
 	}
 
-	By("creating management cluster")
+	By("Creating management cluster")
 	var err error
 
 	scheme := runtime.NewScheme()
@@ -70,14 +70,13 @@ var _ = BeforeSuite(func() {
 	Expect(bootstrapv1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 
-	// Create the management cluster
-	capi := &generators.ClusterAPI{Version: "v0.2.3"}
-	cabpk := &generators.Bootstrap{Version: "v0.1.1"}
-	infra := &generators.Infra{}
-
 	mgmt, err = NewManagementCluster(ctx, "mgmt", scheme, managerImage)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmt).NotTo(BeNil())
+
+	capi := &generators.ClusterAPI{Version: "v0.2.3"}
+	cabpk := &generators.Bootstrap{Version: "v0.1.1"}
+	infra := &generators.Infra{}
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
 
@@ -86,6 +85,6 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	By("tearing down management cluster")
+	By("Tearing down management cluster")
 	Expect(mgmt.Teardown(ctx)).NotTo(HaveOccurred())
 })

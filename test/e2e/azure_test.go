@@ -39,14 +39,14 @@ import (
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 )
 
-var _ = Describe("capz e2e tests", func() {
-	Describe("cluster creation", func() {
+var _ = Describe("CAPZ e2e tests", func() {
+	Describe("Cluster creation", func() {
 
 		clusterGen := &ClusterGenerator{}
 		nodeGen := &NodeGenerator{}
 
-		Context("create one controlplane cluster", func() {
-			It("should create a single node cluster", func() {
+		Context("Create one controlplane cluster", func() {
+			It("Should create a single node cluster", func() {
 				cluster, infraCluster := clusterGen.GenerateCluster(namespace)
 				node := nodeGen.GenerateNode(cluster.GetName())
 				OneNodeCluster(&OneNodeClusterInput{
