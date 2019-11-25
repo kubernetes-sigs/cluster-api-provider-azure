@@ -19,6 +19,7 @@ package e2e
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
+	"sigs.k8s.io/cluster-api/util"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,17 +77,17 @@ var _ = Describe("capz e2e tests", func() {
 type ClusterGenerator struct{}
 
 func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
-	generatedName := "test-cluster"
-	vnetName := generatedName + "-vnet"
+	name := "capz-" + util.RandomString(6)
+	vnetName := name + "-vnet"
 
 	infraCluster := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      generatedName,
+			Name:      name,
 		},
 		Spec: infrav1.AzureClusterSpec{
 			Location:      location,
-			ResourceGroup: generatedName,
+			ResourceGroup: name,
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{Name: vnetName},
 			},
@@ -95,7 +97,7 @@ func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *
 	cluster := &capiv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      generatedName,
+			Name:      name,
 		},
 		Spec: capiv1.ClusterSpec{
 			ClusterNetwork: &capiv1.ClusterNetwork{
@@ -122,7 +124,7 @@ func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 	Expect(err).NotTo(HaveOccurred())
 
 	firstControlPlane := n.counter == 0
-	name := fmt.Sprintf("controlplane-%d", n.counter)
+	name := fmt.Sprintf("%s-controlplane-%d", clusterName, n.counter)
 	n.counter++
 
 	infraMachine := &infrav1.AzureMachine{
@@ -245,15 +247,15 @@ func cloudConfig(cn string) string {
 }
 
 func sshkey() (string, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	prv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to generate private key")
 	}
-	publicRsaKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	pub, err := ssh.NewPublicKey(&prv.PublicKey)
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to generate public key")
 	}
-	return string(ssh.MarshalAuthorizedKey(publicRsaKey)), nil
+	return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(pub)), nil
 }
 
 func cpInitConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions kubeadmv1beta1.NodeRegistrationOptions) {
