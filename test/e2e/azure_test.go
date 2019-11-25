@@ -27,16 +27,14 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
-	"sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
-	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
+	kubeadmv1beta1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/kubeadm/v1beta1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha2"
-
-	e2ealpha2 "sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 )
 
 var _ = Describe("capz e2e tests", func() {
@@ -56,7 +54,7 @@ var _ = Describe("capz e2e tests", func() {
 					Node:          node,
 					CreateTimeout: 60 * time.Minute,
 				})
-				e2ealpha2.CleanUp(&e2ealpha2.CleanUpInput{
+				framework.CleanUp(&framework.CleanUpInput{
 					Management: mgmt,
 					Cluster:    cluster,
 				})
@@ -118,7 +116,7 @@ type NodeGenerator struct {
 	counter int
 }
 
-func (n *NodeGenerator) GenerateNode(clusterName string) e2ealpha2.Node {
+func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 
 	sshkey, err := sshkey()
 	Expect(err).NotTo(HaveOccurred())
@@ -166,12 +164,12 @@ func (n *NodeGenerator) GenerateNode(clusterName string) e2ealpha2.Node {
 					Content:     cloudConfig(clusterName),
 				},
 			},
-			InitConfiguration: &v1beta1.InitConfiguration{},
-			JoinConfiguration: &v1beta1.JoinConfiguration{},
+			InitConfiguration: &kubeadmv1beta1.InitConfiguration{},
+			JoinConfiguration: &kubeadmv1beta1.JoinConfiguration{},
 		},
 	}
 
-	registrationOptions := v1beta1.NodeRegistrationOptions{
+	registrationOptions := kubeadmv1beta1.NodeRegistrationOptions{
 		Name: "{{ ds.meta_data[\"local_hostname\"] }}",
 		KubeletExtraArgs: map[string]string{
 			"cloud-provider": "azure",
@@ -212,7 +210,7 @@ func (n *NodeGenerator) GenerateNode(clusterName string) e2ealpha2.Node {
 		},
 	}
 
-	return e2ealpha2.Node{
+	return framework.Node{
 		Machine:         machine,
 		InfraMachine:    infraMachine,
 		BootstrapConfig: bootstrapConfig,
@@ -258,15 +256,15 @@ func sshkey() (string, error) {
 	return string(ssh.MarshalAuthorizedKey(publicRsaKey)), nil
 }
 
-func cpInitConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions v1beta1.NodeRegistrationOptions) {
-	kubeadmConfig.Spec.ClusterConfiguration = &v1beta1.ClusterConfiguration{
-		APIServer: v1beta1.APIServer{
-			ControlPlaneComponent: v1beta1.ControlPlaneComponent{
+func cpInitConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions kubeadmv1beta1.NodeRegistrationOptions) {
+	kubeadmConfig.Spec.ClusterConfiguration = &kubeadmv1beta1.ClusterConfiguration{
+		APIServer: kubeadmv1beta1.APIServer{
+			ControlPlaneComponent: kubeadmv1beta1.ControlPlaneComponent{
 				ExtraArgs: map[string]string{
 					"cloud-provider": "azure",
 					"cloud-config":   "/etc/kubernetes/azure.json",
 				},
-				ExtraVolumes: []v1beta1.HostPathMount{
+				ExtraVolumes: []kubeadmv1beta1.HostPathMount{
 					{
 						Name:      "cloud-config",
 						HostPath:  "/etc/kubernetes/azure.json",
@@ -277,13 +275,13 @@ func cpInitConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationO
 			},
 			TimeoutForControlPlane: &metav1.Duration{Duration: 20 * time.Minute},
 		},
-		ControllerManager: v1beta1.ControlPlaneComponent{
+		ControllerManager: kubeadmv1beta1.ControlPlaneComponent{
 			ExtraArgs: map[string]string{
 				"allocate-node-cidrs": "false",
 				"cloud-provider":      "azure",
 				"cloud-config":        "/etc/kubernetes/azure.json",
 			},
-			ExtraVolumes: []v1beta1.HostPathMount{
+			ExtraVolumes: []kubeadmv1beta1.HostPathMount{
 				{
 					Name:      "cloud-config",
 					HostPath:  "/etc/kubernetes/azure.json",
@@ -293,9 +291,9 @@ func cpInitConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationO
 			},
 		},
 	}
-	kubeadmConfig.Spec.InitConfiguration = &v1beta1.InitConfiguration{NodeRegistration: registrationOptions}
+	kubeadmConfig.Spec.InitConfiguration = &kubeadmv1beta1.InitConfiguration{NodeRegistration: registrationOptions}
 }
 
-func cpJoinConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions v1beta1.NodeRegistrationOptions) {
-	kubeadmConfig.Spec.JoinConfiguration = &v1beta1.JoinConfiguration{NodeRegistration: registrationOptions, ControlPlane: nil}
+func cpJoinConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions kubeadmv1beta1.NodeRegistrationOptions) {
+	kubeadmConfig.Spec.JoinConfiguration = &kubeadmv1beta1.JoinConfiguration{NodeRegistration: registrationOptions, ControlPlane: nil}
 }

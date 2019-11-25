@@ -24,15 +24,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	capzgen "sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
-	"sigs.k8s.io/cluster-api/test/framework"
-	capigen "sigs.k8s.io/cluster-api/test/framework/generators"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
 
+	corev1 "k8s.io/api/core/v1"
+	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha2"
 )
 
 func TestE2e(t *testing.T) {
@@ -72,9 +71,9 @@ var _ = BeforeSuite(func() {
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 
 	// Create the management cluster
-	capi := &capigen.ClusterAPI{Version: "v0.2.3"}
-	cabpk := &capzgen.Bootstrap{Version: "v0.1.1"}
-	infra := &capzgen.Infra{}
+	capi := &generators.ClusterAPI{Version: "v0.2.3"}
+	cabpk := &generators.Bootstrap{Version: "v0.1.1"}
+	infra := &generators.Infra{}
 
 	mgmt, err = NewManagementCluster(ctx, "mgmt", scheme, managerImage)
 	Expect(err).NotTo(HaveOccurred())

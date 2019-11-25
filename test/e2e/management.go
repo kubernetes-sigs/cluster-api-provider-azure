@@ -25,7 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/cluster-api/test/framework/management/kind"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/management/kind"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

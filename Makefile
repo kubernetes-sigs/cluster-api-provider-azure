@@ -82,7 +82,7 @@ test-integration: ## Run integration tests
 
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests
-	PULL_POLICY=IfNotPresent $(MAKE) docker-build
+	# PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) go test -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=1h ./test/e2e/...
 
 ## --------------------------------------

@@ -26,19 +26,17 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	e2etypes "sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 )
 
 // OneNodeClusterInput are all the dependencies of the OneNodeCluster test.
 type OneNodeClusterInput struct {
-	Management    framework.ManagementCluster
+	Management    *ManagementCluster
 	Cluster       *clusterv1.Cluster
 	InfraCluster  runtime.Object
-	Node          e2etypes.Node
+	Node          framework.Node
 	CreateTimeout time.Duration
 }
 

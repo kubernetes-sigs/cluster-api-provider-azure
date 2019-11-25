@@ -23,12 +23,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	"sigs.k8s.io/cluster-api/test/framework"
 )
 
 // CleanUpInput are all the dependencies needed to clean up a Cluster API cluster.
 type CleanUpInput struct {
-	Management    framework.ManagementCluster
+	Management    ManagementCluster
 	Cluster       *clusterv1.Cluster
 	DeleteTimeout time.Duration
 }
