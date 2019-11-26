@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 )
@@ -43,16 +43,16 @@ func CleanUp(input *CleanUpInput) {
 	input.setDefaults()
 
 	mgmtClient, err := input.Management.GetClient()
-	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "stack: %+v", err)
 
 	ctx := context.Background()
-	Expect(mgmtClient.Delete(ctx, input.Cluster)).NotTo(HaveOccurred())
+	gomega.Expect(mgmtClient.Delete(ctx, input.Cluster)).NotTo(gomega.HaveOccurred())
 
-	Eventually(func() []clusterv1.Cluster {
+	gomega.Eventually(func() []clusterv1.Cluster {
 		clusters := clusterv1.ClusterList{}
 		c, err := input.Management.GetClient()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(c.List(ctx, &clusters)).NotTo(HaveOccurred())
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		gomega.Expect(c.List(ctx, &clusters)).NotTo(gomega.HaveOccurred())
 		return clusters.Items
-	}, input.DeleteTimeout, 20*time.Second).Should(HaveLen(0))
+	}, input.DeleteTimeout, 20*time.Second).Should(gomega.HaveLen(0))
 }

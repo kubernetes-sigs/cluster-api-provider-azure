@@ -20,18 +20,18 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 )
 
 // InstallComponents is a helper function that applies components, generally to a management cluster.
 func InstallComponents(ctx context.Context, mgmt Applier, components ...ComponentGenerator) {
-	Describe("Installing the provider components", func() {
+	ginkgo.Describe("Installing the provider components", func() {
 		for _, component := range components {
-			By(fmt.Sprintf("Installing %s", component.GetName()))
+			ginkgo.By(fmt.Sprintf("Installing %s", component.GetName()))
 			c, err := component.Manifests(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(mgmt.Apply(ctx, c)).NotTo(HaveOccurred())
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			gomega.Expect(mgmt.Apply(ctx, c)).NotTo(gomega.HaveOccurred())
 		}
 	})
 }
@@ -40,5 +40,5 @@ func InstallComponents(ctx context.Context, mgmt Applier, components ...Componen
 // For example, kubectl wait --for=condition=Available --timeout=300s apiservice v1beta1.webhook.cert-manager.io
 func WaitForAPIServiceAvailable(ctx context.Context, mgmt Waiter, serviceName string) {
 	err := mgmt.Wait(ctx, "--for", "condition=Available", "--timeout", "300s", "apiservice", serviceName)
-	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "stack: %+v", err)
 }
