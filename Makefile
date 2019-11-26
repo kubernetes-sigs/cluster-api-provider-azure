@@ -31,6 +31,7 @@ export GOPROXY
 export GO111MODULE=on
 
 # Directories.
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 BIN_DIR := bin
@@ -41,6 +42,9 @@ CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
+KUBECTL=$(TOOLS_BIN_DIR)/kubectl
+KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
+ETCD=$(TOOLS_BIN_DIR)/etcd
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -72,9 +76,14 @@ help:  ## Display this help
 ## Testing
 ## --------------------------------------
 
+test: export TEST_ASSET_KUBECTL = $(ROOT_DIR)/$(KUBECTL)
+test: export TEST_ASSET_KUBE_APISERVER = $(ROOT_DIR)/$(KUBE_APISERVER)
+test: export TEST_ASSET_ETCD = $(ROOT_DIR)/$(ETCD)
+
 .PHONY: test
-test: generate lint ## Run tests
-	go test -v ./...
+test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) generate lint ## Run tests
+	go test ./...
+
 
 .PHONY: test-integration
 test-integration: ## Run integration tests
@@ -84,6 +93,9 @@ test-integration: ## Run integration tests
 test-e2e: ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	go test -v -tags=e2e -timeout=1h ./test/e2e/... -args --managerImage $(CONTROLLER_IMG)-$(ARCH):$(TAG)
+
+$(KUBECTL) $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
+	source ./scripts/fetch_ext_bins.sh && fetch_tools
 
 ## --------------------------------------
 ## Binaries
