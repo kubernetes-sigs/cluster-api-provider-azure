@@ -74,7 +74,7 @@ spec:
         "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
         "aadClientId": "${AZURE_CLIENT_ID}",
         "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-        "resourceGroup": "${CLUSTER_NAME}",
+        "resourceGroup": "${AZURE_RESOURCE_GROUP}",
         "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
         "location": "${AZURE_LOCATION}",
         "vmType": "standard",

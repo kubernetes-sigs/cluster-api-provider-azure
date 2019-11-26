@@ -27,7 +27,7 @@ command -v "${ENVSUBST}" >/dev/null 2>&1 || echo -v "Cannot find ${ENVSUBST} in 
 RANDOM_STRING=$(date | md5sum | head -c8)
 
 # Cluster.
-export CLUSTER_NAME="${CLUSTER_NAME:-capz-${RANDOM_STRING}}"
+export CLUSTER_NAME="${CLUSTER_NAME:-capz-example-${RANDOM_STRING}}"
 export VNET_NAME="${VNET_NAME:-${CLUSTER_NAME}-vnet}"
 export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.16.2}"
 export KUBERNETES_SEMVER="${KUBERNETES_VERSION#v}"
@@ -49,6 +49,7 @@ PROVIDER_COMPONENTS_GENERATED_FILE=${OUTPUT_DIR}/provider-components.yaml
 CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
 CONTROLPLANE_GENERATED_FILE=${OUTPUT_DIR}/controlplane.yaml
 MACHINEDEPLOYMENT_GENERATED_FILE=${OUTPUT_DIR}/machinedeployment.yaml
+ENV_GENERATED_FILE=${OUTPUT_DIR}/.env
 
 # Overwrite flag.
 OVERWRITE=0
@@ -126,11 +127,11 @@ kustomize build "${SOURCE_DIR}/machinedeployment" | envsubst >> "${MACHINEDEPLOY
 echo "Generated ${MACHINEDEPLOYMENT_GENERATED_FILE}"
 
 # Generate Cluster API provider components file.
-curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.3/cluster-api-components.yaml > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.7/cluster-api-components.yaml > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
 echo "Downloaded ${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
 
 # Generate Kubeadm Bootstrap Provider components file.
-curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm/releases/download/v0.1.1/bootstrap-components.yaml > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
+curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm/releases/download/v0.1.5/bootstrap-components.yaml > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
 echo "Downloaded ${COMPONENTS_KUBEADM_GENERATED_FILE}"
 
 # Generate Azure Infrastructure Provider components file.
@@ -141,3 +142,5 @@ echo "Generated ${COMPONENTS_AZURE_GENERATED_FILE}"
 kustomize build "${SOURCE_DIR}/provider-components" | envsubst > "${PROVIDER_COMPONENTS_GENERATED_FILE}"
 echo "Generated ${PROVIDER_COMPONENTS_GENERATED_FILE}"
 echo "WARNING: ${PROVIDER_COMPONENTS_GENERATED_FILE} includes Azure credentials"
+
+echo "CLUSTER_NAME=${CLUSTER_NAME}" > "${ENV_GENERATED_FILE}"

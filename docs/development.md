@@ -38,21 +38,17 @@
    - `brew install gettext && brew link --force gettext` on MacOS.
 4. Install [KIND][kind]
    - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0`.
-5. Install [bazel][bazel]
+5. Install [Kustomize][kustomize]
+   - `brew install kustomize`
 6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
 7. Install make.
 
 [go]: https://golang.org/doc/install
 
 ### Get the source
-
-`go get -d sigs.k8s.io/cluster-api-provider-azure`
-
-Ensure you have updated the vendor directory with:
-
 ``` shell
+go get -d sigs.k8s.io/cluster-api-provider-azure
 cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
-make vendor
 ```
 
 ### Get familiar with basic concepts
@@ -83,11 +79,8 @@ This repositories uses [Go Modules](https://github.com/golang/go/wiki/Modules) t
 To pin a new dependency:
 - Run `go get <repository>@<version>`.
 - (Optional) Add a `replace` statement in `go.mod`.
-- Run `make vendor`.
 
 A few Makefile and scripts are offered to work with go modules:
-- `make vendor` runs `hack/update-vendor.sh`, which uses a combination of `go mod` commands to store this project's dependencies under `vendor/`.
-   - This step uses the `go.vendor` file to store a full copy of some imports/repositories. This is necessary given that go modules prunes non-Go files by default.
 - `hack/ensure-go.sh` file checks that the Go version and environment variables are properly set.
 
 ### Manual Testing
@@ -125,12 +118,15 @@ using:
 ```bash
 make clean # Clean up any previous manifests
 
-REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" RESOURCE_GROUP="<resource-group>" CLUSTER_NAME="<cluster-name>" make manifests
+REGISTRY="<container-registry>" \
+MANAGER_IMAGE_TAG="<image-tag>" \
+AZURE_RESOURCE_GROUP="<resource-group>" \
+CLUSTER_NAME="<cluster-name>" \
+make generate-examples # Generate new example manifests
 ```
 
-You will then have a sample cluster and machine manifest in:
-`/cmd/clusterctl/examples/azure/out` and a provider components file to use with clusterctl in
-`cmd/clusterctl/examples/azure/out/provider-components.yaml`
+You will then have a sample cluster, machine manifest and provider components in:
+`./examples/_out`
 
 #### Creating a test cluster
 
@@ -147,22 +143,9 @@ make kind-reset
 **Before continuing, please review the [documentation on manifests][manifests] to understand which manifests to use for various cluster scenarios.**
 
 Launch a bootstrap cluster and then run the generated manifests creating a target cluster in Azure:
-- Use `make create-cluster` to create a single control plane, single node cluster
-- Use `make create-cluster-ha` to create a multi-node control plane, with no nodes
+- Use `make create-cluster` to create a multi-node control plane, with 2 nodes
 
-If you're interested in creating the cluster with verbose logging or further customize the manifests, you can instead run:
-
-```bash
-time clusterctl create cluster -v 10 \
---provider azure \
---bootstrap-type kind \
--m ./cmd/clusterctl/examples/azure/out/<machine-manifest> \
--c ./cmd/clusterctl/examples/azure/out/<cluster-manifest> \
--p ./cmd/clusterctl/examples/azure/out/provider-components.yaml \
--a ./cmd/clusterctl/examples/azure/out/addons.yaml
-```
-
-While clusterctl is running, you can optionally follow the controller logs in a separate window as follows:
+While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
 ```bash
 export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")" # Export the kind kubeconfig
 
@@ -171,9 +154,9 @@ time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure
 kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f # Follow the controller logs
 ```
 
-After this is finished you will have
-a kubeconfig copied locally. You can debug most issues by SSHing into the
-instances that have been created and reading `/var/lib/waagent/custom-script/download/0/stdout`.
+After this is finished you will have a kubeconfig in `./examples/_out/clusterapi.kubeconfig`.
+You can debug most issues by SSHing into the VMs that have been created and 
+reading `/var/lib/waagent/custom-script/download/0/stdout`.
 
 ### Submitting PRs and testing
 
@@ -207,6 +190,6 @@ If you then want to use these mocks with `go test ./...`, run
 [gettext]: https://www.gnu.org/software/gettext/
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
-[bazel]: https://docs.bazel.build/versions/master/install.html
 [manifests]: /docs/manifests.md
 [pyenv]: https://github.com/pyenv/pyenv
+[kustomize]: https://github.com/kubernetes-sigs/kustomize
