@@ -12,6 +12,7 @@ require (
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/mock v1.2.0
+	github.com/google/uuid v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/onsi/ginkgo v1.10.1
@@ -34,7 +35,6 @@ require (
 	sigs.k8s.io/cluster-api v0.2.7
 	sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm v0.1.1
 	sigs.k8s.io/controller-runtime v0.3.0
-	sigs.k8s.io/kind v0.5.1
 )
 
 replace (
