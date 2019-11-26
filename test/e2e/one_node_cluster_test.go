@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package e2e_test
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,7 +34,7 @@ import (
 
 // OneNodeClusterInput are all the dependencies of the OneNodeCluster test.
 type OneNodeClusterInput struct {
-	Management    *ManagementCluster
+	Management    *e2e.ManagementCluster
 	Cluster       *clusterv1.Cluster
 	InfraCluster  runtime.Object
 	Node          framework.Node
@@ -86,6 +87,7 @@ func OneNodeCluster(input *OneNodeClusterInput) {
 	By("Creating machine resource that owns infra machine and its bootstrap")
 	Expect(mgmtClient.Create(ctx, input.Node.Machine)).NotTo(HaveOccurred())
 
+	By("Waiting for nodes to reach the Running phase")
 	Eventually(func() string {
 		machine := &clusterv1.Machine{}
 		key := client.ObjectKey{
@@ -98,7 +100,6 @@ func OneNodeCluster(input *OneNodeClusterInput) {
 		return machine.Status.Phase
 	}, input.CreateTimeout, 20*time.Second).Should(Equal(string(clusterv1.MachinePhaseRunning)))
 
-	By("Waiting for the nodes to exist")
 	Eventually(func() []v1.Node {
 		nodes := v1.NodeList{}
 		err := wait.PollImmediate(10*time.Second, 5*time.Minute, func() (bool, error) {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package e2e_test
 
 import (
 	"crypto/rand"
@@ -70,7 +70,6 @@ var _ = Describe("CAPZ e2e tests", func() {
 		// TODO: Deploy a MachineDeployment
 		// TODO: Scale MachineDeployment up
 		// TODO: Scale MachineDeployment down
-		// TODO: Delete cluster
 	})
 })
 

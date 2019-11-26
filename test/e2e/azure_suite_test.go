@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package e2e_test
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
 
@@ -40,7 +41,7 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	mgmt *ManagementCluster
+	mgmt *e2e.ManagementCluster
 	ctx  = context.Background()
 
 	location = "westus2"
@@ -70,7 +71,7 @@ var _ = BeforeSuite(func() {
 	Expect(bootstrapv1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 
-	mgmt, err = NewManagementCluster(ctx, "mgmt", scheme, managerImage)
+	mgmt, err = e2e.NewManagementCluster(ctx, "mgmt", scheme, managerImage)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmt).NotTo(BeNil())
 

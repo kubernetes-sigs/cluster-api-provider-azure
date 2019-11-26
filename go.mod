@@ -24,16 +24,20 @@ require (
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7
 	golang.org/x/net v0.0.0-20190909003024-a7b16738d86b
 	golang.org/x/sys v0.0.0-20190911201528-7ad0cfa0b7b5 // indirect
-	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
-	k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
+	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
 	k8s.io/utils v0.0.0-20190809000727-6c36bc71fc4a
 	sigs.k8s.io/cluster-api v0.2.7
+	sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm v0.1.1
 	sigs.k8s.io/controller-runtime v0.3.0
+	sigs.k8s.io/kind v0.5.1
 )
 
-replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.2.0+incompatible
+replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.2.0+incompatible
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
+)
