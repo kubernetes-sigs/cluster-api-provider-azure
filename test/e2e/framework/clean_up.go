@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
@@ -45,6 +46,7 @@ func CleanUp(input *CleanUpInput) {
 	mgmtClient, err := input.Management.GetClient()
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "stack: %+v", err)
 
+	ginkgo.By("Deleting cluster")
 	ctx := context.Background()
 	gomega.Expect(mgmtClient.Delete(ctx, input.Cluster)).NotTo(gomega.HaveOccurred())
 

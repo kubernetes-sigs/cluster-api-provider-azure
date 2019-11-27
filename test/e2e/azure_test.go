@@ -21,7 +21,6 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -46,7 +45,7 @@ var _ = Describe("CAPZ e2e tests", func() {
 		nodeGen := &NodeGenerator{}
 
 		Context("Create one controlplane cluster", func() {
-			It("Should create a single node cluster", func() {
+			It("Should create a single node cluster and delete it before exiting", func() {
 				cluster, infraCluster := clusterGen.GenerateCluster(namespace)
 				node := nodeGen.GenerateNode(cluster.GetName())
 				OneNodeCluster(&OneNodeClusterInput{
@@ -118,7 +117,6 @@ type NodeGenerator struct {
 }
 
 func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
-
 	sshkey, err := sshkey()
 	Expect(err).NotTo(HaveOccurred())
 
@@ -177,6 +175,7 @@ func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 			"cloud-config":   "/etc/kubernetes/azure.json",
 		},
 	}
+
 	if firstControlPlane {
 		cpInitConfiguration(bootstrapConfig, registrationOptions)
 	} else {
@@ -219,10 +218,6 @@ func (n *NodeGenerator) GenerateNode(clusterName string) framework.Node {
 }
 
 func cloudConfig(cn string) string {
-	tid := os.Getenv("AZURE_TENANT_ID")
-	sid := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	cid := os.Getenv("AZURE_CLIENT_ID")
-	cs := os.Getenv("AZURE_CLIENT_SECRET")
 	return fmt.Sprintf(`{
     "cloud": "AzurePublicCloud",
     "tenantId": "%s",
@@ -242,7 +237,7 @@ func cloudConfig(cn string) string {
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
-}`, tid, sid, cid, cs, cn, cn, cn, cn, cn, cn, cn)
+}`, creds.TenantID, creds.SubscriptionID, creds.ClientID, creds.ClientSecret, cn, cn, cn, cn, cn, cn, cn)
 }
 
 func sshkey() (string, error) {

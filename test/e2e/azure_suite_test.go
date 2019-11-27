@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
 
@@ -41,6 +42,8 @@ func TestE2E(t *testing.T) {
 }
 
 var (
+	creds auth.Creds
+
 	mgmt *e2e.ManagementCluster
 	ctx  = context.Background()
 
@@ -57,14 +60,23 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	managerImage := os.Getenv("MANAGER_IMAGE")
-	if managerImage == "" {
+	var err error
+
+	By("Loading Azure credentials")
+	if credsFile, found := os.LookupEnv("AZURE_CREDENTIALS"); found {
+		creds, err = auth.LoadCredentialsFromFile(credsFile)
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		creds, err = auth.LoadCredentialsFromEnvironment()
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	managerImage, found := os.LookupEnv("MANAGER_IMAGE")
+	if !found {
 		managerImage = "us.gcr.io/k8s-artifacts-prod/cluster-api-azure/cluster-api-azure-controller:v0.3.0-alpha.1"
 	}
 
 	By("Creating management cluster")
-	var err error
-
 	scheme := runtime.NewScheme()
 	Expect(corev1.AddToScheme(scheme)).To(Succeed())
 	Expect(capiv1.AddToScheme(scheme)).To(Succeed())
@@ -77,7 +89,7 @@ var _ = BeforeSuite(func() {
 
 	capi := &generators.ClusterAPI{Version: "v0.2.3"}
 	cabpk := &generators.Bootstrap{Version: "v0.1.1"}
-	infra := &generators.Infra{}
+	infra := &generators.Infra{Creds: creds}
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
 

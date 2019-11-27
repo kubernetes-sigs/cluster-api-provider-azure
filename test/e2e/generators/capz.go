@@ -24,10 +24,13 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/exec"
 )
 
-type Infra struct{}
+type Infra struct {
+	Creds auth.Creds
+}
 
 // GetName returns the name of the components being generated.
 func (g *Infra) GetName() string {
@@ -50,7 +53,7 @@ func (g *Infra) Manifests(ctx context.Context) ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	prepareEnvsubst()
+	g.prepareEnvsubst()
 	envsubst := exec.NewCommand(
 		exec.WithCommand("envsubst"),
 		exec.WithStdin(bytes.NewReader(stdout)),
@@ -63,16 +66,9 @@ func (g *Infra) Manifests(ctx context.Context) ([]byte, error) {
 	return stdout, nil
 }
 
-func prepareEnvsubst() {
-	encodeAndSet("AZURE_CLIENT_ID", "AZURE_CLIENT_ID_B64")
-	encodeAndSet("AZURE_CLIENT_SECRET", "AZURE_CLIENT_SECRET_B64")
-	encodeAndSet("AZURE_SUBSCRIPTION_ID", "AZURE_SUBSCRIPTION_ID_B64")
-	encodeAndSet("AZURE_TENANT_ID", "AZURE_TENANT_ID_B64")
-}
-
-func encodeAndSet(in, out string) {
-	// TODO check for nil/empty
-	value := os.Getenv(in)
-	encoded := base64.StdEncoding.EncodeToString([]byte(value))
-	os.Setenv(out, encoded)
+func (g *Infra) prepareEnvsubst() {
+	os.Setenv("AZURE_CLIENT_ID_B64", base64.StdEncoding.EncodeToString([]byte(g.Creds.ClientID)))
+	os.Setenv("AZURE_CLIENT_SECRET_B64", base64.StdEncoding.EncodeToString([]byte(g.Creds.ClientSecret)))
+	os.Setenv("AZURE_SUBSCRIPTION_ID_B64", base64.StdEncoding.EncodeToString([]byte(g.Creds.SubscriptionID)))
+	os.Setenv("AZURE_TENANT_ID_B64", base64.StdEncoding.EncodeToString([]byte(g.Creds.TenantID)))
 }

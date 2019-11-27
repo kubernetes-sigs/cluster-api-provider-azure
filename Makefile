@@ -81,7 +81,7 @@ test-integration: ## Run integration tests
 	go test -v -tags=integration ./test/integration/...
 
 .PHONY: test-e2e
-test-e2e: ensure-e2e-tools ## Run e2e tests
+test-e2e: ## Run e2e tests
 	$(MAKE) docker-build
 	AZURE_CLIENT_ID=$(AZURE_CLIENT_ID) \
 	AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET) \
@@ -386,7 +386,3 @@ verify-gen: generate
 	@if !(git diff --quiet HEAD); then \
 		echo "generated files are out of date, run make generate"; exit 1; \
 	fi
-
-.PHONY: ensure-e2e-tools
-ensure-e2e-tools: ## Ensure e2e dependencies are installed
-	./hack/ensure-kind.sh
