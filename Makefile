@@ -31,6 +31,7 @@ export GOPROXY
 export GO111MODULE=on
 
 # Directories.
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 BIN_DIR := bin
@@ -41,6 +42,9 @@ CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
+KUBECTL=$(TOOLS_BIN_DIR)/kubectl
+KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
+ETCD=$(TOOLS_BIN_DIR)/etcd
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -72,9 +76,14 @@ help:  ## Display this help
 ## Testing
 ## --------------------------------------
 
+test: export TEST_ASSET_KUBECTL = $(ROOT_DIR)/$(KUBECTL)
+test: export TEST_ASSET_KUBE_APISERVER = $(ROOT_DIR)/$(KUBE_APISERVER)
+test: export TEST_ASSET_ETCD = $(ROOT_DIR)/$(ETCD)
+
 .PHONY: test
-test: generate lint ## Run tests
-	go test -v ./...
+test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) generate lint ## Run tests
+	go test ./...
+
 
 .PHONY: test-integration
 test-integration: ## Run integration tests
@@ -89,6 +98,9 @@ test-e2e: ## Run e2e tests
 	AZURE_TENANT_ID=$(AZURE_TENANT_ID) \
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=20m
+
+$(KUBECTL) $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
+	source ./scripts/fetch_ext_bins.sh && fetch_tools
 
 ## --------------------------------------
 ## Binaries
@@ -285,18 +297,7 @@ release-notes: $(RELEASE_NOTES)
 ## --------------------------------------
 
 .PHONY: create-cluster
-create-cluster: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure using examples
-	$(CLUSTERCTL) \
-	create cluster -v 4 \
-	--bootstrap-flags="name=clusterapi" \
-	--bootstrap-type kind \
-	-m ./examples/_out/controlplane.yaml \
-	-c ./examples/_out/cluster.yaml \
-	-p ./examples/_out/provider-components.yaml \
-	-a ./examples/addons.yaml
-
-.PHONY: create-cluster-management
-create-cluster-management: $(CLUSTERCTL) ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
+create-cluster: ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
 	kind create cluster --name=clusterapi
 	# Apply provider-components.
 	kubectl \
@@ -306,35 +307,40 @@ create-cluster-management: $(CLUSTERCTL) ## Create a development Kubernetes clus
 	kubectl \
 		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/cluster.yaml
-	# Create control plane machine.
+	# Create control plane machines.
 	kubectl \
 		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/controlplane.yaml
-	# Get KubeConfig using clusterctl.
-	$(CLUSTERCTL) \
-		alpha phases get-kubeconfig -v=3 \
+	# wait for the first control plane machine to be ready
+	./examples/wait-for-ready.sh
+	# Fetch the Kubeconfig for the target cluster
+	source ./examples/_out/.env; \
+	kubectl \
 		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
-		--namespace=default \
-		--cluster-name=$(CLUSTER_NAME)
-	# Apply addons on the target cluster, waiting for the control-plane to become available.
-	$(CLUSTERCTL) \
-		alpha phases apply-addons -v=10 \
-		--kubeconfig=./kubeconfig \
-		-a examples/addons.yaml
-	# Create a worker node with MachineDeployment.
+		--namespace=default get secret/$$CLUSTER_NAME-kubeconfig -o json \
+		| jq -r .data.value \
+		| base64 --decode > ./examples/_out/clusterapi.kubeconfig
+
+	# Deploy a CNI soution, Calico
+	kubectl --kubeconfig=./examples/_out/clusterapi.kubeconfig \
+	  apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml
+	# Create 2 worker nodes with MachineDeployment.
 	kubectl \
 		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/machinedeployment.yaml
 
+	@echo 'run "kubectl --kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") ..." to work with the kind cluster'
+	@echo 'run "kubectl --kubeconfig=./examples/_out/clusterapi.kubeconfig ..." to work with the new target cluster'
+
 .PHONY: delete-cluster
-delete-cluster: $(CLUSTERCTL) ## Deletes the development Kubernetes Cluster "test1"
-	$(CLUSTERCTL) \
-	delete cluster -v 4 \
-	--bootstrap-type kind \
-	--bootstrap-flags="name=clusterapi" \
-	--cluster $(CLUSTER_NAME) \
-	--kubeconfig ./kubeconfig \
-	-p ./examples/_out/provider-components.yaml \
+delete-cluster: $(CLUSTERCTL) ## Deletes the example Kubernetes Cluster "clusterapi"
+	# Fetch the Kubeconfig for the target cluster
+	source ./examples/_out/.env; \
+	kubectl \
+		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
+		delete cluster $$CLUSTER_NAME
+
+	kind delete cluster --name=clusterapi
 
 .PHONY: kind-reset
 kind-reset: ## Destroys the "clusterapi" kind cluster.

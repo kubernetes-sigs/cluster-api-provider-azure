@@ -58,8 +58,9 @@ function header_text {
   echo "$header$*$reset"
 }
 
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+tools_bin=${REPO_ROOT}/hack/tools/bin
 tmp_root=/tmp
-
 kb_root_dir=${tmp_root}/kubebuilder
 
 # Skip fetching and untaring the tools by setting the SKIP_FETCH_TOOLS variable
@@ -70,18 +71,6 @@ kb_root_dir=${tmp_root}/kubebuilder
 # If you skip fetching tools, this script will use the tools already on your
 # machine, but rebuild the kubebuilder and kubebuilder-bin binaries.
 SKIP_FETCH_TOOLS=${SKIP_FETCH_TOOLS:-""}
-
-function prepare_staging_dir {
-  header_text "preparing staging dir"
-
-  if [[ -z "${SKIP_FETCH_TOOLS}" ]]; then
-    rm -rf "${kb_root_dir}"
-  else
-    rm -f "${kb_root_dir}/kubebuilder/bin/kubebuilder"
-    rm -f "${kb_root_dir}/kubebuilder/bin/kubebuilder-gen"
-    rm -f "${kb_root_dir}/kubebuilder/bin/vendor.tar.gz"
-  fi
-}
 
 # fetch k8s API gen tools and make it available under kb_root_dir/bin.
 function fetch_tools {
@@ -98,14 +87,7 @@ function fetch_tools {
     curl -fsL ${kb_tools_download_url} -o "${kb_tools_archive_path}"
   fi
   tar -zvxf "${kb_tools_archive_path}" -C "${tmp_root}/"
-}
 
-function setup_envs {
-  header_text "setting up env vars"
-
-  # Setup env vars
-  export PATH=/tmp/kubebuilder/bin:$PATH
-  export TEST_ASSET_KUBECTL=/tmp/kubebuilder/bin/kubectl
-  export TEST_ASSET_KUBE_APISERVER=/tmp/kubebuilder/bin/kube-apiserver
-  export TEST_ASSET_ETCD=/tmp/kubebuilder/bin/etcd
+  mkdir -p "${tools_bin}"
+  mv "${kb_root_dir}"/bin/* "${tools_bin}"
 }
