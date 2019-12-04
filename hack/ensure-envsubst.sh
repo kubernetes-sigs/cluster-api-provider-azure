@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2019 The Kubernetes Authors.
 #
@@ -14,24 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
+# TODO do not rely on package managers
+ensure_envsubst() {
+  # If envsubst is not available on the path, get it
+  if ! [ -x "$(command -v envsubst)" ]; then
+    if [[ "${OSTYPE}" == "linux-gnu" ]]; then
+      echo 'envsubst not found, installing'
+      apt-get install -y gettext-base
+    else
+      echo "Missing required binary in path: envsubst"
+      return 2
+    fi
+  fi
+}
 
-# shellcheck source=../hack/ensure-go.sh
-source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=../hack/ensure-kind.sh
-source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=../hack/ensure-kubectl.sh
-source "${REPO_ROOT}/hack/ensure-kubectl.sh"
-# shellcheck source=../hack/ensure-envsubst.sh
-source "${REPO_ROOT}/hack/ensure-envsubst.sh"
-
-make test-e2e
-test_status="${?}"
-
-# TODO last chance to clean up resources if prow job leaves something behind
-
-exit "${test_status}"
+ensure_envsubst
