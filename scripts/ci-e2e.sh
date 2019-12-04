@@ -17,7 +17,21 @@
 set -o nounset
 set -o pipefail
 
-# This script is part of the e2e effort. Current plan is to:
-# - Merge dummy ci-e2e script
-# - Create a prow presubmit that calls the dummy script
-# - Fill in the ci-e2e along with the e2e PR
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+cd "${REPO_ROOT}" || exit 1
+
+# shellcheck source=../hack/ensure-go.sh
+source "${REPO_ROOT}/hack/ensure-go.sh"
+# shellcheck source=../hack/ensure-kind.sh
+source "${REPO_ROOT}/hack/ensure-kind.sh"
+# shellcheck source=../hack/ensure-kubectl.sh
+source "${REPO_ROOT}/hack/ensure-kubectl.sh"
+# shellcheck source=../hack/ensure-kustomize.sh
+source "${REPO_ROOT}/hack/ensure-kustomize.sh"
+
+make test-e2e
+test_status="${?}"
+
+# TODO last chance to clean up resources if prow job leaves something behind
+
+exit "${test_status}"
