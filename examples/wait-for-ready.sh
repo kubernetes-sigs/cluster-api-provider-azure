@@ -26,7 +26,7 @@ ready="false"
 echo "Waiting for any machine in cluster ${CLUSTER_NAME} to be in running state..."
 while [ $ready == "false" ]; do
   output=$(kubectl get machines -o json)
-  ready=$(echo "$output" | jq -r 'any(.items[]; .status.phase=="running")')
+  ready=$(echo "$output" | jq -r 'any(.items[]; .status.phase=="Running")')
   [ "$ready" == "false" ] && echo "Waiting..." && sleep 30
 done
 echo 'found a running Machine'

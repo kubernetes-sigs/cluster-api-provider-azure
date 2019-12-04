@@ -29,12 +29,17 @@ import (
 	"github.com/golang/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	"k8s.io/client-go/kubernetes/scheme"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+func init() {
+	clusterv1.AddToScheme(scheme.Scheme)
+}
 
 func TestReconcileVnet(t *testing.T) {
 	testcases := []struct {
@@ -120,6 +125,7 @@ func TestReconcileVnet(t *testing.T) {
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+				Spec:       clusterv1.ClusterSpec{},
 			}
 
 			client := fake.NewFakeClient(cluster)

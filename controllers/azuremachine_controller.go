@@ -26,10 +26,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -68,6 +68,7 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 
 func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
@@ -173,7 +174,7 @@ func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, ams *azureMac
 func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	machineScope.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
-	if machineScope.AzureMachine.Status.ErrorReason != nil || machineScope.AzureMachine.Status.ErrorMessage != nil {
+	if machineScope.AzureMachine.Status.FailureReason != nil || machineScope.AzureMachine.Status.FailureMessage != nil {
 		machineScope.Info("Error state detected, skipping reconciliation")
 		return reconcile.Result{}, nil
 	}
@@ -189,8 +190,8 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	}
 
 	// Make sure bootstrap data is available and populated.
-	if machineScope.Machine.Spec.Bootstrap.Data == nil {
-		machineScope.Info("Bootstrap data is not yet available")
+	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
+		machineScope.Info("Bootstrap data secret reference is not yet available")
 		return reconcile.Result{}, nil
 	}
 
@@ -207,8 +208,8 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	//       Should we set a requeue above? CAPA doesn't seem to need the requeue.
 	/*
 		if vm == nil {
-			machineScope.SetErrorReason(capierrors.UpdateMachineError)
-			machineScope.SetErrorMessage(errors.New("Azure virtual machine cannot be found"))
+			machineScope.SetFailureReason(capierrors.UpdateMachineError)
+			machineScope.SetFailureMessage(errors.New("Azure virtual machine cannot be found"))
 			return reconcile.Result{}, nil
 		}
 	*/
@@ -238,8 +239,8 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	case infrav1.VMStateUpdating:
 		machineScope.Info("Machine VM is updating", "instance-id", *machineScope.GetVMID())
 	default:
-		machineScope.SetErrorReason(capierrors.UpdateMachineError)
-		machineScope.SetErrorMessage(errors.Errorf("Azure VM state %q is unexpected", vm.State))
+		machineScope.SetFailureReason(capierrors.UpdateMachineError)
+		machineScope.SetFailureMessage(errors.Errorf("Azure VM state %q is unexpected", vm.State))
 	}
 
 	if err := ams.reconcileNetworkInterface(azure.GenerateNICName(machineScope.Name())); err != nil {
@@ -316,7 +317,7 @@ func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject
 		return result
 	}
 
-	labels := map[string]string{clusterv1.MachineClusterLabelName: cluster.Name}
+	labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
 	machineList := &clusterv1.MachineList{}
 	if err := r.List(context.TODO(), machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
 		log.Error(err, "failed to list Machines")

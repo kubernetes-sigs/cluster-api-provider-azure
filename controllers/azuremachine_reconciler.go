@@ -26,7 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -300,6 +300,11 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			return nil, errors.Wrap(err, "failed to get VM image")
 		}
 
+		bootstrapData, err := s.machineScope.GetBootstrapData()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
+		}
+
 		vmSpec = &virtualmachines.Spec{
 			Name:       s.machineScope.Name(),
 			NICName:    nicName,
@@ -307,7 +312,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			Size:       s.machineScope.AzureMachine.Spec.VMSize,
 			OSDisk:     s.machineScope.AzureMachine.Spec.OSDisk,
 			Image:      image,
-			CustomData: *s.machineScope.Machine.Spec.Bootstrap.Data,
+			CustomData: bootstrapData,
 			Zone:       vmZone,
 		}
 

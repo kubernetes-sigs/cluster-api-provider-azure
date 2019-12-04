@@ -32,18 +32,17 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/management/kind"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
-	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -94,8 +93,17 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmt).NotTo(BeNil())
 
-	// TODO Figure out how to keep these versions in sync across the code base
-	capi := &generators.ClusterAPI{Version: "v0.2.9"}
+	certmanagerYaml := "https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml"
+	mgmt.ApplyYAML(ctx, certmanagerYaml)
+
+	// Wait for CertManager to be available before continuing
+	c, err := mgmt.GetClient()
+	Expect(err).NotTo(HaveOccurred())
+	waitDeployment(c, "cert-manager", "cert-manager-webhook")
+
+	// Deploy the CAPI and CABPK components from Cluster API repository,
+	// workaround since there isn't a v1alpha3 capi release yet
+	capi := &generators.ClusterAPI{Version: "v0.2.6", GitRef: "v0.2.6-0.20200106222425-660e6b945a27"}
 	cabpk := &generators.Bootstrap{Version: "v0.1.5"}
 	infra := &generators.Infra{Creds: creds}
 

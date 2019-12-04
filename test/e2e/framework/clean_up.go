@@ -24,7 +24,7 @@ import (
 	"github.com/onsi/gomega"
 
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/management/kind"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // CleanUpInput are all the dependencies needed to clean up a Cluster API cluster.

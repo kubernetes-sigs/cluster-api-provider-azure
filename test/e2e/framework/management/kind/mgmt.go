@@ -130,6 +130,21 @@ func (c *Cluster) Apply(ctx context.Context, resources []byte) error {
 	return nil
 }
 
+// ApplyYAML wraps `kubectl apply` and prints the output so we can see what gets applied to the cluster.
+func (c *Cluster) ApplyYAML(ctx context.Context, manifestPath string) error {
+	applyCmd := exec.NewCommand(
+		exec.WithCommand("kubectl"),
+		exec.WithArgs("apply", "--kubeconfig", c.KubeconfigPath, "-f", manifestPath),
+	)
+	stdout, stderr, err := applyCmd.Run(ctx)
+	if err != nil {
+		fmt.Println(string(stderr))
+		return err
+	}
+	fmt.Println(string(stdout))
+	return nil
+}
+
 // Wait wraps `kubectl wait`.
 func (c *Cluster) Wait(ctx context.Context, args ...string) error {
 	wargs := append([]string{"wait", "--kubeconfig", c.KubeconfigPath}, args...)

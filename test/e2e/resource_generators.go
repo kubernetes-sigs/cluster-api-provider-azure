@@ -31,12 +31,12 @@ import (
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	bootstrapv1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/api/v1alpha2"
-	kubeadmv1beta1 "sigs.k8s.io/cluster-api-bootstrap-provider-kubeadm/kubeadm/v1beta1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
-	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
+	kubeadmv1beta1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -189,7 +189,6 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 			Name:      name,
 			Labels: map[string]string{
 				capiv1.MachineControlPlaneLabelName: "true",
-				capiv1.MachineClusterLabelName:      clusterName,
 			},
 		},
 		Spec: capiv1.MachineSpec{
@@ -207,7 +206,8 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 				Namespace:  infraMachine.GetNamespace(),
 				Name:       infraMachine.GetName(),
 			},
-			Version: &framework.Flags.KubernetesVersion,
+			Version:     &framework.Flags.KubernetesVersion,
+			ClusterName: clusterName,
 		},
 	}
 	return framework.Node{
@@ -372,23 +372,11 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      generatedName,
-			Labels: map[string]string{
-				capiv1.MachineClusterLabelName: clusterName,
-			},
 		},
 		Spec: capiv1.MachineDeploymentSpec{
-			Replicas: &replicas,
-			Selector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					capiv1.MachineClusterLabelName: clusterName,
-				},
-			},
+			ClusterName: clusterName,
+			Replicas:    &replicas,
 			Template: capiv1.MachineTemplateSpec{
-				ObjectMeta: capiv1.ObjectMeta{
-					Labels: map[string]string{
-						capiv1.MachineClusterLabelName: clusterName,
-					},
-				},
 				Spec: capiv1.MachineSpec{
 					Bootstrap: capiv1.Bootstrap{
 						ConfigRef: &corev1.ObjectReference{
@@ -404,7 +392,8 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 						Namespace:  infraMachineTemplate.GetNamespace(),
 						Name:       infraMachineTemplate.GetName(),
 					},
-					Version: &framework.Flags.KubernetesVersion,
+					Version:     &framework.Flags.KubernetesVersion,
+					ClusterName: clusterName,
 				},
 			},
 		},

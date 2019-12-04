@@ -19,10 +19,9 @@ package generators
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/exec"
 )
 
 type Bootstrap struct {
@@ -34,20 +33,25 @@ func (g *Bootstrap) GetName() string {
 	return fmt.Sprintf("Cluster API Bootstrap Provider Kubeadm %s", g.Version)
 }
 
+func (g *Bootstrap) kustomizePath(path string) string {
+	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//bootstrap/kubeadm/config/%s", path)
+}
+
 func (g *Bootstrap) releaseYAMLPath() string {
 	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm/releases/download/%s/bootstrap-components.yaml", g.Version)
 }
 
 // Manifests return the generated components and any error if there is one.
 func (g *Bootstrap) Manifests(ctx context.Context) ([]byte, error) {
-	resp, err := http.Get(g.releaseYAMLPath())
+	kustomize := exec.NewCommand(
+		exec.WithCommand("kustomize"),
+		exec.WithArgs("build", g.kustomizePath("default")),
+	)
+	stdout, stderr, err := kustomize.Run(ctx)
 	if err != nil {
+		fmt.Println(string(stderr))
 		return nil, errors.WithStack(err)
 	}
-	out, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	defer resp.Body.Close()
-	return out, nil
+	return stdout, nil
+
 }

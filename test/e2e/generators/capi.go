@@ -40,7 +40,7 @@ func (g *ClusterAPI) GetName() string {
 }
 
 func (g *ClusterAPI) kustomizePath(path string) string {
-	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//config/%s?ref=%s", path, g.GitRef)
+	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//config/%s", path)
 }
 
 func (g *ClusterAPI) releaseYAMLPath() string {
