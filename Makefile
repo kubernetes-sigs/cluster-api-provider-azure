@@ -92,10 +92,6 @@ test-integration: ## Run integration tests
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests
 	$(MAKE) docker-build
-	AZURE_CLIENT_ID=$(AZURE_CLIENT_ID) \
-	AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET) \
-	AZURE_SUBSCRIPTION_ID=$(AZURE_SUBSCRIPTION_ID) \
-	AZURE_TENANT_ID=$(AZURE_TENANT_ID) \
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=20m
 
