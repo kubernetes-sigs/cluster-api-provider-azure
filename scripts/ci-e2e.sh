@@ -26,6 +26,8 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 source "${REPO_ROOT}/hack/ensure-kind.sh"
 # shellcheck source=../hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
+# shellcheck source=../hack/ensure-kustomize.sh
+source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 
 make test-e2e
 test_status="${?}"
@@ -33,3 +35,8 @@ test_status="${?}"
 # TODO last chance to clean up resources if prow job leaves something behind
 
 exit "${test_status}"
+
+export CLIENT_ID=da8c7265-60fc-43bc-91b5-0aa0f1b05f25
+export CLIENT_SECRET=cuVJ7.i60I??PhwwbqI-scrfXfg6PHd:
+export SUBSCRIPTION_ID=e3cdcc6a-93e3-4bf1-b2d3-54dba53a5764
+export TENANT_ID=javierdarsieoutlook.onmicrosoft.com
