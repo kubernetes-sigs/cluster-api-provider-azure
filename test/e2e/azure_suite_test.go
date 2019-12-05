@@ -74,9 +74,9 @@ var _ = BeforeSuite(func() {
 	}
 	Expect(creds).NotTo(BeNil())
 	Expect(creds.TenantID).NotTo(BeEmpty())
-	Expect(creds.TenantID).NotTo(BeEmpty())
-	Expect(creds.TenantID).NotTo(BeEmpty())
-	Expect(creds.TenantID).NotTo(BeEmpty())
+	Expect(creds.SubscriptionID).NotTo(BeEmpty())
+	Expect(creds.ClientID).NotTo(BeEmpty())
+	Expect(creds.ClientSecret).NotTo(BeEmpty())
 
 	managerImage, found := os.LookupEnv("MANAGER_IMAGE")
 	if !found {
