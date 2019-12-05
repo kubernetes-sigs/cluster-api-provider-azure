@@ -26,8 +26,6 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 source "${REPO_ROOT}/hack/ensure-kind.sh"
 # shellcheck source=../hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
-# shellcheck source=../hack/ensure-envsubst.sh
-source "${REPO_ROOT}/hack/ensure-envsubst.sh"
 
 make test-e2e
 test_status="${?}"

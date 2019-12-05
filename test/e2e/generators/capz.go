@@ -17,7 +17,6 @@ limitations under the License.
 package generators
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -52,18 +51,8 @@ func (g *Infra) Manifests(ctx context.Context) ([]byte, error) {
 		fmt.Println(string(stderr))
 		return nil, errors.WithStack(err)
 	}
-
 	g.prepareEnvsubst()
-	envsubst := exec.NewCommand(
-		exec.WithCommand("envsubst"),
-		exec.WithStdin(bytes.NewReader(stdout)),
-	)
-	stdout, stderr, err = envsubst.Run(ctx)
-	if err != nil {
-		fmt.Println(string(stderr))
-		return nil, errors.WithStack(err)
-	}
-	return stdout, nil
+	return []byte(os.ExpandEnv(string(stdout))), nil
 }
 
 func (g *Infra) prepareEnvsubst() {
