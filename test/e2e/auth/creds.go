@@ -40,12 +40,11 @@ type Creds struct {
 
 func LoadCredentialsFromFile(credsFile string) (Creds, error) {
 	log.Printf("Loading credentials from file %v", credsFile)
-	config := Config{}
-
 	content, err := ioutil.ReadFile(credsFile)
 	if err != nil {
 		return Creds{}, fmt.Errorf("error reading credentials file %v %v", credsFile, err)
 	}
+	config := Config{}
 	if err = toml.Unmarshal(content, &config); err != nil {
 		return Creds{}, fmt.Errorf("error parsing credentials file %v %v", credsFile, err)
 	}
@@ -54,31 +53,10 @@ func LoadCredentialsFromFile(credsFile string) (Creds, error) {
 
 func LoadCredentialsFromEnvironment() (Creds, error) {
 	log.Print("Loading credentials from environment")
-	creds := Creds{}
-
-	if tenantID, found := os.LookupEnv("AZURE_TENANT_ID"); found {
-		creds.TenantID = tenantID
-	} else {
-		return Creds{}, fmt.Errorf("required variable AZURE_TENANT_ID is not set")
-	}
-
-	if subscriptionID, found := os.LookupEnv("AZURE_SUBSCRIPTION_ID"); found {
-		creds.SubscriptionID = subscriptionID
-	} else {
-		return Creds{}, fmt.Errorf("required variable AZURE_SUBSCRIPTION_ID is not set")
-	}
-
-	if clientID, found := os.LookupEnv("AZURE_CLIENT_ID"); found {
-		creds.ClientID = clientID
-	} else {
-		return Creds{}, fmt.Errorf("required variable AZURE_CLIENT_ID is not set")
-	}
-
-	if clientSecret, found := os.LookupEnv("AZURE_CLIENT_SECRET"); found {
-		creds.ClientSecret = clientSecret
-	} else {
-		return Creds{}, fmt.Errorf("required variable AZURE_CLIENT_SECRET is not set")
-	}
-
-	return creds, nil
+	return Creds{
+		TenantID:       os.Getenv("AZURE_TENANT_ID"),
+		SubscriptionID: os.Getenv("AZURE_SUBSCRIPTION_ID"),
+		ClientID:       os.Getenv("AZURE_CLIENT_ID"),
+		ClientSecret:   os.Getenv("AZURE_CLIENT_SECRET"),
+	}, nil
 }

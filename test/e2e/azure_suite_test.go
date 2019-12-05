@@ -72,6 +72,11 @@ var _ = BeforeSuite(func() {
 		creds, err = auth.LoadCredentialsFromEnvironment()
 		Expect(err).NotTo(HaveOccurred())
 	}
+	Expect(creds).NotTo(BeNil())
+	Expect(creds.TenantID).NotTo(BeEmpty())
+	Expect(creds.TenantID).NotTo(BeEmpty())
+	Expect(creds.TenantID).NotTo(BeEmpty())
+	Expect(creds.TenantID).NotTo(BeEmpty())
 
 	managerImage, found := os.LookupEnv("MANAGER_IMAGE")
 	if !found {
@@ -89,8 +94,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmt).NotTo(BeNil())
 
-	capi := &generators.ClusterAPI{Version: "v0.2.3"}
-	cabpk := &generators.Bootstrap{Version: "v0.1.1"}
+	capi := &generators.ClusterAPI{Version: "v0.2.7"}
+	cabpk := &generators.Bootstrap{Version: "v0.1.5"}
 	infra := &generators.Infra{Creds: creds}
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
