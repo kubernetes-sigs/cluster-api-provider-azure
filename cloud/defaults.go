@@ -18,9 +18,10 @@ package azure
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 )
 
@@ -132,28 +133,24 @@ func GenerateOSDiskName(machineName string) string {
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
-func getDefaultImageSKUID(k8sVersion string) string {
-	if strings.HasPrefix(k8sVersion, "v1.16") {
-		return "k8s-1dot16-ubuntu-1804"
+func getDefaultImageSKUID(k8sVersion string) (string, error) {
+	version, err := semver.ParseTolerant(k8sVersion)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to parse Kubernetes version \"%s\" in spec, expected valid SemVer string", k8sVersion)
 	}
-	if strings.HasPrefix(k8sVersion, "v1.15") {
-		return "k8s-1dot15-ubuntu-1804"
-	}
-	if strings.HasPrefix(k8sVersion, "v1.14") {
-		return "k8s-1dot14-ubuntu-1804"
-	}
-	if strings.HasPrefix(k8sVersion, "v1.13") {
-		return "k8s-1dot13-ubuntu-1804"
-	}
-	return ""
+	return fmt.Sprintf("k8s-%ddot%ddot%d-ubuntu-1804", version.Major, version.Minor, version.Patch), nil
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func GetDefaultUbuntuImage(k8sVersion string) infrav1.Image {
+func GetDefaultUbuntuImage(k8sVersion string) (infrav1.Image, error) {
+	skuID, err := getDefaultImageSKUID(k8sVersion)
+	if err != nil {
+		return infrav1.Image{}, errors.Wrapf(err, "failed to get default image")
+	}
 	return infrav1.Image{
 		Publisher: to.StringPtr(DefaultImagePublisherID),
 		Offer:     to.StringPtr(DefaultImageOfferID),
-		SKU:       to.StringPtr(getDefaultImageSKUID(k8sVersion)),
+		SKU:       to.StringPtr(skuID),
 		Version:   to.StringPtr(LatestVersion),
-	}
+	}, nil
 }

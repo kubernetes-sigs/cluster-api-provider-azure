@@ -295,13 +295,18 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			}
 		}
 
+		image, err := getVMImage(s.machineScope)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get VM image")
+		}
+
 		vmSpec = &virtualmachines.Spec{
 			Name:       s.machineScope.Name(),
 			NICName:    nicName,
 			SSHKeyData: string(decoded),
 			Size:       s.machineScope.AzureMachine.Spec.VMSize,
 			OSDisk:     s.machineScope.AzureMachine.Spec.OSDisk,
-			Image:      getVMImage(s.machineScope),
+			Image:      image,
 			CustomData: *s.machineScope.Machine.Spec.Bootstrap.Data,
 			Zone:       vmZone,
 		}
@@ -370,10 +375,10 @@ func (s *azureMachineService) isAvailabilityZoneSupported() bool {
 }
 
 // Pick image from the machine configuration, or use a default one.
-func getVMImage(scope *scope.MachineScope) infrav1.Image {
+func getVMImage(scope *scope.MachineScope) (infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if scope.AzureMachine.Spec.Image != nil {
-		return *scope.AzureMachine.Spec.Image
+		return *scope.AzureMachine.Spec.Image, nil
 	}
 	return azure.GetDefaultUbuntuImage(to.String(scope.Machine.Spec.Version))
 }
