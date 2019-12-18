@@ -15,7 +15,7 @@
   - [Setting up the environment](#setting-up-the-environment)
   - [Generating cluster manifests and example cluster](#generating-cluster-manifests-and-example-cluster)
     - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
-    - [Running the manifest generation script](#running-the-manifest-generation-scr ipt)
+    - [Running the manifest generation script](#running-the-manifest-generation-script)
   - [Creating a cluster](#creating-a-cluster)
 - [Using the cluster](#using-the-cluster)
 - [Troubleshooting](#troubleshooting)
