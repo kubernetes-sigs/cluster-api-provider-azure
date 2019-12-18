@@ -15,7 +15,7 @@
   - [Setting up the environment](#setting-up-the-environment)
   - [Generating cluster manifests and example cluster](#generating-cluster-manifests-and-example-cluster)
     - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
-    - [Running the manifest generation script](#running-the-manifest-generation-script)
+    - [Running the manifest generation script](#running-the-manifest-generation-scr ipt)
   - [Creating a cluster](#creating-a-cluster)
 - [Using the cluster](#using-the-cluster)
 - [Troubleshooting](#troubleshooting)
@@ -34,7 +34,7 @@
 - make
 - [gettext](https://www.gnu.org/software/gettext/) (with `envsubst` in your PATH)
 - md5sum
-- [bazel](https://docs.bazel.build/versions/master/install-os-x.html#install-on-mac-os-x-homebrew)
+- [bazel](https://docs.bazel.build/versions/1.2.0/getting-started.html)
 
 ### Optional
 
