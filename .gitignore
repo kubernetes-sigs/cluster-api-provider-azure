@@ -46,3 +46,6 @@ manager_image_patch.yaml-e
 
 # Bazel
 bazel-*
+
+# Tilt files.
+.tiltbuild
