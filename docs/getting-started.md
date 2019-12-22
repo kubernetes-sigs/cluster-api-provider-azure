@@ -32,9 +32,9 @@
 - [kubectl]
 - [kustomize]
 - make
-- gettext (with `envsubst` in your PATH)
+- [gettext](https://www.gnu.org/software/gettext/) (with `envsubst` in your PATH)
 - md5sum
-- bazel
+- [bazel](https://docs.bazel.build/versions/1.2.0/getting-started.html)
 
 ### Optional
 
