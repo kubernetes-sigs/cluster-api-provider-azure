@@ -5,6 +5,7 @@
 <!-- Below is generated using VSCode yzhang.markdown-all-in-one >
 
 <!-- TOC depthFrom:2 -->
+
 - [Setting up](#setting-up)
   - [Base requirements](#base-requirements)
   - [Get the source](#get-the-source)
@@ -46,7 +47,8 @@
 [go]: https://golang.org/doc/install
 
 ### Get the source
-``` shell
+
+```shell
 go get -d sigs.k8s.io/cluster-api-provider-azure
 cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
 ```
@@ -77,11 +79,34 @@ Change some code!
 This repositories uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track and vendor dependencies.
 
 To pin a new dependency:
+
 - Run `go get <repository>@<version>`.
 - (Optional) Add a `replace` statement in `go.mod`.
 
 A few Makefile and scripts are offered to work with go modules:
+
 - `hack/ensure-go.sh` file checks that the Go version and environment variables are properly set.
+
+### Using Tilt
+
+To use Tilt for a simplified development workflow, follow the [instructions](https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/book/src/developer/tilt.md) in the cluster-api repo
+
+Add the following section to your `tilt-settings.json`
+
+```json
+"kustomize_substitutions": {
+    "AZURE_CLIENT_SECRET_B64": "your-clinet-secret-encoded-in-base64",
+    "AZURE_CLIENT_ID_B64": "your-client-id-encoded-in-base64",
+    "AZURE_SUBSCRIPTION_ID_B64": "your-subscription-id-encoded-in-base64",
+    "AZURE_TENANT_ID_B64": "your-tenant-id-encoded-in-base64"
+  }
+```
+
+You can generate a base64 version of your AZURE related credentials using:
+
+```shell
+echo "your-credentials" | base64
+```
 
 ### Manual Testing
 
@@ -94,18 +119,19 @@ started prerequisites section](./getting-started.md#Prerequisites)
 
 1. Login to your container registry using `docker login`.
 
-    e.g., `docker login quay.io`
+   e.g., `docker login quay.io`
+
 2. To build images with custom tags and push to your custom image registry,
    run the `make docker-build` as follows:
 
-    ```bash
-    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-build
-    ```
+   ```bash
+   REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-build
+   ```
 
 3. Push your docker images:
-    ```bash
-    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-push
-    ```
+   ```bash
+   REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-push
+   ```
 
 #### Build manifests
 
@@ -131,11 +157,13 @@ You will then have a sample cluster, machine manifest and provider components in
 #### Creating a test cluster
 
 Generate custom binaries:
+
 ```bash
 make binaries
 ```
 
 Ensure kind has been reset:
+
 ```bash
 make kind-reset
 ```
@@ -143,9 +171,11 @@ make kind-reset
 **Before continuing, please review the [documentation on manifests][manifests] to understand which manifests to use for various cluster scenarios.**
 
 Launch a bootstrap cluster and then run the generated manifests creating a target cluster in Azure:
+
 - Use `make create-cluster` to create a multi-node control plane, with 2 nodes
 
 While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
+
 ```bash
 export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")" # Export the kind kubeconfig
 
@@ -155,7 +185,7 @@ kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f # F
 ```
 
 After this is finished you will have a kubeconfig in `./examples/_out/clusterapi.kubeconfig`.
-You can debug most issues by SSHing into the VMs that have been created and 
+You can debug most issues by SSHing into the VMs that have been created and
 reading `/var/lib/waagent/custom-script/download/0/stdout`.
 
 ### Submitting PRs and testing
