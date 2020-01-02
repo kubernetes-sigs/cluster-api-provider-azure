@@ -41,7 +41,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.VirtualNetwork{}, errors.New("Invalid VNET Specification")
 	}
-	vnet, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name, "")
+	vnet, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vnet %s not found", vnetSpec.Name)
 	} else if err != nil {
@@ -71,37 +71,28 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	klog.V(2).Infof("creating vnet %s ", vnetSpec.Name)
-	f, err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name,
-		network.VirtualNetwork{
-			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-				ClusterName: s.Scope.Name(),
-				Lifecycle:   infrav1.ResourceLifecycleOwned,
-				Name:        to.StringPtr(fmt.Sprintf("%s-vnet", s.Scope.Name())),
-				Role:        to.StringPtr(infrav1.CommonRoleTagValue),
-				Additional:  s.Scope.AdditionalTags(),
-			})),
-			Location: to.StringPtr(s.Scope.Location()),
-			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-				AddressSpace: &network.AddressSpace{
-					AddressPrefixes: &[]string{vnetSpec.CIDR},
-				},
+	vnet := network.VirtualNetwork{
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.Scope.Name(),
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(fmt.Sprintf("%s-vnet", s.Scope.Name())),
+			Role:        to.StringPtr(infrav1.CommonRoleTagValue),
+			Additional:  s.Scope.AdditionalTags(),
+		})),
+		Location: to.StringPtr(s.Scope.Location()),
+		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+			AddressSpace: &network.AddressSpace{
+				AddressPrefixes: &[]string{vnetSpec.CIDR},
 			},
-		})
+		},
+	}
+	err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name, vnet)
 	if err != nil {
 		return err
 	}
 
-	err = f.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.Result(s.Client)
-	if err != nil {
-		return err
-	}
 	klog.V(2).Infof("successfully created vnet %s ", vnetSpec.Name)
-	return err
+	return nil
 }
 
 // Delete deletes the virtual network with the provided name.
@@ -111,7 +102,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid VNET Specification")
 	}
 	klog.V(2).Infof("deleting vnet %s ", vnetSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -120,13 +111,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete vnet %s in resource group %s", vnetSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot delete, future response")
-	}
-
-	_, err = future.Result(s.Client)
-
 	klog.V(2).Infof("successfully deleted vnet %s ", vnetSpec.Name)
-	return err
+	return nil
 }

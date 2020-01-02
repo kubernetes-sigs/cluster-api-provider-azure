@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
 
 // Spec specification for internal load balancer
@@ -43,7 +42,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 		return network.LoadBalancer{}, errors.New("invalid internal load balancer specification")
 	}
 	//lbName := fmt.Sprintf("%s-api-internallb", s.Scope.Cluster.Name)
-	lb, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, internalLBSpec.Name, "")
+	lb, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, internalLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "load balancer %s not found", internalLBSpec.Name)
 	} else if err != nil {
@@ -66,19 +65,15 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	lbName := internalLBSpec.Name
 
 	klog.V(2).Infof("getting subnet %s", internalLBSpec.SubnetName)
-	subnetInterface, err := subnets.NewService(s.Scope).Get(ctx, &subnets.Spec{Name: internalLBSpec.SubnetName, VnetName: internalLBSpec.VnetName})
+	subnet, err := s.SubnetsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, internalLBSpec.VnetName, internalLBSpec.SubnetName)
 	if err != nil {
 		return err
 	}
 
-	subnet, ok := subnetInterface.(network.Subnet)
-	if !ok {
-		return errors.New("subnet Get returned invalid interface")
-	}
 	klog.V(2).Infof("successfully got subnet %s", internalLBSpec.SubnetName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
-	future, err := s.Client.CreateOrUpdate(ctx,
+	err = s.Client.CreateOrUpdate(ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		lbName,
 		network.LoadBalancer{
@@ -140,12 +135,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create load balancer")
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot get internal load balancer create or update future response")
-	}
-
-	_, err = future.Result(s.Client)
 	klog.V(2).Infof("successfully created internal load balancer %s", internalLBSpec.Name)
 	return err
 }
@@ -157,7 +146,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid internal load balancer specification")
 	}
 	klog.V(2).Infof("deleting internal load balancer %s", internalLBSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, internalLBSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, internalLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -165,16 +154,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete internal load balancer %s in resource group %s", internalLBSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
-
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully deleted internal load balancer %s", internalLBSpec.Name)
-	return err
+	return nil
 }

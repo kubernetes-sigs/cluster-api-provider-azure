@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -34,8 +33,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
@@ -56,7 +53,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return compute.VirtualMachine{}, errors.New("invalid vm specification")
 	}
-	vm, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name, "")
+	vm, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm %s not found", vmSpec.Name)
 	} else if err != nil {
@@ -91,13 +88,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	klog.V(2).Infof("getting nic %s", vmSpec.NICName)
-	nicInterface, err := networkinterfaces.NewService(s.Scope).Get(ctx, &networkinterfaces.Spec{Name: vmSpec.NICName})
+	nic, err := s.InterfacesClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.NICName)
 	if err != nil {
 		return err
-	}
-	nic, ok := nicInterface.(network.Interface)
-	if !ok {
-		return errors.New("error getting network security group")
 	}
 	klog.V(2).Infof("got nic %s", vmSpec.NICName)
 
@@ -177,7 +170,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		virtualMachine.Zones = &zones
 	}
 
-	future, err := s.Client.CreateOrUpdate(
+	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		vmSpec.Name,
@@ -186,18 +179,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "cannot create vm")
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrapf(err, "cannot get the vm create or update future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return err
-	}
-
 	klog.V(2).Infof("successfully created vm %s ", vmSpec.Name)
-	return err
+	return nil
 }
 
 // Delete deletes the virtual machine with the provided name.
@@ -207,7 +190,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid vm Specification")
 	}
 	klog.V(2).Infof("deleting vm %s ", vmSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -216,15 +199,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot delete, future response")
-	}
-
-	_, err = future.Result(s.Client)
-
 	klog.V(2).Infof("successfully deleted vm %s ", vmSpec.Name)
-	return err
+	return nil
 }
 
 func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) ([]corev1.NodeAddress, error) {
@@ -245,13 +221,9 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 		nicName := getResourceNameByID(to.String(nicRef.ID))
 
 		// Fetch nic and append its addresses
-		nicInterface, err := networkinterfaces.NewService(s.Scope).Get(ctx, &networkinterfaces.Spec{Name: nicName})
+		nic, err := s.InterfacesClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicName)
 		if err != nil {
 			return addresses, err
-		}
-		nic, ok := nicInterface.(network.Interface)
-		if !ok {
-			return addresses, errors.New("unexpected type for network interface")
 		}
 
 		if nic.IPConfigurations == nil {
@@ -287,13 +259,9 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 // getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation
 func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
 	retAddress := corev1.NodeAddress{}
-	publicIPResult, err := publicips.NewService(s.Scope).Get(ctx, &publicips.Spec{Name: publicIPAddressName})
+	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPAddressName)
 	if err != nil {
 		return retAddress, err
-	}
-	publicIP, ok := publicIPResult.(network.PublicIPAddress)
-	if !ok {
-		return retAddress, errors.New("unexpected type for public ip address")
 	}
 	retAddress.Type = corev1.NodeExternalIP
 	retAddress.Address = to.String(publicIP.IPAddress)

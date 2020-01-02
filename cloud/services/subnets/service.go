@@ -17,32 +17,25 @@ limitations under the License.
 package subnets
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service provides operations on resource groups
+// Service provides operations on azure resources
 type Service struct {
-	Client network.SubnetsClient
-	Scope  *scope.ClusterScope
+	Scope *scope.ClusterScope
+	Client
+	SecurityGroupsClient securitygroups.Client
+	RouteTablesClient    routetables.Client
 }
 
-// getGroupsClient creates a new groups client from subscriptionid.
-func getSubnetsClient(subscriptionID string, authorizer autorest.Authorizer) network.SubnetsClient {
-	subnetsClient := network.NewSubnetsClient(subscriptionID)
-	subnetsClient.Authorizer = authorizer
-	subnetsClient.AddToUserAgent(azure.UserAgent)
-	return subnetsClient
-}
-
-// NewService creates a new groups service.
+// NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
-		Client: getSubnetsClient(scope.SubscriptionID, scope.Authorizer),
-		Scope:  scope,
+		Scope:                scope,
+		Client:               NewClient(scope.SubscriptionID, scope.Authorizer),
+		SecurityGroupsClient: securitygroups.NewClient(scope.SubscriptionID, scope.Authorizer),
+		RouteTablesClient:    routetables.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

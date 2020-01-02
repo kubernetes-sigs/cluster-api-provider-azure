@@ -17,32 +17,19 @@ limitations under the License.
 package virtualnetworks
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service provides operations on resource groups
+// Service provides operations on azure resources
 type Service struct {
-	Client network.VirtualNetworksClient
-	Scope  *scope.ClusterScope
+	Scope *scope.ClusterScope
+	Client
 }
 
-// getVirtualNetworksClient creates a new groups client from subscriptionid.
-func getVirtualNetworksClient(subscriptionID string, authorizer autorest.Authorizer) network.VirtualNetworksClient {
-	vnetsClient := network.NewVirtualNetworksClient(subscriptionID)
-	vnetsClient.Authorizer = authorizer
-	vnetsClient.AddToUserAgent(azure.UserAgent)
-	return vnetsClient
-}
-
-// NewService creates a new groups service.
+// NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
-		Client: getVirtualNetworksClient(scope.SubscriptionID, scope.Authorizer),
 		Scope:  scope,
+		Client: NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

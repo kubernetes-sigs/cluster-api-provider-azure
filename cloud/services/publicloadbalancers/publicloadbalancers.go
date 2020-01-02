@@ -27,7 +27,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 )
 
 // Spec specification for public load balancer
@@ -42,7 +41,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.LoadBalancer{}, errors.New("invalid public loadbalancer specification")
 	}
-	lb, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.Name, "")
+	lb, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "load balancer %s not found", publicLBSpec.Name)
 	} else if err != nil {
@@ -65,19 +64,15 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating public load balancer %s", lbName)
 
 	klog.V(2).Infof("getting public ip %s", publicLBSpec.PublicIPName)
-	pipInterface, err := publicips.NewService(s.Scope).Get(ctx, &publicips.Spec{Name: publicLBSpec.PublicIPName})
+	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.PublicIPName)
 	if err != nil {
 		return err
-	}
-	pip, ok := pipInterface.(network.PublicIPAddress)
-	if !ok {
-		return errors.New("got invalid public ip")
 	}
 
 	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
-	future, err := s.Client.CreateOrUpdate(ctx,
+	err = s.Client.CreateOrUpdate(ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		lbName,
 		network.LoadBalancer{
@@ -95,7 +90,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						Name: &frontEndIPConfigName,
 						FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
 							PrivateIPAllocationMethod: network.Dynamic,
-							PublicIPAddress:           &pip,
+							PublicIPAddress:           &publicIP,
 						},
 					},
 				},
@@ -185,16 +180,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create public load balancer")
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrapf(err, "cannot get public load balancer create or update future response")
-	}
-
-	s.Scope.Network().APIServerIP.IPAddress = *pip.IPAddress
-
-	_, err = future.Result(s.Client)
 	klog.V(2).Infof("successfully created public load balancer %s", lbName)
-	return err
+	return nil
 }
 
 // Delete deletes the public load balancer with the provided name.
@@ -204,7 +191,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid public loadbalancer specification")
 	}
 	klog.V(2).Infof("deleting public load balancer %s", publicLBSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -213,15 +200,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("deleted public load balancer %s", publicLBSpec.Name)
-	return err
+	return nil
 }

@@ -37,7 +37,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.RouteTable{}, errors.New("Invalid Route Table Specification")
 	}
-	routeTable, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, routeTableSpec.Name, "")
+	routeTable, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, routeTableSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "route table %s not found", routeTableSpec.Name)
 	} else if err != nil {
@@ -53,7 +53,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid Route Table Specification")
 	}
 	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
-	future, err := s.Client.CreateOrUpdate(
+	err := s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		routeTableSpec.Name,
@@ -66,17 +66,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully created route table %s", routeTableSpec.Name)
-	return err
+	return nil
 }
 
 // Delete deletes the route table with the provided name.
@@ -86,7 +77,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid Route Table Specification")
 	}
 	klog.V(2).Infof("deleting route table %s", routeTableSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, routeTableSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, routeTableSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -95,15 +86,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully deleted route table %s", routeTableSpec.Name)
-	return err
+	return nil
 }
