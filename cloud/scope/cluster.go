@@ -18,9 +18,7 @@ package scope
 
 import (
 	"context"
-	"os"
 
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
@@ -54,17 +52,10 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.Logger = klogr.New()
 	}
 
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	err := params.AzureClients.setCredentials()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create azure session")
+		return nil, errors.Wrap(err, "failed to create Azure session")
 	}
-	params.AzureClients.Authorizer = authorizer
-
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return nil, errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
-	}
-	params.AzureClients.SubscriptionID = subscriptionID
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {

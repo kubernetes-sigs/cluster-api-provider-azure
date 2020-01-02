@@ -17,11 +17,45 @@ limitations under the License.
 package scope
 
 import (
+	"os"
+
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/pkg/errors"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
 	SubscriptionID string
 	Authorizer     autorest.Authorizer
+}
+
+func (c *AzureClients) setCredentials() error {
+	if c.SubscriptionID == "" {
+		subID, err := getSubscriptionID()
+		if err != nil {
+			return err
+		}
+		c.SubscriptionID = subID
+	}
+	if c.Authorizer == nil {
+		auth, err := getAuthorizer()
+		if err != nil {
+			return err
+		}
+		c.Authorizer = auth
+	}
+	return nil
+}
+
+func getSubscriptionID() (string, error) {
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if subscriptionID == "" {
+		return "", errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
+	}
+	return subscriptionID, nil
+}
+
+func getAuthorizer() (autorest.Authorizer, error) {
+	return auth.NewAuthorizerFromEnvironment()
 }

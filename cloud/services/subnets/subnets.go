@@ -24,8 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
@@ -43,7 +41,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.Subnet{}, errors.New("Invalid Subnet Specification")
 	}
-	subnet, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name, "")
+	subnet, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "subnet %s not found", subnetSpec.Name)
 	} else if err != nil {
@@ -63,32 +61,24 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 	if subnetSpec.RouteTableName != "" {
 		klog.V(2).Infof("getting route table %s", subnetSpec.RouteTableName)
-		rtInterface, err := routetables.NewService(s.Scope).Get(ctx, &routetables.Spec{Name: subnetSpec.RouteTableName})
+		rt, err := s.RouteTablesClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.RouteTableName)
 		if err != nil {
 			return err
-		}
-		rt, rOk := rtInterface.(network.RouteTable)
-		if !rOk {
-			return errors.New("error getting route table")
 		}
 		klog.V(2).Infof("successfully got route table %s", subnetSpec.RouteTableName)
 		subnetProperties.RouteTable = &rt
 	}
 
 	klog.V(2).Infof("getting nsg %s", subnetSpec.SecurityGroupName)
-	nsgInterface, err := securitygroups.NewService(s.Scope).Get(ctx, &securitygroups.Spec{Name: subnetSpec.SecurityGroupName})
+	nsg, err := s.SecurityGroupsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.SecurityGroupName)
 	if err != nil {
 		return err
-	}
-	nsg, ok := nsgInterface.(network.SecurityGroup)
-	if !ok {
-		return errors.New("error getting network security group")
 	}
 	klog.V(2).Infof("got nsg %s", subnetSpec.SecurityGroupName)
 	subnetProperties.NetworkSecurityGroup = &nsg
 
 	klog.V(2).Infof("creating subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
-	future, err := s.Client.CreateOrUpdate(
+	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		subnetSpec.VnetName,
@@ -102,17 +92,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully created subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
-	return err
+	return nil
 }
 
 // Delete deletes the subnet with the provided name.
@@ -126,7 +107,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid Subnet Specification")
 	}
 	klog.V(2).Infof("deleting subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -135,15 +116,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully deleted subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
-	return err
+	return nil
 }

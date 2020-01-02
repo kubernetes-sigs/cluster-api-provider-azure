@@ -17,32 +17,19 @@ limitations under the License.
 package virtualmachineextensions
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service provides operations on resource groups
+// Service provides operations on azure resources
 type Service struct {
-	Client compute.VirtualMachineExtensionsClient
-	Scope  *scope.ClusterScope
+	Scope *scope.ClusterScope
+	Client
 }
 
-// getVirtualNetworksClient creates a new groups client from subscriptionid.
-func getVirtualMachineExtensionsClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineExtensionsClient {
-	vmExtClient := compute.NewVirtualMachineExtensionsClient(subscriptionID)
-	vmExtClient.Authorizer = authorizer
-	vmExtClient.AddToUserAgent(azure.UserAgent)
-	return vmExtClient
-}
-
-// NewService creates a new groups service.
+// NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
-		Client: getVirtualMachineExtensionsClient(scope.SubscriptionID, scope.Authorizer),
 		Scope:  scope,
+		Client: NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

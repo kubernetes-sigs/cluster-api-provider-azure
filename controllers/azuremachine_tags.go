@@ -46,7 +46,7 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 			Name: machineScope.Name(),
 		}
 		svc := virtualmachines.NewService(clusterScope, machineScope)
-		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.AzureCluster.Spec.ResourceGroup, machineScope.Name(), "")
+		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.AzureCluster.Spec.ResourceGroup, machineScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VM")
 		}
@@ -61,23 +61,13 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 
 		vm.Tags = tags
 
-		future, err := svc.Client.CreateOrUpdate(
+		err = svc.Client.CreateOrUpdate(
 			clusterScope.Context,
 			clusterScope.AzureCluster.Spec.ResourceGroup,
 			vmSpec.Name,
 			vm)
 		if err != nil {
 			return errors.Wrapf(err, "cannot update VM tags")
-		}
-
-		err = future.WaitForCompletionRef(clusterScope.Context, svc.Client.Client)
-		if err != nil {
-			return errors.Wrapf(err, "cannot get the VM create or update future response")
-		}
-
-		_, err = future.Result(svc.Client)
-		if err != nil {
-			return err
 		}
 
 		// We also need to update the annotation if anything changed.

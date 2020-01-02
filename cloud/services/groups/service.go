@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,32 +17,19 @@ limitations under the License.
 package groups
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/go-autorest/autorest"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service provides operations on resource groups
+// Service provides operations on azure resources
 type Service struct {
-	Client resources.GroupsClient
-	Scope  *scope.ClusterScope
+	Scope *scope.ClusterScope
+	Client
 }
 
-// getGroupsClient creates a new groups client from subscriptionid.
-func getGroupsClient(subscriptionID string, authorizer autorest.Authorizer) resources.GroupsClient {
-	groupsClient := resources.NewGroupsClient(subscriptionID)
-	groupsClient.Authorizer = authorizer
-	groupsClient.AddToUserAgent(azure.UserAgent)
-	return groupsClient
-}
-
-// NewService creates a new groups service.
+// NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
-		Client: getGroupsClient(scope.SubscriptionID, scope.Authorizer),
 		Scope:  scope,
+		Client: NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

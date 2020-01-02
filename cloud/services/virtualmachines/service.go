@@ -17,34 +17,27 @@ limitations under the License.
 package virtualmachines
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service provides operations on resource groups
+// Service provides operations on azure resources
 type Service struct {
-	Client       compute.VirtualMachinesClient
 	Scope        *scope.ClusterScope
 	MachineScope *scope.MachineScope
+	Client
+	InterfacesClient networkinterfaces.Client
+	PublicIPsClient  publicips.Client
 }
 
-// getVirtualNetworksClient creates a new groups client from subscriptionid.
-func getVirtualMachinesClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachinesClient {
-	vmClient := compute.NewVirtualMachinesClient(subscriptionID)
-	vmClient.Authorizer = authorizer
-	vmClient.AddToUserAgent(azure.UserAgent)
-	return vmClient
-}
-
-// NewService creates a new virtualmachines service.
+// NewService creates a new service.
 func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
 	return &Service{
-		Client:       getVirtualMachinesClient(scope.SubscriptionID, scope.Authorizer),
-		Scope:        scope,
-		MachineScope: machineScope,
+		Scope:            scope,
+		MachineScope:     machineScope,
+		Client:           NewClient(scope.SubscriptionID, scope.Authorizer),
+		InterfacesClient: networkinterfaces.NewClient(scope.SubscriptionID, scope.Authorizer),
+		PublicIPsClient:  publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

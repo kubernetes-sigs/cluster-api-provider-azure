@@ -38,7 +38,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.PublicIPAddress{}, errors.New("Invalid PublicIP Specification")
 	}
-	publicIP, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPSpec.Name, "")
+	publicIP, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "publicip %s not found", publicIPSpec.Name)
 	} else if err != nil {
@@ -57,7 +57,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating public ip %s", ipName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
-	future, err := s.Client.CreateOrUpdate(
+	err := s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		ipName,
@@ -80,17 +80,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create public ip")
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully created public ip %s", ipName)
-	return err
+	return nil
 }
 
 // Delete deletes the public ip with the provided scope.
@@ -100,7 +91,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid PublicIP Specification")
 	}
 	klog.V(2).Infof("deleting public ip %s", publicIPSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -109,15 +100,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete public ip %s in resource group %s", publicIPSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("deleted public ip %s", publicIPSpec.Name)
 	return err
 }

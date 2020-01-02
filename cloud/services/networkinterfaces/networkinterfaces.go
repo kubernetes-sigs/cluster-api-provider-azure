@@ -24,10 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
 
 // Spec specification for routetable
@@ -48,7 +44,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.Interface{}, errors.New("invalid network interface specification")
 	}
-	nic, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.Name, "")
+	nic, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "network interface %s not found", nicSpec.Name)
 	} else if err != nil {
@@ -66,14 +62,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
-	subnetInterface, err := subnets.NewService(s.Scope).Get(ctx, &subnets.Spec{Name: nicSpec.SubnetName, VnetName: nicSpec.VnetName})
+	subnet, err := s.SubnetsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.VnetName, nicSpec.SubnetName)
 	if err != nil {
 		return err
-	}
-
-	subnet, ok := subnetInterface.(network.Subnet)
-	if !ok {
-		return errors.New("subnet get returned invalid network interface")
 	}
 
 	nicConfig.Subnet = &network.Subnet{ID: subnet.ID}
@@ -85,14 +76,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	backendAddressPools := []network.BackendAddressPool{}
 	if nicSpec.PublicLoadBalancerName != "" {
-		lbInterface, lberr := publicloadbalancers.NewService(s.Scope).Get(ctx, &publicloadbalancers.Spec{Name: nicSpec.PublicLoadBalancerName})
+		lb, lberr := s.LoadBalancersClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.PublicLoadBalancerName)
 		if lberr != nil {
 			return lberr
-		}
-
-		lb, ok := lbInterface.(network.LoadBalancer)
-		if !ok {
-			return errors.New("public load balancer get returned invalid network interface")
 		}
 
 		backendAddressPools = append(backendAddressPools,
@@ -107,35 +93,27 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 	}
 	if nicSpec.InternalLoadBalancerName != "" {
-		internallbInterface, ilberr := internalloadbalancers.NewService(s.Scope).Get(ctx, &internalloadbalancers.Spec{Name: nicSpec.InternalLoadBalancerName})
+		internalLB, ilberr := s.LoadBalancersClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.InternalLoadBalancerName)
 		if ilberr != nil {
 			return ilberr
 		}
 
-		internallb, ok := internallbInterface.(network.LoadBalancer)
-		if !ok {
-			return errors.New("internal load balancer get returned invalid network interface")
-		}
 		backendAddressPools = append(backendAddressPools,
 			network.BackendAddressPool{
-				ID: (*internallb.BackendAddressPools)[0].ID,
+				ID: (*internalLB.BackendAddressPools)[0].ID,
 			})
 	}
 	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 	if nicSpec.PublicIPName != "" {
-		publicIPInterface, err := publicips.NewService(s.Scope).Get(ctx, &publicips.Spec{Name: nicSpec.PublicIPName})
+		publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.PublicIPName)
 		if err != nil {
 			return errors.Wrap(err, "failed to get publicIP")
-		}
-		publicIP, ok := publicIPInterface.(network.PublicIPAddress)
-		if !ok {
-			return errors.Wrap(err, "unexpected type for publicIP")
 		}
 		nicConfig.PublicIPAddress = &publicIP
 	}
 
-	future, err := s.Client.CreateOrUpdate(ctx,
+	err = s.Client.CreateOrUpdate(ctx,
 		s.Scope.AzureCluster.Spec.ResourceGroup,
 		nicSpec.Name,
 		network.Interface{
@@ -154,17 +132,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully created network interface %s", nicSpec.Name)
-	return err
+	return nil
 }
 
 // Delete deletes the network interface with the provided name.
@@ -174,7 +143,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid network interface Specification")
 	}
 	klog.V(2).Infof("deleting nic %s", nicSpec.Name)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -183,15 +152,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete network interface %s in resource group %s", nicSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot create, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		return errors.Wrap(err, "result error")
-	}
 	klog.V(2).Infof("successfully deleted nic %s", nicSpec.Name)
-	return err
+	return nil
 }

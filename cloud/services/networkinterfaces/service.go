@@ -17,32 +17,28 @@ limitations under the License.
 package networkinterfaces
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	"github.com/Azure/go-autorest/autorest"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
 
-var _ azure.Service = (*Service)(nil)
-
-// Service provides operations on resource groups
+// Service provides operations on azure resources
 type Service struct {
-	Client network.InterfacesClient
-	Scope  *scope.ClusterScope
+	Scope *scope.ClusterScope
+	Client
+	SubnetsClient       subnets.Client
+	LoadBalancersClient publicloadbalancers.Client
+	PublicIPsClient     publicips.Client
 }
 
-// getGroupsClient creates a new groups client from subscriptionid.
-func getNetworkInterfacesClient(subscriptionID string, authorizer autorest.Authorizer) network.InterfacesClient {
-	nicClient := network.NewInterfacesClient(subscriptionID)
-	nicClient.Authorizer = authorizer
-	nicClient.AddToUserAgent(azure.UserAgent)
-	return nicClient
-}
-
-// NewService creates a new groups service.
+// NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
-		Client: getNetworkInterfacesClient(scope.SubscriptionID, scope.Authorizer),
-		Scope:  scope,
+		Scope:               scope,
+		Client:              NewClient(scope.SubscriptionID, scope.Authorizer),
+		SubnetsClient:       subnets.NewClient(scope.SubscriptionID, scope.Authorizer),
+		LoadBalancersClient: publicloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
+		PublicIPsClient:     publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

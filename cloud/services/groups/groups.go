@@ -67,7 +67,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return nil
 	}
 	klog.V(2).Infof("deleting resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
-	future, err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
+	err = s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
@@ -76,16 +76,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
 	}
 
-	err = future.WaitForCompletionRef(ctx, s.Client.Client)
-	if err != nil {
-		return errors.Wrap(err, "cannot delete, future response")
-	}
-
-	_, err = future.Result(s.Client)
-	if err != nil {
-		klog.V(2).Infof("successfully deleted resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
-	}
-	return err
+	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	return nil
 }
 
 func (s *Service) isGroupManaged(ctx context.Context, spec interface{}) (bool, error) {
