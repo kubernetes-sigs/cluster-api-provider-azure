@@ -19,7 +19,7 @@ set -o nounset
 set -o pipefail
 
 GOPATH_BIN="$(go env GOPATH)/bin/"
-MINIMUM_KIND_VERSION=v0.5.1
+MINIMUM_KIND_VERSION=v0.6.1
 
 # Ensure the kind tool exists and is a viable version, or installs it
 verify_kind_version() {
@@ -41,7 +41,7 @@ verify_kind_version() {
 
   local kind_version
   kind_version=$(kind version)
-  if [[ "${MINIMUM_KIND_VERSION}" != $(echo -e "${MINIMUM_KIND_VERSION}\n${kind_version}" | sort -s -t. -k 1,1 -k 2,2n -k 3,3n | head -n1) ]]; then
+   if ! [[ "${kind_version}" =~ ${MINIMUM_KIND_VERSION} ]]; then
     cat <<EOF
 Detected kind version: ${kind_version}.
 Requires ${MINIMUM_KIND_VERSION} or greater.

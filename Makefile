@@ -297,22 +297,18 @@ create-cluster: ## Create a development Kubernetes cluster on Azure in a KIND ma
 	kind create cluster --name=clusterapi
 	# Apply provider-components.
 	kubectl \
-		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/provider-components.yaml
 	# Create Cluster.
 	kubectl \
-		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/cluster.yaml
 	# Create control plane machines.
 	kubectl \
-		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/controlplane.yaml
 	# wait for the first control plane machine to be ready
 	./examples/wait-for-ready.sh
 	# Fetch the Kubeconfig for the target cluster
 	source ./examples/_out/.env; \
 	kubectl \
-		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		--namespace=default get secret/$$CLUSTER_NAME-kubeconfig -o json \
 		| jq -r .data.value \
 		| base64 --decode > ./examples/_out/clusterapi.kubeconfig
@@ -322,10 +318,9 @@ create-cluster: ## Create a development Kubernetes cluster on Azure in a KIND ma
 	  apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml
 	# Create 2 worker nodes with MachineDeployment.
 	kubectl \
-		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		create -f examples/_out/machinedeployment.yaml
 
-	@echo 'run "kubectl --kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") ..." to work with the kind cluster'
+	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-clusterapi"'
 	@echo 'run "kubectl --kubeconfig=./examples/_out/clusterapi.kubeconfig ..." to work with the new target cluster'
 
 .PHONY: delete-cluster
@@ -333,7 +328,6 @@ delete-cluster: $(CLUSTERCTL) ## Deletes the example Kubernetes Cluster "cluster
 	# Fetch the Kubeconfig for the target cluster
 	source ./examples/_out/.env; \
 	kubectl \
-		--kubeconfig=$$(kind get kubeconfig-path --name="clusterapi") \
 		delete cluster $$CLUSTER_NAME
 
 	kind delete cluster --name=clusterapi
