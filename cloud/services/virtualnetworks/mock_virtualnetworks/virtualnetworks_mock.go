@@ -92,3 +92,18 @@ func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
 }
+
+// CheckIPAddressAvailability mocks base method
+func (m *MockClient) CheckIPAddressAvailability(arg0 context.Context, arg1, arg2, arg3 string) (network.IPAddressAvailabilityResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIPAddressAvailability", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(network.IPAddressAvailabilityResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckIPAddressAvailability indicates an expected call of CheckIPAddressAvailability
+func (mr *MockClientMockRecorder) CheckIPAddressAvailability(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIPAddressAvailability", reflect.TypeOf((*MockClient)(nil).CheckIPAddressAvailability), arg0, arg1, arg2, arg3)
+}

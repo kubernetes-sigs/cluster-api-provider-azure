@@ -222,7 +222,7 @@ func (s *azureMachineService) reconcilePublicIP(publicIPName string) error {
 func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     nicName,
-		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
+		VnetName: s.clusterScope.Vnet().Name,
 	}
 
 	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
@@ -236,7 +236,7 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 
 	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:
-		networkInterfaceSpec.SubnetName = azure.GenerateNodeSubnetName(s.clusterScope.Name())
+		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
 	case infrav1.ControlPlane:
 		// TODO: Come up with a better way to determine the control plane NAT rule
 		natRuleString := strings.TrimPrefix(nicName, fmt.Sprintf("%s-controlplane-", s.clusterScope.Name()))
@@ -247,7 +247,7 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 		}
 
 		networkInterfaceSpec.NatRule = natRule
-		networkInterfaceSpec.SubnetName = azure.GenerateControlPlaneSubnetName(s.clusterScope.Name())
+		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name
 		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
 		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.Name())
 	default:

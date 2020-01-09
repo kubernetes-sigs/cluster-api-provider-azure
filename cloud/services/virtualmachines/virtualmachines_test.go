@@ -139,10 +139,6 @@ func TestCreateVM(t *testing.T) {
 				},
 			}
 
-			azureCluster := tc.azureCluster
-
-			machine := &tc.machine
-
 			azureMachine := &infrav1.AzureMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "azure-test1",
@@ -156,18 +152,18 @@ func TestCreateVM(t *testing.T) {
 				},
 			}
 
-			client := fake.NewFakeClient(secret, cluster, machine)
+			client := fake.NewFakeClient(secret, cluster, &tc.machine)
 
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 				Client:  client,
 				Cluster: cluster,
-				Machine: machine,
+				Machine: &tc.machine,
 				AzureClients: scope.AzureClients{
 					SubscriptionID: "123",
 					Authorizer:     autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
-				AzureCluster: azureCluster,
+				AzureCluster: tc.azureCluster,
 			})
 			if err != nil {
 				t.Fatalf("Failed to create test context: %v", err)

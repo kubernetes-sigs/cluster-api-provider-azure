@@ -30,7 +30,7 @@ import (
 
 // Get provides information about a resource group.
 func (s *Service) Get(ctx context.Context, spec interface{}) (resources.Group, error) {
-	return s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
+	return s.Client.Get(ctx, s.Scope.ResourceGroup())
 }
 
 // Reconcile gets/creates/updates a resource group.
@@ -39,19 +39,19 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// resource group already exists, skip creation
 		return nil
 	}
-	klog.V(2).Infof("creating resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	klog.V(2).Infof("creating resource group %s", s.Scope.ResourceGroup())
 	group := resources.Group{
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.Scope.Name(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.Scope.AzureCluster.Spec.ResourceGroup),
+			Name:        to.StringPtr(s.Scope.ResourceGroup()),
 			Role:        to.StringPtr(infrav1.CommonRoleTagValue),
 			Additional:  s.Scope.AdditionalTags(),
 		})),
 	}
-	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, group)
-	klog.V(2).Infof("successfully created resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
+	klog.V(2).Infof("successfully created resource group %s", s.Scope.ResourceGroup())
 	return err
 }
 
@@ -66,17 +66,17 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		s.Scope.V(4).Info("Skipping resource group deletion in unmanaged mode")
 		return nil
 	}
-	klog.V(2).Infof("deleting resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
-	err = s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup)
+	klog.V(2).Infof("deleting resource group %s", s.Scope.ResourceGroup())
+	err = s.Client.Delete(ctx, s.Scope.ResourceGroup())
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.AzureCluster.Spec.ResourceGroup)
+	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.ResourceGroup())
 	return nil
 }
 

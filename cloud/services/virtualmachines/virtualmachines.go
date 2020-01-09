@@ -53,7 +53,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return compute.VirtualMachine{}, errors.New("invalid vm specification")
 	}
-	vm, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name)
+	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm %s not found", vmSpec.Name)
 	} else if err != nil {
@@ -88,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	klog.V(2).Infof("getting nic %s", vmSpec.NICName)
-	nic, err := s.InterfacesClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.NICName)
+	nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), vmSpec.NICName)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	err = s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.AzureCluster.Spec.ResourceGroup,
+		s.Scope.ResourceGroup(),
 		vmSpec.Name,
 		virtualMachine)
 	if err != nil {
@@ -190,13 +190,13 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid vm Specification")
 	}
 	klog.V(2).Infof("deleting vm %s ", vmSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
 	}
 
 	klog.V(2).Infof("successfully deleted vm %s ", vmSpec.Name)
@@ -221,7 +221,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 		nicName := getResourceNameByID(to.String(nicRef.ID))
 
 		// Fetch nic and append its addresses
-		nic, err := s.InterfacesClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nicName)
+		nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
 		if err != nil {
 			return addresses, err
 		}
@@ -259,7 +259,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 // getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation
 func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
 	retAddress := corev1.NodeAddress{}
-	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, publicIPAddressName)
+	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
 	if err != nil {
 		return retAddress, err
 	}

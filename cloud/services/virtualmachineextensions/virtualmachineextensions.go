@@ -39,7 +39,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return compute.VirtualMachineExtension{}, errors.New("invalid vm specification")
 	}
-	vmExt, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name)
+	vmExt, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmExtSpec.VMName, vmExtSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "vm extension %s not found", vmExtSpec.Name)
 	} else if err != nil {
@@ -59,7 +59,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.AzureCluster.Spec.ResourceGroup,
+		s.Scope.ResourceGroup(),
 		vmExtSpec.VMName,
 		vmExtSpec.Name,
 		compute.VirtualMachineExtension{
@@ -94,13 +94,13 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid VNET Specification")
 	}
 	klog.V(2).Infof("deleting vm extension %s ", vmExtSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, vmExtSpec.VMName, vmExtSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmExtSpec.VMName, vmExtSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm extension %s in resource group %s", vmExtSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete vm extension %s in resource group %s", vmExtSpec.Name, s.Scope.ResourceGroup())
 	}
 
 	klog.V(2).Infof("successfully deleted vm %s ", vmExtSpec.Name)

@@ -49,7 +49,8 @@ spec:
               description: NetworkSpec encapsulates all things related to Azure network.
               properties:
                 subnets:
-                  description: Subnets configuration.
+                  description: Subnets is the configuration for the control-plane
+                    subnet and the node subnet.
                   items:
                     description: SubnetSpec configures an Azure subnet.
                     properties:
@@ -61,8 +62,16 @@ spec:
                         description: ID defines a unique identifier to reference this
                           resource.
                         type: string
+                      internalLBIPAddress:
+                        description: InternalLBIPAddress is the IP address that will
+                          be used as the internal LB private IP. For the control plane
+                          subnet only.
+                        type: string
                       name:
                         description: Name defines a name for the subnet resource.
+                        type: string
+                      role:
+                        description: Role defines the subnet role (eg. Node, ControlPlane)
                         type: string
                       securityGroup:
                         description: SecurityGroup defines the NSG (network security
@@ -121,23 +130,13 @@ spec:
                               type: string
                             description: Tags defines a map of tags.
                             type: object
-                        required:
-                        - id
-                        - ingressRule
-                        - name
                         type: object
-                      vnetId:
-                        description: VnetID defines the ID of the virtual network
-                          this subnet should be built in.
-                        type: string
                     required:
                     - name
-                    - securityGroup
-                    - vnetId
                     type: object
                   type: array
                 vnet:
-                  description: Vnet configuration.
+                  description: Vnet is the configuration for the Azure virtual network.
                   properties:
                     cidrBlock:
                       description: CidrBlock is the CIDR block to be used when the
@@ -149,6 +148,11 @@ spec:
                       type: string
                     name:
                       description: Name defines a name for the virtual network resource.
+                      type: string
+                    resourceGroup:
+                      description: ResourceGroup is the name of the resource group
+                        of the existing virtual network or the resource group where
+                        a managed virtual network should be created.
                       type: string
                     tags:
                       additionalProperties:
@@ -368,10 +372,6 @@ spec:
                           type: string
                         description: Tags defines a map of tags.
                         type: object
-                    required:
-                    - id
-                    - ingressRule
-                    - name
                     type: object
                   description: SecurityGroups is a map from the role/kind of the security
                     group to its unique name, if any.

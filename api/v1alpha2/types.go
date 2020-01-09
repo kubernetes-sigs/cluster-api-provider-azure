@@ -90,17 +90,21 @@ type Network struct {
 
 // NetworkSpec encapsulates all things related to Azure network.
 type NetworkSpec struct {
-	// Vnet configuration.
+	// Vnet is the configuration for the Azure virtual network.
 	// +optional
 	Vnet VnetSpec `json:"vnet,omitempty"`
 
-	// Subnets configuration.
+	// Subnets is the configuration for the control-plane subnet and the node subnet.
 	// +optional
 	Subnets Subnets `json:"subnets,omitempty"`
 }
 
 // VnetSpec configures an Azure virtual network.
 type VnetSpec struct {
+	// ResourceGroup is the name of the resource group of the existing virtual network
+	// or the resource group where a managed virtual network should be created.
+	ResourceGroup string `json:"resourceGroup,omitempty"`
+
 	// ID is the identifier of the virtual network this provider should use to create resources.
 	ID string `json:"id,omitempty"`
 
@@ -114,9 +118,9 @@ type VnetSpec struct {
 	Tags Tags `json:"tags,omitempty"`
 }
 
-// IsManaged returns true if the vnet is unmanaged.
+// IsManaged returns true if the vnet is managed.
 func (v *VnetSpec) IsManaged(clusterName string) bool {
-	return v.ID != "" && !v.Tags.HasOwned(clusterName)
+	return v.ID == "" || v.Tags.HasOwned(clusterName)
 }
 
 // Subnets is a slice of Subnet.
@@ -147,9 +151,9 @@ var (
 
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
-	ID           string       `json:"id"`
-	Name         string       `json:"name"`
-	IngressRules IngressRules `json:"ingressRule"`
+	ID           string       `json:"id,omitempty"`
+	Name         string       `json:"name,omitempty"`
+	IngressRules IngressRules `json:"ingressRule,omitempty"`
 	Tags         Tags         `json:"tags,omitempty"`
 }
 
@@ -433,22 +437,37 @@ type ManagedDisk struct {
 	StorageAccountType string `json:"storageAccountType"`
 }
 
+// SubnetRole defines the unique role of a subnet.
+type SubnetRole string
+
+var (
+	// SubnetNode defines a Kubernetes workload node role
+	SubnetNode = SubnetRole(Node)
+
+	// SubnetControlPlane defines a Kubernetes control plane node role
+	SubnetControlPlane = SubnetRole(ControlPlane)
+)
+
 // SubnetSpec configures an Azure subnet.
 type SubnetSpec struct {
+	// Role defines the subnet role (eg. Node, ControlPlane)
+	Role SubnetRole `json:"role,omitempty"`
+
 	// ID defines a unique identifier to reference this resource.
 	ID string `json:"id,omitempty"`
 
 	// Name defines a name for the subnet resource.
 	Name string `json:"name"`
 
-	// VnetID defines the ID of the virtual network this subnet should be built in.
-	VnetID string `json:"vnetId"`
-
 	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
+	// InternalLBIPAddress is the IP address that will be used as the internal LB private IP.
+	// For the control plane subnet only.
+	InternalLBIPAddress string `json:"internalLBIPAddress,omitempty"`
+
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
-	SecurityGroup SecurityGroup `json:"securityGroup"`
+	SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
 }
 
 const (

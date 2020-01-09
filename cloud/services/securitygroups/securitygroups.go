@@ -39,7 +39,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return network.SecurityGroup{}, errors.New("invalid security groups specification")
 	}
-	securityGroup, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nsgSpec.Name)
+	securityGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "security group %s not found", nsgSpec.Name)
 	} else if err != nil {
@@ -50,6 +50,10 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+		s.Scope.V(4).Info("Skipping network security group reconcile in custom vnet mode")
+		return nil
+	}
 	nsgSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid security groups specification")
@@ -92,7 +96,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
 	err := s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.AzureCluster.Spec.ResourceGroup,
+		s.Scope.ResourceGroup(),
 		nsgSpec.Name,
 		network.SecurityGroup{
 			Location: to.StringPtr(s.Scope.Location()),
@@ -102,7 +106,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
 	klog.V(2).Infof("created security group %s", nsgSpec.Name)
@@ -116,13 +120,13 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid security groups specification")
 	}
 	klog.V(2).Infof("deleting security group %s", nsgSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, nsgSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
 	klog.V(2).Infof("deleted security group %s", nsgSpec.Name)

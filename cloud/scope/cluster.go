@@ -99,9 +99,40 @@ func (s *ClusterScope) Subnets() infrav1.Subnets {
 	return s.AzureCluster.Spec.NetworkSpec.Subnets
 }
 
+// ControlPlaneSubnet returns the cluster control plane subnet.
+func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
+	for _, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		if sn.Role == infrav1.SubnetControlPlane {
+			return sn
+		}
+	}
+	if len(s.AzureCluster.Spec.NetworkSpec.Subnets) > 0 {
+		return s.AzureCluster.Spec.NetworkSpec.Subnets[0]
+	}
+	return nil
+}
+
+// NodeSubnet returns the cluster node subnet.
+func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
+	for _, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		if sn.Role == infrav1.SubnetNode {
+			return sn
+		}
+	}
+	if len(s.AzureCluster.Spec.NetworkSpec.Subnets) > 1 {
+		return s.AzureCluster.Spec.NetworkSpec.Subnets[1]
+	}
+	return nil
+}
+
 // SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
 func (s *ClusterScope) SecurityGroups() map[infrav1.SecurityGroupRole]infrav1.SecurityGroup {
 	return s.AzureCluster.Status.Network.SecurityGroups
+}
+
+// ResourceGroup returns the cluster resource group.
+func (s *ClusterScope) ResourceGroup() string {
+	return s.AzureCluster.Spec.ResourceGroup
 }
 
 // Name returns the cluster name.

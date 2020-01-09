@@ -18,36 +18,54 @@ package subnets
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
-	Name              string
-	CIDR              string
-	VnetName          string
-	RouteTableName    string
-	SecurityGroupName string
+	Name                string
+	CIDR                string
+	VnetName            string
+	RouteTableName      string
+	SecurityGroupName   string
+	Role                infrav1.SubnetRole
+	InternalLBIPAddress string
 }
 
 // Get provides information about a subnet.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
+func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.SubnetSpec, error) {
 	subnetSpec, ok := spec.(*Spec)
 	if !ok {
-		return network.Subnet{}, errors.New("Invalid Subnet Specification")
+		return nil, errors.New("Invalid Subnet Specification")
 	}
-	subnet, err := s.Client.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "subnet %s not found", subnetSpec.Name)
-	} else if err != nil {
-		return subnet, err
+	subnet, err := s.Client.Get(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
+	if err != nil {
+		return nil, err
 	}
-	return subnet, nil
+	var sg infrav1.SecurityGroup
+	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.NetworkSecurityGroup != nil {
+		sg = infrav1.SecurityGroup{
+			Name: to.String(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.Name),
+			ID:   to.String(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.ID),
+			Tags: converters.MapToTags(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.Tags),
+		}
+	}
+	return &infrav1.SubnetSpec{
+		Role:                subnetSpec.Role,
+		InternalLBIPAddress: subnetSpec.InternalLBIPAddress,
+		Name:                to.String(subnet.Name),
+		ID:                  to.String(subnet.ID),
+		CidrBlock:           to.String(subnet.SubnetPropertiesFormat.AddressPrefix),
+		SecurityGroup:       sg,
+	}, nil
 }
 
 // Reconcile gets/creates/updates a subnet.
@@ -56,12 +74,27 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("Invalid Subnet Specification")
 	}
+	if subnet, err := s.Get(ctx, subnetSpec); err == nil {
+		// TODO: add validation on existing subnet
+		// subnet already exists, skip creation
+		if subnetSpec.Role == infrav1.SubnetControlPlane {
+			subnet.DeepCopyInto(s.Scope.ControlPlaneSubnet())
+		} else if subnetSpec.Role == infrav1.SubnetNode {
+			subnet.DeepCopyInto(s.Scope.NodeSubnet())
+		}
+		return nil
+	}
+	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+		// if vnet is unmanaged, we expect all subnets to be created as well
+		return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
+	}
+
 	subnetProperties := network.SubnetPropertiesFormat{
 		AddressPrefix: to.StringPtr(subnetSpec.CIDR),
 	}
 	if subnetSpec.RouteTableName != "" {
 		klog.V(2).Infof("getting route table %s", subnetSpec.RouteTableName)
-		rt, err := s.RouteTablesClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.RouteTableName)
+		rt, err := s.RouteTablesClient.Get(ctx, s.Scope.ResourceGroup(), subnetSpec.RouteTableName)
 		if err != nil {
 			return err
 		}
@@ -70,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	klog.V(2).Infof("getting nsg %s", subnetSpec.SecurityGroupName)
-	nsg, err := s.SecurityGroupsClient.Get(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.SecurityGroupName)
+	nsg, err := s.SecurityGroupsClient.Get(ctx, s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)
 	if err != nil {
 		return err
 	}
@@ -80,7 +113,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
 	err = s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.AzureCluster.Spec.ResourceGroup,
+		s.Scope.Vnet().ResourceGroup,
 		subnetSpec.VnetName,
 		subnetSpec.Name,
 		network.Subnet{
@@ -89,7 +122,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
 	}
 
 	klog.V(2).Infof("successfully created subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
@@ -98,8 +131,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the subnet with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	if s.Scope.Vnet().IsManaged(s.Scope.Name()) {
-		s.Scope.V(4).Info("Skipping subnets deletion in unmanaged mode")
+	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+		s.Scope.V(4).Info("Skipping subnets deletion in custom vnet mode")
 		return nil
 	}
 	subnetSpec, ok := spec.(*Spec)
@@ -107,13 +140,13 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid Subnet Specification")
 	}
 	klog.V(2).Infof("deleting subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
-	err := s.Client.Delete(ctx, s.Scope.AzureCluster.Spec.ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
+	err := s.Client.Delete(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.AzureCluster.Spec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
 	}
 
 	klog.V(2).Infof("successfully deleted subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)

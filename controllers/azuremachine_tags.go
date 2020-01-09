@@ -46,7 +46,7 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 			Name: machineScope.Name(),
 		}
 		svc := virtualmachines.NewService(clusterScope, machineScope)
-		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.AzureCluster.Spec.ResourceGroup, machineScope.Name())
+		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.ResourceGroup(), machineScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VM")
 		}
@@ -63,7 +63,7 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 
 		err = svc.Client.CreateOrUpdate(
 			clusterScope.Context,
-			clusterScope.AzureCluster.Spec.ResourceGroup,
+			clusterScope.ResourceGroup(),
 			vmSpec.Name,
 			vm)
 		if err != nil {
