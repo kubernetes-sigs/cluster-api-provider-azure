@@ -27,14 +27,15 @@
 ## Requirements
 
 - Linux or MacOS (Windows isn't supported at the moment)
-- A set of Azure credentials sufficient to bootstrap the cluster (an Azure service principal with Collaborator rights).
+- A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
+- Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+- Install the [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) 
 - [KIND]
-- [kubectl]
 - [kustomize]
 - make
-- [gettext](https://www.gnu.org/software/gettext/) (with `envsubst` in your PATH)
+- gettext (with `envsubst` in your PATH)
 - md5sum
-- [bazel](https://docs.bazel.build/versions/1.2.0/getting-started.html)
+- bazel
 
 ### Optional
 
@@ -46,35 +47,49 @@
 [go]: https://golang.org/dl/
 [jq]: https://stedolan.github.io/jq/download/
 [kind]: https://sigs.k8s.io/kind
-[kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 
 ## Prerequisites
 
-### Install release binaries
-
-Get the latest [release of `clusterctl`](https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases) and place them in your PATH.
-
-#### Building from master
+### Building from master
 
 If you're interested in developing cluster-api-provider-azure and getting the latest version from `master`, please follow the [development guide][development].
 
-## Deploying a cluster
+### Deploying a cluster
 
-### Setting up the environment
+#### Setting up your Azure environment
 
-An Azure Service Principal is needed for usage by the `clusterctl` tool and for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
+An Azure Service Principal is needed for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
+  
+  1. List your Azure subscriptions. 
 
-The following environment variables should be set:
+   ```bash
+  az account list -o table
+   ```
 
-- `AZURE_SUBSCRIPTION_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
+  2. Save your Subscription ID in an enviroment variable.
 
-An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Note that the service principals created by the scripts will not be deleted automatically._
+  ```bash
+  export AZURE_SUBSCRIPTION_ID="<SubscriptionId>"
+  ```
+   
+  3. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal. 
 
-### Generating cluster manifests and example cluster
+  ```bash
+  az ad sp create-for-rbac --name SPClusterAPI
+  ```
+
+  4. Save the output from the above command in enviroment variables. 
+
+  ```bash  
+  export AZURE_TENANT_ID=<Tenant>
+  export AZURE_CLIENT_ID=<AppId>
+  export AZURE_CLIENT_SECRET=<Password>
+  export AZURE_LOCATION="eastus"
+  ```
+<!--An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Note that the service principals created by the scripts will not be deleted automatically._ -->
+
+#### Generating cluster manifests and example cluster
 
 Download the cluster-api-provider-azure-examples.tar file and unpack it.
 
@@ -91,10 +106,10 @@ Here is a list of commonly overriden configuration parameters (the full list is 
 ```bash
 # Azure settings.
 export AZURE_LOCATION="eastus"
-export AZURE_RESOURCE_GROUP="kubecuddles"
+export AZURE_RESOURCE_GROUP="capz-rg"
 
 # Cluster settings.
-export CLUSTER_NAME="pony-unicorns"
+export CLUSTER_NAME="capz-cluster"
 
 # Machine settings.
 export CONTROL_PLANE_MACHINE_TYPE="Standard_B2ms"
@@ -112,7 +127,7 @@ You can also [build your own image](https://github.com/kubernetes-sigs/image-bui
 Now that the deployment has been customized, the next step is to generate the required manifests:
 
 ```bash
-./azure/generate-yaml.sh
+./examples/generate.sh
 ```
 
 **Please review `manifests.md` to understand which manifests to use for various cluster scenarios.**
@@ -126,16 +141,10 @@ Verify that the manifests reflect the expected settings before continuing.
 You can now start the Cluster API controllers and deploy a new cluster in Azure:
 
 ```bash
-clusterctl create cluster -v 4 \
-  --bootstrap-type kind \
-  --provider azure \
-  -m ./azure/out/<machine-manifest> \
-  -c ./azure/out/<cluster-manifest> \
-  -p ./azure/out/provider-components.yaml \
-  -a ./azure/out/addons.yaml
+make create-cluster
 ```
 
-Here is some example output from `clusterctl`:
+Here is some example output from `make`:
 
 <details>
 
@@ -240,19 +249,9 @@ I0324 23:54:00.260254   27739 kind.go:72] Ran: kind [delete cluster --name=clust
 
 The created KIND cluster is ephemeral and is cleaned up automatically when done. During the cluster creation, the kubectl context is set to "kind-clusterapi" and can be retrieved using `kubectl cluster-info --context kind-clusterapi`.
 
-For a more in-depth look into what `clusterctl` is doing during this create step, please see the [clusterctl document](/docs/clusterctl.md).
+## Next steps
 
-## Using the cluster
-
-The kubeconfig for the new cluster is created in the directory from where the above `clusterctl create` was run.
-
-Run the following command to point `kubectl` to the kubeconfig of the new cluster:
-
-```bash
-export KUBECONFIG=$(pwd)/kubeconfig
-```
-
-Alternatively, move the kubeconfig file to a desired location and set the `KUBECONFIG` environment variable accordingly.
+You've just created an initial management cluster with kind. You are now ready to set up this management cluster and use it to create workload clusters. Follow the documentation in the [Cluster API Book](https://cluster-api.sigs.k8s.io/tasks/installation.html) to learn more. 
 
 ## Troubleshooting
 
