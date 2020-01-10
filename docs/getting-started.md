@@ -43,9 +43,9 @@
 - [Go]
 
 [brew]: https://brew.sh/
-[Go]: https://golang.org/dl/
+[go]: https://golang.org/dl/
 [jq]: https://stedolan.github.io/jq/download/
-[KIND]: https://sigs.k8s.io/kind
+[kind]: https://sigs.k8s.io/kind
 [kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 
@@ -66,6 +66,7 @@ If you're interested in developing cluster-api-provider-azure and getting the la
 An Azure Service Principal is needed for usage by the `clusterctl` tool and for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
 
 The following environment variables should be set:
+
 - `AZURE_SUBSCRIPTION_ID`
 - `AZURE_TENANT_ID`
 - `AZURE_CLIENT_ID`
@@ -86,6 +87,7 @@ tar -xvf cluster-api-provider-azure-examples.tar
 A set of sane defaults are utilized when generating manifests via `./azure/generate-yaml.sh`, but these can be overridden by exporting environment variables.
 
 Here is a list of commonly overriden configuration parameters (the full list is available in `./azure/generate-yaml.sh`):
+
 ```bash
 # Azure settings.
 export AZURE_LOCATION="eastus"
@@ -162,7 +164,6 @@ I0324 23:23:58.081879   27739 kind.go:72] Ran: kind [create cluster --name=clust
  ✓ [control-plane] Starting Kubernetes (this may take a minute) ☸
 Cluster creation complete. You can now use the cluster with:
 
-export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")"
 kubectl cluster-info
 I0324 23:23:58.081925   27739 kind.go:69] Running: kind [get kubeconfig-path --name=clusterapi]
 I0324 23:23:58.149609   27739 kind.go:72] Ran: kind [get kubeconfig-path --name=clusterapi] Output: /home/fakeuser/.kube/kind-config-clusterapi
@@ -234,9 +235,10 @@ I0324 23:53:58.997892   27739 createbootstrapcluster.go:36] Cleaning up bootstra
 I0324 23:53:58.997937   27739 kind.go:69] Running: kind [delete cluster --name=clusterapi]
 I0324 23:54:00.260254   27739 kind.go:72] Ran: kind [delete cluster --name=clusterapi] Output: Deleting cluster "clusterapi" ...
 ```
+
 </details>
 
-The created KIND cluster is ephemeral and is cleaned up automatically when done. During the cluster creation, the KIND configuration is written to a local directory and can be retrieved using `kind get kubeconfig-path --name="clusterapi"`.
+The created KIND cluster is ephemeral and is cleaned up automatically when done. During the cluster creation, the kubectl context is set to "kind-clusterapi" and can be retrieved using `kubectl cluster-info --context kind-clusterapi`.
 
 For a more in-depth look into what `clusterctl` is doing during this create step, please see the [clusterctl document](/docs/clusterctl.md).
 
@@ -245,12 +247,12 @@ For a more in-depth look into what `clusterctl` is doing during this create step
 The kubeconfig for the new cluster is created in the directory from where the above `clusterctl create` was run.
 
 Run the following command to point `kubectl` to the kubeconfig of the new cluster:
+
 ```bash
 export KUBECONFIG=$(pwd)/kubeconfig
 ```
 
 Alternatively, move the kubeconfig file to a desired location and set the `KUBECONFIG` environment variable accordingly.
-
 
 ## Troubleshooting
 
@@ -259,7 +261,6 @@ Alternatively, move the kubeconfig file to a desired location and set the `KUBEC
 Logs can be tailed using [`kubectl`][kubectl]:
 
 ```bash
-export KUBECONFIG=$(kind get kubeconfig-path --name="clusterapi")
 kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f
 ```
 

@@ -177,8 +177,6 @@ Launch a bootstrap cluster and then run the generated manifests creating a targe
 While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
 
 ```bash
-export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")" # Export the kind kubeconfig
-
 time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure-provider-controller-manager-0 is available
 
 kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f # Follow the controller logs

@@ -23,10 +23,9 @@ ENV_GENERATED_FILE=${OUTPUT_DIR}/.env
 source "${ENV_GENERATED_FILE}"
 
 ready="false"
-kubeconfigPath=$(kind get kubeconfig-path --name="clusterapi")
 echo "Waiting for any machine in cluster ${CLUSTER_NAME} to be in running state..."
 while [ $ready == "false" ]; do
-  output=$(kubectl --kubeconfig="$kubeconfigPath" get machines -o json)
+  output=$(kubectl get machines -o json)
   ready=$(echo "$output" | jq -r 'any(.items[]; .status.phase=="running")')
   [ "$ready" == "false" ] && echo "Waiting..." && sleep 30
 done
