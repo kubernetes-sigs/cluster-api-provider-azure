@@ -105,7 +105,7 @@ var _ = BeforeSuite(func() {
 	Expect(mgmt).NotTo(BeNil())
 
 	// TODO Figure out how to keep these versions in sync across the code base
-	capi := &generators.ClusterAPI{Version: "v0.2.7"}
+	capi := &generators.ClusterAPI{Version: "v0.2.9"}
 	cabpk := &generators.Bootstrap{Version: "v0.1.5"}
 	infra := &generators.Infra{Creds: creds}
 
