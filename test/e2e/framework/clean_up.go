@@ -36,7 +36,7 @@ type CleanUpInput struct {
 
 func (c *CleanUpInput) setDefaults() {
 	if c.DeleteTimeout == 0*time.Second {
-		c.DeleteTimeout = 10 * time.Minute
+		c.DeleteTimeout = 20 * time.Minute
 	}
 }
 
