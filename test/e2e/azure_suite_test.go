@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e_test
+package e2e
 
 import (
 	"bufio"
@@ -54,23 +54,13 @@ func TestE2E(t *testing.T) {
 	junitReporter := reporters.NewJUnitReporter(junitPath)
 
 	RegisterFailHandler(Fail)
-	RunSpecsWithDefaultAndCustomReporters(t, "CAPZ e2e suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "capz e2e suite", []Reporter{junitReporter})
 }
 
 var (
 	ctx   = context.Background()
 	creds auth.Creds
 	mgmt  *kind.Cluster
-
-	// TODO Parameterize some of these variables
-	location       = "westus2"
-	vmSize         = "Standard_B2ms"
-	namespace      = "default"
-	k8sVersion     = "v1.16.2"
-	imageOffer     = "capi"
-	imagePublisher = "cncf-upstream"
-	imageSKU       = "k8s-1dot16-ubuntu-1804"
-	imageVersion   = "latest"
 )
 
 var _ = BeforeSuite(func() {

@@ -93,7 +93,7 @@ test-integration: ## Run integration tests
 test-e2e: ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=30m
+	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=60m
 
 $(KUBECTL) $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
