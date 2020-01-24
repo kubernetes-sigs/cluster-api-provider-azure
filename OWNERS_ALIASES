@@ -11,18 +11,18 @@ aliases:
     - davidewatson
     - vincepri
   cluster-api-maintainers:
-    - justinsb
+    - chuckha
     - detiber
+    - justinsb
     - ncdc
     - vincepri
-    - chuckha
   cluster-api-azure-maintainers:
     - awesomenix
+    - CecileRobertMichon
     - justaugustus
     - soggiest
-    - CecileRobertMichon
   cluster-api-azure-reviewers:
     - juan-lee
+    - nader-ziada
     - serbrech
     - vincepri
-    - nader-ziada
