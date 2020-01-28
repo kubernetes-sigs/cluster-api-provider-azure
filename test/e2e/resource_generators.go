@@ -77,6 +77,10 @@ var (
 func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
 	name := "capz-" + util.RandomString(6)
 	vnetName := name + "-vnet"
+	tags := map[string]string{
+		"creationTimestamp": time.Now().UTC().Format(time.RFC3339),
+		"jobName": "cluster-api-provider-azure",
+	}
 	infraCluster := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -88,6 +92,7 @@ func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{Name: vnetName},
 			},
+			AdditionalTags: tags,
 		},
 	}
 	cluster := &capiv1.Cluster{
