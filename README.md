@@ -15,10 +15,9 @@ The [Cluster API][cluster_api] brings declarative, Kubernetes-style APIs to clus
 The API itself is shared across multiple cloud providers allowing for true Azure
 hybrid deployments of Kubernetes.
 
-## Launching a Kubernetes cluster on Azure
+## Quick Start
 
-Check out the [getting started guide](docs/getting-started.md) for launching a
-cluster on Azure.
+Check out the [Cluster API Quick Start][quickstart] to create your first Kubernetes cluster on Azure using Cluster API.
 
 ## Features
 
@@ -123,3 +122,4 @@ https://go.k8s.io/bot-commands
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=feature_request.md
 [slack_info]: https://github.com/kubernetes/community/blob/master/communication.md#social-media
 [cluster_api]: https://github.com/kubernetes-sigs/cluster-api
+[quickstart]: https://cluster-api.sigs.k8s.io/user/quick-start.html

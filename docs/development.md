@@ -133,6 +133,25 @@ started prerequisites section](./getting-started.md#Prerequisites)
    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-push
    ```
 
+#### Customizing the cluster deployment
+
+A set of sane defaults are utilized when generating manifests via `./azure/generate-yaml.sh`, but these can be overridden by exporting environment variables.
+
+Here is a list of commonly overriden configuration parameters (the full list is available in `./azure/generate-yaml.sh`):
+
+```bash
+# Azure settings.
+export AZURE_LOCATION="eastus"
+export AZURE_RESOURCE_GROUP="capz-rg"
+
+# Cluster settings.
+export CLUSTER_NAME="capz-cluster"
+
+# Machine settings.
+export CONTROL_PLANE_MACHINE_TYPE="Standard_B2ms"
+export NODE_MACHINE_TYPE="Standard_B2ms"
+```
+
 #### Build manifests
 
 **NOTE:** It's expected that some set of Azure credentials are available at the time, either
