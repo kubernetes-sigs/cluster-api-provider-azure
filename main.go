@@ -28,6 +28,7 @@ import (
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -48,6 +49,7 @@ func init() {
 	_ = infrav1alpha2.AddToScheme(scheme)
 	_ = infrav1alpha3.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
+	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -63,6 +65,7 @@ func main() {
 		azureMachineConcurrency int
 		syncPeriod              time.Duration
 		healthAddr              string
+		webhookPort             int
 	)
 
 	flag.StringVar(
@@ -117,6 +120,12 @@ func main() {
 		"The address the health endpoint binds to.",
 	)
 
+	flag.IntVar(&webhookPort,
+		"webhook-port",
+		9443,
+		"Webhook server port",
+	)
+
 	flag.Parse()
 
 	if watchNamespace != "" {
@@ -140,6 +149,7 @@ func main() {
 		SyncPeriod:             &syncPeriod,
 		Namespace:              watchNamespace,
 		HealthProbeBindAddress: healthAddr,
+		Port:                   webhookPort,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -161,6 +171,18 @@ func main() {
 		Log:    ctrl.Log.WithName("controllers").WithName("AzureCluster"),
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

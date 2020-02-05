@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -449,9 +449,6 @@ type SubnetSpec struct {
 
 	// Name defines a name for the subnet resource.
 	Name string `json:"name"`
-
-	// VnetID defines the ID of the virtual network this subnet should be built in.
-	VnetID string `json:"vnetId"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
 	CidrBlock string `json:"cidrBlock,omitempty"`
