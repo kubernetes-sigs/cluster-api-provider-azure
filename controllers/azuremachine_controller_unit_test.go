@@ -23,8 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 )
@@ -44,7 +44,7 @@ func newMachine(clusterName, machineName string) *clusterv1.Machine {
 	return &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.MachineClusterLabelName: clusterName,
+				clusterv1.ClusterLabelName: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",

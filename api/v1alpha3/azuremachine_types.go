@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package v1alpha3
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -86,7 +86,7 @@ type AzureMachineStatus struct {
 	// can be added as events to the Machine object and/or logged in the
 	// controller's output.
 	// +optional
-	ErrorReason *errors.MachineStatusError `json:"errorReason,omitempty"`
+	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
 
 	// ErrorMessage will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a more verbose string suitable
@@ -105,11 +105,12 @@ type AzureMachineStatus struct {
 	// can be added as events to the Machine object and/or logged in the
 	// controller's output.
 	// +optional
-	ErrorMessage *string `json:"errorMessage,omitempty"`
+	FailureMessage *string `json:"failureMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureMachine is the Schema for the azuremachines API

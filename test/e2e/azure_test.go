@@ -23,10 +23,17 @@ import (
 
 	. "github.com/onsi/ginkgo"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	"k8s.io/client-go/kubernetes/scheme"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
-	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
+
+func init() {
+	clusterv1.AddToScheme(scheme.Scheme)
+}
 
 var _ = Describe("CAPZ e2e tests", func() {
 	Describe("Cluster creation", func() {

@@ -20,7 +20,7 @@ import (
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // Node contains all the pieces necessary to make a single node

@@ -93,7 +93,7 @@ test-integration: ## Run integration tests
 test-e2e: ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=60m
+	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=90m
 
 $(KUBECTL) $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
@@ -172,7 +172,7 @@ generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related g
 generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) \
 		paths=./api/... \
-		crd:trivialVersions=true \
+		crd \
 		output:crd:dir=$(CRD_ROOT) \
 		output:webhook:dir=$(WEBHOOK_ROOT) \
 		webhook
@@ -295,9 +295,26 @@ release-notes: $(RELEASE_NOTES)
 .PHONY: create-cluster
 create-cluster: ## Create a development Kubernetes cluster on Azure in a KIND management cluster.
 	kind create cluster --name=clusterapi
+
+	# Install cert manager.
+	kubectl \
+		create -f examples/_out/cert-manager.yaml
+	# Wait for webhook servers to be ready to take requests
+	kubectl \
+		wait --for=condition=Available --timeout=5m apiservice v1beta1.webhook.cert-manager.io
+	
 	# Apply provider-components.
 	kubectl \
 		create -f examples/_out/provider-components.yaml
+	# Wait for capi-controller 
+	kubectl \
+		wait --for=condition=Ready --timeout=5m -n capi-system pod -l control-plane=cluster-api-controller-manager
+    # Wait for capz-controller 
+	kubectl \
+		wait --for=condition=Ready --timeout=5m -n capz-system pod -l control-plane=capz-controller-manager
+	# Create Cluster.
+	sleep 10
+
 	# Create Cluster.
 	kubectl \
 		create -f examples/_out/cluster.yaml

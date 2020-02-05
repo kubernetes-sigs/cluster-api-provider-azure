@@ -22,8 +22,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -153,7 +153,7 @@ func (s *ClusterScope) Location() string {
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
 func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 	return client.MatchingLabels(map[string]string{
-		clusterv1.MachineClusterLabelName: s.Cluster.Name,
+		clusterv1.ClusterLabelName: s.Cluster.Name,
 	})
 }
 

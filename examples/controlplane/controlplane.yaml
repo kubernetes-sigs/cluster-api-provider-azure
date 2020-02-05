@@ -1,23 +1,23 @@
-apiVersion: cluster.x-k8s.io/v1alpha2
+apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Machine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-0
   labels:
     cluster.x-k8s.io/control-plane: "true"
-    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   version: ${KUBERNETES_VERSION}
+  clusterName: ${CLUSTER_NAME}
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
       kind: KubeadmConfig
       name: ${CLUSTER_NAME}-controlplane-0
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureMachine
     name: ${CLUSTER_NAME}-controlplane-0
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-0
@@ -31,7 +31,7 @@ spec:
       storageAccountType: "Premium_LRS"
   sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-controlplane-0
@@ -49,66 +49,66 @@ spec:
         cloud-provider: azure
         cloud-config: /etc/kubernetes/azure.json
       extraVolumes:
-      - hostPath: /etc/kubernetes/azure.json
-        mountPath: /etc/kubernetes/azure.json
-        name: cloud-config
-        readOnly: true
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
     controllerManager:
       extraArgs:
         cloud-provider: azure
         cloud-config: /etc/kubernetes/azure.json
         allocate-node-cidrs: "false"
       extraVolumes:
-      - hostPath: /etc/kubernetes/azure.json
-        mountPath: /etc/kubernetes/azure.json
-        name: cloud-config
-        readOnly: true
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
   files:
-  - path: /etc/kubernetes/azure.json
-    owner: "root:root"
-    permissions: "0644"
-    content: |
-      {
-        "cloud": "AzurePublicCloud",
-        "tenantId": "${AZURE_TENANT_ID}",
-        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-        "aadClientId": "${AZURE_CLIENT_ID}",
-        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-        "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-        "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
-        "location": "${AZURE_LOCATION}",
-        "vmType": "standard",
-        "vnetName": "${CLUSTER_NAME}",
-        "vnetResourceGroup": "${CLUSTER_NAME}",
-        "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
-        "routeTableName": "${CLUSTER_NAME}-node-routetable",
-        "userAssignedID": "${CLUSTER_NAME}",
-        "loadBalancerSku": "standard",
-        "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": false,
-        "useInstanceMetadata": true
-      }
+    - path: /etc/kubernetes/azure.json
+      owner: "root:root"
+      permissions: "0644"
+      content: |
+        {
+          "cloud": "AzurePublicCloud",
+          "tenantId": "${AZURE_TENANT_ID}",
+          "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+          "aadClientId": "${AZURE_CLIENT_ID}",
+          "aadClientSecret": "${AZURE_CLIENT_SECRET}",
+          "resourceGroup": "${AZURE_RESOURCE_GROUP}",
+          "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
+          "location": "${AZURE_LOCATION}",
+          "vmType": "standard",
+          "vnetName": "${CLUSTER_NAME}",
+          "vnetResourceGroup": "${CLUSTER_NAME}",
+          "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
+          "routeTableName": "${CLUSTER_NAME}-node-routetable",
+          "userAssignedID": "${CLUSTER_NAME}",
+          "loadBalancerSku": "standard",
+          "maximumLoadBalancerRuleCount": 250,
+          "useManagedIdentityExtension": false,
+          "useInstanceMetadata": true
+        }
 ---
-apiVersion: cluster.x-k8s.io/v1alpha2
+apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Machine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-1
   labels:
     cluster.x-k8s.io/control-plane: "true"
-    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   version: ${KUBERNETES_VERSION}
+  clusterName: ${CLUSTER_NAME}
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
       kind: KubeadmConfig
       name: ${CLUSTER_NAME}-controlplane-1
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureMachine
     name: ${CLUSTER_NAME}-controlplane-1
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-1
@@ -122,7 +122,7 @@ spec:
       storageAccountType: "Premium_LRS"
   sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-controlplane-1
@@ -135,50 +135,50 @@ spec:
         cloud-provider: azure
         cloud-config: /etc/kubernetes/azure.json
   files:
-  - path: /etc/kubernetes/azure.json
-    owner: "root:root"
-    permissions: "0644"
-    content: |
-      {
-        "cloud": "AzurePublicCloud",
-        "tenantID": "${AZURE_TENANT_ID}",
-        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-        "aadClientId": "${AZURE_CLIENT_ID}",
-        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-        "resourceGroup": "${CLUSTER_NAME}",
-        "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
-        "location": "${AZURE_LOCATION}",
-        "vmType": "standard",
-        "vnetName": "${CLUSTER_NAME}",
-        "vnetResourceGroup": "${CLUSTER_NAME}",
-        "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
-        "routeTableName": "${CLUSTER_NAME}-node-routetable",
-        "loadBalancerSku": "standard",
-        "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": false,
-        "useInstanceMetadata": true
-      }
+    - path: /etc/kubernetes/azure.json
+      owner: "root:root"
+      permissions: "0644"
+      content: |
+        {
+          "cloud": "AzurePublicCloud",
+          "tenantID": "${AZURE_TENANT_ID}",
+          "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+          "aadClientId": "${AZURE_CLIENT_ID}",
+          "aadClientSecret": "${AZURE_CLIENT_SECRET}",
+          "resourceGroup": "${CLUSTER_NAME}",
+          "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
+          "location": "${AZURE_LOCATION}",
+          "vmType": "standard",
+          "vnetName": "${CLUSTER_NAME}",
+          "vnetResourceGroup": "${CLUSTER_NAME}",
+          "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
+          "routeTableName": "${CLUSTER_NAME}-node-routetable",
+          "loadBalancerSku": "standard",
+          "maximumLoadBalancerRuleCount": 250,
+          "useManagedIdentityExtension": false,
+          "useInstanceMetadata": true
+        }
 ---
-apiVersion: cluster.x-k8s.io/v1alpha2
+apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Machine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-2
   labels:
     cluster.x-k8s.io/control-plane: "true"
-    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   version: ${KUBERNETES_VERSION}
+  clusterName: ${CLUSTER_NAME}
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
       kind: KubeadmConfig
       name: ${CLUSTER_NAME}-controlplane-2
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureMachine
     name: ${CLUSTER_NAME}-controlplane-2
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-controlplane-2
@@ -192,7 +192,7 @@ spec:
       storageAccountType: "Premium_LRS"
   sshPublicKey: ${SSH_PUBLIC_KEY}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha2
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-controlplane-2
@@ -205,26 +205,26 @@ spec:
         cloud-provider: azure
         cloud-config: /etc/kubernetes/azure.json
   files:
-  - path: /etc/kubernetes/azure.json
-    owner: "root:root"
-    permissions: "0644"
-    content: |
-      {
-        "cloud": "AzurePublicCloud",
-        "tenantId": "${AZURE_TENANT_ID}",
-        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-        "aadClientId": "${AZURE_CLIENT_ID}",
-        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-        "resourceGroup": "${CLUSTER_NAME}",
-        "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
-        "location": "${AZURE_LOCATION}",
-        "vmType": "standard",
-        "vnetName": "${CLUSTER_NAME}",
-        "vnetResourceGroup": "${CLUSTER_NAME}",
-        "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
-        "routeTableName": "${CLUSTER_NAME}-node-routetable",
-        "loadBalancerSku": "standard",
-        "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": false,
-        "useInstanceMetadata": true
-      }
+    - path: /etc/kubernetes/azure.json
+      owner: "root:root"
+      permissions: "0644"
+      content: |
+        {
+          "cloud": "AzurePublicCloud",
+          "tenantId": "${AZURE_TENANT_ID}",
+          "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+          "aadClientId": "${AZURE_CLIENT_ID}",
+          "aadClientSecret": "${AZURE_CLIENT_SECRET}",
+          "resourceGroup": "${CLUSTER_NAME}",
+          "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
+          "location": "${AZURE_LOCATION}",
+          "vmType": "standard",
+          "vnetName": "${CLUSTER_NAME}",
+          "vnetResourceGroup": "${CLUSTER_NAME}",
+          "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
+          "routeTableName": "${CLUSTER_NAME}-node-routetable",
+          "loadBalancerSku": "standard",
+          "maximumLoadBalancerRuleCount": 250,
+          "useManagedIdentityExtension": false,
+          "useInstanceMetadata": true
+        }

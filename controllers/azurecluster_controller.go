@@ -23,8 +23,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -125,11 +126,9 @@ func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScop
 	}
 
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
-	azureCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
-		{
-			Host: azureCluster.Status.Network.APIServerIP.DNSName,
-			Port: int(clusterScope.APIServerPort()),
-		},
+	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+		Host: azureCluster.Status.Network.APIServerIP.DNSName,
+		Port: clusterScope.APIServerPort(),
 	}
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it

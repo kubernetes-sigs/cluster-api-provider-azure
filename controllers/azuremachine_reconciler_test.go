@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -118,8 +118,8 @@ func TestIsAvailabilityZoneSupported(t *testing.T) {
 	s := azureMachineService{
 		machineScope: &scope.MachineScope{
 			Logger: log.Log.Logger,
-			AzureCluster: &v1alpha2.AzureCluster{
-				Spec: v1alpha2.AzureClusterSpec{
+			AzureCluster: &v1alpha3.AzureCluster{
+				Spec: v1alpha3.AzureClusterSpec{
 					Location: "",
 				},
 			},

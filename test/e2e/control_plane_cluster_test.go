@@ -21,19 +21,24 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/exec"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/management/kind"
-	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	eventuallyInterval = 10 * time.Second
 )
 
 // ControlPlaneClusterInput are all the dependencies of the ControlPlaneCluster test.
@@ -68,8 +73,13 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 	By("Creating infra cluster resource")
 	Expect(mgmtClient.Create(ctx, input.InfraCluster)).NotTo(HaveOccurred())
 
+	// This call happens in an eventually because of a race condition with the
+	// webhook server. If the latter isn't fully online then this call will
+	// fail.
 	By("Creating cluster resource that owns the infra cluster")
-	Expect(mgmtClient.Create(ctx, input.Cluster)).NotTo(HaveOccurred())
+	Eventually(func() error {
+		return mgmtClient.Create(ctx, input.Cluster)
+	}, input.CreateTimeout, eventuallyInterval).Should(Succeed())
 
 	// expectedNumberOfNodes is the number of nodes that should be deployed to
 	// the cluster. This is the control plane nodes plus the number of replicas
@@ -128,24 +138,41 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 			return nil, err
 		}
 		return nodeList.Items, nil
-	}, input.CreateTimeout, 10*time.Second).Should(HaveLen(expectedNumberOfNodes))
+	}, input.CreateTimeout, 10*time.Second).Should(HaveLen(len(input.Nodes)))
 
-	By("waiting for the workload nodes to exist")
-	Eventually(func() ([]v1.Node, error) {
-		workloadClient, err := input.Management.GetWorkloadClient(ctx, input.Cluster.Namespace, input.Cluster.Name)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get workload client")
-		}
-		nodeList := v1.NodeList{}
-		if err := workloadClient.List(ctx, &nodeList); err != nil {
-			return nil, err
-		}
-		return nodeList.Items, nil
-	}, input.CreateTimeout, 10*time.Second).Should(HaveLen(expectedNumberOfNodes))
+	By("deploy a CNI soution, Calico")
+	config := &v1.Secret{}
+	key := client.ObjectKey{
+		Name:      fmt.Sprintf("%s-kubeconfig", input.Cluster.Name),
+		Namespace: input.Cluster.Namespace,
+	}
+	if err := mgmtClient.Get(ctx, key, config); err != nil {
+		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	}
+
+	tmpdir, err := ioutil.TempDir("", "")
+	f, err := ioutil.TempFile(tmpdir, "worker-kubeconfig")
+	if err != nil {
+		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	}
+	defer os.RemoveAll(tmpdir)
+	data := config.Data["value"]
+	if _, err := f.Write(data); err != nil {
+		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	}
+	calicoManifestPath := "https://docs.projectcalico.org/v3.8/manifests/calico.yaml"
+	applyCmd := exec.NewCommand(
+		exec.WithCommand("kubectl"),
+		exec.WithArgs("apply", "--kubeconfig", f.Name(), "-f", calicoManifestPath),
+	)
+	_, _, err = applyCmd.Run(ctx)
+	if err != nil {
+		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	}
 
 	By("waiting for all machines to be running")
 	inClustersNamespaceListOption := client.InNamespace(input.Cluster.Namespace)
-	matchClusterListOption := client.MatchingLabels{capiv1.MachineClusterLabelName: input.Cluster.Name}
+	matchClusterListOption := client.MatchingLabels{clusterv1.ClusterLabelName: input.Cluster.Name}
 	Eventually(func() (bool, error) {
 		// Get a list of all the Machine resources that belong to the Cluster.
 		machineList := &clusterv1.MachineList{}

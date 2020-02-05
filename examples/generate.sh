@@ -50,6 +50,7 @@ CLUSTER_GENERATED_FILE=${OUTPUT_DIR}/cluster.yaml
 CONTROLPLANE_GENERATED_FILE=${OUTPUT_DIR}/controlplane.yaml
 MACHINEDEPLOYMENT_GENERATED_FILE=${OUTPUT_DIR}/machinedeployment.yaml
 ENV_GENERATED_FILE=${OUTPUT_DIR}/.env
+CERTMANAGER_COMPONENTS_GENERATED_FILE=${OUTPUT_DIR}/cert-manager.yaml
 
 # Overwrite flag.
 OVERWRITE=0
@@ -114,6 +115,10 @@ export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
 export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
 export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
 
+# Download cert-manager component
+curl -sL https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml > "${CERTMANAGER_COMPONENTS_GENERATED_FILE}"
+echo "Generated ${CERTMANAGER_COMPONENTS_GENERATED_FILE}"
+
 # Generate cluster resources.
 kustomize build "${SOURCE_DIR}/cluster" | envsubst > "${CLUSTER_GENERATED_FILE}"
 echo "Generated ${CLUSTER_GENERATED_FILE}"
@@ -127,12 +132,20 @@ kustomize build "${SOURCE_DIR}/machinedeployment" | envsubst >> "${MACHINEDEPLOY
 echo "Generated ${MACHINEDEPLOYMENT_GENERATED_FILE}"
 
 # Generate Cluster API provider components file.
-curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.9/cluster-api-components.yaml > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
-echo "Downloaded ${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+CAPI_BRANCH=${CAPI_BRANCH:-"master"}
+kustomize build "github.com/kubernetes-sigs/cluster-api/config/default/?ref=${CAPI_BRANCH}" > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+kustomize build "github.com/kubernetes-sigs/cluster-api/bootstrap/kubeadm/config/default/?ref=${CAPI_BRANCH}" > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
+echo "---" >> "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+cat ${SOURCE_DIR}/provider-components/provider-components-kubeadm.yaml >> "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+echo "Generated ${COMPONENTS_CLUSTER_API_GENERATED_FILE} from cluster-api - ${CAPI_BRANCH}"
+
+# Generate Cluster API provider components file.
+# curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.2.9/cluster-api-components.yaml > "${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
+# echo "Downloaded ${COMPONENTS_CLUSTER_API_GENERATED_FILE}"
 
 # Generate Kubeadm Bootstrap Provider components file.
-curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm/releases/download/v0.1.5/bootstrap-components.yaml > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
-echo "Downloaded ${COMPONENTS_KUBEADM_GENERATED_FILE}"
+# curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm/releases/download/v0.1.5/bootstrap-components.yaml > "${COMPONENTS_KUBEADM_GENERATED_FILE}"
+# echo "Downloaded ${COMPONENTS_KUBEADM_GENERATED_FILE}"
 
 # Generate Azure Infrastructure Provider components file.
 kustomize build "${SOURCE_DIR}/../config/default" | envsubst > "${COMPONENTS_AZURE_GENERATED_FILE}"
