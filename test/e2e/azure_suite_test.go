@@ -22,6 +22,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,6 +33,7 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,13 +59,19 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	ctx   = context.Background()
-	creds auth.Creds
-	mgmt  *kind.Cluster
+	ctx     = context.Background()
+	creds   auth.Creds
+	mgmt    *kind.Cluster
+	logPath string
 )
 
 var _ = BeforeSuite(func() {
 	var err error
+
+	By("creating the logs directory")
+	artifactPath := os.Getenv("ARTIFACTS")
+	logPath = path.Join(artifactPath, "logs")
+	Expect(os.MkdirAll(filepath.Dir(logPath), 0755)).To(Succeed())
 
 	By("Loading Azure credentials")
 	if credsFile, found := os.LookupEnv("AZURE_CREDENTIALS"); found {
@@ -109,7 +117,6 @@ var _ = BeforeSuite(func() {
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
 
-	// DO NOT stream "capi-controller-manager" logs as it prints out azure.json
 	// go func() {
 	// 	defer GinkgoRecover()
 	// 	watchDeployment(mgmt, "cabpk-system", "cabpk-controller-manager")
@@ -121,6 +128,9 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	// DO NOT stream "capi-controller-manager" logs as it prints out azure.json
+	Expect(writeLogs(mgmt, "capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", logPath)).To(Succeed())
+	Expect(writeLogs(mgmt, "capz-system", "capz-controller-manager", logPath)).To(Succeed())
 	By("Tearing down management cluster")
 	Expect(mgmt.Teardown(ctx)).NotTo(HaveOccurred())
 })
@@ -186,4 +196,65 @@ func waitDeployment(c client.Client, namespace, name string) {
 	}, 5*time.Minute, 15*time.Second,
 		fmt.Sprintf("Deployment %s/%s could not reach the ready state", namespace, name),
 	).ShouldNot(BeZero())
+}
+
+func writeLogs(mgmt *kind.Cluster, namespace, deploymentName, logDir string) error {
+	c, err := mgmt.GetClient()
+	if err != nil {
+		return err
+	}
+	clientSet, err := mgmt.GetClientSet()
+	if err != nil {
+		return err
+	}
+	deployment := &appsv1.Deployment{}
+	if err := c.Get(context.TODO(), client.ObjectKey{Namespace: namespace, Name: deploymentName}, deployment); err != nil {
+		return err
+	}
+
+	selector, err := metav1.LabelSelectorAsMap(deployment.Spec.Selector)
+	if err != nil {
+		return err
+	}
+
+	pods := &corev1.PodList{}
+	if err := c.List(context.TODO(), pods, client.InNamespace(namespace), client.MatchingLabels(selector)); err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		for _, container := range deployment.Spec.Template.Spec.Containers {
+			logFile := path.Join(logDir, deploymentName, pod.Name, container.Name+".log")
+			fmt.Fprintf(GinkgoWriter, "Creating directory: %s\n", filepath.Dir(logFile))
+			if err := os.MkdirAll(filepath.Dir(logFile), 0755); err != nil {
+				return errors.Wrapf(err, "error making logDir %q", filepath.Dir(logFile))
+			}
+
+			opts := &corev1.PodLogOptions{
+				Container: container.Name,
+				Follow:    false,
+			}
+
+			podLogs, err := clientSet.CoreV1().Pods(namespace).GetLogs(pod.Name, opts).Stream()
+			if err != nil {
+				return errors.Wrapf(err, "error getting pod stream for pod name %q/%q", pod.Namespace, pod.Name)
+			}
+			defer podLogs.Close()
+
+			f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return errors.Wrapf(err, "error opening created logFile %q", logFile)
+			}
+			defer f.Close()
+
+			logs, err := ioutil.ReadAll(podLogs)
+			if err != nil {
+				return errors.Wrapf(err, "failed to read podLogs %q/%q", pod.Namespace, pod.Name)
+			}
+			if err := ioutil.WriteFile(f.Name(), logs, 0644); err != nil {
+				return errors.Wrapf(err, "error writing pod logFile %q", f.Name())
+			}
+		}
+	}
+	return nil
 }
