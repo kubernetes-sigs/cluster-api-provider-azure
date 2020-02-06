@@ -203,6 +203,15 @@ func (c *Cluster) ClientFromRestConfig(restConfig *rest.Config) (client.Client, 
 	return c.Client, nil
 }
 
+// GetClientSet returns a clientset to the management cluster to be used for object interface expansions such as pod logs.
+func (c *Cluster) GetClientSet() (*kubernetes.Clientset, error) {
+	restConfig, err := clientcmd.BuildConfigFromFlags("", c.KubeconfigPath)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return kubernetes.NewForConfig(restConfig)
+}
+
 // GetClient returns a controller-rutnime client for the management cluster.
 func (c *Cluster) GetClient() (client.Client, error) {
 	restConfig, err := clientcmd.BuildConfigFromFlags("", c.KubeconfigPath)

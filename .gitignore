@@ -50,5 +50,6 @@ bazel-*
 # Tilt files.
 .tiltbuild
 
-# junit output
+# e2e output
 test/e2e/junit.e2e_suite.*.xml
+test/e2e/logs/*
