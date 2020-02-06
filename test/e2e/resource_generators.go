@@ -24,6 +24,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
+	random "math/rand"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -65,12 +67,12 @@ type azureConfig struct {
 
 var (
 	// TODO Parameterize some of these variables
-	location       = "westus2"
-	vmSize         = "Standard_B2ms"
+	location       = GetRandomRegion()
+	vmSize         = "Standard_D2s_v3"
 	namespace      = "default"
 	imageOffer     = "capi"
 	imagePublisher = "cncf-upstream"
-	imageSKU       = "k8s-1dot16dot4-ubuntu-1804"
+	imageSKU       = "k8s-1dot16dot6-ubuntu-1804"
 	imageVersion   = "latest"
 )
 
@@ -79,7 +81,7 @@ func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *
 	vnetName := name + "-vnet"
 	tags := map[string]string{
 		"creationTimestamp": time.Now().UTC().Format(time.RFC3339),
-		"jobName": "cluster-api-provider-azure",
+		"jobName":           "cluster-api-provider-azure",
 	}
 	infraCluster := &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -404,4 +406,14 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 		BootstrapConfigTemplate: bootstrapConfigTemplate,
 		InfraMachineTemplate:    infraMachineTemplate,
 	}
+}
+
+// GetRandomRegion gets a random region to use in the tests
+func GetRandomRegion() string {
+	regions := []string{"eastus", "eastus2", "southcentralus", "westus2", "westeurope"}
+	log.Printf("Picking Random Region from list %s\n", regions)
+	r := random.New(random.NewSource(time.Now().UnixNano()))
+	location := regions[r.Intn(len(regions))]
+	log.Printf("Picked Random Region:%s\n", location)
+	return location
 }
