@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-azure
 
-go 1.12
+go 1.13
 
 require (
 	github.com/Azure/azure-sdk-for-go v34.2.0+incompatible
