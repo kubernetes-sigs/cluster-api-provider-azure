@@ -51,7 +51,7 @@ func TestGetAvailabilityZones(t *testing.T) {
 			availabilityZoneSpec: Spec{VMSize: "Standard_B2ms"},
 			expectedError:        "",
 			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
-				m.ListComplete(context.TODO()).Return(compute.ResourceSkusResultIterator{}, nil)
+				m.ListComplete(context.TODO(), "").Return(compute.ResourceSkusResultIterator{}, nil)
 			},
 		},
 		{
@@ -59,7 +59,7 @@ func TestGetAvailabilityZones(t *testing.T) {
 			availabilityZoneSpec: Spec{VMSize: "Standard_B2ms"},
 			expectedError:        "#: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
-				m.ListComplete(context.TODO()).Return(compute.ResourceSkusResultIterator{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.ListComplete(context.TODO(), "").Return(compute.ResourceSkusResultIterator{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -67,7 +67,7 @@ func TestGetAvailabilityZones(t *testing.T) {
 			availabilityZoneSpec: Spec{VMSize: "Standard_B2ms"},
 			expectedError:        "",
 			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
-				m.ListComplete(context.TODO()).Return(compute.NewResourceSkusResultIterator(compute.ResourceSkusResultPage{}), nil)
+				m.ListComplete(context.TODO(), "").Return(compute.NewResourceSkusResultIterator(compute.ResourceSkusResultPage{}), nil)
 			},
 		},
 	}

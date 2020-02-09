@@ -38,7 +38,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 		return zones, errors.New("invalid availability zones specification")
 	}
 	// Prefer ListComplete() over List() to automatically traverse pages via iterator.
-	res, err := s.Client.ListComplete(ctx)
+	res, err := s.Client.ListComplete(ctx, "")
 	if err != nil {
 		return zones, err
 	}

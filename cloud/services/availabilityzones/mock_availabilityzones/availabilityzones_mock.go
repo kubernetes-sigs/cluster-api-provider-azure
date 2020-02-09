@@ -51,16 +51,16 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // ListComplete mocks base method
-func (m *MockClient) ListComplete(arg0 context.Context) (compute.ResourceSkusResultIterator, error) {
+func (m *MockClient) ListComplete(arg0 context.Context, arg1 string) (compute.ResourceSkusResultIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListComplete", arg0)
+	ret := m.ctrl.Call(m, "ListComplete", arg0, arg1)
 	ret0, _ := ret[0].(compute.ResourceSkusResultIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListComplete indicates an expected call of ListComplete
-func (mr *MockClientMockRecorder) ListComplete(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListComplete(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListComplete", reflect.TypeOf((*MockClient)(nil).ListComplete), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListComplete", reflect.TypeOf((*MockClient)(nil).ListComplete), arg0, arg1)
 }
