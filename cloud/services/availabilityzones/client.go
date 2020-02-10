@@ -26,7 +26,7 @@ import (
 
 // Client wraps go-sdk
 type Client interface {
-	ListComplete(context.Context) (compute.ResourceSkusResultIterator, error)
+	ListComplete(context.Context, string) (compute.ResourceSkusResultIterator, error)
 }
 
 // AzureClient contains the Azure go-sdk Client
@@ -51,6 +51,6 @@ func newResourceSkusClient(subscriptionID string, authorizer autorest.Authorizer
 }
 
 // ListComplete enumerates all values, automatically crossing page boundaries as required.
-func (ac *AzureClient) ListComplete(ctx context.Context) (compute.ResourceSkusResultIterator, error) {
-	return ac.resourceSkus.ListComplete(ctx)
+func (ac *AzureClient) ListComplete(ctx context.Context, filter string) (compute.ResourceSkusResultIterator, error) {
+	return ac.resourceSkus.ListComplete(ctx, filter)
 }
