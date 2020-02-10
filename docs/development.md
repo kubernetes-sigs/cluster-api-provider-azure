@@ -32,15 +32,20 @@
 ### Base requirements
 
 1. Install [go][go]
-   - Get the latest patch version for go v1.12.
+   - Get the latest patch version for go v1.13.
 2. Install [jq][jq]
    - `brew install jq` on MacOS.
+   - `chocolatey install jq` on Windows.
+   - `sudo apt-get install jq` on Linux.
 3. Install [gettext][gettext] package
    - `brew install gettext && brew link --force gettext` on MacOS.
+   - [install instructions](gettextwindows) on Windows.
 4. Install [KIND][kind]
-   - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0`.
+   - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0`.
 5. Install [Kustomize][kustomize]
-   - `brew install kustomize`
+   - `brew install kustomize` on MacOs.
+   - `choco install kustomize` on Windows.
+   - [install instructions](kustomizelinux) on Linux
 6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
 7. Install make.
 
@@ -235,8 +240,10 @@ If you then want to use these mocks with `go test ./...`, run
 [jq]: https://stedolan.github.io/jq/download/
 [image_pull_secrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 [gettext]: https://www.gnu.org/software/gettext/
+[gettextwindows]: https://mlocati.github.io/articles/gettext-iconv-windows.html
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
 [pyenv]: https://github.com/pyenv/pyenv
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
+[kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md

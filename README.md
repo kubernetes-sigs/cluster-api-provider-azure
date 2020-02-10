@@ -61,6 +61,8 @@ maintainers and community, would love your suggestions, contributions, and help!
 Also, the maintainers can be contacted at any time to learn more about how to get
 involved.
 
+To set up your environment checkout the [development guide](docs/development.md).
+
 In the interest of getting more new people involved, we tag issues with
 [`good first issue`][good_first_issue].
 These are typically issues that have smaller scope but are good ways to start
