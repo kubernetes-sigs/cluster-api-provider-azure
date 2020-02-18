@@ -94,23 +94,19 @@ A few Makefile and scripts are offered to work with go modules:
 
 ### Using Tilt
 
-To use Tilt for a simplified development workflow, follow the [instructions](https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/book/src/developer/tilt.md) in the cluster-api repo
+To use Tilt for a simplified development workflow, follow the [instructions](https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/book/src/developer/tilt.md) in the cluster-api repo.
 
-Add the following section to your `tilt-settings.json`
-
-```json
-"kustomize_substitutions": {
-    "AZURE_CLIENT_SECRET_B64": "your-clinet-secret-encoded-in-base64",
-    "AZURE_CLIENT_ID_B64": "your-client-id-encoded-in-base64",
-    "AZURE_SUBSCRIPTION_ID_B64": "your-subscription-id-encoded-in-base64",
-    "AZURE_TENANT_ID_B64": "your-tenant-id-encoded-in-base64"
-  }
-```
-
-You can generate a base64 version of your AZURE related credentials using:
+Add the output of the following as a section in your `tilt-settings.json`:
 
 ```shell
-echo "your-credentials" | base64
+cat <<EOF
+"kustomize_substitutions": {
+   "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+   "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+   "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
+   "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  }
+EOF
 ```
 
 ### Manual Testing
