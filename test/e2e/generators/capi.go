@@ -39,8 +39,8 @@ func (g *ClusterAPI) GetName() string {
 	return fmt.Sprintf("Cluster API %s", g.Version)
 }
 
-func (g *ClusterAPI) kustomizePath(path string) string {
-	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//config/%s", path)
+func (g *ClusterAPI) kustomizePath() string {
+	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//config/")
 }
 
 func (g *ClusterAPI) releaseYAMLPath() string {
@@ -53,7 +53,7 @@ func (g *ClusterAPI) Manifests(ctx context.Context) ([]byte, error) {
 	if g.GitRef != "" {
 		kustomize := exec.NewCommand(
 			exec.WithCommand("kustomize"),
-			exec.WithArgs("build", g.kustomizePath("default")),
+			exec.WithArgs("build", g.kustomizePath()),
 		)
 		stdout, stderr, err := kustomize.Run(ctx)
 		if err != nil {

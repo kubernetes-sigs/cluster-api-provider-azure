@@ -22,6 +22,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"time"
+	// +kubebuilder:scaffold:imports
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -36,7 +37,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	// +kubebuilder:scaffold:imports
 )
 
 var (
@@ -122,8 +122,8 @@ func main() {
 
 	flag.IntVar(&webhookPort,
 		"webhook-port",
-		9443,
-		"Webhook server port",
+		0,
+		"Webhook Server port, disabled by default. When enabled, the manager will only work as webhook server, no reconcilers are installed.",
 	)
 
 	flag.Parse()
@@ -159,31 +159,34 @@ func main() {
 	// Initialize event recorder.
 	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
-	if err = (&controllers.AzureMachineReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AzureMachine"),
-	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
-		os.Exit(1)
-	}
-	if err = (&controllers.AzureClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AzureCluster"),
-	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
-		os.Exit(1)
-	}
-	if err = (&infrastructurev1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
-		os.Exit(1)
-	}
-	if err = (&infrastructurev1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
-		os.Exit(1)
-	}
-	if err = (&infrastructurev1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
-		os.Exit(1)
+	if webhookPort == 0 {
+		if err = (&controllers.AzureMachineReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
+			os.Exit(1)
+		}
+		if err = (&controllers.AzureClusterReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("AzureCluster"),
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
+			os.Exit(1)
+		}
+	} else {
+		if err = (&infrastructurev1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
+			os.Exit(1)
+		}
+		if err = (&infrastructurev1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
+			os.Exit(1)
+		}
+		if err = (&infrastructurev1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
