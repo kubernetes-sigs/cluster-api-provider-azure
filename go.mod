@@ -15,16 +15,15 @@ require (
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pelletier/go-toml v1.6.0
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.0
 	golang.org/x/crypto v0.0.0-20190923035154-9ee001bba392
 	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
-	gopkg.in/yaml.v2 v2.2.7 // indirect
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v0.17.2
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
-	sigs.k8s.io/cluster-api v0.2.6-0.20200106222425-660e6b945a27
+	sigs.k8s.io/cluster-api v0.3.0-rc.1
 	sigs.k8s.io/controller-runtime v0.5.0
 )
 
