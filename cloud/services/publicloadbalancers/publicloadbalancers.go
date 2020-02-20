@@ -65,10 +65,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	klog.V(2).Infof("getting public ip %s", publicLBSpec.PublicIPName)
 	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicLBSpec.PublicIPName)
-	if err != nil {
-		return err
+	if err != nil && azure.ResourceNotFound(err) {
+		return errors.Wrap(err, fmt.Sprintf("public ip %s not found in RG %s", publicLBSpec.PublicIPName, s.Scope.ResourceGroup()))
+	} else if err != nil {
+		return errors.Wrap(err, "failed to look for existing public IP")
 	}
-
 	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
