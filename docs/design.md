@@ -16,7 +16,7 @@
 ### Cluster Actuator
 
 The cluster actuator creates the following resources, in order:
-- Certificates (generating using the kubeadm packages): 
+- Certificates (generating using the kubeadm packages):
     - Kubernetes Certificate Authority (CA)
     - API server (includes public IP FQDN as a certificate SAN (subject alternative name))
     - front proxy
@@ -32,7 +32,7 @@ The cluster actuator creates the following resources, in order:
       - control plane
       - node
     - (1) route table (node)
-    - (1) public IP (Standard SKU) 
+    - (1) public IP (Standard SKU)
     - (1) public load balancer (Standard SKU, attached to public IP)
    - (1) internal load balancer (Standard SKU, for communication from worker nodes)
 

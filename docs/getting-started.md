@@ -24,7 +24,7 @@
 - Linux or MacOS (Windows isn't supported at the moment)
 - A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-- Install the [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) 
+- Install the [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 - [KIND]
 - [kustomize]
 - make
@@ -47,8 +47,8 @@
 ### Setting up your Azure environment
 
 An Azure Service Principal is needed for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
-  
-  1. List your Azure subscriptions. 
+
+  1. List your Azure subscriptions.
 
    ```bash
   az account list -o table
@@ -59,16 +59,16 @@ An Azure Service Principal is needed for populating the controller manifests. Th
   ```bash
   export AZURE_SUBSCRIPTION_ID="<SubscriptionId>"
   ```
-   
-  3. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal. 
+
+  3. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal.
 
   ```bash
   az ad sp create-for-rbac --name SPClusterAPI
   ```
 
-  4. Save the output from the above command in enviroment variables. 
+  4. Save the output from the above command in enviroment variables.
 
-  ```bash  
+  ```bash
   export AZURE_TENANT_ID=<Tenant>
   export AZURE_CLIENT_ID=<AppId>
   export AZURE_CLIENT_SECRET=<Password>
