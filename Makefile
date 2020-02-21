@@ -308,7 +308,7 @@ create-cluster: ## Create a development Kubernetes cluster on Azure in a KIND ma
 		create -f examples/_out/provider-components.yaml
 	# Wait for capi-controller 
 	kubectl \
-		wait --for=condition=Ready --timeout=5m -n capi-system pod -l control-plane=cluster-api-controller-manager
+		wait --for=condition=Ready --timeout=5m -n capi-system pod -l control-plane=controller-manager
     # Wait for capz-controller 
 	kubectl \
 		wait --for=condition=Ready --timeout=5m -n capz-system pod -l control-plane=capz-controller-manager
