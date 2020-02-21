@@ -523,13 +523,8 @@ spec:
                               description: Tags defines a map of tags.
                               type: object
                           type: object
-                        vnetId:
-                          description: VnetID defines the ID of the virtual network
-                            this subnet should be built in.
-                          type: string
                       required:
                       - name
-                      - vnetId
                       type: object
                     type: array
                   vnet:
