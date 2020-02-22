@@ -347,7 +347,7 @@ func TestDeletePublicLB(t *testing.T) {
 			},
 		},
 		{
-			name: "internal load balancer deletion fails",
+			name: "public load balancer deletion fails",
 			publicLBSpec: Spec{
 				Name:         "my-publiclb",
 				PublicIPName: "my-publicip",
