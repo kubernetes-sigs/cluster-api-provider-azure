@@ -36,15 +36,15 @@ func (g *Infra) GetName() string {
 	return "Cluster API Provider Azure: file system"
 }
 
-func (g *Infra) kustomizePath(path string) string {
-	return "../../config/" + path
+func (g *Infra) kustomizePath() string {
+	return "../../config/"
 }
 
 // Manifests return the generated components and any error if there is one.
 func (g *Infra) Manifests(ctx context.Context) ([]byte, error) {
 	kustomize := exec.NewCommand(
 		exec.WithCommand("kustomize"),
-		exec.WithArgs("build", g.kustomizePath("default")),
+		exec.WithArgs("build", g.kustomizePath()),
 	)
 	stdout, stderr, err := kustomize.Run(ctx)
 	if err != nil {

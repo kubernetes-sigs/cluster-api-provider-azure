@@ -140,7 +140,7 @@ curl -L https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubead
 echo "Downloaded ${COMPONENTS_KUBEADM_GENERATED_FILE}"
 
 # Generate Azure Infrastructure Provider components file.
-kustomize build "${SOURCE_DIR}/../config/default" | envsubst > "${COMPONENTS_AZURE_GENERATED_FILE}"
+kustomize build "${SOURCE_DIR}/../config" | envsubst > "${COMPONENTS_AZURE_GENERATED_FILE}"
 echo "Generated ${COMPONENTS_AZURE_GENERATED_FILE}"
 
 # Generate a single provider components file.

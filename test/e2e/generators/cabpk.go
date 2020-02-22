@@ -33,8 +33,8 @@ func (g *Bootstrap) GetName() string {
 	return fmt.Sprintf("Cluster API Bootstrap Provider Kubeadm %s", g.Version)
 }
 
-func (g *Bootstrap) kustomizePath(path string) string {
-	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//bootstrap/kubeadm/config/%s", path)
+func (g *Bootstrap) kustomizePath() string {
+	return fmt.Sprintf("https://github.com/kubernetes-sigs/cluster-api//bootstrap/kubeadm/config")
 }
 
 func (g *Bootstrap) releaseYAMLPath() string {
@@ -45,7 +45,7 @@ func (g *Bootstrap) releaseYAMLPath() string {
 func (g *Bootstrap) Manifests(ctx context.Context) ([]byte, error) {
 	kustomize := exec.NewCommand(
 		exec.WithCommand("kustomize"),
-		exec.WithArgs("build", g.kustomizePath("default")),
+		exec.WithArgs("build", g.kustomizePath()),
 	)
 	stdout, stderr, err := kustomize.Run(ctx)
 	if err != nil {
@@ -53,5 +53,4 @@ func (g *Bootstrap) Manifests(ctx context.Context) ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 	return stdout, nil
-
 }
