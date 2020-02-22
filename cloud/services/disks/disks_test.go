@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 
+	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -36,6 +37,54 @@ import (
 
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
+}
+
+func TestInvalidDiskSpec(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	disksMock := mock_disks.NewMockClient(mockCtrl)
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+	}
+
+	client := fake.NewFakeClient(cluster)
+
+	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+		AzureClients: scope.AzureClients{
+			SubscriptionID: "123",
+			Authorizer:     autorest.NullAuthorizer{},
+		},
+		Client:  client,
+		Cluster: cluster,
+		AzureCluster: &infrav1.AzureCluster{
+			Spec: infrav1.AzureClusterSpec{
+				Location: "test-location",
+				ResourceGroup: "my-rg",
+				NetworkSpec: infrav1.NetworkSpec{
+					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test context: %v", err)
+	}
+
+	s := &Service{
+		Scope:  clusterScope,
+		Client: disksMock,
+	}
+
+	// Wrong Spec
+	wrongSpec := &network.PublicIPAddress{}
+
+	err = s.Delete(context.TODO(), &wrongSpec)
+	if err == nil {
+		t.Fatalf("it should fail")
+	}
+	if err.Error() != "invalid disk specification" {
+		t.Fatalf("got an unexpected error: %v", err)
+	}
 }
 
 func TestDeleteDisk(t *testing.T) {
@@ -53,6 +102,16 @@ func TestDeleteDisk(t *testing.T) {
 			expectedError: "",
 			expect: func(m *mock_disks.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-disk")
+			},
+		},
+		{
+			name: "disk already deleted",
+			disksSpec: Spec{
+				Name: "my-disk",
+			},
+			expectedError: "",
+			expect: func(m *mock_disks.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-disk").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{

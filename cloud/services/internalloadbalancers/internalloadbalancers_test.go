@@ -39,6 +39,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+const expectedInvalidSpec = "invalid internal load balancer specification"
+
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
@@ -86,7 +88,7 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 	if err == nil {
 		t.Fatalf("it should fail")
 	}
-	if err.Error() != "invalid internal load balancer specification" {
+	if err.Error() != expectedInvalidSpec {
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 
@@ -94,7 +96,7 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 	if err == nil {
 		t.Fatalf("it should fail")
 	}
-	if err.Error() != "invalid internal load balancer specification" {
+	if err.Error() != expectedInvalidSpec {
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 
@@ -102,7 +104,7 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 	if err == nil {
 		t.Fatalf("it should fail")
 	}
-	if err.Error() != "invalid internal load balancer specification" {
+	if err.Error() != expectedInvalidSpec {
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 }

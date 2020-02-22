@@ -36,6 +36,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+const expectedInvalidSpec = "invalid public loadbalancer specification"
+
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
@@ -83,7 +85,7 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 	if err == nil {
 		t.Fatalf("it should fail")
 	}
-	if err.Error() != "invalid public loadbalancer specification" {
+	if err.Error() != expectedInvalidSpec {
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 
@@ -91,7 +93,7 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 	if err == nil {
 		t.Fatalf("it should fail")
 	}
-	if err.Error() != "invalid public loadbalancer specification" {
+	if err.Error() != expectedInvalidSpec {
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 
@@ -99,7 +101,7 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 	if err == nil {
 		t.Fatalf("it should fail")
 	}
-	if err.Error() != "invalid public loadbalancer specification" {
+	if err.Error() != expectedInvalidSpec {
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 }

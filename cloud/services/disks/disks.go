@@ -43,7 +43,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	diskSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("Invalid disk specification")
+		return errors.New("invalid disk specification")
 	}
 	klog.V(2).Infof("deleting disk %s", diskSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
