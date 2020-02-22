@@ -43,6 +43,70 @@ func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
 
+func TestInvalidInternalLBSpec(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	internalLBMock := mock_internalloadbalancers.NewMockClient(mockCtrl)
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+	}
+
+	client := fake.NewFakeClient(cluster)
+
+	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+		AzureClients: scope.AzureClients{
+			SubscriptionID: "123",
+			Authorizer:     autorest.NullAuthorizer{},
+		},
+		Client:  client,
+		Cluster: cluster,
+		AzureCluster: &infrav1.AzureCluster{
+			Spec: infrav1.AzureClusterSpec{
+				Location: "test-location",
+				ResourceGroup: "my-rg",
+				NetworkSpec: infrav1.NetworkSpec{
+					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test context: %v", err)
+	}
+
+	s := &Service{
+		Scope:  clusterScope,
+		Client: internalLBMock,
+	}
+
+	// Wrong Spec
+	wrongSpec := &network.PublicIPAddress{}
+
+	err = s.Reconcile(context.TODO(), &wrongSpec)
+	if err == nil {
+		t.Fatalf("it should fail")
+	}
+	if err.Error() != "invalid internal load balancer specification" {
+		t.Fatalf("got an unexpected error: %v", err)
+	}
+
+	_, err = s.Get(context.TODO(), &wrongSpec)
+	if err == nil {
+		t.Fatalf("it should fail")
+	}
+	if err.Error() != "invalid internal load balancer specification" {
+		t.Fatalf("got an unexpected error: %v", err)
+	}
+
+	err = s.Delete(context.TODO(), &wrongSpec)
+	if err == nil {
+		t.Fatalf("it should fail")
+	}
+	if err.Error() != "invalid internal load balancer specification" {
+		t.Fatalf("got an unexpected error: %v", err)
+	}
+}
+
 func TestReconcileInternalLoadBalancer(t *testing.T) {
 	testcases := []struct {
 		name           string
