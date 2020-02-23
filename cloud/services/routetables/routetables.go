@@ -35,7 +35,7 @@ type Spec struct {
 func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
-		return network.RouteTable{}, errors.New("Invalid Route Table Specification")
+		return network.RouteTable{}, errors.New("invalid Route Table Specification")
 	}
 	routeTable, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
@@ -54,7 +54,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("Invalid Route Table Specification")
+		return errors.New("invalid Route Table Specification")
 	}
 	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
 	err := s.Client.CreateOrUpdate(
@@ -82,7 +82,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	}
 	routeTableSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("Invalid Route Table Specification")
+		return errors.New("invalid Route Table Specification")
 	}
 	klog.V(2).Infof("deleting route table %s", routeTableSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
