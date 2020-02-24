@@ -37,7 +37,7 @@ type Spec struct {
 func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
-		return compute.VirtualMachineExtension{}, errors.New("invalid vm specification")
+		return compute.VirtualMachineExtension{}, errors.New("invalid vm extension specification")
 	}
 	vmExt, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmExtSpec.VMName, vmExtSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
@@ -52,7 +52,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("invalid vm specification")
+		return errors.New("invalid vm extension specification")
 	}
 
 	klog.V(2).Infof("creating vm extension %s ", vmExtSpec.Name)
@@ -78,6 +78,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "cannot create vm extension")
 	}
 
+	// TODO: review if can remove this code
 	// if *vmExt.ProvisioningState != string(compute.ProvisioningStateSucceeded) {
 	// 	// If the script failed delete it so it can be retried
 	// 	s.Delete(ctx, vmExtSpec)
@@ -91,7 +92,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	vmExtSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("Invalid VNET Specification")
+		return errors.New("invalid vm extension specification")
 	}
 	klog.V(2).Infof("deleting vm extension %s ", vmExtSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmExtSpec.VMName, vmExtSpec.Name)
