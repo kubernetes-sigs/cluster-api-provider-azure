@@ -54,14 +54,14 @@ func TestGetGroups(t *testing.T) {
 			},
 		},
 		{
-			name:          "get existing group",
-			expectedError: "#: Not found: StatusCode=404",
+			name:          "reource group not found",
+			expectedError: "resource group my-rg not found: #: Not found: StatusCode=404",
 			expect: func(m *mock_groups.MockClientMockRecorder) {
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name:          "get existing group",
+			name:          "resource group retrieval fails",
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_groups.MockClientMockRecorder) {
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
