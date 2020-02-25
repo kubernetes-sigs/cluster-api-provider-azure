@@ -30,7 +30,13 @@ import (
 
 // Get provides information about a resource group.
 func (s *Service) Get(ctx context.Context, spec interface{}) (resources.Group, error) {
-	return s.Client.Get(ctx, s.Scope.ResourceGroup())
+	resourceGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup())
+	if err != nil && azure.ResourceNotFound(err) {
+		return resources.Group{}, errors.Wrapf(err, "resource group %s not found", s.Scope.ResourceGroup())
+	} else if err != nil {
+		return resourceGroup, err
+	}
+	return resourceGroup, nil
 }
 
 // Reconcile gets/creates/updates a resource group.
