@@ -56,7 +56,7 @@ cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
 ### Get familiar with basic concepts
 
 This provider is modeled after the upstream Cluster API project. To get familiar
-with Cluster API resources, concepts and conventions, refer to the [Cluster API gitbook](https://kubernetes-sigs.github.io/cluster-api/).
+with Cluster API resources, concepts and conventions, refer to the [Cluster API Book](https://cluster-api.sigs.k8s.io/).
 
 ### Dev manifest files
 
