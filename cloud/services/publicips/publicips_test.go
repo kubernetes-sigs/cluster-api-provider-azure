@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package publicloadbalancers
+package publicips
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers/mock_publicloadbalancers"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
@@ -36,15 +35,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid public loadbalancer specification"
-
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
 
-func TestInvalidPublicLBSpec(t *testing.T) {
+const expectedInvalidSpec = "invalid PublicIP Specification"
+
+func TestInvalidPublicIPSpec(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
-	publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
+	publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
@@ -75,11 +74,11 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 
 	s := &Service{
 		Scope:  clusterScope,
-		Client: publicLBMock,
+		Client: publicIPsMock,
 	}
 
 	// Wrong Spec
-	wrongSpec := &network.PublicIPAddress{}
+	wrongSpec := &network.LoadBalancer{}
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
 	if err == nil {
@@ -106,41 +105,41 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 	}
 }
 
-func TestGetPublicLB(t *testing.T) {
+func TestGetPublicIP(t *testing.T) {
 	testcases := []struct {
 		name          string
-		publicLBSpec  Spec
+		publicIPsSpec Spec
 		expectedError string
-		expect        func(m *mock_publicloadbalancers.MockClientMockRecorder)
+		expect        func(m *mock_publicips.MockClientMockRecorder)
 	}{
 		{
-			name: "get existing public load balancer",
-			publicLBSpec: Spec{
-				Name: "my-publiclb",
+			name: "get existing publicip",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
 			},
 			expectedError: "",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-publiclb").Return(network.LoadBalancer{}, nil)
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil)
 			},
 		},
 		{
-			name: "public load balancer not found",
-			publicLBSpec: Spec{
-				Name: "my-publiclb",
+			name: "publicip not found",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
 			},
-			expectedError: "load balancer my-publiclb not found: #: Not found: StatusCode=404",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-publiclb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			expectedError: "publicip my-publicip not found: #: Not found: StatusCode=404",
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name: "public load balancer retrieval fails",
-			publicLBSpec: Spec{
-				Name: "my-publiclb",
+			name: "publicip retrieval fails",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
 			},
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-publiclb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -148,7 +147,7 @@ func TestGetPublicLB(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
+			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
@@ -156,7 +155,7 @@ func TestGetPublicLB(t *testing.T) {
 
 			client := fake.NewFakeClient(cluster)
 
-			tc.expect(publicLBMock.EXPECT())
+			tc.expect(publicIPsMock.EXPECT())
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
@@ -169,9 +168,6 @@ func TestGetPublicLB(t *testing.T) {
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
 						ResourceGroup: "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
 					},
 				},
 			})
@@ -181,10 +177,10 @@ func TestGetPublicLB(t *testing.T) {
 
 			s := &Service{
 				Scope:  clusterScope,
-				Client: publicLBMock,
+				Client: publicIPsMock,
 			}
 
-			_, err = s.Get(context.TODO(), &tc.publicLBSpec)
+			_, err = s.Get(context.TODO(), &tc.publicIPsSpec)
 			if err != nil {
 				if tc.expectedError == "" || err.Error() != tc.expectedError {
 					t.Fatalf("got an unexpected error: %v", err)
@@ -202,61 +198,28 @@ func TestGetPublicLB(t *testing.T) {
 func TestReconcilePublicLoadBalancer(t *testing.T) {
 	testcases := []struct {
 		name          string
-		publicLBSpec  Spec
+		publicIPsSpec Spec
 		expectedError string
-		expect        func(m *mock_publicloadbalancers.MockClientMockRecorder,
-			publicIP *mock_publicips.MockClientMockRecorder)
+		expect        func(m *mock_publicips.MockClientMockRecorder)
 	}{
 		{
-			name: "public IP does not exist",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
-			},
-			expectedError: "public ip my-publicip not found in RG my-rg: #: Not found: StatusCode=404",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder,
-				publicIP *mock_publicips.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-				publicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-			},
-		},
-		{
-			name: "public IP retrieval fails",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
-			},
-			expectedError: "failed to look for existing public IP: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder,
-				publicIP *mock_publicips.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-				publicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
-		{
-			name: "successfully create a public LB",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
+			name: "can create a public IP",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
 			},
 			expectedError: "",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder,
-				publicIP *mock_publicips.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{})).Return(nil)
-				publicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil)
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{}))
 			},
 		},
 		{
-			name: "fail to create a public LB",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
+			name: "fail to create a public IP",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
 			},
-			expectedError: "cannot create public load balancer: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder,
-				publicIP *mock_publicips.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-				publicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil)
+			expectedError: "cannot create public ip: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -264,7 +227,6 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
 			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
@@ -273,105 +235,7 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 
 			client := fake.NewFakeClient(cluster)
 
-			tc.expect(publicLBMock.EXPECT(), publicIPsMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup: "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
-
-			s := &Service{
-				Scope:           clusterScope,
-				Client:          publicLBMock,
-				PublicIPsClient: publicIPsMock,
-			}
-
-			if err := s.Reconcile(context.TODO(), &tc.publicLBSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
-			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
-			}
-		})
-	}
-}
-
-func TestDeletePublicLB(t *testing.T) {
-	testcases := []struct {
-		name          string
-		publicLBSpec  Spec
-		expectedError string
-		expect        func(m *mock_publicloadbalancers.MockClientMockRecorder)
-	}{
-		{
-			name: "successfully delete an existing public load balancer",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
-			},
-			expectedError: "",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-publiclb")
-			},
-		},
-		{
-			name: "public load balancer already deleted",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
-			},
-			expectedError: "",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-publiclb").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-			},
-		},
-		{
-			name: "public load balancer deletion fails",
-			publicLBSpec: Spec{
-				Name:         "my-publiclb",
-				PublicIPName: "my-publicip",
-			},
-			expectedError: "failed to delete public load balancer my-publiclb in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-publiclb").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			mockCtrl := gomock.NewController(t)
-			publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClient(cluster)
-
-			tc.expect(publicLBMock.EXPECT())
+			tc.expect(publicIPsMock.EXPECT())
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
@@ -396,10 +260,104 @@ func TestDeletePublicLB(t *testing.T) {
 
 			s := &Service{
 				Scope:  clusterScope,
-				Client: publicLBMock,
+				Client: publicIPsMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.publicLBSpec); err != nil {
+			if err := s.Reconcile(context.TODO(), &tc.publicIPsSpec); err != nil {
+				if tc.expectedError == "" || err.Error() != tc.expectedError {
+					t.Fatalf("got an unexpected error: %v", err)
+				}
+			} else {
+				if tc.expectedError != "" {
+					t.Fatalf("expected an error: %v", tc.expectedError)
+
+				}
+			}
+		})
+	}
+}
+
+func TestDeletePublicIP(t *testing.T) {
+	testcases := []struct {
+		name          string
+		publicIPsSpec Spec
+		expectedError string
+		expect        func(m *mock_publicips.MockClientMockRecorder)
+	}{
+		{
+			name: "successfully delete an existing public ip",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
+			},
+			expectedError: "",
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-publicip")
+			},
+		},
+		{
+			name: "public ip already deleted",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
+			},
+			expectedError: "",
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-publicip").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+		},
+		{
+			name: "public ip deletion fails",
+			publicIPsSpec: Spec{
+				Name: "my-publicip",
+			},
+			expectedError: "failed to delete public ip my-publicip in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_publicips.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-publicip").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+			}
+
+			client := fake.NewFakeClient(cluster)
+
+			tc.expect(publicIPsMock.EXPECT())
+
+			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+				AzureClients: scope.AzureClients{
+					SubscriptionID: "123",
+					Authorizer:     autorest.NullAuthorizer{},
+				},
+				Client:  client,
+				Cluster: cluster,
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						Location: "test-location",
+						ResourceGroup: "my-rg",
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
+						},
+					},
+				},
+			})
+			if err != nil {
+				t.Fatalf("Failed to create test context: %v", err)
+			}
+
+			s := &Service{
+				Scope:  clusterScope,
+				Client: publicIPsMock,
+			}
+
+			if err := s.Delete(context.TODO(), &tc.publicIPsSpec); err != nil {
 				if tc.expectedError == "" || err.Error() != tc.expectedError {
 					t.Fatalf("got an unexpected error: %v", err)
 				}

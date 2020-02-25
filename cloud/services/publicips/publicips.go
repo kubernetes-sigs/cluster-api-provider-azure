@@ -36,7 +36,7 @@ type Spec struct {
 func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
-		return network.PublicIPAddress{}, errors.New("Invalid PublicIP Specification")
+		return network.PublicIPAddress{}, errors.New("invalid PublicIP Specification")
 	}
 	publicIP, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), publicIPSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
@@ -51,7 +51,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("Invalid PublicIP Specification")
+		return errors.New("invalid PublicIP Specification")
 	}
 	ipName := publicIPSpec.Name
 	klog.V(2).Infof("creating public ip %s", ipName)
@@ -88,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	publicIPSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("Invalid PublicIP Specification")
+		return errors.New("invalid PublicIP Specification")
 	}
 	klog.V(2).Infof("deleting public ip %s", publicIPSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), publicIPSpec.Name)
