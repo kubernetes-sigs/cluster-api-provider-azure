@@ -40,7 +40,7 @@ const (
 
 	// DefaultKubernetesVersion is the default value for Flags.KubernetesVersion
 	// if the env var KUBERNETES_VERSION is an empty string.
-	DefaultKubernetesVersion = "v1.16.6"
+	DefaultKubernetesVersion = "v1.16.7"
 )
 
 // Flags contains command-line flags used by the e2e framework.
