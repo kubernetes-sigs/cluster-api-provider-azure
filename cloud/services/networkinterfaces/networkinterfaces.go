@@ -47,10 +47,9 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	nic, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "network interface %s not found", nicSpec.Name)
-	} else if err != nil {
-		return nic, err
 	}
-	return nic, nil
+
+	return nic, err
 }
 
 // Reconcile gets/creates/updates a network interface.
