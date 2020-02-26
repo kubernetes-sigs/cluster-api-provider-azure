@@ -78,7 +78,11 @@ An Azure Service Principal is needed for populating the controller manifests. Th
 
 ### Using images
 
-By default, the code will use the Azure Marketplace "capi" offer.
+By default, the code will use the Azure Marketplace "capi" offer. You can list the available images with:
+
+```bash
+az vm image list --publisher cncf-upstream --offer capi --all -o table
+```
 
 You can also [build your own image](https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure) and specify the image ID in the manifests generated in the AzureMachine specs.
 
