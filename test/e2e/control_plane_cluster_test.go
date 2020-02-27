@@ -132,7 +132,7 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 		}
 	}
 
-	By("waiting for the workload nodes to exist")
+	By("waiting for the first workload node to exist")
 	Eventually(func() ([]v1.Node, error) {
 		workloadClient, err := input.Management.GetWorkloadClient(ctx, input.Cluster.Namespace, input.Cluster.Name)
 		if err != nil {
@@ -143,7 +143,7 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 			return nil, err
 		}
 		return nodeList.Items, nil
-	}, input.CreateTimeout, 10*time.Second).Should(HaveLen(len(input.Nodes)))
+	}, input.CreateTimeout, 10*time.Second).ShouldNot(HaveLen(0))
 
 	By("deploy a CNI soution, Calico")
 	config := &v1.Secret{}
@@ -154,7 +154,6 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 	if err := mgmtClient.Get(ctx, key, config); err != nil {
 		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
 	}
-
 	tmpdir, err := ioutil.TempDir("", "")
 	f, err := ioutil.TempFile(tmpdir, "worker-kubeconfig")
 	if err != nil {
@@ -165,15 +164,21 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 	if _, err := f.Write(data); err != nil {
 		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
 	}
-	calicoManifestPath := "https://docs.projectcalico.org/v3.8/manifests/calico.yaml"
+	calicoManifestPath := "https://docs.projectcalico.org/v3.13/manifests/calico.yaml"
 	applyCmd := exec.NewCommand(
 		exec.WithCommand("kubectl"),
 		exec.WithArgs("apply", "--kubeconfig", f.Name(), "-f", calicoManifestPath),
 	)
-	_, _, err = applyCmd.Run(ctx)
-	if err != nil {
-		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
-	}
+
+	Eventually(func() error {
+		_, _, err = applyCmd.Run(ctx)
+		return err
+	}, 5*time.Minute, 10*time.Second).Should(BeNil())
+
+	// _, _, err = applyCmd.Run(ctx)
+	// if err != nil {
+	// 	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+	// }
 
 	By("waiting for all machines to be running")
 	inClustersNamespaceListOption := client.InNamespace(input.Cluster.Namespace)

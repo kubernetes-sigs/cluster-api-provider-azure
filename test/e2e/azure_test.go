@@ -22,9 +22,7 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
-
 	"k8s.io/client-go/kubernetes/scheme"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -39,12 +37,12 @@ var _ = Describe("CAPZ e2e tests", func() {
 	Describe("Cluster creation", func() {
 
 		var (
-			clusterGen   *ClusterGenerator
-			nodeGen      *NodeGenerator
-			cluster      *capiv1.Cluster
-			infraCluster *infrav1.AzureCluster
-			input        *ControlPlaneClusterInput
-			//machineDeploymentGen = &MachineDeploymentGenerator{}
+			clusterGen           *ClusterGenerator
+			nodeGen              *NodeGenerator
+			cluster              *capiv1.Cluster
+			infraCluster         *infrav1.AzureCluster
+			input                *ControlPlaneClusterInput
+			machineDeploymentGen = &MachineDeploymentGenerator{}
 		)
 
 		BeforeEach(func() {
@@ -60,7 +58,7 @@ var _ = Describe("CAPZ e2e tests", func() {
 
 		Context("Create single controlplane cluster", func() {
 			It("Should create a single node cluster", func() {
-				nodes := []framework.Node{nodeGen.GenerateNode(creds, cluster.GetName())}
+				nodes := []framework.Node{nodeGen.GenerateInitNode(creds, cluster.GetName())}
 				input = &ControlPlaneClusterInput{
 					Management:    mgmt,
 					Cluster:       cluster,
@@ -72,20 +70,20 @@ var _ = Describe("CAPZ e2e tests", func() {
 			})
 		})
 
-		// todo: re-enable this test once we fix it
-		// Context("Create multiple controlplane cluster with machine deployments", func() {
-		// 	It("Should create a 3 node cluster", func() {
-		// 		nodes := []framework.Node{nodeGen.GenerateNode(creds, cluster.GetName()), nodeGen.GenerateNode(creds, cluster.GetName()), nodeGen.GenerateNode(creds, cluster.GetName())}
-		// 		machineDeployment := machineDeploymentGen.Generate(creds, cluster.GetNamespace(), cluster.GetName(), 1)
-		// 		ControlPlaneCluster(&ControlPlaneClusterInput{
-		// 			Management:        mgmt,
-		// 			Cluster:           cluster,
-		// 			InfraCluster:      infraCluster,
-		// 			Nodes:             nodes,
-		// 			MachineDeployment: machineDeployment,
-		// 			CreateTimeout:     30 * time.Minute,
-		// 		})
-		// 	})
-		// })
+		Context("Create multiple controlplane cluster with machine deployments", func() {
+			It("Should create a 3 node cluster", func() {
+				nodes := []framework.Node{nodeGen.GenerateInitNode(creds, cluster.GetName()), nodeGen.GenerateJoinNode(creds, cluster.GetName(), "1"), nodeGen.GenerateJoinNode(creds, cluster.GetName(), "2")}
+				machineDeployment := machineDeploymentGen.Generate(creds, cluster.GetNamespace(), cluster.GetName(), 1)
+				input = &ControlPlaneClusterInput{
+					Management:        mgmt,
+					Cluster:           cluster,
+					InfraCluster:      infraCluster,
+					Nodes:             nodes,
+					MachineDeployment: machineDeployment,
+					CreateTimeout:     40 * time.Minute,
+				}
+				ControlPlaneCluster(input)
+			})
+		})
 	})
 })
