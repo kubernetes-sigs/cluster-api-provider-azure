@@ -187,7 +187,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("invalid vm Specification")
+		return errors.New("invalid vm specification")
 	}
 	klog.V(2).Infof("deleting vm %s ", vmSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
