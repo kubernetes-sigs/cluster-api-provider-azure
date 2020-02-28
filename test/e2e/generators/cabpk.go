@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/exec"
+	"sigs.k8s.io/cluster-api/test/framework/exec"
 )
 
 type Bootstrap struct {

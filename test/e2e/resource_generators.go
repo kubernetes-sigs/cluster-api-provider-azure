@@ -33,12 +33,13 @@ import (
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 	kubeadmv1beta1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -97,6 +98,7 @@ func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *
 			AdditionalTags: tags,
 		},
 	}
+
 	cluster := &capiv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -185,6 +187,8 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 		cpJoinConfiguration(bootstrapConfig, registrationOptions)
 	}
 
+	defaultConfig, _ := framework.DefaultConfig()
+
 	machine := &capiv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -208,7 +212,8 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 				Namespace:  infraMachine.GetNamespace(),
 				Name:       infraMachine.GetName(),
 			},
-			Version:     &framework.Flags.KubernetesVersion,
+			Version: pointer.StringPtr(defaultConfig.KubernetesVersion),
+
 			ClusterName: clusterName,
 		},
 	}
@@ -370,6 +375,8 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 		},
 	}
 
+	defaultConfig, _ := framework.DefaultConfig()
+
 	machineDeployment := &capiv1.MachineDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -394,7 +401,7 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 						Namespace:  infraMachineTemplate.GetNamespace(),
 						Name:       infraMachineTemplate.GetName(),
 					},
-					Version:     &framework.Flags.KubernetesVersion,
+					Version:     pointer.StringPtr(defaultConfig.KubernetesVersion),
 					ClusterName: clusterName,
 				},
 			},

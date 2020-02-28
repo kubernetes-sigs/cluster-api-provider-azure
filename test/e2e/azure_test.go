@@ -26,9 +26,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/test/framework"
 )
 
 func init() {
@@ -43,6 +43,7 @@ var _ = Describe("CAPZ e2e tests", func() {
 			nodeGen      *NodeGenerator
 			cluster      *capiv1.Cluster
 			infraCluster *infrav1.AzureCluster
+			input        *ControlPlaneClusterInput
 			//machineDeploymentGen = &MachineDeploymentGenerator{}
 		)
 
@@ -54,23 +55,20 @@ var _ = Describe("CAPZ e2e tests", func() {
 
 		AfterEach(func() {
 			By("cleaning up e2e resources")
-			framework.CleanUp(&framework.CleanUpInput{
-				Management:    mgmt,
-				Cluster:       cluster,
-				DeleteTimeout: 20 * time.Minute,
-			})
+			ensureCAPZArtifactsDeleted(input)
 		})
 
 		Context("Create single controlplane cluster", func() {
 			It("Should create a single node cluster", func() {
 				nodes := []framework.Node{nodeGen.GenerateNode(creds, cluster.GetName())}
-				ControlPlaneCluster(&ControlPlaneClusterInput{
+				input = &ControlPlaneClusterInput{
 					Management:    mgmt,
 					Cluster:       cluster,
 					InfraCluster:  infraCluster,
 					Nodes:         nodes,
 					CreateTimeout: 30 * time.Minute,
-				})
+				}
+				ControlPlaneCluster(input)
 			})
 		})
 
