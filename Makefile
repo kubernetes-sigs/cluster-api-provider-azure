@@ -302,14 +302,14 @@ create-cluster: ## Create a development Kubernetes cluster on Azure in a KIND ma
 	# Wait for webhook servers to be ready to take requests
 	kubectl \
 		wait --for=condition=Available --timeout=5m apiservice v1beta1.webhook.cert-manager.io
-	
+
 	# Apply provider-components.
 	kubectl \
 		create -f examples/_out/provider-components.yaml
-	# Wait for capi-controller 
+	# Wait for capi-controller
 	kubectl \
 		wait --for=condition=Ready --timeout=5m -n capi-system pod -l control-plane=controller-manager
-    # Wait for capz-controller 
+    # Wait for capz-controller
 	kubectl \
 		wait --for=condition=Ready --timeout=5m -n capz-system pod -l control-plane=capz-controller-manager
 	# Create Cluster.
@@ -399,4 +399,3 @@ verify-gen: generate
 	@if !(git diff --quiet HEAD); then \
 		echo "generated files are out of date, run make generate"; exit 1; \
 	fi
-

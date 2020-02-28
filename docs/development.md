@@ -225,11 +225,13 @@ Kubernetes cluster, nor do they have external dependencies.
 
 #### Mocks
 
-Mocks are set up using Bazel, see [build](../../build)
+Mocks for the services tests are generated using [GoMock][gomock]
 
-If you then want to use these mocks with `go test ./...`, run
+To generate the mocks you can run
 
-`make copy-genmocks`
+```bash
+make generate-go
+```
 
 <!-- References -->
 
@@ -243,3 +245,4 @@ If you then want to use these mocks with `go test ./...`, run
 [pyenv]: https://github.com/pyenv/pyenv
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
+[gomock]: https://github.com/golang/mock
