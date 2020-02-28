@@ -25,6 +25,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -380,10 +381,11 @@ func (s *azureMachineService) isAvailabilityZoneSupported() bool {
 }
 
 // Pick image from the machine configuration, or use a default one.
-func getVMImage(scope *scope.MachineScope) (infrav1.Image, error) {
+func getVMImage(scope *scope.MachineScope) (*runtime.RawExtension, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
-	if scope.AzureMachine.Spec.Image != nil {
-		return *scope.AzureMachine.Spec.Image, nil
+	if scope.AzureMachine.Spec.Image != nil && scope.AzureMachine.Spec.Image.Raw != nil {
+		return scope.AzureMachine.Spec.Image, nil
 	}
+	scope.Info("No image specified for machine, using default", "machine", scope.AzureMachine.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(scope.Machine.Spec.Version))
 }

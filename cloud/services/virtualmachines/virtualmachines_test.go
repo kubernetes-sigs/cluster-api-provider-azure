@@ -18,6 +18,7 @@ package virtualmachines
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -29,6 +30,7 @@ import (
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
@@ -366,6 +368,24 @@ func TestReconcileVM(t *testing.T) {
 		},
 	}
 
+	image := infrav1.AzureMarketplaceImage{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       infrav1.AzureMarketplaceImageKind,
+			APIVersion: infrav1.GroupVersion.String(),
+		},
+		Publisher: "test-publisher",
+		Offer:     "test-offer",
+		SKU:       "test-sku",
+		Version:   "1.0.0.",
+	}
+
+	imageData, err := json.Marshal(image)
+	if err != nil {
+		t.Fatalf("did not expect error: %v", err)
+	}
+
+	rawImage := &runtime.RawExtension{Raw: imageData}
+
 	testcases := []struct {
 		name          string
 		machine       clusterv1.Machine
@@ -390,12 +410,7 @@ func TestReconcileVM(t *testing.T) {
 			machineConfig: &infrav1.AzureMachineSpec{
 				VMSize:   "Standard_B2ms",
 				Location: "eastus",
-				Image: &infrav1.Image{
-					Publisher: to.StringPtr("test-publisher"),
-					Offer:     to.StringPtr("test-offer"),
-					SKU:       to.StringPtr("test-sku"),
-					Version:   to.StringPtr("1.0.0"),
-				},
+				Image:    rawImage,
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
@@ -450,12 +465,7 @@ func TestReconcileVM(t *testing.T) {
 			machineConfig: &infrav1.AzureMachineSpec{
 				VMSize:   "Standard_B2ms",
 				Location: "eastus",
-				Image: &infrav1.Image{
-					Publisher: to.StringPtr("test-publisher"),
-					Offer:     to.StringPtr("test-offer"),
-					SKU:       to.StringPtr("test-sku"),
-					Version:   to.StringPtr("1.0.0"),
-				},
+				Image:    rawImage,
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
@@ -579,7 +589,7 @@ func TestReconcileVM(t *testing.T) {
 				SSHKeyData: "fake-key",
 				Size:       machineScope.AzureMachine.Spec.VMSize,
 				OSDisk:     machineScope.AzureMachine.Spec.OSDisk,
-				Image:      *machineScope.AzureMachine.Spec.Image,
+				Image:      machineScope.AzureMachine.Spec.Image,
 				CustomData: *machineScope.Machine.Spec.Bootstrap.Data,
 			}
 			err = s.Reconcile(context.TODO(), vmSpec)

@@ -21,6 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // // ResourceSpec defines a generic spec that can used to define Azure resources.
@@ -361,9 +362,9 @@ type VM struct {
 	// Hardware profile
 	VMSize string `json:"vmSize,omitempty"`
 	// Storage profile
-	Image         Image  `json:"image,omitempty"`
-	OSDisk        OSDisk `json:"osDisk,omitempty"`
-	StartupScript string `json:"startupScript,omitempty"`
+	Image         runtime.RawExtension `json:"image,omitempty"`
+	OSDisk        OSDisk               `json:"osDisk,omitempty"`
+	StartupScript string               `json:"startupScript,omitempty"`
 	// State - The provisioning state, which only appears in the response.
 	State    VMState    `json:"vmState,omitempty"`
 	Identity VMIdentity `json:"identity,omitempty"`
@@ -392,27 +393,6 @@ type VM struct {
 type AvailabilityZone struct {
 	ID      *string `json:"id,omitempty"`
 	Enabled *bool   `json:"enabled,omitempty"`
-}
-
-// Image defines information about the image to use for VM creation.
-// There are three ways to specify an image: by ID, by publisher, or by Shared Image Gallery.
-// If specifying an image by ID, only the ID field needs to be set.
-// If specifying an image by publisher, the Publisher, Offer, SKU, and Version fields must be set.
-// If specifying an image from a Shared Image Gallery, the SubscriptionID, ResourceGroup,
-// Gallery, Name, and Version fields must be set.
-type Image struct {
-	Publisher *string `json:"publisher,omitempty"`
-	Offer     *string `json:"offer,omitempty"`
-	SKU       *string `json:"sku,omitempty"`
-
-	ID *string `json:"id,omitempty"`
-
-	SubscriptionID *string `json:"subscriptionID,omitempty"`
-	ResourceGroup  *string `json:"resourceGroup,omitempty"`
-	Gallery        *string `json:"gallery,omitempty"`
-	Name           *string `json:"name,omitempty"`
-
-	Version *string `json:"version,omitempty"`
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.

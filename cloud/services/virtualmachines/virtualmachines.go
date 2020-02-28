@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -42,7 +43,7 @@ type Spec struct {
 	SSHKeyData string
 	Size       string
 	Zone       string
-	Image      infrav1.Image
+	Image      *runtime.RawExtension
 	OSDisk     infrav1.OSDisk
 	CustomData string
 }
@@ -293,7 +294,7 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 		},
 	}
 
-	imageRef, err := generateImageReference(vmSpec.Image)
+	imageRef, err := converters.ImageToSDK(vmSpec.Image)
 	if err != nil {
 		return nil, err
 	}
@@ -301,72 +302,6 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 	storageProfile.ImageReference = imageRef
 
 	return storageProfile, nil
-}
-
-// generateImageReference generates a pointer to a compute.ImageReference which can utilized for VM creation.
-func generateImageReference(image infrav1.Image) (*compute.ImageReference, error) {
-	imageRef := &compute.ImageReference{}
-
-	if image.ID != nil {
-		imageRef.ID = image.ID
-		// return early if an image ID is provided
-		return imageRef, nil
-	}
-
-	imageID, err := generateSIGImageID(image)
-	if err == nil {
-		imageRef.ID = to.StringPtr(imageID)
-		// return early if an image in a shared image gallery is provided
-		return imageRef, nil
-	}
-
-	// otherwise use the Azure Marketplace image
-	return generateImagePlan(image)
-}
-
-// generateSIGImageID generates the resource ID for an image stored in an Azure Shared Image Gallery.
-func generateSIGImageID(image infrav1.Image) (string, error) {
-	if image.SubscriptionID == nil {
-		return "", errors.New("Image subscription ID cannot be nil when specifying an image from an Azure Shared Image Gallery")
-	}
-	if image.ResourceGroup == nil {
-		return "", errors.New("Image resource group cannot be nil when specifying an image from an Azure Shared Image Gallery")
-	}
-	if image.Gallery == nil {
-		return "", errors.New("Image gallery cannot be nil when specifying an image from an Azure Shared Image Gallery")
-	}
-	if image.Name == nil {
-		return "", errors.New("Image name cannot be nil when specifying an image from an Azure Shared Image Gallery")
-	}
-	if image.Version == nil {
-		return "", errors.New("Image version cannot be nil when specifying an image from an Azure Shared Image Gallery")
-	}
-
-	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s", *image.SubscriptionID, *image.ResourceGroup, *image.Gallery, *image.Name, *image.Version), nil
-}
-
-// generateImagePlan generates an image reference based on the image spec's Publisher, Offer, SKU and Version
-func generateImagePlan(image infrav1.Image) (*compute.ImageReference, error) {
-	if image.Publisher == nil {
-		return nil, errors.New("Image reference cannot be generated, as Publisher field is missing")
-	}
-	if image.Offer == nil {
-		return nil, errors.New("Image reference cannot be generated, as Offer field is missing")
-	}
-	if image.SKU == nil {
-		return nil, errors.New("Image reference cannot be generated, as SKU field is missing")
-	}
-	if image.Version == nil {
-		return nil, errors.New("Image reference cannot be generated, as Version field is missing")
-	}
-
-	return &compute.ImageReference{
-		Publisher: image.Publisher,
-		Offer:     image.Offer,
-		Sku:       image.SKU,
-		Version:   image.Version,
-	}, nil
-
 }
 
 // GenerateRandomString returns a URL-safe, base64 encoded

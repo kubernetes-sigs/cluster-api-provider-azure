@@ -12,6 +12,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/mock v1.4.0
+	github.com/google/gofuzz v1.0.0
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pelletier/go-toml v1.6.0

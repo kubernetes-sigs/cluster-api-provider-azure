@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"log"
 	random "math/rand"
+	"os"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -33,6 +34,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
@@ -68,7 +70,7 @@ type azureConfig struct {
 
 var (
 	// TODO Parameterize some of these variables
-	location       = GetRandomRegion()
+	location       = GetRegion()
 	vmSize         = "Standard_D2s_v3"
 	namespace      = "default"
 	imageOffer     = "capi"
@@ -131,6 +133,20 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 	name := fmt.Sprintf("%s-controlplane-%d", clusterName, n.counter)
 	n.counter++
 
+	image := infrav1.AzureMarketplaceImage{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       infrav1.AzureMarketplaceImageKind,
+			APIVersion: infrav1.GroupVersion.String(),
+		},
+		Publisher: imagePublisher,
+		Offer:     imageOffer,
+		SKU:       imageSKU,
+		Version:   imageVersion,
+	}
+
+	imageData, err := json.Marshal(image)
+	Expect(err).NotTo(HaveOccurred())
+
 	infraMachine := &infrav1.AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -140,12 +156,7 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 			VMSize:       vmSize,
 			Location:     location,
 			SSHPublicKey: sshkey,
-			Image: &infrav1.Image{
-				Offer:     &imageOffer,
-				Publisher: &imagePublisher,
-				SKU:       &imageSKU,
-				Version:   &imageVersion,
-			},
+			Image:        &runtime.RawExtension{Raw: imageData},
 			OSDisk: infrav1.OSDisk{
 				DiskSizeGB: 30,
 				OSType:     "Linux",
@@ -316,6 +327,20 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 	Expect(err).NotTo(HaveOccurred())
 	generatedName := fmt.Sprintf("%s-%d", clusterName, n.counter)
 
+	image := infrav1.AzureMarketplaceImage{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       infrav1.AzureMarketplaceImageKind,
+			APIVersion: infrav1.GroupVersion.String(),
+		},
+		Publisher: imagePublisher,
+		Offer:     imageOffer,
+		SKU:       imageSKU,
+		Version:   imageVersion,
+	}
+
+	imageData, err := json.Marshal(image)
+	Expect(err).NotTo(HaveOccurred())
+
 	infraMachineTemplate := &infrav1.AzureMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -327,12 +352,7 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 					VMSize:       vmSize,
 					Location:     location,
 					SSHPublicKey: sshkey,
-					Image: &infrav1.Image{
-						Offer:     &imageOffer,
-						Publisher: &imagePublisher,
-						SKU:       &imageSKU,
-						Version:   &imageVersion,
-					},
+					Image:        &runtime.RawExtension{Raw: imageData},
 					OSDisk: infrav1.OSDisk{
 						DiskSizeGB: 30,
 						OSType:     "Linux",
@@ -415,8 +435,13 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 	}
 }
 
-// GetRandomRegion gets a random region to use in the tests
-func GetRandomRegion() string {
+// GetRegion gets a random region to use in the tests unless explicit region specified in env var
+func GetRegion() string {
+	region := os.Getenv("E2E_REGION")
+	if region != "" {
+		return region
+	}
+
 	regions := []string{"eastus", "eastus2", "southcentralus", "westus2", "westeurope"}
 	log.Printf("Picking Random Region from list %s\n", regions)
 	r := random.New(random.NewSource(time.Now().UnixNano()))

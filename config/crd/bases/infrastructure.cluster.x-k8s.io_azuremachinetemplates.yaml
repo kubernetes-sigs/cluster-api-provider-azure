@@ -191,35 +191,14 @@ spec:
                             type: string
                         type: object
                       image:
-                        description: 'Image defines information about the image to
-                          use for VM creation. There are three ways to specify an
-                          image: by ID, by publisher, or by Shared Image Gallery.
-                          If specifying an image by ID, only the ID field needs to
-                          be set. If specifying an image by publisher, the Publisher,
-                          Offer, SKU, and Version fields must be set. If specifying
-                          an image from a Shared Image Gallery, the SubscriptionID,
-                          ResourceGroup, Gallery, Name, and Version fields must be
-                          set.'
-                        properties:
-                          gallery:
-                            type: string
-                          id:
-                            type: string
-                          name:
-                            type: string
-                          offer:
-                            type: string
-                          publisher:
-                            type: string
-                          resourceGroup:
-                            type: string
-                          sku:
-                            type: string
-                          subscriptionID:
-                            type: string
-                          version:
-                            type: string
+                        description: Image is used to provide details of an image
+                          to use during VM creation. If set it should be one of AzureImageByID,
+                          AzureSharedGalleryImage or AzureMarketplaceImage. If image
+                          details are omitted the image will default the Azure Marketplace
+                          "capi" offer, which is based on Ubuntu.
                         type: object
+                        x-kubernetes-embedded-resource: true
+                        x-kubernetes-preserve-unknown-fields: true
                       location:
                         type: string
                       osDisk:
