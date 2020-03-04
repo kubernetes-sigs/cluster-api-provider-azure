@@ -35,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -180,8 +181,10 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	}
 
 	// If the AzureMachine doesn't have our finalizer, add it.
-	if !util.Contains(machineScope.AzureMachine.Finalizers, infrav1.MachineFinalizer) {
-		machineScope.AzureMachine.Finalizers = append(machineScope.AzureMachine.Finalizers, infrav1.MachineFinalizer)
+	controllerutil.AddFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
+	// Register the finalizer immediately to avoid orphaning Azure resources on delete
+	if err := machineScope.PatchObject(); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if !machineScope.Cluster.Status.InfrastructureReady {
@@ -282,7 +285,8 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 
 	defer func() {
 		if reterr == nil {
-			machineScope.AzureMachine.Finalizers = util.Filter(machineScope.AzureMachine.Finalizers, infrav1.MachineFinalizer)
+			// VM is deleted so remove the finalizer.
+			controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
 		}
 	}()
 

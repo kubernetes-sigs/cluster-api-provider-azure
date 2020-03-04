@@ -30,6 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -109,8 +110,10 @@ func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScop
 	azureCluster := clusterScope.AzureCluster
 
 	// If the AzureCluster doesn't have our finalizer, add it.
-	if !util.Contains(azureCluster.Finalizers, infrav1.ClusterFinalizer) {
-		azureCluster.Finalizers = append(azureCluster.Finalizers, infrav1.ClusterFinalizer)
+	controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer)
+	// Register the finalizer immediately to avoid orphaning Azure resources on delete
+	if err := clusterScope.PatchObject(); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	err := newAzureClusterReconciler(clusterScope).Reconcile()
@@ -147,7 +150,7 @@ func (r *AzureClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScop
 	}
 
 	// Cluster is deleted so remove the finalizer.
-	clusterScope.AzureCluster.Finalizers = util.Filter(clusterScope.AzureCluster.Finalizers, infrav1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(clusterScope.AzureCluster, infrav1.ClusterFinalizer)
 
 	return reconcile.Result{}, nil
 }
