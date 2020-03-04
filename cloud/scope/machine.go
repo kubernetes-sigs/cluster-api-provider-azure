@@ -189,6 +189,11 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 	m.AzureMachine.Status.Addresses = addrs
 }
 
+// PatchObject persists the machine spec and status.
+func (m *MachineScope) PatchObject() error {
+	return m.patchHelper.Patch(context.TODO(), m.AzureMachine)
+}
+
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachineScope) Close() error {
 	return m.patchHelper.Patch(context.TODO(), m.AzureMachine)

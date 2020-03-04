@@ -157,6 +157,11 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 	})
 }
 
+// PatchObject persists the cluster configuration and status.
+func (s *ClusterScope) PatchObject() error {
+	return s.patchHelper.Patch(context.TODO(), s.AzureCluster)
+}
+
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close() error {
 	return s.patchHelper.Patch(context.TODO(), s.AzureCluster)
