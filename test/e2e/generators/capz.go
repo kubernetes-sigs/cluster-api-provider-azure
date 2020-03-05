@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/exec"
+	"sigs.k8s.io/cluster-api/test/framework/exec"
 )
 
 type Infra struct {

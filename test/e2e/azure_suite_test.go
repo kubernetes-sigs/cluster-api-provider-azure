@@ -33,6 +33,7 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,11 +41,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/management/kind"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/test/framework"
+	frameworkgenerator "sigs.k8s.io/cluster-api/test/framework/generators"
+	"sigs.k8s.io/cluster-api/test/framework/management/kind"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -101,8 +104,11 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(mgmt).NotTo(BeNil())
 
-	certmanagerYaml := "https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml"
-	mgmt.ApplyYAML(ctx, certmanagerYaml)
+	// set up cert manager generator
+	cm := &frameworkgenerator.CertManager{ReleaseVersion: "v0.11.0"}
+	// install cert manager first
+	framework.InstallComponents(ctx, mgmt, cm)
+	framework.WaitForAPIServiceAvailable(ctx, mgmt, "v1beta1.webhook.cert-manager.io")
 
 	// Wait for CertManager to be available before continuing
 	c, err := mgmt.GetClient()
@@ -115,6 +121,8 @@ var _ = BeforeSuite(func() {
 	infra := &generators.Infra{Creds: creds}
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
+	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capi-system")
+	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capz-system")
 
 	// go func() {
 	// 	defer GinkgoRecover()
@@ -131,7 +139,7 @@ var _ = AfterSuite(func() {
 	Expect(writeLogs(mgmt, "capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", logPath)).To(Succeed())
 	Expect(writeLogs(mgmt, "capz-system", "capz-controller-manager", logPath)).To(Succeed())
 	By("Tearing down management cluster")
-	Expect(mgmt.Teardown(ctx)).NotTo(HaveOccurred())
+	mgmt.Teardown(ctx)
 })
 
 func watchDeployment(mgmt *kind.Cluster, namespace, name string) {
@@ -161,7 +169,7 @@ func watchDeployment(mgmt *kind.Cluster, namespace, name string) {
 			logFile := path.Join(logDir, name, pod.Name, container.Name+".log")
 			Expect(os.MkdirAll(filepath.Dir(logFile), 0755)).To(Succeed())
 
-			clientSet, err := mgmt.Clientset()
+			clientSet, err := mgmt.GetClientSet()
 			Expect(err).NotTo(HaveOccurred())
 
 			opts := &corev1.PodLogOptions{Container: container.Name, Follow: true}
@@ -256,4 +264,23 @@ func writeLogs(mgmt *kind.Cluster, namespace, deploymentName, logDir string) err
 		}
 	}
 	return nil
+}
+
+func ensureCAPZArtifactsDeleted(input *ControlPlaneClusterInput) {
+	input.SetDefaults()
+
+	mgmtClient, err := input.Management.GetClient()
+	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
+
+	By("Deleting cluster")
+	ctx := context.Background()
+	Expect(mgmtClient.Delete(ctx, input.Cluster)).NotTo(HaveOccurred())
+
+	Eventually(func() []clusterv1.Cluster {
+		clusters := clusterv1.ClusterList{}
+		c, err := input.Management.GetClient()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(c.List(ctx, &clusters)).NotTo(HaveOccurred())
+		return clusters.Items
+	}, input.DeleteTimeout, 20*time.Second).Should(HaveLen(0))
 }

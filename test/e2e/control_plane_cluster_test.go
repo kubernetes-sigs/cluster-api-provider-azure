@@ -30,10 +30,10 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/exec"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/framework/management/kind"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/exec"
+	"sigs.k8s.io/cluster-api/test/framework/management/kind"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -49,12 +49,17 @@ type ControlPlaneClusterInput struct {
 	Nodes             []framework.Node
 	MachineDeployment framework.MachineDeployment
 	CreateTimeout     time.Duration
+	DeleteTimeout     time.Duration
 }
 
 // SetDefaults defaults the struct fields if necessary.
 func (o *ControlPlaneClusterInput) SetDefaults() {
 	if o.CreateTimeout == 0*time.Second {
 		o.CreateTimeout = 60 * time.Minute
+	}
+
+	if o.DeleteTimeout == 0 {
+		o.DeleteTimeout = 20 * time.Minute
 	}
 }
 
