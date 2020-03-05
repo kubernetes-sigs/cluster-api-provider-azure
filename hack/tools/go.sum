@@ -697,8 +697,8 @@ sigs.k8s.io/cluster-api/hack/tools v0.0.0-20191002152509-a6b5ba419bad h1:+pyTDIY
 sigs.k8s.io/cluster-api/hack/tools v0.0.0-20191002152509-a6b5ba419bad/go.mod h1:w6SK94C+oIbOHeW7yXXGueLLlmbGoRhghH2GF6qJIWQ=
 sigs.k8s.io/controller-tools v0.2.1 h1:HoCik83vXOpPi7KSJWdPRmiGntyOzK0v0BTV4U+pl8o=
 sigs.k8s.io/controller-tools v0.2.1/go.mod h1:cenyhL7t2e7izk/Zy7ZxDqQ9YEj0niU5VDL1PWMgZ5s=
-sigs.k8s.io/controller-tools v0.2.5 h1:kH7HKWed9XO42OTxyhUtqyImiefdZV2Q9Jbrytvhf18=
-sigs.k8s.io/controller-tools v0.2.5/go.mod h1:+t0Hz6tOhJQCdd7IYO0mNzimmiM9sqMU0021u6UCF2o=
+sigs.k8s.io/controller-tools v0.2.6-0.20200226180227-d6efdcdd90e2 h1:emZ+AFmD8mTciBRbEj2Qfk/RDI8uApvizRrFpmHf7IQ=
+sigs.k8s.io/controller-tools v0.2.6-0.20200226180227-d6efdcdd90e2/go.mod h1:9VKHPszmf2DHz/QmHkcfZoewO6BL7pPs9uAiBVsaJSE=
 sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20190903174343-de03361a00cb/go.mod h1:zSW4yXo5uN/rRueruOtX8TWM8wBPJippG9OAOygomc8=
 sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e/go.mod h1:wWxsB5ozmmv/SG7nM11ayaAW51xMvak/t1r0CSlcokI=
 sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06/go.mod h1:/ULNhyfzRopfcjskuui0cTITekDduZ7ycKN3oUT9R18=
