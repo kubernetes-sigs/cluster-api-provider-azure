@@ -164,7 +164,7 @@ spec:
             properties:
               template:
                 description: AzureMachineTemplateResource describes the data needed
-                  to create am AzureMachine from a template
+                  to create an AzureMachine from a template
                 properties:
                   spec:
                     description: Spec is the specification of the desired behavior
