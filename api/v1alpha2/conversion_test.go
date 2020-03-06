@@ -19,8 +19,10 @@ package v1alpha2
 import (
 	"testing"
 
+	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
+	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 )
@@ -31,7 +33,20 @@ func TestFuzzyConversion(t *testing.T) {
 	g.Expect(AddToScheme(scheme)).To(Succeed())
 	g.Expect(v1alpha3.AddToScheme(scheme)).To(Succeed())
 
-	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(scheme, &v1alpha3.AzureCluster{}, &AzureCluster{}))
-	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(scheme, &v1alpha3.AzureMachine{}, &AzureMachine{}))
-	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(scheme, &v1alpha3.AzureMachineTemplate{}, &AzureMachineTemplate{}))
+	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(scheme, &v1alpha3.AzureCluster{}, &AzureCluster{}, overrideImageFuncs))
+	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(scheme, &v1alpha3.AzureMachine{}, &AzureMachine{}, overrideImageFuncs))
+	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(scheme, &v1alpha3.AzureMachineTemplate{}, &AzureMachineTemplate{}, overrideImageFuncs))
+}
+
+func overrideImageFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
+	return []interface{}{
+		func(image *v1alpha3.Image, c fuzz.Continue) {
+			image.Marketplace = &v1alpha3.AzureMarketplaceImage{
+				Publisher: "PUB1234",
+				Offer:     "OFFER123",
+				SKU:       "SKU123",
+				Version:   "1.0.0",
+			}
+		},
+	}
 }

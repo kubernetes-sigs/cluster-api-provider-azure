@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"github.com/pkg/errors"
+
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
@@ -108,4 +110,85 @@ func Convert_v1alpha3_AzureMachineStatus_To_v1alpha2_AzureMachineStatus(in *infr
 	out.ErrorReason = in.FailureReason
 
 	return nil
+}
+
+// Convert_v1alpha2_Image_To_v1alpha3_Image converts from an Images between v1alpha2 and v1alpha3
+func Convert_v1alpha2_Image_To_v1alpha3_Image(in *Image, out *infrav1alpha3.Image, s apiconversion.Scope) error { //nolint
+	if isAzureMarketPlaceImage(in) {
+		out.Marketplace = &infrav1alpha3.AzureMarketplaceImage{
+			Publisher: *in.Publisher,
+			Offer:     *in.Offer,
+			SKU:       *in.SKU,
+			Version:   *in.Version,
+		}
+		return nil
+	}
+	if isSharedGalleryImage(in) {
+		out.SharedGallery = &infrav1alpha3.AzureSharedGalleryImage{
+			SubscriptionID: *in.SubscriptionID,
+			ResourceGroup:  *in.ResourceGroup,
+			Gallery:        *in.Gallery,
+			Name:           *in.Name,
+			Version:        *in.Version,
+		}
+		return nil
+	}
+	if isImageByID(in) {
+		out.ID = in.ID
+		return nil
+	}
+
+	return errors.New("cannot determine image type for conversion")
+}
+
+// Convert_v1alpha3_Image_To_v1alpha2_Image converts Images from v1alpha3 to v1alpha2
+func Convert_v1alpha3_Image_To_v1alpha2_Image(in *infrav1alpha3.Image, out *Image, s apiconversion.Scope) error { // nolint
+	if in.ID != nil {
+		out.ID = in.ID
+		return nil
+	}
+	if in.Marketplace != nil {
+		out.Publisher = &in.Marketplace.Publisher
+		out.Offer = &in.Marketplace.Offer
+		out.SKU = &in.Marketplace.SKU
+		out.Version = &in.Marketplace.Version
+		return nil
+	}
+	if in.SharedGallery != nil {
+		out.SubscriptionID = &in.SharedGallery.SubscriptionID
+		out.ResourceGroup = &in.SharedGallery.ResourceGroup
+		out.Gallery = &in.SharedGallery.Gallery
+		out.Version = &in.SharedGallery.Version
+		out.Name = &in.SharedGallery.Name
+	}
+
+	return errors.New("cannot determine how to convert image from v1alpha3 to v1alpha2")
+}
+
+func isAzureMarketPlaceImage(in *Image) bool {
+	if in.Publisher == nil || in.Offer == nil || in.SKU == nil || in.Version == nil {
+		return false
+	}
+
+	if len(*in.Publisher) == 0 || len(*in.Offer) == 0 || len(*in.SKU) == 0 || len(*in.Version) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func isSharedGalleryImage(in *Image) bool {
+	if in.SubscriptionID == nil || in.ResourceGroup == nil || in.Gallery == nil || in.Version == nil || in.Name == nil {
+		return false
+	}
+
+	if len(*in.SubscriptionID) == 0 || len(*in.ResourceGroup) == 0 || len(*in.Gallery) == 0 || len(*in.Version) == 0 || len(*in.Name) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func isImageByID(in *Image) bool {
+	return in.ID != nil && len(*in.ID) > 0
 }

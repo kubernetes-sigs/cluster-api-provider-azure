@@ -17,15 +17,51 @@ limitations under the License.
 package v1alpha3
 
 import (
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // log is for logging in this package.
-var _ = logf.Log.WithName("azuremachine-resource")
+var machinelog = logf.Log.WithName("azuremachine-resource")
 
-func (r *AzureMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
+// SetupWebhookWithManager will setup and register the webhook with the controller mnager
+func (m *AzureMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(m).
 		Complete()
+}
+
+// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachine,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachine,versions=v1alpha3,name=validation.azuremachine.infrastructure.cluster.x-k8s.io
+
+var _ webhook.Validator = &AzureMachine{}
+
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+func (m *AzureMachine) ValidateCreate() error {
+	machinelog.Info("validate create", "name", m.Name)
+
+	if errs := ValidateImage(m.Spec.Image, field.NewPath("image")); len(errs) > 0 {
+		return apierrors.NewInvalid(
+			GroupVersion.WithKind("AzureMachine").GroupKind(),
+			m.Name, errs)
+	}
+
+	return nil
+}
+
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
+	machinelog.Info("validate update", "name", m.Name)
+
+	return nil
+}
+
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+func (m *AzureMachine) ValidateDelete() error {
+	machinelog.Info("validate delete", "name", m.Name)
+
+	return nil
 }

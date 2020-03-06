@@ -389,30 +389,71 @@ type VM struct {
 	//AvailabilitySet *SubResource `json:"availabilitySet,omitempty"`
 }
 
+// Image defines information about the image to use for VM creation.
+// There are three ways to specify an image: by ID, Markeplace Image or SharedImageGallery
+// One of ID, SharedImage or Marketplace should be set.
+type Image struct {
+	// ID specifies an image to use by ID
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// SharedGallery specifies an image to use from an Azure Shared Image Gallery
+	// +optional
+	SharedGallery *AzureSharedGalleryImage `json:"sharedGallery,omitempty"`
+
+	// Marketplace specifies an image to use from the Azure Marketplace
+	// +optional
+	Marketplace *AzureMarketplaceImage `json:"marketplace,omitempty"`
+}
+
+// AzureMarketplaceImage defines an image in the Azure marketplace to use for VM creation
+type AzureMarketplaceImage struct {
+	// Publisher is the name of the organization that created the image
+	// +kubebuilder:validation:MinLength=1
+	Publisher string `json:"publisher"`
+	// Offer specifies the name of a group of related images created by the publisher.
+	// For example, UbuntuServer, WindowsServer
+	// +kubebuilder:validation:MinLength=1
+	Offer string `json:"offer"`
+	// SKU specifies an instance of an offer, such as a major release of a distribution.
+	// For example, 18.04-LTS, 2019-Datacenter
+	// +kubebuilder:validation:MinLength=1
+	SKU string `json:"sku"`
+	// Version specifies the version of an image sku. The allowed formats
+	// are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers.
+	// Specify 'latest' to use the latest version of an image available at deploy time.
+	// Even if you use 'latest', the VM image will not automatically update after deploy
+	// time even if a new version becomes available.
+	// +kubebuilder:validation:MinLength=1
+	Version string `json:"version"`
+}
+
+// AzureSharedGalleryImage defines an image in a Shared Image Gallery to use for VM creation
+type AzureSharedGalleryImage struct {
+	// SubscriptionID is the identifier of the subscription that contains the shared image gallery
+	// +kubebuilder:validation:MinLength=1
+	SubscriptionID string `json:"subscriptionID"`
+	// ResourceGroup specifies the resource group containing the shared image gallery
+	// +kubebuilder:validation:MinLength=1
+	ResourceGroup string `json:"resourceGroup"`
+	// Gallery specifies the name of the shared image gallery that contains the image
+	// +kubebuilder:validation:MinLength=1
+	Gallery string `json:"gallery"`
+	// Name is the name of the image
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// Version specifies the version of the marketplace image. The allowed formats
+	// are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers.
+	// Specify 'latest' to use the latest version of an image available at deploy time.
+	// Even if you use 'latest', the VM image will not automatically update after deploy
+	// time even if a new version becomes available.
+	// +kubebuilder:validation:MinLength=1
+	Version string `json:"version"`
+}
+
 type AvailabilityZone struct {
 	ID      *string `json:"id,omitempty"`
 	Enabled *bool   `json:"enabled,omitempty"`
-}
-
-// Image defines information about the image to use for VM creation.
-// There are three ways to specify an image: by ID, by publisher, or by Shared Image Gallery.
-// If specifying an image by ID, only the ID field needs to be set.
-// If specifying an image by publisher, the Publisher, Offer, SKU, and Version fields must be set.
-// If specifying an image from a Shared Image Gallery, the SubscriptionID, ResourceGroup,
-// Gallery, Name, and Version fields must be set.
-type Image struct {
-	Publisher *string `json:"publisher,omitempty"`
-	Offer     *string `json:"offer,omitempty"`
-	SKU       *string `json:"sku,omitempty"`
-
-	ID *string `json:"id,omitempty"`
-
-	SubscriptionID *string `json:"subscriptionID,omitempty"`
-	ResourceGroup  *string `json:"resourceGroup,omitempty"`
-	Gallery        *string `json:"gallery,omitempty"`
-	Name           *string `json:"name,omitempty"`
-
-	Version *string `json:"version,omitempty"`
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.

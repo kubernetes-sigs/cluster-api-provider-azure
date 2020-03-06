@@ -19,7 +19,6 @@ package azure
 import (
 	"fmt"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -142,15 +141,20 @@ func getDefaultImageSKUID(k8sVersion string) (string, error) {
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func GetDefaultUbuntuImage(k8sVersion string) (infrav1.Image, error) {
+func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	skuID, err := getDefaultImageSKUID(k8sVersion)
 	if err != nil {
-		return infrav1.Image{}, errors.Wrapf(err, "failed to get default image")
+		return nil, errors.Wrapf(err, "failed to get default image")
 	}
-	return infrav1.Image{
-		Publisher: to.StringPtr(DefaultImagePublisherID),
-		Offer:     to.StringPtr(DefaultImageOfferID),
-		SKU:       to.StringPtr(skuID),
-		Version:   to.StringPtr(LatestVersion),
-	}, nil
+
+	defaultImage := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			Publisher: DefaultImagePublisherID,
+			Offer:     DefaultImageOfferID,
+			SKU:       skuID,
+			Version:   LatestVersion,
+		},
+	}
+
+	return defaultImage, nil
 }

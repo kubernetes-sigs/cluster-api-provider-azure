@@ -366,6 +366,15 @@ func TestReconcileVM(t *testing.T) {
 		},
 	}
 
+	image := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			Publisher: "test-publisher",
+			Offer:     "test-offer",
+			SKU:       "test-sku",
+			Version:   "1.0.0.",
+		},
+	}
+
 	testcases := []struct {
 		name          string
 		machine       clusterv1.Machine
@@ -390,12 +399,7 @@ func TestReconcileVM(t *testing.T) {
 			machineConfig: &infrav1.AzureMachineSpec{
 				VMSize:   "Standard_B2ms",
 				Location: "eastus",
-				Image: &infrav1.Image{
-					Publisher: to.StringPtr("test-publisher"),
-					Offer:     to.StringPtr("test-offer"),
-					SKU:       to.StringPtr("test-sku"),
-					Version:   to.StringPtr("1.0.0"),
-				},
+				Image:    image,
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
@@ -450,12 +454,7 @@ func TestReconcileVM(t *testing.T) {
 			machineConfig: &infrav1.AzureMachineSpec{
 				VMSize:   "Standard_B2ms",
 				Location: "eastus",
-				Image: &infrav1.Image{
-					Publisher: to.StringPtr("test-publisher"),
-					Offer:     to.StringPtr("test-offer"),
-					SKU:       to.StringPtr("test-sku"),
-					Version:   to.StringPtr("1.0.0"),
-				},
+				Image:    image,
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
@@ -579,7 +578,7 @@ func TestReconcileVM(t *testing.T) {
 				SSHKeyData: "fake-key",
 				Size:       machineScope.AzureMachine.Spec.VMSize,
 				OSDisk:     machineScope.AzureMachine.Spec.OSDisk,
-				Image:      *machineScope.AzureMachine.Spec.Image,
+				Image:      machineScope.AzureMachine.Spec.Image,
 				CustomData: *machineScope.Machine.Spec.Bootstrap.Data,
 			}
 			err = s.Reconcile(context.TODO(), vmSpec)

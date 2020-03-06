@@ -380,10 +380,11 @@ func (s *azureMachineService) isAvailabilityZoneSupported() bool {
 }
 
 // Pick image from the machine configuration, or use a default one.
-func getVMImage(scope *scope.MachineScope) (infrav1.Image, error) {
+func getVMImage(scope *scope.MachineScope) (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if scope.AzureMachine.Spec.Image != nil {
-		return *scope.AzureMachine.Spec.Image, nil
+		return scope.AzureMachine.Spec.Image, nil
 	}
+	scope.Info("No image specified for machine, using default", "machine", scope.AzureMachine.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(scope.Machine.Spec.Version))
 }

@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"log"
 	random "math/rand"
+	"os"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -68,7 +69,7 @@ type azureConfig struct {
 
 var (
 	// TODO Parameterize some of these variables
-	location       = GetRandomRegion()
+	location       = GetRegion()
 	vmSize         = "Standard_D2s_v3"
 	namespace      = "default"
 	imageOffer     = "capi"
@@ -141,10 +142,12 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 			Location:     location,
 			SSHPublicKey: sshkey,
 			Image: &infrav1.Image{
-				Offer:     &imageOffer,
-				Publisher: &imagePublisher,
-				SKU:       &imageSKU,
-				Version:   &imageVersion,
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					Publisher: imagePublisher,
+					Offer:     imageOffer,
+					SKU:       imageSKU,
+					Version:   imageVersion,
+				},
 			},
 			OSDisk: infrav1.OSDisk{
 				DiskSizeGB: 30,
@@ -328,10 +331,12 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 					Location:     location,
 					SSHPublicKey: sshkey,
 					Image: &infrav1.Image{
-						Offer:     &imageOffer,
-						Publisher: &imagePublisher,
-						SKU:       &imageSKU,
-						Version:   &imageVersion,
+						Marketplace: &infrav1.AzureMarketplaceImage{
+							Publisher: imagePublisher,
+							Offer:     imageOffer,
+							SKU:       imageSKU,
+							Version:   imageVersion,
+						},
 					},
 					OSDisk: infrav1.OSDisk{
 						DiskSizeGB: 30,
@@ -415,8 +420,13 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 	}
 }
 
-// GetRandomRegion gets a random region to use in the tests
-func GetRandomRegion() string {
+// GetRegion gets a random region to use in the tests unless explicit region specified in env var
+func GetRegion() string {
+	region := os.Getenv("E2E_REGION")
+	if region != "" {
+		return region
+	}
+
 	regions := []string{"eastus", "eastus2", "southcentralus", "westus2", "westeurope"}
 	log.Printf("Picking Random Region from list %s\n", regions)
 	r := random.New(random.NewSource(time.Now().UnixNano()))

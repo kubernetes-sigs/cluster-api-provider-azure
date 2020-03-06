@@ -37,6 +37,11 @@ type AzureMachineSpec struct {
 	VMSize           string           `json:"vmSize"`
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
+	// Image is used to provide details of an image to use during VM creation.
+	// If image details are omitted the image will default the Azure Marketplace "capi" offer,
+	// which is based on Ubuntu.
+	// +kubebuilder:validation:nullable
+	// +optional
 	Image *Image `json:"image,omitempty"`
 
 	OSDisk OSDisk `json:"osDisk"`

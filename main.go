@@ -22,10 +22,12 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"time"
+
 	// +kubebuilder:scaffold:imports
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
@@ -141,6 +143,12 @@ func main() {
 
 	ctrl.SetLogger(klogr.New())
 
+	// Machine and cluster operations can create enough events to trigger the event recorder spam filter
+	// Setting the burst size higher ensures all events will be recorded and submitted to the API
+	broadcaster := cgrecord.NewBroadcasterWithCorrelatorOptions(cgrecord.CorrelatorOptions{
+		BurstSize: 100,
+	})
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -150,6 +158,7 @@ func main() {
 		Namespace:              watchNamespace,
 		HealthProbeBindAddress: healthAddr,
 		Port:                   webhookPort,
+		EventBroadcaster:       broadcaster,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -161,15 +170,17 @@ func main() {
 
 	if webhookPort == 0 {
 		if err = (&controllers.AzureMachineReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+			Client:   mgr.GetClient(),
+			Log:      ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+			Recorder: mgr.GetEventRecorderFor("azuremachine-reconciler"),
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
 			os.Exit(1)
 		}
 		if err = (&controllers.AzureClusterReconciler{
-			Client: mgr.GetClient(),
-			Log:    ctrl.Log.WithName("controllers").WithName("AzureCluster"),
+			Client:   mgr.GetClient(),
+			Log:      ctrl.Log.WithName("controllers").WithName("AzureCluster"),
+			Recorder: mgr.GetEventRecorderFor("azurecluster-reconciler"),
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
