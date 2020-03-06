@@ -201,7 +201,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 	// Check that the image is valid
 	// NOTE: this validation logic is also in the validating webhook
-	if machineScope.AzureMachine.Spec.Image != nil && machineScope.AzureMachine.Spec.Image.Raw != nil {
+	if machineScope.AzureMachine.Spec.Image != nil {
 		if errs := infrav1.ValidateImage(machineScope.AzureMachine.Spec.Image, field.NewPath("image")); len(errs) > 0 {
 			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
 			machineScope.Info("Invalid image: %s", agg.Error())

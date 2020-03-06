@@ -192,13 +192,93 @@ spec:
                         type: object
                       image:
                         description: Image is used to provide details of an image
-                          to use during VM creation. If set it should be one of AzureImageByID,
-                          AzureSharedGalleryImage or AzureMarketplaceImage. If image
-                          details are omitted the image will default the Azure Marketplace
-                          "capi" offer, which is based on Ubuntu.
+                          to use during VM creation. If image details are omitted
+                          the image will default the Azure Marketplace "capi" offer,
+                          which is based on Ubuntu.
+                        properties:
+                          id:
+                            description: ID specifies an image to use by ID
+                            type: string
+                          marketplace:
+                            description: Marketplace specifies an image to use from
+                              the Azure Marketplace
+                            properties:
+                              offer:
+                                description: Offer specifies the name of a group of
+                                  related images created by the publisher. For example,
+                                  UbuntuServer, WindowsServer
+                                minLength: 1
+                                type: string
+                              publisher:
+                                description: Publisher is the name of the organization
+                                  that created the image
+                                minLength: 1
+                                type: string
+                              sku:
+                                description: SKU specifies an instance of an offer,
+                                  such as a major release of a distribution. For example,
+                                  18.04-LTS, 2019-Datacenter
+                                minLength: 1
+                                type: string
+                              version:
+                                description: Version specifies the version of an image
+                                  sku. The allowed formats are Major.Minor.Build or
+                                  'latest'. Major, Minor, and Build are decimal numbers.
+                                  Specify 'latest' to use the latest version of an
+                                  image available at deploy time. Even if you use
+                                  'latest', the VM image will not automatically update
+                                  after deploy time even if a new version becomes
+                                  available.
+                                minLength: 1
+                                type: string
+                            required:
+                            - offer
+                            - publisher
+                            - sku
+                            - version
+                            type: object
+                          sharedGallery:
+                            description: SharedGallery specifies an image to use from
+                              an Azure Shared Image Gallery
+                            properties:
+                              gallery:
+                                description: Gallery specifies the name of the shared
+                                  image gallery that contains the image
+                                minLength: 1
+                                type: string
+                              name:
+                                description: Name is the name of the image
+                                minLength: 1
+                                type: string
+                              resourceGroup:
+                                description: ResourceGroup specifies the resource
+                                  group containing the shared image gallery
+                                minLength: 1
+                                type: string
+                              subscriptionID:
+                                description: SubscriptionID is the identifier of the
+                                  subscription that contains the shared image gallery
+                                minLength: 1
+                                type: string
+                              version:
+                                description: Version specifies the version of the
+                                  marketplace image. The allowed formats are Major.Minor.Build
+                                  or 'latest'. Major, Minor, and Build are decimal
+                                  numbers. Specify 'latest' to use the latest version
+                                  of an image available at deploy time. Even if you
+                                  use 'latest', the VM image will not automatically
+                                  update after deploy time even if a new version becomes
+                                  available.
+                                minLength: 1
+                                type: string
+                            required:
+                            - gallery
+                            - name
+                            - resourceGroup
+                            - subscriptionID
+                            - version
+                            type: object
                         type: object
-                        x-kubernetes-embedded-resource: true
-                        x-kubernetes-preserve-unknown-fields: true
                       location:
                         type: string
                       osDisk:

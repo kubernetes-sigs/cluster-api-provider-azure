@@ -17,13 +17,10 @@ limitations under the License.
 package azure
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
@@ -144,28 +141,20 @@ func getDefaultImageSKUID(k8sVersion string) (string, error) {
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func GetDefaultUbuntuImage(k8sVersion string) (*runtime.RawExtension, error) {
+func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	skuID, err := getDefaultImageSKUID(k8sVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get default image")
 	}
 
-	defaultImage := infrav1.AzureMarketplaceImage{
-		TypeMeta: v1.TypeMeta{
-			Kind:       infrav1.AzureMarketplaceImageKind,
-			APIVersion: infrav1.GroupVersion.String(),
+	defaultImage := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			Publisher: DefaultImagePublisherID,
+			Offer:     DefaultImageOfferID,
+			SKU:       skuID,
+			Version:   LatestVersion,
 		},
-		Publisher: DefaultImagePublisherID,
-		Offer:     DefaultImageOfferID,
-		SKU:       skuID,
-		Version:   LatestVersion,
 	}
 
-	imageData, err := json.Marshal(defaultImage)
-	if err != nil {
-		return nil, err
-	}
-
-	rawImage := &runtime.RawExtension{Raw: imageData}
-	return rawImage, nil
+	return defaultImage, nil
 }

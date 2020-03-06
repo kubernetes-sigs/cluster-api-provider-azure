@@ -17,17 +17,14 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"encoding/json"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func TestImageRequired(t *testing.T) {
 	type test struct {
-		Image *runtime.RawExtension
+		Image *Image
 	}
 
 	extension := test{}
@@ -47,77 +44,31 @@ func TestImageRequired(t *testing.T) {
 	}
 }
 
-func TestImageGroupValid(t *testing.T) {
-	testCases := map[string]struct {
-		image      *runtime.RawExtension
-		validgroup bool
-	}{
-		"correct group name - v1alpha3": {
-			validgroup: true,
-			image:      &runtime.RawExtension{Raw: []byte(`{ "apiVersion": "infrastructure.cluster.x-k8s.io/v1alpha3", "kind": "AzureImageByID", "id": "12345ABCD" }`)},
+func TestImageTooManyDetails(t *testing.T) {
+	image := &Image{
+		Marketplace: &AzureMarketplaceImage{
+			Offer:     "OFFER",
+			Publisher: "PUBLISHER",
+			SKU:       "SKU",
+			Version:   "1.0.0.",
 		},
-		"incorrect group name": {
-			validgroup: false,
-			image:      &runtime.RawExtension{Raw: []byte(`{ "apiVersion": "infrastructure.wrong.io/v1alpha3", "kind": "AzureImageByID", "id": "12345ABCD" }`)},
-		},
-	}
-
-	for k, tc := range testCases {
-		errs := ValidateImage(tc.image, field.NewPath("image"))
-
-		if tc.validgroup {
-			if len(errs) > 0 {
-				t.Errorf("test case '%s' failed, expected no errors but got %d errors", k, len(errs))
-			}
-		} else {
-			if len(errs) == 0 {
-				t.Errorf("test case '%s' failed, expected errors but got no errors", k)
-			}
-		}
-	}
-}
-
-func TestImageKindValid(t *testing.T) {
-	testCases := map[string]struct {
-		image     *runtime.RawExtension
-		validKind bool
-	}{
-		"correct kind - AzureMarketplaceImage": {
-			validKind: true,
-			image:     &runtime.RawExtension{Raw: []byte(`{ "apiVersion": "infrastructure.cluster.x-k8s.io/v1alpha3", "kind": "AzureMarketplaceImage","publisher": "pub1", "offer": "offer1", "sku": "sku1", "version": "0.0.1" }`)},
-		},
-		"correct kind - AzureSharedGalleryImage": {
-			validKind: true,
-			image:     &runtime.RawExtension{Raw: []byte(`{ "apiVersion": "infrastructure.cluster.x-k8s.io/v1alpha3", "kind": "AzureSharedGalleryImage", "subscriptionID": "sub1", "resourceGroup": "rg1", "gallery": "gal1", "name": "abcd", "version": "0.0.1" }`)},
-		},
-		"correct kind - AzureImageByID": {
-			validKind: true,
-			image:     &runtime.RawExtension{Raw: []byte(`{ "apiVersion": "infrastructure.cluster.x-k8s.io/v1alpha3", "kind": "AzureImageByID", "id": "12345ABCD" }`)},
-		},
-		"incorrect kind": {
-			validKind: false,
-			image:     &runtime.RawExtension{Raw: []byte(`{ "apiVersion": "infrastructure.wrong.io/v1alpha3", "kind": "AzureImageByID", "id": "12345ABCD" }`)},
+		SharedGallery: &AzureSharedGalleryImage{
+			Gallery:        "GALLERY",
+			Name:           "GALLERY1",
+			ResourceGroup:  "RG1",
+			SubscriptionID: "SUB12",
+			Version:        "1.0.0.",
 		},
 	}
-
-	for k, tc := range testCases {
-		errs := ValidateImage(tc.image, field.NewPath("image"))
-
-		if tc.validKind {
-			if len(errs) > 0 {
-				t.Errorf("test case '%s' failed, expected no errors but got %d errors: %#v", k, len(errs), errs)
-			}
-		} else {
-			if len(errs) == 0 {
-				t.Errorf("test case '%s' failed, expected errors but got no errors", k)
-			}
-		}
+	errs := ValidateImage(image, field.NewPath("image"))
+	if len(errs) != 1 {
+		t.Errorf("unexpected number of errors, expected 1 but got %d", len(errs))
 	}
 }
 
 func TestSharedImageGalleryValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *AzureSharedGalleryImage
+		image          *Image
 		expectedErrors int
 	}{
 		"AzureSharedGalleryImage - fully specified": {
@@ -147,13 +98,7 @@ func TestSharedImageGalleryValid(t *testing.T) {
 	}
 
 	for k, tc := range testCases {
-		imageData, err := json.Marshal(tc.image)
-		if err != nil {
-			t.Errorf("test case '%s' encountered an unexpected error: %#v", k, err)
-		}
-		rawImage := &runtime.RawExtension{Raw: imageData}
-
-		errs := ValidateImage(rawImage, field.NewPath("image"))
+		errs := ValidateImage(tc.image, field.NewPath("image"))
 
 		if len(errs) != tc.expectedErrors {
 			t.Errorf("test case '%s' failed, expected %d errors but got %d: %#v", k, tc.expectedErrors, len(errs), errs)
@@ -163,7 +108,7 @@ func TestSharedImageGalleryValid(t *testing.T) {
 
 func TestMarketPlaceImageValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *AzureMarketplaceImage
+		image          *Image
 		expectedErrors int
 	}{
 		"AzureMarketplaceImage - fully specified": {
@@ -189,13 +134,7 @@ func TestMarketPlaceImageValid(t *testing.T) {
 	}
 
 	for k, tc := range testCases {
-		imageData, err := json.Marshal(tc.image)
-		if err != nil {
-			t.Errorf("test case '%s' encountered an unexpected error: %#v", k, err)
-		}
-		rawImage := &runtime.RawExtension{Raw: imageData}
-
-		errs := ValidateImage(rawImage, field.NewPath("image"))
+		errs := ValidateImage(tc.image, field.NewPath("image"))
 
 		if len(errs) != tc.expectedErrors {
 			t.Errorf("test case '%s' failed, expected %d errors but got %d: %#v", k, tc.expectedErrors, len(errs), errs)
@@ -205,7 +144,7 @@ func TestMarketPlaceImageValid(t *testing.T) {
 
 func TestImageByIDValid(t *testing.T) {
 	testCases := map[string]struct {
-		image          *AzureImageByID
+		image          *Image
 		expectedErrors int
 	}{
 		"AzureImageByID - with id": {
@@ -219,13 +158,7 @@ func TestImageByIDValid(t *testing.T) {
 	}
 
 	for k, tc := range testCases {
-		imageData, err := json.Marshal(tc.image)
-		if err != nil {
-			t.Errorf("test case '%s' encountered an unexpected error: %#v", k, err)
-		}
-		rawImage := &runtime.RawExtension{Raw: imageData}
-
-		errs := ValidateImage(rawImage, field.NewPath("image"))
+		errs := ValidateImage(tc.image, field.NewPath("image"))
 
 		if len(errs) != tc.expectedErrors {
 			t.Errorf("test case '%s' failed, expected %d errors but got %d: %#v", k, tc.expectedErrors, len(errs), errs)
@@ -233,45 +166,31 @@ func TestImageByIDValid(t *testing.T) {
 	}
 }
 
-func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *AzureSharedGalleryImage {
-	image := &AzureSharedGalleryImage{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureSharedGalleryImage",
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+func createTestSharedImage(subscriptionID, resourceGroup, name, gallery, version string) *Image {
+	return &Image{
+		SharedGallery: &AzureSharedGalleryImage{
+			SubscriptionID: subscriptionID,
+			ResourceGroup:  resourceGroup,
+			Name:           name,
+			Gallery:        gallery,
+			Version:        version,
 		},
-		SubscriptionID: subscriptionID,
-		ResourceGroup:  resourceGroup,
-		Name:           name,
-		Gallery:        gallery,
-		Version:        version,
 	}
-
-	return image
 }
 
-func createTestMarketPlaceImage(publisher, offer, sku, version string) *AzureMarketplaceImage {
-	image := &AzureMarketplaceImage{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       AzureMarketplaceImageKind,
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+func createTestMarketPlaceImage(publisher, offer, sku, version string) *Image {
+	return &Image{
+		Marketplace: &AzureMarketplaceImage{
+			Publisher: publisher,
+			Offer:     offer,
+			SKU:       sku,
+			Version:   version,
 		},
-		Publisher: publisher,
-		Offer:     offer,
-		SKU:       sku,
-		Version:   version,
 	}
-
-	return image
 }
 
-func createTestImageByID(imageID string) *AzureImageByID {
-	image := &AzureImageByID{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureImageByID",
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
-		},
-		ID: imageID,
+func createTestImageByID(imageID string) *Image {
+	return &Image{
+		ID: &imageID,
 	}
-
-	return image
 }

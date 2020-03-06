@@ -34,7 +34,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
@@ -133,20 +132,6 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 	name := fmt.Sprintf("%s-controlplane-%d", clusterName, n.counter)
 	n.counter++
 
-	image := infrav1.AzureMarketplaceImage{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       infrav1.AzureMarketplaceImageKind,
-			APIVersion: infrav1.GroupVersion.String(),
-		},
-		Publisher: imagePublisher,
-		Offer:     imageOffer,
-		SKU:       imageSKU,
-		Version:   imageVersion,
-	}
-
-	imageData, err := json.Marshal(image)
-	Expect(err).NotTo(HaveOccurred())
-
 	infraMachine := &infrav1.AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -156,7 +141,14 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 			VMSize:       vmSize,
 			Location:     location,
 			SSHPublicKey: sshkey,
-			Image:        &runtime.RawExtension{Raw: imageData},
+			Image: &infrav1.Image{
+				Marketplace: &infrav1.AzureMarketplaceImage{
+					Publisher: imagePublisher,
+					Offer:     imageOffer,
+					SKU:       imageSKU,
+					Version:   imageVersion,
+				},
+			},
 			OSDisk: infrav1.OSDisk{
 				DiskSizeGB: 30,
 				OSType:     "Linux",
@@ -327,20 +319,6 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 	Expect(err).NotTo(HaveOccurred())
 	generatedName := fmt.Sprintf("%s-%d", clusterName, n.counter)
 
-	image := infrav1.AzureMarketplaceImage{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       infrav1.AzureMarketplaceImageKind,
-			APIVersion: infrav1.GroupVersion.String(),
-		},
-		Publisher: imagePublisher,
-		Offer:     imageOffer,
-		SKU:       imageSKU,
-		Version:   imageVersion,
-	}
-
-	imageData, err := json.Marshal(image)
-	Expect(err).NotTo(HaveOccurred())
-
 	infraMachineTemplate := &infrav1.AzureMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -352,7 +330,14 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 					VMSize:       vmSize,
 					Location:     location,
 					SSHPublicKey: sshkey,
-					Image:        &runtime.RawExtension{Raw: imageData},
+					Image: &infrav1.Image{
+						Marketplace: &infrav1.AzureMarketplaceImage{
+							Publisher: imagePublisher,
+							Offer:     imageOffer,
+							SKU:       imageSKU,
+							Version:   imageVersion,
+						},
+					},
 					OSDisk: infrav1.OSDisk{
 						DiskSizeGB: 30,
 						OSType:     "Linux",

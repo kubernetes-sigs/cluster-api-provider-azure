@@ -19,7 +19,6 @@ package v1alpha3
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
@@ -38,15 +37,12 @@ type AzureMachineSpec struct {
 	VMSize           string           `json:"vmSize"`
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
-	// Image is used to provide details of an image to use during VM creation. If set it should be
-	// one of AzureImageByID, AzureSharedGalleryImage or AzureMarketplaceImage.
+	// Image is used to provide details of an image to use during VM creation.
 	// If image details are omitted the image will default the Azure Marketplace "capi" offer,
 	// which is based on Ubuntu.
-	// +optional
-	// +kubebuilder:validation:EmbeddedResource
-	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:nullable
-	Image *runtime.RawExtension `json:"image,omitempty"`
+	// +optional
+	Image *Image `json:"image,omitempty"`
 
 	OSDisk OSDisk `json:"osDisk"`
 

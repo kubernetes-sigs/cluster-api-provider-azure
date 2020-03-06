@@ -17,14 +17,9 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/pkg/errors"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
-	"k8s.io/apimachinery/pkg/runtime"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -117,69 +112,57 @@ func Convert_v1alpha3_AzureMachineStatus_To_v1alpha2_AzureMachineStatus(in *infr
 	return nil
 }
 
-// Convert_v1alpha2_Image_To_runtime_RawExtension converts from an Image to RawExtension
-func Convert_v1alpha2_Image_To_runtime_RawExtension(in *Image, out *runtime.RawExtension, s apiconversion.Scope) error { // nolint
+// Convert_v1alpha2_Image_To_v1alpha3_Image converts from an Images between v1alpha2 and v1alpha3
+func Convert_v1alpha2_Image_To_v1alpha3_Image(in *Image, out *infrav1alpha3.Image, s apiconversion.Scope) error { //nolint
 	if isAzureMarketPlaceImage(in) {
-		image := infrav1alpha3.AzureMarketplaceImage{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       infrav1alpha3.AzureMarketplaceImageKind,
-				APIVersion: infrav1alpha3.GroupVersion.String(),
-			},
+		out.Marketplace = &infrav1alpha3.AzureMarketplaceImage{
 			Publisher: *in.Publisher,
 			Offer:     *in.Offer,
 			SKU:       *in.SKU,
 			Version:   *in.Version,
 		}
-		return convertImageToRawExtension(image, out)
-
+		return nil
 	}
 	if isSharedGalleryImage(in) {
-		image := infrav1alpha3.AzureSharedGalleryImage{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       infrav1alpha3.AzureSharedGalleryImageKind,
-				APIVersion: infrav1alpha3.GroupVersion.String(),
-			},
+		out.SharedGallery = &infrav1alpha3.AzureSharedGalleryImage{
 			SubscriptionID: *in.SubscriptionID,
 			ResourceGroup:  *in.ResourceGroup,
 			Gallery:        *in.Gallery,
 			Name:           *in.Name,
 			Version:        *in.Version,
 		}
-		return convertImageToRawExtension(image, out)
+		return nil
 	}
 	if isImageByID(in) {
-		image := infrav1alpha3.AzureImageByID{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       infrav1alpha3.AzureImageByIDKind,
-				APIVersion: infrav1alpha3.GroupVersion.String(),
-			},
-			ID: *in.ID,
-		}
-		return convertImageToRawExtension(image, out)
+		out.ID = in.ID
+		return nil
 	}
 
 	return errors.New("cannot determine image type for conversion")
 }
 
-// Convert_runtime_RawExtension_To_v1alpha2_Image converts from RawExtension to Image
-func Convert_runtime_RawExtension_To_v1alpha2_Image(in *runtime.RawExtension, out *Image, s apiconversion.Scope) error { // nolint
-
-	unknown := new(runtime.Unknown)
-
-	if err := infrav1alpha3.DecodeRawExtension(in, unknown); err != nil {
-		return errors.Wrap(err, "unable to decode rawextension to unknown")
+// Convert_v1alpha3_Image_To_v1alpha2_Image converts Images from v1alpha3 to v1alpha2
+func Convert_v1alpha3_Image_To_v1alpha2_Image(in *infrav1alpha3.Image, out *Image, s apiconversion.Scope) error { // nolint
+	if in.ID != nil {
+		out.ID = in.ID
+		return nil
+	}
+	if in.Marketplace != nil {
+		out.Publisher = &in.Marketplace.Publisher
+		out.Offer = &in.Marketplace.Offer
+		out.SKU = &in.Marketplace.SKU
+		out.Version = &in.Marketplace.Version
+		return nil
+	}
+	if in.SharedGallery != nil {
+		out.SubscriptionID = &in.SharedGallery.SubscriptionID
+		out.ResourceGroup = &in.SharedGallery.ResourceGroup
+		out.Gallery = &in.SharedGallery.Gallery
+		out.Version = &in.SharedGallery.Version
+		out.Name = &in.SharedGallery.Name
 	}
 
-	switch unknown.Kind {
-	case infrav1alpha3.AzureMarketplaceImageKind:
-		return mpImageToImage(in, out)
-	case infrav1alpha3.AzureSharedGalleryImageKind:
-		return sigImageToImage(in, out)
-	case infrav1alpha3.AzureImageByIDKind:
-		return specificImageToImage(in, out)
-	default:
-		return fmt.Errorf("unknown image kind: %s", unknown.Kind)
-	}
+	return errors.New("cannot determine how to convert image from v1alpha3 to v1alpha2")
 }
 
 func isAzureMarketPlaceImage(in *Image) bool {
@@ -208,57 +191,4 @@ func isSharedGalleryImage(in *Image) bool {
 
 func isImageByID(in *Image) bool {
 	return in.ID != nil && len(*in.ID) > 0
-}
-
-func convertImageToRawExtension(image interface{}, out *runtime.RawExtension) error {
-	imageData, err := json.Marshal(image)
-	if err != nil {
-		return errors.Wrap(err, "error marshalling image kind to json")
-	}
-
-	out.Raw = imageData
-	return nil
-}
-
-func mpImageToImage(rawImage *runtime.RawExtension, out *Image) error {
-	image := &infrav1alpha3.AzureMarketplaceImage{}
-
-	if err := infrav1alpha3.DecodeRawExtension(rawImage, image); err != nil {
-		return errors.Wrap(err, "failed decoding image to AzureMarketplaceImage")
-	}
-
-	out.Publisher = &image.Publisher
-	out.Offer = &image.Offer
-	out.SKU = &image.SKU
-	out.Version = &image.Version
-
-	return nil
-}
-
-func sigImageToImage(rawImage *runtime.RawExtension, out *Image) error {
-	image := &infrav1alpha3.AzureSharedGalleryImage{}
-
-	if err := infrav1alpha3.DecodeRawExtension(rawImage, image); err != nil {
-		return errors.Wrap(err, "failed decoding image to AzureSharedGalleryImage")
-	}
-
-	out.SubscriptionID = &image.SubscriptionID
-	out.ResourceGroup = &image.ResourceGroup
-	out.Gallery = &image.Gallery
-	out.Version = &image.Version
-	out.Name = &image.Name
-
-	return nil
-}
-
-func specificImageToImage(rawImage *runtime.RawExtension, out *Image) error {
-	image := &infrav1alpha3.AzureImageByID{}
-
-	if err := infrav1alpha3.DecodeRawExtension(rawImage, image); err != nil {
-		return errors.Wrap(err, "failed decoding image to AzureImageByID")
-	}
-
-	out.ID = &image.ID
-
-	return nil
 }

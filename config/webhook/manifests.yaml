@@ -13,6 +13,7 @@ webhooks:
       namespace: system
       path: /validate-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachine
   failurePolicy: Fail
+  matchPolicy: Equivalent
   name: validation.azuremachine.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:

@@ -17,11 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"encoding/json"
 	"testing"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestAzureMachine_ValidateCreate(t *testing.T) {
@@ -71,65 +67,49 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 }
 
 func createMachineWithSharedImage(t *testing.T, subscriptionID, resourceGroup, name, gallery, version string) *AzureMachine {
-	image := &AzureSharedGalleryImage{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureSharedGalleryImage",
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+	image := &Image{
+		SharedGallery: &AzureSharedGalleryImage{
+			SubscriptionID: subscriptionID,
+			ResourceGroup:  resourceGroup,
+			Name:           name,
+			Gallery:        gallery,
+			Version:        version,
 		},
-		SubscriptionID: subscriptionID,
-		ResourceGroup:  resourceGroup,
-		Name:           name,
-		Gallery:        gallery,
-		Version:        version,
 	}
 
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
-			Image: convertToRawExtension(t, image),
+			Image: image,
 		},
 	}
 
 }
 
 func createMachineWithtMarketPlaceImage(t *testing.T, publisher, offer, sku, version string) *AzureMachine {
-	image := &AzureMarketplaceImage{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       AzureMarketplaceImageKind,
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+	image := &Image{
+		Marketplace: &AzureMarketplaceImage{
+			Publisher: publisher,
+			Offer:     offer,
+			SKU:       sku,
+			Version:   version,
 		},
-		Publisher: publisher,
-		Offer:     offer,
-		SKU:       sku,
-		Version:   version,
 	}
 
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
-			Image: convertToRawExtension(t, image),
+			Image: image,
 		},
 	}
 }
 
 func createMachineWithImageByID(t *testing.T, imageID string) *AzureMachine {
-	image := &AzureImageByID{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureImageByID",
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
-		},
-		ID: imageID,
+	image := &Image{
+		ID: &imageID,
 	}
 
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
-			Image: convertToRawExtension(t, image),
+			Image: image,
 		},
 	}
-}
-
-func convertToRawExtension(t *testing.T, obj runtime.Object) *runtime.RawExtension {
-	imageData, err := json.Marshal(obj)
-	if err != nil {
-		t.Errorf("error encountered converting object to RawExtension: %#v", err)
-	}
-	return &runtime.RawExtension{Raw: imageData}
 }

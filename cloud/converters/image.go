@@ -19,67 +19,54 @@ package converters
 import (
 	"fmt"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/pkg/errors"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 // ImageToSDK converts a CAPZ Image (as RawExtension) to a Azure SDK Image Reference.
-func ImageToSDK(rawImage *runtime.RawExtension) (*compute.ImageReference, error) {
-	unknown := new(runtime.Unknown)
-	if err := infrav1.DecodeRawExtension(rawImage, unknown); err != nil {
-		return nil, err
+func ImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
+
+	if image.ID != nil {
+		return specificImageToSDK(image)
+	}
+	if image.Marketplace != nil {
+		return mpImageToSDK(image)
+	}
+	if image.SharedGallery != nil {
+		return sigImageToSDK(image)
 	}
 
-	switch unknown.Kind {
-	case infrav1.AzureMarketplaceImageKind:
-		return mpImageToSDK(rawImage)
-	case infrav1.AzureSharedGalleryImageKind:
-		return sigImageToSDK(rawImage)
-	case infrav1.AzureImageByIDKind:
-		return specificImageToSDK(rawImage)
-	default:
-		return nil, fmt.Errorf("unknown image kind: %s", unknown.Kind)
-	}
+	return nil, errors.New("unable to convert image as no options set")
+
 }
 
-func mpImageToSDK(rawImage *runtime.RawExtension) (*compute.ImageReference, error) {
-	image := &infrav1.AzureMarketplaceImage{}
-	if err := infrav1.DecodeRawExtension(rawImage, image); err != nil {
-		return nil, err
-	}
-
+func mpImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	return &compute.ImageReference{
-		Publisher: &image.Publisher,
-		Offer:     &image.Offer,
-		Sku:       &image.SKU,
-		Version:   &image.Version,
+		Publisher: &image.Marketplace.Publisher,
+		Offer:     &image.Marketplace.Offer,
+		Sku:       &image.Marketplace.SKU,
+		Version:   &image.Marketplace.Version,
 	}, nil
 
 }
 
-func sigImageToSDK(rawImage *runtime.RawExtension) (*compute.ImageReference, error) {
-	image := &infrav1.AzureSharedGalleryImage{}
-	if err := infrav1.DecodeRawExtension(rawImage, image); err != nil {
-		return nil, err
-	}
-
-	imageID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s", image.SubscriptionID, image.ResourceGroup, image.Gallery, image.Name, image.Version)
+func sigImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
+	imageID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/galleries/%s/images/%s/versions/%s",
+		image.SharedGallery.SubscriptionID,
+		image.SharedGallery.ResourceGroup,
+		image.SharedGallery.Gallery,
+		image.SharedGallery.Name,
+		image.SharedGallery.Version)
 
 	return &compute.ImageReference{
 		ID: &imageID,
 	}, nil
 }
 
-func specificImageToSDK(rawImage *runtime.RawExtension) (*compute.ImageReference, error) {
-	image := &infrav1.AzureImageByID{}
-	if err := infrav1.DecodeRawExtension(rawImage, image); err != nil {
-		return nil, err
-	}
-
+func specificImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	return &compute.ImageReference{
-		ID: &image.ID,
+		ID: image.ID,
 	}, nil
 }

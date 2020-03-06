@@ -17,12 +17,10 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"encoding/json"
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -42,22 +40,13 @@ func TestFuzzyConversion(t *testing.T) {
 
 func overrideImageFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
-		func(r *runtime.RawExtension, c fuzz.Continue) {
-			image := v1alpha3.AzureMarketplaceImage{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       v1alpha3.AzureMarketplaceImageKind,
-					APIVersion: v1alpha3.GroupVersion.String(),
-				},
+		func(image *v1alpha3.Image, c fuzz.Continue) {
+			image.Marketplace = &v1alpha3.AzureMarketplaceImage{
 				Publisher: "PUB1234",
 				Offer:     "OFFER123",
 				SKU:       "SKU123",
 				Version:   "1.0.0",
 			}
-			imageData, err := json.Marshal(image)
-			if err != nil {
-				panic(err)
-			}
-			r.Raw = imageData
 		},
 	}
 }

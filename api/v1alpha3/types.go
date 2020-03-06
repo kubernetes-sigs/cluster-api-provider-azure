@@ -21,7 +21,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // // ResourceSpec defines a generic spec that can used to define Azure resources.
@@ -362,9 +361,9 @@ type VM struct {
 	// Hardware profile
 	VMSize string `json:"vmSize,omitempty"`
 	// Storage profile
-	Image         runtime.RawExtension `json:"image,omitempty"`
-	OSDisk        OSDisk               `json:"osDisk,omitempty"`
-	StartupScript string               `json:"startupScript,omitempty"`
+	Image         Image  `json:"image,omitempty"`
+	OSDisk        OSDisk `json:"osDisk,omitempty"`
+	StartupScript string `json:"startupScript,omitempty"`
 	// State - The provisioning state, which only appears in the response.
 	State    VMState    `json:"vmState,omitempty"`
 	Identity VMIdentity `json:"identity,omitempty"`
@@ -388,6 +387,68 @@ type VM struct {
 	//NetworkProfile *NetworkProfile `json:"networkProfile,omitempty"`
 
 	//AvailabilitySet *SubResource `json:"availabilitySet,omitempty"`
+}
+
+// Image defines information about the image to use for VM creation.
+// There are three ways to specify an image: by ID, Markeplace Image or SharedImageGallery
+// One of ID, SharedImage or Marketplace should be set.
+type Image struct {
+	// ID specifies an image to use by ID
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// SharedGallery specifies an image to use from an Azure Shared Image Gallery
+	// +optional
+	SharedGallery *AzureSharedGalleryImage `json:"sharedGallery,omitempty"`
+
+	// Marketplace specifies an image to use from the Azure Marketplace
+	// +optional
+	Marketplace *AzureMarketplaceImage `json:"marketplace,omitempty"`
+}
+
+// AzureMarketplaceImage defines an image in the Azure marketplace to use for VM creation
+type AzureMarketplaceImage struct {
+	// Publisher is the name of the organization that created the image
+	// +kubebuilder:validation:MinLength=1
+	Publisher string `json:"publisher"`
+	// Offer specifies the name of a group of related images created by the publisher.
+	// For example, UbuntuServer, WindowsServer
+	// +kubebuilder:validation:MinLength=1
+	Offer string `json:"offer"`
+	// SKU specifies an instance of an offer, such as a major release of a distribution.
+	// For example, 18.04-LTS, 2019-Datacenter
+	// +kubebuilder:validation:MinLength=1
+	SKU string `json:"sku"`
+	// Version specifies the version of an image sku. The allowed formats
+	// are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers.
+	// Specify 'latest' to use the latest version of an image available at deploy time.
+	// Even if you use 'latest', the VM image will not automatically update after deploy
+	// time even if a new version becomes available.
+	// +kubebuilder:validation:MinLength=1
+	Version string `json:"version"`
+}
+
+// AzureSharedGalleryImage defines an image in a Shared Image Gallery to use for VM creation
+type AzureSharedGalleryImage struct {
+	// SubscriptionID is the identifier of the subscription that contains the shared image gallery
+	// +kubebuilder:validation:MinLength=1
+	SubscriptionID string `json:"subscriptionID"`
+	// ResourceGroup specifies the resource group containing the shared image gallery
+	// +kubebuilder:validation:MinLength=1
+	ResourceGroup string `json:"resourceGroup"`
+	// Gallery specifies the name of the shared image gallery that contains the image
+	// +kubebuilder:validation:MinLength=1
+	Gallery string `json:"gallery"`
+	// Name is the name of the image
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// Version specifies the version of the marketplace image. The allowed formats
+	// are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers.
+	// Specify 'latest' to use the latest version of an image available at deploy time.
+	// Even if you use 'latest', the VM image will not automatically update after deploy
+	// time even if a new version becomes available.
+	// +kubebuilder:validation:MinLength=1
+	Version string `json:"version"`
 }
 
 type AvailabilityZone struct {

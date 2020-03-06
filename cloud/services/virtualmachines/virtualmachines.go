@@ -29,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -43,7 +42,7 @@ type Spec struct {
 	SSHKeyData string
 	Size       string
 	Zone       string
-	Image      *runtime.RawExtension
+	Image      *infrav1.Image
 	OSDisk     infrav1.OSDisk
 	CustomData string
 }
