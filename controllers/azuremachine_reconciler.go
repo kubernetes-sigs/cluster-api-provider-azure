@@ -18,9 +18,6 @@ package controllers
 
 import (
 	"encoding/base64"
-	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -43,6 +40,8 @@ const (
 	// DefaultBootstrapTokenTTL default ttl for bootstrap token
 	DefaultBootstrapTokenTTL = 10 * time.Minute
 )
+
+var natRules = make(map[string]int)
 
 // azureMachineService are list of services required by cluster actuator, easy to create a fake
 // TODO: We should decide if we want to keep this
@@ -238,15 +237,10 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	case infrav1.Node:
 		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
 	case infrav1.ControlPlane:
-		// TODO: Come up with a better way to determine the control plane NAT rule
-		natRuleString := strings.TrimPrefix(nicName, fmt.Sprintf("%s-controlplane-", s.clusterScope.Name()))
-		natRuleString = strings.TrimSuffix(natRuleString, "-nic")
-		natRule, err := strconv.Atoi(natRuleString)
-		if err != nil {
-			return errors.Wrap(err, "unable to determine NAT rule for control plane network interface")
+		if _, ok := natRules[nicName]; !ok {
+			natRules[nicName] = len(natRules)
 		}
-
-		networkInterfaceSpec.NatRule = natRule
+		networkInterfaceSpec.NatRule = natRules[nicName]
 		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name
 		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
 		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.Name())
