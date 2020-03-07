@@ -24,6 +24,7 @@
     - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
     - [Mocks](#mocks)
+    - [E2E Testing](#e2e-testing)
 
 <!-- /TOC -->
 
@@ -219,6 +220,16 @@ To generate the mocks you can run
 ```bash
 make generate-go
 ```
+
+#### E2E Testing
+
+To run E2E locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
+
+```bash
+./scripts/ci-e2e.sh
+```
+
+You can optionally set `AZURE_SSH_PUBLIC_KEY_FILE` to use your own ssh key.
 
 <!-- References -->
 
