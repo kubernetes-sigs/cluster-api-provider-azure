@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -256,10 +255,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	default:
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state %q is unexpected", vm.State))
-	}
-
-	if err := ams.reconcileNetworkInterface(azure.GenerateNICName(machineScope.Name())); err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to reconcile NIC: %+v", err)
 	}
 
 	// Ensure that the tags are correct.

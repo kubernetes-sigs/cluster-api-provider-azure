@@ -50,7 +50,7 @@ func init() {
 	SchemeBuilder.Register(&AzureMachineTemplate{}, &AzureMachineTemplateList{})
 }
 
-// AzureMachineTemplateResource describes the data needed to create am AzureMachine from a template
+// AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template
 type AzureMachineTemplateResource struct {
 	// Spec is the specification of the desired behavior of the machine.
 	Spec AzureMachineSpec `json:"spec"`

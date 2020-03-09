@@ -136,43 +136,36 @@ started prerequisites section](./getting-started.md#Prerequisites)
 
 #### Customizing the cluster deployment
 
-A set of sane defaults are utilized when generating manifests via `./azure/generate-yaml.sh`, but these can be overridden by exporting environment variables.
-
-Here is a list of commonly overriden configuration parameters (the full list is available in `./azure/generate-yaml.sh`):
+Here is a list of commonly overriden configuration parameters (the full list is available in `templates/cluster-template.yaml`):
 
 ```bash
-# Azure settings.
-export AZURE_LOCATION="eastus"
-export AZURE_RESOURCE_GROUP="capz-rg"
-
 # Cluster settings.
 export CLUSTER_NAME="capz-cluster"
+export VNET_NAME=${CLUSTER_NAME}-vnet
+
+# Azure settings.
+export AZURE_LOCATION="southcentralus"
+export AZURE_RESOURCE_GROUP=${CLUSTER_NAME}
+export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
 
 # Machine settings.
+export CONTROL_PLANE_MACHINE_COUNT=3
 export CONTROL_PLANE_MACHINE_TYPE="Standard_B2ms"
 export NODE_MACHINE_TYPE="Standard_B2ms"
+export WORKER_MACHINE_COUNT=2
+export KUBERNETES_VERSION="1.16.7"
+
+# Generate SSH key.
+# If you want to provide your own key, skip this step and set SSH_PUBLIC_KEY to your existing file.
+SSH_KEY_FILE=.sshkey
+rm -f "${SSH_KEY_FILE}" 2>/dev/null
+ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
+echo "Machine SSH key generated in ${SSH_KEY_FILE}"
+export SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 ```
-
-#### Build manifests
-
-**NOTE:** It's expected that some set of Azure credentials are available at the time, either
-as environment variable, or some other SDK-supported method.
-
-Whenever you are working on a branch, you will need to generate manifests
-using:
-
-```bash
-make clean # Clean up any previous manifests
-
-REGISTRY="<container-registry>" \
-MANAGER_IMAGE_TAG="<image-tag>" \
-AZURE_RESOURCE_GROUP="<resource-group>" \
-CLUSTER_NAME="<cluster-name>" \
-make generate-examples # Generate new example manifests
-```
-
-You will then have a sample cluster, machine manifest and provider components in:
-`./examples/_out`
 
 #### Creating a test cluster
 
@@ -192,7 +185,9 @@ make kind-reset
 
 Launch a bootstrap cluster and then run the generated manifests creating a target cluster in Azure:
 
-- Use `make create-cluster` to create a multi-node control plane, with 2 nodes
+```bash
+make create-cluster
+```
 
 While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
 
@@ -202,7 +197,7 @@ time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure
 kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f # Follow the controller logs
 ```
 
-After this is finished you will have a kubeconfig in `./examples/_out/clusterapi.kubeconfig`.
+After this is finished you will have a kubeconfig in `./kubeconfig`.
 You can debug most issues by SSHing into the VMs that have been created and
 reading `/var/lib/waagent/custom-script/download/0/stdout`.
 
