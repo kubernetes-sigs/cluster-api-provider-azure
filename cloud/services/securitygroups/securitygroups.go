@@ -65,20 +65,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		klog.V(2).Infof("using additional rules for control plane %s", nsgSpec.Name)
 		securityRules = &[]network.SecurityRule{
 			{
-				Name: to.StringPtr("allow_ssh"),
-				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Protocol:                 network.SecurityRuleProtocolTCP,
-					SourceAddressPrefix:      to.StringPtr("*"),
-					SourcePortRange:          to.StringPtr("*"),
-					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr("22"),
-					Access:                   network.SecurityRuleAccessAllow,
-					Direction:                network.SecurityRuleDirectionInbound,
-					Priority:                 to.Int32Ptr(100),
-				},
-			},
-			{
-				Name: to.StringPtr("allow_6443"),
+				Name: to.StringPtr("AllowAPIServer"),
 				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
 					Protocol:                 network.SecurityRuleProtocolTCP,
 					SourceAddressPrefix:      to.StringPtr("*"),

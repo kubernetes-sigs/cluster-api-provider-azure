@@ -21,6 +21,10 @@ set -o pipefail
 GOPATH_BIN="$(go env GOPATH)/bin/"
 MINIMUM_KIND_VERSION=v0.6.1
 
+version_gte() {
+  test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "$1"
+}
+
 # Ensure the kind tool exists and is a viable version, or installs it
 verify_kind_version() {
 
@@ -40,8 +44,8 @@ verify_kind_version() {
   fi
 
   local kind_version
-  kind_version=$(kind version)
-   if ! [[ "${kind_version}" =~ ${MINIMUM_KIND_VERSION} ]]; then
+  kind_version=$(kind version | cut -d ' ' -f 2)
+  if version_gte ${MINIMUM_KIND_VERSION} ${kind_version}; then
     cat <<EOF
 Detected kind version: ${kind_version}.
 Requires ${MINIMUM_KIND_VERSION} or greater.
