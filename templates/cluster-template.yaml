@@ -38,58 +38,64 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     name: "${CLUSTER_NAME}-control-plane"
   kubeadmConfigSpec:
-      initConfiguration:
-        nodeRegistration:
-          name: '{{ ds.meta_data["local_hostname"] }}'
-          kubeletExtraArgs:
-            cloud-provider: azure
-            cloud-config: /etc/kubernetes/azure.json
-      clusterConfiguration:
-        apiServer:
-          timeoutForControlPlane: 20m
-          extraArgs:
-            cloud-provider: azure
-            cloud-config: /etc/kubernetes/azure.json
-          extraVolumes:
-            - hostPath: /etc/kubernetes/azure.json
-              mountPath: /etc/kubernetes/azure.json
-              name: cloud-config
-              readOnly: true
-        controllerManager:
-          extraArgs:
-            cloud-provider: azure
-            cloud-config: /etc/kubernetes/azure.json
-            allocate-node-cidrs: "false"
-          extraVolumes:
-            - hostPath: /etc/kubernetes/azure.json
-              mountPath: /etc/kubernetes/azure.json
-              name: cloud-config
-              readOnly: true
-      files:
-        - path: /etc/kubernetes/azure.json
-          owner: "root:root"
-          permissions: "0644"
-          content: |
-            {
-              "cloud": "AzurePublicCloud",
-              "tenantId": "${AZURE_TENANT_ID}",
-              "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-              "aadClientId": "${AZURE_CLIENT_ID}",
-              "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-              "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-              "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
-              "location": "${AZURE_LOCATION}",
-              "vmType": "standard",
-              "vnetName": "${CLUSTER_NAME}",
-              "vnetResourceGroup": "${CLUSTER_NAME}",
-              "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
-              "routeTableName": "${CLUSTER_NAME}-node-routetable",
-              "userAssignedID": "${CLUSTER_NAME}",
-              "loadBalancerSku": "standard",
-              "maximumLoadBalancerRuleCount": 250,
-              "useManagedIdentityExtension": false,
-              "useInstanceMetadata": true
-            }
+    initConfiguration:
+      nodeRegistration:
+        name: '{{ ds.meta_data["local_hostname"] }}'
+        kubeletExtraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+    joinConfiguration:
+      nodeRegistration:
+        name: '{{ ds.meta_data["local_hostname"] }}'
+        kubeletExtraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+    clusterConfiguration:
+      apiServer:
+        timeoutForControlPlane: 20m
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+        extraVolumes:
+          - hostPath: /etc/kubernetes/azure.json
+            mountPath: /etc/kubernetes/azure.json
+            name: cloud-config
+            readOnly: true
+      controllerManager:
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          allocate-node-cidrs: "false"
+        extraVolumes:
+          - hostPath: /etc/kubernetes/azure.json
+            mountPath: /etc/kubernetes/azure.json
+            name: cloud-config
+            readOnly: true
+    files:
+      - path: /etc/kubernetes/azure.json
+        owner: "root:root"
+        permissions: "0644"
+        content: |
+          {
+            "cloud": "AzurePublicCloud",
+            "tenantId": "${AZURE_TENANT_ID}",
+            "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+            "aadClientId": "${AZURE_CLIENT_ID}",
+            "aadClientSecret": "${AZURE_CLIENT_SECRET}",
+            "resourceGroup": "${AZURE_RESOURCE_GROUP}",
+            "securityGroupName": "${CLUSTER_NAME}-controlplane-nsg",
+            "location": "${AZURE_LOCATION}",
+            "vmType": "standard",
+            "vnetName": "${CLUSTER_NAME}",
+            "vnetResourceGroup": "${CLUSTER_NAME}",
+            "subnetName": "${CLUSTER_NAME}-controlplane-subnet",
+            "routeTableName": "${CLUSTER_NAME}-controlplane-routetable",
+            "userAssignedID": "${CLUSTER_NAME}",
+            "loadBalancerSku": "standard",
+            "maximumLoadBalancerRuleCount": 250,
+            "useManagedIdentityExtension": false,
+            "useInstanceMetadata": true
+          }
   version: "${KUBERNETES_VERSION}"
 ---
 kind: AzureMachineTemplate
