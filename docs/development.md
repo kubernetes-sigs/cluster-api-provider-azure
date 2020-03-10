@@ -18,7 +18,7 @@
   - [Manual Testing](#manual-testing)
     - [Setting up the environment](#setting-up-the-environment)
     - [Building and pushing dev images](#building-and-pushing-dev-images)
-    - [Build manifests](#build-manifests)
+    - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
     - [Creating a test cluster](#creating-a-test-cluster)
   - [Submitting PRs and testing](#submitting-prs-and-testing)
     - [Executing unit tests](#executing-unit-tests)
@@ -153,8 +153,8 @@ export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -
 
 # Machine settings.
 export CONTROL_PLANE_MACHINE_COUNT=3
-export CONTROL_PLANE_MACHINE_TYPE="Standard_B2ms"
-export NODE_MACHINE_TYPE="Standard_B2ms"
+export CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
+export NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
 export KUBERNETES_VERSION="1.16.7"
 
@@ -169,21 +169,13 @@ export SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 
 #### Creating a test cluster
 
-Generate custom binaries:
-
-```bash
-make binaries
-```
-
 Ensure kind has been reset:
 
 ```bash
 make kind-reset
 ```
 
-**Before continuing, please review the [documentation on manifests][manifests] to understand which manifests to use for various cluster scenarios.**
-
-Launch a bootstrap cluster and then run the generated manifests creating a target cluster in Azure:
+Create the cluster:
 
 ```bash
 make create-cluster
