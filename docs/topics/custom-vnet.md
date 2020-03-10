@@ -81,4 +81,4 @@ spec:
 
 If no CIDR block is provided, `10.0.0.0/8` will be used by default, with default internal LB private IP `10.0.0.100`.
 
-Whenever using custom vnet and subnet names and/or a different vnet resource group, please make sure to update the `azure.json` content part of each control plane's `KubeadmConfig` accordingly before creating the control plane machines.
+Whenever using custom vnet and subnet names and/or a different vnet resource group, please make sure to update the `azure.json` content part of both the nodes and control planes' `kubeadmConfigSpec` accordingly before creating the cluster.
