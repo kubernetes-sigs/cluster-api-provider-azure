@@ -141,7 +141,7 @@ Here is a list of commonly overriden configuration parameters (the full list is 
 ```bash
 # Cluster settings.
 export CLUSTER_NAME="capz-cluster"
-export VNET_NAME=${CLUSTER_NAME}-vnet
+export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
 
 # Azure settings.
 export AZURE_LOCATION="southcentralus"
@@ -153,18 +153,18 @@ export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -
 
 # Machine settings.
 export CONTROL_PLANE_MACHINE_COUNT=3
-export CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
-export NODE_MACHINE_TYPE="Standard_D2s_v3"
+export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
+export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
 export KUBERNETES_VERSION="1.16.7"
 
 # Generate SSH key.
-# If you want to provide your own key, skip this step and set SSH_PUBLIC_KEY to your existing file.
+# If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY to your existing file.
 SSH_KEY_FILE=.sshkey
 rm -f "${SSH_KEY_FILE}" 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
-export SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 ```
 
 #### Creating a test cluster
