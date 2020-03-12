@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"github.com/pkg/errors"
-
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
@@ -114,6 +112,10 @@ func Convert_v1alpha3_AzureMachineStatus_To_v1alpha2_AzureMachineStatus(in *infr
 
 // Convert_v1alpha2_Image_To_v1alpha3_Image converts from an Images between v1alpha2 and v1alpha3
 func Convert_v1alpha2_Image_To_v1alpha3_Image(in *Image, out *infrav1alpha3.Image, s apiconversion.Scope) error { //nolint
+	if isImageByID(in) {
+		out.ID = in.ID
+		return nil
+	}
 	if isAzureMarketPlaceImage(in) {
 		out.Marketplace = &infrav1alpha3.AzureMarketplaceImage{
 			Publisher: *in.Publisher,
@@ -133,12 +135,7 @@ func Convert_v1alpha2_Image_To_v1alpha3_Image(in *Image, out *infrav1alpha3.Imag
 		}
 		return nil
 	}
-	if isImageByID(in) {
-		out.ID = in.ID
-		return nil
-	}
-
-	return errors.New("cannot determine image type for conversion")
+	return nil
 }
 
 // Convert_v1alpha3_Image_To_v1alpha2_Image converts Images from v1alpha3 to v1alpha2
@@ -160,9 +157,9 @@ func Convert_v1alpha3_Image_To_v1alpha2_Image(in *infrav1alpha3.Image, out *Imag
 		out.Gallery = &in.SharedGallery.Gallery
 		out.Version = &in.SharedGallery.Version
 		out.Name = &in.SharedGallery.Name
+		return nil
 	}
-
-	return errors.New("cannot determine how to convert image from v1alpha3 to v1alpha2")
+	return nil
 }
 
 func isAzureMarketPlaceImage(in *Image) bool {
