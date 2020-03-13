@@ -52,7 +52,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid internal load balancer specification")
 	}
 	klog.V(2).Infof("creating internal load balancer %s", internalLBSpec.Name)
-	probeName := "tcpHTTPSProbe"
+	probeName := "HTTPSProbe"
 	frontEndIPConfigName := "controlplane-internal-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-internal-backEndPool"
 	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ResourceGroup())
@@ -111,7 +111,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 					{
 						Name: &probeName,
 						ProbePropertiesFormat: &network.ProbePropertiesFormat{
-							Protocol:          network.ProbeProtocolTCP,
+							Protocol:          network.ProbeProtocolHTTPS,
+							RequestPath:       to.StringPtr("/healthz"),
 							Port:              to.Int32Ptr(s.Scope.APIServerPort()),
 							IntervalInSeconds: to.Int32Ptr(15),
 							NumberOfProbes:    to.Int32Ptr(4),
