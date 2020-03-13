@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	random "math/rand"
 	"os"
@@ -253,15 +254,30 @@ func cloudConfig(clusterName string, creds auth.Creds) string {
 }
 
 func sshkey() (string, error) {
-	// TODO Load from AZURE_SSH_PUBLIC_KEY_FILE if set
-	prv, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return "", errors.Wrap(err, "Failed to generate private key")
+	var pub ssh.PublicKey
+
+	if os.Getenv("AZURE_SSH_PUBLIC_KEY_FILE") != "" {
+		authorizedKeysBytes, err := ioutil.ReadFile(os.Getenv("AZURE_SSH_PUBLIC_KEY_FILE"))
+		if err != nil {
+			return "", errors.Wrap(err, "Failed to load public key provided via environment variable")
+		}
+
+		// double checking if the public key provided is valid
+		pub, _, _, _, err = ssh.ParseAuthorizedKey(authorizedKeysBytes)
+		if err != nil {
+			return "", errors.Wrap(err, "Failed to parse public key provided via environment variable")
+		}
+	} else {
+		prv, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return "", errors.Wrap(err, "Failed to generate private key")
+		}
+		pub, err = ssh.NewPublicKey(&prv.PublicKey)
+		if err != nil {
+			return "", errors.Wrap(err, "Failed to generate public key")
+		}
 	}
-	pub, err := ssh.NewPublicKey(&prv.PublicKey)
-	if err != nil {
-		return "", errors.Wrap(err, "Failed to generate public key")
-	}
+
 	return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(pub)), nil
 }
 
