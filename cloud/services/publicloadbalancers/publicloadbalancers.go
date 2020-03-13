@@ -72,32 +72,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
 
-	var inboundNATRules []network.InboundNatRule
-	sshNATPorts := []int32{
-		22,
-		2201,
-		2202,
-		2203,
-		2204,
-	}
-	// TODO: figure out how to get the number of control planes instead
-	for i := 0; i < 5; i++ {
-		inboundNATRule := network.InboundNatRule{
-			Name: to.StringPtr(fmt.Sprintf("sshNATRule%d", i)),
-			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
-				BackendPort:          to.Int32Ptr(22),
-				EnableFloatingIP:     to.BoolPtr(false),
-				IdleTimeoutInMinutes: to.Int32Ptr(4),
-				FrontendIPConfiguration: &network.SubResource{
-					ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
-				},
-				FrontendPort: to.Int32Ptr(sshNATPorts[i]),
-				Protocol:     network.TransportProtocolTCP,
-			},
-		}
-		inboundNATRules = append(inboundNATRules, inboundNATRule)
-	}
-
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	err = s.Client.CreateOrUpdate(ctx,
 		s.Scope.ResourceGroup(),
@@ -159,7 +133,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						},
 					},
 				},
-				InboundNatRules: &inboundNATRules,
 			},
 		})
 

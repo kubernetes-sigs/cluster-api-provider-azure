@@ -38,7 +38,7 @@ type AzureClient struct {
 
 var _ Client = &AzureClient{}
 
-// NewClient creates a new VM client from subscription ID.
+// NewClient creates a new load balancer client from subscription ID.
 func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
 	c := newLoadBalancersClient(subscriptionID, authorizer)
 	return &AzureClient{c}

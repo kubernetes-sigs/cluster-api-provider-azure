@@ -41,8 +41,6 @@ const (
 	DefaultBootstrapTokenTTL = 10 * time.Minute
 )
 
-var natRules = make(map[string]int)
-
 // azureMachineService are list of services required by cluster actuator, easy to create a fake
 // TODO: We should decide if we want to keep this
 type azureMachineService struct {
@@ -62,7 +60,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		machineScope:          machineScope,
 		clusterScope:          clusterScope,
 		availabilityZonesSvc:  availabilityzones.NewService(clusterScope),
-		networkInterfacesSvc:  networkinterfaces.NewService(clusterScope),
+		networkInterfacesSvc:  networkinterfaces.NewService(clusterScope, machineScope),
 		publicIPSvc:           publicips.NewService(clusterScope),
 		virtualMachinesSvc:    virtualmachines.NewService(clusterScope, machineScope),
 		virtualMachinesExtSvc: virtualmachineextensions.NewService(clusterScope),
@@ -100,6 +98,10 @@ func (s *azureMachineService) Delete() error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     azure.GenerateNICName(s.machineScope.Name()),
 		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
+	}
+
+	if s.machineScope.Role() == infrav1.ControlPlane {
+		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
 	}
 
 	err = s.networkInterfacesSvc.Delete(s.clusterScope.Context, networkInterfaceSpec)
@@ -237,10 +239,6 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	case infrav1.Node:
 		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
 	case infrav1.ControlPlane:
-		if _, ok := natRules[nicName]; !ok {
-			natRules[nicName] = len(natRules)
-		}
-		networkInterfaceSpec.NatRule = natRules[nicName]
 		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name
 		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
 		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.Name())
