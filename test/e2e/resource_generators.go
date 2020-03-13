@@ -150,7 +150,7 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 				},
 			},
 			OSDisk: infrav1.OSDisk{
-				DiskSizeGB: 30,
+				DiskSizeGB: 128,
 				OSType:     "Linux",
 				ManagedDisk: infrav1.ManagedDisk{
 					StorageAccountType: "Premium_LRS",

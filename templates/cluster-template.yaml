@@ -109,7 +109,7 @@ spec:
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
       osDisk:
         osType: "Linux"
-        diskSizeGB: 30
+        diskSizeGB: 128
         managedDisk:
           storageAccountType: "Premium_LRS"
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
