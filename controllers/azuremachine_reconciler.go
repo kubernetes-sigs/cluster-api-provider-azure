@@ -19,6 +19,7 @@ package controllers
 import (
 	"encoding/base64"
 	"time"
+	"sync"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -40,8 +41,6 @@ const (
 	// DefaultBootstrapTokenTTL default ttl for bootstrap token
 	DefaultBootstrapTokenTTL = 10 * time.Minute
 )
-
-var natRules = make(map[string]int)
 
 // azureMachineService are list of services required by cluster actuator, easy to create a fake
 // TODO: We should decide if we want to keep this
@@ -69,6 +68,29 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		disksSvc:              disks.NewService(clusterScope),
 	}
 }
+
+type usedNatIndex struct {
+    used int
+    mux        sync.Mutex
+}
+
+var natRules = make(map[string]int)
+var usedNatRules = make([]usedNatIndex, azure.MaxNumberOfControlPlanes)
+
+func getAvailableNatRule() (int, error){
+	for i:=0; i < len(usedNatRules); i++ {
+		usedNatRules[i].mux.Lock()
+		if usedNatRules[i].used == 0 {
+			usedNatRules[i].used = 1
+			usedNatRules[i].mux.Unlock()
+			return i, nil
+		}
+		usedNatRules[i].mux.Unlock()
+	}  
+
+	return -1, errors.Errorf("Unable to find available NAT Rule index")
+}
+
 
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (s *azureMachineService) Create() (*infrav1.VM, error) {
@@ -105,6 +127,14 @@ func (s *azureMachineService) Delete() error {
 	err = s.networkInterfacesSvc.Delete(s.clusterScope.Context, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
+	}
+
+	// free up the natRule
+	if index, ok := natRules[s.machineScope.Name()]; ok {
+		delete(natRules, s.machineScope.Name())
+		usedNatRules[index].mux.Lock()
+		usedNatRules[index].used = 0
+		usedNatRules[index].mux.Unlock()
 	}
 
 	publicIPSpec := &publicips.Spec{
@@ -238,7 +268,11 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
 	case infrav1.ControlPlane:
 		if _, ok := natRules[nicName]; !ok {
-			natRules[nicName] = len(natRules)
+			index, err := getAvailableNatRule()
+			if err != nil {
+				return errors.Wrap(err, "unable to assign VM network interface NAT rule")
+			}
+			natRules[nicName] = index
 		}
 		networkInterfaceSpec.NatRule = natRules[nicName]
 		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name

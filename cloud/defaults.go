@@ -25,20 +25,22 @@ import (
 )
 
 const (
-	// DefaultUserName is the default username for created vm
+	// DefaultUserName is the default username for created VM.
 	DefaultUserName = "capi"
-	// DefaultVnetCIDR is the default Vnet CIDR
+	// DefaultVnetCIDR is the default Vnet CIDR.
 	DefaultVnetCIDR = "10.0.0.0/8"
-	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
+	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR.
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
-	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
+	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR.
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
-	// DefaultInternalLBIPAddress is the default internal load balancer ip address
+	// DefaultInternalLBIPAddress is the default internal load balancer IP address.
 	DefaultInternalLBIPAddress = "10.0.0.100"
-	// DefaultAzureDNSZone is the default provided azure dns zone
+	// DefaultAzureDNSZone is the default provided Azure DNS zone.
 	DefaultAzureDNSZone = "cloudapp.azure.com"
-	// UserAgent used for communicating with azure
+	// UserAgent used for communicating with Azure.
 	UserAgent = "cluster-api-azure-services"
+	// MaxNumberOfControlPlanes is the maximum allowed number of control planes, used to determine number of needed Inbound NAT Rules.
+	MaxNumberOfControlPlanes = 7
 )
 
 const (

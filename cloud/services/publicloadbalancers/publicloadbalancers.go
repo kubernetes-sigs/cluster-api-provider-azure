@@ -73,15 +73,13 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
 
 	var inboundNATRules []network.InboundNatRule
-	sshNATPorts := []int32{
-		22,
-		2201,
-		2202,
-		2203,
-		2204,
-	}
+
 	// TODO: figure out how to get the number of control planes instead
-	for i := 0; i < 5; i++ {
+	for i := 0; i < azure.MaxNumberOfControlPlanes; i++ {
+		var sshNATPort int32 = 22
+		if i != 0 {
+			sshNATPort = 2200 + int32(i)
+		}
 		inboundNATRule := network.InboundNatRule{
 			Name: to.StringPtr(fmt.Sprintf("sshNATRule%d", i)),
 			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
@@ -91,7 +89,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				FrontendIPConfiguration: &network.SubResource{
 					ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
 				},
-				FrontendPort: to.Int32Ptr(sshNATPorts[i]),
+				FrontendPort: to.Int32Ptr(sshNATPort),
 				Protocol:     network.TransportProtocolTCP,
 			},
 		}
