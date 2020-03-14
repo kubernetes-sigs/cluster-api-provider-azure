@@ -29,22 +29,23 @@ TODO
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|  | Cluster API `v1alpha1` (`v0.1.x`) | Cluster API `v1alpha2` (`v0.2.x`) |
-|---|---|---|
-|Azure Provider `v0.2.x` | ✓ |  |
-|Azure Provider `v0.3.x` |  | ✓ |
+|  | Cluster API `v1alpha1` (`v0.1.x`) | Cluster API `v1alpha2` (`v0.2.x`) | Cluster API `v1alpha3` (`v0.3.x`) |
+|---|---|---|---|
+|Azure Provider `v0.2.x` | ✓ |  |  |
+|Azure Provider `v0.3.x` |  | ✓ |  |
+|Azure Provider `v0.4.x` |  |  | ✓ |
 
 This provider's versions are able to install and manage the following versions of Kubernetes:
 
-|  | Azure Provider `v0.2.x` | Azure Provider `v0.3.x` (unreleased) |
-|---|---|---|
-| Kubernetes 1.13 | ✓ |  |
-| Kubernetes 1.14 | ✓ | ✓ |
-| Kubernetes 1.15 | ✓ | ✓ |
-| Kubernetes 1.16 |  | ✓ |
+|  | Azure Provider `v0.2.x` | Azure Provider `v0.3.x` | Azure Provider `v0.4.x` |
+|---|---|---|---|
+| Kubernetes 1.13 | ✓ |  |  |
+| Kubernetes 1.14 | ✓ | ✓ |  |
+| Kubernetes 1.15 | ✓ | ✓ | ✓ |
+| Kubernetes 1.16 |  | ✓ | ✓ |
+| Kubernetes 1.17 |  |  | ✓ |
 
-
-Each version of Cluster API for Azure will attempt to support two Kubernetes versions e.g., Cluster API for Azure `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
+Each version of Cluster API for Azure will attempt to support at least two Kubernetes versions e.g., Cluster API for Azure `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
 
 **NOTE:** As the versioning for this project is tied to the versioning of Cluster API, future modifications to this policy may be made to more closely align with other providers in the Cluster API ecosystem.
 
@@ -118,8 +119,7 @@ We also use the issue tracker to track features. If you have an idea for a featu
 
 [slack]: https://kubernetes.slack.com/messages/CEX9HENG7
 [good_first_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
-[prow]:
-https://go.k8s.io/bot-commands
+[prow]: https://go.k8s.io/bot-commands
 [bug_report]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=feature_request.md
 [slack_info]: https://github.com/kubernetes/community/blob/master/communication.md#social-media
