@@ -54,7 +54,7 @@ An Azure Service Principal is needed for populating the controller manifests. Th
   az account list -o table
    ```
 
-  2. Save your Subscription ID in an enviroment variable.
+  2. Save your Subscription ID in an environment variable.
 
   ```bash
   export AZURE_SUBSCRIPTION_ID="<SubscriptionId>"
@@ -66,7 +66,7 @@ An Azure Service Principal is needed for populating the controller manifests. Th
   az ad sp create-for-rbac --name SPClusterAPI
   ```
 
-  4. Save the output from the above command in enviroment variables.
+  4. Save the output from the above command in environment variables.
 
   ```bash
   export AZURE_TENANT_ID=<Tenant>

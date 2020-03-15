@@ -137,7 +137,7 @@ started prerequisites section](./getting-started.md#Prerequisites)
 
 #### Customizing the cluster deployment
 
-Here is a list of commonly overriden configuration parameters (the full list is available in `templates/cluster-template.yaml`):
+Here is a list of commonly overridden configuration parameters (the full list is available in `templates/cluster-template.yaml`):
 
 ```bash
 # Cluster settings.
