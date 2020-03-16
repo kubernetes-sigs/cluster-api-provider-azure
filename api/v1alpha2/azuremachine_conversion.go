@@ -36,19 +36,27 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
-	if restored.Spec.Identity != "" {
-		dst.Spec.Identity = restored.Spec.Identity
-	}
-	if len(restored.Spec.UserAssignedIdentities) > 0 {
-		dst.Spec.UserAssignedIdentities = restored.Spec.UserAssignedIdentities
-	}
-	if restored.Spec.AcceleratedNetworking != nil {
-		dst.Spec.AcceleratedNetworking = restored.Spec.AcceleratedNetworking
-	}
 
-	dst.Spec.FailureDomain = restored.Spec.FailureDomain
-
+	restoreAzureMachineSpec(&restored.Spec, &dst.Spec)
 	return nil
+}
+
+func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
+	if restored.Identity != "" {
+		dst.Identity = restored.Identity
+	}
+	if len(restored.UserAssignedIdentities) > 0 {
+		dst.UserAssignedIdentities = restored.UserAssignedIdentities
+	}
+	if restored.AcceleratedNetworking != nil {
+		dst.AcceleratedNetworking = restored.AcceleratedNetworking
+	}
+
+	dst.FailureDomain = restored.FailureDomain
+
+	if restored.SpotVMOptions != nil {
+		dst.SpotVMOptions = restored.SpotVMOptions.DeepCopy()
+	}
 }
 
 // ConvertFrom converts from the Hub version (v1alpha3) to this version.

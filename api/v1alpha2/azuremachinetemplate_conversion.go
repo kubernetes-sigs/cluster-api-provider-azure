@@ -34,17 +34,8 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
-	if restored.Spec.Template.Spec.Identity != "" {
-		dst.Spec.Template.Spec.Identity = restored.Spec.Template.Spec.Identity
-	}
-	if len(restored.Spec.Template.Spec.UserAssignedIdentities) > 0 {
-		dst.Spec.Template.Spec.UserAssignedIdentities = restored.Spec.Template.Spec.UserAssignedIdentities
-	}
-	if restored.Spec.Template.Spec.AcceleratedNetworking != nil {
-		dst.Spec.Template.Spec.AcceleratedNetworking = restored.Spec.Template.Spec.AcceleratedNetworking
-	}
-	dst.Spec.Template.Spec.FailureDomain = restored.Spec.Template.Spec.FailureDomain
 
+	restoreAzureMachineSpec(&restored.Spec.Template.Spec, &dst.Spec.Template.Spec)
 	return nil
 }
 

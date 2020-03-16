@@ -87,6 +87,18 @@ type AzureMachineSpec struct {
 	// +kubebuilder:validation:nullable
 	// +optional
 	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
+
+	// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
+	// +optional
+	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`
+}
+
+// SpotVMOptions defines the options relevant to running the Machine on Spot VMs
+type SpotVMOptions struct {
+	// MaxPrice defines the maximum price the user is willing to pay for Spot VM instances
+	// +optional
+	// +kubebuilder:validation:pattern="^[0-9]+(\.[0-9]+)?$"
+	MaxPrice *string `json:"maxPrice,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine
