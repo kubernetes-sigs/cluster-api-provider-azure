@@ -63,7 +63,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	subnet, err := s.SubnetsClient.Get(ctx, s.Scope.Vnet().ResourceGroup, nicSpec.VnetName, nicSpec.SubnetName)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get subNets")
 	}
 
 	nicConfig.Subnet = &network.Subnet{ID: subnet.ID}
@@ -77,7 +77,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if nicSpec.PublicLoadBalancerName != "" {
 		lb, lberr := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicLoadBalancerName)
 		if lberr != nil {
-			return lberr
+			return errors.Wrap(lberr, "failed to get publicLB")
 		}
 
 		backendAddressPools = append(backendAddressPools,
@@ -94,7 +94,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if nicSpec.InternalLoadBalancerName != "" {
 		internalLB, ilberr := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.InternalLoadBalancerName)
 		if ilberr != nil {
-			return ilberr
+			return errors.Wrap(ilberr, "failed to get internalLB")
 		}
 
 		backendAddressPools = append(backendAddressPools,
@@ -139,7 +139,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	nicSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("invalid network interface Specification")
+		return errors.New("invalid network interface specification")
 	}
 	klog.V(2).Infof("deleting nic %s", nicSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
