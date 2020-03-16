@@ -271,6 +271,7 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 		Zone:                   vmZone,
 		Identity:               s.machineScope.AzureMachine.Spec.Identity,
 		UserAssignedIdentities: s.machineScope.AzureMachine.Spec.UserAssignedIdentities,
+		SpotVMOptions:          s.machineScope.AzureMachine.Spec.SpotVMOptions,
 	}
 
 	err = s.virtualMachinesSvc.Reconcile(ctx, vmSpec)
