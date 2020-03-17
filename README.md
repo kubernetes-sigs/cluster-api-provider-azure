@@ -82,7 +82,12 @@ This repository uses the Kubernetes bots.  See a full list of the commands [here
 
 ### Implementer office hours
 
-TODO. Coming soon!
+Maintainers hold office hours every two weeks, with sessions open to all
+developers working on this project.
+
+Office hours are hosted on a zoom video chat every other Friday
+at 09:00 (PT) / 12:00 (ET) / 17:00 (UTC),
+and are published on the [Kubernetes community meetings calendar][gcal].
 
 ### Other ways to communicate with the contributors
 
@@ -119,6 +124,7 @@ We also use the issue tracker to track features. If you have an idea for a featu
 
 [slack]: https://kubernetes.slack.com/messages/CEX9HENG7
 [good_first_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
+[gcal]: https://calendar.google.com/calendar/embed?src=cgnt364vd8s86hr2phapfjc6uk%40group.calendar.google.com
 [prow]: https://go.k8s.io/bot-commands
 [bug_report]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/new?template=feature_request.md
