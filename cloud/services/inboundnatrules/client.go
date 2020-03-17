@@ -1,0 +1,86 @@
+/*
+Copyright 2019 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package inboundnatrules
+
+import (
+	"context"
+
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/go-autorest/autorest"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+)
+
+// Client wraps go-sdk
+type Client interface {
+	Get(context.Context, string, string, string) (network.InboundNatRule, error)
+	CreateOrUpdate(context.Context, string, string, string, network.InboundNatRule) error
+	Delete(context.Context, string, string, string) error
+}
+
+// AzureClient contains the Azure go-sdk Client
+type AzureClient struct {
+	inboundnatrules network.InboundNatRulesClient
+}
+
+var _ Client = &AzureClient{}
+
+// NewClient creates a new inbound NAT rules client from subscription ID.
+func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
+	c := newInboundNatRulesClient(subscriptionID, authorizer)
+	return &AzureClient{c}
+}
+
+// newLoadbalancersClient creates a new inbound NAT rules client from subscription ID.
+func newInboundNatRulesClient(subscriptionID string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
+	inboundNatRulesClient := network.NewInboundNatRulesClient(subscriptionID)
+	inboundNatRulesClient.Authorizer = authorizer
+	inboundNatRulesClient.AddToUserAgent(azure.UserAgent)
+	return inboundNatRulesClient
+}
+
+// Get gets the specified inbound NAT rules.
+func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) (network.InboundNatRule, error) {
+	return ac.inboundnatrules.Get(ctx, resourceGroupName, lbName, inboundNatRuleName, "")
+}
+
+// CreateOrUpdate creates or updates a inbound NAT rules.
+func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, inboundNatRuleName string, inboundNatRuleParameters network.InboundNatRule) error {
+	future, err := ac.inboundnatrules.CreateOrUpdate(ctx, resourceGroupName, lbName, inboundNatRuleName, inboundNatRuleParameters)
+	if err != nil {
+		return err
+	}
+	err = future.WaitForCompletionRef(ctx, ac.inboundnatrules.Client)
+	if err != nil {
+		return err
+	}
+	_, err = future.Result(ac.inboundnatrules)
+	return err
+}
+
+// Delete deletes the specified inbound NAT rules.
+func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) error {
+	future, err := ac.inboundnatrules.Delete(ctx, resourceGroupName, lbName, inboundNatRuleName)
+	if err != nil {
+		return err
+	}
+	err = future.WaitForCompletionRef(ctx, ac.inboundnatrules.Client)
+	if err != nil {
+		return err
+	}
+	_, err = future.Result(ac.inboundnatrules)
+	return err
+}

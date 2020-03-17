@@ -18,6 +18,8 @@ package networkinterfaces
 
 import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
@@ -25,20 +27,26 @@ import (
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope        *scope.ClusterScope
+	MachineScope *scope.MachineScope
 	Client
-	SubnetsClient       subnets.Client
-	LoadBalancersClient publicloadbalancers.Client
-	PublicIPsClient     publicips.Client
+	SubnetsClient               subnets.Client
+	PublicLoadBalancersClient   publicloadbalancers.Client
+	InternalLoadBalancersClient internalloadbalancers.Client
+	PublicIPsClient             publicips.Client
+	InboundNATRulesClient       inboundnatrules.Client
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
+func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
 	return &Service{
-		Scope:               scope,
-		Client:              NewClient(scope.SubscriptionID, scope.Authorizer),
-		SubnetsClient:       subnets.NewClient(scope.SubscriptionID, scope.Authorizer),
-		LoadBalancersClient: publicloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
-		PublicIPsClient:     publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
+		Scope:                       scope,
+		MachineScope:                machineScope,
+		Client:                      NewClient(scope.SubscriptionID, scope.Authorizer),
+		SubnetsClient:               subnets.NewClient(scope.SubscriptionID, scope.Authorizer),
+		PublicLoadBalancersClient:   publicloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
+		InternalLoadBalancersClient: internalloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
+		PublicIPsClient:             publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
+		InboundNATRulesClient:       inboundnatrules.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }
