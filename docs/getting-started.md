@@ -84,7 +84,7 @@ By default, the code will use the Azure Marketplace "capi" offer. You can list t
 az vm image list --publisher cncf-upstream --offer capi --all -o table
 ```
 
-You can also [build your own image](https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi/packer/azure) and specify the image ID in the manifests generated in the AzureMachine specs.
+You can also [build your own image](https://image-builder.sigs.k8s.io/capi/providers/azure.html) and specify the image ID in the manifests generated in the AzureMachine specs.
 
 ## Troubleshooting
 
