@@ -19,10 +19,14 @@ package v1alpha3
 import (
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func TestImageRequired(t *testing.T) {
+	g := NewWithT(t)
+
 	type test struct {
 		Image *Image
 	}
@@ -30,21 +34,15 @@ func TestImageRequired(t *testing.T) {
 	extension := test{}
 
 	errs := ValidateImage(extension.Image, field.NewPath("image"))
-	if len(errs) != 1 {
-		t.Errorf("unexpected number of errors, expected 1 but got %d", len(errs))
-	}
-	if errs[0].Type.String() != field.ErrorTypeRequired.String() {
-		t.Errorf("unexpected field required error but go %s", errs[0].Type.String())
-	}
-	if errs[0].Field != "image" {
-		t.Errorf("unexpected field name, expected image but got %s", errs[0].Field)
-	}
-	if errs[0].Detail == "" {
-		t.Error("expected a non-empty error detail")
-	}
+	g.Expect(errs).To(HaveLen(1))
+	g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
+	g.Expect(errs[0].Field).To(Equal("image"))
+	g.Expect(errs[0].Detail).NotTo(BeEmpty())
 }
 
 func TestImageTooManyDetails(t *testing.T) {
+	g := NewWithT(t)
+
 	image := &Image{
 		Marketplace: &AzureMarketplaceImage{
 			Offer:     "OFFER",
@@ -60,13 +58,13 @@ func TestImageTooManyDetails(t *testing.T) {
 			Version:        "1.0.0.",
 		},
 	}
-	errs := ValidateImage(image, field.NewPath("image"))
-	if len(errs) != 1 {
-		t.Errorf("unexpected number of errors, expected 1 but got %d", len(errs))
-	}
+
+	g.Expect(ValidateImage(image, field.NewPath("image"))).To(HaveLen(1))
 }
 
 func TestSharedImageGalleryValid(t *testing.T) {
+	g := NewWithT(t)
+
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -97,16 +95,14 @@ func TestSharedImageGalleryValid(t *testing.T) {
 		},
 	}
 
-	for k, tc := range testCases {
-		errs := ValidateImage(tc.image, field.NewPath("image"))
-
-		if len(errs) != tc.expectedErrors {
-			t.Errorf("test case '%s' failed, expected %d errors but got %d: %#v", k, tc.expectedErrors, len(errs), errs)
-		}
+	for _, tc := range testCases {
+		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }
 
 func TestMarketPlaceImageValid(t *testing.T) {
+	g := NewWithT(t)
+
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -133,16 +129,14 @@ func TestMarketPlaceImageValid(t *testing.T) {
 		},
 	}
 
-	for k, tc := range testCases {
-		errs := ValidateImage(tc.image, field.NewPath("image"))
-
-		if len(errs) != tc.expectedErrors {
-			t.Errorf("test case '%s' failed, expected %d errors but got %d: %#v", k, tc.expectedErrors, len(errs), errs)
-		}
+	for _, tc := range testCases {
+		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }
 
 func TestImageByIDValid(t *testing.T) {
+	g := NewWithT(t)
+
 	testCases := map[string]struct {
 		image          *Image
 		expectedErrors int
@@ -157,12 +151,8 @@ func TestImageByIDValid(t *testing.T) {
 		},
 	}
 
-	for k, tc := range testCases {
-		errs := ValidateImage(tc.image, field.NewPath("image"))
-
-		if len(errs) != tc.expectedErrors {
-			t.Errorf("test case '%s' failed, expected %d errors but got %d: %#v", k, tc.expectedErrors, len(errs), errs)
-		}
+	for _, tc := range testCases {
+		g.Expect(ValidateImage(tc.image, field.NewPath("image"))).To(HaveLen(tc.expectedErrors))
 	}
 }
 

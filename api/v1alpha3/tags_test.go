@@ -17,11 +17,14 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"reflect"
 	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestTags_Merge(t *testing.T) {
+	g := NewWithT(t)
+
 	tests := []struct {
 		name     string
 		other    Tags
@@ -80,10 +83,7 @@ func TestTags_Merge(t *testing.T) {
 			}
 
 			tags.Merge(tc.other)
-			if e, a := tc.expected, tags; !reflect.DeepEqual(e, a) {
-				t.Errorf("expected %#v, got %#v", e, a)
-			}
+			g.Expect(tags).To(Equal(tc.expected))
 		})
 	}
-
 }
