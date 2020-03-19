@@ -23,16 +23,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -42,6 +44,8 @@ func init() {
 }
 
 func TestReconcileVnet(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name   string
 		input  *infrav1.VnetSpec
@@ -148,9 +152,7 @@ func TestReconcileVnet(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -162,9 +164,10 @@ func TestReconcileVnet(t *testing.T) {
 				ResourceGroup: clusterScope.Vnet().ResourceGroup,
 				CIDR:          clusterScope.Vnet().CidrBlock,
 			}
-			if err := s.Reconcile(context.TODO(), vnetSpec); err != nil {
-				t.Fatalf("got an unexpected error: %v", err)
-			}
+
+			err = s.Reconcile(context.TODO(), vnetSpec)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(clusterScope.Vnet()).To(Equal(tc.output))
 
 			if !reflect.DeepEqual(clusterScope.Vnet(), tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
@@ -176,6 +179,8 @@ func TestReconcileVnet(t *testing.T) {
 }
 
 func TestDeleteVnet(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name   string
 		input  *infrav1.VnetSpec
@@ -239,9 +244,7 @@ func TestDeleteVnet(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -253,9 +256,8 @@ func TestDeleteVnet(t *testing.T) {
 				ResourceGroup: clusterScope.Vnet().ResourceGroup,
 				CIDR:          clusterScope.Vnet().CidrBlock,
 			}
-			if err := s.Delete(context.TODO(), vnetSpec); err != nil {
-				t.Fatalf("got an unexpected error: %v", err)
-			}
+
+			g.Expect(s.Delete(context.TODO(), vnetSpec)).To(Succeed())
 		})
 	}
 }

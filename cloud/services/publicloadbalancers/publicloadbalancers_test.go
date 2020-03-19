@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers/mock_publicloadbalancers"
 
@@ -43,6 +44,8 @@ func init() {
 }
 
 func TestInvalidPublicLBSpec(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
 
@@ -69,9 +72,7 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -82,31 +83,21 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	_, err = s.Get(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 }
 
 func TestGetPublicLB(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		publicLBSpec  Spec
@@ -175,9 +166,7 @@ func TestGetPublicLB(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -185,21 +174,19 @@ func TestGetPublicLB(t *testing.T) {
 			}
 
 			_, err = s.Get(context.TODO(), &tc.publicLBSpec)
-			if err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestReconcilePublicLoadBalancer(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		publicLBSpec  Spec
@@ -292,9 +279,7 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:           clusterScope,
@@ -302,21 +287,20 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 				PublicIPsClient: publicIPsMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), &tc.publicLBSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), &tc.publicLBSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeletePublicLB(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		publicLBSpec  Spec
@@ -390,24 +374,19 @@ func TestDeletePublicLB(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: publicLBMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.publicLBSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.publicLBSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

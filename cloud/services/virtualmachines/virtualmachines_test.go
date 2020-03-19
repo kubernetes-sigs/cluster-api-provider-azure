@@ -21,6 +21,11 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -32,9 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -46,6 +48,8 @@ func init() {
 }
 
 func TestInvalidVM(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	vmextensionsMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
@@ -72,9 +76,7 @@ func TestInvalidVM(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -85,31 +87,21 @@ func TestInvalidVM(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	_, err = s.Get(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 }
 
 func TestGetVM(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		vmSpec        Spec
@@ -330,9 +322,7 @@ func TestGetVM(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:            clusterScope,
@@ -342,21 +332,19 @@ func TestGetVM(t *testing.T) {
 			}
 
 			_, err = s.Get(context.TODO(), &tc.vmSpec)
-			if err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestReconcileVM(t *testing.T) {
+	g := NewWithT(t)
+
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "bootstrap-data",
@@ -381,7 +369,7 @@ func TestReconcileVM(t *testing.T) {
 		machineConfig *infrav1.AzureMachineSpec
 		azureCluster  *infrav1.AzureCluster
 		expect        func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
-		checkError    func(err error)
+		expectedError string
 	}{
 		{
 			name: "can create a vm",
@@ -432,11 +420,7 @@ func TestReconcileVM(t *testing.T) {
 				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
 				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
-			checkError: func(err error) {
-				if err != nil {
-					t.Fatalf("did not expect error: %v", err)
-				}
-			},
+			expectedError: "",
 		},
 		{
 			name: "vm creation fails",
@@ -487,11 +471,7 @@ func TestReconcileVM(t *testing.T) {
 				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
 				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
-			checkError: func(err error) {
-				if err.Error() != "cannot create vm: #: Internal Server Error: StatusCode=500" {
-					t.Fatalf("did not expect error: %v", err)
-				}
-			},
+			expectedError: "cannot create vm: #: Internal Server Error: StatusCode=500",
 		},
 	}
 
@@ -545,9 +525,8 @@ func TestReconcileVM(t *testing.T) {
 				AzureMachine: azureMachine,
 				AzureCluster: tc.azureCluster,
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
+
 			machineScope.AzureMachine.Spec = *tc.machineConfig
 			tc.expect(vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
 
@@ -560,9 +539,7 @@ func TestReconcileVM(t *testing.T) {
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:            clusterScope,
@@ -582,12 +559,19 @@ func TestReconcileVM(t *testing.T) {
 				CustomData: *machineScope.Machine.Spec.Bootstrap.Data,
 			}
 			err = s.Reconcile(context.TODO(), vmSpec)
-			tc.checkError(err)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
 
 func TestDeleteVM(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		vmSpec        Spec
@@ -658,24 +642,19 @@ func TestDeleteVM(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: publicIPsMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.vmSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.vmSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachineextensions/mock_virtualmachineextensions"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -43,6 +44,8 @@ func init() {
 }
 
 func TestInvalidVMExtensions(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	vmextensionsMock := mock_virtualmachineextensions.NewMockClient(mockCtrl)
 
@@ -69,9 +72,7 @@ func TestInvalidVMExtensions(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -82,31 +83,21 @@ func TestInvalidVMExtensions(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	_, err = s.Get(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 }
 
 func TestGetVMExtensions(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name            string
 		vmExtensionSpec Spec
@@ -181,9 +172,7 @@ func TestGetVMExtensions(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -191,21 +180,19 @@ func TestGetVMExtensions(t *testing.T) {
 			}
 
 			_, err = s.Get(context.TODO(), &tc.vmExtensionSpec)
-			if err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestReconcileVMExtensions(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name            string
 		vmExtensionSpec Spec
@@ -272,30 +259,27 @@ func TestReconcileVMExtensions(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: vmExtensionMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), &tc.vmExtensionSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), &tc.vmExtensionSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeleteVMExtensions(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name            string
 		vmExtensionSpec Spec
@@ -374,24 +358,19 @@ func TestDeleteVMExtensions(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: vmExtensionMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.vmExtensionSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.vmExtensionSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups/mock_groups"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -41,6 +42,8 @@ func init() {
 }
 
 func TestGetGroups(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		expectedError string
@@ -96,9 +99,7 @@ func TestGetGroups(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -106,21 +107,19 @@ func TestGetGroups(t *testing.T) {
 			}
 
 			_, err = s.Get(context.TODO(), nil)
-			if err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestReconcileGroups(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name               string
 		clusterScopeParams scope.ClusterScopeParams
@@ -212,30 +211,27 @@ func TestReconcileGroups(t *testing.T) {
 			tc.clusterScopeParams.Client = client
 			tc.clusterScopeParams.Cluster = cluster
 			clusterScope, err := scope.NewClusterScope(tc.clusterScopeParams)
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: groupsMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), nil); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), nil)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeleteGroups(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name               string
 		clusterScopeParams scope.ClusterScopeParams
@@ -399,24 +395,19 @@ func TestDeleteGroups(t *testing.T) {
 			tc.clusterScopeParams.Client = client
 			tc.clusterScopeParams.Cluster = cluster
 			clusterScope, err := scope.NewClusterScope(tc.clusterScopeParams)
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: groupsMock,
 			}
 
-			if err := s.Delete(context.TODO(), nil); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), nil)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

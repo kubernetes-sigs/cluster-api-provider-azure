@@ -21,17 +21,20 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
+
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -41,6 +44,8 @@ func init() {
 }
 
 func TestReconcileSubnets(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		subnetSpec    Spec
@@ -166,9 +171,7 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:                clusterScope,
@@ -177,16 +180,20 @@ func TestReconcileSubnets(t *testing.T) {
 				RouteTablesClient:    rtMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), &tc.subnetSpec); err != nil {
-				if tc.expectedError != "" && err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), &tc.subnetSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeleteSubnets(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name       string
 		subnetSpec Spec
@@ -271,18 +278,14 @@ func TestDeleteSubnets(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: subnetMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.subnetSpec); err != nil {
-				t.Fatalf("got an unexpected error: %v", err)
-			}
+			g.Expect(s.Delete(context.TODO(), &tc.subnetSpec)).To(Succeed())
 		})
 	}
 }

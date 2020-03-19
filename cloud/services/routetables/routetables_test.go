@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -42,6 +43,8 @@ func init() {
 }
 
 func TestInvalidRouteTableSpec(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	routetableMock := mock_routetables.NewMockClient(mockCtrl)
 
@@ -68,9 +71,7 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -81,31 +82,21 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	_, err = s.Get(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 }
 
 func TestGetRouteTable(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name           string
 		routetableSpec Spec
@@ -174,9 +165,7 @@ func TestGetRouteTable(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -184,21 +173,19 @@ func TestGetRouteTable(t *testing.T) {
 			}
 
 			_, err = s.Get(context.TODO(), &tc.routetableSpec)
-			if err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestReconcileRouteTables(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name           string
 		routetableSpec Spec
@@ -288,30 +275,27 @@ func TestReconcileRouteTables(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: routetableMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), &tc.routetableSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), &tc.routetableSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeleteRouteTable(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name           string
 		routetableSpec Spec
@@ -416,24 +400,19 @@ func TestDeleteRouteTable(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: routetableMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.routetableSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.routetableSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
