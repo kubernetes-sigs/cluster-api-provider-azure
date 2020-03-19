@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones/mock_availabilityzones"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
@@ -40,6 +41,8 @@ func init() {
 }
 
 func TestGetAvailabilityZones(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name                 string
 		availabilityZoneSpec Spec
@@ -106,24 +109,19 @@ func TestGetAvailabilityZones(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: azMock,
 			}
 
-			if _, err := s.Get(context.TODO(), &tc.availabilityZoneSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			_, err = s.Get(context.TODO(), &tc.availabilityZoneSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

@@ -21,13 +21,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
-
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers/mock_internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
@@ -46,6 +46,8 @@ func init() {
 }
 
 func TestInvalidInternalLBSpec(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	internalLBMock := mock_internalloadbalancers.NewMockClient(mockCtrl)
 
@@ -72,9 +74,7 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -85,31 +85,21 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	_, err = s.Get(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 }
 
 func TestReconcileInternalLoadBalancer(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name           string
 		internalLBSpec Spec
@@ -251,9 +241,7 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:                 clusterScope,
@@ -262,21 +250,20 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 				VirtualNetworksClient: vnetMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), &tc.internalLBSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), &tc.internalLBSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeleteInternalLB(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name           string
 		internalLBSpec Spec
@@ -363,24 +350,19 @@ func TestDeleteInternalLB(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: internalLBMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.internalLBSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.internalLBSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

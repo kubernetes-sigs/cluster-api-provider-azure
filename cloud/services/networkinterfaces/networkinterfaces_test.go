@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules/mock_inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers/mock_internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
@@ -49,6 +50,8 @@ func init() {
 }
 
 func TestInvalidNetworkInterface(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	netInterfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 
@@ -75,9 +78,7 @@ func TestInvalidNetworkInterface(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -88,31 +89,21 @@ func TestInvalidNetworkInterface(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	err = s.Reconcile(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	_, err = s.Get(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != expectedInvalidSpec {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
 }
 
 func TestGetNetworkInterface(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name             string
 		netInterfaceSpec Spec
@@ -184,9 +175,7 @@ func TestGetNetworkInterface(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			azureMachine := &infrav1.AzureMachine{
 				ObjectMeta: metav1.ObjectMeta{
@@ -211,9 +200,7 @@ func TestGetNetworkInterface(t *testing.T) {
 				AzureMachine: azureMachine,
 				AzureCluster: &infrav1.AzureCluster{},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			tc.expect(netInterfaceMock.EXPECT())
 
@@ -224,20 +211,19 @@ func TestGetNetworkInterface(t *testing.T) {
 			}
 
 			_, err = s.Get(context.TODO(), &tc.netInterfaceSpec)
-			if err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestReconcileNetworkInterface(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name             string
 		netInterfaceSpec Spec
@@ -593,9 +579,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			azureMachine := &infrav1.AzureMachine{
 				ObjectMeta: metav1.ObjectMeta{
@@ -620,9 +604,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				AzureMachine: azureMachine,
 				AzureCluster: &infrav1.AzureCluster{},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			tc.expect(netInterfaceMock.EXPECT(), subnetMock.EXPECT(),
 				publicLoadBalancerMock.EXPECT(), inboundNatRulesMock.EXPECT(),
@@ -639,21 +621,20 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				PublicIPsClient:             publicIPsMock,
 			}
 
-			if err := s.Reconcile(context.TODO(), &tc.netInterfaceSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Reconcile(context.TODO(), &tc.netInterfaceSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
 }
 
 func TestDeleteNetworkInterface(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name             string
 		netInterfaceSpec Spec
@@ -756,9 +737,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			azureMachine := &infrav1.AzureMachine{
 				ObjectMeta: metav1.ObjectMeta{
@@ -783,9 +762,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				AzureMachine: azureMachine,
 				AzureCluster: &infrav1.AzureCluster{},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			tc.expect(netInterfaceMock.EXPECT(), inboundNatRulesMock.EXPECT())
 
@@ -796,14 +773,12 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				InboundNATRulesClient: inboundNatRulesMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.netInterfaceSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.netInterfaceSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

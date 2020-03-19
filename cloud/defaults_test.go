@@ -19,11 +19,12 @@ package azure
 import (
 	"testing"
 
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 )
 
 func TestGetDefaultImageSKUID(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
+	g := NewWithT(t)
+
 	var tests = []struct {
 		k8sVersion     string
 		expectedResult string
@@ -74,12 +75,13 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.k8sVersion, func(t *testing.T) {
 			id, err := getDefaultImageSKUID(test.k8sVersion)
-			g.Expect(id).To(gomega.Equal(test.expectedResult))
+
 			if test.expectedError {
-				g.Expect(err).ToNot(gomega.BeNil())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).To(gomega.BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 			}
+			g.Expect(id).To(Equal(test.expectedResult))
 		})
 	}
 }

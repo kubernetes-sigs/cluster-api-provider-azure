@@ -21,6 +21,9 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 
@@ -29,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -39,6 +41,8 @@ func init() {
 }
 
 func TestReconcileSecurityGroups(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name           string
 		sgName         string
@@ -102,9 +106,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -115,14 +117,14 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				Name:           tc.sgName,
 				IsControlPlane: tc.isControlPlane,
 			}
-			if err := s.Reconcile(context.TODO(), sgSpec); err != nil {
-				t.Fatalf("got an unexpected error: %v", err)
-			}
+			g.Expect(s.Reconcile(context.TODO(), sgSpec)).To(Succeed())
 		})
 	}
 }
 
 func TestDeleteSecurityGroups(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name   string
 		sgName string
@@ -171,9 +173,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
@@ -185,9 +185,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				IsControlPlane: false,
 			}
 
-			if err := s.Delete(context.TODO(), sgSpec); err != nil {
-				t.Fatalf("got an unexpected error: %v", err)
-			}
+			g.Expect(s.Delete(context.TODO(), sgSpec)).To(Succeed())
 		})
 	}
 }

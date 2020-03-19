@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks/mock_disks"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -40,6 +41,8 @@ func init() {
 }
 
 func TestInvalidDiskSpec(t *testing.T) {
+	g := NewWithT(t)
+
 	mockCtrl := gomock.NewController(t)
 	disksMock := mock_disks.NewMockClient(mockCtrl)
 
@@ -66,9 +69,7 @@ func TestInvalidDiskSpec(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create test context: %v", err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
 
 	s := &Service{
 		Scope:  clusterScope,
@@ -79,15 +80,13 @@ func TestInvalidDiskSpec(t *testing.T) {
 	wrongSpec := &network.PublicIPAddress{}
 
 	err = s.Delete(context.TODO(), &wrongSpec)
-	if err == nil {
-		t.Fatalf("it should fail")
-	}
-	if err.Error() != "invalid disk specification" {
-		t.Fatalf("got an unexpected error: %v", err)
-	}
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError("invalid disk specification"))
 }
 
 func TestDeleteDisk(t *testing.T) {
+	g := NewWithT(t)
+
 	testcases := []struct {
 		name          string
 		disksSpec     Spec
@@ -153,24 +152,19 @@ func TestDeleteDisk(t *testing.T) {
 					},
 				},
 			})
-			if err != nil {
-				t.Fatalf("Failed to create test context: %v", err)
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
 				Scope:  clusterScope,
 				Client: disksMock,
 			}
 
-			if err := s.Delete(context.TODO(), &tc.disksSpec); err != nil {
-				if tc.expectedError == "" || err.Error() != tc.expectedError {
-					t.Fatalf("got an unexpected error: %v", err)
-				}
+			err = s.Delete(context.TODO(), &tc.disksSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
-				if tc.expectedError != "" {
-					t.Fatalf("expected an error: %v", tc.expectedError)
-
-				}
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
