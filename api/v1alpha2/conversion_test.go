@@ -21,6 +21,7 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"

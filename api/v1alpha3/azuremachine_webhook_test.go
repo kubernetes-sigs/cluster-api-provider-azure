@@ -18,9 +18,13 @@ package v1alpha3
 
 import (
 	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestAzureMachine_ValidateCreate(t *testing.T) {
+	g := NewWithT(t)
+
 	tests := []struct {
 		name    string
 		machine *AzureMachine
@@ -59,8 +63,11 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if err := tc.machine.ValidateCreate(); (err != nil) != tc.wantErr {
-				t.Errorf("ValidateCreate() error = %v, wantErr %v", err, tc.wantErr)
+			err := tc.machine.ValidateCreate()
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
