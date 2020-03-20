@@ -192,6 +192,7 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 	}
 
 	defaultConfig, _ := framework.DefaultConfig()
+	defaultConfig.Defaults()
 
 	machine := &capiv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
