@@ -25,6 +25,7 @@ import (
 
 	// +kubebuilder:scaffold:imports
 
+	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	cgrecord "k8s.io/client-go/tools/record"
@@ -35,6 +36,7 @@ import (
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -47,6 +49,8 @@ var (
 )
 
 func init() {
+	klog.InitFlags(nil)
+
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1alpha2.AddToScheme(scheme)
 	_ = infrav1alpha3.AddToScheme(scheme)
@@ -55,80 +59,84 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-func main() {
-	klog.InitFlags(nil)
+var (
+	metricsAddr             string
+	enableLeaderElection    bool
+	watchNamespace          string
+	profilerAddress         string
+	azureClusterConcurrency int
+	azureMachineConcurrency int
+	syncPeriod              time.Duration
+	healthAddr              string
+	webhookPort             int
+)
 
-	var (
-		metricsAddr             string
-		enableLeaderElection    bool
-		watchNamespace          string
-		profilerAddress         string
-		azureClusterConcurrency int
-		azureMachineConcurrency int
-		syncPeriod              time.Duration
-		healthAddr              string
-		webhookPort             int
-	)
-
-	flag.StringVar(
+func InitFlags(fs *pflag.FlagSet) {
+	fs.StringVar(
 		&metricsAddr,
 		"metrics-addr",
 		":8080",
 		"The address the metric endpoint binds to.",
 	)
 
-	flag.BoolVar(
+	fs.BoolVar(
 		&enableLeaderElection,
 		"enable-leader-election",
 		false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.",
 	)
 
-	flag.StringVar(
+	fs.StringVar(
 		&watchNamespace,
 		"namespace",
 		"",
 		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.",
 	)
 
-	flag.StringVar(
+	fs.StringVar(
 		&profilerAddress,
 		"profiler-address",
 		"",
 		"Bind address to expose the pprof profiler (e.g. localhost:6060)",
 	)
 
-	flag.IntVar(&azureClusterConcurrency,
+	fs.IntVar(&azureClusterConcurrency,
 		"azurecluster-concurrency",
 		10,
 		"Number of AzureClusters to process simultaneously",
 	)
 
-	flag.IntVar(&azureMachineConcurrency,
+	fs.IntVar(&azureMachineConcurrency,
 		"azuremachine-concurrency",
 		10,
 		"Number of AzureMachines to process simultaneously",
 	)
 
-	flag.DurationVar(&syncPeriod,
+	fs.DurationVar(&syncPeriod,
 		"sync-period",
 		10*time.Minute,
 		"The minimum interval at which watched resources are reconciled (e.g. 15m)",
 	)
 
-	flag.StringVar(&healthAddr,
+	fs.StringVar(&healthAddr,
 		"health-addr",
 		":9440",
 		"The address the health endpoint binds to.",
 	)
 
-	flag.IntVar(&webhookPort,
+	fs.IntVar(&webhookPort,
 		"webhook-port",
 		0,
 		"Webhook Server port, disabled by default. When enabled, the manager will only work as webhook server, no reconcilers are installed.",
 	)
 
-	flag.Parse()
+	feature.MutableGates.AddFlag(fs)
+}
+
+func main() {
+	InitFlags(pflag.CommandLine)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
 
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
