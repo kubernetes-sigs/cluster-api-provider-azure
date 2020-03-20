@@ -19,6 +19,8 @@ package controllers
 import (
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -28,6 +30,8 @@ import (
 )
 
 func TestGetControlPlaneMachines(t *testing.T) {
+	g := NewWithT(t)
+
 	controlPlaneMachine0 := clusterv1.Machine{
 		ObjectMeta: v1.ObjectMeta{
 			Name:   "control-plane-0",
@@ -101,20 +105,18 @@ func TestGetControlPlaneMachines(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			actual := GetControlPlaneMachines(c.machineList)
-			if len(actual) != len(c.expected) {
-				t.Fatalf("Got unexpected GetControlPlaneMachines result. Expected length: %v. Got: %v.", len(actual), len(c.expected))
-			}
-			for i, v := range c.expected {
-				if v.ObjectMeta.Name != actual[i].ObjectMeta.Name {
-					t.Fatalf("Got unexpected GetControlPlaneMachines result. Expected Item: %v. Got: %v.", v, actual[i])
+			g.Expect(actual).To(HaveLen(len(c.expected)))
 
-				}
+			for i, v := range c.expected {
+				g.Expect(v.ObjectMeta.Name).To(Equal(actual[i].ObjectMeta.Name))
 			}
 		})
 	}
 }
 
 func TestIsAvailabilityZoneSupported(t *testing.T) {
+	g := NewWithT(t)
+
 	s := azureMachineService{
 		machineScope: &scope.MachineScope{
 			Logger: log.Log.Logger,
@@ -128,9 +130,7 @@ func TestIsAvailabilityZoneSupported(t *testing.T) {
 
 	for _, l := range azure.SupportedAvailabilityZoneLocations {
 		s.machineScope.AzureCluster.Spec.Location = l
-		if s.isAvailabilityZoneSupported() != true {
-			t.Errorf("isAvailabilityZoneSupported should return true for supported region %s but returned %t", l, s.isAvailabilityZoneSupported())
-		}
+		g.Expect(s.isAvailabilityZoneSupported()).To(BeTrue())
 	}
 
 	unSupportedLocations := []string{
@@ -140,8 +140,6 @@ func TestIsAvailabilityZoneSupported(t *testing.T) {
 
 	for _, l := range unSupportedLocations {
 		s.machineScope.AzureCluster.Spec.Location = l
-		if s.isAvailabilityZoneSupported() != false {
-			t.Errorf("isAvailabilityZoneSupported should return false for unsupported region %s but returned %t", l, s.isAvailabilityZoneSupported())
-		}
+		g.Expect(s.isAvailabilityZoneSupported()).To(BeFalse())
 	}
 }

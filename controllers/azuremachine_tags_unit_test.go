@@ -19,11 +19,12 @@ package controllers
 import (
 	"testing"
 
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 )
 
 func TestTagsChanged(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
+	g := NewWithT(t)
+
 	var tests = map[string]struct {
 		annotation             map[string]interface{}
 		src                    map[string]string
@@ -110,10 +111,10 @@ func TestTagsChanged(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			changed, created, deleted, newAnnotation := tagsChanged(test.annotation, test.src)
-			g.Expect(changed).To(gomega.Equal(test.expectedResult))
-			g.Expect(created).To(gomega.Equal(test.expectedCreated))
-			g.Expect(deleted).To(gomega.Equal(test.expectedDeleted))
-			g.Expect(newAnnotation).To(gomega.Equal(test.expectedNewAnnotations))
+			g.Expect(changed).To(Equal(test.expectedResult))
+			g.Expect(created).To(Equal(test.expectedCreated))
+			g.Expect(deleted).To(Equal(test.expectedDeleted))
+			g.Expect(newAnnotation).To(Equal(test.expectedNewAnnotations))
 		})
 	}
 }

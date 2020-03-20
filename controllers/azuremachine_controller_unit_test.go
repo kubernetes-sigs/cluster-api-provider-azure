@@ -19,6 +19,8 @@ package controllers
 import (
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,6 +53,7 @@ func newMachine(clusterName, machineName string) *clusterv1.Machine {
 		},
 	}
 }
+
 func newMachineWithInfrastructureRef(clusterName, machineName string) *clusterv1.Machine {
 	m := newMachine(clusterName, machineName)
 	m.Spec.InfrastructureRef = v1.ObjectReference{
@@ -61,6 +64,7 @@ func newMachineWithInfrastructureRef(clusterName, machineName string) *clusterv1
 	}
 	return m
 }
+
 func newCluster(name string) *clusterv1.Cluster {
 	return &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -71,10 +75,11 @@ func newCluster(name string) *clusterv1.Cluster {
 }
 
 func TestAzureMachineReconciler_AzureClusterToAzureMachines(t *testing.T) {
+	g := NewWithT(t)
+
 	scheme, err := setupScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
+	g.Expect(err).NotTo(HaveOccurred())
+
 	clusterName := "my-cluster"
 	initObjects := []runtime.Object{
 		newCluster(clusterName),
@@ -105,7 +110,6 @@ func TestAzureMachineReconciler_AzureClusterToAzureMachines(t *testing.T) {
 			},
 		},
 	})
-	if len(requests) != 2 {
-		t.Fatalf("Expected 2 but found %d requests", len(initObjects))
-	}
+
+	g.Expect(requests).To(HaveLen(2))
 }
