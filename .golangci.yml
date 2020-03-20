@@ -2,6 +2,9 @@ run:
   deadline: 3m
   skip-dirs:
     - mock*
+  skip-files:
+  - "zz_generated.*\\.go$"
+  - ".*conversion.*\\.go$"
 linters:
   enable:
     - golint
