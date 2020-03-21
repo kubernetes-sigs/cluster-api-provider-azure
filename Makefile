@@ -292,7 +292,7 @@ release-notes: $(RELEASE_NOTES)
 
 .PHONY: create-management-cluster
 create-management-cluster: $(ENVSUBST) 
-	## Create KIND management cluster.
+	## Create kind management cluster.
 	kind create cluster --name=clusterapi
 
 	# Install cert manager and wait for availability
@@ -313,7 +313,7 @@ create-management-cluster: $(ENVSUBST)
 	# Wait for CAPZ pods
 	kubectl wait --for=condition=Ready --timeout=5m -n capz-system pod -l cluster.x-k8s.io/provider=infrastructure-azure
 	
-	# required sleep for when creating management and workload at sametime
+	# required sleep for when creating management and workload cluster simultaneously 
 	sleep 10
 	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-clusterapi"'
 
@@ -334,15 +334,15 @@ create-workload-cluster: $(ENVSUBST)
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
 .PHONY: create-cluster
-create-cluster: create-management-cluster create-workload-cluster ## Create a workload development Kubernetes cluster on Azure in a KIND management cluster.
+create-cluster: create-management-cluster create-workload-cluster ## Create a workload development Kubernetes cluster on Azure in a kind management cluster.
 
 .PHONY: delete-workload-cluster
-delete-workload-cluster: ## Deletes the example workload Kubernetes Cluster "clusterapi
-	@echo 'Your azure resources will now be deleted, this can take up to 20 minutes'
+delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
+	@echo 'Your Azure resources will now be deleted, this can take up to 20 minutes'
 	kubectl delete cluster $(CLUSTER_NAME)
 	
 .PHONY: delete-cluster
-delete-cluster: delete-workload-cluster  ## Deletes the example Kubernetes Cluster "clusterapi
+delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "clusterapi"
 	kind delete cluster --name=clusterapi
 
 .PHONY: kind-reset

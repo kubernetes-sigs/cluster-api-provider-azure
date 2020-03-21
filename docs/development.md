@@ -62,7 +62,7 @@ cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
 ### Get familiar with basic concepts
 
 This provider is modeled after the upstream Cluster API project. To get familiar
-with Cluster API resources, concepts and conventions, refer to the [Cluster API Book](https://cluster-api.sigs.k8s.io/).
+with Cluster API resources, concepts and conventions ([such as CAPI and CAPZ](https://cluster-api.sigs.k8s.io/reference/glossary.html#c)), refer to the [Cluster API Book](https://cluster-api.sigs.k8s.io/).
 
 ### Dev manifest files
 
@@ -214,6 +214,10 @@ Create the cluster:
 make create-cluster
 ```
 
+These steps above are provided in a convient script in [hack/manual-testing.sh](hack/manual-testing.sh).  Be sure to set `REGISTRY="<container-registry>"` and  `MANAGER_IMAGE_TAG="<image-tag>"` before running.
+
+#### debugging cluster creation
+
 While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
 
 ```bash
@@ -222,7 +226,13 @@ time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure
 kubectl logs -n capz-system azure-provider-controller-manager-0 manager -f # Follow the controller logs
 ```
 
-After this is finished you will have a kubeconfig in `./kubeconfig`.
+An error such as the following in the manager could point to a miss match between a current capi with old capz version:
+
+```
+E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}  
+```
+
+After the workload cluster is finished deploying you will have a kubeconfig in `./kubeconfig`.
 You can debug most issues by SSHing into the VMs that have been created and
 reading `/var/lib/waagent/custom-script/download/0/stdout`.
 
