@@ -62,7 +62,7 @@ cd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure"
 ### Get familiar with basic concepts
 
 This provider is modeled after the upstream Cluster API project. To get familiar
-with Cluster API resources, concepts and conventions, refer to the [Cluster API Book](https://cluster-api.sigs.k8s.io/).
+with Cluster API resources, concepts and conventions ([such as CAPI and CAPZ](https://cluster-api.sigs.k8s.io/reference/glossary.html#c)), refer to the [Cluster API Book](https://cluster-api.sigs.k8s.io/).
 
 ### Dev manifest files
 
@@ -95,19 +95,51 @@ A few Makefile and scripts are offered to work with go modules:
 
 ### Using Tilt
 
-To use Tilt for a simplified development workflow, follow the [instructions](https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/book/src/developer/tilt.md) in the cluster-api repo.
+To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to delpoy the cluster api managment components.  
 
-Add the output of the following as a section in your `tilt-settings.json`:
+> you may wish to checkout out the correct version of capi to match the [version used in capz](go.mod) 
+
+Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositorys will automatically redeployed to the `kind` cluster.
+
+After you have cloned both repositories your folder structure should look like:
+
+```tree
+|-- src/cluster-api-provider-azure
+|-- src/cluster-api (run `tilt up` here)
+```
+
+After configuring the environment variables, you can run the following to generate you `tilt-settings.json` file:
 
 ```shell
-cat <<EOF
-"kustomize_substitutions": {
-   "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-   "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-   "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-   "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+cat <<EOF > tilt-settings.json
+{
+  "default_registry": "${REGISTRY}",
+  "provider_repos": ["../cluster-api-provider-azure"],
+  "enable_providers": ["azure", "docker", "kubeadm-bootstrap", "kubeadm-control-plane"],
+  "kustomize_substitutions": {
+      "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
   }
+}
 EOF
+```
+
+> `$REGISTRY` should be in the format `docker.io/<dockerhub-username>`
+
+The cluster-api management components that are deployed are configured at the `/config` folder of each repository respectively. Making changes to those files will trigger a redeploy of the managment cluster components.
+
+After your kind management cluster is up and running with tilt, you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster with the following:
+
+```bash
+make create-workload-cluster
+```
+
+To delete the cluster:
+
+```
+make delete-workload-cluster
 ```
 
 ### Manual Testing
@@ -182,15 +214,25 @@ Create the cluster:
 make create-cluster
 ```
 
+These steps above are provided in a convient script in [hack/manual-testing.sh](hack/manual-testing.sh).  Be sure to set `REGISTRY="<container-registry>"` and  `MANAGER_IMAGE_TAG="<image-tag>"` before running.
+
+#### debugging cluster creation
+
 While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
 
 ```bash
 time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure-provider-controller-manager-0 is available
 
-kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f # Follow the controller logs
+kubectl logs -n capz-system azure-provider-controller-manager-0 manager -f # Follow the controller logs
 ```
 
-After this is finished you will have a kubeconfig in `./kubeconfig`.
+An error such as the following in the manager could point to a miss match between a current capi with old capz version:
+
+```
+E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}  
+```
+
+After the workload cluster is finished deploying you will have a kubeconfig in `./kubeconfig`.
 You can debug most issues by SSHing into the VMs that have been created and
 reading `/var/lib/waagent/custom-script/download/0/stdout`.
 
