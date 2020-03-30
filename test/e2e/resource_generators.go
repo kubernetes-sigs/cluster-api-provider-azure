@@ -80,7 +80,7 @@ var (
 )
 
 func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
-	name := "capz-" + util.RandomString(6)
+	name := "capz-e2e" + util.RandomString(6)
 	vnetName := name + "-vnet"
 	tags := map[string]string{
 		"creationTimestamp": time.Now().UTC().Format(time.RFC3339),
