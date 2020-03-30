@@ -17,9 +17,11 @@
   - [Modules and dependencies](#modules-and-dependencies)
   - [Manual Testing](#manual-testing)
     - [Setting up the environment](#setting-up-the-environment)
-    - [Building and pushing dev images](#building-and-pushing-dev-images)
-    - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
-    - [Creating a test cluster](#creating-a-test-cluster)
+    - [Creating a dev cluster](#creating-a-dev-cluster)
+      - [Building and pushing dev images](#building-and-pushing-dev-images)
+      - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
+      - [Creating the cluster](#creating-the-cluster)
+    - [Debugging cluster creation](#debugging-cluster-creation)
   - [Submitting PRs and testing](#submitting-prs-and-testing)
     - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
@@ -138,7 +140,7 @@ make create-workload-cluster
 
 To delete the cluster:
 
-```
+```bash
 make delete-workload-cluster
 ```
 
@@ -149,27 +151,42 @@ make delete-workload-cluster
 Your environment must have the Azure credentials as outlined in the [getting
 started prerequisites section](./getting-started.md#Prerequisites)
 
-#### Building and pushing dev images
+#### Creating a dev cluster
 
-1. Login to your container registry using `docker login`.
+The steps below are provided in a convenient script in [hack/create-dev-cluster.sh](hack/create-dev-cluster.sh). Be sure to set `REGISTRY="<container-registry>"`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_TENANT_ID` before running. Optionally, you can override the different cluster configuration variables. For example, to override the workload cluster name:
 
-   e.g., `docker login quay.io`
+```bash
+CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
+```
 
-2. To build images with custom tags and push to your custom image registry,
+##### Building and pushing dev images
+
+1. To build images with custom tags,
    run the `make docker-build` as follows:
 
    ```bash
-   REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-build
+   export REGISTRY="<container-registry>"
+   export MANAGER_IMAGE_TAG="<image-tag>" # optional - defaults to `dev`.
+   PULL_POLICY=IfNotPresent make docker-build
    ```
 
-3. Push your docker images:
+2. (optional) Push your docker images:
+
+   2.1. Login to your container registry using `docker login`.
+
+   e.g., `docker login quay.io`
+
+   2.2. Push to your custom image registry:
+
    ```bash
    REGISTRY="<container-registry>" MANAGER_IMAGE_TAG="<image-tag>" make docker-push
    ```
 
-#### Customizing the cluster deployment
+   NOTE: `make create-cluster` will fetch the manager image locally and load it onto the kind cluster if it is present.
 
-Here is a list of commonly overridden configuration parameters (the full list is available in `templates/cluster-template.yaml`):
+##### Customizing the cluster deployment
+
+Here is a list of required configuration parameters (the full list is available in `templates/cluster-template.yaml`):
 
 ```bash
 # Cluster settings.
@@ -200,11 +217,14 @@ echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 ```
 
-#### Creating a test cluster
+##### Creating the cluster
 
-Ensure kind has been reset:
+⚠️ Make sure you followed the previous two steps to build the dev image and set the required environment variables before proceding.
+
+Ensure dev environment has been reset:
 
 ```bash
+make clean
 make kind-reset
 ```
 
@@ -214,9 +234,7 @@ Create the cluster:
 make create-cluster
 ```
 
-These steps above are provided in a convient script in [hack/manual-testing.sh](hack/manual-testing.sh).  Be sure to set `REGISTRY="<container-registry>"` and  `MANAGER_IMAGE_TAG="<image-tag>"` before running.
-
-#### debugging cluster creation
+#### Debugging cluster creation
 
 While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
 
