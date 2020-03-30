@@ -46,7 +46,7 @@
 5. Install [Kustomize][kustomize]
    - `brew install kustomize` on MacOs.
    - `choco install kustomize` on Windows.
-   - [install instructions](kustomizelinux) on Linux
+   - [install instructions][kustomizelinux] on Linux
 6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
 7. Install make.
 
