@@ -303,6 +303,7 @@ create-management-cluster: $(ENVSUBST)
 	kubectl apply -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.3/cluster-api-components.yaml
 
 	# Deploy CAPZ
+	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=clusterapi
 	kustomize build config | $(ENVSUBST) | kubectl apply -f -
 
 	# Wait for CAPI pods
@@ -326,7 +327,7 @@ create-workload-cluster: $(ENVSUBST)
 	timeout 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout 300 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+	timeout 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
 	kubectl --kubeconfig=./kubeconfig apply -f https://docs.projectcalico.org/v3.13/manifests/calico.yaml
