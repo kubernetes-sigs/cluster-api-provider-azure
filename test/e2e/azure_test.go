@@ -50,6 +50,7 @@ var _ = Describe("CAPZ e2e tests", func() {
 		BeforeEach(func() {
 			clusterGen = &ClusterGenerator{}
 			nodeGen = &NodeGenerator{}
+			clusterGen.VariablesInit()
 			cluster, infraCluster = clusterGen.GenerateCluster(namespace)
 		})
 
