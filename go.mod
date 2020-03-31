@@ -25,8 +25,8 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
 	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab
-	sigs.k8s.io/cluster-api v0.3.2
-	sigs.k8s.io/controller-runtime v0.5.1
+	sigs.k8s.io/cluster-api v0.3.3
+	sigs.k8s.io/controller-runtime v0.5.2
 )
 
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.4.0+incompatible
