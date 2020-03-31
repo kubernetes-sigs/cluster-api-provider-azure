@@ -32,6 +32,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,15 +70,50 @@ type azureConfig struct {
 }
 
 var (
-	// TODO Parameterize some of these variables
-	location       = GetRegion()
-	vmSize         = "Standard_D2s_v3"
-	namespace      = "default"
-	imageOffer     = "capi"
-	imagePublisher = "cncf-upstream"
-	imageSKU       = "k8s-1dot16dot6-ubuntu-1804"
-	imageVersion   = "latest"
+	location       string
+	vmSize         string
+	namespace      string
+	imageOffer     string
+	imagePublisher string
+	imageSKU       string
+	imageVersion   string
 )
+
+func (c *ClusterGenerator) VariablesInit() {
+
+	v := viper.New()
+
+	v.SetDefault("location", GetRegion())
+	v.SetDefault("vmSize", "Standard_D2s_v3")
+	v.SetDefault("namespace", "default")
+	v.SetDefault("imageOffer", "capi")
+	v.SetDefault("imagePublisher", "cncf-upstream")
+	v.SetDefault("imageSKU", "k8s-1dot16dot6-ubuntu-1804")
+	v.SetDefault("imageVersion", "latest")
+
+	v.AddConfigPath(".")
+	v.AutomaticEnv()
+
+	v.SetConfigFile(".env")
+	err := v.ReadInConfig()
+	if err != nil {
+		log.Printf("Error while reading config file .env. Trying config-capz yaml file. Error: %s", err.Error())
+		v.SetConfigName("config-capz")
+		v.SetConfigType("yaml")
+		err = v.ReadInConfig()
+		if err != nil {
+			log.Printf("Error reading the config-capz file. Using the default values or values set via environment variables. Error: %s", err.Error())
+		}
+	}
+
+	location = v.GetString("location")
+	vmSize = v.GetString("vmSize")
+	namespace = v.GetString("namespace")
+	imageOffer = v.GetString("imageOffer")
+	imagePublisher = v.GetString("imagePublisher")
+	imageSKU = v.GetString("imageSKU")
+	imageVersion = v.GetString("imageVersion")
+}
 
 func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
 	name := "capz-" + util.RandomString(6)
@@ -132,6 +168,9 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 	firstControlPlane := n.counter == 0
 	name := fmt.Sprintf("%s-controlplane-%d", clusterName, n.counter)
 	n.counter++
+
+	defaultConfig, _ := framework.DefaultConfig()
+	defaultConfig.Defaults()
 
 	infraMachine := &infrav1.AzureMachine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -190,9 +229,6 @@ func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) frame
 	} else {
 		cpJoinConfiguration(bootstrapConfig, registrationOptions)
 	}
-
-	defaultConfig, _ := framework.DefaultConfig()
-	defaultConfig.Defaults()
 
 	machine := &capiv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -336,6 +372,9 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 	Expect(err).NotTo(HaveOccurred())
 	generatedName := fmt.Sprintf("%s-%d", clusterName, n.counter)
 
+	defaultConfig, _ := framework.DefaultConfig()
+	defaultConfig.Defaults()
+
 	infraMachineTemplate := &infrav1.AzureMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -396,8 +435,6 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 			},
 		},
 	}
-
-	defaultConfig, _ := framework.DefaultConfig()
 
 	machineDeployment := &capiv1.MachineDeployment{
 		ObjectMeta: metav1.ObjectMeta{
