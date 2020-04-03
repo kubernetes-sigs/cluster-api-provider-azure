@@ -93,7 +93,7 @@ You can also [build your own image](https://image-builder.sigs.k8s.io/capi/provi
 Logs can be tailed using [`kubectl`][kubectl]:
 
 ```bash
-kubectl logs capz-controller-manager-c574c65b9-d4t4c -n capz-system manager -f
+kubectl logs deploy/capz-controller-manager -n capz-system -f manager
 ```
 
 ### Resources are created but control plane is taking a long time to become ready
