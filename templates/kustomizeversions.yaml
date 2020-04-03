@@ -4,6 +4,7 @@ metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
   kubeadmConfigSpec:
+    useExperimentalRetryJoin: true,
     clusterConfiguration:
       kubernetesVersion: "ci/${CI_VERSION}"
     preKubeadmCommands:
