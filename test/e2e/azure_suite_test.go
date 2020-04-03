@@ -45,6 +45,7 @@ import (
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
 	frameworkgenerator "sigs.k8s.io/cluster-api/test/framework/generators"
 	"sigs.k8s.io/cluster-api/test/framework/management/kind"
@@ -96,6 +97,7 @@ var _ = BeforeSuite(func() {
 	Expect(capiv1.AddToScheme(scheme)).To(Succeed())
 	Expect(bootstrapv1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	Expect(controlplanev1.AddToScheme(scheme)).To(Succeed())
 
 	managerImage, found := os.LookupEnv("MANAGER_IMAGE")
 	Expect(found).To(BeTrue(), fmt.Sprint("MANAGER_IMAGE not set"))
@@ -118,9 +120,10 @@ var _ = BeforeSuite(func() {
 	// Deploy the CAPI and CABPK components from Cluster API repository,
 	capi := &generators.ClusterAPI{Version: "v0.3.3"}
 	cabpk := &generators.Bootstrap{Version: "v0.3.3"}
+	kcp := &generators.KubeadmControPlane{Version: "v0.3.3"}
 	infra := &generators.Infra{Creds: creds}
 
-	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
+	framework.InstallComponents(ctx, mgmt, capi, cabpk, kcp, infra)
 	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capi-system")
 	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capz-system")
 
