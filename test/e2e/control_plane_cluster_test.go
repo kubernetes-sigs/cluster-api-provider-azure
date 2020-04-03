@@ -62,7 +62,7 @@ func (o *ControlPlaneClusterInput) SetDefaults() {
 	}
 
 	if o.DeleteTimeout == 0 {
-		o.DeleteTimeout = 20 * time.Minute
+		o.DeleteTimeout = 30 * time.Minute
 	}
 }
 
