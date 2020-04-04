@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -42,6 +43,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/utils"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
@@ -271,6 +273,7 @@ func writeLogs(mgmt *kind.Cluster, namespace, deploymentName, logDir string) err
 
 func ensureCAPZArtifactsDeleted(input *ControlPlaneClusterInput) {
 	input.SetDefaults()
+	groupName := input.Management.GetName()
 
 	mgmtClient, err := input.Management.GetClient()
 	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
@@ -286,4 +289,15 @@ func ensureCAPZArtifactsDeleted(input *ControlPlaneClusterInput) {
 		Expect(c.List(ctx, &clusters)).NotTo(HaveOccurred())
 		return clusters.Items
 	}, input.DeleteTimeout, 20*time.Second).Should(HaveLen(0))
+
+	By("Making sure there are all Azure resources are deleted")
+	_, err = utils.GetGroup(ctx, creds, groupName)
+	if err == nil {
+		log.Printf("resource group %s still exist, cleaning\n", groupName)
+		err = utils.CleanupE2EResources(ctx, creds, groupName)
+		if err != nil {
+			log.Printf("failed to delete the group %s: %s\n", groupName, err.Error())
+			return
+		}
+	}
 }

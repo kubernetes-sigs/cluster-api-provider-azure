@@ -39,6 +39,4 @@ export REGISTRY=e2e
 make test-e2e
 test_status="${?}"
 
-# TODO last chance to clean up resources if prow job leaves something behind
-
 exit "${test_status}"
