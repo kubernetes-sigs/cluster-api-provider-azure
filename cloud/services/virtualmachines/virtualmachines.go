@@ -110,11 +110,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		sshKeyData = string(ssh.MarshalAuthorizedKey(publicRsaKey))
 	}
 
-	randomPassword, err := GenerateRandomString(32)
-	if err != nil {
-		return errors.Wrapf(err, "failed to generate random string")
-	}
-
 	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
 	additionalTags := s.MachineScope.AdditionalTags()
 	// Set the cloud provider tag
@@ -137,9 +132,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			OsProfile: &compute.OSProfile{
 				ComputerName:  to.StringPtr(vmSpec.Name),
 				AdminUsername: to.StringPtr(azure.DefaultUserName),
-				AdminPassword: to.StringPtr(randomPassword),
 				CustomData:    to.StringPtr(vmSpec.CustomData),
 				LinuxConfiguration: &compute.LinuxConfiguration{
+					DisablePasswordAuthentication: to.BoolPtr(true),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
