@@ -180,7 +180,7 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 	if _, err := f.Write(data); err != nil {
 		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
 	}
-	calicoManifestPath := "https://docs.projectcalico.org/v3.13/manifests/calico.yaml"
+	calicoManifestPath := "../../templates/addons/calico.yaml"
 	applyCmd := exec.NewCommand(
 		exec.WithCommand("kubectl"),
 		exec.WithArgs("apply", "--kubeconfig", f.Name(), "-f", calicoManifestPath),
