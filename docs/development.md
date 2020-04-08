@@ -97,9 +97,9 @@ A few Makefile and scripts are offered to work with go modules:
 
 ### Using Tilt
 
-To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to delpoy the cluster api managment components.  
+To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to delpoy the cluster api managment components.
 
-> you may wish to checkout out the correct version of capi to match the [version used in capz](go.mod) 
+> you may wish to checkout out the correct version of capi to match the [version used in capz](go.mod)
 
 Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositorys will automatically redeployed to the `kind` cluster.
 
@@ -247,7 +247,7 @@ kubectl logs -n capz-system azure-provider-controller-manager-0 manager -f # Fol
 An error such as the following in the manager could point to a miss match between a current capi with old capz version:
 
 ```
-E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}  
+E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}
 ```
 
 After the workload cluster is finished deploying you will have a kubeconfig in `./kubeconfig`.
@@ -322,6 +322,7 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [image_pull_secrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 [gettext]: https://www.gnu.org/software/gettext/
 [gettextwindows]: https://mlocati.github.io/articles/gettext-iconv-windows.html
+[go.mod]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/go.mod
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
