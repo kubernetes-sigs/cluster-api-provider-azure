@@ -22,7 +22,8 @@ set -o pipefail
 : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
 : "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
-: "${REGISTRY:?Environment variable empty or not defined.}"
+
+export REGISTRY="${REGISTRY:-registry.local/fake}"
 
 # Cluster settings.
 export CLUSTER_NAME="${CLUSTER_NAME:-capz-test}"

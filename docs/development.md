@@ -153,7 +153,7 @@ started prerequisites section](./getting-started.md#Prerequisites)
 
 #### Creating a dev cluster
 
-The steps below are provided in a convenient script in [hack/create-dev-cluster.sh](hack/create-dev-cluster.sh). Be sure to set `REGISTRY="<container-registry>"`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_TENANT_ID` before running. Optionally, you can override the different cluster configuration variables. For example, to override the workload cluster name:
+The steps below are provided in a convenient script in [hack/create-dev-cluster.sh](hack/create-dev-cluster.sh). Be sure to set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_TENANT_ID` before running. Optionally, you can override the different cluster configuration variables. For example, to override the workload cluster name:
 
 ```bash
 CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
