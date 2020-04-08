@@ -77,6 +77,9 @@ build_k8s() {
 
 create_cluster() {
     export CLUSTER_NAME="capz-conformance-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
+    # Conformance test suite needs a cluster with at least 2 nodes
+    export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
+    export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
     export CI_VERSION=${CI_VERSION:-$(curl -sSL https://dl.k8s.io/ci/k8s-master.txt)}
     export REGISTRY=conformance
     ${REPO_ROOT}/hack/create-dev-cluster.sh
@@ -90,12 +93,12 @@ run_tests() {
     FOCUS="${FOCUS:-"\\[Conformance\\]"}"
     # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
     if [[ "${PARALLEL:-false}" == "true" ]]; then
-    export GINKGO_PARALLEL=y
-    if [[ -z "${SKIP}" ]]; then
-        SKIP="\\[Serial\\]"
-    else
-        SKIP="\\[Serial\\]|${SKIP}"
-    fi
+        export GINKGO_PARALLEL=y
+        if [[ -z "${SKIP}" ]]; then
+            SKIP="\\[Serial\\]"
+        else
+            SKIP="\\[Serial\\]|${SKIP}"
+        fi
     fi
 
     # get the number of worker nodes
@@ -132,21 +135,20 @@ cleanup() {
 }
 
 # create cluster
-SKIP_CREATE_CLUSTER=${SKIP_CREATE_CLUSTER:-""}
-if [[ -z "${SKIP_CREATE_CLUSTER}" ]]; then
-    add_kustomize_patch
+if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
+    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
+        add_kustomize_patch
+    fi
     create_cluster
 fi
 
 # build k8s binaries and run conformance tests
-SKIP_TESTS=${SKIP_TESTS:-""}
-if [[ -z "${SKIP_TESTS}" ]]; then
+if [[ -z "${SKIP_TESTS:-}" ]]; then
     build_k8s
     run_tests
 fi
 
 # cleanup
-SKIP_CLEANUP=${SKIP_CLEANUP:-""}
-if [[ -z "${SKIP_CLEANUP}" ]]; then
+if [[ -z "${SKIP_CLEANUP:-}" ]]; then
     cleanup
 fi
