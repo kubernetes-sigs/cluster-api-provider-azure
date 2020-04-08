@@ -97,6 +97,45 @@ A few Makefile and scripts are offered to work with go modules:
 
 ### Using Tilt
 
+Both of the [Tilt](https://tilt.dev) setups below will get you started developing CAPZ in a local kind cluster.
+The main difference is the number of components you will build from source and the scope of the changes you'd like to make.
+If you only want to make changes in CAPZ, then follow [CAPZ instructions](#tilt-for-dev-in-capz). This will
+save you from having to build all of the images for CAPI, which can take a while. If the scope of your
+development will span both CAPZ and CAPI, then follow the [CAPI and CAPZ instructions](#tilt-for-dev-in-both-capz-and-capi).
+
+#### Tilt for dev in CAPZ
+
+If you want to develop in CAPZ and get a local development cluster working quickly, this is the path for you.
+
+From the root of the CAPZ repository and after configuring the environment variables, you can run the following to generate your `tilt-settings.json` file:
+
+```shell
+cat <<EOF > tilt-settings.json
+{
+  "kustomize_substitutions": {
+      "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+  }
+}
+EOF
+```
+
+To build a kind cluster and start tilt, just run:
+```shell
+make tilt-up
+```
+
+To tear down the kind cluster built by the command above, just run:
+```shell
+make kind-reset
+```
+
+#### Tilt for dev in both CAPZ and CAPI
+
+If you want to develop in both CAPI and CAPZ at the same time, then this is the path for you.
+
 To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to delpoy the cluster api managment components.
 
 > you may wish to checkout out the correct version of capi to match the [version used in capz](go.mod)
