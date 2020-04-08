@@ -35,13 +35,13 @@ const (
 
 // Ensure that the tags of the machine are correct
 func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
-	machineScope.Info("Updating tags on AzureMachine")
 	annotation, err := r.machineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation)
 	if err != nil {
 		return err
 	}
 	changed, created, deleted, newAnnotation := tagsChanged(annotation, additionalTags)
 	if changed {
+		machineScope.Info("Updating tags on AzureMachine")
 		vmSpec := &virtualmachines.Spec{
 			Name: machineScope.Name(),
 		}
