@@ -322,7 +322,7 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [image_pull_secrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 [gettext]: https://www.gnu.org/software/gettext/
 [gettextwindows]: https://mlocati.github.io/articles/gettext-iconv-windows.html
-[go.mod]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/go.mod#L29
+[go.mod]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/go.mod
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
