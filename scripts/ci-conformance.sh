@@ -31,7 +31,7 @@ source "${REPO_ROOT}/hack/ensure-kind.sh"
 # shellcheck source=../hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=../hack/ensure-kustomize.sh
-source "${REPO_ROOT}/hack/ensure-kustomize.sh"  
+source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 
 random-string() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1
