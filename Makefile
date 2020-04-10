@@ -293,7 +293,7 @@ release-notes: $(RELEASE_NOTES)
 .PHONY: create-management-cluster
 create-management-cluster: $(ENVSUBST)
 	## Create kind management cluster.
-	kind create cluster --name=clusterapi
+	$(MAKE) kind-create
 
 	# Install cert manager and wait for availability
 	kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v0.11.1/cert-manager.yaml
@@ -303,7 +303,7 @@ create-management-cluster: $(ENVSUBST)
 	kubectl apply -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.3/cluster-api-components.yaml
 
 	# Deploy CAPZ
-	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=clusterapi
+	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
 	kustomize build config | $(ENVSUBST) | kubectl apply -f -
 
 	# Wait for CAPI pods
@@ -316,7 +316,7 @@ create-management-cluster: $(ENVSUBST)
 
 	# required sleep for when creating management and workload cluster simultaneously
 	sleep 10
-	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-clusterapi"'
+	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
 create-workload-cluster: $(ENVSUBST)
@@ -342,13 +342,26 @@ delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
 	@echo 'Your Azure resources will now be deleted, this can take up to 20 minutes'
 	kubectl delete cluster $(CLUSTER_NAME)
 
+## --------------------------------------
+## Tilt / Kind
+## --------------------------------------
+
+.PHONY: kind-create
+kind-create: ## create capz kind cluster if needed
+	./scripts/kind-with-registry.sh
+
+.PHONY: tilt-up
+tilt-up: kind-create ## start tilt and build kind cluster if needed
+	tilt up
+
 .PHONY: delete-cluster
-delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "clusterapi"
-	kind delete cluster --name=clusterapi
+delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "capz"
+	kind delete cluster --name=capz
 
 .PHONY: kind-reset
-kind-reset: ## Destroys the "clusterapi" kind cluster.
-	kind delete cluster --name=clusterapi || true
+kind-reset: ## Destroys the "capz" kind cluster.
+	kind delete cluster --name=capz || true
+
 
 ## --------------------------------------
 ## Cleanup / Verification
