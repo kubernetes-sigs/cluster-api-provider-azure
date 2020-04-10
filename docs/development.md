@@ -95,6 +95,11 @@ A few Makefile and scripts are offered to work with go modules:
 
 - `hack/ensure-go.sh` file checks that the Go version and environment variables are properly set.
 
+### Setting up the environment
+
+Your environment must have the Azure credentials as outlined in the [getting
+started prerequisites section](./getting-started.md#Prerequisites)
+
 ### Using Tilt
 
 Both of the [Tilt](https://tilt.dev) setups below will get you started developing CAPZ in a local kind cluster.
@@ -185,14 +190,9 @@ make delete-workload-cluster
 
 ### Manual Testing
 
-#### Setting up the environment
-
-Your environment must have the Azure credentials as outlined in the [getting
-started prerequisites section](./getting-started.md#Prerequisites)
-
 #### Creating a dev cluster
 
-The steps below are provided in a convenient script in [hack/create-dev-cluster.sh](hack/create-dev-cluster.sh). Be sure to set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_TENANT_ID` before running. Optionally, you can override the different cluster configuration variables. For example, to override the workload cluster name:
+The steps below are provided in a convenient script in [hack/create-dev-cluster.sh](../hack/create-dev-cluster.sh). Be sure to set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_TENANT_ID` before running. Optionally, you can override the different cluster configuration variables. For example, to override the workload cluster name:
 
 ```bash
 CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
