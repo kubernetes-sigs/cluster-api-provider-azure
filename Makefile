@@ -449,7 +449,13 @@ create-workload-cluster: $(ENVSUBST)
 	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
-	kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml
+	@if [[ "${CLUSTER_TEMPLATE}" == *ipv6* ]]; then \
+		echo 'deploying ivp6 configuration'; \
+		kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico-ipv6.yaml; \
+	else \
+		kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml; \
+	fi
+
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 

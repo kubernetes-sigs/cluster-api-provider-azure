@@ -57,6 +57,7 @@ func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
 		dst.AcceleratedNetworking = restored.AcceleratedNetworking
 	}
 	dst.FailureDomain = restored.FailureDomain
+	dst.EnableIPForwarding = restored.EnableIPForwarding
 	if restored.SpotVMOptions != nil {
 		dst.SpotVMOptions = restored.SpotVMOptions.DeepCopy()
 	}

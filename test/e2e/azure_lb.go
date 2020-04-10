@@ -43,6 +43,7 @@ type AzureLBSpecInput struct {
 	Namespace             *corev1.Namespace
 	ClusterName           string
 	SkipCleanup           bool
+	IPv6                  bool
 }
 
 // AzureLBSpec implements a test that verifies Azure internal and external load balancers can
@@ -112,86 +113,92 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	WaitForDeploymentsAvailable(context.TODO(), deployInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 
-	By("creating an internal Load Balancer service")
 	servicesClient := clientset.CoreV1().Services(corev1.NamespaceDefault)
-	ilbService := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress-nginx-ilb",
-			Namespace: corev1.NamespaceDefault,
-			Annotations: map[string]string{
-				"service.beta.kubernetes.io/azure-load-balancer-internal": "true",
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeLoadBalancer,
-			Ports: []corev1.ServicePort{
-				{
-					Name:     "http",
-					Port:     80,
-					Protocol: corev1.ProtocolTCP,
-				},
-				{
-					Name:     "https",
-					Port:     443,
-					Protocol: corev1.ProtocolTCP,
-				},
-			},
-			Selector: map[string]string{
-				"app": "ingress-nginx",
-			},
-		},
-	}
-	_, err = servicesClient.Create(ilbService)
-	Expect(err).NotTo(HaveOccurred())
-	ilbSvcInput := WaitForServiceAvailableInput{
-		Getter:    servicesClientAdapter{client: servicesClient},
-		Service:   ilbService,
-		Clientset: clientset,
-	}
-	WaitForServiceAvailable(context.TODO(), ilbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
-
-	By("connecting to the internal LB service from a curl pod")
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
-	svc, err := servicesClient.Get("ingress-nginx-ilb", metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	var ilbIP string
-	for _, i := range svc.Status.LoadBalancer.Ingress {
-		if net.ParseIP(i.IP) != nil {
-			ilbIP = i.IP
-			break
+	ilbName := "ingress-nginx-ilb"
+	jobName := "curl-to-ilb-job"
+	if !input.IPv6 {
+		By("creating an internal Load Balancer service")
+
+		ilbService := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      ilbName,
+				Namespace: corev1.NamespaceDefault,
+				Annotations: map[string]string{
+					"service.beta.kubernetes.io/azure-load-balancer-internal": "true",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Type: corev1.ServiceTypeLoadBalancer,
+				Ports: []corev1.ServicePort{
+					{
+						Name:     "http",
+						Port:     80,
+						Protocol: corev1.ProtocolTCP,
+					},
+					{
+						Name:     "https",
+						Port:     443,
+						Protocol: corev1.ProtocolTCP,
+					},
+				},
+				Selector: map[string]string{
+					"app": "ingress-nginx",
+				},
+			},
 		}
-	}
-	ilbJob := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "curl-to-ilb-job",
-			Namespace: corev1.NamespaceDefault,
-		},
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{
-						{
-							Name:  "curl",
-							Image: "curlimages/curl",
-							Command: []string{
-								"curl",
-								ilbIP,
+		_, err = servicesClient.Create(ilbService)
+		Expect(err).NotTo(HaveOccurred())
+		ilbSvcInput := WaitForServiceAvailableInput{
+			Getter:    servicesClientAdapter{client: servicesClient},
+			Service:   ilbService,
+			Clientset: clientset,
+		}
+		WaitForServiceAvailable(context.TODO(), ilbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
+
+		By("connecting to the internal LB service from a curl pod")
+
+		svc, err := servicesClient.Get("ingress-nginx-ilb", metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		var ilbIP string
+		for _, i := range svc.Status.LoadBalancer.Ingress {
+			if net.ParseIP(i.IP) != nil {
+				ilbIP = i.IP
+				break
+			}
+		}
+		ilbJob := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      jobName,
+				Namespace: corev1.NamespaceDefault,
+			},
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						RestartPolicy: corev1.RestartPolicyNever,
+						Containers: []corev1.Container{
+							{
+								Name:  "curl",
+								Image: "curlimages/curl",
+								Command: []string{
+									"curl",
+									ilbIP,
+								},
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		_, err = jobsClient.Create(ilbJob)
+		Expect(err).NotTo(HaveOccurred())
+		ilbJobInput := WaitForJobCompleteInput{
+			Getter:    jobsClientAdapter{client: jobsClient},
+			Job:       ilbJob,
+			Clientset: clientset,
+		}
+		WaitForJobComplete(context.TODO(), ilbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 	}
-	_, err = jobsClient.Create(ilbJob)
-	Expect(err).NotTo(HaveOccurred())
-	ilbJobInput := WaitForJobCompleteInput{
-		Getter:    jobsClientAdapter{client: jobsClient},
-		Job:       ilbJob,
-		Clientset: clientset,
-	}
-	WaitForJobComplete(context.TODO(), ilbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
 	By("creating an external Load Balancer service")
 	elbService := &corev1.Service{
@@ -228,7 +235,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	WaitForServiceAvailable(context.TODO(), elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
 	By("connecting to the external LB service from a curl pod")
-	svc, err = servicesClient.Get("ingress-nginx-elb", metav1.GetOptions{})
+	svc, err := servicesClient.Get("ingress-nginx-elb", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	var elbIP string
 	for _, i := range svc.Status.LoadBalancer.Ingress {
@@ -286,13 +293,13 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		return
 	}
 	By("deleting the test resources")
-	err = servicesClient.Delete(ilbService.Name, &metav1.DeleteOptions{})
+	err = servicesClient.Delete(ilbName, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	err = servicesClient.Delete(elbService.Name, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	err = deploymentsClient.Delete(deployment.Name, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	err = jobsClient.Delete(ilbJob.Name, &metav1.DeleteOptions{})
+	err = jobsClient.Delete(jobName, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	err = jobsClient.Delete(elbJob.Name, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())

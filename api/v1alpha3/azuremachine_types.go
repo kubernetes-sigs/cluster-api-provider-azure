@@ -87,6 +87,12 @@ type AzureMachineSpec struct {
 	// +optional
 	AllocatePublicIP bool `json:"allocatePublicIP,omitempty"`
 
+	// EnableIPForwarding enables IP Forwarding in Azure which is required for some CNI's to send traffic from a pods on one machine
+	// to another. This is required for IpV6 with Calico in combination with User Defined Routes (set by the Azure Cloud Controller
+	// manager). Default is false for disabled.
+	// +optional
+	EnableIPForwarding bool `json:"enableIPForwarding,omitempty"`
+
 	// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
 	// whether the requested VMSize supports accelerated networking.
 	// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.

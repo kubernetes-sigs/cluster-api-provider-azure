@@ -19,8 +19,9 @@ package subnets
 import (
 	"context"
 	"net/http"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"testing"
+
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
@@ -61,6 +62,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.IsVnetManaged().Return(true)
 				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -69,6 +71,43 @@ func TestReconcileSubnets(t *testing.T) {
 						AddressPrefix:        to.StringPtr("10.0.0.0/16"),
 						NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
 						RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+					},
+				}))
+			},
+		},
+		{
+			name:          "subnet ipv6 does not exist",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-ipv6-subnet",
+						CIDR:                "10.0.0.0/16",
+						IPv6CIDR:            "2001:1234:5678:9abd::/64",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.IsIPv6Enabled().AnyTimes().Return(true)
+				s.IsVnetManaged().Return(true)
+				m.Get(context.TODO(), "my-rg", "my-vnet", "my-ipv6-subnet").
+					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vnet", "my-ipv6-subnet", gomockinternal.DiffEq(network.Subnet{
+					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+						AddressPrefixes: &[]string{
+							"10.0.0.0/16",
+							"2001:1234:5678:9abd::/64",
+						},
+						RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+						NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
 					},
 				}))
 			},
@@ -93,6 +132,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.IsVnetManaged().Return(true)
 				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -211,6 +251,86 @@ func TestReconcileSubnets(t *testing.T) {
 						Name: to.StringPtr("my-subnet-1"),
 						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 							AddressPrefix: to.StringPtr("10.2.0.0/16"),
+							RouteTable: &network.RouteTable{
+								ID:   to.StringPtr("rt-id"),
+								Name: to.StringPtr("my-subnet_route_table"),
+							},
+							NetworkSecurityGroup: &network.SecurityGroup{
+								ID:   to.StringPtr("sg-id"),
+								Name: to.StringPtr("my-sg-1"),
+							},
+						},
+					}, nil)
+			},
+		},
+		{
+			name:          "vnet for ipv6 is provided",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-ipv6-subnet",
+						CIDR:                "10.0.0.0/16",
+						IPv6CIDR:            "2001:1234:5678:9abd::/64",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+					{
+						Name:                "my-ipv6-subnet-cp",
+						CIDR:                "10.2.0.0/16",
+						IPv6CIDR:            "2001:1234:5678:9abc::/64",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg-1",
+						Role:                infrav1.SubnetControlPlane,
+						InternalLBIPAddress: "10.2.0.20",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.NodeSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+					Name: "my-subnet",
+					Role: infrav1.SubnetNode,
+				})
+				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+					Name: "my-subnet-1",
+					Role: infrav1.SubnetControlPlane,
+				})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.IsIPv6Enabled().AnyTimes().Return(true)
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Get(context.TODO(), "", "my-vnet", "my-ipv6-subnet").
+					Return(network.Subnet{
+						ID:   to.StringPtr("subnet-id"),
+						Name: to.StringPtr("my-ipv6-subnet"),
+						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+							AddressPrefixes: &[]string{
+								"10.0.0.0/16",
+								"2001:1234:5678:9abd::/64",
+							},
+							RouteTable: &network.RouteTable{
+								ID:   to.StringPtr("rt-id"),
+								Name: to.StringPtr("my-subnet_route_table"),
+							},
+							NetworkSecurityGroup: &network.SecurityGroup{
+								ID:   to.StringPtr("sg-id"),
+								Name: to.StringPtr("my-sg"),
+							},
+						},
+					}, nil)
+				m.Get(context.TODO(), "", "my-vnet", "my-ipv6-subnet-cp").
+					Return(network.Subnet{
+						ID:   to.StringPtr("subnet-id-1"),
+						Name: to.StringPtr("my-ipv6-subnet-cp"),
+						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+							AddressPrefixes: &[]string{
+								"10.2.0.0/16",
+								"2001:1234:5678:9abc::/64",
+							},
 							RouteTable: &network.RouteTable{
 								ID:   to.StringPtr("rt-id"),
 								Name: to.StringPtr("my-subnet_route_table"),

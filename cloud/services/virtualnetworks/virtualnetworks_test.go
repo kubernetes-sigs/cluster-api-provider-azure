@@ -19,6 +19,7 @@ package virtualnetworks
 import (
 	"context"
 	"net/http"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -71,6 +72,41 @@ func TestReconcileVnet(t *testing.T) {
 			},
 		},
 		{
+			name:          "managed ipv6 vnet exists",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
+				s.VNetSpecs().Return([]azure.VNetSpec{
+					{
+						ResourceGroup: "my-rg",
+						Name:          "ipv6-vnet-exists",
+						CIDR:          "10.0.0.0/8",
+						IPv6CIDR:      "2001:1234:5678:9a00::/56",
+					},
+				})
+				m.Get(context.TODO(), "my-rg", "ipv6-vnet-exists").
+					Return(network.VirtualNetwork{
+						ID:   to.StringPtr("azure/fake/id"),
+						Name: to.StringPtr("ipv6-vnet-exists"),
+						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+							AddressSpace: &network.AddressSpace{
+								AddressPrefixes: to.StringSlicePtr([]string{
+									"10.0.0.0/8",
+									"2001:1234:5678:9a00::/56",
+								}),
+							},
+						},
+						Tags: map[string]*string{
+							"Name": to.StringPtr("ipv6-vnet-exists"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
+						},
+					}, nil)
+			},
+		},
+		{
 			name:          "vnet created successufuly",
 			expectedError: "",
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
@@ -78,6 +114,7 @@ func TestReconcileVnet(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
 				s.VNetSpecs().Return([]azure.VNetSpec{
 					{
@@ -90,6 +127,45 @@ func TestReconcileVnet(t *testing.T) {
 					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 
 				m.CreateOrUpdate(context.TODO(), "my-rg", "vnet-new", gomock.AssignableToTypeOf(network.VirtualNetwork{}))
+			},
+		},
+		{
+			name:          "ipv6 vnet created successufuly",
+			expectedError: "",
+			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.Location().AnyTimes().Return("fake-location")
+				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
+				s.IsIPv6Enabled().AnyTimes().Return(true)
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
+				s.VNetSpecs().Return([]azure.VNetSpec{
+					{
+						ResourceGroup: "my-rg",
+						Name:          "vnet-ipv6-new",
+						CIDR:          "10.0.0.0/8",
+						IPv6CIDR:      "2001:1234:5678:9a00::/56",
+					},
+				})
+				m.Get(context.TODO(), "my-rg", "vnet-ipv6-new").
+					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+
+				m.CreateOrUpdate(context.TODO(), "my-rg", "vnet-ipv6-new", gomockinternal.DiffEq(network.VirtualNetwork{
+					Tags: map[string]*string{
+						"Name": to.StringPtr("vnet-ipv6-new"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr(string(infrav1.ResourceLifecycleOwned)),
+						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr(infrav1.CommonRole),
+					},
+					Location: to.StringPtr("fake-location"),
+					VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+						AddressSpace: &network.AddressSpace{
+							AddressPrefixes: to.StringSlicePtr([]string{
+								"10.0.0.0/8",
+								"2001:1234:5678:9a00::/56",
+							}),
+						},
+					},
+				}))
 			},
 		},
 		{
@@ -129,6 +205,7 @@ func TestReconcileVnet(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
 				s.VNetSpecs().Return([]azure.VNetSpec{
@@ -170,6 +247,7 @@ func TestReconcileVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.VNetSpecs().Return([]azure.VNetSpec{
 					{
 						ResourceGroup: "custom-vnet-rg",

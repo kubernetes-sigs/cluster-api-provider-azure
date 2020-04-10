@@ -240,6 +240,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
@@ -294,6 +295,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				})
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("my-cluster")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{
 					LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -388,6 +390,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				})
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(false)}, nil)
@@ -427,6 +430,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				})
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
@@ -594,7 +598,7 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 				VirtualNetworksClient: vnetMock,
 			}
 
-			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", tc.subnetCidr, "")
+			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", tc.subnetCidr, "", false)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(resultIP).To(Equal(tc.expectedIP))
 		})

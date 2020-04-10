@@ -40,7 +40,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		default:
 			nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
-			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
+			subnet := &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
+			nicConfig.Subnet = subnet
 
 			nicConfig.PrivateIPAllocationMethod = network.Dynamic
 			if nicSpec.StaticIPAddress != "" {
@@ -90,19 +91,35 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				nicSpec.AcceleratedNetworking = &accelNet
 			}
 
+			ipConfigurations := []network.InterfaceIPConfiguration{
+				{
+					Name:                                     to.StringPtr("pipConfig"),
+					InterfaceIPConfigurationPropertiesFormat: nicConfig,
+				},
+			}
+
+			if nicSpec.IPv6Enabled {
+				ipv6Config := network.InterfaceIPConfiguration{
+					Name: to.StringPtr("ipConfigv6"),
+					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+						PrivateIPAddressVersion: "IPv6",
+						Primary:                 to.BoolPtr(false),
+						Subnet:                  &network.Subnet{ID: subnet.ID},
+					},
+				}
+
+				ipConfigurations = append(ipConfigurations, ipv6Config)
+			}
+
 			err = s.Client.CreateOrUpdate(ctx,
 				s.Scope.ResourceGroup(),
 				nicSpec.Name,
 				network.Interface{
 					Location: to.StringPtr(s.Scope.Location()),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-						IPConfigurations: &[]network.InterfaceIPConfiguration{
-							{
-								Name:                                     to.StringPtr("pipConfig"),
-								InterfaceIPConfigurationPropertiesFormat: nicConfig,
-							},
-						},
 						EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
+						IPConfigurations:            &ipConfigurations,
+						EnableIPForwarding:          to.BoolPtr(nicSpec.EnableIPForwarding),
 					},
 				})
 

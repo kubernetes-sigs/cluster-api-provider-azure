@@ -35,12 +35,29 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 		return nil, errors.Wrapf(err, "failed to fetch subnet named %s in vnet %s", spec.VNetName, spec.Name)
 	}
 
+	IPV4Cidr := to.String(subnet.SubnetPropertiesFormat.AddressPrefix)
+	var IPv6Cidr string
+	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
+		addresses := to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
+
+		// assumption that the second address is the ipv6 address.
+		// This would be unnessary if subnet spec was array
+		if len(addresses) > 0 {
+			IPV4Cidr = addresses[0]
+		}
+
+		if len(addresses) > 1 {
+			IPv6Cidr = addresses[1]
+		}
+	}
+
 	subnetSpec := &infrav1.SubnetSpec{
 		Role:                spec.Role,
 		InternalLBIPAddress: spec.InternalLBIPAddress,
 		Name:                to.String(subnet.Name),
 		ID:                  to.String(subnet.ID),
-		CidrBlock:           to.String(subnet.SubnetPropertiesFormat.AddressPrefix),
+		CidrBlock:           IPV4Cidr,
+		IPv6CidrBlock:       IPv6Cidr,
 	}
 
 	return subnetSpec, nil
@@ -67,6 +84,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			subnet.Role = subnetSpec.Role
 			subnet.Name = existingSubnet.Name
 			subnet.CidrBlock = existingSubnet.CidrBlock
+			subnet.IPv6CidrBlock = existingSubnet.IPv6CidrBlock
 			subnet.ID = existingSubnet.ID
 
 		case !s.Scope.IsVnetManaged():
@@ -74,8 +92,18 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		default:
 			subnetProperties := network.SubnetPropertiesFormat{
-				AddressPrefix: to.StringPtr(subnetSpec.CIDR),
+				AddressPrefix: &subnetSpec.CIDR,
 			}
+
+			if s.Scope.IsIPv6Enabled() {
+				subnetCidrs := []string{subnetSpec.CIDR}
+				subnetCidrs = append(subnetCidrs, subnetSpec.IPv6CIDR)
+
+				subnetProperties = network.SubnetPropertiesFormat{
+					AddressPrefixes: &subnetCidrs,
+				}
+			}
+
 			if subnetSpec.RouteTableName != "" {
 				subnetProperties.RouteTable = &network.RouteTable{
 					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),

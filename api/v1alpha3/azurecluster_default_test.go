@@ -175,6 +175,73 @@ func TestVnetDefaults(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "IPv6 enabled",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							IPv6Enabled: true,
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							ResourceGroup: "cluster-test",
+							Name:          "cluster-test-vnet",
+							IPv6CidrBlock: DefaultVnetIPv6CIDR,
+							CidrBlock:     DefaultVnetCIDR,
+							IPv6Enabled:   true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "IPv6 enabled with custom cidr",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							IPv6Enabled:   true,
+							IPv6CidrBlock: "2001:beef::1/48",
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							ResourceGroup: "cluster-test",
+							Name:          "cluster-test-vnet",
+							IPv6CidrBlock: "2001:beef::1/48",
+							CidrBlock:     DefaultVnetCIDR,
+							IPv6Enabled:   true,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -365,6 +432,108 @@ func TestSubnetDefaults(t *testing.T) {
 								Name:          "cluster-test-controlplane-subnet",
 								CidrBlock:     DefaultControlPlaneSubnetCIDR,
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "no subnets IPv6 enabled",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							IPv6Enabled: true,
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							IPv6Enabled: true,
+						},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "cluster-test-controlplane-subnet",
+								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								IPv6CidrBlock: DefaultControlPlaneSubnetIPv6CIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "cluster-test-node-subnet",
+								CidrBlock:     DefaultNodeSubnetCIDR,
+								IPv6CidrBlock: DefaultNodeSubnetIPv6CIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets specified with IPv6 enabled",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							IPv6Enabled: true,
+						},
+						Subnets: Subnets{
+							{
+								Name:          "cluster-test-controlplane-subnet",
+								Role:          "control-plane",
+								IPv6CidrBlock: "2001:beef::1/64",
+							},
+							{
+								Name:          "cluster-test-node-subnet",
+								Role:          "node",
+								IPv6CidrBlock: "2001:beea::1/64",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							IPv6Enabled: true,
+						},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "cluster-test-controlplane-subnet",
+								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								IPv6CidrBlock: "2001:beef::1/64",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "cluster-test-node-subnet",
+								CidrBlock:     DefaultNodeSubnetCIDR,
+								IPv6CidrBlock: "2001:beea::1/64",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
 						},

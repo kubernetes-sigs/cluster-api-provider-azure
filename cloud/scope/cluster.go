@@ -112,6 +112,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 		{
 			Name:    s.Network().APIServerIP.Name,
 			DNSName: s.Network().APIServerIP.DNSName,
+			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
 		},
 	}
 }
@@ -171,6 +172,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 		{
 			Name:                s.ControlPlaneSubnet().Name,
 			CIDR:                s.ControlPlaneSubnet().CidrBlock,
+			IPv6CIDR:            s.ControlPlaneSubnet().IPv6CidrBlock,
 			VNetName:            s.Vnet().Name,
 			SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
 			Role:                s.ControlPlaneSubnet().Role,
@@ -180,6 +182,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 		{
 			Name:              s.NodeSubnet().Name,
 			CIDR:              s.NodeSubnet().CidrBlock,
+			IPv6CIDR:          s.NodeSubnet().IPv6CidrBlock,
 			VNetName:          s.Vnet().Name,
 			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
 			RouteTableName:    s.NodeSubnet().RouteTable.Name,
@@ -195,6 +198,7 @@ func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
 			ResourceGroup: s.Vnet().ResourceGroup,
 			Name:          s.Vnet().Name,
 			CIDR:          s.Vnet().CidrBlock,
+			IPv6CIDR:      s.Vnet().IPv6CidrBlock,
 		},
 	}
 }
@@ -207,6 +211,11 @@ func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 // IsVnetManaged returns true if the vnet is managed.
 func (s *ClusterScope) IsVnetManaged() bool {
 	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
+}
+
+// IsIPv6Enabled returns true if IPv6 is enabled.
+func (s *ClusterScope) IsIPv6Enabled() bool {
+	return s.AzureCluster.Spec.NetworkSpec.Vnet.IPv6Enabled
 }
 
 // Subnets returns the cluster subnets.

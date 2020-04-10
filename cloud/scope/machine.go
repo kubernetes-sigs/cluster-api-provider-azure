@@ -152,6 +152,8 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		SubnetName:            m.Subnet().Name,
 		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		IPv6Enabled:           m.IsIPv6Enabled(),
+		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
 	}
 	if m.Role() == infrav1.ControlPlane {
 		publicLBName := azure.GeneratePublicLBName(m.ClusterName())
