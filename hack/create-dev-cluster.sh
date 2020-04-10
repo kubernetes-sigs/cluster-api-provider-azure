@@ -18,7 +18,7 @@ set -o nounset
 set -o pipefail
 
 # for Prow we use the provided AZURE_CREDENTIALS file
-if [[ -n "${AZURE_CREDENTIALS}" ]]; then
+if [[ -n "${AZURE_CREDENTIALS:-}" ]]; then
     export AZURE_SUBSCRIPTION_ID="$(cat ${AZURE_CREDENTIALS} | grep SubscriptionID | cut -d '=' -f 2)"
     export AZURE_TENANT_ID="$(cat ${AZURE_CREDENTIALS} | grep TenantID | cut -d '=' -f 2)"
     export AZURE_CLIENT_ID="$(cat ${AZURE_CREDENTIALS} | grep ClientID | cut -d '=' -f 2)"
