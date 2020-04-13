@@ -15,8 +15,12 @@
     - [Container registry](#container-registry)
 - [Developing](#developing)
   - [Modules and dependencies](#modules-and-dependencies)
+  - [Setting up the environment](#setting-up-the-environment)
+  - [Using Tilt](#using-tilt)
+    - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
+    - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
+    - [Deploying a workload cluster](#deploying-a-workload-cluster)
   - [Manual Testing](#manual-testing)
-    - [Setting up the environment](#setting-up-the-environment)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
       - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
@@ -27,6 +31,7 @@
   - [Automated Testing](#automated-testing)
     - [Mocks](#mocks)
     - [E2E Testing](#e2e-testing)
+    - [Conformance Testing](#conformance-testing)
 
 <!-- /TOC -->
 
@@ -127,12 +132,16 @@ cat <<EOF > tilt-settings.json
 EOF
 ```
 
-To build a kind cluster and start tilt, just run:
+To build a kind cluster and start Tilt, just run:
+
 ```shell
 make tilt-up
 ```
 
+Once your kind management cluster is up and running, you can [deploy a workload cluster](#deploying-a-workload-cluster).
+
 To tear down the kind cluster built by the command above, just run:
+
 ```shell
 make kind-reset
 ```
@@ -141,11 +150,11 @@ make kind-reset
 
 If you want to develop in both CAPI and CAPZ at the same time, then this is the path for you.
 
-To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to delpoy the cluster api managment components.
+To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to deploy the cluster api management components.
 
 > you may wish to checkout out the correct version of capi to match the [version used in capz](go.mod)
 
-Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositorys will automatically redeployed to the `kind` cluster.
+Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositories will automatically redeployed to the `kind` cluster.
 
 After you have cloned both repositories your folder structure should look like:
 
@@ -174,9 +183,11 @@ EOF
 
 > `$REGISTRY` should be in the format `docker.io/<dockerhub-username>`
 
-The cluster-api management components that are deployed are configured at the `/config` folder of each repository respectively. Making changes to those files will trigger a redeploy of the managment cluster components.
+The cluster-api management components that are deployed are configured at the `/config` folder of each repository respectively. Making changes to those files will trigger a redeploy of the management cluster components.
 
-After your kind management cluster is up and running with tilt, you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster with the following:
+#### Deploying a workload cluster
+
+After your kind management cluster is up and running with Tilt, you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster with the following:
 
 ```bash
 make create-workload-cluster
