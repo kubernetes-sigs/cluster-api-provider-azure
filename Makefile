@@ -35,17 +35,20 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 BIN_DIR := bin
+RELEASE_NOTES_BIN := bin/release-notes
 
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
-GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
-MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
-KUBECTL=$(TOOLS_BIN_DIR)/kubectl
-KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
+ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
 ETCD=$(TOOLS_BIN_DIR)/etcd
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
+KUBECTL=$(TOOLS_BIN_DIR)/kubectl
+KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/kustomize)
+MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
+RELEASE_NOTES := $(TOOLS_DIR)/$(RELEASE_NOTES_BIN)
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -120,17 +123,20 @@ $(CLUSTERCTL): go.mod ## Build clusterctl binary.
 $(CONTROLLER_GEN): $(TOOLS_DIR)/go.mod # Build controller-gen from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/controller-gen sigs.k8s.io/controller-tools/cmd/controller-gen
 
+$(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
+	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
+
 $(ENVSUBST): $(TOOLS_DIR)/go.mod # Build envsubst from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/envsubst github.com/a8m/envsubst/cmd/envsubst
 
 $(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod # Build golangci-lint from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 
+$(KUSTOMIZE): $(TOOLS_DIR)/go.mod # Build kustomize from tools folder.
+	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/kustomize sigs.k8s.io/kustomize/kustomize/v3
+
 $(MOCKGEN): $(TOOLS_DIR)/go.mod # Build mockgen from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mockgen github.com/golang/mock/mockgen
-
-$(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
 
 $(RELEASE_NOTES) : $(TOOLS_DIR)/go.mod
 	cd $(TOOLS_DIR) && go build -tags tools -o $(BIN_DIR)/release-notes sigs.k8s.io/cluster-api/hack/tools/release
@@ -256,7 +262,7 @@ release: clean-release  ## Builds and push container images using the latest git
 	$(MAKE) release-manifests
 
 .PHONY: release-manifests
-release-manifests: $(RELEASE_DIR) ## Builds the manifests to publish with a release
+release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
 	kustomize build config > $(RELEASE_DIR)/infrastructure-components.yaml
 
 .PHONY: release-binary
@@ -291,7 +297,7 @@ release-notes: $(RELEASE_NOTES)
 ## --------------------------------------
 
 .PHONY: create-management-cluster
-create-management-cluster: $(ENVSUBST)
+create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	## Create kind management cluster.
 	$(MAKE) kind-create
 
@@ -304,7 +310,7 @@ create-management-cluster: $(ENVSUBST)
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
-	kustomize build config | $(ENVSUBST) | kubectl apply -f -
+	$(KUSTOMIZE) build config | $(ENVSUBST) | kubectl apply -f -
 
 	# Wait for CAPI pods
 	kubectl wait --for=condition=Ready --timeout=5m -n capi-system pod -l cluster.x-k8s.io/provider=cluster-api
@@ -319,9 +325,9 @@ create-management-cluster: $(ENVSUBST)
 	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
-create-workload-cluster: $(ENVSUBST)
+create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	# Create workload Cluster.
-	kustomize build templates | $(ENVSUBST) | kubectl apply -f -
+	$(KUSTOMIZE) build templates | $(ENVSUBST) | kubectl apply -f -
 
 	# Wait for the kubeconfig to become available.
 	timeout 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
