@@ -40,12 +40,17 @@ random-string() {
 
 # generate manifests needed for creating the Azure cluster to run the tests
 add_kustomize_patch() {
-    # Enable the bits to inject a script that can pull newer versions of kubernetes
     if ! grep -i -wq "patchesStrategicMerge" "templates/kustomization.yaml"; then
         echo "patchesStrategicMerge:" >> "templates/kustomization.yaml"
     fi
-    if ! grep -i -wq "kustomizeversions" "templates/kustomization.yaml"; then
-        echo "- kustomizeversions.yaml" >> "templates/kustomization.yaml"
+    if ! grep -i -wq "conformance-tags" "templates/kustomization.yaml"; then
+        echo "- conformance-tags.yaml" >> "templates/kustomization.yaml"
+    fi
+    # Enable the bits to inject a script that can pull newer versions of kubernetes
+    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
+        if ! grep -i -wq "ci-version" "templates/kustomization.yaml"; then
+            echo "- ci-version.yaml" >> "templates/kustomization.yaml"
+        fi
     fi
 }
 
@@ -83,6 +88,8 @@ create_cluster() {
     export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
     export CI_VERSION=${CI_VERSION:-$(curl -sSL https://dl.k8s.io/ci/k8s-master.txt)}
     export REGISTRY=conformance
+    # timestamp is in RFC-3339 format to match kubetest
+    export TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
     ${REPO_ROOT}/hack/create-dev-cluster.sh
 }
 
@@ -153,9 +160,7 @@ mkdir -p "${ARTIFACTS}/logs"
 
 # create cluster
 if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
-    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
-        add_kustomize_patch
-    fi
+    add_kustomize_patch
     create_cluster
 fi
 
