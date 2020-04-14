@@ -56,8 +56,8 @@
    - [install instructions][kustomizelinux] on Linux
 6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
 7. Install make.
-
-[go]: https://golang.org/doc/install
+8. Install [timeout][timeout]
+   - `brew install coreutils` on MacOS.
 
 ### Get the source
 
@@ -368,6 +368,7 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 
 <!-- References -->
 
+[go]: https://golang.org/doc/install
 [jq]: https://stedolan.github.io/jq/download/
 [image_pull_secrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 [gettext]: https://www.gnu.org/software/gettext/
@@ -380,3 +381,4 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
 [gomock]: https://github.com/golang/mock
+[timeout]: http://man7.org/linux/man-pages/man1/timeout.1.html
