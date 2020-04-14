@@ -17,11 +17,10 @@ require (
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/russross/blackfriday v2.0.0+incompatible // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	k8s.io/code-generator v0.18.0-alpha.2.0.20200130061103-7dfd5e9157ef
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20200319204836-a97903fa1e7e
-	sigs.k8s.io/controller-tools v0.2.6
+	sigs.k8s.io/controller-tools v0.2.8
 	sigs.k8s.io/kustomize/kustomize/v3 v3.5.4
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
