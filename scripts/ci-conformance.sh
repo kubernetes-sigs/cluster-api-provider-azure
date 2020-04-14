@@ -18,6 +18,7 @@
 
 # To run locally, set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID
 
+set -o errexit
 set -o nounset
 set -o pipefail
 
@@ -109,8 +110,6 @@ run_tests() {
     # wait for all the nodes to be ready
     kubectl wait --for=condition=Ready node --kubeconfig="$KUBECONFIG" --all || true
 
-    ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
-
     # setting this env prevents ginkg e2e from trying to run provider setup
     export KUBERNETES_CONFORMANCE_TEST="y"
     # run the tests
@@ -121,6 +120,11 @@ run_tests() {
 
     unset KUBECONFIG
     unset KUBERNETES_CONFORMANCE_TEST
+}
+
+get_logs() {
+    # TODO collect more logs https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/474 
+    kubectl logs deploy/capz-controller-manager -n capz-system manager > "${ARTIFACTS}/logs/capz-manager.log" || true
 }
 
 # cleanup all resources we use
@@ -134,6 +138,19 @@ cleanup() {
     (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && rm -f _output/bin/e2e.test) || true
 }
 
+on_exit() {
+    unset KUBECONFIG
+    get_logs
+    # cleanup
+    if [[ -z "${SKIP_CLEANUP:-}" ]]; then
+        cleanup
+    fi
+}
+
+trap on_exit EXIT 
+ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
+mkdir -p "${ARTIFACTS}/logs"
+
 # create cluster
 if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
     if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
@@ -146,9 +163,4 @@ fi
 if [[ -z "${SKIP_TESTS:-}" ]]; then
     build_k8s
     run_tests
-fi
-
-# cleanup
-if [[ -z "${SKIP_CLEANUP:-}" ]]; then
-    cleanup
 fi
