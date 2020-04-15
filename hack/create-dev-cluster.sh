@@ -17,15 +17,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# for Prow we use the provided AZURE_CREDENTIALS file.
-# the file is expected to be in toml format.
-if [[ -n "${AZURE_CREDENTIALS:-}" ]]; then
-    export AZURE_SUBSCRIPTION_ID="$(cat ${AZURE_CREDENTIALS} | grep -E -o 'SubscriptionID[[:blank:]]*=[[:blank:]]*"[^[:space:]"]+"' | cut -d '"' -f 2)"
-    export AZURE_TENANT_ID="$(cat ${AZURE_CREDENTIALS} | grep -E -o 'TenantID[[:blank:]]*=[[:blank:]]*"[^[:space:]"]+"' | cut -d '"' -f 2)"
-    export AZURE_CLIENT_ID="$(cat ${AZURE_CREDENTIALS} | grep -E -o 'ClientID[[:blank:]]*=[[:blank:]]*"[^[:space:]"]+"' | cut -d '"' -f 2)"
-    export AZURE_CLIENT_SECRET="$(cat ${AZURE_CREDENTIALS} | grep -E -o 'ClientSecret[[:blank:]]*=[[:blank:]]*"[^[:space:]"]+"' | cut -d '"' -f 2)"
-fi 
-
 # Verify the required Environment Variables are present.
 : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
 : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
