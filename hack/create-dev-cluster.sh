@@ -17,15 +17,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# for Prow we use the provided AZURE_CREDENTIALS file
-if [[ -n "${AZURE_CREDENTIALS:-}" ]]; then
-    export AZURE_SUBSCRIPTION_ID="$(cat ${AZURE_CREDENTIALS} | grep SubscriptionID | cut -d '=' -f 2)"
-    export AZURE_TENANT_ID="$(cat ${AZURE_CREDENTIALS} | grep TenantID | cut -d '=' -f 2)"
-    export AZURE_CLIENT_ID="$(cat ${AZURE_CREDENTIALS} | grep ClientID | cut -d '=' -f 2)"
-    # password might contain an '=' sign so we need to get all the fields after the first '=' 
-    export AZURE_CLIENT_SECRET="$(cat ${AZURE_CREDENTIALS} | grep ClientSecret | cut -d '=' -f 2-)"
-fi 
-
 # Verify the required Environment Variables are present.
 : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
 : "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
