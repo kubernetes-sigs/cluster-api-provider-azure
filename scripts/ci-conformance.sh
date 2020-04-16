@@ -40,22 +40,6 @@ random-string() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1
 }
 
-# generate manifests needed for creating the Azure cluster to run the tests
-add_kustomize_patch() {
-    if ! grep -i -wq "patchesStrategicMerge" "templates/kustomization.yaml"; then
-        echo "patchesStrategicMerge:" >> "templates/kustomization.yaml"
-    fi
-    if ! grep -i -wq "conformance-tags" "templates/kustomization.yaml"; then
-        echo "- conformance-tags.yaml" >> "templates/kustomization.yaml"
-    fi
-    # Enable the bits to inject a script that can pull newer versions of kubernetes
-    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
-        if ! grep -i -wq "ci-version" "templates/kustomization.yaml"; then
-            echo "- ci-version.yaml" >> "templates/kustomization.yaml"
-        fi
-    fi
-}
-
 # build Kubernetes E2E binaries
 build_k8s() {
     # possibly enable bazel build caching before building kubernetes
@@ -85,6 +69,13 @@ build_k8s() {
 }
 
 create_cluster() {
+    # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
+    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
+        export CLUSTER_TEMPLATE="test/cluster-template-conformance-ci-version"
+    else
+        export CLUSTER_TEMPLATE="test/cluster-template-conformance"
+    fi
+
     export CLUSTER_NAME="capz-conformance-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
     # Conformance test suite needs a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
@@ -163,7 +154,6 @@ mkdir -p "${ARTIFACTS}/logs"
 
 # create cluster
 if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
-    add_kustomize_patch
     create_cluster
 fi
 
