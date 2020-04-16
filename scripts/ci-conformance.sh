@@ -72,6 +72,7 @@ build_k8s() {
     mkdir -p "${PWD}/_output/bin/"
     cp -f "${PWD}/bazel-bin/test/e2e/e2e.test" "${PWD}/_output/bin/e2e.test"
     # workaround for mac os
+    # comment
     cp -f "${PWD}/bazel-bin/vendor/github.com/onsi/ginkgo/ginkgo/darwin_amd64_stripped/ginkgo" "${PWD}/_output/bin/ginkgo" || true
     export KUBECTL_PATH="$(dirname "$(find "${PWD}/bazel-bin/" -name kubectl -type f)")/kubectl"
     PATH="${KUBECTL_PATH}:${PATH}"
