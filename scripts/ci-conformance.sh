@@ -71,7 +71,8 @@ build_k8s() {
     # ensure the e2e script will find our binaries ...
     mkdir -p "${PWD}/_output/bin/"
     cp -f "${PWD}/bazel-bin/test/e2e/e2e.test" "${PWD}/_output/bin/e2e.test"
-    cp -f "${PWD}/bazel-bin/vendor/github.com/onsi/ginkgo/ginkgo/darwin_amd64_stripped/ginkgo" "${PWD}/_output/bin/ginkgo"
+    # workaround for mac os
+    cp -f "${PWD}/bazel-bin/vendor/github.com/onsi/ginkgo/ginkgo/darwin_amd64_stripped/ginkgo" "${PWD}/_output/bin/ginkgo" || true
     export KUBECTL_PATH="$(dirname "$(find "${PWD}/bazel-bin/" -name kubectl -type f)")/kubectl"
     PATH="${KUBECTL_PATH}:${PATH}"
     export PATH
