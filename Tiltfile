@@ -96,6 +96,22 @@ def validate_auth():
     if missing:
         fail("missing kustomize_substitutions keys {} in tilt-setting.json".format(missing))
 
+tilt_helper_dockerfile_header = """
+# Tilt image
+FROM golang:1.13.8 as tilt-helper
+# Support live reloading with Tilt
+RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/restart.sh  && \
+    wget --output-document /start.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/start.sh && \
+    chmod +x /start.sh && chmod +x /restart.sh
+"""
+
+tilt_dockerfile_header = """
+FROM gcr.io/distroless/base:debug as tilt
+WORKDIR /
+COPY --from=tilt-helper /start.sh .
+COPY --from=tilt-helper /restart.sh .
+COPY manager .
+"""
 
 # Build CAPZ and add feature gates
 def capz():
@@ -113,8 +129,34 @@ def capz():
         yaml = str(encode_yaml_stream(yaml_dict))
         yaml = fixup_yaml_empty_arrays(yaml)
 
+    # Set up a local_resource build of the provider's manager binary.
+    local_resource(
+        "manager",
+        cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
+        deps = ["./api", "./main.go", "./pkg", "./controllers", "./cloud", "./exp"]
+    )
+
+    dockerfile_contents = "\n".join([
+        tilt_helper_dockerfile_header,
+        tilt_dockerfile_header,
+    ])
+
+    # Set up an image build for the provider. The live update configuration syncs the output from the local_resource
+    # build into the container.
+    docker_build(
+        ref = "gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller",
+        context = "./.tiltbuild/",
+        dockerfile_contents = dockerfile_contents,
+        target = "tilt",
+        entrypoint = ["sh", "/start.sh", "/manager"],
+        only = "manager",
+        live_update = [
+            sync("./.tiltbuild/manager", "/manager"),
+            run("sh /restart.sh"),
+        ],
+    )
+
     k8s_yaml(blob(yaml))
-    docker_build( "gcr.io/k8s-staging-cluster-api-azure/cluster-api-azure-controller", ".")
 
 ##############################
 # Actual work happens here
