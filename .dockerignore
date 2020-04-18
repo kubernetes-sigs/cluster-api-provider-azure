@@ -1,11 +1,11 @@
-.git
-.github
-.vscode
-bin/
-config/
-hack/
-docs/
-templates/
-scripts/
-**/.md
-tilt-provider.json
+# Ignore everything
+**
+
+# Allow only these
+!/api/**
+!/cloud/**
+!/controllers/**
+!/pkg/**
+!/main.go
+!/go.mod
+!/go.sum
