@@ -141,6 +141,11 @@ def capz():
         tilt_dockerfile_header,
     ])
 
+    entrypoint = ["sh", "/start.sh", "/manager"]
+    extra_args = p.get("extra_args")
+    if extra_args:
+        entrypoint.extend(extra_args)
+
     # Set up an image build for the provider. The live update configuration syncs the output from the local_resource
     # build into the container.
     docker_build(
@@ -148,7 +153,7 @@ def capz():
         context = "./.tiltbuild/",
         dockerfile_contents = dockerfile_contents,
         target = "tilt",
-        entrypoint = ["sh", "/start.sh", "/manager"],
+        entrypoint = entrypoint,
         only = "manager",
         live_update = [
             sync("./.tiltbuild/manager", "/manager"),
