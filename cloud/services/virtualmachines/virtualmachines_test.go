@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid vm specification"
+const expectedInvalidSpec = "invalid VM specification"
 
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
@@ -167,7 +167,7 @@ func TestGetVM(t *testing.T) {
 			vmSpec: Spec{
 				Name: "my-vm",
 			},
-			expectedError: "vm my-vm not found: #: Not found: StatusCode=404",
+			expectedError: "VM my-vm not found: #: Not found: StatusCode=404",
 			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, nil)
 				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{}, nil)
@@ -604,7 +604,7 @@ func TestDeleteVM(t *testing.T) {
 			vmSpec: Spec{
 				Name: "my-vm",
 			},
-			expectedError: "failed to delete vm my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to delete VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_virtualmachines.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-vm").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))

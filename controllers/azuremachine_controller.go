@@ -217,17 +217,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		return reconcile.Result{}, err
 	}
 
-	// Set an error message if we couldn't find the VM.
-	// TODO: Nodes are getting marked failed. Need to debug this.
-	//       Should we set a requeue above? CAPA doesn't seem to need the requeue.
-	/*
-		if vm == nil {
-			machineScope.SetFailureReason(capierrors.UpdateMachineError)
-			machineScope.SetFailureMessage(errors.New("Azure virtual machine cannot be found"))
-			return reconcile.Result{}, nil
-		}
-	*/
-
 	// TODO(ncdc): move this validation logic into a validating webhook
 	if errs := r.validateUpdate(&machineScope.AzureMachine.Spec, vm); len(errs) > 0 {
 		agg := kerrors.NewAggregate(errs)
@@ -248,13 +237,30 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 	switch vm.State {
 	case infrav1.VMStateSucceeded:
-		machineScope.Info("Machine VM is running", "instance-id", *machineScope.GetVMID())
+		machineScope.V(2).Info("VM is running", "id", *machineScope.GetVMID())
 		machineScope.SetReady()
+	case infrav1.VMStateCreating:
+		machineScope.V(2).Info("VM is creating", "id", *machineScope.GetVMID())
+		machineScope.SetNotReady()
 	case infrav1.VMStateUpdating:
-		machineScope.Info("Machine VM is updating", "instance-id", *machineScope.GetVMID())
-	default:
+		machineScope.V(2).Info("VM is updating", "id", *machineScope.GetVMID())
+		machineScope.SetNotReady()
+	case infrav1.VMStateDeleting:
+		machineScope.Info("Unexpected VM deletion", "state", vm.State, "instance-id", *machineScope.GetVMID())
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure VM deletion")
+		machineScope.SetNotReady()
+	case infrav1.VMStateFailed:
+		machineScope.SetNotReady()
+		machineScope.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", *machineScope.GetVMID())
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "FailedVMState", "Azure VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
-		machineScope.SetFailureMessage(errors.Errorf("Azure VM state %q is unexpected", vm.State))
+		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", vm.State))
+	default:
+		machineScope.SetNotReady()
+		machineScope.Info("VM state is undefined", "state", vm.State, "instance-id", *machineScope.GetVMID())
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnhandledVMState", "Azure VM state is undefined")
+		machineScope.SetFailureReason(capierrors.UpdateMachineError)
+		machineScope.SetFailureMessage(errors.Errorf("Azure VM state %q is undefined", vm.State))
 	}
 
 	// Ensure that the tags are correct.

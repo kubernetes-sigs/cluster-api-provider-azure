@@ -51,11 +51,11 @@ type Spec struct {
 func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
-		return compute.VirtualMachine{}, errors.New("invalid vm specification")
+		return compute.VirtualMachine{}, errors.New("invalid VM specification")
 	}
 	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "vm %s not found", vmSpec.Name)
+		return nil, errors.Wrapf(err, "VM %s not found", vmSpec.Name)
 	} else if err != nil {
 		return vm, err
 	}
@@ -79,7 +79,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("invalid vm specification")
+		return errors.New("invalid VM specification")
 	}
 
 	storageProfile, err := generateStorageProfile(*vmSpec)
@@ -87,14 +87,14 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	klog.V(2).Infof("getting nic %s", vmSpec.NICName)
+	klog.V(2).Infof("getting NIC %s", vmSpec.NICName)
 	nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), vmSpec.NICName)
 	if err != nil {
 		return err
 	}
-	klog.V(2).Infof("got nic %s", vmSpec.NICName)
+	klog.V(2).Infof("got NIC %s", vmSpec.NICName)
 
-	klog.V(2).Infof("creating vm %s ", vmSpec.Name)
+	klog.V(2).Infof("creating VM %s ", vmSpec.Name)
 
 	sshKeyData := vmSpec.SSHKeyData
 	if sshKeyData == "" {
@@ -174,7 +174,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "cannot create vm")
 	}
 
-	klog.V(2).Infof("successfully created vm %s ", vmSpec.Name)
+	klog.V(2).Infof("successfully created VM %s ", vmSpec.Name)
 	return nil
 }
 
@@ -182,19 +182,19 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	vmSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("invalid vm specification")
+		return errors.New("invalid VM specification")
 	}
-	klog.V(2).Infof("deleting vm %s ", vmSpec.Name)
+	klog.V(2).Infof("deleting VM %s ", vmSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vm %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
+		return errors.Wrapf(err, "failed to delete VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted vm %s ", vmSpec.Name)
+	klog.V(2).Infof("successfully deleted VM %s ", vmSpec.Name)
 	return nil
 }
 
