@@ -338,19 +338,19 @@ type LoadBalancerHealthCheck struct {
 // VMState describes the state of an Azure virtual machine.
 type VMState string
 
-var (
+const (
 	// VMStateCreating ...
-	VMStateCreating = VMState("Creating")
+	VMStateCreating VMState = "Creating"
 	// VMStateDeleting ...
-	VMStateDeleting = VMState("Deleting")
+	VMStateDeleting VMState = "Deleting"
 	// VMStateFailed ...
-	VMStateFailed = VMState("Failed")
+	VMStateFailed VMState = "Failed"
 	// VMStateMigrating ...
-	VMStateMigrating = VMState("Migrating")
+	VMStateMigrating VMState = "Migrating"
 	// VMStateSucceeded ...
-	VMStateSucceeded = VMState("Succeeded")
+	VMStateSucceeded VMState = "Succeeded"
 	// VMStateUpdating ...
-	VMStateUpdating = VMState("Updating")
+	VMStateUpdating VMState = "Updating"
 )
 
 // VM describes an Azure virtual machine.

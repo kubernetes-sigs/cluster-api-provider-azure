@@ -161,9 +161,14 @@ func (m *MachineScope) SetVMState(v infrav1.VMState) {
 	m.AzureMachine.Status.VMState = &v
 }
 
-// SetReady sets the AzureMachine Ready Status
+// SetReady sets the AzureMachine Ready Status to true.
 func (m *MachineScope) SetReady() {
 	m.AzureMachine.Status.Ready = true
+}
+
+// SetNotReady sets the AzureMachine Ready Status to false.
+func (m *MachineScope) SetNotReady() {
+	m.AzureMachine.Status.Ready = false
 }
 
 // SetFailureMessage sets the AzureMachine status failure message.
