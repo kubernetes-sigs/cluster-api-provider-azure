@@ -177,7 +177,6 @@ generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related g
 		paths=./api/... \
 		paths=./$(EXP_DIR)/api/... \
 		object:headerFile=./hack/boilerplate/boilerplate.generatego.txt
-
 	$(CONVERSION_GEN) \
 		--input-dirs=./api/v1alpha2 \
 		--output-file-base=zz_generated.conversion \

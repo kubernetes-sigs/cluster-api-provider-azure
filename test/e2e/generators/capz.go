@@ -59,6 +59,5 @@ func expandCredVariables(stdout []byte, creds auth.Creds) []byte {
 	os.Setenv("AZURE_CLIENT_SECRET_B64", base64.StdEncoding.EncodeToString([]byte(creds.ClientSecret)))
 	os.Setenv("AZURE_SUBSCRIPTION_ID_B64", base64.StdEncoding.EncodeToString([]byte(creds.SubscriptionID)))
 	os.Setenv("AZURE_TENANT_ID_B64", base64.StdEncoding.EncodeToString([]byte(creds.TenantID)))
-	// TODO Figure out a better way of doing this
 	return []byte(os.ExpandEnv(string(stdout)))
 }

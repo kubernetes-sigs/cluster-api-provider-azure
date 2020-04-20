@@ -124,7 +124,6 @@ run_tests() {
 }
 
 get_logs() {
-    # TODO collect more logs https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/474 
     kubectl logs deploy/capz-controller-manager -n capz-system manager > "${ARTIFACTS}/logs/capz-manager.log" || true
 }
 

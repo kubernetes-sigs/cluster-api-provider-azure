@@ -75,7 +75,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("Invalid Subnet Specification")
 	}
 	if subnet, err := s.Get(ctx, subnetSpec); err == nil {
-		// TODO: add validation on existing subnet
 		// subnet already exists, skip creation
 		if subnetSpec.Role == infrav1.SubnetControlPlane {
 			subnet.DeepCopyInto(s.Scope.ControlPlaneSubnet())
