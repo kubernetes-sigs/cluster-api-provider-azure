@@ -142,7 +142,7 @@ def capz():
     ])
 
     entrypoint = ["sh", "/start.sh", "/manager"]
-    extra_args = p.get("extra_args")
+    extra_args = settings.get("extra_args")
     if extra_args:
         entrypoint.extend(extra_args)
 
