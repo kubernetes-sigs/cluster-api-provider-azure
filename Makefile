@@ -34,6 +34,7 @@ export GO111MODULE=on
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
+TEMPLATES_DIR := $(ROOT_DIR)/templates
 BIN_DIR := bin
 RELEASE_NOTES_BIN := bin/release-notes
 
@@ -68,6 +69,8 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= Always
+
+CLUSTER_TEMPLATE ?= cluster-template.yaml
 
 ## --------------------------------------
 ## Help
@@ -165,6 +168,7 @@ modules: ## Runs go mod to ensure proper vendoring.
 generate: ## Generate code
 	$(MAKE) generate-go
 	$(MAKE) generate-manifests
+	$(MAKE) generate-flavors
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
@@ -190,6 +194,10 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		paths=./controllers/... \
 		output:rbac:dir=$(RBAC_ROOT) \
 		rbac:roleName=manager-role
+
+.PHONY: generate-flavors ## Generate template flavors
+generate-flavors: $(KUSTOMIZE)
+	./hack/gen-flavors.sh
 
 ## --------------------------------------
 ## Docker
@@ -260,10 +268,15 @@ release: clean-release  ## Builds and push container images using the latest git
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(PROD_REGISTRY)/$(IMAGE_NAME) MANIFEST_TAG=$(RELEASE_TAG)
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent
 	$(MAKE) release-manifests
+	$(MAKE) release-templates
 
 .PHONY: release-manifests
 release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
 	kustomize build config > $(RELEASE_DIR)/infrastructure-components.yaml
+
+.PHONY: release-templates
+release-templates: $(RELEASE_DIR)
+	cp templates/cluster-template* $(RELEASE_DIR)/
 
 .PHONY: release-binary
 release-binary: $(RELEASE_DIR)
@@ -327,7 +340,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 .PHONY: create-workload-cluster
 create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	# Create workload Cluster.
-	$(KUSTOMIZE) build templates | $(ENVSUBST) | kubectl apply -f -
+	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
 
 	# Wait for the kubeconfig to become available.
 	timeout 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"

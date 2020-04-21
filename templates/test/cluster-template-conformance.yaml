@@ -2,6 +2,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   template:
     spec:
@@ -33,7 +34,7 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: external
+            cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -59,6 +60,7 @@ apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -104,7 +106,7 @@ spec:
         extraArgs:
           allocate-node-cidrs: "false"
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-provider: azure
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -139,13 +141,13 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-config: /etc/kubernetes/azure.json
-          cloud-provider: external
+          cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
@@ -157,6 +159,9 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
+  additionalTags:
+    creationTimestamp: ${TIMESTAMP}
+    jobName: cluster-api-provider-azure-conformance
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -184,6 +189,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   template:
     spec:
