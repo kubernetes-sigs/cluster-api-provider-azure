@@ -71,9 +71,9 @@ build_k8s() {
 create_cluster() {
     # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
     if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
-        export CLUSTER_TEMPLATE="test/cluster-template-conformance-ci-version"
+        export CLUSTER_TEMPLATE="test/cluster-template-conformance-ci-version.yaml"
     else
-        export CLUSTER_TEMPLATE="test/cluster-template-conformance"
+        export CLUSTER_TEMPLATE="test/cluster-template-conformance.yaml"
     fi
 
     export CLUSTER_NAME="capz-conformance-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
