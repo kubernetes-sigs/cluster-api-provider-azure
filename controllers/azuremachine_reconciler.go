@@ -305,6 +305,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			Image:      image,
 			CustomData: bootstrapData,
 			Zone:       vmZone,
+			Identity:   s.machineScope.AzureMachine.Spec.Identity,
 		}
 
 		err = s.virtualMachinesSvc.Reconcile(s.clusterScope.Context, vmSpec)

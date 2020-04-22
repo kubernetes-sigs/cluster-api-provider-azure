@@ -398,7 +398,15 @@ type AvailabilityZone struct {
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.
+// +kubebuilder:validation:Enum=None;SystemAssigned
 type VMIdentity string
+
+const (
+	// VMIdentityNone ...
+	VMIdentityNone VMIdentity = "None"
+	// VMIdentitySystemAssigned ...
+	VMIdentitySystemAssigned VMIdentity = "SystemAssigned"
+)
 
 type OSDisk struct {
 	OSType      string      `json:"osType"`

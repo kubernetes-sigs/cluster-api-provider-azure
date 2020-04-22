@@ -36,6 +36,9 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+	if restored.Spec.Identity != "" {
+		dst.Spec.Identity = restored.Spec.Identity
+	}
 
 	return nil
 }

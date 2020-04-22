@@ -34,6 +34,9 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+	if restored.Spec.Template.Spec.Identity != "" {
+		dst.Spec.Template.Spec.Identity = restored.Spec.Template.Spec.Identity
+	}
 
 	return nil
 }

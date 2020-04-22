@@ -44,6 +44,13 @@ type AzureMachineSpec struct {
 	// +optional
 	Image *Image `json:"image,omitempty"`
 
+	// Identity is the type of identity used for the virtual machine.
+	// The type 'SystemAssigned' is an implicitly created identity
+	// The generated identity will be assigned a Subscription contributor role
+	// +kubebuilder:default=None
+	// +optional
+	Identity VMIdentity `json:"identity,omitempty"`
+
 	OSDisk OSDisk `json:"osDisk"`
 
 	Location string `json:"location"`

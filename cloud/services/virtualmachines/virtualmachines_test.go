@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments/mock_roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -368,7 +369,7 @@ func TestReconcileVM(t *testing.T) {
 		machine       clusterv1.Machine
 		machineConfig *infrav1.AzureMachineSpec
 		azureCluster  *infrav1.AzureCluster
-		expect        func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
+		expect        func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder)
 		expectedError string
 	}{
 		{
@@ -416,9 +417,62 @@ func TestReconcileVM(t *testing.T) {
 					},
 				},
 			},
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder) {
 				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
 				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			},
+			expectedError: "",
+		},
+		{
+			name: "can create a vm with system assigned identity",
+			machine: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"set": "node"},
+				},
+				Spec: clusterv1.MachineSpec{
+					Bootstrap: clusterv1.Bootstrap{
+						Data: to.StringPtr("bootstrap-data"),
+					},
+					Version: to.StringPtr("1.15.7"),
+				},
+			},
+			machineConfig: &infrav1.AzureMachineSpec{
+				VMSize:   "Standard_B2ms",
+				Location: "eastus",
+				Image:    image,
+				Identity: "SystemAssigned",
+			},
+			azureCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							&infrav1.SubnetSpec{
+								Name: "subnet-1",
+							},
+							&infrav1.SubnetSpec{},
+						},
+					},
+				},
+				Status: infrav1.AzureClusterStatus{
+					Network: infrav1.Network{
+						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
+							infrav1.SecurityGroupControlPlane: {
+								ID: "1",
+							},
+							infrav1.SecurityGroupNode: {
+								ID: "2",
+							},
+						},
+						APIServerIP: infrav1.PublicIP{
+							DNSName: "azure-test-dns",
+						},
+					},
+				},
+			},
+			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder) {
+				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
+				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				mra.Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			expectedError: "",
 		},
@@ -467,11 +521,11 @@ func TestReconcileVM(t *testing.T) {
 					},
 				},
 			},
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder) {
 				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
 				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
-			expectedError: "cannot create vm: #: Internal Server Error: StatusCode=500",
+			expectedError: "cannot create VM: #: Internal Server Error: StatusCode=500",
 		},
 	}
 
@@ -481,6 +535,7 @@ func TestReconcileVM(t *testing.T) {
 			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 			interfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
+			roleAssignmentMock := mock_roleassignments.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -528,7 +583,7 @@ func TestReconcileVM(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			machineScope.AzureMachine.Spec = *tc.machineConfig
-			tc.expect(vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
+			tc.expect(vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), roleAssignmentMock.EXPECT())
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
@@ -542,11 +597,12 @@ func TestReconcileVM(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			s := &Service{
-				Scope:            clusterScope,
-				MachineScope:     machineScope,
-				Client:           vmMock,
-				InterfacesClient: interfaceMock,
-				PublicIPsClient:  publicIPMock,
+				Scope:                 clusterScope,
+				MachineScope:          machineScope,
+				Client:                vmMock,
+				InterfacesClient:      interfaceMock,
+				PublicIPsClient:       publicIPMock,
+				RoleAssignmentsClient: roleAssignmentMock,
 			}
 
 			vmSpec := &Spec{
