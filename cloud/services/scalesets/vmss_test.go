@@ -263,6 +263,7 @@ func TestService_Reconcile(t *testing.T) {
 							StorageAccountType: "accountType",
 						},
 					},
+					// TODO: add here
 					Image: &infrav1.Image{
 						ID: to.StringPtr("image"),
 					},

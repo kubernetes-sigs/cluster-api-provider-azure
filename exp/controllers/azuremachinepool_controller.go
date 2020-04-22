@@ -500,6 +500,7 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 		SSHKeyData:            string(decoded),
 		Image:                 image,
 		OSDisk:                ampSpec.Template.OSDisk,
+		DataDisks:  		   ampSpec.Template.DataDisks,
 		CustomData:            bootstrapData,
 		AdditionalTags:        s.machinePoolScope.AdditionalTags(),
 		SubnetID:              s.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,

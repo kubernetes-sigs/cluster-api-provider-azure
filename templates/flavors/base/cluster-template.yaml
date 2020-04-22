@@ -98,6 +98,23 @@ spec:
             "useManagedIdentityExtension": false,
             "useInstanceMetadata": true
           }
+    diskSetup:
+      partitions:
+        - device: /dev/disk/azure/scsi1/lun0
+          tableType: gpt
+          layout: true
+          overwrite: false
+      filesystems:
+        - label: etcd_disk
+          filesystem: ext4
+          device: /dev/disk/azure/scsi1/lun0
+          extraOpts:
+            - "-F"
+            - "-E"
+            - "lazy_itable_init=1,lazy_journal_init=1"
+    mounts:
+      - - etcd_disk
+        - /var/lib/etcd
   version: "${KUBERNETES_VERSION}"
 ---
 kind: AzureMachineTemplate
@@ -114,4 +131,8 @@ spec:
         diskSizeGB: 128
         managedDisk:
           storageAccountType: "Premium_LRS"
+      dataDisks:
+        - nameSuffix: etcddisk
+          diskSizeGB: 256
+          lun: 0
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}

@@ -56,6 +56,10 @@ func (m *AzureMachine) ValidateCreate() error {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -72,6 +76,10 @@ func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
 	}
 
 	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 

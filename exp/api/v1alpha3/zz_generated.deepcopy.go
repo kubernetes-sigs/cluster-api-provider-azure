@@ -152,6 +152,13 @@ func (in *AzureMachineTemplate) DeepCopyInto(out *AzureMachineTemplate) {
 		(*in).DeepCopyInto(*out)
 	}
 	out.OSDisk = in.OSDisk
+	if in.DataDisks != nil {
+		in, out := &in.DataDisks, &out.DataDisks
+		*out = make([]apiv1alpha3.DataDisk, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.AcceleratedNetworking != nil {
 		in, out := &in.AcceleratedNetworking, &out.AcceleratedNetworking
 		*out = new(bool)

@@ -581,6 +581,7 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha2_AzureMachineSpec(in *v1al
 	if err := Convert_v1alpha3_OSDisk_To_v1alpha2_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
+	// WARNING: in.DataDisks requires manual conversion: does not exist in peer-type
 	out.Location = in.Location
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))

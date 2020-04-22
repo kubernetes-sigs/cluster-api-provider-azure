@@ -136,6 +136,11 @@ func GenerateOSDiskName(machineName string) string {
 	return fmt.Sprintf("%s_OSDisk", machineName)
 }
 
+// GenerateDataDiskName generates the name of a data disk based on the name of a VM.
+func GenerateDataDiskName(machineName, nameSuffix string) string {
+	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
+}
+
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
 func getDefaultImageSKUID(k8sVersion string) (string, error) {
 	version, err := semver.ParseTolerant(k8sVersion)

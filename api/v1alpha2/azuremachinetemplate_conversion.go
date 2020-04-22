@@ -44,6 +44,9 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 		dst.Spec.Template.Spec.AcceleratedNetworking = restored.Spec.Template.Spec.AcceleratedNetworking
 	}
 	dst.Spec.Template.Spec.FailureDomain = restored.Spec.Template.Spec.FailureDomain
+	if len(restored.Spec.Template.Spec.DataDisks) != 0 {
+		dst.Spec.Template.Spec.DataDisks = restored.Spec.Template.Spec.DataDisks
+	}
 
 	return nil
 }

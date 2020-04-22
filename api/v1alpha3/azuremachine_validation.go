@@ -29,12 +29,12 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 
 	decoded, err := base64.StdEncoding.DecodeString(sshKey)
 	if err != nil {
-		allErrs = append(allErrs, field.Required(fldPath, "the SSH public key is not properly base64 encoded"))
+		allErrs = append(allErrs, field.Invalid(fldPath, "the SSH public key is not properly base64 encoded"))
 		return allErrs
 	}
 
-	if _, _, _, _, err := ssh.ParseAuthorizedKey(decoded); err != nil {
-		allErrs = append(allErrs, field.Required(fldPath, "the SSH public key is not valid"))
+	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(sshKey)); err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, sshKey, "the SSH public key is not valid"))
 		return allErrs
 	}
 
@@ -48,6 +48,20 @@ func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentetie
 	if identityType == VMIdentityUserAssigned && len(userAssignedIdenteties) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
 	}
+}
 
+// ValidateDataDisks validates a list of data disks
+func ValidateDataDisks(dataDisks []DataDisk, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	// check that all LUNs are unique
+	set := make(map[int32]struct{})
+	for _, disk := range dataDisks {
+		if _, ok := set[disk.Lun]; ok {
+			allErrs = append(allErrs, field.Invalid(fldPath, disk, "The LUN must be unique for each data disk attached to a VM"))
+		} else {
+			set[disk.Lun] = struct{}{}
+		}
+	}
 	return allErrs
 }

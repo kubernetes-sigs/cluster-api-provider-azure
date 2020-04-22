@@ -48,6 +48,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	dst.Spec.FailureDomain = restored.Spec.FailureDomain
 
+	if len(restored.Spec.DataDisks) != 0 {
+		dst.Spec.DataDisks = restored.Spec.DataDisks
+	}
+
 	return nil
 }
 
