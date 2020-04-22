@@ -20,6 +20,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"github.com/Azure/go-autorest/autorest/to"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -156,5 +157,107 @@ func generateValidOSDisk() OSDisk {
 		ManagedDisk: ManagedDisk{
 			StorageAccountType: "Premium_LRS",
 		},
+	}
+}
+
+func TestAzureMachine_ValidateDataDisks(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name    string
+		disks   []DataDisk
+		wantErr bool
+	}{
+		{
+			name:    "valid nil data disks",
+			disks:   nil,
+			wantErr: false,
+		},
+		{
+			name:    "valid empty data disks",
+			disks:   []DataDisk{},
+			wantErr: false,
+		},
+		{
+			name: "valid disks",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "duplicate names",
+			disks: []DataDisk{
+				{
+					NameSuffix: "disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate LUNs",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid disk size",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 0,
+					Lun:        to.Int32Ptr(0),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty name",
+			disks: []DataDisk{
+				{
+					NameSuffix: "",
+					DiskSizeGB: 0,
+					Lun:        to.Int32Ptr(0),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateDataDisks(test.disks, field.NewPath("dataDisks"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
 	}
 }

@@ -66,7 +66,11 @@ type AzureMachineSpec struct {
 	// +optional
 	UserAssignedIdentities []UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 
+	// OSDisk specifies the parameters for the operating system disk of the machine
 	OSDisk OSDisk `json:"osDisk"`
+
+	// DataDisk specifies the parameters that are used to add one or more data disks to the machine
+	DataDisks []DataDisk `json:"dataDisks,omitempty"`
 
 	Location string `json:"location"`
 

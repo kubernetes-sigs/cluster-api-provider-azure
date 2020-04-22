@@ -74,6 +74,9 @@ spec:
             mountPath: /etc/kubernetes/azure.json
             name: cloud-config
             readOnly: true
+      etcd:
+        local:
+          dataDir: "/var/lib/etcddisk/etcd"
     files:
     - contentFrom:
         secret:
@@ -82,6 +85,26 @@ spec:
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
+    diskSetup:
+      partitions:
+        - device: /dev/disk/azure/scsi1/lun0
+          tableType: gpt
+          layout: true
+          overwrite: false
+      filesystems:
+        - label: etcd_disk
+          filesystem: ext4
+          device: /dev/disk/azure/scsi1/lun0
+          extraOpts:
+            - "-E"
+            - "lazy_itable_init=1,lazy_journal_init=1"
+        - label: ephemeral0
+          filesystem: ext4
+          device: ephemeral0.1
+          replaceFS: ntfs
+    mounts:
+      - - LABEL=etcd_disk
+        - /var/lib/etcddisk
   version: "${KUBERNETES_VERSION}"
 ---
 kind: AzureMachineTemplate
@@ -98,6 +121,10 @@ spec:
         diskSizeGB: 128
         managedDisk:
           storageAccountType: "Premium_LRS"
+      dataDisks:
+        - nameSuffix: etcddisk
+          diskSizeGB: 256
+          lun: 0
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
 ---
 apiVersion: v1

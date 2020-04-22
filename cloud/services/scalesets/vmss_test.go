@@ -271,6 +271,13 @@ func TestService_Reconcile(t *testing.T) {
 							StorageAccountType: "accountType",
 						},
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
 					Image: &infrav1.Image{
 						ID: to.StringPtr("image"),
 					},
@@ -499,6 +506,13 @@ func TestService_Reconcile(t *testing.T) {
 							StorageAccountType: "accountType",
 						},
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
 					Image: &infrav1.Image{
 						ID: to.StringPtr("image"),
 					},
@@ -617,6 +631,14 @@ func TestService_Reconcile(t *testing.T) {
 								OsDisk: &compute.VirtualMachineScaleSetUpdateOSDisk{
 									DiskSizeGB:  to.Int32Ptr(120),
 									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{StorageAccountType: "accountType"},
+								},
+								DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
+									{
+										Name:         to.StringPtr("capz-mp-0_my_disk"),
+										Lun:          to.Int32Ptr(0),
+										CreateOption: "Empty",
+										DiskSizeGB:   to.Int32Ptr(128),
+									},
 								},
 							},
 						},

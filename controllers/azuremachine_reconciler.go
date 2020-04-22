@@ -228,6 +228,7 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 		SSHKeyData:             string(decoded),
 		Size:                   s.machineScope.AzureMachine.Spec.VMSize,
 		OSDisk:                 s.machineScope.AzureMachine.Spec.OSDisk,
+		DataDisks:              s.machineScope.AzureMachine.Spec.DataDisks,
 		Image:                  image,
 		CustomData:             bootstrapData,
 		Zone:                   vmZone,

@@ -48,6 +48,7 @@ type Spec struct {
 	Image                  *infrav1.Image
 	Identity               infrav1.VMIdentity
 	OSDisk                 infrav1.OSDisk
+	DataDisks              []infrav1.DataDisk
 	CustomData             string
 	UserAssignedIdentities []infrav1.UserAssignedIdentity
 	SpotVMOptions          *infrav1.SpotVMOptions
@@ -338,6 +339,17 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 			},
 		},
 	}
+
+	dataDisks := []compute.DataDisk{}
+	for _, disk := range vmSpec.DataDisks {
+		dataDisks = append(dataDisks, compute.DataDisk{
+			CreateOption: compute.DiskCreateOptionTypesEmpty,
+			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
+			Lun:          disk.Lun,
+			Name:         to.StringPtr(azure.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
+		})
+	}
+	storageProfile.DataDisks = &dataDisks
 
 	imageRef, err := converters.ImageToSDK(vmSpec.Image)
 	if err != nil {

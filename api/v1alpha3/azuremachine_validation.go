@@ -31,12 +31,12 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 
 	decoded, err := base64.StdEncoding.DecodeString(sshKey)
 	if err != nil {
-		allErrs = append(allErrs, field.Required(fldPath, "the SSH public key is not properly base64 encoded"))
+		allErrs = append(allErrs, field.Invalid(fldPath, sshKey, "the SSH public key is not properly base64 encoded"))
 		return allErrs
 	}
 
 	if _, _, _, _, err := ssh.ParseAuthorizedKey(decoded); err != nil {
-		allErrs = append(allErrs, field.Required(fldPath, "the SSH public key is not valid"))
+		allErrs = append(allErrs, field.Invalid(fldPath, sshKey, "the SSH public key is not valid"))
 		return allErrs
 	}
 
@@ -50,7 +50,41 @@ func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentetie
 	if identityType == VMIdentityUserAssigned && len(userAssignedIdenteties) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
 	}
+	return allErrs
+}
 
+// ValidateDataDisks validates a list of data disks
+func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	lunSet := make(map[int32]struct{})
+	nameSet := make(map[string]struct{})
+	for _, disk := range dataDisks {
+		// validate that the disk size is between 4 and 32767.
+		if disk.DiskSizeGB < 4 || disk.DiskSizeGB > 32767 {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Child("DiskSizeGB"), "", "the disk size should be a value between 4 and 32767"))
+		}
+
+		// validate that all names are unique
+		if disk.NameSuffix == "" {
+			allErrs = append(allErrs, field.Required(fieldPath.Child("NameSuffix"), "the name suffix cannot be empty"))
+		}
+		if _, ok := nameSet[disk.NameSuffix]; ok {
+			allErrs = append(allErrs, field.Duplicate(fieldPath, disk.NameSuffix))
+		} else {
+			nameSet[disk.NameSuffix] = struct{}{}
+		}
+
+		// validate that all LUNs are unique and between 0 and 63.
+		if disk.Lun == nil {
+			allErrs = append(allErrs, field.Required(fieldPath, "LUN should not be nil"))
+		} else if *disk.Lun < 0 || *disk.Lun > 63 {
+			allErrs = append(allErrs, field.Invalid(fieldPath, disk.Lun, "logical unit number must be between 0 and 63"))
+		} else if _, ok := lunSet[*disk.Lun]; ok {
+			allErrs = append(allErrs, field.Duplicate(fieldPath, disk.Lun))
+		} else {
+			lunSet[*disk.Lun] = struct{}{}
+		}
+	}
 	return allErrs
 }
 

@@ -521,6 +521,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		SSHKeyData:             string(decoded),
 		Image:                  image,
 		OSDisk:                 ampSpec.Template.OSDisk,
+		DataDisks:              ampSpec.Template.DataDisks,
 		CustomData:             bootstrapData,
 		AdditionalTags:         s.machinePoolScope.AdditionalTags(),
 		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().ID,

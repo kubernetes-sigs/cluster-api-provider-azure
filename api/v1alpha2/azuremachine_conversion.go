@@ -55,11 +55,12 @@ func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
 	if restored.AcceleratedNetworking != nil {
 		dst.AcceleratedNetworking = restored.AcceleratedNetworking
 	}
-
 	dst.FailureDomain = restored.FailureDomain
-
 	if restored.SpotVMOptions != nil {
 		dst.SpotVMOptions = restored.SpotVMOptions.DeepCopy()
+	}
+	if len(restored.DataDisks) != 0 {
+		dst.DataDisks = restored.DataDisks
 	}
 }
 
