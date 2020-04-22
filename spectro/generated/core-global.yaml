@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: capi-webhook-system/capz-serving-cert
-    controller-gen.kubebuilder.io/version: v0.2.6
+    controller-gen.kubebuilder.io/version: v0.2.8
   creationTimestamp: null
   labels:
     cluster.x-k8s.io/provider: infrastructure-azure
@@ -406,7 +406,28 @@ spec:
     storage: false
     subresources:
       status: {}
-  - name: v1alpha3
+  - additionalPrinterColumns:
+    - description: Cluster to which this AzureCluster belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - jsonPath: .spec.resourceGroup
+      name: Resource Group
+      priority: 1
+      type: string
+    - jsonPath: .spec.location
+      name: Location
+      priority: 1
+      type: string
+    - description: Control Plane Endpoint
+      jsonPath: .spec.controlPlaneEndpoint.host
+      name: Endpoint
+      priority: 1
+      type: string
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: AzureCluster is the Schema for the azureclusters API
@@ -852,7 +873,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: capi-webhook-system/capz-serving-cert
-    controller-gen.kubebuilder.io/version: v0.2.6
+    controller-gen.kubebuilder.io/version: v0.2.8
   creationTimestamp: null
   labels:
     cluster.x-k8s.io/provider: infrastructure-azure
@@ -1047,7 +1068,36 @@ spec:
     storage: false
     subresources:
       status: {}
-  - name: v1alpha3
+  - additionalPrinterColumns:
+    - description: AzureMachine ready status
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - description: Azure VM provisioning state
+      jsonPath: .status.vmState
+      name: State
+      type: string
+    - description: Cluster to which this AzureMachine belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      priority: 1
+      type: string
+    - description: Machine object to which this AzureMachine belongs
+      jsonPath: .metadata.ownerReferences[?(@.kind=="Machine")].name
+      name: Machine
+      priority: 1
+      type: string
+    - description: Azure VM ID
+      jsonPath: .spec.providerID
+      name: VM ID
+      priority: 1
+      type: string
+    - description: Azure VM Size
+      jsonPath: .spec.vmSize
+      name: VM Size
+      priority: 1
+      type: string
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: AzureMachine is the Schema for the azuremachines API
@@ -1281,7 +1331,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: capi-webhook-system/capz-serving-cert
-    controller-gen.kubebuilder.io/version: v0.2.6
+    controller-gen.kubebuilder.io/version: v0.2.8
   creationTimestamp: null
   labels:
     cluster.x-k8s.io/provider: infrastructure-azure
