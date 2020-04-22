@@ -111,10 +111,13 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						},
 					},
 				},
+				// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
+				// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
 				LoadBalancingRules: &[]network.LoadBalancingRule{
 					{
 						Name: to.StringPtr("LBRuleHTTPS"),
 						LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
+							DisableOutboundSnat:  to.BoolPtr(true),
 							Protocol:             network.TransportProtocolTCP,
 							FrontendPort:         to.Int32Ptr(s.Scope.APIServerPort()),
 							BackendPort:          to.Int32Ptr(s.Scope.APIServerPort()),
@@ -129,6 +132,23 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 							},
 							Probe: &network.SubResource{
 								ID: to.StringPtr(fmt.Sprintf("/%s/%s/probes/%s", idPrefix, lbName, probeName)),
+							},
+						},
+					},
+				},
+				OutboundRules: &[]network.OutboundRule{
+					{
+						Name: to.StringPtr("OutboundNATAllProtocols"),
+						OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
+							Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
+							IdleTimeoutInMinutes: to.Int32Ptr(4),
+							FrontendIPConfigurations: &[]network.SubResource{
+								{
+									ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+								},
+							},
+							BackendAddressPool: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
 							},
 						},
 					},

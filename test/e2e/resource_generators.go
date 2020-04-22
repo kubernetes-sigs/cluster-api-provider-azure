@@ -32,15 +32,18 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
 	kubeadmv1beta1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/types/v1beta1"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 )
@@ -69,18 +72,53 @@ type azureConfig struct {
 }
 
 var (
-	// TODO Parameterize some of these variables
-	location       = GetRegion()
-	vmSize         = "Standard_D2s_v3"
-	namespace      = "default"
-	imageOffer     = "capi"
-	imagePublisher = "cncf-upstream"
-	imageSKU       = "k8s-1dot16dot6-ubuntu-1804"
-	imageVersion   = "latest"
+	location       string
+	vmSize         string
+	namespace      string
+	imageOffer     string
+	imagePublisher string
+	imageSKU       string
+	imageVersion   string
 )
 
+func (c *ClusterGenerator) VariablesInit() {
+
+	v := viper.New()
+
+	v.SetDefault("location", GetRegion())
+	v.SetDefault("vmSize", "Standard_D2s_v3")
+	v.SetDefault("namespace", "default")
+	v.SetDefault("imageOffer", "capi")
+	v.SetDefault("imagePublisher", "cncf-upstream")
+	v.SetDefault("imageSKU", "k8s-1dot16dot6-ubuntu-1804")
+	v.SetDefault("imageVersion", "latest")
+
+	v.AddConfigPath(".")
+	v.AutomaticEnv()
+
+	v.SetConfigFile(".env")
+	err := v.ReadInConfig()
+	if err != nil {
+		log.Printf("Error while reading config file .env. Trying config-capz yaml file. Error: %s", err.Error())
+		v.SetConfigName("config-capz")
+		v.SetConfigType("yaml")
+		err = v.ReadInConfig()
+		if err != nil {
+			log.Printf("Error reading the config-capz file. Using the default values or values set via environment variables. Error: %s", err.Error())
+		}
+	}
+
+	location = v.GetString("location")
+	vmSize = v.GetString("vmSize")
+	namespace = v.GetString("namespace")
+	imageOffer = v.GetString("imageOffer")
+	imagePublisher = v.GetString("imagePublisher")
+	imageSKU = v.GetString("imageSKU")
+	imageVersion = v.GetString("imageVersion")
+}
+
 func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
-	name := "capz-" + util.RandomString(6)
+	name := "capz-e2e" + util.RandomString(6)
 	vnetName := name + "-vnet"
 	tags := map[string]string{
 		"creationTimestamp": time.Now().UTC().Format(time.RFC3339),
@@ -116,6 +154,12 @@ func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *
 				Namespace:  infraCluster.GetNamespace(),
 				Name:       infraCluster.GetName(),
 			},
+			ControlPlaneRef: &corev1.ObjectReference{
+				APIVersion: controlplanev1.GroupVersion.String(),
+				Kind:       "KubeadmControlPlane",
+				Namespace:  namespace,
+				Name:       fmt.Sprintf("%s-control-plane", name),
+			},
 		},
 	}
 	return cluster, infraCluster
@@ -125,108 +169,125 @@ type NodeGenerator struct {
 	counter int
 }
 
-func (n *NodeGenerator) GenerateNode(creds auth.Creds, clusterName string) framework.Node {
+func (n *NodeGenerator) GenerateMachineTemplate(creds auth.Creds, clusterName string) runtime.Object {
 	sshkey, err := sshkey()
 	Expect(err).NotTo(HaveOccurred())
 
-	firstControlPlane := n.counter == 0
-	name := fmt.Sprintf("%s-controlplane-%d", clusterName, n.counter)
-	n.counter++
-
-	infraMachine := &infrav1.AzureMachine{
+	return &infrav1.AzureMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      name,
+			Name:      fmt.Sprintf("%s-control-plane", clusterName),
 		},
-		Spec: infrav1.AzureMachineSpec{
-			VMSize:       vmSize,
-			Location:     location,
-			SSHPublicKey: sshkey,
-			Image: &infrav1.Image{
-				Marketplace: &infrav1.AzureMarketplaceImage{
-					Publisher: imagePublisher,
-					Offer:     imageOffer,
-					SKU:       imageSKU,
-					Version:   imageVersion,
-				},
-			},
-			OSDisk: infrav1.OSDisk{
-				DiskSizeGB: 128,
-				OSType:     "Linux",
-				ManagedDisk: infrav1.ManagedDisk{
-					StorageAccountType: "Premium_LRS",
+		Spec: infrav1.AzureMachineTemplateSpec{
+			Template: infrav1.AzureMachineTemplateResource{
+				Spec: infrav1.AzureMachineSpec{
+					VMSize:       vmSize,
+					Location:     location,
+					SSHPublicKey: sshkey,
+					Image: &infrav1.Image{
+						Marketplace: &infrav1.AzureMarketplaceImage{
+							Publisher: imagePublisher,
+							Offer:     imageOffer,
+							SKU:       imageSKU,
+							Version:   imageVersion,
+						},
+					},
+					OSDisk: infrav1.OSDisk{
+						DiskSizeGB: 128,
+						OSType:     "Linux",
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
 				},
 			},
 		},
 	}
-	bootstrapConfig := &bootstrapv1.KubeadmConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
-		},
-		Spec: bootstrapv1.KubeadmConfigSpec{
-			Files: []bootstrapv1.File{
-				{
-					Owner:       "root:root",
-					Path:        "/etc/kubernetes/azure.json",
-					Permissions: "0644",
-					Content:     cloudConfig(clusterName, creds),
-				},
-			},
-			InitConfiguration: &kubeadmv1beta1.InitConfiguration{},
-			JoinConfiguration: &kubeadmv1beta1.JoinConfiguration{},
-		},
-	}
-	registrationOptions := kubeadmv1beta1.NodeRegistrationOptions{
-		Name: `{{ ds.meta_data["local_hostname"] }}`,
-		KubeletExtraArgs: map[string]string{
-			"cloud-provider": "azure",
-			"cloud-config":   "/etc/kubernetes/azure.json",
-		},
-	}
+}
 
-	if firstControlPlane {
-		cpInitConfiguration(bootstrapConfig, registrationOptions)
-	} else {
-		cpJoinConfiguration(bootstrapConfig, registrationOptions)
-	}
-
+func (n *NodeGenerator) GenerateKubeadmControlplane(creds auth.Creds, clusterName string, controlplaneMachineCount int32) *controlplanev1.KubeadmControlPlane {
 	defaultConfig, _ := framework.DefaultConfig()
 	defaultConfig.Defaults()
 
-	machine := &capiv1.Machine{
+	controlplane := controlplanev1.KubeadmControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      name,
-			Labels: map[string]string{
-				capiv1.MachineControlPlaneLabelName: "true",
-			},
+			Name:      fmt.Sprintf("%s-control-plane", clusterName),
 		},
-		Spec: capiv1.MachineSpec{
-			Bootstrap: capiv1.Bootstrap{
-				ConfigRef: &corev1.ObjectReference{
-					APIVersion: bootstrapv1.GroupVersion.String(),
-					Kind:       framework.TypeToKind(bootstrapConfig),
-					Namespace:  bootstrapConfig.GetNamespace(),
-					Name:       bootstrapConfig.GetName(),
+		Spec: controlplanev1.KubeadmControlPlaneSpec{
+			Replicas: pointer.Int32Ptr(controlplaneMachineCount),
+			InfrastructureTemplate: corev1.ObjectReference{
+				Kind:       "AzureMachineTemplate",
+				APIVersion: infrav1.GroupVersion.String(),
+				Name:       fmt.Sprintf("%s-control-plane", clusterName),
+			},
+			KubeadmConfigSpec: bootstrapv1.KubeadmConfigSpec{
+				UseExperimentalRetryJoin: true,
+				Files: []bootstrapv1.File{
+					{
+						Owner:       "root:root",
+						Path:        "/etc/kubernetes/azure.json",
+						Permissions: "0644",
+						Content:     cloudConfig(clusterName, creds),
+					},
+				},
+				InitConfiguration: &kubeadmv1beta1.InitConfiguration{
+					NodeRegistration: kubeadmv1beta1.NodeRegistrationOptions{
+						Name: `{{ ds.meta_data["local_hostname"] }}`,
+						KubeletExtraArgs: map[string]string{
+							"cloud-provider": "azure",
+							"cloud-config":   "/etc/kubernetes/azure.json",
+						},
+					},
+				},
+				JoinConfiguration: &kubeadmv1beta1.JoinConfiguration{
+					NodeRegistration: kubeadmv1beta1.NodeRegistrationOptions{
+						Name: `{{ ds.meta_data["local_hostname"] }}`,
+						KubeletExtraArgs: map[string]string{
+							"cloud-provider": "azure",
+							"cloud-config":   "/etc/kubernetes/azure.json",
+						},
+					},
+				},
+				ClusterConfiguration: &kubeadmv1beta1.ClusterConfiguration{
+					APIServer: kubeadmv1beta1.APIServer{
+						ControlPlaneComponent: kubeadmv1beta1.ControlPlaneComponent{
+							ExtraArgs: map[string]string{
+								"cloud-provider": "azure",
+								"cloud-config":   "/etc/kubernetes/azure.json",
+							},
+							ExtraVolumes: []kubeadmv1beta1.HostPathMount{
+								{
+									Name:      "cloud-config",
+									HostPath:  "/etc/kubernetes/azure.json",
+									MountPath: "/etc/kubernetes/azure.json",
+									ReadOnly:  true,
+								},
+							},
+						},
+						TimeoutForControlPlane: &metav1.Duration{Duration: 20 * time.Minute},
+					},
+					ControllerManager: kubeadmv1beta1.ControlPlaneComponent{
+						ExtraArgs: map[string]string{
+							"allocate-node-cidrs": "false",
+							"cloud-provider":      "azure",
+							"cloud-config":        "/etc/kubernetes/azure.json",
+						},
+						ExtraVolumes: []kubeadmv1beta1.HostPathMount{
+							{
+								Name:      "cloud-config",
+								HostPath:  "/etc/kubernetes/azure.json",
+								MountPath: "/etc/kubernetes/azure.json",
+								ReadOnly:  true,
+							},
+						},
+					},
 				},
 			},
-			InfrastructureRef: corev1.ObjectReference{
-				APIVersion: infrav1.GroupVersion.String(),
-				Kind:       framework.TypeToKind(infraMachine),
-				Namespace:  infraMachine.GetNamespace(),
-				Name:       infraMachine.GetName(),
-			},
-			Version: pointer.StringPtr(defaultConfig.KubernetesVersion),
-
-			ClusterName: clusterName,
+			Version: defaultConfig.KubernetesVersion,
 		},
 	}
-	return framework.Node{
-		Machine:         machine,
-		InfraMachine:    infraMachine,
-		BootstrapConfig: bootstrapConfig,
-	}
+	return &controlplane
 }
 
 func cloudConfig(clusterName string, creds auth.Creds) string {
@@ -282,48 +343,6 @@ func sshkey() (string, error) {
 	return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(pub)), nil
 }
 
-func cpInitConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions kubeadmv1beta1.NodeRegistrationOptions) {
-	kubeadmConfig.Spec.ClusterConfiguration = &kubeadmv1beta1.ClusterConfiguration{
-		APIServer: kubeadmv1beta1.APIServer{
-			ControlPlaneComponent: kubeadmv1beta1.ControlPlaneComponent{
-				ExtraArgs: map[string]string{
-					"cloud-provider": "azure",
-					"cloud-config":   "/etc/kubernetes/azure.json",
-				},
-				ExtraVolumes: []kubeadmv1beta1.HostPathMount{
-					{
-						Name:      "cloud-config",
-						HostPath:  "/etc/kubernetes/azure.json",
-						MountPath: "/etc/kubernetes/azure.json",
-						ReadOnly:  true,
-					},
-				},
-			},
-			TimeoutForControlPlane: &metav1.Duration{Duration: 20 * time.Minute},
-		},
-		ControllerManager: kubeadmv1beta1.ControlPlaneComponent{
-			ExtraArgs: map[string]string{
-				"allocate-node-cidrs": "false",
-				"cloud-provider":      "azure",
-				"cloud-config":        "/etc/kubernetes/azure.json",
-			},
-			ExtraVolumes: []kubeadmv1beta1.HostPathMount{
-				{
-					Name:      "cloud-config",
-					HostPath:  "/etc/kubernetes/azure.json",
-					MountPath: "/etc/kubernetes/azure.json",
-					ReadOnly:  true,
-				},
-			},
-		},
-	}
-	kubeadmConfig.Spec.InitConfiguration = &kubeadmv1beta1.InitConfiguration{NodeRegistration: registrationOptions}
-}
-
-func cpJoinConfiguration(kubeadmConfig *bootstrapv1.KubeadmConfig, registrationOptions kubeadmv1beta1.NodeRegistrationOptions) {
-	kubeadmConfig.Spec.JoinConfiguration = &kubeadmv1beta1.JoinConfiguration{NodeRegistration: registrationOptions, ControlPlane: nil}
-}
-
 // MachineDeploymentGenerator may be used to generate the resources
 // required to create a machine deployment for testing.
 type MachineDeploymentGenerator struct {
@@ -335,6 +354,9 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 	sshkey, err := sshkey()
 	Expect(err).NotTo(HaveOccurred())
 	generatedName := fmt.Sprintf("%s-%d", clusterName, n.counter)
+
+	defaultConfig, _ := framework.DefaultConfig()
+	defaultConfig.Defaults()
 
 	infraMachineTemplate := &infrav1.AzureMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -396,8 +418,6 @@ func (n *MachineDeploymentGenerator) Generate(creds auth.Creds, namespace string
 			},
 		},
 	}
-
-	defaultConfig, _ := framework.DefaultConfig()
 
 	machineDeployment := &capiv1.MachineDeployment{
 		ObjectMeta: metav1.ObjectMeta{

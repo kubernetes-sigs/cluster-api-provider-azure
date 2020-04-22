@@ -34,18 +34,22 @@ export GO111MODULE=on
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
+TEMPLATES_DIR := $(ROOT_DIR)/templates
 BIN_DIR := bin
+RELEASE_NOTES_BIN := bin/release-notes
 
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
-GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
-MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
-KUBECTL=$(TOOLS_BIN_DIR)/kubectl
-KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
+ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
 ETCD=$(TOOLS_BIN_DIR)/etcd
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
+KUBECTL=$(TOOLS_BIN_DIR)/kubectl
+KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/kustomize)
+MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
+RELEASE_NOTES := $(TOOLS_DIR)/$(RELEASE_NOTES_BIN)
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -65,6 +69,8 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= Always
+
+CLUSTER_TEMPLATE ?= cluster-template.yaml
 
 ## --------------------------------------
 ## Help
@@ -120,17 +126,20 @@ $(CLUSTERCTL): go.mod ## Build clusterctl binary.
 $(CONTROLLER_GEN): $(TOOLS_DIR)/go.mod # Build controller-gen from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/controller-gen sigs.k8s.io/controller-tools/cmd/controller-gen
 
+$(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
+	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
+
 $(ENVSUBST): $(TOOLS_DIR)/go.mod # Build envsubst from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/envsubst github.com/a8m/envsubst/cmd/envsubst
 
 $(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod # Build golangci-lint from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 
+$(KUSTOMIZE): $(TOOLS_DIR)/go.mod # Build kustomize from tools folder.
+	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/kustomize sigs.k8s.io/kustomize/kustomize/v3
+
 $(MOCKGEN): $(TOOLS_DIR)/go.mod # Build mockgen from tools folder.
 	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mockgen github.com/golang/mock/mockgen
-
-$(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
 
 $(RELEASE_NOTES) : $(TOOLS_DIR)/go.mod
 	cd $(TOOLS_DIR) && go build -tags tools -o $(BIN_DIR)/release-notes sigs.k8s.io/cluster-api/hack/tools/release
@@ -159,6 +168,7 @@ modules: ## Runs go mod to ensure proper vendoring.
 generate: ## Generate code
 	$(MAKE) generate-go
 	$(MAKE) generate-manifests
+	$(MAKE) generate-flavors
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
@@ -184,6 +194,10 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 		paths=./controllers/... \
 		output:rbac:dir=$(RBAC_ROOT) \
 		rbac:roleName=manager-role
+
+.PHONY: generate-flavors ## Generate template flavors
+generate-flavors: $(KUSTOMIZE)
+	./hack/gen-flavors.sh
 
 ## --------------------------------------
 ## Docker
@@ -254,10 +268,15 @@ release: clean-release  ## Builds and push container images using the latest git
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(PROD_REGISTRY)/$(IMAGE_NAME) MANIFEST_TAG=$(RELEASE_TAG)
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent
 	$(MAKE) release-manifests
+	$(MAKE) release-templates
 
 .PHONY: release-manifests
-release-manifests: $(RELEASE_DIR) ## Builds the manifests to publish with a release
+release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
 	kustomize build config > $(RELEASE_DIR)/infrastructure-components.yaml
+
+.PHONY: release-templates
+release-templates: $(RELEASE_DIR)
+	cp templates/cluster-template* $(RELEASE_DIR)/
 
 .PHONY: release-binary
 release-binary: $(RELEASE_DIR)
@@ -291,9 +310,9 @@ release-notes: $(RELEASE_NOTES)
 ## --------------------------------------
 
 .PHONY: create-management-cluster
-create-management-cluster: $(ENVSUBST) 
+create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	## Create kind management cluster.
-	kind create cluster --name=clusterapi
+	$(MAKE) kind-create
 
 	# Install cert manager and wait for availability
 	kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v0.11.1/cert-manager.yaml
@@ -303,7 +322,8 @@ create-management-cluster: $(ENVSUBST)
 	kubectl apply -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.3/cluster-api-components.yaml
 
 	# Deploy CAPZ
-	kustomize build config | $(ENVSUBST) | kubectl apply -f -
+	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
+	$(KUSTOMIZE) build config | $(ENVSUBST) | kubectl apply -f -
 
 	# Wait for CAPI pods
 	kubectl wait --for=condition=Ready --timeout=5m -n capi-system pod -l cluster.x-k8s.io/provider=cluster-api
@@ -312,24 +332,24 @@ create-management-cluster: $(ENVSUBST)
 
 	# Wait for CAPZ pods
 	kubectl wait --for=condition=Ready --timeout=5m -n capz-system pod -l cluster.x-k8s.io/provider=infrastructure-azure
-	
-	# required sleep for when creating management and workload cluster simultaneously 
+
+	# required sleep for when creating management and workload cluster simultaneously
 	sleep 10
-	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-clusterapi"'
+	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
-create-workload-cluster: $(ENVSUBST) 
+create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	# Create workload Cluster.
-	kustomize build templates | $(ENVSUBST) | kubectl apply -f -
+	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
 
 	# Wait for the kubeconfig to become available.
 	timeout 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout 300 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+	timeout 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
-	kubectl --kubeconfig=./kubeconfig apply -f https://docs.projectcalico.org/v3.13/manifests/calico.yaml
+	kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
@@ -340,14 +360,27 @@ create-cluster: create-management-cluster create-workload-cluster ## Create a wo
 delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
 	@echo 'Your Azure resources will now be deleted, this can take up to 20 minutes'
 	kubectl delete cluster $(CLUSTER_NAME)
-	
+
+## --------------------------------------
+## Tilt / Kind
+## --------------------------------------
+
+.PHONY: kind-create
+kind-create: ## create capz kind cluster if needed
+	./scripts/kind-with-registry.sh
+
+.PHONY: tilt-up
+tilt-up: kind-create ## start tilt and build kind cluster if needed
+	tilt up
+
 .PHONY: delete-cluster
-delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "clusterapi"
-	kind delete cluster --name=clusterapi
+delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "capz"
+	kind delete cluster --name=capz
 
 .PHONY: kind-reset
-kind-reset: ## Destroys the "clusterapi" kind cluster.
-	kind delete cluster --name=clusterapi || true
+kind-reset: ## Destroys the "capz" kind cluster.
+	kind delete cluster --name=capz || true
+
 
 ## --------------------------------------
 ## Cleanup / Verification

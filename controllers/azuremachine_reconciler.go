@@ -73,12 +73,12 @@ func (s *azureMachineService) Create() (*infrav1.VM, error) {
 	nicName := azure.GenerateNICName(s.machineScope.Name())
 	nicErr := s.reconcileNetworkInterface(nicName)
 	if nicErr != nil {
-		return nil, errors.Wrapf(nicErr, "failed to create nic %s for machine %s", nicName, s.machineScope.Name())
+		return nil, errors.Wrapf(nicErr, "failed to create NIC %s for machine %s", nicName, s.machineScope.Name())
 	}
 
 	vm, vmErr := s.createVirtualMachine(nicName)
 	if vmErr != nil {
-		return nil, errors.Wrapf(vmErr, "failed to create vm %s ", s.machineScope.Name())
+		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
 	}
 
 	return vm, nil
@@ -131,7 +131,7 @@ func (s *azureMachineService) Delete() error {
 
 func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 	if id == nil {
-		s.clusterScope.Info("VM does not have an id")
+		s.clusterScope.Info("VM does not have an ID")
 		return nil, nil
 	}
 
@@ -145,7 +145,7 @@ func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get vm")
+		return nil, errors.Wrap(err, "Failed to get VM")
 	}
 
 	vm, ok := vmInterface.(*infrav1.VM)
@@ -153,7 +153,7 @@ func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 		return nil, errors.New("returned incorrect vm interface")
 	}
 
-	klog.Infof("Found vm for machine %s", s.machineScope.Name())
+	klog.V(2).Infof("Found VM for AzureMachine %s", s.machineScope.Name())
 
 	return vm, nil
 }

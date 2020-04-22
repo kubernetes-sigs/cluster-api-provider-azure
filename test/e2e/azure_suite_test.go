@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -42,9 +43,11 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/auth"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/generators"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/utils"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
 	frameworkgenerator "sigs.k8s.io/cluster-api/test/framework/generators"
 	"sigs.k8s.io/cluster-api/test/framework/management/kind"
@@ -96,6 +99,7 @@ var _ = BeforeSuite(func() {
 	Expect(capiv1.AddToScheme(scheme)).To(Succeed())
 	Expect(bootstrapv1.AddToScheme(scheme)).To(Succeed())
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	Expect(controlplanev1.AddToScheme(scheme)).To(Succeed())
 
 	managerImage, found := os.LookupEnv("MANAGER_IMAGE")
 	Expect(found).To(BeTrue(), fmt.Sprint("MANAGER_IMAGE not set"))
@@ -118,9 +122,10 @@ var _ = BeforeSuite(func() {
 	// Deploy the CAPI and CABPK components from Cluster API repository,
 	capi := &generators.ClusterAPI{Version: "v0.3.3"}
 	cabpk := &generators.Bootstrap{Version: "v0.3.3"}
+	kcp := &generators.KubeadmControPlane{Version: "v0.3.3"}
 	infra := &generators.Infra{Creds: creds}
 
-	framework.InstallComponents(ctx, mgmt, capi, cabpk, infra)
+	framework.InstallComponents(ctx, mgmt, capi, cabpk, kcp, infra)
 	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capi-system")
 	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capz-system")
 
@@ -268,6 +273,7 @@ func writeLogs(mgmt *kind.Cluster, namespace, deploymentName, logDir string) err
 
 func ensureCAPZArtifactsDeleted(input *ControlPlaneClusterInput) {
 	input.SetDefaults()
+	groupName := input.Management.GetName()
 
 	mgmtClient, err := input.Management.GetClient()
 	Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
@@ -283,4 +289,15 @@ func ensureCAPZArtifactsDeleted(input *ControlPlaneClusterInput) {
 		Expect(c.List(ctx, &clusters)).NotTo(HaveOccurred())
 		return clusters.Items
 	}, input.DeleteTimeout, 20*time.Second).Should(HaveLen(0))
+
+	By("Making sure there are all Azure resources are deleted")
+	_, err = utils.GetGroup(ctx, creds, groupName)
+	if err == nil {
+		log.Printf("resource group %s still exist, cleaning\n", groupName)
+		err = utils.CleanupE2EResources(ctx, creds, groupName)
+		if err != nil {
+			log.Printf("failed to delete the group %s: %s\n", groupName, err.Error())
+			return
+		}
+	}
 }

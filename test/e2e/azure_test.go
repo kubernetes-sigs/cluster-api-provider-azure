@@ -28,7 +28,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/test/framework"
 )
 
 func init() {
@@ -39,17 +38,19 @@ var _ = Describe("CAPZ e2e tests", func() {
 	Describe("Cluster creation", func() {
 
 		var (
-			clusterGen   *ClusterGenerator
-			nodeGen      *NodeGenerator
-			cluster      *capiv1.Cluster
-			infraCluster *infrav1.AzureCluster
-			input        *ControlPlaneClusterInput
-			//machineDeploymentGen = &MachineDeploymentGenerator{}
+			clusterGen           *ClusterGenerator
+			nodeGen              *NodeGenerator
+			cluster              *capiv1.Cluster
+			infraCluster         *infrav1.AzureCluster
+			input                *ControlPlaneClusterInput
+			machineDeploymentGen *MachineDeploymentGenerator
 		)
 
 		BeforeEach(func() {
 			clusterGen = &ClusterGenerator{}
 			nodeGen = &NodeGenerator{}
+			clusterGen.VariablesInit()
+			machineDeploymentGen = &MachineDeploymentGenerator{}
 			cluster, infraCluster = clusterGen.GenerateCluster(namespace)
 		})
 
@@ -60,32 +61,36 @@ var _ = Describe("CAPZ e2e tests", func() {
 
 		Context("Create single controlplane cluster", func() {
 			It("Should create a single node cluster", func() {
-				nodes := []framework.Node{nodeGen.GenerateNode(creds, cluster.GetName())}
+				controlplane := nodeGen.GenerateKubeadmControlplane(creds, cluster.GetName(), 1)
+				machineTemplate := nodeGen.GenerateMachineTemplate(creds, cluster.GetName())
 				input = &ControlPlaneClusterInput{
-					Management:    mgmt,
-					Cluster:       cluster,
-					InfraCluster:  infraCluster,
-					Nodes:         nodes,
-					CreateTimeout: 30 * time.Minute,
+					Management:      mgmt,
+					Cluster:         cluster,
+					InfraCluster:    infraCluster,
+					ControlPlane:    controlplane,
+					MachineTemplate: machineTemplate,
+					CreateTimeout:   30 * time.Minute,
 				}
 				ControlPlaneCluster(input)
 			})
 		})
 
-		// todo: re-enable this test once we fix it
-		// Context("Create multiple controlplane cluster with machine deployments", func() {
-		// 	It("Should create a 3 node cluster", func() {
-		// 		nodes := []framework.Node{nodeGen.GenerateNode(creds, cluster.GetName()), nodeGen.GenerateNode(creds, cluster.GetName()), nodeGen.GenerateNode(creds, cluster.GetName())}
-		// 		machineDeployment := machineDeploymentGen.Generate(creds, cluster.GetNamespace(), cluster.GetName(), 1)
-		// 		ControlPlaneCluster(&ControlPlaneClusterInput{
-		// 			Management:        mgmt,
-		// 			Cluster:           cluster,
-		// 			InfraCluster:      infraCluster,
-		// 			Nodes:             nodes,
-		// 			MachineDeployment: machineDeployment,
-		// 			CreateTimeout:     30 * time.Minute,
-		// 		})
-		// 	})
-		// })
+		Context("Create multiple controlplane cluster with machine deployments", func() {
+			It("Should create a 3 node cluster", func() {
+				controlplane := nodeGen.GenerateKubeadmControlplane(creds, cluster.GetName(), 3)
+				machineTemplate := nodeGen.GenerateMachineTemplate(creds, cluster.GetName())
+				machineDeployment := machineDeploymentGen.Generate(creds, cluster.GetNamespace(), cluster.GetName(), 1)
+				input = &ControlPlaneClusterInput{
+					Management:        mgmt,
+					Cluster:           cluster,
+					InfraCluster:      infraCluster,
+					ControlPlane:      controlplane,
+					MachineTemplate:   machineTemplate,
+					MachineDeployment: machineDeployment,
+					CreateTimeout:     40 * time.Minute,
+				}
+				ControlPlaneCluster(input)
+			})
+		})
 	})
 })

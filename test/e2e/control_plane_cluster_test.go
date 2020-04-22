@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/exec"
 	"sigs.k8s.io/cluster-api/test/framework/management/kind"
@@ -48,6 +49,8 @@ type ControlPlaneClusterInput struct {
 	InfraCluster      runtime.Object
 	Nodes             []framework.Node
 	MachineDeployment framework.MachineDeployment
+	ControlPlane      *controlplanev1.KubeadmControlPlane
+	MachineTemplate   runtime.Object
 	CreateTimeout     time.Duration
 	DeleteTimeout     time.Duration
 }
@@ -59,7 +62,7 @@ func (o *ControlPlaneClusterInput) SetDefaults() {
 	}
 
 	if o.DeleteTimeout == 0 {
-		o.DeleteTimeout = 20 * time.Minute
+		o.DeleteTimeout = 30 * time.Minute
 	}
 }
 
@@ -86,10 +89,22 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 		return mgmtClient.Create(ctx, input.Cluster)
 	}, input.CreateTimeout, eventuallyInterval).Should(Succeed())
 
+	By("creating the machine template")
+	Expect(mgmtClient.Create(ctx, input.MachineTemplate)).To(Succeed())
+
+	By("creating a KubeadmControlPlane")
+	Eventually(func() error {
+		err := mgmtClient.Create(ctx, input.ControlPlane)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return err
+	}, input.CreateTimeout, 10*time.Second).Should(BeNil())
+
 	// expectedNumberOfNodes is the number of nodes that should be deployed to
 	// the cluster. This is the control plane nodes plus the number of replicas
 	// defined for a possible MachineDeployment.
-	expectedNumberOfNodes := len(input.Nodes)
+	expectedNumberOfNodes := int(*input.ControlPlane.Spec.Replicas)
 
 	// Create the control plane nodes.
 	for i, node := range input.Nodes {
@@ -132,7 +147,7 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 		}
 	}
 
-	By("waiting for the workload nodes to exist")
+	By("waiting for workload node(s) to exist")
 	Eventually(func() ([]v1.Node, error) {
 		workloadClient, err := input.Management.GetWorkloadClient(ctx, input.Cluster.Namespace, input.Cluster.Name)
 		if err != nil {
@@ -143,7 +158,7 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 			return nil, err
 		}
 		return nodeList.Items, nil
-	}, input.CreateTimeout, 10*time.Second).Should(HaveLen(len(input.Nodes)))
+	}, input.CreateTimeout, 10*time.Second).Should(HaveLen(expectedNumberOfNodes))
 
 	By("deploy a CNI soution, Calico")
 	config := &v1.Secret{}
@@ -165,15 +180,16 @@ func ControlPlaneCluster(input *ControlPlaneClusterInput) {
 	if _, err := f.Write(data); err != nil {
 		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
 	}
-	calicoManifestPath := "https://docs.projectcalico.org/v3.8/manifests/calico.yaml"
+	calicoManifestPath := "../../templates/addons/calico.yaml"
 	applyCmd := exec.NewCommand(
 		exec.WithCommand("kubectl"),
 		exec.WithArgs("apply", "--kubeconfig", f.Name(), "-f", calicoManifestPath),
 	)
-	_, _, err = applyCmd.Run(ctx)
-	if err != nil {
-		Expect(err).NotTo(HaveOccurred(), "stack: %+v", err)
-	}
+
+	Eventually(func() error {
+		_, _, err = applyCmd.Run(ctx)
+		return err
+	}, 5*time.Minute, 10*time.Second).Should(BeNil())
 
 	By("waiting for all machines to be running")
 	inClustersNamespaceListOption := client.InNamespace(input.Cluster.Namespace)
