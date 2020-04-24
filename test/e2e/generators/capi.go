@@ -49,7 +49,6 @@ func (g *ClusterAPI) releaseYAMLPath() string {
 
 // Manifests return the generated components and any error if there is one.
 func (g *ClusterAPI) Manifests(ctx context.Context) ([]byte, error) {
-	// TODO: this is not very nice
 	if g.GitRef != "" {
 		kustomize := exec.NewCommand(
 			exec.WithCommand("kustomize"),

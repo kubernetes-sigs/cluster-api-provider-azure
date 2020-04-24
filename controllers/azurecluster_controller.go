@@ -123,8 +123,6 @@ func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScop
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
 
-	// TODO: We may need to use azureCluster.Status.Network.APIServerIP.IPAddress
-	//       instead when we look at configuring private clusters.
 	if azureCluster.Status.Network.APIServerIP.DNSName == "" {
 		clusterScope.Info("Waiting for API server endpoint to exist")
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil

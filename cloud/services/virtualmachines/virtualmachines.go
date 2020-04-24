@@ -275,7 +275,6 @@ func getResourceNameByID(resourceID string) string {
 
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
 func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
-	// TODO: Validate parameters before building storage profile
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
 			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),

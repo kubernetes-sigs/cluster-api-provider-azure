@@ -42,7 +42,6 @@ const (
 )
 
 // azureMachineService are list of services required by cluster actuator, easy to create a fake
-// TODO: We should decide if we want to keep this
 type azureMachineService struct {
 	machineScope          *scope.MachineScope
 	clusterScope          *scope.ClusterScope

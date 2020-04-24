@@ -89,7 +89,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			s.Scope.V(2).Info("Working on custom vnet", "vnet-id", vnet.ID)
 		}
 		// vnet already exists, cannot update since it's immutable
-		// TODO: ensure tags & other managed vnet attributes
 		vnet.DeepCopyInto(s.Scope.Vnet())
 		return nil
 	}

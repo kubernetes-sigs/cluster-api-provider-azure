@@ -19,11 +19,7 @@ hybrid deployments of Kubernetes.
 
 Check out the [Cluster API Quick Start][quickstart] to create your first Kubernetes cluster on Azure using Cluster API.
 
-## Features
-
-TODO
-
----
+------
 
 ## Support Policy
 
@@ -47,7 +43,7 @@ Each version of Cluster API for Azure will attempt to support at least two Kuber
 
 **NOTE:** As the versioning for this project is tied to the versioning of Cluster API, future modifications to this policy may be made to more closely align with other providers in the Cluster API ecosystem.
 
----
+------
 
 ## Documentation
 
