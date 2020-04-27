@@ -72,15 +72,16 @@ create_cluster() {
     # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
     if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
         export CLUSTER_TEMPLATE="test/cluster-template-conformance-ci-version.yaml"
+        export CI_VERSION=${CI_VERSION:-$(curl -sSL https://dl.k8s.io/ci/k8s-master.txt)}
+        export KUBERNETES_VERSION=${CI_VERSION}
     else
         export CLUSTER_TEMPLATE="test/cluster-template-conformance.yaml"
     fi
 
     export CLUSTER_NAME="capz-conformance-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
     # Conformance test suite needs a cluster with at least 2 nodes
-    export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
+    export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-1}
     export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
-    export CI_VERSION=${CI_VERSION:-$(curl -sSL https://dl.k8s.io/ci/k8s-master.txt)}
     export REGISTRY=conformance
     # timestamp is in RFC-3339 format to match kubetest
     export TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')

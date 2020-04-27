@@ -323,6 +323,12 @@ metadata:
 spec:
   template:
     spec:
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot2-ubuntu-1804
+          version: 2020.04.17
       location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
@@ -340,6 +346,12 @@ metadata:
 spec:
   template:
     spec:
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot2-ubuntu-1804
+          version: 2020.04.17
       location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 30
