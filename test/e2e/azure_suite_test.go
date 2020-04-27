@@ -120,9 +120,9 @@ var _ = BeforeSuite(func() {
 	waitDeployment(c, "cert-manager", "cert-manager-webhook")
 
 	// Deploy the CAPI and CABPK components from Cluster API repository,
-	capi := &generators.ClusterAPI{Version: "v0.3.3"}
-	cabpk := &generators.Bootstrap{Version: "v0.3.3"}
-	kcp := &generators.KubeadmControPlane{Version: "v0.3.3"}
+	capi := &frameworkgenerator.ClusterAPI{Version: "v0.3.3"}
+	cabpk := &frameworkgenerator.KubeadmBootstrap{Version: "v0.3.3"}
+	kcp := &frameworkgenerator.KubeadmControlPlane{Version: "v0.3.3"}
 	infra := &generators.Infra{Creds: creds}
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, kcp, infra)
