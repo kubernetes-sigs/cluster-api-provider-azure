@@ -42,22 +42,23 @@
 1. Install [go][go]
    - Get the latest patch version for go v1.13.
 2. Install [jq][jq]
-   - `brew install jq` on MacOS.
+   - `brew install jq` on macOS.
    - `chocolatey install jq` on Windows.
-   - `sudo apt-get install jq` on Linux.
+   - `sudo apt install jq` on Ubuntu Linux.
 3. Install [gettext][gettext] package
-   - `brew install gettext && brew link --force gettext` on MacOS.
-   - [install instructions](gettextwindows) on Windows.
+   - `brew install gettext && brew link --force gettext` on macOS.
+   - [install instructions][gettextwindows] on Windows.
+   - `sudo apt install gettext` on Ubuntu Linux.
 4. Install [KIND][kind]
    - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0`.
 5. Install [Kustomize][kustomize]
-   - `brew install kustomize` on MacOs.
+   - `brew install kustomize` on macOS.
    - `choco install kustomize` on Windows.
    - [install instructions][kustomizelinux] on Linux
 6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
 7. Install make.
 8. Install [timeout][timeout]
-   - `brew install coreutils` on MacOS.
+   - `brew install coreutils` on macOS.
 
 ### Get the source
 
@@ -96,14 +97,16 @@ To pin a new dependency:
 - Run `go get <repository>@<version>`.
 - (Optional) Add a `replace` statement in `go.mod`.
 
-A few Makefile and scripts are offered to work with go modules:
+Makefile targets and scripts are offered to work with go modules:
 
-- `hack/ensure-go.sh` file checks that the Go version and environment variables are properly set.
+- `make verify-modules` checks whether go module files are out of date.
+- `make modules` runs `go mod tidy` to ensure proper vendoring.
+- `hack/ensure-go.sh` checks that the Go version and environment variables are properly set.
 
 ### Setting up the environment
 
 Your environment must have the Azure credentials as outlined in the [getting
-started prerequisites section](./getting-started.md#Prerequisites)
+started prerequisites](./getting-started.md#Prerequisites) section.
 
 ### Using Tilt
 
@@ -150,20 +153,20 @@ make kind-reset
 
 If you want to develop in both CAPI and CAPZ at the same time, then this is the path for you.
 
-To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (capi) repository and configuring Tilt to use `kind` to deploy the cluster api management components.
+To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (CAPI) repository and configuring Tilt to use `kind` to deploy the cluster api management components.
 
-> you may wish to checkout out the correct version of capi to match the [version used in capz](go.mod)
+> you may wish to checkout out the correct version of CAPI to match the [version used in CAPZ](go.mod)
 
 Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositories will automatically redeployed to the `kind` cluster.
 
-After you have cloned both repositories your folder structure should look like:
+After you have cloned both repositories, your folder structure should look like:
 
 ```tree
 |-- src/cluster-api-provider-azure
 |-- src/cluster-api (run `tilt up` here)
 ```
 
-After configuring the environment variables, you can run the following to generate you `tilt-settings.json` file:
+After configuring the environment variables, run the following to generate your `tilt-settings.json` file:
 
 ```shell
 cat <<EOF > tilt-settings.json
@@ -274,8 +277,7 @@ export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 Ensure dev environment has been reset:
 
 ```bash
-make clean
-make kind-reset
+make clean kind-reset
 ```
 
 Create the cluster:
@@ -294,7 +296,7 @@ time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure
 kubectl logs -n capz-system azure-provider-controller-manager-0 manager -f # Follow the controller logs
 ```
 
-An error such as the following in the manager could point to a miss match between a current capi with old capz version:
+An error such as the following in the manager could point to a mismatch between a current CAPI and an old CAPZ version:
 
 ```
 E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}
@@ -323,7 +325,7 @@ Kubernetes cluster, nor do they have external dependencies.
 
 #### Mocks
 
-Mocks for the services tests are generated using [GoMock][gomock]
+Mocks for the services tests are generated using [GoMock][gomock].
 
 To generate the mocks you can run
 
