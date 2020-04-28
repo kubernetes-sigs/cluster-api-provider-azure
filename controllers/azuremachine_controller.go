@@ -209,6 +209,18 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
+	if machineScope.AzureMachine.Spec.AvailabilityZone.ID != nil {
+		message := "AvailavilityZone is deprecated, use FailureDomain instead"
+		machineScope.Info(message)
+		r.Recorder.Eventf(machineScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
+
+		// Set FailureDomain if its not set
+		if machineScope.AzureMachine.Spec.FailureDomain == nil {
+			machineScope.V(2).Info("Failure domain not set, setting with value from AvailabilityZone.ID")
+			machineScope.AzureMachine.Spec.FailureDomain = machineScope.AzureMachine.Spec.AvailabilityZone.ID
+		}
+	}
+
 	ams := newAzureMachineService(machineScope, clusterScope)
 
 	// Get or create the virtual machine.

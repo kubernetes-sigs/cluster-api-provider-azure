@@ -102,8 +102,23 @@ func (m *MachineScope) Location() string {
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
+// Priority for selecting the AZ is
+//   1) Machine.Spec.FailureDomain
+//   2) AzureMachine.Spec.FailureDomain
+//   3) AzureMachine.Spec.AvailabilityZone.ID (This is DEPRECATED)
+//   4) No AZ
 func (m *MachineScope) AvailabilityZone() string {
-	return *m.AzureMachine.Spec.AvailabilityZone.ID
+	if m.Machine.Spec.FailureDomain != nil {
+		return *m.Machine.Spec.FailureDomain
+	}
+	if m.AzureMachine.Spec.FailureDomain != nil {
+		return *m.AzureMachine.Spec.FailureDomain
+	}
+	if m.AzureMachine.Spec.AvailabilityZone.ID != nil {
+		return *m.AzureMachine.Spec.AvailabilityZone.ID
+	}
+
+	return ""
 }
 
 // Name returns the AzureMachine name.

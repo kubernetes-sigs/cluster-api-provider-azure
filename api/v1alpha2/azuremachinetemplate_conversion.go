@@ -38,6 +38,8 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 		dst.Spec.Template.Spec.Identity = restored.Spec.Template.Spec.Identity
 	}
 
+	dst.Spec.Template.Spec.FailureDomain = restored.Spec.Template.Spec.FailureDomain
+
 	return nil
 }
 

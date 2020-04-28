@@ -165,7 +165,7 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 	location := s.machineScope.AzureMachine.Spec.Location
 
 	zonesSpec := &availabilityzones.Spec{
-		VMSize: vmSize,
+		VMSize: to.StringPtr(vmSize),
 	}
 	zonesInterface, err := s.availabilityZonesSvc.Get(s.clusterScope.Context, zonesSpec)
 	if err != nil {
@@ -184,9 +184,11 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 		return "", nil
 	}
 
-	var zone string
+	zone := s.machineScope.AvailabilityZone()
 	var selectedZone string
-	if s.machineScope.AzureMachine.Spec.AvailabilityZone.ID != nil {
+
+	// DEPRECATED: to support old clients
+	if zone == "" && s.machineScope.AzureMachine.Spec.AvailabilityZone.ID != nil {
 		zone = *s.machineScope.AzureMachine.Spec.AvailabilityZone.ID
 	}
 

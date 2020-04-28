@@ -50,6 +50,10 @@ type AzureClusterSpec struct {
 type AzureClusterStatus struct {
 	Network Network `json:"network,omitempty"`
 
+	// FailureDomains specifies the list of unique failure domains for the location of the cluster.
+	// This list will be used by Cluster API to try and spread the machines across thsese domains.
+	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
+
 	Bastion VM `json:"bastion,omitempty"`
 
 	// Ready is true when the provider resource is ready.

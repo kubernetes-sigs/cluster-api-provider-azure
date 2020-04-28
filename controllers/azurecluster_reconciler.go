@@ -22,9 +22,11 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
@@ -33,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // azureClusterReconciler are list of services required by cluster controller
@@ -46,6 +49,7 @@ type azureClusterReconciler struct {
 	internalLBSvc    azure.Service
 	publicIPSvc      azure.Service
 	publicLBSvc      azure.Service
+	availZoneSvc     azure.GetterService
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
@@ -60,6 +64,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		internalLBSvc:    internalloadbalancers.NewService(scope),
 		publicIPSvc:      publicips.NewService(scope),
 		publicLBSvc:      publicloadbalancers.NewService(scope),
+		availZoneSvc:     availabilityzones.NewService(scope),
 	}
 }
 
@@ -67,6 +72,10 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 func (r *azureClusterReconciler) Reconcile() error {
 	klog.V(2).Infof("reconciling cluster %s", r.scope.Name())
 	r.createOrUpdateNetworkAPIServerIP()
+
+	if err := r.setFailureDomainsForLocation(); err != nil {
+		return errors.Wrapf(err, "failed to get availability zones for cluster %s in location %s", r.scope.Name(), r.scope.Location())
+	}
 
 	if err := r.groupsSvc.Reconcile(r.scope.Context, nil); err != nil {
 		return errors.Wrapf(err, "failed to reconcile resource group for cluster %s", r.scope.Name())
@@ -337,4 +346,23 @@ func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() {
 	}
 
 	r.scope.Network().APIServerIP.DNSName = azure.GenerateFQDN(r.scope.Network().APIServerIP.Name, r.scope.Location())
+}
+
+func (r *azureClusterReconciler) setFailureDomainsForLocation() error {
+
+	spec := &availabilityzones.Spec{}
+
+	zonesInterface, err := r.availZoneSvc.Get(r.scope.Context, spec)
+	if err != nil {
+		return err
+	}
+
+	zones := zonesInterface.([]string)
+	for _, zone := range zones {
+		r.scope.SetFailureDomain(zone, clusterv1.FailureDomainSpec{
+			ControlPlane: true,
+		})
+	}
+
+	return nil
 }

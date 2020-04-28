@@ -44,6 +44,8 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		return err
 	}
 
+	dst.Status.FailureDomains = restored.Status.FailureDomains
+
 	return nil
 }
 

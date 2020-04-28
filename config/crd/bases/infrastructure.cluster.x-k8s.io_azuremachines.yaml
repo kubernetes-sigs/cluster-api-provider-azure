@@ -247,12 +247,18 @@ spec:
                   public ips for machines where this value is true.
                 type: boolean
               availabilityZone:
+                description: 'DEPRECATED: use FailureDomain instead'
                 properties:
                   enabled:
                     type: boolean
                   id:
                     type: string
                 type: object
+              failureDomain:
+                description: FailureDomain is the failure domain unique identifier
+                  this Machine should be attached to, as defined in Cluster API. This
+                  relates to an Azure Availability Zone
+                type: string
               identity:
                 default: None
                 description: Identity is the type of identity used for the virtual

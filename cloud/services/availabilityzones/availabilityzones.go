@@ -18,6 +18,7 @@ package availabilityzones
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -27,7 +28,7 @@ import (
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
-	VMSize string
+	VMSize *string
 }
 
 // Get provides information about a availability zones.
@@ -37,26 +38,39 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return zones, errors.New("invalid availability zones specification")
 	}
+
+	filter := fmt.Sprintf("location eq '%s'", s.Scope.Location())
+
 	// Prefer ListComplete() over List() to automatically traverse pages via iterator.
-	res, err := s.Client.ListComplete(ctx, "")
+	res, err := s.Client.ListComplete(ctx, filter)
 	if err != nil {
 		return zones, err
 	}
 
+	if skusSpec.VMSize != nil {
+		return s.filterForVMSizeInLocation(ctx, skusSpec.VMSize, &res)
+	}
+
+	return s.filterUniqueForLocation(ctx, &res)
+}
+
+func (s *Service) filterForVMSizeInLocation(ctx context.Context, vmSize *string, res *compute.ResourceSkusResultIterator) ([]string, error) {
+	var zones []string
+
 	for res.NotDone() {
 		resSku := res.Value()
-		if strings.EqualFold(*resSku.Name, skusSpec.VMSize) {
+		if strings.EqualFold(*resSku.Name, *vmSize) {
 			// Use map for easy deletion and iteration
 			availableZones := make(map[string]bool)
 			for _, locationInfo := range *resSku.LocationInfo {
 				for _, zone := range *locationInfo.Zones {
 					availableZones[zone] = true
 				}
-				if strings.EqualFold(*locationInfo.Location, s.Scope.Location()) {
+				if strings.EqualFold(*locationInfo.Location, s.Scope.Location()) { //NOTE: this should always be true due to the filter
 					for _, restriction := range *resSku.Restrictions {
 						// Can't deploy anything in this subscription in this location. Bail out.
 						if restriction.Type == compute.Location {
-							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", skusSpec.VMSize, s.Scope.Location())
+							return []string{}, errors.Errorf("rejecting sku: %s in location: %s due to susbcription restriction", *vmSize, s.Scope.Location())
 						}
 						// May be able to deploy one or more zones to this location.
 						for _, restrictedZone := range *restriction.RestrictionInfo.Zones {
@@ -74,12 +88,41 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 				}
 			}
 		}
-		err = res.NextWithContext(ctx)
+		err := res.NextWithContext(ctx)
 		if err != nil {
 			return zones, errors.Wrap(err, "could not iterate availability zones")
 		}
 	}
 
+	return zones, nil
+}
+
+func (s *Service) filterUniqueForLocation(ctx context.Context, res *compute.ResourceSkusResultIterator) ([]string, error) {
+	zones := make([]string, 0)
+
+	for res.NotDone() {
+		resSku := res.Value()
+		// Use map for easy deletion and iteration
+		availableZones := make(map[string]bool)
+		for _, locationInfo := range *resSku.LocationInfo {
+			for _, zone := range *locationInfo.Zones {
+				availableZones[zone] = true
+			}
+
+			for availableZone := range availableZones {
+				if !contains(zones, availableZone) {
+					zones = append(zones, availableZone)
+				}
+			}
+		}
+		err := res.NextWithContext(ctx)
+		if err != nil {
+			return zones, errors.Wrap(err, "could not iterate availability zones")
+		}
+	}
+
+	// Lexical sort so comparisons work in tests
+	sort.Strings(zones)
 	return zones, nil
 }
 
@@ -93,4 +136,13 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	// Not implemented since there is nothing to delete
 	return nil
+}
+
+func contains(strSlice []string, val string) bool {
+	for _, c := range strSlice {
+		if c == val {
+			return true
+		}
+	}
+	return false
 }
