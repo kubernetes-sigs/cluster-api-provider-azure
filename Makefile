@@ -341,7 +341,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
-create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST)
+create-workload-cluster: $(ENVSUBST)
 	# Create workload Cluster.
 	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
 
