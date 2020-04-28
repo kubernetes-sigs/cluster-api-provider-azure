@@ -49,12 +49,24 @@ func (m *AzureMachine) ValidateCreate() error {
 			m.Name, errs)
 	}
 
+	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
+		return apierrors.NewInvalid(
+			GroupVersion.WithKind("AzureMachine").GroupKind(),
+			m.Name, errs)
+	}
+
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
+
+	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
+		return apierrors.NewInvalid(
+			GroupVersion.WithKind("AzureMachine").GroupKind(),
+			m.Name, errs)
+	}
 
 	return nil
 }
@@ -64,4 +76,14 @@ func (m *AzureMachine) ValidateDelete() error {
 	machinelog.Info("validate delete", "name", m.Name)
 
 	return nil
+}
+
+// Default implements webhookutil.defaulter so a webhook will be registered for the type
+func (m *AzureMachine) Default() {
+	machinelog.Info("default", "name", m.Name)
+
+	err := m.SetDefaultSSHPublicKey()
+	if err != nil {
+		machinelog.Error(err, "SetDefaultSshPublicKey failed")
+	}
 }

@@ -19,7 +19,6 @@ package virtualmachines
 import (
 	"context"
 	"crypto/rand"
-	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -27,7 +26,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -96,20 +94,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	klog.V(2).Infof("creating VM %s ", vmSpec.Name)
 
-	sshKeyData := vmSpec.SSHKeyData
-	if sshKeyData == "" {
-		privateKey, perr := rsa.GenerateKey(rand.Reader, 2048)
-		if perr != nil {
-			return errors.Wrap(perr, "Failed to generate private key")
-		}
-
-		publicRsaKey, perr := ssh.NewPublicKey(&privateKey.PublicKey)
-		if perr != nil {
-			return errors.Wrap(perr, "Failed to generate public key")
-		}
-		sshKeyData = string(ssh.MarshalAuthorizedKey(publicRsaKey))
-	}
-
 	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
 	additionalTags := s.MachineScope.AdditionalTags()
 	// Set the cloud provider tag
@@ -139,7 +123,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
 								Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-								KeyData: to.StringPtr(sshKeyData),
+								KeyData: to.StringPtr(vmSpec.SSHKeyData),
 							},
 						},
 					},
