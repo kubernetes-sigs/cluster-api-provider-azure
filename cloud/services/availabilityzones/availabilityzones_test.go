@@ -41,6 +41,10 @@ func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
 
+const (
+	subscriptionID = "123"
+)
+
 func TestGetAvailabilityZones(t *testing.T) {
 	g := NewWithT(t)
 
@@ -107,15 +111,15 @@ func TestGetAvailabilityZones(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
-						Location:      "centralus",
-						ResourceGroup: "my-rg",
+						Location:       "centralus",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 							Subnets: []*infrav1.SubnetSpec{{

@@ -39,11 +39,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid internal load balancer specification"
-
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
+
+const (
+	expectedInvalidSpec = "invalid internal load balancer specification"
+	subscriptionID      = "123"
+)
 
 func TestInvalidInternalLBSpec(t *testing.T) {
 	g := NewWithT(t)
@@ -59,15 +62,15 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: subscriptionID,
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},
@@ -222,15 +225,15 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 							Subnets: []*infrav1.SubnetSpec{{
@@ -331,15 +334,15 @@ func TestDeleteInternalLB(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 							Subnets: []*infrav1.SubnetSpec{{

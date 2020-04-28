@@ -39,6 +39,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+const (
+	subscriptionID = "123"
+)
+
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
 }
@@ -155,15 +159,15 @@ func TestReconcileSubnets(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet:    *tc.vnetSpec,
 							Subnets: tc.subnets,
@@ -263,15 +267,15 @@ func TestDeleteSubnets(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: *tc.vnetSpec,
 						},

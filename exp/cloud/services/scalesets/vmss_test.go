@@ -52,15 +52,15 @@ func TestNewService(t *testing.T) {
 	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 	s, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: "123",
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},
@@ -425,15 +425,15 @@ func getNewService(g *gomega.GomegaWithT) *Service {
 	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 	s, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: "123",
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 					Subnets: infrav1.Subnets{

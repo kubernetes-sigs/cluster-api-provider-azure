@@ -34,6 +34,8 @@ type AzureClusterSpec struct {
 
 	ResourceGroup string `json:"resourceGroup"`
 
+	SubscriptionID string `json:"subscriptionID,omitempty"`
+
 	Location string `json:"location"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
@@ -69,6 +71,7 @@ type AzureClusterStatus struct {
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AzureCluster belongs"
 // +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready"
 // +kubebuilder:printcolumn:name="Resource Group",type="string",priority=1,JSONPath=".spec.resourceGroup"
+// +kubebuilder:printcolumn:name="SubscriptionID",type="string",priority=1,JSONPath=".spec.subscriptionID"
 // +kubebuilder:printcolumn:name="Location",type="string",priority=1,JSONPath=".spec.location"
 // +kubebuilder:printcolumn:name="Endpoint",type="string",priority=1,JSONPath=".spec.controlPlaneEndpoint.host",description="Control Plane Endpoint"
 // +kubebuilder:resource:path=azureclusters,scope=Namespaced,categories=cluster-api

@@ -23,6 +23,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
+const (
+	subscriptionIDAnnotation = "azurecluster.infrastructure.cluster.x-k8s.io/subscriptionID"
+)
+
 // ConvertTo converts this AzureCluster to the Hub version (v1alpha3).
 func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*infrav1alpha3.AzureCluster)
@@ -36,6 +40,14 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		endpoint := src.Status.APIEndpoints[0]
 		dst.Spec.ControlPlaneEndpoint.Host = endpoint.Host
 		dst.Spec.ControlPlaneEndpoint.Port = int32(endpoint.Port)
+	}
+
+	if subscriptionID, ok := src.Annotations[subscriptionIDAnnotation]; ok {
+		dst.Spec.SubscriptionID = subscriptionID
+		delete(dst.Annotations, subscriptionIDAnnotation)
+		if len(dst.Annotations) == 0 {
+			dst.Annotations = nil
+		}
 	}
 
 	// Manually restore data.
@@ -65,6 +77,14 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 				Port: int(src.Spec.ControlPlaneEndpoint.Port),
 			},
 		}
+	}
+
+	// Preserve Spec.SubscriptionID in annotation `azurecluster.infrastructure.cluster.x-k8s.io/subscriptionID`
+	if src.Spec.SubscriptionID != "" {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		dst.Annotations[subscriptionIDAnnotation] = src.Spec.SubscriptionID
 	}
 
 	// Preserve Hub data on down-conversion.
