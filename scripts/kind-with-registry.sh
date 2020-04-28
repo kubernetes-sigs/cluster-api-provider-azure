@@ -14,6 +14,8 @@
 # limitations under the License.
 
 set -o errexit
+set -o nounset
+set -o pipefail
 
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
