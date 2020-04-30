@@ -9,7 +9,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v0.3.3",
+    "capi_version": "v0.3.5",
     "cert_manager_version": "v0.11.0",
     "feature_gates": '--feature-gates MachinePool=true'
 }
