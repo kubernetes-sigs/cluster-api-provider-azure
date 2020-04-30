@@ -21,6 +21,7 @@ aliases:
     - CecileRobertMichon
     - justaugustus
   cluster-api-azure-reviewers:
+    - devigned
     - juan-lee
     - nader-ziada
     - serbrech
