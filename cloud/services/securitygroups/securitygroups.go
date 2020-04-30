@@ -19,12 +19,18 @@ package securitygroups
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+)
+
+const (
+	apiServerRule = "apiServerRule"
+	sshRule       = "sshRule"
 )
 
 // Spec specification for network security groups
@@ -59,58 +65,104 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid security groups specification")
 	}
 
-	securityRules := &[]network.SecurityRule{}
-
-	if nsgSpec.IsControlPlane {
-		klog.V(2).Infof("using additional rules for control plane %s", nsgSpec.Name)
-		securityRules = &[]network.SecurityRule{
-			{
-				Name: to.StringPtr("allow_ssh"),
-				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Protocol:                 network.SecurityRuleProtocolTCP,
-					SourceAddressPrefix:      to.StringPtr("*"),
-					SourcePortRange:          to.StringPtr("*"),
-					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr("22"),
-					Access:                   network.SecurityRuleAccessAllow,
-					Direction:                network.SecurityRuleDirectionInbound,
-					Priority:                 to.Int32Ptr(100),
-				},
-			},
-			{
-				Name: to.StringPtr("allow_6443"),
-				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Protocol:                 network.SecurityRuleProtocolTCP,
-					SourceAddressPrefix:      to.StringPtr("*"),
-					SourcePortRange:          to.StringPtr("*"),
-					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr(strconv.Itoa(int(s.Scope.APIServerPort()))),
-					Access:                   network.SecurityRuleAccessAllow,
-					Direction:                network.SecurityRuleDirectionInbound,
-					Priority:                 to.Int32Ptr(101),
-				},
-			},
-		}
+	securityGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "failed to get NSG %s in %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
-	err := s.Client.CreateOrUpdate(
-		ctx,
-		s.Scope.ResourceGroup(),
-		nsgSpec.Name,
-		network.SecurityGroup{
-			Location: to.StringPtr(s.Scope.Location()),
-			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-				SecurityRules: securityRules,
-			},
+	nsgExists := false
+	securityRules := make([]network.SecurityRule, 0)
+	if securityGroup.Name != nil {
+		nsgExists = true
+		securityRules = *securityGroup.SecurityRules
+	}
+
+	defaultRules := make(map[string]network.SecurityRule, 0)
+	defaultRules[sshRule] = getRule("allow_ssh", "22", 100)
+	defaultRules[apiServerRule] = getRule("allow_6443", strconv.Itoa(int(s.Scope.APIServerPort())), 101)
+
+	if nsgSpec.IsControlPlane {
+		if nsgExists {
+			// Check if the expected rules are present
+			update := false
+			for _, rule := range defaultRules {
+				if !ruleExists(securityRules, rule) {
+					update = true
+					securityRules = append(securityRules, rule)
+				}
+			}
+			if !update {
+				// Skip update for control-plane NSG as the required default rules are present
+				klog.V(2).Infof("security group %s exists and no default rules are missing, skipping update", nsgSpec.Name)
+				return nil
+			}
+		} else {
+			klog.V(2).Infof("applying missing default rules for control plane NSG %s", nsgSpec.Name)
+			securityRules = append(securityRules, defaultRules[sshRule], defaultRules[apiServerRule])
+		}
+	} else if nsgExists {
+		// Skip update for node NSG as no default rules are required
+		klog.V(2).Infof("security group %s exists and no default rules are required, skipping update", nsgSpec.Name)
+		return nil
+	}
+
+	sg := network.SecurityGroup{
+		Location: to.StringPtr(s.Scope.Location()),
+		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+			SecurityRules: &securityRules,
 		},
-	)
+	}
+	if nsgExists {
+		// We append the existing NSG etag to the header to ensure we only apply the updates if the NSG has not been modified.
+		sg.Etag = securityGroup.Etag
+	}
+	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
+	err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), nsgSpec.Name, sg)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
 	klog.V(2).Infof("created security group %s", nsgSpec.Name)
 	return err
+}
+
+func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
+	for _, existingRule := range rules {
+		if !strings.EqualFold(to.String(existingRule.Name), to.String(rule.Name)) {
+			continue
+		}
+		if !strings.EqualFold(to.String(existingRule.DestinationPortRange), to.String(rule.DestinationPortRange)) {
+			continue
+		}
+		if existingRule.Protocol != network.SecurityRuleProtocolTCP &&
+			existingRule.Access != network.SecurityRuleAccessAllow &&
+			existingRule.Direction != network.SecurityRuleDirectionInbound {
+			continue
+		}
+		if !strings.EqualFold(to.String(existingRule.SourcePortRange), "*") &&
+			!strings.EqualFold(to.String(existingRule.SourceAddressPrefix), "*") &&
+			!strings.EqualFold(to.String(existingRule.DestinationAddressPrefix), "*") {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func getRule(name, destinationPort string, priority int32) network.SecurityRule {
+	return network.SecurityRule{
+		Name: to.StringPtr(name),
+		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+			Protocol:                 network.SecurityRuleProtocolTCP,
+			SourceAddressPrefix:      to.StringPtr("*"),
+			SourcePortRange:          to.StringPtr("*"),
+			DestinationAddressPrefix: to.StringPtr("*"),
+			DestinationPortRange:     to.StringPtr(destinationPort),
+			Access:                   network.SecurityRuleAccessAllow,
+			Direction:                network.SecurityRuleDirectionInbound,
+			Priority:                 to.Int32Ptr(priority),
+		},
+	}
 }
 
 // Delete deletes the network security group with the provided name.
