@@ -5,6 +5,7 @@
 !/api/**
 !/cloud/**
 !/controllers/**
+!/exp/**
 !/pkg/**
 !/main.go
 !/go.mod

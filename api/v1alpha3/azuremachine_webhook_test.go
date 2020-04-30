@@ -22,6 +22,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var validSSHPublicKey = generateSSHPublicKey()
+
 func TestAzureMachine_ValidateCreate(t *testing.T) {
 	g := NewWithT(t)
 
@@ -60,6 +62,21 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithImageByID(t, ""),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with valid SSHPublicKey",
+			machine: createMachineWithSSHPublicKey(t, validSSHPublicKey),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine without SSHPublicKey",
+			machine: createMachineWithSSHPublicKey(t, ""),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with invalid SSHPublicKey",
+			machine: createMachineWithSSHPublicKey(t, "invalid ssh key"),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -71,6 +88,64 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAzureMachine_ValidateUpdate(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name       string
+		oldMachine *AzureMachine
+		machine    *AzureMachine
+		wantErr    bool
+	}{
+		{
+			name:       "azuremachine with valid SSHPublicKey",
+			oldMachine: createMachineWithSSHPublicKey(t, ""),
+			machine:    createMachineWithSSHPublicKey(t, validSSHPublicKey),
+			wantErr:    false,
+		},
+		{
+			name:       "azuremachine without SSHPublicKey",
+			oldMachine: createMachineWithSSHPublicKey(t, ""),
+			machine:    createMachineWithSSHPublicKey(t, ""),
+			wantErr:    true,
+		},
+		{
+			name:       "azuremachine with invalid SSHPublicKey",
+			oldMachine: createMachineWithSSHPublicKey(t, ""),
+			machine:    createMachineWithSSHPublicKey(t, "invalid ssh key"),
+			wantErr:    true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.machine.ValidateUpdate(tc.oldMachine)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestAzureMachine_Default(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		machine *AzureMachine
+	}
+
+	existingPublicKey := validSSHPublicKey
+	publicKeyExistTest := test{machine: createMachineWithSSHPublicKey(t, existingPublicKey)}
+	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey(t, "")}
+
+	publicKeyExistTest.machine.Default()
+	g.Expect(publicKeyExistTest.machine.Spec.SSHPublicKey).To(Equal(existingPublicKey))
+
+	publicKeyNotExistTest.machine.Default()
+	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 }
 
 func createMachineWithSharedImage(t *testing.T, subscriptionID, resourceGroup, name, gallery, version string) *AzureMachine {
@@ -86,7 +161,8 @@ func createMachineWithSharedImage(t *testing.T, subscriptionID, resourceGroup, n
 
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
-			Image: image,
+			Image:        image,
+			SSHPublicKey: validSSHPublicKey,
 		},
 	}
 
@@ -104,7 +180,8 @@ func createMachineWithtMarketPlaceImage(t *testing.T, publisher, offer, sku, ver
 
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
-			Image: image,
+			Image:        image,
+			SSHPublicKey: validSSHPublicKey,
 		},
 	}
 }
@@ -116,7 +193,8 @@ func createMachineWithImageByID(t *testing.T, imageID string) *AzureMachine {
 
 	return &AzureMachine{
 		Spec: AzureMachineSpec{
-			Image: image,
+			Image:        image,
+			SSHPublicKey: validSSHPublicKey,
 		},
 	}
 }

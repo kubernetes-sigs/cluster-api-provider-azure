@@ -47,7 +47,4 @@ var _ = Describe("Metacluster", func() {
 	AfterEach(func() {
 		kindCluster.Teardown()
 	})
-
-	// TODO: validate that the controller-manager is deployed and the
-	// types are available
 })

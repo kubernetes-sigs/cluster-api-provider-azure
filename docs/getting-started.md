@@ -21,7 +21,7 @@
 
 ### Requirements
 
-- Linux or MacOS (Windows isn't supported at the moment)
+- Linux or macOS (Windows isn't supported at the moment)
 - A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
 - Install the [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
@@ -90,7 +90,7 @@ You can also [build your own image](https://image-builder.sigs.k8s.io/capi/provi
 
 ### Bootstrap running, but resources aren't being created
 
-Logs can be tailed using [`kubectl`][kubectl]:
+Logs can be tailed using [`kubectl`][kubectl-logs]:
 
 ```bash
 kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f
@@ -105,3 +105,5 @@ You can check the custom script logs by SSHing into the VM created and reading `
 ## Building from master
 
 If you're interested in developing cluster-api-provider-azure and getting the latest version from `master`, please follow the [development guide][development].
+
+[kubectl-logs]: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods

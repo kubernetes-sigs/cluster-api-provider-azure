@@ -50,6 +50,7 @@ KUBECTL=$(TOOLS_BIN_DIR)/kubectl
 KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/kustomize)
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 RELEASE_NOTES := $(TOOLS_DIR)/$(RELEASE_NOTES_BIN)
+EXP_DIR := exp
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -172,26 +173,28 @@ generate: ## Generate code
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
-	go generate ./...
 	$(CONTROLLER_GEN) \
 		paths=./api/... \
+		paths=./$(EXP_DIR)/api/... \
 		object:headerFile=./hack/boilerplate/boilerplate.generatego.txt
-
 	$(CONVERSION_GEN) \
 		--input-dirs=./api/v1alpha2 \
 		--output-file-base=zz_generated.conversion \
 		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
+	go generate ./...
 
 .PHONY: generate-manifests
 generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) \
 		paths=./api/... \
+		paths=./$(EXP_DIR)/api/... \
 		crd:crdVersions=v1 \
 		output:crd:dir=$(CRD_ROOT) \
 		output:webhook:dir=$(WEBHOOK_ROOT) \
 		webhook
 	$(CONTROLLER_GEN) \
 		paths=./controllers/... \
+		paths=./$(EXP_DIR)/controllers/... \
 		output:rbac:dir=$(RBAC_ROOT) \
 		rbac:roleName=manager-role
 
@@ -338,7 +341,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-capz"'
 
 .PHONY: create-workload-cluster
-create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST)
+create-workload-cluster: $(ENVSUBST)
 	# Create workload Cluster.
 	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
 

@@ -217,23 +217,15 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		return reconcile.Result{}, err
 	}
 
-	// TODO(ncdc): move this validation logic into a validating webhook
-	if errs := r.validateUpdate(&machineScope.AzureMachine.Spec, vm); len(errs) > 0 {
-		agg := kerrors.NewAggregate(errs)
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "InvalidUpdate", "Invalid update: %s", agg.Error())
-		return reconcile.Result{}, nil
-	}
-
 	// Make sure Spec.ProviderID is always set.
 	machineScope.SetProviderID(fmt.Sprintf("azure:////%s", vm.ID))
 
-	// Proceed to reconcile the AzureMachine state.
-	machineScope.SetVMState(vm.State)
-
-	// TODO(vincepri): Remove this annotation when clusterctl is no longer relevant.
 	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
 
 	machineScope.SetAddresses(vm.Addresses)
+
+	// Proceed to reconcile the AzureMachine state.
+	machineScope.SetVMState(vm.State)
 
 	switch vm.State {
 	case infrav1.VMStateSucceeded:
@@ -306,14 +298,7 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 	return reconcile.Result{}, nil
 }
 
-// validateUpdate checks that no immutable fields have been updated and
-// returns a slice of errors representing attempts to change immutable state.
-func (r *AzureMachineReconciler) validateUpdate(spec *infrav1.AzureMachineSpec, i *infrav1.VM) (errs []error) {
-	// TODO: Add comparison logic for immutable fields
-	return errs
-}
-
-// AzureClusterToAzureMachine is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
+// AzureClusterToAzureMachines is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
 // of AzureMachines.
 func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject) []ctrl.Request {
 	result := []ctrl.Request{}

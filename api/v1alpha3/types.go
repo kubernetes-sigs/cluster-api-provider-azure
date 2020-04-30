@@ -23,22 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// // ResourceSpec defines a generic spec that can used to define Azure resources.
-// TODO: ResourceSpec should be removed once concrete specs have been defined for all Azure resources in use.
-// type ResourceSpec interface{}
-
-// TODO: Write type tests
-
-// AzureResourceReference is a reference to a specific Azure resource by ID
-type AzureResourceReference struct {
-	// ID of resource
-	// +optional
-	ID *string `json:"id,omitempty"`
-	// TODO: Investigate if we should reference resources in other ways
-}
-
-// TODO: Investigate resource filters
-
 // AzureMachineProviderConditionType is a valid value for AzureMachineProviderCondition.Type
 type AzureMachineProviderConditionType string
 
@@ -157,14 +141,6 @@ type SecurityGroup struct {
 	Tags         Tags         `json:"tags,omitempty"`
 }
 
-/*
-// TODO
-// String returns a string representation of the security group.
-func (s *SecurityGroup) String() string {
-	return fmt.Sprintf("id=%s/name=%s", s.ID, s.Name)
-}
-*/
-
 // SecurityGroupProtocol defines the protocol type for a security group rule.
 type SecurityGroupProtocol string
 
@@ -197,45 +173,10 @@ type IngressRule struct {
 	Destination *string `json:"destination,omitempty"`
 }
 
-// TODO
-// String returns a string representation of the ingress rule.
-/*
-func (i *IngressRule) String() string {
-	return fmt.Sprintf("protocol=%s/range=[%d-%d]/description=%s", i.Protocol, i.FromPort, i.ToPort, i.Description)
-}
-*/
-
 // IngressRules is a slice of Azure ingress rules for security groups.
 type IngressRules []*IngressRule
 
-// TODO
-// Difference returns the difference between this slice and the other slice.
-/*
-func (i IngressRules) Difference(o IngressRules) (out IngressRules) {
-	for _, x := range i {
-		found := false
-		for _, y := range o {
-			sort.Strings(x.CidrBlocks)
-			sort.Strings(y.CidrBlocks)
-			sort.Strings(x.SourceSecurityGroupIDs)
-			sort.Strings(y.SourceSecurityGroupIDs)
-			if reflect.DeepEqual(x, y) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			out = append(out, x)
-		}
-	}
-
-	return
-}
-*/
-
 // PublicIP defines an Azure public IP address.
-// TODO: Remove once load balancer is implemented.
 type PublicIP struct {
 	ID        string `json:"id,omitempty"`
 	Name      string `json:"name,omitempty"`

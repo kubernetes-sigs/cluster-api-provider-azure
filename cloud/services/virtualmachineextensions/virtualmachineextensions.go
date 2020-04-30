@@ -78,12 +78,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "cannot create vm extension")
 	}
 
-	// TODO: review if can remove this code
-	// if *vmExt.ProvisioningState != string(compute.ProvisioningStateSucceeded) {
-	// 	// If the script failed delete it so it can be retried
-	// 	s.Delete(ctx, vmExtSpec)
-	// }
-
 	klog.V(2).Infof("successfully created vm extension %s ", vmExtSpec.Name)
 	return nil
 }
