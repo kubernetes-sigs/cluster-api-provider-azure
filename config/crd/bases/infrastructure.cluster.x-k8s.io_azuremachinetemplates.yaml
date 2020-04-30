@@ -190,6 +190,16 @@ spec:
                           id:
                             type: string
                         type: object
+                      identity:
+                        default: None
+                        description: Identity is the type of identity used for the
+                          virtual machine. The type 'SystemAssigned' is an implicitly
+                          created identity The generated identity will be assigned
+                          a Subscription contributor role
+                        enum:
+                        - None
+                        - SystemAssigned
+                        type: string
                       image:
                         description: Image is used to provide details of an image
                           to use during VM creation. If image details are omitted

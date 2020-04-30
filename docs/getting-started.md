@@ -63,7 +63,7 @@ An Azure Service Principal is needed for populating the controller manifests. Th
   3. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal.
 
   ```bash
-  az ad sp create-for-rbac --name SPClusterAPI
+  az ad sp create-for-rbac --name SPClusterAPI --role owner
   ```
 
   4. Save the output from the above command in environment variables.

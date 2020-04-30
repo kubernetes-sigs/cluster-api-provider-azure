@@ -614,6 +614,9 @@ spec:
                   identity:
                     description: VMIdentity defines the identity of the virtual machine,
                       if configured.
+                    enum:
+                    - None
+                    - SystemAssigned
                     type: string
                   image:
                     description: Storage profile

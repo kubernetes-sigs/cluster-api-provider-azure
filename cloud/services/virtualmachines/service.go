@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 )
 
 // Service provides operations on azure resources
@@ -27,17 +28,19 @@ type Service struct {
 	Scope        *scope.ClusterScope
 	MachineScope *scope.MachineScope
 	Client
-	InterfacesClient networkinterfaces.Client
-	PublicIPsClient  publicips.Client
+	InterfacesClient      networkinterfaces.Client
+	PublicIPsClient       publicips.Client
+	RoleAssignmentsClient roleassignments.Client
 }
 
 // NewService creates a new service.
 func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
 	return &Service{
-		Scope:            scope,
-		MachineScope:     machineScope,
-		Client:           NewClient(scope.SubscriptionID, scope.Authorizer),
-		InterfacesClient: networkinterfaces.NewClient(scope.SubscriptionID, scope.Authorizer),
-		PublicIPsClient:  publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
+		Scope:                 scope,
+		MachineScope:          machineScope,
+		Client:                NewClient(scope.SubscriptionID, scope.Authorizer),
+		InterfacesClient:      networkinterfaces.NewClient(scope.SubscriptionID, scope.Authorizer),
+		PublicIPsClient:       publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
+		RoleAssignmentsClient: roleassignments.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

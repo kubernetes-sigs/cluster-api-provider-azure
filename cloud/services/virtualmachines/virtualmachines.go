@@ -23,15 +23,19 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
+
+const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
@@ -41,6 +45,7 @@ type Spec struct {
 	Size       string
 	Zone       string
 	Image      *infrav1.Image
+	Identity   infrav1.VMIdentity
 	OSDisk     infrav1.OSDisk
 	CustomData string
 }
@@ -149,16 +154,53 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		virtualMachine.Zones = &zones
 	}
 
+	if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
+		virtualMachine.Identity = &compute.VirtualMachineIdentity{
+			Type: compute.ResourceIdentityTypeSystemAssigned,
+		}
+	}
+
 	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.ResourceGroup(),
 		vmSpec.Name,
 		virtualMachine)
 	if err != nil {
-		return errors.Wrapf(err, "cannot create vm")
+		return errors.Wrapf(err, "cannot create VM")
+	}
+
+	if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
+		err = s.createRoleAssignmentForIdentity(ctx, vmSpec.Name)
+		if err != nil {
+			return errors.Wrapf(err, "cannot create VM")
+		}
 	}
 
 	klog.V(2).Infof("successfully created VM %s ", vmSpec.Name)
+	return nil
+}
+
+func (s *Service) createRoleAssignmentForIdentity(ctx context.Context, vmName string) error {
+	resultVM, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmName)
+	if err != nil {
+		return errors.Wrapf(err, "cannot get VM to assign role to system assigned identity")
+	}
+
+	scope := fmt.Sprintf("/subscriptions/%s/", s.Scope.SubscriptionID)
+	// Azure built-in roles https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
+	contributorRoleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", s.Scope.SubscriptionID, azureBuiltInContributorID)
+	params := authorization.RoleAssignmentCreateParameters{
+		Properties: &authorization.RoleAssignmentProperties{
+			RoleDefinitionID: to.StringPtr(contributorRoleDefinitionID),
+			PrincipalID:      to.StringPtr(*resultVM.Identity.PrincipalID),
+		},
+	}
+	_, err = s.RoleAssignmentsClient.Create(ctx, scope, string(uuid.NewUUID()), params)
+	if err != nil {
+		return errors.Wrapf(err, "cannot assign role to VM system assigned identity")
+	}
+
+	klog.V(2).Infof("successfully created Role assignment for generated Identity for VM %s ", vmName)
 	return nil
 }
 

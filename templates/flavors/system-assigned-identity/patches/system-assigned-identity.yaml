@@ -1,0 +1,52 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      files:
+      - content: |
+          {
+            "cloud": "AzurePublicCloud",
+            "tenantId": "${AZURE_TENANT_ID}",
+            "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+            "resourceGroup": "${CLUSTER_NAME}",
+            "securityGroupName": "${CLUSTER_NAME}-node-nsg",
+            "location": "${AZURE_LOCATION}",
+            "vmType": "standard",
+            "vnetName": "${CLUSTER_NAME}-vnet",
+            "vnetResourceGroup": "${CLUSTER_NAME}",
+            "subnetName": "${CLUSTER_NAME}-node-subnet",
+            "routeTableName": "${CLUSTER_NAME}-node-routetable",
+            "loadBalancerSku": "standard",
+            "maximumLoadBalancerRuleCount": 250,
+            "useManagedIdentityExtension": true,
+            "useInstanceMetadata": true
+          }
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+---
+kind: AzureMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      location: ${AZURE_LOCATION}
+      identity: SystemAssigned
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+      osDisk:
+        osType: "Linux"
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: "Premium_LRS"
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
