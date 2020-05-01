@@ -69,7 +69,7 @@ func validateSingleDetailsOnly(image *Image, fldPath *field.Path) field.ErrorLis
 	}
 
 	if !imageDetailsFound {
-		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace and SharedGallery image details"))
+		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace or SharedGallery image details"))
 	}
 
 	return allErrs

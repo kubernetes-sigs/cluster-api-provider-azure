@@ -37,6 +37,7 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 TEMPLATES_DIR := $(ROOT_DIR)/templates
 BIN_DIR := bin
 RELEASE_NOTES_BIN := bin/release-notes
+EXP_DIR := exp
 
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl

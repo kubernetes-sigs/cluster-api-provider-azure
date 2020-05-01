@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof" //nolint
 	"os"
@@ -31,11 +32,15 @@ import (
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
+
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
-	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	infrav1alpha3exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -54,21 +59,23 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1alpha2.AddToScheme(scheme)
 	_ = infrav1alpha3.AddToScheme(scheme)
+	_ = infrav1alpha3exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
-	_ = infrastructurev1alpha3.AddToScheme(scheme)
+	_ = clusterv1exp.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
 var (
-	metricsAddr             string
-	enableLeaderElection    bool
-	watchNamespace          string
-	profilerAddress         string
-	azureClusterConcurrency int
-	azureMachineConcurrency int
-	syncPeriod              time.Duration
-	healthAddr              string
-	webhookPort             int
+	metricsAddr                 string
+	enableLeaderElection        bool
+	watchNamespace              string
+	profilerAddress             string
+	azureClusterConcurrency     int
+	azureMachineConcurrency     int
+	azureMachinePoolConcurrency int
+	syncPeriod                  time.Duration
+	healthAddr                  string
+	webhookPort                 int
 )
 
 func InitFlags(fs *pflag.FlagSet) {
@@ -111,6 +118,11 @@ func InitFlags(fs *pflag.FlagSet) {
 		10,
 		"Number of AzureMachines to process simultaneously",
 	)
+
+	fs.IntVar(&azureMachinePoolConcurrency,
+		"azuremachinepool-concurrency",
+		10,
+		"Number of AzureMachinePools to process simultaneously")
 
 	fs.DurationVar(&syncPeriod,
 		"sync-period",
@@ -193,18 +205,38 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
 		}
+
+		// just use CAPI MachinePool feature flag rather than create a new one
+		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
+		if feature.Gates.Enabled(feature.MachinePool) {
+			if err = (&infrav1controllersexp.AzureMachinePoolReconciler{
+				Client:   mgr.GetClient(),
+				Log:      ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
+				Recorder: mgr.GetEventRecorderFor("azurecluster-reconciler"),
+			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
+				os.Exit(1)
+			}
+		}
 	} else {
-		if err = (&infrastructurev1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
 			os.Exit(1)
 		}
-		if err = (&infrastructurev1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
 			os.Exit(1)
 		}
-		if err = (&infrastructurev1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
 			os.Exit(1)
+		}
+		// just use CAPI MachinePool feature flag rather than create a new one
+		if feature.Gates.Enabled(feature.MachinePool) {
+			if err = (&infrav1alpha3exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
+				os.Exit(1)
+			}
 		}
 	}
 	// +kubebuilder:scaffold:builder

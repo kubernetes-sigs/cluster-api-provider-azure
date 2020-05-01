@@ -39,7 +39,7 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 	if err != nil {
 		return err
 	}
-	changed, created, deleted, newAnnotation := tagsChanged(annotation, additionalTags)
+	changed, created, deleted, newAnnotation := TagsChanged(annotation, additionalTags)
 	if changed {
 		machineScope.Info("Updating tags on AzureMachine")
 		vmSpec := &virtualmachines.Spec{
@@ -80,8 +80,8 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 	return nil
 }
 
-// tagsChanged determines which tags to delete and which to add.
-func tagsChanged(annotation map[string]interface{}, src map[string]string) (bool, map[string]string, map[string]string, map[string]interface{}) {
+// TagsChanged determines which tags to delete and which to add.
+func TagsChanged(annotation map[string]interface{}, src map[string]string) (bool, map[string]string, map[string]string, map[string]interface{}) {
 	// Bool tracking if we found any changed state.
 	changed := false
 

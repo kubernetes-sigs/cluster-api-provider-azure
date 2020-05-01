@@ -117,7 +117,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, nil
 	}
 
-	logger = logger.WithValues("azureCluster", azureCluster.Name)
+	logger = logger.WithValues("AzureCluster", azureCluster.Name)
 
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{

@@ -1,6 +1,33 @@
 
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: mazuremachinepool.kb.io
+  rules:
+  - apiGroups:
+    - exp.cluster.x-k8s.io.x-k8s.io
+    apiVersions:
+    - v1alpha3
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - azuremachinepools
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   creationTimestamp: null
@@ -25,3 +52,22 @@ webhooks:
     - UPDATE
     resources:
     - azuremachine
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vazuremachinepool.kb.io
+  rules:
+  - apiGroups:
+    - exp.cluster.x-k8s.io.x-k8s.io
+    apiVersions:
+    - v1alpha3
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - azuremachinepools
