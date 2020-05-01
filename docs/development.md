@@ -140,6 +140,8 @@ To build a kind cluster and start Tilt, just run:
 ```shell
 make tilt-up
 ```
+By default, the Cluster API components deployed by Tilt have experimental features turned off. 
+If you would like to enable these features, add `extra_args` as specified in [The Cluster API Book](https://cluster-api.sigs.k8s.io/developer/tilt.html#create-a-tilt-settingsjson-file).
 
 Once your kind management cluster is up and running, you can [deploy a workload cluster](#deploying-a-workload-cluster).
 
