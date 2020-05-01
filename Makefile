@@ -73,9 +73,6 @@ PULL_POLICY ?= Always
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 
-# Allow running the manager locally for debugging
-DEBUG_DEPLOY_MANAGER ?= true
-
 ## --------------------------------------
 ## Help
 ## --------------------------------------
@@ -336,7 +333,6 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kubectl wait --for=condition=Ready --timeout=5m -n capi-kubeadm-bootstrap-system pod -l cluster.x-k8s.io/provider=bootstrap-kubeadm
 	kubectl wait --for=condition=Ready --timeout=5m -n capi-kubeadm-control-plane-system pod -l cluster.x-k8s.io/provider=control-plane-kubeadm
 
-ifeq ($(DEBUG_DEPLOY_MANAGER), true)
 	# Wait for CAPZ pods
 	kubectl wait --for=condition=Ready --timeout=5m -n capz-system pod -l cluster.x-k8s.io/provider=infrastructure-azure
 
@@ -359,11 +355,6 @@ create-workload-cluster: $(ENVSUBST)
 	kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
-else
-	# Delete the deployment and webhooks as we will be running/debugging locally
-	kubectl delete deployment capz-controller-manager -n capz-system
-	kubectl delete ValidatingWebhookConfiguration capz-validating-webhook-configuration 
-endif
 
 .PHONY: create-cluster
 create-cluster: create-management-cluster create-workload-cluster ## Create a workload development Kubernetes cluster on Azure in a kind management cluster.
