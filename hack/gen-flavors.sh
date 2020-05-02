@@ -25,9 +25,9 @@ flavors_dir="${root}/templates/flavors/"
 test_dir="${root}/templates/test/"
 
 rm "${root}/templates/cluster-template"*
-find "${flavors_dir}"* -maxdepth 0 -type d -maxdepth 0 -print0 | xargs -0 -I {} basename {} | grep -v base | xargs -I {} sh -c "${kustomize} build ${flavors_dir}{} > ${root}/templates/cluster-template-{}.yaml"
+find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v base | xargs -I {} sh -c "${kustomize} build ${flavors_dir}{} > ${root}/templates/cluster-template-{}.yaml"
 # move the default template to the default file expected by clusterctl
 mv "${root}/templates/cluster-template-default.yaml" "${root}/templates/cluster-template.yaml"
 
 rm -f "${test_dir}cluster-template"*
-find "${test_dir}"* -maxdepth 0 -type d -maxdepth 0 -print0 | xargs -0 -I {} basename {} | xargs -I {} sh -c "${kustomize} build ${test_dir}{} > ${test_dir}cluster-template-{}.yaml"
+find "${test_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | xargs -I {} sh -c "${kustomize} build ${test_dir}{} > ${test_dir}cluster-template-{}.yaml"
