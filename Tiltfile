@@ -11,7 +11,6 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v0.3.5",
     "cert_manager_version": "v0.11.0",
-    "feature_gates": '--feature-gates MachinePool=true'
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
@@ -55,17 +54,47 @@ def deploy_cert_manager():
 def deploy_capi():
     version = settings.get("capi_version")
     local("kubectl apply -f https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version))
-    if settings.get("feature_gates"):
-        args_str = str(local('kubectl get deployments capi-controller-manager -n capi-system -o jsonpath={.spec.template.spec.containers[1].args}'))
-        if settings.get("feature_gates") not in args_str:
-            args = args_str[1:-1].split() # "[arg1 arg2 ...]" trim off the first and last, then split
-            args.append("\"{}\"".format(settings.get("feature_gates")))
-            patch = [{
-                "op": "replace",
-                "path": "/spec/template/spec/containers/1/args",
-                "value": args,
-            }]
-            local("kubectl patch deployment capi-controller-manager -n capi-system  --type json -p='{}'".format(str(encode_json(patch)).replace("\n", "")))
+    if settings.get("extra_args"):
+        extra_args = settings.get("extra_args")
+        if extra_args.get("core"):
+            core_extra_args = extra_args.get("core")
+            if core_extra_args:
+                for namespace in ["capi-system", "capi-webhook-system"]:
+                    patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)
+                patch_capi_manager_role_with_exp_infra_rbac()
+        if extra_args.get("kubeadm-bootstrap"):
+            kb_extra_args = extra_args.get("kubeadm-bootstrap")
+            if kb_extra_args:
+                patch_args_with_extra_args("capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", kb_extra_args)
+
+
+def patch_args_with_extra_args(namespace, name, extra_args):
+    args_str = str(local('kubectl get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}'.format(name, namespace)))
+    args_to_add = [arg for arg in extra_args if arg not in args_str]
+    if args_to_add:
+        args = args_str[1:-1].split()
+        args.extend(args_to_add)
+        patch = [{
+            "op": "replace",
+            "path": "/spec/template/spec/containers/1/args",
+            "value": args,
+        }]
+        local("kubectl patch deployment {} -n {} --type json -p='{}'".format(name, namespace, str(encode_json(patch)).replace("\n", "")))
+
+
+# patch the CAPI manager role to also provide access to experimental infrastructure
+def patch_capi_manager_role_with_exp_infra_rbac():
+    api_groups_str = str(local('kubectl get clusterrole capi-manager-role -o jsonpath={.rules[1].apiGroups}'))
+    exp_infra_group = "exp.infrastructure.cluster.x-k8s.io"
+    if exp_infra_group not in api_groups_str:
+        groups = api_groups_str[1:-1].split() # "[arg1 arg2 ...]" trim off the first and last, then split
+        groups.append(exp_infra_group)
+        patch = [{
+            "op": "replace",
+            "path": "/rules/1/apiGroups",
+            "value": groups,
+        }]
+        local("kubectl patch clusterrole capi-manager-role --type json -p='{}'".format(str(encode_json(patch)).replace("\n", "")))
 
 
 # Users may define their own Tilt customizations in tilt.d. This directory is excluded from git and these files will
@@ -76,13 +105,13 @@ def include_user_tilt_files():
         include(f)
 
 
-def append_arg_for_container_in_deployment(yaml_stream, name, namespace, contains_image_name, arg):
+def append_arg_for_container_in_deployment(yaml_stream, name, namespace, contains_image_name, args):
     for item in yaml_stream:
         if item["kind"] == "Deployment" and item.get("metadata").get("name") == name and item.get("metadata").get("namespace") == namespace:
             containers = item.get("spec").get("template").get("spec").get("containers")
             for container in containers:
                 if contains_image_name in container.get("image"):
-                    container.get("args").append("\"{}\"".format(arg))
+                    container.get("args").extend(args)
 
 
 def fixup_yaml_empty_arrays(yaml_str):
@@ -122,12 +151,14 @@ def capz():
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
 
-    # add feature gates if they are defined
-    if settings.get("feature_gates"):
-        yaml_dict = decode_yaml_stream(yaml)
-        append_arg_for_container_in_deployment(yaml_dict, "capz-controller-manager", "capz-system", "cluster-api-azure-controller", settings.get("feature_gates"))
-        yaml = str(encode_yaml_stream(yaml_dict))
-        yaml = fixup_yaml_empty_arrays(yaml)
+    # add extra_args if they are defined
+    if settings.get("extra_args"):
+        azure_extra_args = settings.get("extra_args").get("azure")
+        if azure_extra_args:
+            yaml_dict = decode_yaml_stream(yaml)
+            append_arg_for_container_in_deployment(yaml_dict, "capz-controller-manager", "capz-system", "cluster-api-azure-controller", azure_extra_args)
+            yaml = str(encode_yaml_stream(yaml_dict))
+            yaml = fixup_yaml_empty_arrays(yaml)
 
     # Set up a local_resource build of the provider's manager binary.
     local_resource(

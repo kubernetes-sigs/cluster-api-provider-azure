@@ -1,0 +1,282 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.9
+  creationTimestamp: null
+  name: azuremachinepools.exp.infrastructure.cluster.x-k8s.io
+spec:
+  group: exp.infrastructure.cluster.x-k8s.io
+  names:
+    kind: AzureMachinePool
+    listKind: AzureMachinePoolList
+    plural: azuremachinepools
+    singular: azuremachinepool
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: AzureMachinePool replicas count
+      jsonPath: .status.replicas
+      name: Replicas
+      type: string
+    - description: AzureMachinePool replicas count
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - description: Azure VMSS provisioning state
+      jsonPath: .status.provisioningState
+      name: State
+      type: string
+    - description: Cluster to which this AzureMachinePool belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      priority: 1
+      type: string
+    - description: MachinePool object to which this AzureMachinePool belongs
+      jsonPath: .metadata.ownerReferences[?(@.kind=="MachinePool")].name
+      name: MachinePool
+      priority: 1
+      type: string
+    - description: Azure VMSS ID
+      jsonPath: .spec.providerID
+      name: VMSS ID
+      priority: 1
+      type: string
+    - description: Azure VM Size
+      jsonPath: .spec.template.vmSize
+      name: VM Size
+      priority: 1
+      type: string
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: AzureMachinePool is the Schema for the azuremachinepools API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AzureMachinePoolSpec defines the desired state of AzureMachinePool
+            properties:
+              additionalTags:
+                additionalProperties:
+                  type: string
+                description: AdditionalTags is an optional set of tags to add to an
+                  instance, in addition to the ones added by default by the Azure
+                  provider. If both the AzureCluster and the AzureMachine specify
+                  the same tag name with different values, the AzureMachine's value
+                  takes precedence.
+                type: object
+              location:
+                description: Location is the Azure region location e.g. westus2
+                type: string
+              providerID:
+                description: ProviderID is the identification ID of the Virtual Machine
+                  Scale Set
+                type: string
+              providerIDList:
+                description: ProviderIDList are the identification IDs of machine
+                  instances provided by the provider. This field must match the provider
+                  IDs as seen on the node objects corresponding to a machine pool's
+                  machine instances.
+                items:
+                  type: string
+                type: array
+              template:
+                description: Template contains the details used to build a replica
+                  virtual machine within the Machine Pool
+                properties:
+                  image:
+                    description: Image is used to provide details of an image to use
+                      during Virtual Machine creation. If image details are omitted
+                      the image will default the Azure Marketplace "capi" offer, which
+                      is based on Ubuntu.
+                    properties:
+                      id:
+                        description: ID specifies an image to use by ID
+                        type: string
+                      marketplace:
+                        description: Marketplace specifies an image to use from the
+                          Azure Marketplace
+                        properties:
+                          offer:
+                            description: Offer specifies the name of a group of related
+                              images created by the publisher. For example, UbuntuServer,
+                              WindowsServer
+                            minLength: 1
+                            type: string
+                          publisher:
+                            description: Publisher is the name of the organization
+                              that created the image
+                            minLength: 1
+                            type: string
+                          sku:
+                            description: SKU specifies an instance of an offer, such
+                              as a major release of a distribution. For example, 18.04-LTS,
+                              2019-Datacenter
+                            minLength: 1
+                            type: string
+                          version:
+                            description: Version specifies the version of an image
+                              sku. The allowed formats are Major.Minor.Build or 'latest'.
+                              Major, Minor, and Build are decimal numbers. Specify
+                              'latest' to use the latest version of an image available
+                              at deploy time. Even if you use 'latest', the VM image
+                              will not automatically update after deploy time even
+                              if a new version becomes available.
+                            minLength: 1
+                            type: string
+                        required:
+                        - offer
+                        - publisher
+                        - sku
+                        - version
+                        type: object
+                      sharedGallery:
+                        description: SharedGallery specifies an image to use from
+                          an Azure Shared Image Gallery
+                        properties:
+                          gallery:
+                            description: Gallery specifies the name of the shared
+                              image gallery that contains the image
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name is the name of the image
+                            minLength: 1
+                            type: string
+                          resourceGroup:
+                            description: ResourceGroup specifies the resource group
+                              containing the shared image gallery
+                            minLength: 1
+                            type: string
+                          subscriptionID:
+                            description: SubscriptionID is the identifier of the subscription
+                              that contains the shared image gallery
+                            minLength: 1
+                            type: string
+                          version:
+                            description: Version specifies the version of the marketplace
+                              image. The allowed formats are Major.Minor.Build or
+                              'latest'. Major, Minor, and Build are decimal numbers.
+                              Specify 'latest' to use the latest version of an image
+                              available at deploy time. Even if you use 'latest',
+                              the VM image will not automatically update after deploy
+                              time even if a new version becomes available.
+                            minLength: 1
+                            type: string
+                        required:
+                        - gallery
+                        - name
+                        - resourceGroup
+                        - subscriptionID
+                        - version
+                        type: object
+                    type: object
+                  osDisk:
+                    description: OSDisk contains the operating system disk information
+                      for a Virtual Machine
+                    properties:
+                      diskSizeGB:
+                        format: int32
+                        type: integer
+                      managedDisk:
+                        properties:
+                          storageAccountType:
+                            type: string
+                        required:
+                        - storageAccountType
+                        type: object
+                      osType:
+                        type: string
+                    required:
+                    - diskSizeGB
+                    - managedDisk
+                    - osType
+                    type: object
+                  sshPublicKey:
+                    description: SSHPublicKey is the SSH public key string base64
+                      encoded to add to a Virtual Machine
+                    type: string
+                  vmSize:
+                    description: VMSize is the size of the Virtual Machine to build.
+                      See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
+                    type: string
+                required:
+                - osDisk
+                - sshPublicKey
+                - vmSize
+                type: object
+            required:
+            - location
+            - template
+            type: object
+          status:
+            description: AzureMachinePoolStatus defines the observed state of AzureMachinePool
+            properties:
+              failureMessage:
+                description: "ErrorMessage will be set in the event that there is
+                  a terminal problem reconciling the MachinePool and will contain
+                  a more verbose string suitable for logging and human consumption.
+                  \n This field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over time (like
+                  service outages), but instead indicate that something is fundamentally
+                  wrong with the MachinePool's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of MachinePools can be added as
+                  events to the MachinePool object and/or logged in the controller's
+                  output."
+                type: string
+              failureReason:
+                description: "ErrorReason will be set in the event that there is a
+                  terminal problem reconciling the MachinePool and will contain a
+                  succinct value suitable for machine interpretation. \n This field
+                  should not be set for transitive errors that a controller faces
+                  that are expected to be fixed automatically over time (like service
+                  outages), but instead indicate that something is fundamentally wrong
+                  with the MachinePool's spec or the configuration of the controller,
+                  and that manual intervention is required. Examples of terminal errors
+                  would be invalid combinations of settings in the spec, values that
+                  are unsupported by the controller, or the responsible controller
+                  itself being critically misconfigured. \n Any transient errors that
+                  occur during the reconciliation of MachinePools can be added as
+                  events to the MachinePool object and/or logged in the controller's
+                  output."
+                type: string
+              provisioningState:
+                description: VMState is the provisioning state of the Azure virtual
+                  machine.
+                type: string
+              ready:
+                description: Ready is true when the provider resource is ready.
+                type: boolean
+              replicas:
+                description: Replicas is the most recently observed number of replicas.
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

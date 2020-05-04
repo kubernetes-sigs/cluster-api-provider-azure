@@ -110,7 +110,7 @@ func TestTagsChanged(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			changed, created, deleted, newAnnotation := tagsChanged(test.annotation, test.src)
+			changed, created, deleted, newAnnotation := TagsChanged(test.annotation, test.src)
 			g.Expect(changed).To(Equal(test.expectedResult))
 			g.Expect(created).To(Equal(test.expectedCreated))
 			g.Expect(deleted).To(Equal(test.expectedDeleted))
