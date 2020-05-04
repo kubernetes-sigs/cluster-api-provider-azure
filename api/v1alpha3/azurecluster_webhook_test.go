@@ -35,14 +35,14 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 	}{
 		{
 			name:    "no change",
-			cluster: createAzureCluster(t, "westus2"),
-			updated: createAzureCluster(t, "westus2"),
+			cluster: createAzureCluster("westus2"),
+			updated: createAzureCluster("westus2"),
 			err:     nil,
 		},
 		{
 			name:    "update location should throw an error",
-			cluster: createAzureCluster(t, "westus2"),
-			updated: createAzureCluster(t, "eastus"),
+			cluster: createAzureCluster("westus2"),
+			updated: createAzureCluster("eastus"),
 			err: apierrors.NewInvalid(
 				GroupVersion.WithKind("AzureCluster").GroupKind(),
 				"westus2", field.ErrorList{
@@ -53,6 +53,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := tc.cluster.ValidateUpdate(tc.updated)
 			if tc.err != nil {
 				g.Expect(err).To(HaveOccurred())
@@ -64,7 +65,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 	}
 }
 
-func createAzureCluster(t *testing.T, location string) *AzureCluster {
+func createAzureCluster(location string) *AzureCluster {
 	return &AzureCluster{
 		Spec: AzureClusterSpec{
 			Location: location,
