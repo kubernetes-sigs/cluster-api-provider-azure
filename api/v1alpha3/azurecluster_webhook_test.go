@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func TestAzureCluster_ValidateUpdate(t *testing.T) {
@@ -29,27 +31,32 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 		name    string
 		cluster *AzureCluster
 		updated *AzureCluster
-		wantErr bool
+		err     error
 	}{
 		{
 			name:    "no change",
 			cluster: createAzureCluster(t, "westus2"),
 			updated: createAzureCluster(t, "westus2"),
-			wantErr: false,
+			err:     nil,
 		},
 		{
-			name:    "no change",
+			name:    "update location should throw an error",
 			cluster: createAzureCluster(t, "westus2"),
 			updated: createAzureCluster(t, "eastus"),
-			wantErr: true,
+			err: apierrors.NewInvalid(
+				GroupVersion.WithKind("AzureCluster").GroupKind(),
+				"westus2", field.ErrorList{
+					field.Invalid(field.NewPath("location"), "westus2", "AzureCluster Location is not mutable"),
+				}),
 		},
 	}
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.cluster.ValidateUpdate(tc.updated)
-			if tc.wantErr {
+			if tc.err != nil {
 				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(Equal(tc.err))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
