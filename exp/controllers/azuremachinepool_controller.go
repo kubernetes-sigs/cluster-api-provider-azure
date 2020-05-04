@@ -104,7 +104,7 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 
 func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.TODO()
-	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
+	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	azMachinePool := &infrav1exp.AzureMachinePool{}
 	err := r.Get(ctx, req.NamespacedName, azMachinePool)
