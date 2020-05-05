@@ -104,4 +104,9 @@ func (m *AzureMachine) Default() {
 	if err != nil {
 		machinelog.Error(err, "SetDefaultSshPublicKey failed")
 	}
+
+	err = m.SetDefaultsDataDisks()
+	if err != nil {
+		machinelog.Error(err, "SetDefaultDataDisks failed")
+	}
 }

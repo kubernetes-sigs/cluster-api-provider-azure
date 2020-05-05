@@ -57,10 +57,12 @@ func ValidateDataDisks(dataDisks []DataDisk, fldPath *field.Path) field.ErrorLis
 	// check that all LUNs are unique
 	set := make(map[int32]struct{})
 	for _, disk := range dataDisks {
-		if _, ok := set[disk.Lun]; ok {
+		if disk.Lun == nil {
+			allErrs = append(allErrs, field.Required(fldPath, "LUN should not be nil"))
+		} else if _, ok := set[*disk.Lun]; ok {
 			allErrs = append(allErrs, field.Invalid(fldPath, disk, "The LUN must be unique for each data disk attached to a VM"))
 		} else {
-			set[disk.Lun] = struct{}{}
+			set[*disk.Lun] = struct{}{}
 		}
 	}
 	return allErrs

@@ -43,3 +43,20 @@ func (m *AzureMachine) SetDefaultSSHPublicKey() error {
 
 	return nil
 }
+
+// SetDefaultsDataDisks sets the data disk defaults for an AzureMachine
+func (m *AzureMachine) SetDefaultsDataDisks() error {
+	// set := make(map[int32]struct{})
+	// // populate all the existing values in the set
+	// for _, disk := range m.Spec.DataDisks {
+	// 	if disk.Lun != nil {
+	// 		set[*disk.Lun] = struct{}{}
+	// 	}
+	// }
+	// for _, disk := range m.Spec.DataDisks {
+	// 	if disk.Lun != nil {
+	// 		set[*disk.Lun] = struct{}{}
+	// 	}
+	// }
+	return nil
+}
