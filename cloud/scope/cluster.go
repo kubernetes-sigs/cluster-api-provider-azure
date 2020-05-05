@@ -183,3 +183,11 @@ func (s *ClusterScope) APIServerPort() int32 {
 	}
 	return 6443
 }
+
+// SetFailureDomain will set the spec for a for a given key
+func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
+	if s.AzureCluster.Status.FailureDomains == nil {
+		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
+	}
+	s.AzureCluster.Status.FailureDomains[id] = spec
+}

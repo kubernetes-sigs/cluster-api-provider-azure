@@ -23,6 +23,7 @@ package v1alpha3
 import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
@@ -138,6 +139,13 @@ func (in *AzureClusterSpec) DeepCopy() *AzureClusterSpec {
 func (in *AzureClusterStatus) DeepCopyInto(out *AzureClusterStatus) {
 	*out = *in
 	in.Network.DeepCopyInto(&out.Network)
+	if in.FailureDomains != nil {
+		in, out := &in.FailureDomains, &out.FailureDomains
+		*out = make(apiv1alpha3.FailureDomains, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
 	in.Bastion.DeepCopyInto(&out.Bastion)
 }
 
@@ -232,6 +240,11 @@ func (in *AzureMachineSpec) DeepCopyInto(out *AzureMachineSpec) {
 	*out = *in
 	if in.ProviderID != nil {
 		in, out := &in.ProviderID, &out.ProviderID
+		*out = new(string)
+		**out = **in
+	}
+	if in.FailureDomain != nil {
+		in, out := &in.FailureDomain, &out.FailureDomain
 		*out = new(string)
 		**out = **in
 	}

@@ -34,7 +34,13 @@ type AzureMachineSpec struct {
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
 
-	VMSize           string           `json:"vmSize"`
+	VMSize string `json:"vmSize"`
+
+	// FailureDomain is the failure domain unique identifier this Machine should be attached to,
+	// as defined in Cluster API. This relates to an Azure Availability Zone
+	FailureDomain *string `json:"failureDomain,omitempty"`
+
+	// DEPRECATED: use FailureDomain instead
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is used to provide details of an image to use during VM creation.

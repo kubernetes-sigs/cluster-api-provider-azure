@@ -26,6 +26,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,26 +52,42 @@ func TestGetAvailabilityZones(t *testing.T) {
 	}{
 		{
 			name:                 "empty availability zones",
-			availabilityZoneSpec: Spec{VMSize: "Standard_B2ms"},
+			availabilityZoneSpec: Spec{VMSize: to.StringPtr("Standard_B2ms")},
 			expectedError:        "",
 			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
-				m.ListComplete(context.TODO(), "").Return(compute.ResourceSkusResultIterator{}, nil)
+				m.ListComplete(context.TODO(), "location eq 'centralus'").Return(compute.ResourceSkusResultIterator{}, nil)
 			},
 		},
 		{
 			name:                 "empty availability zones with error",
-			availabilityZoneSpec: Spec{VMSize: "Standard_B2ms"},
+			availabilityZoneSpec: Spec{VMSize: to.StringPtr("Standard_B2ms")},
 			expectedError:        "#: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
-				m.ListComplete(context.TODO(), "").Return(compute.ResourceSkusResultIterator{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.ListComplete(context.TODO(), "location eq 'centralus'").Return(compute.ResourceSkusResultIterator{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
 			name:                 "availability zones exist",
-			availabilityZoneSpec: Spec{VMSize: "Standard_B2ms"},
+			availabilityZoneSpec: Spec{VMSize: to.StringPtr("Standard_B2ms")},
 			expectedError:        "",
 			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
-				m.ListComplete(context.TODO(), "").Return(compute.NewResourceSkusResultIterator(compute.ResourceSkusResultPage{}), nil)
+				m.ListComplete(context.TODO(), "location eq 'centralus'").Return(compute.NewResourceSkusResultIterator(compute.ResourceSkusResultPage{}), nil)
+			},
+		},
+		{
+			name:                 "no vmsize specified",
+			availabilityZoneSpec: Spec{},
+			expectedError:        "",
+			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
+				m.ListComplete(context.TODO(), "location eq 'centralus'").Return(compute.NewResourceSkusResultIterator(compute.ResourceSkusResultPage{}), nil)
+			},
+		},
+		{
+			name:                 "no vmsize (location unique)",
+			availabilityZoneSpec: Spec{},
+			expectedError:        "",
+			expect: func(m *mock_availabilityzones.MockClientMockRecorder) {
+				m.ListComplete(context.TODO(), "location eq 'centralus'").Return(compute.NewResourceSkusResultIterator(compute.ResourceSkusResultPage{}), nil)
 			},
 		},
 	}
@@ -97,7 +114,7 @@ func TestGetAvailabilityZones(t *testing.T) {
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
+						Location:      "centralus",
 						ResourceGroup: "my-rg",
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},

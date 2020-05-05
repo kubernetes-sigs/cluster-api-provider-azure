@@ -483,6 +483,7 @@ func autoConvert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *
 	if err := Convert_v1alpha3_Network_To_v1alpha2_Network(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
+	// WARNING: in.FailureDomains requires manual conversion: does not exist in peer-type
 	if err := Convert_v1alpha3_VM_To_v1alpha2_VM(&in.Bastion, &out.Bastion, s); err != nil {
 		return err
 	}
@@ -622,6 +623,7 @@ func autoConvert_v1alpha2_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *Azur
 func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha2_AzureMachineSpec(in *v1alpha3.AzureMachineSpec, out *AzureMachineSpec, s conversion.Scope) error {
 	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
 	out.VMSize = in.VMSize
+	// WARNING: in.FailureDomain requires manual conversion: does not exist in peer-type
 	if err := Convert_v1alpha3_AvailabilityZone_To_v1alpha2_AvailabilityZone(&in.AvailabilityZone, &out.AvailabilityZone, s); err != nil {
 		return err
 	}
