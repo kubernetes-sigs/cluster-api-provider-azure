@@ -55,7 +55,7 @@ func TestInvalidVM(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
-	vmextensionsMock := mock_virtualmachines.NewMockClient(mockCtrl)
+	vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
@@ -84,7 +84,7 @@ func TestInvalidVM(t *testing.T) {
 
 	s := &Service{
 		Scope:  clusterScope,
-		Client: vmextensionsMock,
+		Client: vmMock,
 	}
 
 	// Wrong Spec
