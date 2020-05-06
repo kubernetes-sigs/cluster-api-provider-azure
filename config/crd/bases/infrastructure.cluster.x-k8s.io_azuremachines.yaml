@@ -356,11 +356,14 @@ spec:
               location:
                 type: string
               osDisk:
+                description: OSDisk defines the operating system disk for a VM.
                 properties:
                   diskSizeGB:
                     format: int32
                     type: integer
                   managedDisk:
+                    description: ManagedDisk defines the managed disk options for
+                      a VM.
                     properties:
                       storageAccountType:
                         type: string
