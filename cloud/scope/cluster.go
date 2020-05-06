@@ -52,7 +52,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.Logger = klogr.New()
 	}
 
-	err := params.AzureClients.setCredentials()
+	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create Azure session")
 	}

@@ -43,7 +43,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid network interface specification"
+const (
+	expectedInvalidSpec = "invalid network interface specification"
+	subscriptionID      = "123"
+)
 
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
@@ -63,15 +66,15 @@ func TestInvalidNetworkInterface(t *testing.T) {
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: subscriptionID,
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},
@@ -151,17 +154,18 @@ func TestGetNetworkInterface(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 			client := fake.NewFakeClient(cluster)
+
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
 								Name:          "my-vnet",
@@ -194,8 +198,7 @@ func TestGetNetworkInterface(t *testing.T) {
 				Cluster: cluster,
 				Machine: &clusterv1.Machine{},
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
 				AzureCluster: &infrav1.AzureCluster{},
@@ -555,17 +558,18 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 			client := fake.NewFakeClient(cluster)
+
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
 								Name:          "my-vnet",
@@ -598,8 +602,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				Cluster: cluster,
 				Machine: &clusterv1.Machine{},
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
 				AzureCluster: &infrav1.AzureCluster{},
@@ -716,17 +719,18 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 			client := fake.NewFakeClient(cluster)
+
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 							Subnets: []*infrav1.SubnetSpec{{
@@ -756,8 +760,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				Cluster: cluster,
 				Machine: &clusterv1.Machine{},
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
 				AzureCluster: &infrav1.AzureCluster{},

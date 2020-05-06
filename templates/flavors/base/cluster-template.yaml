@@ -23,6 +23,7 @@ metadata:
 spec:
   resourceGroup: "${AZURE_RESOURCE_GROUP}"
   location: "${AZURE_LOCATION}"
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   networkSpec:
     vnet:
       name: "${AZURE_VNET_NAME}"

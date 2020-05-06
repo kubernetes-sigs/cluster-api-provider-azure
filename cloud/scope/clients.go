@@ -30,32 +30,28 @@ type AzureClients struct {
 	Authorizer     autorest.Authorizer
 }
 
-func (c *AzureClients) setCredentials() error {
-	if c.SubscriptionID == "" {
-		subID, err := getSubscriptionID()
-		if err != nil {
-			return err
-		}
-		c.SubscriptionID = subID
+func (c *AzureClients) setCredentials(subscriptionID string) error {
+	subID, err := getSubscriptionID(subscriptionID)
+	if err != nil {
+		return err
 	}
-	if c.Authorizer == nil {
-		auth, err := getAuthorizer()
-		if err != nil {
-			return err
-		}
-		c.Authorizer = auth
+	c.SubscriptionID = subID
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return err
 	}
-	return nil
+	settings.Values[auth.SubscriptionID] = subscriptionID
+	c.Authorizer, err = settings.GetAuthorizer()
+	return err
 }
 
-func getSubscriptionID() (string, error) {
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+func getSubscriptionID(subscriptionID string) (string, error) {
+	if subscriptionID != "" {
+		return subscriptionID, nil
+	}
+	subscriptionID = os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
 		return "", errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
 	}
 	return subscriptionID, nil
-}
-
-func getAuthorizer() (autorest.Authorizer, error) {
-	return auth.NewAuthorizerFromEnvironment()
 }

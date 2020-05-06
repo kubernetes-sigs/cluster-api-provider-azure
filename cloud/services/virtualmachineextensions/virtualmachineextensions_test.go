@@ -37,7 +37,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid vm extension specification"
+const (
+	expectedInvalidSpec = "invalid vm extension specification"
+	subscriptionID      = "123"
+)
 
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
@@ -57,15 +60,15 @@ func TestInvalidVMExtensions(t *testing.T) {
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: subscriptionID,
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},
@@ -157,15 +160,15 @@ func TestGetVMExtensions(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 						},
@@ -240,15 +243,15 @@ func TestReconcileVMExtensions(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
 								ID:            "my-vnet-id",
@@ -339,15 +342,15 @@ func TestDeleteVMExtensions(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{
 								ID:            "my-vnet-id",

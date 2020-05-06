@@ -404,6 +404,10 @@ spec:
       name: Resource Group
       priority: 1
       type: string
+    - jsonPath: .spec.subscriptionID
+      name: SubscriptionID
+      priority: 1
+      type: string
     - jsonPath: .spec.location
       name: Location
       priority: 1
@@ -577,6 +581,8 @@ spec:
                     type: object
                 type: object
               resourceGroup:
+                type: string
+              subscriptionID:
                 type: string
             required:
             - location

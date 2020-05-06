@@ -37,7 +37,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid public loadbalancer specification"
+const (
+	expectedInvalidSpec = "invalid public loadbalancer specification"
+	subscriptionID      = "123"
+)
 
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
@@ -57,15 +60,15 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: subscriptionID,
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},
@@ -151,15 +154,15 @@ func TestGetPublicLB(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 						},
@@ -264,15 +267,15 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 						},
@@ -359,15 +362,15 @@ func TestDeletePublicLB(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 						},

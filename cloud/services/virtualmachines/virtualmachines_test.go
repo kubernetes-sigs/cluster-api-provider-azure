@@ -42,7 +42,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const expectedInvalidSpec = "invalid VM specification"
+const (
+	expectedInvalidSpec = "invalid VM specification"
+	subscriptionID      = "123"
+)
 
 func init() {
 	clusterv1.AddToScheme(scheme.Scheme)
@@ -62,15 +65,15 @@ func TestInvalidVM(t *testing.T) {
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
-			SubscriptionID: "123",
-			Authorizer:     autorest.NullAuthorizer{},
+			Authorizer: autorest.NullAuthorizer{},
 		},
 		Client:  client,
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
 				Location: "test-location",
-				ResourceGroup: "my-rg",
+				ResourceGroup:  "my-rg",
+				SubscriptionID: subscriptionID,
 				NetworkSpec: infrav1.NetworkSpec{
 					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 				},
@@ -302,15 +305,15 @@ func TestGetVM(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 							Subnets: infrav1.Subnets{
@@ -392,6 +395,7 @@ func TestReconcileVM(t *testing.T) {
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: subscriptionID,
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							&infrav1.SubnetSpec{
@@ -444,6 +448,7 @@ func TestReconcileVM(t *testing.T) {
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: subscriptionID,
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							&infrav1.SubnetSpec{
@@ -496,6 +501,7 @@ func TestReconcileVM(t *testing.T) {
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: subscriptionID,
 					NetworkSpec: infrav1.NetworkSpec{
 						Subnets: infrav1.Subnets{
 							&infrav1.SubnetSpec{
@@ -574,8 +580,7 @@ func TestReconcileVM(t *testing.T) {
 				Cluster: cluster,
 				Machine: &tc.machine,
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
 				AzureCluster: tc.azureCluster,
@@ -587,8 +592,7 @@ func TestReconcileVM(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:       client,
 				Cluster:      cluster,
@@ -683,15 +687,15 @@ func TestDeleteVM(t *testing.T) {
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
+					Authorizer: autorest.NullAuthorizer{},
 				},
 				Client:  client,
 				Cluster: cluster,
 				AzureCluster: &infrav1.AzureCluster{
 					Spec: infrav1.AzureClusterSpec{
 						Location: "test-location",
-						ResourceGroup: "my-rg",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
 						NetworkSpec: infrav1.NetworkSpec{
 							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 						},
