@@ -1,39 +1,3 @@
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-spec:
-  template:
-    spec:
-      files:
-      - content: |
-          {
-            "cloud": "AzurePublicCloud",
-            "tenantId": "${AZURE_TENANT_ID}",
-            "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-            "resourceGroup": "${CLUSTER_NAME}",
-            "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-            "location": "${AZURE_LOCATION}",
-            "vmType": "standard",
-            "vnetName": "${CLUSTER_NAME}-vnet",
-            "vnetResourceGroup": "${CLUSTER_NAME}",
-            "subnetName": "${CLUSTER_NAME}-node-subnet",
-            "routeTableName": "${CLUSTER_NAME}-node-routetable",
-            "loadBalancerSku": "standard",
-            "maximumLoadBalancerRuleCount": 250,
-            "useManagedIdentityExtension": true,
-            "useInstanceMetadata": true
-          }
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
-          name: '{{ ds.meta_data["local_hostname"] }}'
----
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster
 metadata:
@@ -53,28 +17,18 @@ spec:
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineDeployment
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureCluster
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: ${CLUSTER_NAME}
+  namespace: default
 spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: null
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
-      version: ${KUBERNETES_VERSION}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME}
+  resourceGroup: ${AZURE_RESOURCE_GROUP}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -150,19 +104,6 @@ spec:
   version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-kind: AzureCluster
-metadata:
-  name: ${CLUSTER_NAME}
-  namespace: default
-spec:
-  location: ${AZURE_LOCATION}
-  networkSpec:
-    vnet:
-      name: ${AZURE_VNET_NAME}
-  resourceGroup: ${AZURE_RESOURCE_GROUP}
-  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -180,6 +121,29 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachineTemplate
 metadata:
@@ -196,3 +160,39 @@ spec:
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      files:
+      - content: |
+          {
+            "cloud": "AzurePublicCloud",
+            "tenantId": "${AZURE_TENANT_ID}",
+            "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+            "resourceGroup": "${CLUSTER_NAME}",
+            "securityGroupName": "${CLUSTER_NAME}-node-nsg",
+            "location": "${AZURE_LOCATION}",
+            "vmType": "standard",
+            "vnetName": "${CLUSTER_NAME}-vnet",
+            "vnetResourceGroup": "${CLUSTER_NAME}",
+            "subnetName": "${CLUSTER_NAME}-node-subnet",
+            "routeTableName": "${CLUSTER_NAME}-node-routetable",
+            "loadBalancerSku": "standard",
+            "maximumLoadBalancerRuleCount": 250,
+            "useManagedIdentityExtension": true,
+            "useInstanceMetadata": true
+          }
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
