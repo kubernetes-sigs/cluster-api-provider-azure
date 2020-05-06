@@ -45,14 +45,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 	capzcntr "sigs.k8s.io/cluster-api-provider-azure/controllers"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	infrav1expscope "sigs.k8s.io/cluster-api-provider-azure/exp/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/cloud/services/scalesets"
 )
 
 type (
@@ -66,7 +65,7 @@ type (
 
 	// azureMachinePoolService provides structure and behavior around the operations needed to reconcile Azure Machine Pools
 	azureMachinePoolService struct {
-		machinePoolScope           *infrav1expscope.MachinePoolScope
+		machinePoolScope           *scope.MachinePoolScope
 		clusterScope               *scope.ClusterScope
 		virtualMachinesScaleSetSvc azure.GetterService
 	}
@@ -161,7 +160,7 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	}
 
 	// Create the machine pool scope
-	machinePoolScope, err := infrav1expscope.NewMachinePoolScope(infrav1expscope.MachinePoolScopeParams{
+	machinePoolScope, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 		Logger:           logger,
 		Client:           r.Client,
 		Cluster:          cluster,
@@ -189,7 +188,7 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	return r.reconcileNormal(ctx, machinePoolScope, clusterScope)
 }
 
-func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *infrav1expscope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machinePoolScope.Info("Reconciling AzureMachinePool")
 	// If the AzureMachine is in an error state, return early.
 	if machinePoolScope.AzureMachinePool.Status.FailureReason != nil || machinePoolScope.AzureMachinePool.Status.FailureMessage != nil {
@@ -270,7 +269,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureMachinePoolReconciler) reconcileDelete(machinePoolScope *infrav1expscope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+func (r *AzureMachinePoolReconciler) reconcileDelete(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machinePoolScope.Info("Handling deleted AzureMachinePool")
 
 	if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(); err != nil {
@@ -362,7 +361,7 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 }
 
 // Ensure that the tags of the machine are correct
-func (r *AzureMachinePoolReconciler) reconcileTags(machinePoolScope *infrav1expscope.MachinePoolScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
+func (r *AzureMachinePoolReconciler) reconcileTags(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
 	machinePoolScope.Info("Updating tags on AzureMachinePool")
 	annotation, err := r.AnnotationJSON(machinePoolScope.AzureMachinePool, capzcntr.TagsLastAppliedAnnotation)
 	if err != nil {
@@ -460,7 +459,7 @@ func (r *AzureMachinePoolReconciler) Annotation(rw annotationReaderWriter, annot
 }
 
 // newAzureMachinePoolService populates all the services based on input scope
-func newAzureMachinePoolService(machinePoolScope *infrav1expscope.MachinePoolScope, clusterScope *scope.ClusterScope) *azureMachinePoolService {
+func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) *azureMachinePoolService {
 	return &azureMachinePoolService{
 		machinePoolScope:           machinePoolScope,
 		clusterScope:               clusterScope,
@@ -586,7 +585,7 @@ func getMachineByName(ctx context.Context, c client.Client, namespace, name stri
 }
 
 // Pick image from the machine configuration, or use a default one.
-func getVMImage(scope *infrav1expscope.MachinePoolScope) (*infrav1.Image, error) {
+func getVMImage(scope *scope.MachinePoolScope) (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if scope.AzureMachinePool.Spec.Template.Image != nil {
 		return scope.AzureMachinePool.Spec.Template.Image, nil

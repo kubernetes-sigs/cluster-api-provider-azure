@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1convert "sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
@@ -43,7 +42,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	}
 
 	if len(sdkvmss.Tags) > 0 {
-		vmss.Tags = infrav1convert.MapToTags(sdkvmss.Tags)
+		vmss.Tags = MapToTags(sdkvmss.Tags)
 	}
 
 	if len(sdkinstances) > 0 {
