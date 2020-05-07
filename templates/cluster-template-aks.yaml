@@ -23,7 +23,7 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
 spec:
   defaultPoolRef:
-    name: defaultpool
+    name: agentpool0
   location: ${AZURE_LOCATION}
   resourceGroup: ${AZURE_RESOURCE_GROUP}
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
@@ -34,11 +34,13 @@ apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
+spec:
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool
 metadata:
-  name: defaultpool
+  name: agentpool0
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -51,14 +53,14 @@ spec:
       infrastructureRef:
         apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
         kind: AzureManagedMachinePool
-        name: defaultpool
+        name: agentpool0
         namespace: default
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedMachinePool
 metadata:
-  name: defaultpool
+  name: agentpool0
 spec:
   osDiskSizeGB: 512
   sku: ${AZURE_NODE_MACHINE_TYPE}
@@ -66,7 +68,7 @@ spec:
 apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool
 metadata:
-  name: agentpool2
+  name: agentpool1
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -79,14 +81,14 @@ spec:
       infrastructureRef:
         apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
         kind: AzureManagedMachinePool
-        name: agentpool2
+        name: agentpool1
         namespace: default
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedMachinePool
 metadata:
-  name: agentpool2
+  name: agentpool1
 spec:
   osDiskSizeGB: 1024
   sku: ${AZURE_NODE_MACHINE_TYPE}

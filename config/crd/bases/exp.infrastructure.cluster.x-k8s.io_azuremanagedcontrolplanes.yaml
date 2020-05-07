@@ -127,6 +127,12 @@ spec:
             description: AzureManagedControlPlaneStatus defines the observed state
               of AzureManagedControlPlane
             properties:
+              initialized:
+                description: Initialized is true when the the control plane is available
+                  for initial contact. This may occur before the control plane is
+                  fully ready. In the AzureManagedControlPlane implementation, these
+                  are identical.
+                type: boolean
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean

@@ -151,6 +151,7 @@ func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.ControlPlane.Status.Ready = true
+	scope.ControlPlane.Status.Initialized = true
 
 	return reconcile.Result{}, nil
 }

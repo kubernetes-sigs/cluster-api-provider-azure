@@ -27,6 +27,7 @@ import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,7 +50,6 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	scope.Logger.Info("reconciling cluster")
 	managedClusterSpec := &managedclusters.Spec{
 		Name:            scope.ControlPlane.Name,
 		ResourceGroup:   scope.ControlPlane.Spec.ResourceGroup,
@@ -62,6 +62,46 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		SSHPublicKey:    scope.ControlPlane.Spec.SSHPublicKey,
 	}
 
+	scope.Logger.V(2).Info("Reconciling managed cluster")
+	if err := r.reconcileManagedCluster(ctx, scope, managedClusterSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile managed cluster")
+	}
+
+	scope.Logger.V(2).Info("Reconciling endpoint")
+	if err := r.reconcileEndpoint(ctx, scope, managedClusterSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile control plane endpoint")
+	}
+
+	scope.Logger.V(2).Info("Reconciling kubeconfig")
+	if err := r.reconcileKubeconfig(ctx, scope, managedClusterSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile kubeconfig secret")
+	}
+
+	return nil
+}
+
+// Delete reconciles all the services in pre determined order
+func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	managedClusterSpec := &managedclusters.Spec{
+		Name:            scope.ControlPlane.Name,
+		ResourceGroup:   scope.ControlPlane.Spec.ResourceGroup,
+		Location:        scope.ControlPlane.Spec.Location,
+		Tags:            scope.ControlPlane.Spec.AdditionalTags,
+		Version:         scope.ControlPlane.Spec.Version,
+		LoadBalancerSKU: scope.ControlPlane.Spec.LoadBalancerSKU,
+		NetworkPlugin:   scope.ControlPlane.Spec.NetworkPlugin,
+		NetworkPolicy:   scope.ControlPlane.Spec.NetworkPolicy,
+		SSHPublicKey:    scope.ControlPlane.Spec.SSHPublicKey,
+	}
+
+	if err := r.managedClustersSvc.Delete(ctx, managedClusterSpec); err != nil {
+		return errors.Wrapf(err, "failed to delete managed cluster %s", scope.ControlPlane.Name)
+	}
+
+	return nil
+}
+
+func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
 	if net := scope.Cluster.Spec.ClusterNetwork; net != nil {
 		if net.Services != nil {
 			// A user may provide zero or one CIDR blocks. If they provide an empty array,
@@ -86,13 +126,16 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 	}
 
 	_, err := r.managedClustersSvc.Get(ctx, managedClusterSpec)
+	// Transient or other failure not due to 404
 	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to reconcile managed cluster %s", scope.ControlPlane.Name)
+		return errors.Wrapf(err, "failed to fetch existing managed cluster")
 	}
 
+	// We are creating this cluster for the first time.
+	// Configure the default pool, rest will be handled by machinepool controller
+	// We do this here because AKS will only let us mutate agent pools via managed
+	// clusters API at create time, not update.
 	if azure.ResourceNotFound(err) {
-		// We are creating this cluster for the first time.
-		// Configure the default pool, rest will be handled by machinepool controller
 		defaultPoolSpec := managedclusters.PoolSpec{
 			Name:         scope.InfraMachinePool.Name,
 			SKU:          scope.InfraMachinePool.Spec.SKU,
@@ -112,11 +155,14 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		managedClusterSpec.AgentPools = []managedclusters.PoolSpec{defaultPoolSpec}
 	}
 
-	// Send to Azure for updates
+	// Send to Azure for create/update.
 	if err := r.managedClustersSvc.Reconcile(ctx, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile managed cluster %s", scope.ControlPlane.Name)
 	}
+	return nil
+}
 
+func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
 	// Fetch newly updated cluster
 	managedClusterResult, err := r.managedClustersSvc.Get(ctx, managedClusterSpec)
 	if err != nil {
@@ -139,45 +185,36 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		return errors.Wrapf(err, "failed to set control plane endpoint")
 	}
 
+	return nil
+}
+
+func (r *azureManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
 	// Always fetch credentials in case of rotation
-	data, err := r.managedClustersSvc.GetCredentials(ctx, managedClusterSpec)
+	data, err := r.managedClustersSvc.GetCredentials(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get credentials for managed cluster")
 	}
 
 	// Construct and store secret
-	kubeconfig := makeKubeconfig(scope.Cluster)
-	_, err = controllerutil.CreateOrUpdate(ctx, r.kubeclient, kubeconfig, func() error {
+	kubeconfig := makeKubeconfig(scope.Cluster, scope.ControlPlane)
+	if _, err := controllerutil.CreateOrUpdate(ctx, r.kubeclient, kubeconfig, func() error {
 		kubeconfig.Data = map[string][]byte{
 			secret.KubeconfigDataName: data,
 		}
 		return nil
-	})
-
-	return err
-}
-
-// Delete reconciles all the services in pre determined order
-func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	if err := r.managedClustersSvc.Delete(ctx, nil); err != nil {
-		return errors.Wrapf(err, "failed to delete managed cluster %s", scope.ControlPlane.Name)
+	}); err != nil {
+		return errors.Wrapf(err, "failed to kubeconfig secret for cluster")
 	}
-
 	return nil
 }
 
-func makeKubeconfig(cluster *clusterv1.Cluster) *corev1.Secret {
+func makeKubeconfig(cluster *clusterv1.Cluster, controlPlane *infrav1exp.AzureManagedControlPlane) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
 			Namespace: cluster.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: clusterv1.GroupVersion.String(),
-					Kind:       "Cluster",
-					Name:       cluster.Name,
-					UID:        cluster.UID,
-				},
+				*metav1.NewControllerRef(controlPlane, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane")),
 			},
 		},
 	}

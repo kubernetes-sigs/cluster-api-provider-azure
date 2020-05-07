@@ -29,7 +29,8 @@ import (
 
 // Spec specification for public ip
 type Spec struct {
-	Name string
+	Name    string
+	DNSName string
 }
 
 // Get provides information about a public ip.
@@ -70,7 +71,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				PublicIPAllocationMethod: network.Static,
 				DNSSettings: &network.PublicIPAddressDNSSettings{
 					DomainNameLabel: to.StringPtr(strings.ToLower(ipName)),
-					Fqdn:            to.StringPtr(s.Scope.Network().APIServerIP.DNSName),
+					Fqdn:            &publicIPSpec.DNSName,
 				},
 			},
 		},

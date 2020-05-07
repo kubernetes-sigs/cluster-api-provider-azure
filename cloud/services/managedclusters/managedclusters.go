@@ -45,7 +45,6 @@ type Spec struct {
 	Location string
 
 	// Tags is a set of tags to add to this cluster.
-	// +optional
 	Tags map[string]string
 
 	// Version defines the desired Kubernetes version.
@@ -90,12 +89,8 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 }
 
 // Get fetches a managed cluster kubeconfig from Azure.
-func (s *Service) GetCredentials(ctx context.Context, spec interface{}) ([]byte, error) {
-	managedClusterSpec, ok := spec.(*Spec)
-	if !ok {
-		return nil, errors.New("expected managed cluster specification")
-	}
-	return s.Client.GetCredentials(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
+func (s *Service) GetCredentials(ctx context.Context, group, name string) ([]byte, error) {
+	return s.Client.GetCredentials(ctx, group, name)
 }
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
@@ -185,7 +180,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	err := s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name, properties)
 	if err != nil {
-		return fmt.Errorf("failed to create or update managed cluster, %v", err)
+		return fmt.Errorf("failed to create or update managed cluster, %#+v", err)
 	}
 
 	return nil
@@ -198,13 +193,13 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.New("expected managed cluster specification")
 	}
 
-	klog.V(2).Infof("deleting managed cluster  %s ", managedClusterSpec.Name)
+	klog.V(2).Infof("Deleting managed cluster  %s ", managedClusterSpec.Name)
 	err := s.Client.Delete(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
 	if err != nil {
+		if azure.ResourceNotFound(err) {
+			// already deleted
+			return nil
+		}
 		return errors.Wrapf(err, "failed to delete managed cluster %s in resource group %s", managedClusterSpec.Name, managedClusterSpec.ResourceGroup)
 	}
 

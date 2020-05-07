@@ -21,6 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -61,11 +62,10 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, cluster, name
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cluster, name string, properties containerservice.AgentPool) error {
 	future, err := ac.agentpools.CreateOrUpdate(ctx, resourceGroupName, cluster, name, properties)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to begin operation")
 	}
-	err = future.WaitForCompletionRef(ctx, ac.agentpools.Client)
-	if err != nil {
-		return err
+	if err := future.WaitForCompletionRef(ctx, ac.agentpools.Client); err != nil {
+		return errors.Wrap(err, "failed to end operation")
 	}
 	_, err = future.Result(ac.agentpools)
 	return err
@@ -75,11 +75,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cl
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, cluster, name string) error {
 	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to begin operation")
 	}
-	err = future.WaitForCompletionRef(ctx, ac.agentpools.Client)
-	if err != nil {
-		return err
+	if err := future.WaitForCompletionRef(ctx, ac.agentpools.Client); err != nil {
+		return errors.Wrap(err, "failed to end operation")
 	}
 	_, err = future.Result(ac.agentpools)
 	return err

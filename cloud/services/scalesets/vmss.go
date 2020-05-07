@@ -170,11 +170,11 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	}
 	klog.V(2).Infof("deleting VMSS %s ", vmssSpec.Name)
 	err := s.Client.Delete(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
 	if err != nil {
+		if azure.ResourceNotFound(err) {
+			// already deleted
+			return nil
+		}
 		return errors.Wrapf(err, "failed to delete VMSS %s in resource group %s", vmssSpec.Name, vmssSpec.ResourceGroup)
 	}
 

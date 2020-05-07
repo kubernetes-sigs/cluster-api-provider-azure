@@ -10,9 +10,13 @@ metadata:
 spec:
   group: exp.infrastructure.cluster.x-k8s.io
   names:
+    categories:
+    - cluster-api
     kind: AzureMachinePool
     listKind: AzureMachinePoolList
     plural: azuremachinepools
+    shortNames:
+    - amp
     singular: azuremachinepool
   scope: Namespaced
   versions:

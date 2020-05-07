@@ -65,12 +65,26 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	existingSpec, err := s.Get(ctx, spec)
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "failed to get existing agent pool")
+	}
 	existingPool, ok := existingSpec.(containerservice.AgentPool)
 	if !ok {
 		return errors.New("expected agent pool specification")
 	}
 
-	if err == nil {
+	// For updates, we want to pass whatever we find in the existing
+	// cluster, normalized to reflect the input we originally provided.
+	// AKS will populate defaults and read-only values, which we want
+	// to strip/clean to match what we expect.
+	isCreate := azure.ResourceNotFound(err)
+	if isCreate {
+		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
+		if err != nil {
+			return fmt.Errorf("failed to create or update agent pool, %#+v", err)
+		}
+	} else {
+		// Normalize individual agent pools to diff in case we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 				VMSize:              existingPool.ManagedClusterAgentPoolProfileProperties.VMSize,
@@ -81,20 +95,16 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			},
 		}
 
+		// Diff and check if we require an update
 		diff := cmp.Diff(profile, existingProfile)
 		if diff != "" {
-			klog.V(2).Infof("update required (+new -old):\n%s", diff)
+			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
 			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
 			if err != nil {
-				return fmt.Errorf("failed to create or update agent pool, %#+v", err)
+				return fmt.Errorf("failed to create or update agent pool, %#+v", err.Error())
 			}
 		} else {
-			klog.V(2).Infof("normalized and desired managed cluster matched, no update needed")
-		}
-	} else if azure.ResourceNotFound(err) {
-		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
-		if err != nil {
-			return fmt.Errorf("failed to create or update agent pool, %#+v", err)
+			klog.V(2).Infof("Normalized and desired agent pool matched, no update needed")
 		}
 	}
 
@@ -110,14 +120,14 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 
 	klog.V(2).Infof("deleting agent pool  %s ", agentPoolSpec.Name)
 	err := s.Client.Delete(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
 	if err != nil {
+		if azure.ResourceNotFound(err) {
+			// already deleted
+			return nil
+		}
 		return errors.Wrapf(err, "failed to delete agent pool %s in resource group %s", agentPoolSpec.Name, agentPoolSpec.ResourceGroup)
 	}
 
-	klog.V(2).Infof("successfully deleted agent pool %s ", agentPoolSpec.Name)
+	klog.V(2).Infof("Successfully deleted agent pool %s ", agentPoolSpec.Name)
 	return nil
 }

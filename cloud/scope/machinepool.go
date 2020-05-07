@@ -86,6 +86,10 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		params.Logger = klogr.New()
 	}
 
+	if err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID); err != nil {
+		return nil, errors.Wrap(err, "failed to create Azure session")
+	}
+
 	helper, err := patch.NewHelper(params.AzureMachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")

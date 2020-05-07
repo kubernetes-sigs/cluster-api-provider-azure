@@ -205,7 +205,8 @@ func (r *azureClusterReconciler) Reconcile() error {
 	}
 
 	publicIPSpec := &publicips.Spec{
-		Name: r.scope.Network().APIServerIP.Name,
+		Name:    r.scope.Network().APIServerIP.Name,
+		DNSName: r.scope.Network().APIServerIP.DNSName,
 	}
 	if err := r.publicIPSvc.Reconcile(r.scope.Context, publicIPSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane public ip for cluster %s", r.scope.Name())

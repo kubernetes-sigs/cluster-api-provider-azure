@@ -42,8 +42,9 @@ var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
 func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newManagedClustersClient(subscriptionID, authorizer)
-	return &AzureClient{c}
+	return &AzureClient{
+		managedclusters: newManagedClustersClient(subscriptionID, authorizer),
+	}
 }
 
 // newManagedClustersClient creates a new managed clusters client from subscription ID.
@@ -77,11 +78,10 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) error {
 	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to begin operation")
 	}
-	err = future.WaitForCompletionRef(ctx, ac.managedclusters.Client)
-	if err != nil {
-		return err
+	if err := future.WaitForCompletionRef(ctx, ac.managedclusters.Client); err != nil {
+		return errors.Wrapf(err, "failed to end operation")
 	}
 	_, err = future.Result(ac.managedclusters)
 	return err
@@ -91,11 +91,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, na
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
 	future, err := ac.managedclusters.Delete(ctx, resourceGroupName, name)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to begin operation")
 	}
-	err = future.WaitForCompletionRef(ctx, ac.managedclusters.Client)
-	if err != nil {
-		return err
+	if err := future.WaitForCompletionRef(ctx, ac.managedclusters.Client); err != nil {
+		return errors.Wrapf(err, "failed to end operation")
 	}
 	_, err = future.Result(ac.managedclusters)
 	return err

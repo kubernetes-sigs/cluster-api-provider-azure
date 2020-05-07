@@ -72,6 +72,12 @@ type AzureManagedControlPlaneStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
+
+	// Initialized is true when the the control plane is available for initial contact.
+	// This may occur before the control plane is fully ready.
+	// In the AzureManagedControlPlane implementation, these are identical.
+	// +optional
+	Initialized bool `json:"initialized,omitempty"`
 }
 
 // +kubebuilder:object:root=true
