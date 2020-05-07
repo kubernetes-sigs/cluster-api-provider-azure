@@ -13,23 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package scalesets
 
-import (
-	"github.com/Azure/go-autorest/autorest"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-)
-
-// Service provides operations on azure resources
-type Service struct {
-	Client
-	ResourceSkusClient resourceskus.Client
-}
-
-// NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, subscriptionID string) *Service {
-	return &Service{
-		Client:             NewClient(subscriptionID, authorizer),
-		ResourceSkusClient: resourceskus.NewClient(subscriptionID, authorizer),
-	}
-}
+// Run go generate to regenerate this mock.
+//go:generate ../../../../hack/tools/bin/mockgen -destination resourceskus_mock.go -package mock_resourceskus -source ../client.go Client
+//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt resourceskus_mock.go > _resourceskus_mock.go && mv _resourceskus_mock.go resourceskus_mock.go"
+package mock_resourceskus //nolint

@@ -40,6 +40,9 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 	if len(restored.Spec.Template.Spec.UserAssignedIdentities) > 0 {
 		dst.Spec.Template.Spec.UserAssignedIdentities = restored.Spec.Template.Spec.UserAssignedIdentities
 	}
+	if restored.Spec.Template.Spec.AcceleratedNetworking != nil {
+		dst.Spec.Template.Spec.AcceleratedNetworking = restored.Spec.Template.Spec.AcceleratedNetworking
+	}
 	dst.Spec.Template.Spec.FailureDomain = restored.Spec.Template.Spec.FailureDomain
 
 	return nil

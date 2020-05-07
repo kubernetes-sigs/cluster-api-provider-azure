@@ -37,6 +37,7 @@ type Spec struct {
 	PublicLoadBalancerName   string
 	InternalLoadBalancerName string
 	PublicIPName             string
+	AcceleratedNetworking    *bool
 }
 
 // Get provides information about a network interface.
@@ -125,6 +126,16 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		nicConfig.PublicIPAddress = &publicIP
 	}
 
+	if nicSpec.AcceleratedNetworking == nil {
+		// set accelerated networking to the capability of the VMSize
+		sku := s.MachineScope.AzureMachine.Spec.VMSize
+		accelNet, err := s.ResourceSkusClient.HasAcceleratedNetworking(ctx, sku)
+		if err != nil {
+			return errors.Wrap(err, "failed to get accelerated networking capability")
+		}
+		nicSpec.AcceleratedNetworking = to.BoolPtr(accelNet)
+	}
+
 	err = s.Client.CreateOrUpdate(ctx,
 		s.Scope.ResourceGroup(),
 		nicSpec.Name,
@@ -137,6 +148,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 						InterfaceIPConfigurationPropertiesFormat: nicConfig,
 					},
 				},
+				EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
 			},
 		})
 

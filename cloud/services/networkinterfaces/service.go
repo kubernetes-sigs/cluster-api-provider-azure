@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
 
@@ -35,6 +36,7 @@ type Service struct {
 	InternalLoadBalancersClient internalloadbalancers.Client
 	PublicIPsClient             publicips.Client
 	InboundNATRulesClient       inboundnatrules.Client
+	ResourceSkusClient          resourceskus.Client
 }
 
 // NewService creates a new service.
@@ -48,5 +50,6 @@ func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Se
 		InternalLoadBalancersClient: internalloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
 		PublicIPsClient:             publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
 		InboundNATRulesClient:       inboundnatrules.NewClient(scope.SubscriptionID, scope.Authorizer),
+		ResourceSkusClient:          resourceskus.NewClient(scope.SubscriptionID, scope.Authorizer),
 	}
 }

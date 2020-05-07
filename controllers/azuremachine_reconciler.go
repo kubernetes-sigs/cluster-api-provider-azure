@@ -204,6 +204,8 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 		networkInterfaceSpec.PublicIPName = azure.GenerateNodePublicIPName(nicName)
 	}
 
+	networkInterfaceSpec.AcceleratedNetworking = s.machineScope.AzureMachine.Spec.AcceleratedNetworking
+
 	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:
 		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name

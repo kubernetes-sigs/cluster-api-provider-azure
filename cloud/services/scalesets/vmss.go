@@ -34,19 +34,20 @@ import (
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type (
 	Spec struct {
-		Name            string
-		ResourceGroup   string
-		Location        string
-		ClusterName     string
-		MachinePoolName string
-		Sku             string
-		Capacity        int64
-		SSHKeyData      string
-		Image           *infrav1.Image
-		OSDisk          infrav1.OSDisk
-		CustomData      string
-		SubnetID        string
-		AdditionalTags  infrav1.Tags
+		Name                  string
+		ResourceGroup         string
+		Location              string
+		ClusterName           string
+		MachinePoolName       string
+		Sku                   string
+		Capacity              int64
+		SSHKeyData            string
+		Image                 *infrav1.Image
+		OSDisk                infrav1.OSDisk
+		CustomData            string
+		SubnetID              string
+		AdditionalTags        infrav1.Tags
+		AcceleratedNetworking *bool
 	}
 )
 
@@ -86,6 +87,15 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		vmssSpec.AdditionalTags = make(infrav1.Tags)
 	}
 	vmssSpec.AdditionalTags[infrav1.ClusterAzureCloudProviderTagKey(vmssSpec.MachinePoolName)] = string(infrav1.ResourceLifecycleOwned)
+
+	if vmssSpec.AcceleratedNetworking == nil {
+		// set accelerated networking to the capability of the VMSize
+		accelNet, err := s.ResourceSkusClient.HasAcceleratedNetworking(ctx, vmssSpec.Sku)
+		if err != nil {
+			return errors.Wrap(err, "failed to get accelerated networking capability")
+		}
+		vmssSpec.AcceleratedNetworking = to.BoolPtr(accelNet)
+	}
 
 	vmss := compute.VirtualMachineScaleSet{
 		Location: to.StringPtr(vmssSpec.Location),
@@ -142,6 +152,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 										},
 									},
 								},
+								EnableAcceleratedNetworking: vmssSpec.AcceleratedNetworking,
 							},
 						},
 					},

@@ -35,6 +35,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus/mock_resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
@@ -272,6 +273,8 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
+				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
+				svc.ResourceSkusClient = skusMock
 
 				storageProfile, err := generateStorageProfile(*spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -316,8 +319,9 @@ func TestService_Reconcile(t *testing.T) {
 									{
 										Name: to.StringPtr(spec.Name + "-netconfig"),
 										VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-											Primary:            to.BoolPtr(true),
-											EnableIPForwarding: to.BoolPtr(true),
+											Primary:                     to.BoolPtr(true),
+											EnableAcceleratedNetworking: to.BoolPtr(false),
+											EnableIPForwarding:          to.BoolPtr(true),
 											IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 												{
 													Name: to.StringPtr(spec.Name + "-ipconfig"),
@@ -338,6 +342,113 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
+				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(false, nil)
+				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
+			},
+			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
+				g.Expect(err).ToNot(gomega.HaveOccurred())
+			},
+		},
+		{
+			Name: "WithAcceleratedNetworking",
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
+				return &Spec{
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
+					Sku:             "skuName",
+					Capacity:        2,
+					SSHKeyData:      "sshKeyData",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "accountType",
+						},
+					},
+					Image: &infrav1.Image{
+						ID: to.StringPtr("image"),
+					},
+					CustomData: "customData",
+				}
+			},
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) {
+				mockCtrl := gomock.NewController(t)
+				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
+				svc.Client = vmssMock
+				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
+				svc.ResourceSkusClient = skusMock
+
+				storageProfile, err := generateStorageProfile(*spec)
+				g.Expect(err).ToNot(gomega.HaveOccurred())
+
+				vmss := compute.VirtualMachineScaleSet{
+					Location: to.StringPtr(scope.Location()),
+					Tags: map[string]*string{
+						"Name":                            to.StringPtr("capz-mp-0"),
+						"kubernetes.io_cluster_capz-mp-0": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("node"),
+					},
+					Sku: &compute.Sku{
+						Name:     to.StringPtr(spec.Sku),
+						Tier:     to.StringPtr("Standard"),
+						Capacity: to.Int64Ptr(spec.Capacity),
+					},
+					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+						UpgradePolicy: &compute.UpgradePolicy{
+							Mode: compute.Manual,
+						},
+						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
+							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
+								ComputerNamePrefix: to.StringPtr(spec.Name),
+								AdminUsername:      to.StringPtr(azure.DefaultUserName),
+								CustomData:         to.StringPtr(spec.CustomData),
+								LinuxConfiguration: &compute.LinuxConfiguration{
+									SSH: &compute.SSHConfiguration{
+										PublicKeys: &[]compute.SSHPublicKey{
+											{
+												Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+												KeyData: to.StringPtr(spec.SSHKeyData),
+											},
+										},
+									},
+									DisablePasswordAuthentication: to.BoolPtr(true),
+								},
+							},
+							StorageProfile: storageProfile,
+							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
+								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
+									{
+										Name: to.StringPtr(spec.Name + "-netconfig"),
+										VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+											Primary:                     to.BoolPtr(true),
+											EnableAcceleratedNetworking: to.BoolPtr(true),
+											EnableIPForwarding:          to.BoolPtr(true),
+											IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
+												{
+													Name: to.StringPtr(spec.Name + "-ipconfig"),
+													VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+														Subnet: &compute.APIEntityReference{
+															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
+														},
+														Primary:                 to.BoolPtr(true),
+														PrivateIPAddressVersion: compute.IPv4,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(true, nil)
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
 			},
 			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
