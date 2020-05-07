@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachineextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
@@ -43,27 +42,25 @@ const (
 
 // azureMachineService are list of services required by cluster actuator, easy to create a fake
 type azureMachineService struct {
-	machineScope          *scope.MachineScope
-	clusterScope          *scope.ClusterScope
-	availabilityZonesSvc  azure.GetterService
-	networkInterfacesSvc  azure.Service
-	publicIPSvc           azure.GetterService
-	virtualMachinesSvc    azure.GetterService
-	virtualMachinesExtSvc azure.GetterService
-	disksSvc              azure.GetterService
+	machineScope         *scope.MachineScope
+	clusterScope         *scope.ClusterScope
+	availabilityZonesSvc azure.GetterService
+	networkInterfacesSvc azure.Service
+	publicIPSvc          azure.GetterService
+	virtualMachinesSvc   azure.GetterService
+	disksSvc             azure.GetterService
 }
 
 // newAzureMachineService populates all the services based on input scope
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
 	return &azureMachineService{
-		machineScope:          machineScope,
-		clusterScope:          clusterScope,
-		availabilityZonesSvc:  availabilityzones.NewService(clusterScope),
-		networkInterfacesSvc:  networkinterfaces.NewService(clusterScope, machineScope),
-		publicIPSvc:           publicips.NewService(clusterScope),
-		virtualMachinesSvc:    virtualmachines.NewService(clusterScope, machineScope),
-		virtualMachinesExtSvc: virtualmachineextensions.NewService(clusterScope),
-		disksSvc:              disks.NewService(clusterScope),
+		machineScope:         machineScope,
+		clusterScope:         clusterScope,
+		availabilityZonesSvc: availabilityzones.NewService(clusterScope),
+		networkInterfacesSvc: networkinterfaces.NewService(clusterScope, machineScope),
+		publicIPSvc:          publicips.NewService(clusterScope),
+		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
+		disksSvc:             disks.NewService(clusterScope),
 	}
 }
 
