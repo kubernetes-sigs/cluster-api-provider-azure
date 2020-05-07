@@ -9,7 +9,8 @@
       "api",
       "cloud",
       "controllers",
-      "pkg"
+      "pkg",
+      "exp"
     ]
   }
 }

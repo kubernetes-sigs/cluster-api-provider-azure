@@ -73,6 +73,7 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 PULL_POLICY ?= Always
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
+MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
 
 ## --------------------------------------
 ## Help
@@ -319,7 +320,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	$(MAKE) kind-create
 
 	# Install cert manager and wait for availability
-	kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v0.11.1/cert-manager.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.1/cert-manager.yaml
 	kubectl wait --for=condition=Available --timeout=5m apiservice v1beta1.webhook.cert-manager.io
 
 	# Deploy CAPI
@@ -347,15 +348,29 @@ create-workload-cluster: $(ENVSUBST)
 	$(ENVSUBST) < $(TEMPLATES_DIR)/$(CLUSTER_TEMPLATE) | kubectl apply -f -
 
 	# Wait for the kubeconfig to become available.
-	timeout 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
-	timeout 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
 	kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
+
+.PHONY: create-aks-cluster
+create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST)
+	# Create managed Cluster.
+	$(ENVSUBST) < $(TEMPLATES_DIR)/$(MANAGED_CLUSTER_TEMPLATE) | kubectl apply -f -
+
+	# Wait for the kubeconfig to become available.
+	timeout --foreground 300 bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	# Get kubeconfig and store it locally.
+	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
+	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+
+	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
+
 
 .PHONY: create-cluster
 create-cluster: create-management-cluster create-workload-cluster ## Create a workload development Kubernetes cluster on Azure in a kind management cluster.
