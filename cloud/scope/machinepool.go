@@ -53,6 +53,7 @@ type (
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
 	MachinePoolScope struct {
 		logr.Logger
+		AzureClients
 		client           client.Client
 		patchHelper      *patch.Helper
 		Cluster          *capiv1.Cluster
@@ -95,6 +96,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		MachinePool:      params.MachinePool,
 		AzureCluster:     params.AzureCluster,
 		AzureMachinePool: params.AzureMachinePool,
+		AzureClients:     params.AzureClients,
 		Logger:           params.Logger,
 		patchHelper:      helper,
 	}, nil

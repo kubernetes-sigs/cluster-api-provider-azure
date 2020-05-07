@@ -35,3 +35,8 @@ type GetterService interface {
 	Reconcile(ctx context.Context, spec interface{}) error
 	Delete(ctx context.Context, spec interface{}) error
 }
+
+type CredentialGetter interface {
+	GetterService
+	GetCredentials(ctx context.Context, spec interface{}) ([]byte, error)
+}

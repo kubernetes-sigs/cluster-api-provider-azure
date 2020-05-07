@@ -51,6 +51,21 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// List mocks base method
+func (m *MockClient) List(arg0 context.Context, arg1 string) ([]compute.VirtualMachineScaleSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret0, _ := ret[0].([]compute.VirtualMachineScaleSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List
+func (mr *MockClientMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClient)(nil).List), arg0, arg1)
+}
+
 // ListInstances mocks base method
 func (m *MockClient) ListInstances(arg0 context.Context, arg1, arg2 string) ([]compute.VirtualMachineScaleSetVM, error) {
 	m.ctrl.T.Helper()

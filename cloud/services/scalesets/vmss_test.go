@@ -79,22 +79,20 @@ func TestNewService(t *testing.T) {
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-	actual := NewService(s, mps)
+	actual := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
 	g.Expect(actual).ToNot(gomega.BeNil())
-	g.Expect(actual.MachinePoolScope).To(gomega.Equal(mps))
-	g.Expect(actual.Scope).To(gomega.Equal(s))
 }
 
 func TestService_Get(t *testing.T) {
 	cases := []struct {
 		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, svc *Service) interface{}
-		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service)
+		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{}
+		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope)
 		Expect      func(ctx context.Context, g *gomega.GomegaWithT, result interface{}, err error)
 	}{
 		{
 			Name: "WithInvalidSepcType",
-			SpecFactory: func(g *gomega.GomegaWithT, _ *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, _ *scope.ClusterScope, _ *scope.MachinePoolScope) interface{} {
 				return "bin"
 			},
 			Expect: func(_ context.Context, g *gomega.GomegaWithT, result interface{}, err error) {
@@ -103,16 +101,21 @@ func TestService_Get(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecBut404FromAzureOnVMSS",
-			SpecFactory: func(g *gomega.GomegaWithT, svc *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name: svc.MachinePoolScope.Name(),
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
 				}
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service) {
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				vmssMock.EXPECT().Get(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return(compute.VirtualMachineScaleSet{}, autorest.DetailedError{
+				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(compute.VirtualMachineScaleSet{}, autorest.DetailedError{
 					StatusCode: 404,
 				})
 			},
@@ -124,17 +127,22 @@ func TestService_Get(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecBut404FromAzureOnInstances",
-			SpecFactory: func(g *gomega.GomegaWithT, svc *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name: svc.MachinePoolScope.Name(),
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
 				}
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service) {
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				vmssMock.EXPECT().Get(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return(compute.VirtualMachineScaleSet{}, nil)
-				vmssMock.EXPECT().ListInstances(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return([]compute.VirtualMachineScaleSetVM{}, autorest.DetailedError{
+				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(compute.VirtualMachineScaleSet{}, nil)
+				vmssMock.EXPECT().ListInstances(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return([]compute.VirtualMachineScaleSetVM{}, autorest.DetailedError{
 					StatusCode: 404,
 				})
 			},
@@ -146,17 +154,22 @@ func TestService_Get(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecWithVMSSAndInstancesReturned",
-			SpecFactory: func(g *gomega.GomegaWithT, svc *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name: svc.MachinePoolScope.Name(),
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
 				}
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service) {
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				vmssMock.EXPECT().Get(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return(compute.VirtualMachineScaleSet{
-					Name: to.StringPtr(svc.MachinePoolScope.Name()),
+				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(compute.VirtualMachineScaleSet{
+					Name: to.StringPtr(mpScope.Name()),
 					Sku: &compute.Sku{
 						Capacity: to.Int64Ptr(1),
 						Name:     to.StringPtr("Standard"),
@@ -165,7 +178,7 @@ func TestService_Get(t *testing.T) {
 						ProvisioningState: to.StringPtr("Succeeded"),
 					},
 				}, nil)
-				vmssMock.EXPECT().ListInstances(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return([]compute.VirtualMachineScaleSetVM{
+				vmssMock.EXPECT().ListInstances(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return([]compute.VirtualMachineScaleSetVM{
 					{
 						Name:       to.StringPtr("vm0"),
 						InstanceID: to.StringPtr("0"),
@@ -199,12 +212,13 @@ func TestService_Get(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
-			svc := getNewService(g)
-			spec := c.SpecFactory(g, svc)
+			s, mps := getScopes(g)
+			svc := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			if c.Setup != nil {
-				c.Setup(ctx, g, svc)
+				c.Setup(ctx, g, svc, s, mps)
 			}
 			res, err := svc.Get(context.Background(), spec)
 			c.Expect(ctx, g, res, err)
@@ -215,13 +229,13 @@ func TestService_Get(t *testing.T) {
 func TestService_Reconcile(t *testing.T) {
 	cases := []struct {
 		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, svc *Service) interface{}
-		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, spec *Spec)
+		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{}
+		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec)
 		Expect      func(ctx context.Context, g *gomega.GomegaWithT, err error)
 	}{
 		{
 			Name: "WithInvalidSepcType",
-			SpecFactory: func(g *gomega.GomegaWithT, _ *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return "bazz"
 			},
 			Expect: func(_ context.Context, g *gomega.GomegaWithT, err error) {
@@ -230,12 +244,17 @@ func TestService_Reconcile(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpec",
-			SpecFactory: func(g *gomega.GomegaWithT, svc *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:       svc.MachinePoolScope.Name(),
-					Sku:        "skuName",
-					Capacity:   2,
-					SSHKeyData: "sshKeyData",
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
+					Sku:             "skuName",
+					Capacity:        2,
+					SSHKeyData:      "sshKeyData",
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 120,
@@ -249,7 +268,7 @@ func TestService_Reconcile(t *testing.T) {
 					CustomData: "customData",
 				}
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, spec *Spec) {
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
@@ -258,7 +277,7 @@ func TestService_Reconcile(t *testing.T) {
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
-					Location: to.StringPtr(svc.Scope.Location()),
+					Location: to.StringPtr(scope.Location()),
 					Tags: map[string]*string{
 						"Name":                            to.StringPtr("capz-mp-0"),
 						"kubernetes.io_cluster_capz-mp-0": to.StringPtr("owned"),
@@ -304,7 +323,7 @@ func TestService_Reconcile(t *testing.T) {
 													Name: to.StringPtr(spec.Name + "-ipconfig"),
 													VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 														Subnet: &compute.APIEntityReference{
-															ID: to.StringPtr(svc.Scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
+															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
 														},
 														Primary:                 to.BoolPtr(true),
 														PrivateIPAddressVersion: compute.IPv4,
@@ -319,7 +338,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
-				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
+				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
 			},
 			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -332,12 +351,13 @@ func TestService_Reconcile(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
-			svc := getNewService(g)
-			spec := c.SpecFactory(g, svc)
+			s, mps := getScopes(g)
+			svc := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			if c.Setup != nil {
-				c.Setup(ctx, g, svc, spec.(*Spec))
+				c.Setup(ctx, g, svc, s, mps, spec.(*Spec))
 			}
 			err := svc.Reconcile(context.Background(), spec)
 			c.Expect(ctx, g, err)
@@ -348,13 +368,13 @@ func TestService_Reconcile(t *testing.T) {
 func TestService_Delete(t *testing.T) {
 	cases := []struct {
 		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, svc *Service) interface{}
-		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service)
+		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{}
+		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope)
 		Expect      func(ctx context.Context, g *gomega.GomegaWithT, err error)
 	}{
 		{
 			Name: "WithInvalidSepcType",
-			SpecFactory: func(g *gomega.GomegaWithT, _ *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return "foo"
 			},
 			Expect: func(_ context.Context, g *gomega.GomegaWithT, err error) {
@@ -363,16 +383,22 @@ func TestService_Delete(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecBut404FromAzureOnVMSSAssumeAlreadyDeleted",
-			SpecFactory: func(g *gomega.GomegaWithT, svc *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name: svc.MachinePoolScope.Name(),
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
 				}
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service) {
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				vmssMock.EXPECT().Delete(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return(autorest.DetailedError{
+
+				vmssMock.EXPECT().Delete(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(autorest.DetailedError{
 					StatusCode: 404,
 				})
 			},
@@ -382,16 +408,21 @@ func TestService_Delete(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecAndSuccessfulDelete",
-			SpecFactory: func(g *gomega.GomegaWithT, svc *Service) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name: svc.MachinePoolScope.Name(),
+					Name:            mpScope.Name(),
+					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
+					Location:        scope.AzureCluster.Spec.Location,
+					ClusterName:     scope.Cluster.Name,
+					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					MachinePoolName: mpScope.Name(),
 				}
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service) {
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				vmssMock.EXPECT().Delete(gomock.Any(), svc.Scope.AzureCluster.Spec.ResourceGroup, svc.MachinePoolScope.Name()).Return(nil)
+				vmssMock.EXPECT().Delete(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(nil)
 			},
 			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -404,12 +435,13 @@ func TestService_Delete(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
-			svc := getNewService(g)
-			spec := c.SpecFactory(g, svc)
+			s, mps := getScopes(g)
+			svc := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			if c.Setup != nil {
-				c.Setup(ctx, g, svc)
+				c.Setup(ctx, g, svc, s, mps)
 			}
 			err := svc.Delete(context.Background(), spec)
 			c.Expect(ctx, g, err)
@@ -417,7 +449,7 @@ func TestService_Delete(t *testing.T) {
 	}
 }
 
-func getNewService(g *gomega.GomegaWithT) *Service {
+func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolScope) {
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
@@ -445,7 +477,6 @@ func getNewService(g *gomega.GomegaWithT) *Service {
 		},
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 		AzureClients: s.AzureClients,
 		Client:       client,
@@ -461,5 +492,5 @@ func getNewService(g *gomega.GomegaWithT) *Service {
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
-	return NewService(s, mps)
+	return s, mps
 }

@@ -34,13 +34,19 @@ import (
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type (
 	Spec struct {
-		Name       string
-		Sku        string
-		Capacity   int64
-		SSHKeyData string
-		Image      *infrav1.Image
-		OSDisk     infrav1.OSDisk
-		CustomData string
+		Name            string
+		ResourceGroup   string
+		Location        string
+		ClusterName     string
+		MachinePoolName string
+		Sku             string
+		Capacity        int64
+		SSHKeyData      string
+		Image           *infrav1.Image
+		OSDisk          infrav1.OSDisk
+		CustomData      string
+		SubnetID        string
+		AdditionalTags  infrav1.Tags
 	}
 )
 
@@ -50,12 +56,12 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 		return compute.VirtualMachineScaleSet{}, errors.New("invalid VMSS specification")
 	}
 
-	vmss, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
+	vmss, err := s.Client.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
 	if err != nil {
 		return vmss, err
 	}
 
-	vmssInstances, err := s.Client.ListInstances(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
+	vmssInstances, err := s.Client.ListInstances(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
 	if err != nil {
 		return vmss, err
 	}
@@ -75,18 +81,20 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
-	additionalTags := s.MachinePoolScope.AdditionalTags()
 	// Set the cloud provider tag
-	additionalTags[infrav1.ClusterAzureCloudProviderTagKey(s.MachinePoolScope.Name())] = string(infrav1.ResourceLifecycleOwned)
+	if vmssSpec.AdditionalTags == nil {
+		vmssSpec.AdditionalTags = make(infrav1.Tags)
+	}
+	vmssSpec.AdditionalTags[infrav1.ClusterAzureCloudProviderTagKey(vmssSpec.MachinePoolName)] = string(infrav1.ResourceLifecycleOwned)
 
 	vmss := compute.VirtualMachineScaleSet{
-		Location: to.StringPtr(s.Scope.Location()),
+		Location: to.StringPtr(vmssSpec.Location),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.Name(),
+			ClusterName: vmssSpec.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.MachinePoolScope.Name()),
+			Name:        to.StringPtr(vmssSpec.MachinePoolName),
 			Role:        to.StringPtr(infrav1.Node),
-			Additional:  additionalTags,
+			Additional:  vmssSpec.AdditionalTags,
 		})),
 		Sku: &compute.Sku{
 			Name:     to.StringPtr(vmssSpec.Sku),
@@ -127,7 +135,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 										Name: to.StringPtr(vmssSpec.Name + "-ipconfig"),
 										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 											Subnet: &compute.APIEntityReference{
-												ID: to.StringPtr(s.Scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
+												ID: to.StringPtr(vmssSpec.SubnetID),
 											},
 											Primary:                 to.BoolPtr(true),
 											PrivateIPAddressVersion: compute.IPv4,
@@ -144,7 +152,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	err = s.Client.CreateOrUpdate(
 		ctx,
-		s.Scope.ResourceGroup(),
+		vmssSpec.ResourceGroup,
 		vmssSpec.Name,
 		vmss)
 	if err != nil {
@@ -156,21 +164,21 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 }
 
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	vmSpec, ok := spec.(*Spec)
+	vmssSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid VMSS specification")
 	}
-	klog.V(2).Infof("deleting VMSS %s ", vmSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
+	klog.V(2).Infof("deleting VMSS %s ", vmssSpec.Name)
+	err := s.Client.Delete(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete VMSS %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
+		return errors.Wrapf(err, "failed to delete VMSS %s in resource group %s", vmssSpec.Name, vmssSpec.ResourceGroup)
 	}
 
-	klog.V(2).Infof("successfully deleted VMSS %s ", vmSpec.Name)
+	klog.V(2).Infof("successfully deleted VMSS %s ", vmssSpec.Name)
 	return nil
 }
 
