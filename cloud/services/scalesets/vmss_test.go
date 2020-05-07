@@ -35,9 +35,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	scopeExp "sigs.k8s.io/cluster-api-provider-azure/exp/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/cloud/services/scalesets/mock_scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
 )
 
@@ -70,7 +69,7 @@ func TestNewService(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
-	mps, err := scopeExp.NewMachinePoolScope(scopeExp.MachinePoolScopeParams{
+	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 		AzureClients:     s.AzureClients,
 		Client:           client,
 		Logger:           s.Logger,
@@ -447,7 +446,7 @@ func getNewService(g *gomega.GomegaWithT) *Service {
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
-	mps, err := scopeExp.NewMachinePoolScope(scopeExp.MachinePoolScopeParams{
+	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 		AzureClients: s.AzureClients,
 		Client:       client,
 		Logger:       s.Logger,

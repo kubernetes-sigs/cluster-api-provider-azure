@@ -28,7 +28,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	convertersexp "sigs.k8s.io/cluster-api-provider-azure/exp/cloud/converters"
 )
 
 // Spec contains properties to create a managed cluster.
@@ -61,7 +60,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 		return vmss, err
 	}
 
-	return convertersexp.SDKToVMSS(vmss, vmssInstances), nil
+	return converters.SDKToVMSS(vmss, vmssInstances), nil
 }
 
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {

@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	capzscope "sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,7 +41,7 @@ import (
 type (
 	// MachinePoolScopeParams defines the input parameters used to create a new MachinePoolScope.
 	MachinePoolScopeParams struct {
-		capzscope.AzureClients
+		AzureClients
 		Client           client.Client
 		Logger           logr.Logger
 		Cluster          *capiv1.Cluster

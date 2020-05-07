@@ -24,8 +24,8 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/onsi/gomega"
 
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/exp/cloud/converters"
 )
 
 func Test_SDKToVMSS(t *testing.T) {

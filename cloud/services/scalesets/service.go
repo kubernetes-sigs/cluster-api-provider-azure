@@ -18,18 +18,17 @@ package scalesets
 
 import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	infrav1expscope "sigs.k8s.io/cluster-api-provider-azure/exp/cloud/scope"
 )
 
 // Service provides operations on azure resources
 type Service struct {
 	Client
 	Scope            *scope.ClusterScope
-	MachinePoolScope *infrav1expscope.MachinePoolScope
+	MachinePoolScope *scope.MachinePoolScope
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope, machinePoolScope *infrav1expscope.MachinePoolScope) *Service {
+func NewService(scope *scope.ClusterScope, machinePoolScope *scope.MachinePoolScope) *Service {
 	return &Service{
 		Scope:            scope,
 		MachinePoolScope: machinePoolScope,
