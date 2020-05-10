@@ -38,6 +38,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1alpha3-azurecluster
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: validation.azurecluster.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1alpha3
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - azurecluster
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachine
   failurePolicy: Fail
   matchPolicy: Equivalent
