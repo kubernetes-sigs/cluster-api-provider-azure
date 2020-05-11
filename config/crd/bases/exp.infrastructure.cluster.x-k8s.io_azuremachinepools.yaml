@@ -192,6 +192,8 @@ spec:
                         format: int32
                         type: integer
                       managedDisk:
+                        description: ManagedDisk defines the managed disk options
+                          for a VM.
                         properties:
                           storageAccountType:
                             type: string

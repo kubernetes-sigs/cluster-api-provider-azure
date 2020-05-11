@@ -595,8 +595,8 @@ spec:
                 description: VM describes an Azure virtual machine.
                 properties:
                   addresses:
-                    description: Addresses contains the Azure instance associated
-                      addresses.
+                    description: Addresses contains the addresses associated with
+                      the Azure VM.
                     items:
                       description: NodeAddress contains information for the node's
                         address.
@@ -711,11 +711,14 @@ spec:
                   name:
                     type: string
                   osDisk:
+                    description: OSDisk defines the operating system disk for a VM.
                     properties:
                       diskSizeGB:
                         format: int32
                         type: integer
                       managedDisk:
+                        description: ManagedDisk defines the managed disk options
+                          for a VM.
                         properties:
                           storageAccountType:
                             type: string
@@ -771,7 +774,7 @@ spec:
                   across the failure domains.'
                 type: object
               network:
-                description: Network encapsulates Azure networking resources.
+                description: Network encapsulates the state of Azure networking resources.
                 properties:
                   apiServerIp:
                     description: APIServerIP is the Kubernetes API server public IP
@@ -790,6 +793,7 @@ spec:
                     description: APIServerLB is the Kubernetes API server load balancer.
                     properties:
                       backendPool:
+                        description: BackendPool defines a load balancer backend pool
                         properties:
                           id:
                             type: string
@@ -797,14 +801,16 @@ spec:
                             type: string
                         type: object
                       frontendIpConfig:
+                        description: FrontendIPConfig - DO NOT USE this empty struct
+                          is here to preserve backwards compatibility and should be
+                          removed in v1alpha4
                         type: object
                       id:
                         type: string
                       name:
                         type: string
                       sku:
-                        description: LoadBalancerSKU enumerates the values for load
-                          balancer sku name.
+                        description: SKU defines an Azure load balancer SKU.
                         type: string
                       tags:
                         additionalProperties:
