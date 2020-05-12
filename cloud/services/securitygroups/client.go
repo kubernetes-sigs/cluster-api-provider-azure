@@ -18,7 +18,6 @@ package securitygroups
 
 import (
 	"context"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -59,10 +58,25 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, sgName string
 
 // CreateOrUpdate creates or updates a network security group in the specified resource group.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, sgName string, sg network.SecurityGroup) error {
-	future, err := ac.securitygroups.CreateOrUpdate(ctx, resourceGroupName, sgName, sg)
+	var etag string
+	if sg.Etag != nil {
+		etag = *sg.Etag
+	}
+	req, err := ac.securitygroups.CreateOrUpdatePreparer(ctx, resourceGroupName, sgName, sg)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.SecurityGroupsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return err
 	}
+	if etag != "" {
+		req.Header.Add("If-Match", etag)
+	}
+
+	future, err := ac.securitygroups.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.SecurityGroupsClient", "CreateOrUpdate", future.Response(), "Failure sending request")
+		return err
+	}
+
 	err = future.WaitForCompletionRef(ctx, ac.securitygroups.Client)
 	if err != nil {
 		return err

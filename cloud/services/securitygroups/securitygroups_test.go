@@ -52,30 +52,32 @@ func TestReconcileSecurityGroups(t *testing.T) {
 		sgName         string
 		isControlPlane bool
 		vnetSpec       *infrav1.VnetSpec
-		expect         func(m *mock_securitygroups.MockClientMockRecorder)
+		expect         func(m *mock_securitygroups.MockClientMockRecorder, m1 *mock_securitygroups.MockClientMockRecorder)
 	}{
 		{
 			name:           "security group does not exists",
 			sgName:         "my-sg",
 			isControlPlane: true,
 			vnetSpec:       &infrav1.VnetSpec{},
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-sg", gomock.AssignableToTypeOf(network.SecurityGroup{}))
+			expect: func(m *mock_securitygroups.MockClientMockRecorder, m1 *mock_securitygroups.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-sg")
+				m1.CreateOrUpdate(context.TODO(), "my-rg", "my-sg", gomock.AssignableToTypeOf(network.SecurityGroup{}))
 			},
 		}, {
 			name:           "security group does not exist and it's not for a control plane",
 			sgName:         "my-sg",
 			isControlPlane: false,
 			vnetSpec:       &infrav1.VnetSpec{},
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-sg", gomock.AssignableToTypeOf(network.SecurityGroup{}))
+			expect: func(m *mock_securitygroups.MockClientMockRecorder, m1 *mock_securitygroups.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-sg")
+				m1.CreateOrUpdate(context.TODO(), "my-rg", "my-sg", gomock.AssignableToTypeOf(network.SecurityGroup{}))
 			},
 		}, {
 			name:           "skipping network security group reconcile in custom vnet mode",
 			sgName:         "my-sg",
 			isControlPlane: false,
 			vnetSpec:       &infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"},
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(m *mock_securitygroups.MockClientMockRecorder, m1 *mock_securitygroups.MockClientMockRecorder) {
 
 			},
 		},
@@ -91,7 +93,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 
 			client := fake.NewFakeClient(cluster)
 
-			tc.expect(sgMock.EXPECT())
+			tc.expect(sgMock.EXPECT(), sgMock.EXPECT())
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
