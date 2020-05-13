@@ -32,7 +32,7 @@ func (c *AzureCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha3-azurecluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azurecluster,versions=v1alpha3,name=validation.azurecluster.infrastructure.cluster.x-k8s.io
+// +kubebuilder:webhook:verbs=create;update;delete,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha3-azurecluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azurecluster,versions=v1alpha3,name=validation.azurecluster.infrastructure.cluster.x-k8s.io,sideEffects=None
 
 var _ webhook.Validator = &AzureCluster{}
 

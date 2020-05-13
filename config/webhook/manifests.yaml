@@ -25,6 +25,7 @@ webhooks:
     - UPDATE
     resources:
     - azuremachinepools
+  sideEffects: None
 
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
@@ -53,6 +54,7 @@ webhooks:
     - DELETE
     resources:
     - azurecluster
+  sideEffects: None
 - clientConfig:
     caBundle: Cg==
     service:
@@ -72,6 +74,7 @@ webhooks:
     - UPDATE
     resources:
     - azuremachine
+  sideEffects: None
 - clientConfig:
     caBundle: Cg==
     service:
@@ -91,3 +94,4 @@ webhooks:
     - UPDATE
     resources:
     - azuremachinepools
+  sideEffects: None
