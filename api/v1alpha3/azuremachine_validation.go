@@ -40,3 +40,14 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 
 	return allErrs
 }
+
+// ValidateUserAssignedIdentity validates the user-assigned identities list
+func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdenteties []UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if identityType == VMIdentityUserAssigned && len(userAssignedIdenteties) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
+	}
+
+	return allErrs
+}

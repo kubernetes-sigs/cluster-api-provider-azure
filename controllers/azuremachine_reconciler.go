@@ -296,15 +296,16 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 		}
 
 		vmSpec = &virtualmachines.Spec{
-			Name:       s.machineScope.Name(),
-			NICName:    nicName,
-			SSHKeyData: string(decoded),
-			Size:       s.machineScope.AzureMachine.Spec.VMSize,
-			OSDisk:     s.machineScope.AzureMachine.Spec.OSDisk,
-			Image:      image,
-			CustomData: bootstrapData,
-			Zone:       vmZone,
-			Identity:   s.machineScope.AzureMachine.Spec.Identity,
+			Name:                   s.machineScope.Name(),
+			NICName:                nicName,
+			SSHKeyData:             string(decoded),
+			Size:                   s.machineScope.AzureMachine.Spec.VMSize,
+			OSDisk:                 s.machineScope.AzureMachine.Spec.OSDisk,
+			Image:                  image,
+			CustomData:             bootstrapData,
+			Zone:                   vmZone,
+			Identity:               s.machineScope.AzureMachine.Spec.Identity,
+			UserAssignedIdentities: s.machineScope.AzureMachine.Spec.UserAssignedIdentities,
 		}
 
 		err = s.virtualMachinesSvc.Reconcile(s.clusterScope.Context, vmSpec)

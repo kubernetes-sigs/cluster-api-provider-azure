@@ -58,3 +58,22 @@ func createMachineWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMach
 		},
 	}
 }
+
+func createMachineWithUserAssignedIdentities(t *testing.T, identitiesList []UserAssignedIdentity) *AzureMachine {
+	return &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: generateSSHPublicKey(),
+			Image: &Image{
+				SharedGallery: &AzureSharedGalleryImage{
+					SubscriptionID: "SUB123",
+					ResourceGroup:  "RG123",
+					Name:           "NAME123",
+					Gallery:        "GALLERY1",
+					Version:        "1.0.0",
+				},
+			},
+			Identity:               VMIdentityUserAssigned,
+			UserAssignedIdentities: identitiesList,
+		},
+	}
+}

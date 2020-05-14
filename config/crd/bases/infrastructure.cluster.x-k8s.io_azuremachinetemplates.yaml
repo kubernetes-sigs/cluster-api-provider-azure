@@ -200,11 +200,14 @@ spec:
                         default: None
                         description: Identity is the type of identity used for the
                           virtual machine. The type 'SystemAssigned' is an implicitly
-                          created identity The generated identity will be assigned
-                          a Subscription contributor role
+                          created identity. The generated identity will be assigned
+                          a Subscription contributor role. The type 'UserAssigned'
+                          is a standalone Azure resource provided by the user and
+                          assigned to the VM
                         enum:
                         - None
                         - SystemAssigned
+                        - UserAssigned
                         type: string
                       image:
                         description: Image is used to provide details of an image
@@ -326,6 +329,25 @@ spec:
                         type: string
                       sshPublicKey:
                         type: string
+                      userAssignedIdentities:
+                        description: UserAssignedIdentities is a list of standalone
+                          Azure identities provided by the user The lifecycle of a
+                          user-assigned identity is managed separately from the lifecycle
+                          of the AzureMachine.
+                        items:
+                          description: UserAssignedIdentity defines the user-assigned
+                            identities provided by the user to be assigned to Azure
+                            resources.
+                          properties:
+                            providerID:
+                              description: 'ProviderID is the identification ID of
+                                the user-assigned Identity, the format of an identity
+                                is: ''azure:////subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'''
+                              type: string
+                          required:
+                          - providerID
+                          type: object
+                        type: array
                       vmSize:
                         type: string
                     required:
