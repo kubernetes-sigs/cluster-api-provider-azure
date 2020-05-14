@@ -53,6 +53,7 @@ type (
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
 	MachinePoolScope struct {
 		logr.Logger
+		AzureClients
 		client           client.Client
 		patchHelper      *patch.Helper
 		Cluster          *capiv1.Cluster
@@ -85,6 +86,10 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		params.Logger = klogr.New()
 	}
 
+	if err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID); err != nil {
+		return nil, errors.Wrap(err, "failed to create Azure session")
+	}
+
 	helper, err := patch.NewHelper(params.AzureMachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
@@ -95,6 +100,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		MachinePool:      params.MachinePool,
 		AzureCluster:     params.AzureCluster,
 		AzureMachinePool: params.AzureMachinePool,
+		AzureClients:     params.AzureClients,
 		Logger:           params.Logger,
 		patchHelper:      helper,
 	}, nil

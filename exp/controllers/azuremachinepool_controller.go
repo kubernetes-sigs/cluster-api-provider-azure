@@ -45,12 +45,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 	capzcntr "sigs.k8s.io/cluster-api-provider-azure/controllers"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
@@ -372,7 +372,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(machinePoolScope *scope.Machi
 		vmssSpec := &scalesets.Spec{
 			Name: machinePoolScope.Name(),
 		}
-		svc := scalesets.NewService(clusterScope, machinePoolScope)
+		svc := scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.SubscriptionID)
 		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.ResourceGroup(), machinePoolScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VMSS")
@@ -463,7 +463,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	return &azureMachinePoolService{
 		machinePoolScope:           machinePoolScope,
 		clusterScope:               clusterScope,
-		virtualMachinesScaleSetSvc: scalesets.NewService(clusterScope, machinePoolScope),
+		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.SubscriptionID),
 	}
 }
 
@@ -490,13 +490,19 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 	}
 
 	vmssSpec := &scalesets.Spec{
-		Name:       s.machinePoolScope.Name(),
-		Sku:        ampSpec.Template.VMSize,
-		Capacity:   replicas,
-		SSHKeyData: string(decoded),
-		Image:      image,
-		OSDisk:     ampSpec.Template.OSDisk,
-		CustomData: bootstrapData,
+		Name:            s.machinePoolScope.Name(),
+		ResourceGroup:   s.clusterScope.ResourceGroup(),
+		Location:        s.clusterScope.Location(),
+		ClusterName:     s.clusterScope.Name(),
+		MachinePoolName: s.machinePoolScope.Name(),
+		Sku:             ampSpec.Template.VMSize,
+		Capacity:        replicas,
+		SSHKeyData:      string(decoded),
+		Image:           image,
+		OSDisk:          ampSpec.Template.OSDisk,
+		CustomData:      bootstrapData,
+		AdditionalTags:  s.machinePoolScope.AdditionalTags(),
+		SubnetID:        s.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
 	}
 
 	err = s.virtualMachinesScaleSetSvc.Reconcile(context.TODO(), vmssSpec)
@@ -567,15 +573,14 @@ func (s *azureMachinePoolService) Get() (*infrav1exp.VMSS, error) {
 func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind == "MachinePool" && ref.APIVersion == capiv1exp.GroupVersion.String() {
-
-			return getMachineByName(ctx, c, obj.Namespace, ref.Name)
+			return getMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
 		}
 	}
 	return nil, nil
 }
 
 // getMachinePoolByName finds and return a Machine object using the specified params.
-func getMachineByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
+func getMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
 	m := &capiv1exp.MachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {

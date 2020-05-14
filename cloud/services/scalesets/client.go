@@ -29,6 +29,7 @@ import (
 
 // Client wraps go-sdk
 type Client interface {
+	List(context.Context, string) ([]compute.VirtualMachineScaleSet, error)
 	ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
 	Get(context.Context, string, string) (compute.VirtualMachineScaleSet, error)
 	CreateOrUpdate(context.Context, string, string, compute.VirtualMachineScaleSet) error
@@ -86,6 +87,20 @@ func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vms
 	}
 
 	var instances []compute.VirtualMachineScaleSetVM
+	for ; itr.NotDone(); err = itr.NextWithContext(ctx) {
+		if err != nil {
+			return nil, fmt.Errorf("failed to iterate vm scale set vms [%w]", err)
+		}
+		vm := itr.Value()
+		instances = append(instances, vm)
+	}
+	return instances, nil
+}
+
+// Lists all scale sets in a resource group.
+func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]compute.VirtualMachineScaleSet, error) {
+	itr, err := ac.scalesets.ListComplete(ctx, resourceGroupName)
+	var instances []compute.VirtualMachineScaleSet
 	for ; itr.NotDone(); err = itr.NextWithContext(ctx) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to iterate vm scale sets [%w]", err)

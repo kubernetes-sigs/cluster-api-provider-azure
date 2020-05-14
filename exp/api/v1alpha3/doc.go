@@ -13,20 +13,5 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package scalesets
 
-import (
-	"github.com/Azure/go-autorest/autorest"
-)
-
-// Service provides operations on azure resources
-type Service struct {
-	Client
-}
-
-// NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, subscriptionID string) *Service {
-	return &Service{
-		Client: NewClient(subscriptionID, authorizer),
-	}
-}
+package v1alpha3

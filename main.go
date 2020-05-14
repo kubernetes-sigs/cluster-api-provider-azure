@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,10 +38,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1alpha3exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -205,10 +206,9 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
 		}
-
 		// just use CAPI MachinePool feature flag rather than create a new one
 		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
-		if feature.Gates.Enabled(feature.MachinePool) {
+		if feature.Gates.Enabled(capifeature.MachinePool) {
 			if err = (&infrav1controllersexp.AzureMachinePoolReconciler{
 				Client:   mgr.GetClient(),
 				Log:      ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
@@ -217,7 +217,34 @@ func main() {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
 				os.Exit(1)
 			}
+			if feature.Gates.Enabled(feature.AKS) {
+				if err = (&infrav1controllersexp.AzureManagedMachinePoolReconciler{
+					Client:   mgr.GetClient(),
+					Log:      ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
+					Recorder: mgr.GetEventRecorderFor("azuremachine-reconciler"),
+				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedMachinePool")
+					os.Exit(1)
+				}
+				if err = (&infrav1controllersexp.AzureManagedClusterReconciler{
+					Client:   mgr.GetClient(),
+					Log:      ctrl.Log.WithName("controllers").WithName("AzureManagedCluster"),
+					Recorder: mgr.GetEventRecorderFor("azuremanagedcluster-reconciler"),
+				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedCluster")
+					os.Exit(1)
+				}
+				if err = (&infrav1controllersexp.AzureManagedControlPlaneReconciler{
+					Client:   mgr.GetClient(),
+					Log:      ctrl.Log.WithName("controllers").WithName("AzureManagedControlPlane"),
+					Recorder: mgr.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
+				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedControlPlane")
+					os.Exit(1)
+				}
+			}
 		}
+		// }
 	} else {
 		if err = (&infrav1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
@@ -232,7 +259,7 @@ func main() {
 			os.Exit(1)
 		}
 		// just use CAPI MachinePool feature flag rather than create a new one
-		if feature.Gates.Enabled(feature.MachinePool) {
+		if feature.Gates.Enabled(capifeature.MachinePool) {
 			if err = (&infrav1alpha3exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
 				os.Exit(1)

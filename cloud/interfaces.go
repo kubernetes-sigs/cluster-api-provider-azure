@@ -35,3 +35,10 @@ type GetterService interface {
 	Reconcile(ctx context.Context, spec interface{}) error
 	Delete(ctx context.Context, spec interface{}) error
 }
+
+// CredentialGetter is a GetterService which knows how to retrieve credentials for an Azure
+// resource in a resource group.
+type CredentialGetter interface {
+	GetterService
+	GetCredentials(ctx context.Context, group string, cluster string) ([]byte, error)
+}

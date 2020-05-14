@@ -6,6 +6,7 @@
 !/cloud/**
 !/controllers/**
 !/exp/**
+!/feature/**
 !/pkg/**
 !/main.go
 !/go.mod
