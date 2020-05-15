@@ -51,7 +51,6 @@ var _ = Describe("CAPZ e2e tests", func() {
 			nodeGen = &NodeGenerator{}
 			clusterGen.VariablesInit()
 			machineDeploymentGen = &MachineDeploymentGenerator{}
-			cluster, infraCluster = clusterGen.GenerateCluster(namespace)
 		})
 
 		AfterEach(func() {
@@ -61,6 +60,7 @@ var _ = Describe("CAPZ e2e tests", func() {
 
 		Context("Create single controlplane cluster", func() {
 			It("Should create a single node cluster", func() {
+				cluster, infraCluster = clusterGen.GenerateCluster(creds.SubscriptionID, namespace)
 				controlplane := nodeGen.GenerateKubeadmControlplane(creds, cluster.GetName(), 1)
 				machineTemplate := nodeGen.GenerateMachineTemplate(creds, cluster.GetName())
 				input = &ControlPlaneClusterInput{
@@ -77,6 +77,7 @@ var _ = Describe("CAPZ e2e tests", func() {
 
 		Context("Create multiple controlplane cluster with machine deployments", func() {
 			It("Should create a 3 node cluster", func() {
+				cluster, infraCluster = clusterGen.GenerateCluster(creds.SubscriptionID, namespace)
 				controlplane := nodeGen.GenerateKubeadmControlplane(creds, cluster.GetName(), 3)
 				machineTemplate := nodeGen.GenerateMachineTemplate(creds, cluster.GetName())
 				machineDeployment := machineDeploymentGen.Generate(creds, cluster.GetNamespace(), cluster.GetName(), 1)

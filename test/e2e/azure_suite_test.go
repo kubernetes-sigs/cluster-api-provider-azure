@@ -144,6 +144,7 @@ var _ = AfterSuite(func() {
 	// DO NOT stream "capi-controller-manager" logs as it prints out azure.json
 	Expect(writeLogs(mgmt, "capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", logPath)).To(Succeed())
 	Expect(writeLogs(mgmt, "capz-system", "capz-controller-manager", logPath)).To(Succeed())
+	Expect(writeLogs(mgmt, "capi-webhook-system", "capz-controller-manager", logPath)).To(Succeed())
 	By("Tearing down management cluster")
 	mgmt.Teardown(ctx)
 })
