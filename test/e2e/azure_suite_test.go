@@ -64,6 +64,8 @@ func TestE2E(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "capz e2e suite", []Reporter{junitReporter})
 }
 
+const CAPI_VERSION = "v0.3.6"
+
 var (
 	ctx     = context.Background()
 	creds   auth.Creds
@@ -120,9 +122,9 @@ var _ = BeforeSuite(func() {
 	waitDeployment(c, "cert-manager", "cert-manager-webhook")
 
 	// Deploy the CAPI and CABPK components from Cluster API repository,
-	capi := &frameworkgenerator.ClusterAPI{Version: "v0.3.5"}
-	cabpk := &frameworkgenerator.KubeadmBootstrap{Version: "v0.3.5"}
-	kcp := &frameworkgenerator.KubeadmControlPlane{Version: "v0.3.5"}
+	capi := &frameworkgenerator.ClusterAPI{Version: CAPI_VERSION}
+	cabpk := &frameworkgenerator.KubeadmBootstrap{Version: CAPI_VERSION}
+	kcp := &frameworkgenerator.KubeadmControlPlane{Version: CAPI_VERSION}
 	infra := &generators.Infra{Creds: creds}
 
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, kcp, infra)
