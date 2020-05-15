@@ -74,7 +74,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, fldPath *field.Path) field.Err
 
 // validateResourceGroup validates a ResourceGroup
 func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Error {
-	if success, _ := regexp.Match(resourceGroupRegex, []byte(resourceGroup)); !success {
+	if success, _ := regexp.MatchString(resourceGroupRegex, resourceGroup); !success {
 		return field.Invalid(fldPath, resourceGroup,
 			fmt.Sprintf("resourceGroup doesn't match regex %s", resourceGroupRegex))
 	}

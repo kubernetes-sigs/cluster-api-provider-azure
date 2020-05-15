@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"encoding/base64"
+
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -25,7 +27,13 @@ import (
 func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(sshKey)); err != nil {
+	decoded, err := base64.StdEncoding.DecodeString(sshKey)
+	if err != nil {
+		allErrs = append(allErrs, field.Required(fldPath, "the SSH public key is not properly base64 encoded"))
+		return allErrs
+	}
+
+	if _, _, _, _, err := ssh.ParseAuthorizedKey(decoded); err != nil {
 		allErrs = append(allErrs, field.Required(fldPath, "the SSH public key is not valid"))
 		return allErrs
 	}

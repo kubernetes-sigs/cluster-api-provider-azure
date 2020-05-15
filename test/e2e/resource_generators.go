@@ -117,7 +117,7 @@ func (c *ClusterGenerator) VariablesInit() {
 	imageVersion = v.GetString("imageVersion")
 }
 
-func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
+func (c *ClusterGenerator) GenerateCluster(subscriptionId, namespace string) (*capiv1.Cluster, *infrav1.AzureCluster) {
 	name := "capz-e2e" + util.RandomString(6)
 	vnetName := name + "-vnet"
 	tags := map[string]string{
@@ -130,8 +130,9 @@ func (c *ClusterGenerator) GenerateCluster(namespace string) (*capiv1.Cluster, *
 			Name:      name,
 		},
 		Spec: infrav1.AzureClusterSpec{
-			Location:      location,
-			ResourceGroup: name,
+			Location:       location,
+			ResourceGroup:  name,
+			SubscriptionID: subscriptionId,
 			NetworkSpec: infrav1.NetworkSpec{
 				Vnet: infrav1.VnetSpec{Name: vnetName},
 			},

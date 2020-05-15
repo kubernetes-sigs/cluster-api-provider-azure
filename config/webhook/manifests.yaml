@@ -53,7 +53,7 @@ webhooks:
     - UPDATE
     - DELETE
     resources:
-    - azurecluster
+    - azureclusters
   sideEffects: None
 - clientConfig:
     caBundle: Cg==
@@ -73,7 +73,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - azuremachine
+    - azuremachines
   sideEffects: None
 - clientConfig:
     caBundle: Cg==
