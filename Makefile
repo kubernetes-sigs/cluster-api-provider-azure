@@ -33,11 +33,11 @@ export GO111MODULE=on
 # Directories.
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
-TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
+TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/bin)
 TEMPLATES_DIR := $(ROOT_DIR)/templates
-BIN_DIR := bin
-RELEASE_NOTES_BIN := bin/release-notes
+BIN_DIR := $(abspath $(ROOT_DIR)/bin)
 EXP_DIR := exp
+GO_INSTALL = ./scripts/go_install.sh
 
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
@@ -48,9 +48,9 @@ ETCD=$(TOOLS_BIN_DIR)/etcd
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 KUBECTL=$(TOOLS_BIN_DIR)/kubectl
-KUSTOMIZE := $(abspath $(TOOLS_BIN_DIR)/kustomize)
+KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
-RELEASE_NOTES := $(TOOLS_DIR)/$(RELEASE_NOTES_BIN)
+RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
 EXP_DIR := exp
 
 # Define Docker related variables. Releases should modify and double check these vars.
@@ -86,9 +86,9 @@ help:  ## Display this help
 ## Testing
 ## --------------------------------------
 
-test: export TEST_ASSET_KUBECTL = $(ROOT_DIR)/$(KUBECTL)
-test: export TEST_ASSET_KUBE_APISERVER = $(ROOT_DIR)/$(KUBE_APISERVER)
-test: export TEST_ASSET_ETCD = $(ROOT_DIR)/$(ETCD)
+test: export TEST_ASSET_KUBECTL = $(KUBECTL)
+test: export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
+test: export TEST_ASSET_ETCD = $(ETCD)
 
 .PHONY: test
 test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) generate lint ## Run tests
@@ -123,29 +123,30 @@ manager: ## Build manager binary.
 ## Tooling Binaries
 ## --------------------------------------
 
-$(CLUSTERCTL): go.mod ## Build clusterctl binary.
-	go build -o $(BIN_DIR)/clusterctl sigs.k8s.io/cluster-api/cmd/clusterctl
+$(CLUSTERCTL): ## Build clusterctl binary.
+	GOBIN=$(BIN_DIR) $(GO_INSTALL) sigs.k8s.io/cluster-api/cmd/clusterctl@v0.3.5
 
-$(CONTROLLER_GEN): $(TOOLS_DIR)/go.mod # Build controller-gen from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/controller-gen sigs.k8s.io/controller-tools/cmd/controller-gen
+$(CONTROLLER_GEN): ## Build controller-gen from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
 
-$(CONVERSION_GEN): $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
+$(CONVERSION_GEN): ## Build conversion-gen
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen@v0.18.2
 
-$(ENVSUBST): $(TOOLS_DIR)/go.mod # Build envsubst from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/envsubst github.com/a8m/envsubst/cmd/envsubst
+$(ENVSUBST): ## Build envsubst from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst@v1.1.0
 
-$(GOLANGCI_LINT): $(TOOLS_DIR)/go.mod # Build golangci-lint from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
+$(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
 
-$(KUSTOMIZE): $(TOOLS_DIR)/go.mod # Build kustomize from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/kustomize sigs.k8s.io/kustomize/kustomize/v3
+$(KUSTOMIZE): ## Build kustomize from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v3@v3.5.4
 
-$(MOCKGEN): $(TOOLS_DIR)/go.mod # Build mockgen from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/mockgen github.com/golang/mock/mockgen
+$(MOCKGEN): ## Build mockgen from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen@v1.4.3
 
-$(RELEASE_NOTES) : $(TOOLS_DIR)/go.mod
-	cd $(TOOLS_DIR) && go build -tags tools -o $(BIN_DIR)/release-notes sigs.k8s.io/cluster-api/hack/tools/release
+$(RELEASE_NOTES): ## Build release notes
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/cluster-api/hack/tools/release
+	mv $(TOOLS_BIN_DIR)/release $(RELEASE_NOTES)
 
 ## --------------------------------------
 ## Linting

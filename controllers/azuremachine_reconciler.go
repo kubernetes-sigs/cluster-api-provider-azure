@@ -346,6 +346,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 func GetControlPlaneMachines(machineList *clusterv1.MachineList) []*clusterv1.Machine {
 	var cpm []*clusterv1.Machine
 	for _, m := range machineList.Items {
+		m := m
 		if util.IsControlPlaneMachine(&m) {
 			cpm = append(cpm, m.DeepCopy())
 		}
