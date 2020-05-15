@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -61,5 +62,5 @@ func TestAzureMachine_ValidateSSHKey(t *testing.T) {
 func generateSSHPublicKey() string {
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicRsaKey, _ := ssh.NewPublicKey(&privateKey.PublicKey)
-	return string(ssh.MarshalAuthorizedKey(publicRsaKey))
+	return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
 }

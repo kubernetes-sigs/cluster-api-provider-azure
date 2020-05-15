@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -37,7 +38,7 @@ func (m *AzureMachine) SetDefaultSSHPublicKey() error {
 		if perr != nil {
 			return errors.Wrap(perr, "Failed to generate public key")
 		}
-		m.Spec.SSHPublicKey = string(ssh.MarshalAuthorizedKey(publicRsaKey))
+		m.Spec.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
 	}
 
 	return nil
