@@ -128,6 +128,7 @@ var _ = BeforeSuite(func() {
 	framework.InstallComponents(ctx, mgmt, capi, cabpk, kcp, infra)
 	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capi-system")
 	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capz-system")
+	framework.WaitForPodsReadyInNamespace(ctx, mgmt, "capi-webhook-system")
 
 	// go func() {
 	// 	defer GinkgoRecover()
