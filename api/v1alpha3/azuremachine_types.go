@@ -97,7 +97,7 @@ type AzureMachineSpec struct {
 type SpotVMOptions struct {
 	// MaxPrice defines the maximum price the user is willing to pay for Spot VM instances
 	// +optional
-	// +kubebuilder:validation:pattern="^[0-9]+(\.[0-9]+)?$"
+	// +kubebuilder:validation:Type=number
 	MaxPrice *string `json:"maxPrice,omitempty"`
 }
 

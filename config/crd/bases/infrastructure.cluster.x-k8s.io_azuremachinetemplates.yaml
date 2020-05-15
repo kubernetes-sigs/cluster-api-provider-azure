@@ -341,7 +341,7 @@ spec:
                           maxPrice:
                             description: MaxPrice defines the maximum price the user
                               is willing to pay for Spot VM instances
-                            type: string
+                            type: number
                         type: object
                       sshPublicKey:
                         type: string
