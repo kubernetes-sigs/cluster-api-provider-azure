@@ -140,7 +140,7 @@ To build a kind cluster and start Tilt, just run:
 ```shell
 make tilt-up
 ```
-By default, the Cluster API components deployed by Tilt have experimental features turned off. 
+By default, the Cluster API components deployed by Tilt have experimental features turned off.
 If you would like to enable these features, add `extra_args` as specified in [The Cluster API Book](https://cluster-api.sigs.k8s.io/developer/tilt.html#create-a-tilt-settingsjson-file).
 
 Once your kind management cluster is up and running, you can [deploy a workload cluster](#deploying-a-workload-cluster).
@@ -350,25 +350,32 @@ You can optionally set `AZURE_SSH_PUBLIC_KEY_FILE` to use your own SSH key.
 To run Conformance locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
 
 ```bash
-./scripts/ci-conformance.sh
+./scripts/ci-entrypoint.sh
 ```
 
 You can optionally set the following variables:
 
-| Variable                    | Description                                                                                                    |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `AZURE_SSH_PUBLIC_KEY_FILE` | Use your own SSH key.                                                                                          |
-| `SKIP_CREATE_CLUSTER`       | Skip cluster creation.                                                                                         |
-| `SKIP_TESTS`                | Skip running Kubernetes E2E tests.                                                                             |
+| Variable                    | Description                                                                                                   |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------|
+| `AZURE_SSH_PUBLIC_KEY_FILE` | Use your own SSH key.                                                                                         |
+| `SKIP_CREATE_CLUSTER`       | Skip cluster creation.                                                                                        |
+| `SKIP_UPSTREAM_E2E_TESTS`   | Skip running upstream Kubernetes E2E tests.                                                                   |
 | `SKIP_CLEANUP`              | Skip deleting the cluster after the tests finish running.                                                      |
-| `KUBECONFIG`                | Provide your existing cluster kubeconfig filepath. If no kubeconfig is provided, `./kubeconfig` will be used.  |
-| `SKIP`                      | Regexp for test cases to skip.                                                                                 |
-| `FOCUS`                     | Regexp for which test cases to run.                                                                            |
+| `KUBECONFIG`                | Provide your existing cluster kubeconfig filepath. If no kubeconfig is provided, `./kubeconfig` will be used.     |
+| `SKIP`                      | Regexp for test cases to skip.                                                                                |
+| `FOCUS`                     | Regexp for which test cases to run.                                                                           |
 | `PARALLEL`                  | Skip serial tests and set --ginkgo-parallel.                                                                  |
-| `USE_CI_ARTIFACTS`          | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)          |
-| `CI_VERSION`                | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                  |
+| `USE_CI_ARTIFACTS`          | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)         |
+| `CI_VERSION`                | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                 |
 
 You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
+
+In addition to upstream E2E, you can append custom commands to `./scripts/ci-entrypoint.sh` to run E2E from other projects against a CAPZ cluster:
+
+```bash
+export SKIP_UPSTREAM_E2E_TESTS="false"
+./scripts/ci-entrypoint.sh bash -c "cd ${GOPATH}/src/github.com/my-org/my-project && make e2e"
+```
 
 <!-- References -->
 
