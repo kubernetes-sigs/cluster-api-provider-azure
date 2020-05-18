@@ -350,7 +350,7 @@ You can optionally set `AZURE_SSH_PUBLIC_KEY_FILE` to use your own SSH key.
 To run Conformance locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
 
 ```bash
-./scripts/ci-conformance.sh
+./scripts/ci-entrypoint.sh
 ```
 
 You can optionally set the following variables:
