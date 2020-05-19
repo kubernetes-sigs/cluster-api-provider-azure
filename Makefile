@@ -51,6 +51,7 @@ KUBECTL=$(TOOLS_BIN_DIR)/kubectl
 KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
+GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
 EXP_DIR := exp
 
 # Define Docker related variables. Releases should modify and double check these vars.
@@ -147,6 +148,9 @@ $(MOCKGEN): ## Build mockgen from tools folder.
 $(RELEASE_NOTES): ## Build release notes
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/cluster-api/hack/tools/release
 	mv $(TOOLS_BIN_DIR)/release $(RELEASE_NOTES)
+
+$(GO_APIDIFF): ## Build go-apidiff.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff
 
 ## --------------------------------------
 ## Linting
