@@ -9,7 +9,7 @@
 - [Prerequisites](#prerequisites)
   - [Requirements](#requirements)
   - [Optional](#optional)
-  - [Setting up the environment](#setting-up-the-environment)
+  - [Setting up your Azure environment](#setting-up-your-azure-environment)
 - [Troubleshooting](#troubleshooting)
   - [Bootstrap running, but resources aren't being created](#bootstrap-running-but-resources-arent-being-created)
   - [Resources are created but control plane is taking a long time to become ready](#resources-are-created-but-control-plane-is-taking-a-long-time-to-become-ready)
