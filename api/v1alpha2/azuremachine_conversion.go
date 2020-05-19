@@ -39,6 +39,9 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	if restored.Spec.Identity != "" {
 		dst.Spec.Identity = restored.Spec.Identity
 	}
+	if len(restored.Spec.UserAssignedIdentities) > 0 {
+		dst.Spec.UserAssignedIdentities = restored.Spec.UserAssignedIdentities
+	}
 
 	dst.Spec.FailureDomain = restored.Spec.FailureDomain
 

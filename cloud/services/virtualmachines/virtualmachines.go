@@ -39,15 +39,16 @@ const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
-	Name       string
-	NICName    string
-	SSHKeyData string
-	Size       string
-	Zone       string
-	Image      *infrav1.Image
-	Identity   infrav1.VMIdentity
-	OSDisk     infrav1.OSDisk
-	CustomData string
+	Name                   string
+	NICName                string
+	SSHKeyData             string
+	Size                   string
+	Zone                   string
+	Image                  *infrav1.Image
+	Identity               infrav1.VMIdentity
+	OSDisk                 infrav1.OSDisk
+	CustomData             string
+	UserAssignedIdentities []infrav1.UserAssignedIdentity
 }
 
 // Get provides information about a virtual machine.
@@ -157,6 +158,25 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
 		virtualMachine.Identity = &compute.VirtualMachineIdentity{
 			Type: compute.ResourceIdentityTypeSystemAssigned,
+		}
+	} else if vmSpec.Identity == infrav1.VMIdentityUserAssigned {
+		if len(vmSpec.UserAssignedIdentities) == 0 {
+			return errors.Wrapf(err, "cannot create VM: The user-assigned identity provider ids must not be null or empty for 'UserAssigned' identity type.")
+		}
+		// UserAssignedIdentities - The list of user identities associated with the Virtual Machine.
+		// The user identity dictionary key references will be ARM resource ids in the form:
+		// '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'.
+		userIdentitiesMap := make(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, len(vmSpec.UserAssignedIdentities))
+		for _, id := range vmSpec.UserAssignedIdentities {
+			key := id.ProviderID
+			if strings.HasPrefix(id.ProviderID, "azure:///") {
+				key = strings.TrimPrefix(key, "azure:///")
+			}
+			userIdentitiesMap[key] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
+		}
+		virtualMachine.Identity = &compute.VirtualMachineIdentity{
+			Type:                   compute.ResourceIdentityTypeUserAssigned,
+			UserAssignedIdentities: userIdentitiesMap,
 		}
 	}
 

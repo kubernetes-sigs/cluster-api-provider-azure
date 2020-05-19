@@ -77,6 +77,16 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithSSHPublicKey(t, "invalid ssh key"),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with list of user-assigned identities",
+			machine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:////123"}, {ProviderID: "azure:////456"}}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with empty list of user-assigned identities",
+			machine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{}),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -115,6 +125,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			name:       "azuremachine with invalid SSHPublicKey",
 			oldMachine: createMachineWithSSHPublicKey(t, ""),
 			machine:    createMachineWithSSHPublicKey(t, "invalid ssh key"),
+			wantErr:    true,
+		},
+		{
+			name:       "azuremachine with user assigned identities",
+			oldMachine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:////123"}}),
+			machine:    createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:////123"}, {ProviderID: "azure:////456"}}),
+			wantErr:    false,
+		},
+		{
+			name:       "azuremachine with empty user assigned identities",
+			oldMachine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:////123"}}),
+			machine:    createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{}),
 			wantErr:    true,
 		},
 	}

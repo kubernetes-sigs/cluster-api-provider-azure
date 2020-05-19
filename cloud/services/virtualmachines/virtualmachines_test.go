@@ -482,6 +482,61 @@ func TestReconcileVM(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name: "can create a vm with user assigned identity",
+			machine: clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"set": "node"},
+				},
+				Spec: clusterv1.MachineSpec{
+					Bootstrap: clusterv1.Bootstrap{
+						Data: to.StringPtr("bootstrap-data"),
+					},
+					Version: to.StringPtr("1.15.7"),
+				},
+			},
+			machineConfig: &infrav1.AzureMachineSpec{
+				VMSize:                 "Standard_B2ms",
+				Location:               "eastus",
+				Image:                  image,
+				Identity:               "UserAssigned",
+				UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "azure:////subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1"}},
+			},
+			azureCluster: &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: subscriptionID,
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							&infrav1.SubnetSpec{
+								Name: "subnet-1",
+							},
+							&infrav1.SubnetSpec{},
+						},
+					},
+				},
+				Status: infrav1.AzureClusterStatus{
+					Network: infrav1.Network{
+						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
+							infrav1.SecurityGroupControlPlane: {
+								ID: "1",
+							},
+							infrav1.SecurityGroupNode: {
+								ID: "2",
+							},
+						},
+						APIServerIP: infrav1.PublicIP{
+							DNSName: "azure-test-dns",
+						},
+					},
+				},
+			},
+			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder) {
+				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
+				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				mra.Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			},
+			expectedError: "",
+		},
+		{
 			name: "vm creation fails",
 			machine: clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{

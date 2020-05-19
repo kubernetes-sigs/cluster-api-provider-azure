@@ -1,0 +1,5 @@
+resources:
+  - ../base
+  - user-assigned-identity-md.yaml
+patchesStrategicMerge:
+  - patches/user-assigned-identity.yaml

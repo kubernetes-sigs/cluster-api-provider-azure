@@ -623,6 +623,7 @@ spec:
                     enum:
                     - None
                     - SystemAssigned
+                    - UserAssigned
                     type: string
                   image:
                     description: Storage profile

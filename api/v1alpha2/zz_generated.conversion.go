@@ -577,6 +577,7 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha2_AzureMachineSpec(in *v1al
 		out.Image = nil
 	}
 	// WARNING: in.Identity requires manual conversion: does not exist in peer-type
+	// WARNING: in.UserAssignedIdentities requires manual conversion: does not exist in peer-type
 	if err := Convert_v1alpha3_OSDisk_To_v1alpha2_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}

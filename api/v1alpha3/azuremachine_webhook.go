@@ -42,33 +42,43 @@ var _ webhook.Validator = &AzureMachine{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (m *AzureMachine) ValidateCreate() error {
 	machinelog.Info("validate create", "name", m.Name)
+	var allErrs field.ErrorList
 
 	if errs := ValidateImage(m.Spec.Image, field.NewPath("image")); len(errs) > 0 {
-		return apierrors.NewInvalid(
-			GroupVersion.WithKind("AzureMachine").GroupKind(),
-			m.Name, errs)
+		allErrs = append(allErrs, errs...)
 	}
 
 	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
-		return apierrors.NewInvalid(
-			GroupVersion.WithKind("AzureMachine").GroupKind(),
-			m.Name, errs)
+		allErrs = append(allErrs, errs...)
 	}
 
-	return nil
+	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if len(allErrs) == 0 {
+		return nil
+	}
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
+	var allErrs field.ErrorList
 
 	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
-		return apierrors.NewInvalid(
-			GroupVersion.WithKind("AzureMachine").GroupKind(),
-			m.Name, errs)
+		allErrs = append(allErrs, errs...)
 	}
 
-	return nil
+	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if len(allErrs) == 0 {
+		return nil
+	}
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type

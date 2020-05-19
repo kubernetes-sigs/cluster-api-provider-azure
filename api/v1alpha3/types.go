@@ -278,7 +278,7 @@ type AvailabilityZone struct {
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.
-// +kubebuilder:validation:Enum=None;SystemAssigned
+// +kubebuilder:validation:Enum=None;SystemAssigned;UserAssigned
 type VMIdentity string
 
 const (
@@ -286,7 +286,17 @@ const (
 	VMIdentityNone VMIdentity = "None"
 	// VMIdentitySystemAssigned ...
 	VMIdentitySystemAssigned VMIdentity = "SystemAssigned"
+	// VMIdentityUserAssigned ...
+	VMIdentityUserAssigned VMIdentity = "UserAssigned"
 )
+
+// UserAssignedIdentity defines the user-assigned identities provided
+// by the user to be assigned to Azure resources.
+type UserAssignedIdentity struct {
+	// ProviderID is the identification ID of the user-assigned Identity, the format of an identity is:
+	// 'azure:////subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'
+	ProviderID string `json:"providerID"`
+}
 
 // OSDisk defines the operating system disk for a VM.
 type OSDisk struct {
