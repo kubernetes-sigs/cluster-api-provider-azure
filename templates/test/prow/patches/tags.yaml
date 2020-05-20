@@ -4,5 +4,5 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
   additionalTags:
-    jobName: 'cluster-api-provider-azure-conformance'
+    jobName: ${JOB_NAME}
     creationTimestamp: ${TIMESTAMP}

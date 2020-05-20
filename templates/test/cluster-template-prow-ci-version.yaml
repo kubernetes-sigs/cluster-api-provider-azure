@@ -25,7 +25,7 @@ metadata:
 spec:
   additionalTags:
     creationTimestamp: ${TIMESTAMP}
-    jobName: cluster-api-provider-azure-conformance
+    jobName: ${JOB_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
