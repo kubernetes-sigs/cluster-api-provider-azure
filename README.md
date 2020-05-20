@@ -19,6 +19,10 @@ hybrid deployments of Kubernetes.
 
 Check out the [Cluster API Quick Start][quickstart] to create your first Kubernetes cluster on Azure using Cluster API.
 
+## Flavors
+
+See the [flavors documentation][flavors_doc] to know which cluster templates are provided by CAPZ.
+
 ------
 
 ## Support Policy
@@ -125,3 +129,4 @@ We also use the issue tracker to track features. If you have an idea for a featu
 [slack_info]: https://github.com/kubernetes/community/blob/master/communication.md#social-media
 [cluster_api]: https://github.com/kubernetes-sigs/cluster-api
 [quickstart]: https://cluster-api.sigs.k8s.io/user/quick-start.html
+[flavors_doc]: ./templates/flavors/README.md
