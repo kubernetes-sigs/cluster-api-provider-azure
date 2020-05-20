@@ -75,11 +75,11 @@ create_cluster() {
         else
             CI_VERSION_URL="https://dl.k8s.io/ci/k8s-master.txt"
         fi
-        export CLUSTER_TEMPLATE="test/cluster-template-conformance-ci-version.yaml"
+        export CLUSTER_TEMPLATE="test/cluster-template-prow-ci-version.yaml"
         export CI_VERSION="${CI_VERSION:-$(curl -sSL ${CI_VERSION_URL})}"
         export KUBERNETES_VERSION="${CI_VERSION}"
     else
-        export CLUSTER_TEMPLATE="test/cluster-template-conformance.yaml"
+        export CLUSTER_TEMPLATE="test/cluster-template-prow.yaml"
     fi
 
     export CLUSTER_NAME="capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
@@ -94,8 +94,6 @@ create_cluster() {
 }
 
 run_upstream_e2e_tests() {
-    # export the target cluster KUBECONFIG if not already set
-    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
     # ginkgo regexes
     SKIP="${SKIP:-}"
     FOCUS="${FOCUS:-"\\[Conformance\\]"}"
@@ -161,6 +159,9 @@ mkdir -p "${ARTIFACTS}/logs"
 if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
     create_cluster
 fi
+
+# export the target cluster KUBECONFIG if not already set
+export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
 # build k8s binaries and run upstream e2e tests
 if [[ -z "${SKIP_UPSTREAM_E2E_TESTS:-}" ]]; then
