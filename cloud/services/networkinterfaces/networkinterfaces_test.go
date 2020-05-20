@@ -517,6 +517,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-public-ip", gomock.AssignableToTypeOf(network.PublicIPAddress{})),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
@@ -538,6 +539,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-public-ip", gomock.AssignableToTypeOf(network.PublicIPAddress{})),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
@@ -642,7 +644,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		name             string
 		netInterfaceSpec Spec
 		expectedError    string
-		expect           func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder)
+		expect           func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder)
 	}{
 		{
 			name: "successfully delete an existing network interface",
@@ -651,7 +653,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				PublicLoadBalancerName: "my-public-lb",
 			},
 			expectedError: "",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder) {
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-net-interface")
 				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
 			},
@@ -663,7 +665,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				PublicLoadBalancerName: "my-public-lb",
 			},
 			expectedError: "",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder) {
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-net-interface").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
@@ -676,7 +678,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				PublicLoadBalancerName: "my-public-lb",
 			},
 			expectedError: "failed to delete network interface my-net-interface in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder) {
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-net-interface").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
@@ -688,7 +690,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				PublicLoadBalancerName: "my-public-lb",
 			},
 			expectedError: "",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder) {
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-net-interface").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
@@ -701,9 +703,53 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				PublicLoadBalancerName: "my-public-lb",
 			},
 			expectedError: "failed to delete inbound NAT rule azure-test1 in load balancer my-public-lb: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder) {
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
 				m.Delete(context.TODO(), "my-rg", "my-net-interface")
 				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name: "Delete NIC with public IP",
+			netInterfaceSpec: Spec{
+				Name:                   "my-net-interface",
+				PublicLoadBalancerName: "my-public-lb",
+				PublicIPName:           "my-public-ip",
+			},
+			expectedError: "",
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-net-interface")
+				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
+				mPublicIP.Delete(context.TODO(), "my-rg", "my-public-ip")
+			},
+		},
+		{
+			name: "Public IP already deleted",
+			netInterfaceSpec: Spec{
+				Name:                   "my-net-interface",
+				PublicLoadBalancerName: "my-public-lb",
+				PublicIPName:           "my-public-ip",
+			},
+			expectedError: "",
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-net-interface")
+				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
+				mPublicIP.Delete(context.TODO(), "my-rg", "my-public-ip").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+		},
+		{
+			name: "Public IP deletion fails",
+			netInterfaceSpec: Spec{
+				Name:                   "my-net-interface",
+				PublicLoadBalancerName: "my-public-lb",
+				PublicIPName:           "my-public-ip",
+			},
+			expectedError: "failed to delete public IP my-public-ip: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-net-interface")
+				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
+				mPublicIP.Delete(context.TODO(), "my-rg", "my-public-ip").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -714,6 +760,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			netInterfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			inboundNatRulesMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
@@ -767,13 +814,14 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
-			tc.expect(netInterfaceMock.EXPECT(), inboundNatRulesMock.EXPECT())
+			tc.expect(netInterfaceMock.EXPECT(), inboundNatRulesMock.EXPECT(), publicIPMock.EXPECT())
 
 			s := &Service{
 				Scope:                 clusterScope,
 				MachineScope:          machineScope,
 				Client:                netInterfaceMock,
 				InboundNATRulesClient: inboundNatRulesMock,
+				PublicIPsClient:       publicIPMock,
 			}
 
 			err = s.Delete(context.TODO(), &tc.netInterfaceSpec)

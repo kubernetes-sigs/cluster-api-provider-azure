@@ -116,6 +116,11 @@ func GeneratePublicIPName(clusterName, hash string) string {
 	return fmt.Sprintf("%s-%s", clusterName, hash)
 }
 
+// GenerateNodePublicIPName generates a node public IP name, based on the NIC name.
+func GenerateNodePublicIPName(nicName string) string {
+	return fmt.Sprintf("%s-public-ip", nicName)
+}
+
 // GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
 func GenerateFQDN(publicIPName, location string) string {
 	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
