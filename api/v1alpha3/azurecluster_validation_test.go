@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-func TestClusterWithPreexistingVnetValid(t *testing.T) {
+func TestClusterWithVnetResourceGroupValid(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -32,7 +32,7 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	testCase := test{
-		name:    "azurecluster with pre-existing vnet - valid",
+		name:    "azurecluster with resource group - valid",
 		cluster: createValidCluster(),
 	}
 
@@ -42,7 +42,7 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 	})
 }
 
-func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
+func TestClusterValid(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -51,37 +51,10 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	testCase := test{
-		name:    "azurecluster with pre-existing vnet - invalid",
+		name:    "azurecluster - valid",
 		cluster: createValidCluster(),
 	}
 
-	// invalid because it doesn't specify a controlplane subnet
-	testCase.cluster.Spec.NetworkSpec.Subnets[0] = &SubnetSpec{
-		Name: "random-subnet",
-		Role: "random",
-	}
-
-	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster()
-		g.Expect(err).ToNot(BeNil())
-	})
-}
-
-func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name    string
-		cluster *AzureCluster
-	}
-
-	testCase := test{
-		name:    "azurecluster without pre-existing vnet - valid",
-		cluster: createValidCluster(),
-	}
-
-	// When ResourceGroup is an empty string, the cluster doesn't
-	// have a pre-existing vnet.
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
@@ -90,7 +63,7 @@ func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
 	})
 }
 
-func TestClusterSpecWithPreexistingVnetValid(t *testing.T) {
+func TestClusterSpecWithVnetResourceGroupValid(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -99,7 +72,7 @@ func TestClusterSpecWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	testCase := test{
-		name:    "azurecluster spec with pre-existing vnet - valid",
+		name:    "azurecluster spec with resource group - valid",
 		cluster: createValidCluster(),
 	}
 
@@ -109,7 +82,7 @@ func TestClusterSpecWithPreexistingVnetValid(t *testing.T) {
 	})
 }
 
-func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
+func TestClusterSpecValid(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -118,37 +91,10 @@ func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	testCase := test{
-		name:    "azurecluster spec with pre-existing vnet - invalid",
+		name:    "azurecluster spec - valid",
 		cluster: createValidCluster(),
 	}
 
-	// invalid because it doesn't specify a controlplane subnet
-	testCase.cluster.Spec.NetworkSpec.Subnets[0] = &SubnetSpec{
-		Name: "random-subnet",
-		Role: "random",
-	}
-
-	t.Run(testCase.name, func(t *testing.T) {
-		errs := testCase.cluster.validateClusterSpec()
-		g.Expect(len(errs)).To(BeNumerically(">", 0))
-	})
-}
-
-func TestClusterSpecWithoutPreexistingVnetValid(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name    string
-		cluster *AzureCluster
-	}
-
-	testCase := test{
-		name:    "azurecluster spec without pre-existing vnet - valid",
-		cluster: createValidCluster(),
-	}
-
-	// When ResourceGroup is an empty string, the cluster doesn't
-	// have a pre-existing vnet.
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
@@ -157,7 +103,7 @@ func TestClusterSpecWithoutPreexistingVnetValid(t *testing.T) {
 	})
 }
 
-func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
+func TestNetworkSpecWithResourceGroupValid(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -166,7 +112,7 @@ func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	testCase := test{
-		name:        "azurecluster networkspec with pre-existing vnet - valid",
+		name:        "azurecluster networkspec with resource group - valid",
 		networkSpec: createValidNetworkSpec(),
 	}
 
@@ -176,7 +122,7 @@ func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
 	})
 }
 
-func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
+func TestNetworkSpecInvalidResourceGroup(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -185,32 +131,7 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 	}
 
 	testCase := test{
-		name:        "azurecluster networkspec with pre-existing vnet - lack required subnets",
-		networkSpec: createValidNetworkSpec(),
-	}
-
-	// invalid because it doesn't specify a node subnet
-	testCase.networkSpec.Subnets = testCase.networkSpec.Subnets[:1]
-
-	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateNetworkSpec(testCase.networkSpec, field.NewPath("spec").Child("networkSpec"))
-		g.Expect(errs).To(HaveLen(1))
-		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
-		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
-		g.Expect(errs[0].Error()).To(ContainSubstring("required role node not included"))
-	})
-}
-
-func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name        string
-		networkSpec NetworkSpec
-	}
-
-	testCase := test{
-		name:        "azurecluster networkspec with pre-existing vnet - invalid resource group",
+		name:        "azurecluster networkspec - invalid resource group",
 		networkSpec: createValidNetworkSpec(),
 	}
 
@@ -225,7 +146,7 @@ func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
 	})
 }
 
-func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
+func TestNetworkSpecValid(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -234,7 +155,7 @@ func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
 	}
 
 	testCase := test{
-		name:        "azurecluster networkspec without pre-existing vnet - valid",
+		name:        "azurecluster networkspec - valid",
 		networkSpec: createValidNetworkSpec(),
 	}
 
@@ -356,31 +277,6 @@ func TestSubnetsInvalidInternalLBIPAddress(t *testing.T) {
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets[0].internalLBIPAddress"))
 		g.Expect(errs[0].BadValue).To(BeEquivalentTo("2550.1.1.1"))
-	})
-}
-
-func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name    string
-		subnets Subnets
-	}
-
-	testCase := test{
-		name:    "subnets - lack required subnet",
-		subnets: createValidSubnets(),
-	}
-
-	testCase.subnets[0].Role = "random-role"
-
-	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
-			field.NewPath("spec").Child("networkSpec").Child("subnets"))
-		g.Expect(errs).To(HaveLen(1))
-		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
-		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
-		g.Expect(errs[0].Detail).To(ContainSubstring("required role control-plane not included"))
 	})
 }
 

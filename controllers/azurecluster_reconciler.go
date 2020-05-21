@@ -91,10 +91,6 @@ func (r *azureClusterReconciler) Reconcile() error {
 		r.scope.Vnet().CidrBlock = azure.DefaultVnetCIDR
 	}
 
-	if len(r.scope.Subnets()) == 0 {
-		r.scope.AzureCluster.Spec.NetworkSpec.Subnets = infrav1.Subnets{&infrav1.SubnetSpec{}, &infrav1.SubnetSpec{}}
-	}
-
 	vnetSpec := &virtualnetworks.Spec{
 		ResourceGroup: r.scope.Vnet().ResourceGroup,
 		Name:          r.scope.Vnet().Name,
@@ -134,6 +130,10 @@ func (r *azureClusterReconciler) Reconcile() error {
 		return errors.Wrapf(err, "failed to reconcile node route table for cluster %s", r.scope.Name())
 	}
 
+	if len(r.scope.Subnets()) == 0 {
+		r.scope.AzureCluster.Spec.NetworkSpec.Subnets = infrav1.Subnets{&infrav1.SubnetSpec{}, &infrav1.SubnetSpec{}}
+	}
+
 	cpSubnet := r.scope.ControlPlaneSubnet()
 	if cpSubnet == nil {
 		cpSubnet = &infrav1.SubnetSpec{}
@@ -151,19 +151,6 @@ func (r *azureClusterReconciler) Reconcile() error {
 		cpSubnet.SecurityGroup.Name = azure.GenerateControlPlaneSecurityGroupName(r.scope.Name())
 	}
 
-	subnetSpec := &subnets.Spec{
-		Name:                cpSubnet.Name,
-		CIDR:                cpSubnet.CidrBlock,
-		VnetName:            r.scope.Vnet().Name,
-		SecurityGroupName:   cpSubnet.SecurityGroup.Name,
-		RouteTableName:      azure.GenerateNodeRouteTableName(r.scope.Name()),
-		Role:                cpSubnet.Role,
-		InternalLBIPAddress: cpSubnet.InternalLBIPAddress,
-	}
-	if err := r.subnetsSvc.Reconcile(r.scope.Context, subnetSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile control plane subnet for cluster %s", r.scope.Name())
-	}
-
 	nodeSubnet := r.scope.NodeSubnet()
 	if nodeSubnet == nil {
 		nodeSubnet = &infrav1.SubnetSpec{}
@@ -179,6 +166,19 @@ func (r *azureClusterReconciler) Reconcile() error {
 	}
 	if nodeSubnet.SecurityGroup.Name == "" {
 		nodeSubnet.SecurityGroup.Name = azure.GenerateNodeSecurityGroupName(r.scope.Name())
+	}
+
+	subnetSpec := &subnets.Spec{
+		Name:                cpSubnet.Name,
+		CIDR:                cpSubnet.CidrBlock,
+		VnetName:            r.scope.Vnet().Name,
+		SecurityGroupName:   cpSubnet.SecurityGroup.Name,
+		RouteTableName:      azure.GenerateNodeRouteTableName(r.scope.Name()),
+		Role:                cpSubnet.Role,
+		InternalLBIPAddress: cpSubnet.InternalLBIPAddress,
+	}
+	if err := r.subnetsSvc.Reconcile(r.scope.Context, subnetSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile control plane subnet for cluster %s", r.scope.Name())
 	}
 
 	subnetSpec = &subnets.Spec{

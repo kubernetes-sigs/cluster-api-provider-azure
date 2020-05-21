@@ -56,16 +56,13 @@ func (c *AzureCluster) validateClusterSpec() field.ErrorList {
 // validateNetworkSpec validates a NetworkSpec
 func validateNetworkSpec(networkSpec NetworkSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	// If the user specifies a resourceGroup for vnet, it means
-	// that she intends to use a pre-existing vnet. In this case,
-	// we need to verify the information she provides
 	if networkSpec.Vnet.ResourceGroup != "" {
 		if err := validateResourceGroup(networkSpec.Vnet.ResourceGroup,
 			fldPath.Child("vnet").Child("resourceGroup")); err != nil {
 			allErrs = append(allErrs, err)
 		}
-		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
+	allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -84,10 +81,6 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 // validateSubnets validates a list of Subnets
 func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	requiredSubnetRoles := map[string]bool{
-		"control-plane": false,
-		"node":          false,
-	}
 	for i, subnet := range subnets {
 		if err := validateSubnetName(subnet.Name, fldPath.Index(i).Child("name")); err != nil {
 			allErrs = append(allErrs, err)
@@ -97,17 +90,6 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				fldPath.Index(i).Child("internalLBIPAddress")); err != nil {
 				allErrs = append(allErrs, err)
 			}
-		}
-		for role := range requiredSubnetRoles {
-			if role == string(subnet.Role) {
-				requiredSubnetRoles[role] = true
-			}
-		}
-	}
-	for k, v := range requiredSubnetRoles {
-		if v == false {
-			allErrs = append(allErrs, field.Required(fldPath,
-				fmt.Sprintf("required role %s not included in provided subnets", k)))
 		}
 	}
 	if len(allErrs) == 0 {

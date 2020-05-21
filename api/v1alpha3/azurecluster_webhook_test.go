@@ -47,24 +47,6 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "azurecluster with pre-existing vnet - lack control plane subnet",
-			cluster: func() *AzureCluster {
-				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
-				return cluster
-			}(),
-			wantErr: true,
-		},
-		{
-			name: "azurecluster with pre-existing vnet - lack node subnet",
-			cluster: func() *AzureCluster {
-				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
-				return cluster
-			}(),
-			wantErr: true,
-		},
-		{
 			name: "azurecluster with pre-existing vnet - invalid resourcegroup name",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
@@ -128,24 +110,6 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 				return cluster
 			}(),
 			wantErr: false,
-		},
-		{
-			name: "azurecluster with pre-existing vnet - lack control plane subnet",
-			cluster: func() *AzureCluster {
-				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
-				return cluster
-			}(),
-			wantErr: true,
-		},
-		{
-			name: "azurecluster with pre-existing vnet - lack node subnet",
-			cluster: func() *AzureCluster {
-				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
-				return cluster
-			}(),
-			wantErr: true,
 		},
 		{
 			name: "azurecluster with pre-existing vnet - invalid resourcegroup name",
