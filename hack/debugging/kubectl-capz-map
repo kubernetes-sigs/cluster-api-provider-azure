@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+azmachine=($(kubectl get azuremachine -o json | jq -r '.items[].metadata.name '))
+for az in "${azmachine[@]}"; do
+  capimachine=$(kubectl get azuremachine $az -o json | jq -r '.metadata.ownerReferences | .[]  |  select(.kind == "Machine").name')
+  azurecluster=$(kubectl get machine $capimachine -o json | jq -r '.spec.clusterName')
+  kubeadmconfig=$(kubectl get machine ${capimachine} -o json | jq -r '.spec.bootstrap.configRef.name')
+
+  echo -e "\x1B[32mAzureCluster:\x1B[36m \x1B[39m$azurecluster"
+  echo -e "\t\x1B[36mAzureMachine: \x1B[39m$az"
+  echo -e "\t\x1B[36mMachine: \x1B[39m${capimachine}"
+  echo -e "\t\x1B[36mKubeadmconfig: \x1B[39m$kubeadmconfig"
+done
