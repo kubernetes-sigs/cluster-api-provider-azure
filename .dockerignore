@@ -8,6 +8,7 @@
 !/exp/**
 !/feature/**
 !/pkg/**
+!/version/**
 !/main.go
 !/go.mod
 !/go.sum
