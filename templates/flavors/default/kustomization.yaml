@@ -1,3 +1,4 @@
+namespace: default
 resources:
   - ../base
   - machine-deployment.yaml

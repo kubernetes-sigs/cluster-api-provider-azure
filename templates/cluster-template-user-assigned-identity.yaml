@@ -127,6 +127,7 @@ apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -150,6 +151,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   template:
     spec:
@@ -169,6 +171,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   template:
     spec:

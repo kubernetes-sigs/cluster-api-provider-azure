@@ -21,6 +21,7 @@ apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
+  namespace: default
 spec:
   defaultPoolRef:
     name: agentpool0
@@ -34,6 +35,7 @@ apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
+  namespace: default
 spec:
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
@@ -41,6 +43,7 @@ apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool
 metadata:
   name: agentpool0
+  namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -61,6 +64,7 @@ apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedMachinePool
 metadata:
   name: agentpool0
+  namespace: default
 spec:
   osDiskSizeGB: 512
   sku: ${AZURE_NODE_MACHINE_TYPE}
@@ -69,6 +73,7 @@ apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool
 metadata:
   name: agentpool1
+  namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
@@ -89,6 +94,7 @@ apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedMachinePool
 metadata:
   name: agentpool1
+  namespace: default
 spec:
   osDiskSizeGB: 1024
   sku: ${AZURE_NODE_MACHINE_TYPE}
