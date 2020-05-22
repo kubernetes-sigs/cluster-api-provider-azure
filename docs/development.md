@@ -55,7 +55,7 @@
    - `brew install kustomize` on macOS.
    - `choco install kustomize` on Windows.
    - [install instructions][kustomizelinux] on Linux
-6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
+6. Install Python 3.x or 2.7.x, if neither is already installed.
 7. Install make.
 8. Install [timeout][timeout]
    - `brew install coreutils` on macOS.
@@ -388,7 +388,6 @@ export SKIP_UPSTREAM_E2E_TESTS="false"
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
-[pyenv]: https://github.com/pyenv/pyenv
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
 [gomock]: https://github.com/golang/mock

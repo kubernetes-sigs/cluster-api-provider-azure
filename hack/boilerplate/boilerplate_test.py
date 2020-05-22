@@ -16,7 +16,7 @@
 
 import boilerplate
 import unittest
-import StringIO
+from io import StringIO
 import os
 import sys
 
@@ -39,7 +39,7 @@ class TestBoilerplate(unittest.TestCase):
 
     # capture stdout
     old_stdout = sys.stdout
-    sys.stdout = StringIO.StringIO()
+    sys.stdout = StringIO()
 
     boilerplate.args = Args()
     ret = boilerplate.main()
@@ -48,5 +48,5 @@ class TestBoilerplate(unittest.TestCase):
 
     sys.stdout = old_stdout
 
-    self.assertEquals(
+    self.assertEqual(
         output, ['././fail.go', '././fail.py'])

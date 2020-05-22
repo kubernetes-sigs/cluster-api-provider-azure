@@ -56,3 +56,7 @@ tilt-settings.json
 test/e2e/junit.e2e_suite.*.xml
 test/e2e/logs/*
 _artifacts
+
+# boilerplate_test output
+hack/boilerplate/__pycache__
+hack/boilerplate/*.pyc

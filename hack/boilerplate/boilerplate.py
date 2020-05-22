@@ -218,6 +218,8 @@ def main():
 
     for filename in filenames:
         if not file_passes(filename, refs, regexs):
+            if sys.version_info[0] < 3:
+                filename = unicode(filename)
             print(filename, file=sys.stdout)
 
     return 0
