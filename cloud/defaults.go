@@ -27,12 +27,6 @@ import (
 const (
 	// DefaultUserName is the default username for created vm
 	DefaultUserName = "capi"
-	// DefaultVnetCIDR is the default Vnet CIDR
-	DefaultVnetCIDR = "10.0.0.0/8"
-	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
-	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
-	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
-	DefaultNodeSubnetCIDR = "10.1.0.0/16"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultAzureDNSZone is the default provided azure dns zone
@@ -69,36 +63,6 @@ var SupportedAvailabilityZoneLocations = []string{
 	// Asia Pacific
 	"japaneast",
 	"southeastasia",
-}
-
-// GenerateVnetName generates a virtual network name, based on the cluster name.
-func GenerateVnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "vnet")
-}
-
-// GenerateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
-func GenerateControlPlaneSecurityGroupName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "controlplane-nsg")
-}
-
-// GenerateNodeSecurityGroupName generates a node security group name, based on the cluster name.
-func GenerateNodeSecurityGroupName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-nsg")
-}
-
-// GenerateNodeRouteTableName generates a node route table name, based on the cluster name.
-func GenerateNodeRouteTableName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
-}
-
-// GenerateControlPlaneSubnetName generates a node subnet name, based on the cluster name.
-func GenerateControlPlaneSubnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "controlplane-subnet")
-}
-
-// GenerateNodeSubnetName generates a node subnet name, based on the cluster name.
-func GenerateNodeSubnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
 }
 
 // GenerateInternalLBName generates a internal load balancer name, based on the cluster name.

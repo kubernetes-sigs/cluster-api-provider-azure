@@ -1,0 +1,330 @@
+/*
+Copyright 2020 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha3
+
+import (
+	"encoding/json"
+	"reflect"
+	"testing"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func TestVnetDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name:    "resource group vnet specified",
+			cluster: createValidCluster(),
+			output: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							ResourceGroup: "custom-vnet",
+							Name:          "my-vnet",
+							CidrBlock:     DefaultVnetCIDR,
+						},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "vnet not specified",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							ResourceGroup: "cluster-test",
+							Name:          "cluster-test-vnet",
+							CidrBlock:     DefaultVnetCIDR,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "custom CIDR",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							CidrBlock: "10.0.0.0/16",
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							ResourceGroup: "cluster-test",
+							Name:          "cluster-test-vnet",
+							CidrBlock:     "10.0.0.0/16",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setVnetDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
+
+func TestSubnetDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name: "no subnets",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "cluster-test-controlplane-subnet",
+								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "cluster-test-node-subnet",
+								CidrBlock:     DefaultNodeSubnetCIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets with custom attributes",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:      SubnetControlPlane,
+								Name:      "my-controlplane-subnet",
+								CidrBlock: "10.0.0.16/24",
+							},
+							{
+								Role:      SubnetNode,
+								Name:      "my-node-subnet",
+								CidrBlock: "10.1.0.16/24",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "my-controlplane-subnet",
+								CidrBlock:     "10.0.0.16/24",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "my-node-subnet",
+								CidrBlock:     "10.1.0.16/24",
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets specified",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role: SubnetControlPlane,
+								Name: "cluster-test-controlplane-subnet",
+							},
+							{
+								Role: SubnetNode,
+								Name: "cluster-test-node-subnet",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "cluster-test-controlplane-subnet",
+								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "cluster-test-node-subnet",
+								CidrBlock:     DefaultNodeSubnetCIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "only node subnet specified",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role: SubnetNode,
+								Name: "my-node-subnet",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetNode,
+								Name:          "my-node-subnet",
+								CidrBlock:     DefaultNodeSubnetCIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetControlPlane,
+								Name:          "cluster-test-controlplane-subnet",
+								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setSubnetDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}

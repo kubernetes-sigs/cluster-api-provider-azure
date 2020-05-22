@@ -58,6 +58,13 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.SubnetSpe
 			Tags: converters.MapToTags(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.Tags),
 		}
 	}
+	var rt infrav1.RouteTable
+	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.RouteTable != nil {
+		rt = infrav1.RouteTable{
+			Name: to.String(subnet.SubnetPropertiesFormat.RouteTable.Name),
+			ID:   to.String(subnet.SubnetPropertiesFormat.RouteTable.ID),
+		}
+	}
 	return &infrav1.SubnetSpec{
 		Role:                subnetSpec.Role,
 		InternalLBIPAddress: subnetSpec.InternalLBIPAddress,
@@ -65,6 +72,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.SubnetSpe
 		ID:                  to.String(subnet.ID),
 		CidrBlock:           to.String(subnet.SubnetPropertiesFormat.AddressPrefix),
 		SecurityGroup:       sg,
+		RouteTable:          rt,
 	}, nil
 }
 

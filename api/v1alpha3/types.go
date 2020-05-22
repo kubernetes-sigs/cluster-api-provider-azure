@@ -96,6 +96,12 @@ type SecurityGroup struct {
 	Tags         Tags         `json:"tags,omitempty"`
 }
 
+// RouteTable defines an Azure route table.
+type RouteTable struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 // SecurityGroupProtocol defines the protocol type for a security group rule.
 type SecurityGroupProtocol string
 
@@ -327,18 +333,46 @@ type SubnetSpec struct {
 	Role SubnetRole `json:"role,omitempty"`
 
 	// ID defines a unique identifier to reference this resource.
+	// +optional
 	ID string `json:"id,omitempty"`
 
 	// Name defines a name for the subnet resource.
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
+	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
 	// InternalLBIPAddress is the IP address that will be used as the internal LB private IP.
 	// For the control plane subnet only.
+	// +optional
 	InternalLBIPAddress string `json:"internalLBIPAddress,omitempty"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
+	// +optional
 	SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
+
+	// RouteTable defines the route table that should be attached to this subnet.
+	// +optional
+	RouteTable RouteTable `json:"routeTable,omitempty"`
+}
+
+// GetControlPlaneSubnet returns the cluster control plane subnet.
+func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
+	for _, sn := range n.Subnets {
+		if sn.Role == SubnetControlPlane {
+			return sn
+		}
+	}
+	return nil
+}
+
+// GetNodeSubnet returns the cluster node subnet.
+func (n *NetworkSpec) GetNodeSubnet() *SubnetSpec {
+	for _, sn := range n.Subnets {
+		if sn.Role == SubnetNode {
+			return sn
+		}
+	}
+	return nil
 }
