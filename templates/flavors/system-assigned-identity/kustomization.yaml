@@ -1,3 +1,4 @@
+namespace: default
 resources:
   - ../base
   - system-assigned-identity-md.yaml
