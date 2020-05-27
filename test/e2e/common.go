@@ -1,4 +1,4 @@
-// +build e2eclusterctl
+// +build e2e
 
 /*
 Copyright 2020 The Kubernetes Authors.
@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2eclusterctl
+package e2e
 
 import (
 	"context"

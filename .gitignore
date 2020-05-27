@@ -55,7 +55,7 @@ tilt-settings.json
 # e2e output
 test/e2e/junit.e2e_suite.*.xml
 test/e2e/logs/*
-test/e2eclusterctl/config/azure-dev-envsubst.yaml
+test/e2e/config/azure-dev-envsubst.yaml
 _artifacts
 
 # boilerplate_test output

@@ -74,8 +74,8 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 PULL_POLICY ?= Always
 
 # Allow overriding the e2e configurations
-E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2eclusterctl/config/azure-dev.yaml
-E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2eclusterctl/config/azure-dev-envsubst.yaml
+E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
+E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 E2E_ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_SKIP_RESOURCE_CLEANUP ?= false
 E2E_USE_EXISTING_CLUSTER ?= false
@@ -112,7 +112,7 @@ test-e2e: $(ENVSUBST) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	go test ./test/e2eclusterctl -v -tags=e2eclusterctl -ginkgo.v -ginkgo.trace -count=1 -timeout=90m \
+	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=90m \
 		-e2e.artifacts-folder="$(E2E_ARTIFACTS)" \
 		-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 		-e2e.skip-resource-cleanup="$(E2E_SKIP_RESOURCE_CLEANUP)" \

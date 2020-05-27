@@ -41,7 +41,7 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-      - name: v0.4.4
+      - name: v0.4.0
         value: ../../../config
     files:
       - sourcePath: ../data/infrastructure-azure/cluster-template.yaml
