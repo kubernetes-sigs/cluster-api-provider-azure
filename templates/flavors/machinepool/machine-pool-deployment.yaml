@@ -53,7 +53,7 @@ spec:
     permissions: "0644"
     content: |
       {
-        "cloud": "AzurePublicCloud",
+        "cloud": "${AZURE_ENVIRONMENT}",
         "tenantId": "${AZURE_TENANT_ID}",
         "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
         "aadClientId": "${AZURE_CLIENT_ID}",

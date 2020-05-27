@@ -37,19 +37,20 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newDisksClient(subscriptionID, authorizer)
+func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
+	c := newDisksClient(settings, authorizer)
 	return &AzureClient{c}
 }
 
 // newDisksClient creates a new disks client from subscription ID.
-func newDisksClient(subscriptionID string, authorizer autorest.Authorizer) compute.DisksClient {
-	disksClient := compute.NewDisksClient(subscriptionID)
+func newDisksClient(settings azure.ClientSettings, authorizer autorest.Authorizer) compute.DisksClient {
+	disksClient := compute.NewDisksClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
 	disksClient.Authorizer = authorizer
 	disksClient.AddToUserAgent(azure.UserAgent())
 	return disksClient
 }
 
+// Delete removes the disk client
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
 	future, err := ac.disks.Delete(ctx, resourceGroupName, name)
 	if err != nil {

@@ -364,7 +364,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machineP
 		vmssSpec := &scalesets.Spec{
 			Name: machinePoolScope.Name(),
 		}
-		svc := scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.SubscriptionID)
+		svc := scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.ResourceManagerEndpoint, machinePoolScope.AzureClients.SubscriptionID)
 		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machinePoolScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VMSS")
@@ -449,7 +449,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	return &azureMachinePoolService{
 		machinePoolScope:           machinePoolScope,
 		clusterScope:               clusterScope,
-		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.SubscriptionID),
+		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.ResourceManagerEndpoint, machinePoolScope.AzureClients.SubscriptionID),
 	}
 }
 

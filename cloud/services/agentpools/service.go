@@ -18,6 +18,7 @@ package agentpools
 
 import (
 	"github.com/Azure/go-autorest/autorest"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Service provides operations on azure resources
@@ -26,8 +27,8 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, subscriptionID string) *Service {
+func NewService(authorizer autorest.Authorizer, settings azure.ClientSettings) *Service {
 	return &Service{
-		Client: NewClient(subscriptionID, authorizer),
+		Client: NewClient(settings, authorizer),
 	}
 }

@@ -324,7 +324,7 @@ func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 		r.scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(r.scope.Name(), fmt.Sprintf("%x", h.Sum32()))
 	}
 
-	r.scope.Network().APIServerIP.DNSName = azure.GenerateFQDN(r.scope.Network().APIServerIP.Name, r.scope.Location())
+	r.scope.Network().APIServerIP.DNSName = r.scope.GenerateFQDN()
 	return nil
 }
 

@@ -48,33 +48,33 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VMSS client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
+func NewClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
 	return &AzureClient{
-		scalesetvms: newVirtualMachineScaleSetVMsClient(subscriptionID, authorizer),
-		scalesets:   newVirtualMachineScaleSetsClient(subscriptionID, authorizer),
-		publicIPs:   newPublicIPsClient(subscriptionID, authorizer),
+		scalesetvms: newVirtualMachineScaleSetVMsClient(baseURI, subscriptionID, authorizer),
+		scalesets:   newVirtualMachineScaleSetsClient(baseURI, subscriptionID, authorizer),
+		publicIPs:   newPublicIPsClient(baseURI, subscriptionID, authorizer),
 	}
 }
 
 // newVirtualMachineScaleSetVMsClient creates a new vmss VM client from subscription ID.
-func newVirtualMachineScaleSetVMsClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetVMsClient {
-	c := compute.NewVirtualMachineScaleSetVMsClient(subscriptionID)
+func newVirtualMachineScaleSetVMsClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetVMsClient {
+	c := compute.NewVirtualMachineScaleSetVMsClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
 	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 
 // newVirtualMachineScaleSetsClient creates a new vmss client from subscription ID.
-func newVirtualMachineScaleSetsClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetsClient {
-	c := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
+func newVirtualMachineScaleSetsClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetsClient {
+	c := compute.NewVirtualMachineScaleSetsClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
 	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 
 // newPublicIPsClient creates a new publicIPs client from subscription ID.
-func newPublicIPsClient(subscriptionID string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
-	c := network.NewPublicIPAddressesClient(subscriptionID)
+func newPublicIPsClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
+	c := network.NewPublicIPAddressesClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
 	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c

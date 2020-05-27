@@ -30,8 +30,6 @@ const (
 	DefaultUserName = "capi"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
-	// DefaultAzureDNSZone is the default provided azure dns zone
-	DefaultAzureDNSZone = "cloudapp.azure.com"
 )
 
 const (
@@ -87,11 +85,6 @@ func GenerateNodeOutboundIPName(clusterName string) string {
 // GenerateNodePublicIPName generates a node public IP name, based on the NIC name.
 func GenerateNodePublicIPName(nicName string) string {
 	return fmt.Sprintf("%s-public-ip", nicName)
-}
-
-// GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
-func GenerateFQDN(publicIPName, location string) string {
-	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
 }
 
 // GenerateNICName generates the name of a network interface based on the name of a VM.

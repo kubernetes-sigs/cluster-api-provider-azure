@@ -37,14 +37,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new role assignment client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newRoleAssignmentClient(subscriptionID, authorizer)
+func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
+	c := newRoleAssignmentClient(settings, authorizer)
 	return &AzureClient{c}
 }
 
 // newRoleAssignmentClient creates a role assignments client from subscription ID.
-func newRoleAssignmentClient(subscriptionID string, authorizer autorest.Authorizer) authorization.RoleAssignmentsClient {
-	roleClient := authorization.NewRoleAssignmentsClient(subscriptionID)
+func newRoleAssignmentClient(settings azure.ClientSettings, authorizer autorest.Authorizer) authorization.RoleAssignmentsClient {
+	roleClient := authorization.NewRoleAssignmentsClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
 	roleClient.Authorizer = authorizer
 	roleClient.AddToUserAgent(azure.UserAgent())
 	return roleClient

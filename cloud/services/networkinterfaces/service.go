@@ -17,6 +17,7 @@ limitations under the License.
 package networkinterfaces
 
 import (
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
@@ -41,15 +42,19 @@ type Service struct {
 
 // NewService creates a new service.
 func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
+	settings := azure.ClientSettings{
+		BaseURI:        scope.ResourceManagerEndpoint,
+		SubscriptionID: scope.SubscriptionID,
+	}
 	return &Service{
 		Scope:                       scope,
 		MachineScope:                machineScope,
-		Client:                      NewClient(scope.SubscriptionID, scope.Authorizer),
-		SubnetsClient:               subnets.NewClient(scope.SubscriptionID, scope.Authorizer),
-		PublicLoadBalancersClient:   publicloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
-		InternalLoadBalancersClient: internalloadbalancers.NewClient(scope.SubscriptionID, scope.Authorizer),
-		PublicIPsClient:             publicips.NewClient(scope.SubscriptionID, scope.Authorizer),
-		InboundNATRulesClient:       inboundnatrules.NewClient(scope.SubscriptionID, scope.Authorizer),
-		ResourceSkusClient:          resourceskus.NewClient(scope.SubscriptionID, scope.Authorizer),
+		Client:                      NewClient(settings, scope.Authorizer),
+		SubnetsClient:               subnets.NewClient(settings, scope.Authorizer),
+		PublicLoadBalancersClient:   publicloadbalancers.NewClient(settings, scope.Authorizer),
+		InternalLoadBalancersClient: internalloadbalancers.NewClient(settings, scope.Authorizer),
+		PublicIPsClient:             publicips.NewClient(settings, scope.Authorizer),
+		InboundNATRulesClient:       inboundnatrules.NewClient(settings, scope.Authorizer),
+		ResourceSkusClient:          resourceskus.NewClient(settings.BaseURI, settings.SubscriptionID, scope.Authorizer),
 	}
 }

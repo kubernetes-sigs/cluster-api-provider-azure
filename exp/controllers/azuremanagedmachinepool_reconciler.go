@@ -46,8 +46,8 @@ type NodeLister interface {
 func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
 	return &azureManagedMachinePoolReconciler{
 		kubeclient:    scope.Client,
-		agentPoolsSvc: agentpools.NewService(scope.AzureClients.Authorizer, scope.AzureClients.SubscriptionID),
-		scaleSetsSvc:  scalesets.NewService(scope.AzureClients.Authorizer, scope.AzureClients.SubscriptionID),
+		agentPoolsSvc: agentpools.NewService(scope.AzureClients.Authorizer, azure.ClientSettings{BaseURI: scope.AzureClients.ResourceManagerEndpoint, SubscriptionID: scope.AzureClients.SubscriptionID}),
+		scaleSetsSvc:  scalesets.NewService(scope.AzureClients.Authorizer, scope.AzureClients.ResourceManagerEndpoint, scope.AzureClients.SubscriptionID),
 	}
 }
 
