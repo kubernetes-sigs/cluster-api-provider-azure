@@ -59,6 +59,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	}
 
 	dst.Status.FailureDomains = restored.Status.FailureDomains
+	dst.Spec.NetworkSpec.PublicIP = restored.Spec.NetworkSpec.PublicIP
 
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		if restoredSubnet != nil {

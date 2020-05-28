@@ -65,6 +65,7 @@ func TestReconcilePublicIP(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("testlocation")
+				s.ClusterName().AnyTimes().Return("foo")
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{}))
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip-2", gomock.AssignableToTypeOf(network.PublicIPAddress{}))
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip-3", gomock.AssignableToTypeOf(network.PublicIPAddress{}))
@@ -108,7 +109,7 @@ func TestReconcilePublicIP(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(Equal(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
@@ -136,8 +137,10 @@ func TestDeletePublicIP(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-publicip")
-				m.Delete(context.TODO(), "my-rg", "my-publicip-2")
+
+				m.Delete(context.TODO(), "my-rg", "my-publicip").Return(nil)
+
+				m.Delete(context.TODO(), "my-rg", "my-publicip-2").Return(nil)
 			},
 		},
 		{
@@ -173,6 +176,7 @@ func TestDeletePublicIP(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -192,7 +196,7 @@ func TestDeletePublicIP(t *testing.T) {
 			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
+				g.Expect(err.Error()).To(Equal(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

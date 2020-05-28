@@ -28,32 +28,33 @@ import (
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
-	for _, ip := range s.Scope.PublicIPSpecs() {
-		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
-		err := s.Client.CreateOrUpdate(
-			ctx,
-			s.Scope.ResourceGroup(),
-			ip.Name,
-			network.PublicIPAddress{
-				Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-				Name:     to.StringPtr(ip.Name),
-				Location: to.StringPtr(s.Scope.Location()),
-				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-					PublicIPAddressVersion:   network.IPv4,
-					PublicIPAllocationMethod: network.Static,
-					DNSSettings: &network.PublicIPAddressDNSSettings{
-						DomainNameLabel: to.StringPtr(strings.ToLower(ip.Name)),
-						Fqdn:            to.StringPtr(ip.DNSName),
-					},
+	for _, publicIPSpec := range s.Scope.PublicIPSpecs() {
+		s.Scope.V(2).Info("creating public IP", "public-ip", publicIPSpec.Name)
+
+		ipSpec := network.PublicIPAddress{
+			Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+			Name:     to.StringPtr(publicIPSpec.Name),
+			Location: to.StringPtr(s.Scope.Location()),
+			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+				PublicIPAddressVersion:   network.IPv4,
+				PublicIPAllocationMethod: network.Static,
+				DNSSettings: &network.PublicIPAddressDNSSettings{
+					DomainNameLabel: to.StringPtr(strings.ToLower(publicIPSpec.Name)),
+					Fqdn:            to.StringPtr(publicIPSpec.DNSName),
 				},
 			},
-		)
+		}
 
-		if err != nil {
+		if err := s.Client.CreateOrUpdate(
+			ctx,
+			s.Scope.ResourceGroup(),
+			publicIPSpec.Name,
+			ipSpec,
+		); err != nil {
 			return errors.Wrap(err, "cannot create public IP")
 		}
 
-		s.Scope.V(2).Info("successfully created public IP", "public ip", ip.Name)
+		s.Scope.V(2).Info("successfully created public IP", "public ip", publicIPSpec.Name)
 	}
 
 	return nil
@@ -61,18 +62,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the public IP with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
-	for _, ip := range s.Scope.PublicIPSpecs() {
-		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			return nil
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete public IP %s in resource group %s", ip.Name, s.Scope.ResourceGroup())
+	for _, publicIPSpec := range s.Scope.PublicIPSpecs() {
+		s.Scope.V(2).Info("deleting public IP", "public ip", publicIPSpec.Name)
+
+		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), publicIPSpec.Name)
+		if err == nil {
+			s.Scope.V(2).Info("deleted public IP", "public ip", publicIPSpec.Name)
+			continue
 		}
 
-		s.Scope.V(2).Info("deleted public IP", "public ip", ip.Name)
+		if azure.ResourceNotFound(err) {
+			s.Scope.V(2).Info("tried to delete public IP which didn't exist", "public ip", publicIPSpec.Name)
+			continue
+		}
+
+		return errors.Wrapf(err, "failed to delete public IP %s in resource group %s", publicIPSpec.Name, s.Scope.ResourceGroup())
 	}
+
 	return nil
 }

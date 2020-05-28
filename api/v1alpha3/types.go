@@ -38,6 +38,12 @@ type Network struct {
 
 // NetworkSpec specifies what the Azure networking resources should look like.
 type NetworkSpec struct {
+	// PublicIP is the public IP to attach to the Azure load balanacer.
+	// If users provide this field, we expect name to be set and the IP to be in the cluster resource group.
+	// We will expect the IP to exist and not create it.
+	// +optional
+	PublicIP *PublicIPSpec `json:"publicIp,omitempty"`
+
 	// Vnet is the configuration for the Azure virtual network.
 	// +optional
 	Vnet VnetSpec `json:"vnet,omitempty"`
@@ -141,9 +147,17 @@ type IngressRules []*IngressRule
 // PublicIP defines an Azure public IP address.
 type PublicIP struct {
 	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
 	IPAddress string `json:"ipAddress,omitempty"`
 	DNSName   string `json:"dnsName,omitempty"`
+	Name      string `json:"name,omitempty"`
+}
+
+// PublicIPSpec defines the inputs to create an Azure public IP address.
+type PublicIPSpec struct {
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// +kubebuilder:validation:MinLength=1
+	DNSName string `json:"dnsName"`
 }
 
 // LoadBalancer defines an Azure load balancer.

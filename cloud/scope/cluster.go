@@ -19,6 +19,8 @@ package scope
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -104,8 +106,18 @@ func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
 }
 
-// PublicIPSpec returns the public IP specs.
+// PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
+	// If user provides an API server IP, do not return it return it here.
+	// We expect it to be created by them and will not reconcile it.
+	if s.AzureCluster.Spec.NetworkSpec.PublicIP != nil && s.AzureCluster.Spec.NetworkSpec.PublicIP.Name != "" {
+		return []azure.PublicIPSpec{
+			{
+				Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+			},
+		}
+	}
+
 	return []azure.PublicIPSpec{
 		{
 			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
@@ -230,4 +242,23 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
 	}
 	s.AzureCluster.Status.FailureDomains[id] = spec
+}
+
+// SetAPIServerIP will set the spec for a for a given key
+func (s *ClusterScope) SetAPIServerIP() error {
+	// If IP provided by name, expect to exist and don't precreate.
+	if s.AzureCluster.Spec.NetworkSpec.PublicIP != nil {
+		s.AzureCluster.Status.Network.APIServerIP.Name = s.AzureCluster.Spec.NetworkSpec.PublicIP.Name
+		s.AzureCluster.Status.Network.APIServerIP.DNSName = s.AzureCluster.Spec.NetworkSpec.PublicIP.DNSName
+	} else if s.Network().APIServerIP.Name == "" {
+		// otherwise, generate
+		h := fnv.New32a()
+		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), s.ClusterName()))); err != nil {
+			return errors.Wrapf(err, "failed to write hash sum for api server ip")
+		}
+		s.AzureCluster.Status.Network.APIServerIP.Name = azure.GeneratePublicIPName(s.ClusterName(), fmt.Sprintf("%x", h.Sum32()))
+		s.AzureCluster.Status.Network.APIServerIP.DNSName = s.GenerateFQDN()
+	}
+
+	return nil
 }

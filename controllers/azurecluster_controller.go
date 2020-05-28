@@ -168,7 +168,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 
 	if azureCluster.Status.Network.APIServerIP.DNSName == "" {
 		clusterScope.Info("Waiting for Load Balancer to exist")
-		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.LoadBalancerProvisioningReason, clusterv1.ConditionSeverityWarning, err.Error())
+		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.LoadBalancerProvisioningReason, clusterv1.ConditionSeverityWarning, infrav1.LoadBalancerProvisioningReason)
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 

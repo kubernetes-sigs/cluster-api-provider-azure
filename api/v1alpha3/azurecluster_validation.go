@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"regexp"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
@@ -34,16 +32,8 @@ const (
 )
 
 // validateCluster validates a cluster
-func (c *AzureCluster) validateCluster() error {
-	var allErrs field.ErrorList
-	allErrs = append(allErrs, c.validateClusterSpec()...)
-	if len(allErrs) == 0 {
-		return nil
-	}
-
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "AzureCluster"},
-		c.Name, allErrs)
+func (c *AzureCluster) validateCluster() field.ErrorList {
+	return c.validateClusterSpec()
 }
 
 // validateClusterSpec validates a ClusterSpec
@@ -156,6 +146,21 @@ func validateIngressRule(ingressRule *IngressRule, fldPath *field.Path) *field.E
 		return field.Invalid(fldPath, ingressRule.Priority,
 			fmt.Sprintf("ingress priorities should be between 100 and 4096"))
 	}
+	return nil
+}
 
+func validateControlPlaneIP(old, new *PublicIPSpec, fldPath *field.Path) *field.Error {
+	if old == nil && new != nil {
+		return field.Invalid(fldPath, new, fmt.Sprintf("setting control plane endpoint after cluster creation is not allowed"))
+	}
+	if old != nil && new == nil {
+		return field.Invalid(fldPath, new, fmt.Sprintf("removing control plane endpoint after cluster creation is not allowed"))
+	}
+	if old != nil && new != nil && old.Name != new.Name {
+		return field.Invalid(fldPath, new, fmt.Sprintf("changing control plane endpoint after cluster creation is not allowed"))
+	}
+	if new != nil && new.Name == "" {
+		return field.Invalid(fldPath, new, fmt.Sprintf("control plane endpoint IP name must be non-empty"))
+	}
 	return nil
 }

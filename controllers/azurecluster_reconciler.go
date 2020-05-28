@@ -18,8 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"hash/fnv"
 	"strconv"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -72,8 +70,9 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 // Reconcile reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 	klog.V(2).Infof("reconciling cluster %s", r.scope.ClusterName())
-	if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
-		return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
+
+	if err := r.scope.SetAPIServerIP(); err != nil {
+		return errors.Wrap(err, "failed to set api server IP")
 	}
 
 	if err := r.setFailureDomainsForLocation(ctx); err != nil {
@@ -234,20 +233,6 @@ func (r *azureClusterReconciler) deleteNSG(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-// CreateOrUpdateNetworkAPIServerIP creates or updates public ip name and dns name
-func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
-	if r.scope.Network().APIServerIP.Name == "" {
-		h := fnv.New32a()
-		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID(), r.scope.ResourceGroup(), r.scope.ClusterName()))); err != nil {
-			return errors.Wrapf(err, "failed to write hash sum for api server ip")
-		}
-		r.scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(r.scope.ClusterName(), fmt.Sprintf("%x", h.Sum32()))
-	}
-
-	r.scope.Network().APIServerIP.DNSName = r.scope.GenerateFQDN()
 	return nil
 }
 

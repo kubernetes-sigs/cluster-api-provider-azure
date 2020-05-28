@@ -943,6 +943,7 @@ func autoConvert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec(in *NetworkSpec, o
 }
 
 func autoConvert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec(in *v1alpha3.NetworkSpec, out *NetworkSpec, s conversion.Scope) error {
+	// WARNING: in.PublicIP requires manual conversion: does not exist in peer-type
 	if err := Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
@@ -1004,9 +1005,9 @@ func Convert_v1alpha2_PublicIP_To_v1alpha3_PublicIP(in *PublicIP, out *v1alpha3.
 
 func autoConvert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(in *v1alpha3.PublicIP, out *PublicIP, s conversion.Scope) error {
 	out.ID = in.ID
-	out.Name = in.Name
 	out.IPAddress = in.IPAddress
 	out.DNSName = in.DNSName
+	out.Name = in.Name
 	return nil
 }
 

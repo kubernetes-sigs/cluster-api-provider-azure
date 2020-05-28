@@ -88,13 +88,14 @@ type MachineScope struct {
 
 // PublicIPSpec returns the public IP specs.
 func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
-	var spec []azure.PublicIPSpec
-	if m.AzureMachine.Spec.AllocatePublicIP == true {
-		spec = append(spec, azure.PublicIPSpec{
-			Name: azure.GenerateNodePublicIPName(m.Name()),
-		})
+	if m.AzureMachine.Spec.AllocatePublicIP {
+		return []azure.PublicIPSpec{
+			{
+				Name: azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name())),
+			},
+		}
 	}
-	return spec
+	return nil
 }
 
 // NICSpecs returns the network interface specs.

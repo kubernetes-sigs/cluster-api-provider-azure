@@ -17,7 +17,9 @@ limitations under the License.
 package v1alpha3
 
 import (
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -48,15 +50,51 @@ func (c *AzureCluster) Default() {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (c *AzureCluster) ValidateCreate() error {
 	clusterlog.Info("validate create", "name", c.Name)
+	allErrs := c.validateCluster()
 
-	return c.validateCluster()
+	// validation is smart/lazy enough to work with the same object compared to itself
+	// it works well for update to take both objects.
+	if err := validateControlPlaneIP(
+		c.Spec.NetworkSpec.PublicIP,
+		c.Spec.NetworkSpec.PublicIP,
+		field.NewPath("spec").Child("networkSpec").Child("publicIp"),
+	); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (c *AzureCluster) ValidateUpdate(old runtime.Object) error {
+func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	clusterlog.Info("validate update", "name", c.Name)
 
-	return c.validateCluster()
+	old := oldRaw.(*AzureCluster)
+
+	var allErrs field.ErrorList
+
+	// validate cluster may return a list of errors
+	if errs := c.validateCluster(); errs != nil {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if err := validateControlPlaneIP(
+		old.Spec.NetworkSpec.PublicIP,
+		c.Spec.NetworkSpec.PublicIP,
+		field.NewPath("spec").Child("networkSpec").Child("publicIp"),
+	); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type

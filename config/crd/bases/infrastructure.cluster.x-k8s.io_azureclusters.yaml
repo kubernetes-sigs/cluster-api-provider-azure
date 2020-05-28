@@ -465,6 +465,22 @@ spec:
                 description: NetworkSpec encapsulates all things related to Azure
                   network.
                 properties:
+                  publicIp:
+                    description: PublicIP is the public IP to attach to the Azure
+                      load balanacer. If users provide this field, we expect name
+                      to be set and the IP to be in the cluster resource group. We
+                      will expect the IP to exist and not create it.
+                    properties:
+                      dnsName:
+                        minLength: 1
+                        type: string
+                      name:
+                        minLength: 1
+                        type: string
+                    required:
+                    - dnsName
+                    - name
+                    type: object
                   subnets:
                     description: Subnets is the configuration for the control-plane
                       subnet and the node subnet.
