@@ -33,8 +33,42 @@ source "${REPO_ROOT}/hack/ensure-kind.sh"
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=../hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
+# shellcheck source=../hack/parse-prow-creds.sh
+source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
-export REGISTRY=e2e
+# Verify the required Environment Variables are present.
+: "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+: "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
+
+get_random_region() {
+    local REGIONS=("eastus" "eastus2" "southcentralus" "westus2" "westeurope")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
+}
+
+export REGISTRY="e2e"
+export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
+export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
+export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
+
+# Generate SSH key.
+AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
+if ! [ -n "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
+    SSH_KEY_FILE=.sshkey
+    rm -f "${SSH_KEY_FILE}" 2>/dev/null
+    ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
+    AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
+fi
+export AZURE_SSH_PUBLIC_KEY=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
+
+# timestamp is in RFC-3339 format to match kubetest
+export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
 
 make test-e2e
 test_status="${?}"
