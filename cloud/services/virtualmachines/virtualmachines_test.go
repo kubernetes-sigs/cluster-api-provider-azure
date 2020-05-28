@@ -499,7 +499,7 @@ func TestReconcileVM(t *testing.T) {
 				Location:               "eastus",
 				Image:                  image,
 				Identity:               "UserAssigned",
-				UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "azure:////subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1"}},
+				UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "azure:///subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1"}},
 			},
 			azureCluster: &infrav1.AzureCluster{
 				Spec: infrav1.AzureClusterSpec{

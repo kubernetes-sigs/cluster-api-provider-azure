@@ -235,11 +235,11 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	}
 
 	// Make sure Spec.ProviderID is always set.
-	machinePoolScope.AzureMachinePool.Spec.ProviderID = fmt.Sprintf("azure:////%s", vmss.ID)
+	machinePoolScope.AzureMachinePool.Spec.ProviderID = fmt.Sprintf("azure:///%s", vmss.ID)
 	providerIDList := make([]string, len(vmss.Instances))
 	var readyCount int32
 	for i, vm := range vmss.Instances {
-		providerIDList[i] = fmt.Sprintf("azure:////%s", vm.ID)
+		providerIDList[i] = fmt.Sprintf("azure:///%s", vm.ID)
 		if vm.State == infrav1.VMStateSucceeded {
 			readyCount++
 		}

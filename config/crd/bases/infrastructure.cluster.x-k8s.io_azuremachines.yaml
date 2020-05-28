@@ -395,7 +395,7 @@ spec:
                   properties:
                     providerID:
                       description: 'ProviderID is the identification ID of the user-assigned
-                        Identity, the format of an identity is: ''azure:////subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'''
+                        Identity, the format of an identity is: ''azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'''
                       type: string
                   required:
                   - providerID

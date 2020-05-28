@@ -230,7 +230,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	}
 
 	// Make sure Spec.ProviderID is always set.
-	machineScope.SetProviderID(fmt.Sprintf("azure:////%s", vm.ID))
+	machineScope.SetProviderID(fmt.Sprintf("azure:///%s", vm.ID))
 
 	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
 

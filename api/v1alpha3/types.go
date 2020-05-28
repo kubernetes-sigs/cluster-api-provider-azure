@@ -294,7 +294,7 @@ const (
 // by the user to be assigned to Azure resources.
 type UserAssignedIdentity struct {
 	// ProviderID is the identification ID of the user-assigned Identity, the format of an identity is:
-	// 'azure:////subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'
+	// 'azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'
 	ProviderID string `json:"providerID"`
 }
 
