@@ -67,30 +67,12 @@ spec:
           name: cloud-config
           readOnly: true
     files:
-    - content: |
-        {
-          "cloud": "AzurePublicCloud",
-          "tenantId": "${AZURE_TENANT_ID}",
-          "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-          "aadClientId": "${AZURE_CLIENT_ID}",
-          "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-          "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-          "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-          "location": "${AZURE_LOCATION}",
-          "vmType": "vmss",
-          "vnetName": "${CLUSTER_NAME}-vnet",
-          "vnetResourceGroup": "${AZURE_RESOURCE_GROUP}",
-          "subnetName": "${CLUSTER_NAME}-node-subnet",
-          "routeTableName": "${CLUSTER_NAME}-node-routetable",
-          "userAssignedID": "${CLUSTER_NAME}",
-          "loadBalancerSku": "standard",
-          "maximumLoadBalancerRuleCount": 250,
-          "useManagedIdentityExtension": false,
-          "useInstanceMetadata": true
-        }
+    - contentFrom:
+        secret:
+          key: standard
+          name: azure-secret
       owner: root:root
       path: /etc/kubernetes/azure.json
-      permissions: "0644"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -123,6 +105,15 @@ spec:
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: v1
+data:
+  standard: ${AZURE_STANDARD_JSON_B64}
+  vmss: ${AZURE_VMSS_JSON_B64}
+kind: Secret
+metadata:
+  name: azure-secret
+  namespace: default
 ---
 apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool
@@ -169,26 +160,10 @@ metadata:
   namespace: default
 spec:
   files:
-  - content: |
-      {
-        "cloud": "${AZURE_ENVIRONMENT}",
-        "tenantId": "${AZURE_TENANT_ID}",
-        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-        "aadClientId": "${AZURE_CLIENT_ID}",
-        "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-        "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-        "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-        "location": "${AZURE_LOCATION}",
-        "vmType": "vmss",
-        "vnetName": "${CLUSTER_NAME}-vnet",
-        "vnetResourceGroup": "${AZURE_RESOURCE_GROUP}",
-        "subnetName": "${CLUSTER_NAME}-node-subnet",
-        "routeTableName": "${CLUSTER_NAME}-node-routetable",
-        "loadBalancerSku": "standard",
-        "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": false,
-        "useInstanceMetadata": true
-      }
+  - contentFrom:
+      secret:
+        key: vmss
+        name: azure-secret
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"

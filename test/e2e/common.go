@@ -20,7 +20,10 @@ package e2e
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -36,6 +39,8 @@ const (
 	CNIPath            = "CNI"
 	AzureResourceGroup = "AZURE_RESOURCE_GROUP"
 	AzureVNetName      = "AZURE_VNET_NAME"
+	AzureStandardJson  = "AZURE_STANDARD_JSON_B64"
+	AzureVMSSJson      = "AZURE_VMSS_JSON_B64"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -80,4 +85,51 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		})
 	}
 	cancelWatches()
+}
+
+type cloudProviderConfig struct {
+	Cloud                        string `json:"cloud"`
+	TenantID                     string `json:"tenantId"`
+	SubscriptionID               string `json:"subscriptionId"`
+	AadClientID                  string `json:"aadClientId"`
+	AadClientSecret              string `json:"aadClientSecret"`
+	ResourceGroup                string `json:"resourceGroup"`
+	SecurityGroupName            string `json:"securityGroupName"`
+	Location                     string `json:"location"`
+	VMType                       string `json:"vmType"`
+	VnetName                     string `json:"vnetName"`
+	VnetResourceGroup            string `json:"vnetResourceGroup"`
+	SubnetName                   string `json:"subnetName"`
+	RouteTableName               string `json:"routeTableName"`
+	LoadBalancerSku              string `json:"loadBalancerSku"`
+	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
+	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
+	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
+}
+
+func getCloudProviderConfig(cluster, vmType string) (string, error) {
+	config := &cloudProviderConfig{
+		Cloud:                        os.Getenv("AZURE_ENVIRONMENT"),
+		TenantID:                     os.Getenv("AZURE_TENANT_ID"),
+		SubscriptionID:               os.Getenv("AZURE_SUBSCRIPTION_ID"),
+		AadClientID:                  os.Getenv("AZURE_CLIENT_ID"),
+		AadClientSecret:              os.Getenv("AZURE_CLIENT_SECRET"),
+		ResourceGroup:                cluster,
+		SecurityGroupName:            fmt.Sprintf("%s-node-nsg", cluster),
+		Location:                     os.Getenv("AZURE_LOCATION"),
+		VMType:                       "standard",
+		VnetName:                     fmt.Sprintf("%s-vnet", cluster),
+		VnetResourceGroup:            cluster,
+		SubnetName:                   fmt.Sprintf("%s-node-subnet", cluster),
+		RouteTableName:               fmt.Sprintf("%s-node-routetable", cluster),
+		LoadBalancerSku:              vmType,
+		MaximumLoadBalancerRuleCount: 250,
+		UseManagedIdentityExtension:  false,
+		UseInstanceMetadata:          true,
+	}
+	b, err := json.Marshal(config)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(b), err
 }
