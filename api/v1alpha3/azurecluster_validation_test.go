@@ -384,6 +384,31 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 	})
 }
 
+func TestSubnetNamesNotUnique(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		name    string
+		subnets Subnets
+	}
+
+	testCase := test{
+		name:    "subnets - names not unique",
+		subnets: createValidSubnets(),
+	}
+
+	testCase.subnets[0].Name = "subnet-name"
+	testCase.subnets[1].Name = "subnet-name"
+
+	t.Run(testCase.name, func(t *testing.T) {
+		errs := validateSubnets(testCase.subnets,
+			field.NewPath("spec").Child("networkSpec").Child("subnets"))
+		g.Expect(errs).To(HaveLen(1))
+		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeDuplicate))
+		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
+	})
+}
+
 func TestSubnetNameValid(t *testing.T) {
 	g := NewWithT(t)
 
