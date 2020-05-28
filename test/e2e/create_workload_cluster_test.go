@@ -56,10 +56,14 @@ var _ = Describe("Workoad cluster creation", func() {
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
 
 		clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
+		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
+		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		cleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
+		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
 	})
 
 	Context("Create single controlplane cluster", func() {

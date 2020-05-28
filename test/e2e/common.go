@@ -32,8 +32,10 @@ import (
 
 // Test suite constants for e2e config variables
 const (
-	KubernetesVersion = "KUBERNETES_VERSION"
-	CNIPath           = "CNI"
+	KubernetesVersion  = "KUBERNETES_VERSION"
+	CNIPath            = "CNI"
+	AzureResourceGroup = "AZURE_RESOURCE_GROUP"
+	AzureVNetName      = "AZURE_VNET_NAME"
 )
 
 func Byf(format string, a ...interface{}) {

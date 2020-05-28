@@ -78,11 +78,6 @@ func init() {
 }
 
 func TestE2E(t *testing.T) {
-	// If running in prow, make sure to use the artifacts folder that will be reported in test grid (ignoring the value provided by flag).
-	if prowArtifactFolder, exists := os.LookupEnv("ARTIFACTS"); exists {
-		artifactFolder = prowArtifactFolder
-	}
-
 	RegisterFailHandler(Fail)
 	junitPath := filepath.Join(artifactFolder, fmt.Sprintf("junit.e2e_suite.%d.xml", config.GinkgoConfig.ParallelNode))
 	junitReporter := reporters.NewJUnitReporter(junitPath)

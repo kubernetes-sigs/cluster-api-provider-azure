@@ -44,10 +44,10 @@ providers:
       - name: v0.4.0
         value: ../../../config
     files:
-      - sourcePath: ../data/infrastructure-azure/cluster-template.yaml
+      - sourcePath: ../../../templates/cluster-template.yaml
 
 variables:
-  KUBERNETES_VERSION: "v1.17.4"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.17.4}"
   CNI: "../../templates/addons/calico.yaml"
 
 intervals:

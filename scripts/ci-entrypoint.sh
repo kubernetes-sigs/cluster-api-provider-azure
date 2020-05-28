@@ -156,7 +156,7 @@ ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs"
 
 # create cluster
-if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
+if [[ -z "${SKIP_CREATE_WORKLOAD_CLUSTER:-}" ]]; then
     create_cluster
 fi
 
