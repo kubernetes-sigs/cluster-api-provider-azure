@@ -17,13 +17,13 @@ limitations under the License.
 package azure
 
 import (
+	"errors"
+
 	"github.com/Azure/go-autorest/autorest"
 )
 
 // ResourceNotFound parses the error to check if it's a resource not found
 func ResourceNotFound(err error) bool {
-	if derr, ok := err.(autorest.DetailedError); ok && derr.StatusCode == 404 {
-		return true
-	}
-	return false
+	derr := autorest.DetailedError{}
+	return errors.As(err, &derr) && derr.StatusCode == 404
 }
