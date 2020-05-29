@@ -48,6 +48,10 @@ func (m *AzureMachine) ValidateCreate() error {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateOSDisk(m.Spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}

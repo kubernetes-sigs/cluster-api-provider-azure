@@ -18,7 +18,9 @@ package v1alpha3
 
 import (
 	"encoding/base64"
+	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -49,5 +51,40 @@ func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentetie
 		allErrs = append(allErrs, field.Required(fldPath, "must be specified for the 'UserAssigned' identity type"))
 	}
 
+	return allErrs
+}
+
+// ValidateOSDisk validates the OSDisk spec
+func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if osDisk.DiskSizeGB <= 0 || osDisk.DiskSizeGB > 2048 {
+		allErrs = append(allErrs, field.Invalid(fieldPath.Child("DiskSizeGB"), "", "the Disk size should be a value between 1 and 2048"))
+	}
+
+	if osDisk.OSType == "" {
+		allErrs = append(allErrs, field.Required(fieldPath.Child("OSType"), "the OS type cannot be empty"))
+	}
+
+	allErrs = append(allErrs, validateStorageAccountType(osDisk.ManagedDisk.StorageAccountType, fieldPath)...)
+
+	return allErrs
+}
+
+func validateStorageAccountType(storageAccountType string, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	storageAccTypeChildPath := fieldPath.Child("ManagedDisk").Child("StorageAccountType")
+
+	if storageAccountType == "" {
+		allErrs = append(allErrs, field.Required(storageAccTypeChildPath, "the Storage Account Type for Managed Disk cannot be empty"))
+		return allErrs
+	}
+
+	for _, possibleStorageAccountType := range compute.PossibleDiskStorageAccountTypesValues() {
+		if string(possibleStorageAccountType) == storageAccountType {
+			return allErrs
+		}
+	}
+	allErrs = append(allErrs, field.Invalid(storageAccTypeChildPath, "", fmt.Sprintf("allowed values are %v", compute.PossibleDiskStorageAccountTypesValues())))
 	return allErrs
 }
