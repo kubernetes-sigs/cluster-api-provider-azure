@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1alpha3exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
+	version "sigs.k8s.io/cluster-api-provider-azure/version"
 	capifeature "sigs.k8s.io/cluster-api/feature"
 
 	"sigs.k8s.io/cluster-api-provider-azure/feature"
@@ -278,7 +279,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	setupLog.Info("starting manager", "version", version.Get().String())
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)

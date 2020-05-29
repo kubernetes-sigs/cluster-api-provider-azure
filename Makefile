@@ -80,6 +80,9 @@ E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
 
+# Build time versioning details.
+LDFLAGS := $(shell hack/version.sh)
+
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
 
@@ -130,7 +133,7 @@ binaries: manager ## Builds and installs all binaries
 
 .PHONY: manager
 manager: ## Build manager binary.
-	go build -o $(BIN_DIR)/manager .
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/manager .
 
 ## --------------------------------------
 ## Tooling Binaries
@@ -310,7 +313,7 @@ release-binary: $(RELEASE_DIR)
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
 		golang:1.13.8 \
-		go build -a -ldflags '-extldflags "-static"' \
+		go build -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
 .PHONY: release-staging
