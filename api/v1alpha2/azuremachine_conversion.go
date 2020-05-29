@@ -42,6 +42,9 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	if len(restored.Spec.UserAssignedIdentities) > 0 {
 		dst.Spec.UserAssignedIdentities = restored.Spec.UserAssignedIdentities
 	}
+	if restored.Spec.AcceleratedNetworking != nil {
+		dst.Spec.AcceleratedNetworking = restored.Spec.AcceleratedNetworking
+	}
 
 	dst.Spec.FailureDomain = restored.Spec.FailureDomain
 

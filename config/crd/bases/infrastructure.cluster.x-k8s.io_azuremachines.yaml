@@ -233,6 +233,13 @@ spec:
           spec:
             description: AzureMachineSpec defines the desired state of AzureMachine
             properties:
+              acceleratedNetworking:
+                description: AcceleratedNetworking enables or disables Azure accelerated
+                  networking. If omitted, it will be set based on whether the requested
+                  VMSize supports accelerated networking. If AcceleratedNetworking
+                  is set to true with a VMSize that does not support it, Azure will
+                  return an error.
+                type: boolean
               additionalTags:
                 additionalProperties:
                   type: string

@@ -41,6 +41,12 @@ type (
 
 		// SSHPublicKey is the SSH public key string base64 encoded to add to a Virtual Machine
 		SSHPublicKey string `json:"sshPublicKey"`
+
+		// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
+		// whether the requested VMSize supports accelerated networking.
+		// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
+		// +optional
+		AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
