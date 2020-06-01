@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newLoadBalancersClient(subscriptionID string, authorizer autorest.Authorizer) network.LoadBalancersClient {
 	loadBalancersClient := network.NewLoadBalancersClient(subscriptionID)
 	loadBalancersClient.Authorizer = authorizer
-	loadBalancersClient.AddToUserAgent(azure.UserAgent)
+	loadBalancersClient.AddToUserAgent(azure.UserAgent())
 	return loadBalancersClient
 }
 

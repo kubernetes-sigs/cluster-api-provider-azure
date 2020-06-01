@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newInterfacesClient(subscriptionID string, authorizer autorest.Authorizer) network.InterfacesClient {
 	nicClient := network.NewInterfacesClient(subscriptionID)
 	nicClient.Authorizer = authorizer
-	nicClient.AddToUserAgent(azure.UserAgent)
+	nicClient.AddToUserAgent(azure.UserAgent())
 	return nicClient
 }
 

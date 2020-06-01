@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newVirtualMachinesClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachinesClient {
 	vmClient := compute.NewVirtualMachinesClient(subscriptionID)
 	vmClient.Authorizer = authorizer
-	vmClient.AddToUserAgent(azure.UserAgent)
+	vmClient.AddToUserAgent(azure.UserAgent())
 	return vmClient
 }
 

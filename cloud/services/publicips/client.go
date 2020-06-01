@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newPublicIPAddressesClient(subscriptionID string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
 	publicIPsClient := network.NewPublicIPAddressesClient(subscriptionID)
 	publicIPsClient.Authorizer = authorizer
-	publicIPsClient.AddToUserAgent(azure.UserAgent)
+	publicIPsClient.AddToUserAgent(azure.UserAgent())
 	return publicIPsClient
 }
 

@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newGroupsClient(subscriptionID string, authorizer autorest.Authorizer) resources.GroupsClient {
 	groupsClient := resources.NewGroupsClient(subscriptionID)
 	groupsClient.Authorizer = authorizer
-	groupsClient.AddToUserAgent(azure.UserAgent)
+	groupsClient.AddToUserAgent(azure.UserAgent())
 	return groupsClient
 }
 

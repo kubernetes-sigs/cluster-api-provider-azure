@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newSubnetsClient(subscriptionID string, authorizer autorest.Authorizer) network.SubnetsClient {
 	subnetsClient := network.NewSubnetsClient(subscriptionID)
 	subnetsClient.Authorizer = authorizer
-	subnetsClient.AddToUserAgent(azure.UserAgent)
+	subnetsClient.AddToUserAgent(azure.UserAgent())
 	return subnetsClient
 }
 

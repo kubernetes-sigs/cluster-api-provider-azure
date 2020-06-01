@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newInboundNatRulesClient(subscriptionID string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
 	inboundNatRulesClient := network.NewInboundNatRulesClient(subscriptionID)
 	inboundNatRulesClient.Authorizer = authorizer
-	inboundNatRulesClient.AddToUserAgent(azure.UserAgent)
+	inboundNatRulesClient.AddToUserAgent(azure.UserAgent())
 	return inboundNatRulesClient
 }
 

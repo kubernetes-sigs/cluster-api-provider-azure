@@ -59,7 +59,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newVirtualMachineScaleSetVMsClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetVMsClient {
 	c := compute.NewVirtualMachineScaleSetVMsClient(subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 
@@ -67,7 +67,7 @@ func newVirtualMachineScaleSetVMsClient(subscriptionID string, authorizer autore
 func newVirtualMachineScaleSetsClient(subscriptionID string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetsClient {
 	c := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 
@@ -75,7 +75,7 @@ func newVirtualMachineScaleSetsClient(subscriptionID string, authorizer autorest
 func newPublicIPsClient(subscriptionID string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
 	c := network.NewPublicIPAddressesClient(subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 

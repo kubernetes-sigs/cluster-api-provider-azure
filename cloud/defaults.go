@@ -22,6 +22,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 
 const (
@@ -31,8 +32,6 @@ const (
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultAzureDNSZone is the default provided azure dns zone
 	DefaultAzureDNSZone = "cloudapp.azure.com"
-	// UserAgent used for communicating with azure
-	UserAgent = "cluster-api-azure-services"
 )
 
 const (
@@ -126,4 +125,9 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	}
 
 	return defaultImage, nil
+}
+
+// UserAgent specifies a string to append to the agent identifier.
+func UserAgent() string {
+	return fmt.Sprintf("cluster-api-provider-azure/%s", version.Get().String())
 }

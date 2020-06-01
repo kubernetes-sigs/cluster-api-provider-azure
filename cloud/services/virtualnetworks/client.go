@@ -49,7 +49,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newVirtualNetworksClient(subscriptionID string, authorizer autorest.Authorizer) network.VirtualNetworksClient {
 	vnetsClient := network.NewVirtualNetworksClient(subscriptionID)
 	vnetsClient.Authorizer = authorizer
-	vnetsClient.AddToUserAgent(azure.UserAgent)
+	vnetsClient.AddToUserAgent(azure.UserAgent())
 	return vnetsClient
 }
 

@@ -49,7 +49,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newAgentPoolsClient(subscriptionID string, authorizer autorest.Authorizer) containerservice.AgentPoolsClient {
 	agentPoolsClient := containerservice.NewAgentPoolsClient(subscriptionID)
 	agentPoolsClient.Authorizer = authorizer
-	agentPoolsClient.AddToUserAgent(azure.UserAgent)
+	agentPoolsClient.AddToUserAgent(azure.UserAgent())
 	return agentPoolsClient
 }
 
