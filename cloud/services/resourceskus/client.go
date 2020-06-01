@@ -51,7 +51,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newResourceSkusClient(subscriptionID string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
 	c := compute.NewResourceSkusClient(subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 

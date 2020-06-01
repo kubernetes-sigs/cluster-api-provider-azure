@@ -46,7 +46,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newRoleAssignmentClient(subscriptionID string, authorizer autorest.Authorizer) authorization.RoleAssignmentsClient {
 	roleClient := authorization.NewRoleAssignmentsClient(subscriptionID)
 	roleClient.Authorizer = authorizer
-	roleClient.AddToUserAgent(azure.UserAgent)
+	roleClient.AddToUserAgent(azure.UserAgent())
 	return roleClient
 }
 

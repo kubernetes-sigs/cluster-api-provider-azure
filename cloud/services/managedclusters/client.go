@@ -51,7 +51,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newManagedClustersClient(subscriptionID string, authorizer autorest.Authorizer) containerservice.ManagedClustersClient {
 	managedClustersClient := containerservice.NewManagedClustersClient(subscriptionID)
 	managedClustersClient.Authorizer = authorizer
-	managedClustersClient.AddToUserAgent(azure.UserAgent)
+	managedClustersClient.AddToUserAgent(azure.UserAgent())
 	return managedClustersClient
 }
 

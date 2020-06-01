@@ -46,7 +46,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newResourceSkusClient(subscriptionID string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
 	skusClient := compute.NewResourceSkusClient(subscriptionID)
 	skusClient.Authorizer = authorizer
-	skusClient.AddToUserAgent(azure.UserAgent)
+	skusClient.AddToUserAgent(azure.UserAgent())
 	return skusClient
 }
 

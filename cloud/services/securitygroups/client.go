@@ -18,6 +18,7 @@ package securitygroups
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -47,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newSecurityGroupsClient(subscriptionID string, authorizer autorest.Authorizer) network.SecurityGroupsClient {
 	securityGroupsClient := network.NewSecurityGroupsClient(subscriptionID)
 	securityGroupsClient.Authorizer = authorizer
-	securityGroupsClient.AddToUserAgent(azure.UserAgent)
+	securityGroupsClient.AddToUserAgent(azure.UserAgent())
 	return securityGroupsClient
 }
 

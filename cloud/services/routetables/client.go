@@ -48,7 +48,7 @@ func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClie
 func newRouteTablesClient(subscriptionID string, authorizer autorest.Authorizer) network.RouteTablesClient {
 	routeTablesClient := network.NewRouteTablesClient(subscriptionID)
 	routeTablesClient.Authorizer = authorizer
-	routeTablesClient.AddToUserAgent(azure.UserAgent)
+	routeTablesClient.AddToUserAgent(azure.UserAgent())
 	return routeTablesClient
 }
 
