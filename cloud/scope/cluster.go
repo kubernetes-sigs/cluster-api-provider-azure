@@ -101,28 +101,12 @@ func (s *ClusterScope) Subnets() infrav1.Subnets {
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
 func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	for _, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		if sn.Role == infrav1.SubnetControlPlane {
-			return sn
-		}
-	}
-	if len(s.AzureCluster.Spec.NetworkSpec.Subnets) > 0 {
-		return s.AzureCluster.Spec.NetworkSpec.Subnets[0]
-	}
-	return nil
+	return s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
 }
 
 // NodeSubnet returns the cluster node subnet.
 func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
-	for _, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		if sn.Role == infrav1.SubnetNode {
-			return sn
-		}
-	}
-	if len(s.AzureCluster.Spec.NetworkSpec.Subnets) > 1 {
-		return s.AzureCluster.Spec.NetworkSpec.Subnets[1]
-	}
-	return nil
+	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
 }
 
 // SecurityGroups returns the cluster security groups as a map, it creates the map if empty.

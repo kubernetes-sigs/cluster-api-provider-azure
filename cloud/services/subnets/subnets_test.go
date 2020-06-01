@@ -64,7 +64,7 @@ func TestReconcileSubnets(t *testing.T) {
 				Name:                "my-subnet",
 				CIDR:                "10.0.0.0/16",
 				VnetName:            "my-vnet",
-				RouteTableName:      "my-subent_route_table",
+				RouteTableName:      "my-subnet_route_table",
 				SecurityGroupName:   "my-sg",
 				Role:                infrav1.SubnetNode,
 				InternalLBIPAddress: "10.0.0.10",
@@ -76,7 +76,7 @@ func TestReconcileSubnets(t *testing.T) {
 				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 
-				m1.Get(context.TODO(), "my-rg", "my-subent_route_table").
+				m1.Get(context.TODO(), "my-rg", "my-subnet_route_table").
 					Return(network.RouteTable{}, nil)
 
 				m2.Get(context.TODO(), "my-rg", "my-sg").
@@ -91,7 +91,7 @@ func TestReconcileSubnets(t *testing.T) {
 				Name:                "my-subnet",
 				CIDR:                "10.0.0.0/16",
 				VnetName:            "custom-vnet",
-				RouteTableName:      "my-subent_route_table",
+				RouteTableName:      "my-subnet_route_table",
 				SecurityGroupName:   "my-sg",
 				Role:                infrav1.SubnetNode,
 				InternalLBIPAddress: "10.0.0.10",
@@ -110,7 +110,7 @@ func TestReconcileSubnets(t *testing.T) {
 				Name:                "my-subnet",
 				CIDR:                "10.0.0.0/16",
 				VnetName:            "my-vnet",
-				RouteTableName:      "my-subent_route_table",
+				RouteTableName:      "my-subnet_route_table",
 				SecurityGroupName:   "my-sg",
 				Role:                infrav1.SubnetNode,
 				InternalLBIPAddress: "10.0.0.10",
@@ -130,7 +130,7 @@ func TestReconcileSubnets(t *testing.T) {
 							AddressPrefix: to.StringPtr("10.0.0.0/16"),
 							RouteTable: &network.RouteTable{
 								ID:   to.StringPtr("rt-id"),
-								Name: to.StringPtr("my-subent_route_table"),
+								Name: to.StringPtr("my-subnet_route_table"),
 							},
 							NetworkSecurityGroup: &network.SecurityGroup{
 								ID:   to.StringPtr("sg-id"),
@@ -210,7 +210,7 @@ func TestDeleteSubnets(t *testing.T) {
 				Name:                "my-subnet",
 				CIDR:                "10.0.0.0/16",
 				VnetName:            "my-vnet",
-				RouteTableName:      "my-subent_route_table",
+				RouteTableName:      "my-subnet_route_table",
 				SecurityGroupName:   "my-sg",
 				Role:                infrav1.SubnetNode,
 				InternalLBIPAddress: "10.0.0.10",
@@ -226,7 +226,7 @@ func TestDeleteSubnets(t *testing.T) {
 				Name:                "my-subnet",
 				CIDR:                "10.0.0.0/16",
 				VnetName:            "my-vnet",
-				RouteTableName:      "my-subent_route_table",
+				RouteTableName:      "my-subnet_route_table",
 				SecurityGroupName:   "my-sg",
 				Role:                infrav1.SubnetNode,
 				InternalLBIPAddress: "10.0.0.10",
@@ -243,7 +243,7 @@ func TestDeleteSubnets(t *testing.T) {
 				Name:                "my-subnet",
 				CIDR:                "10.0.0.0/16",
 				VnetName:            "custom-vnet",
-				RouteTableName:      "my-subent_route_table",
+				RouteTableName:      "my-subnet_route_table",
 				SecurityGroupName:   "my-sg",
 				Role:                infrav1.SubnetNode,
 				InternalLBIPAddress: "10.0.0.10",

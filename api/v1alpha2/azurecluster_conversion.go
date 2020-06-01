@@ -58,6 +58,16 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	dst.Status.FailureDomains = restored.Status.FailureDomains
 
+	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
+		if restoredSubnet != nil {
+			for _, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
+				if dstSubnet != nil && dstSubnet.Name == restoredSubnet.Name {
+					dstSubnet.RouteTable = restoredSubnet.RouteTable
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -141,4 +151,52 @@ func Convert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *infr
 	}
 
 	return nil
+}
+
+// Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec.
+func Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec(in *NetworkSpec, out *infrav1alpha3.NetworkSpec, s apiconversion.Scope) error { //nolint
+	if err := Convert_v1alpha2_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
+		return err
+	}
+
+	out.Subnets = make(infrav1alpha3.Subnets, len(in.Subnets))
+	for i := range in.Subnets {
+		if in.Subnets[i] != nil {
+			out.Subnets[i] = &infrav1alpha3.SubnetSpec{}
+			if err := Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in.Subnets[i], out.Subnets[i], s); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec.
+func Convert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec(in *infrav1alpha3.NetworkSpec, out *NetworkSpec, s apiconversion.Scope) error { //nolint
+	if err := Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
+		return err
+	}
+
+	out.Subnets = make(Subnets, len(in.Subnets))
+	for i := range in.Subnets {
+		if in.Subnets[i] != nil {
+			out.Subnets[i] = &SubnetSpec{}
+			if err := Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in.Subnets[i], out.Subnets[i], s); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec.
+func Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in *SubnetSpec, out *infrav1alpha3.SubnetSpec, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in, out, s)
+}
+
+// Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec.
+func Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in *infrav1alpha3.SubnetSpec, out *SubnetSpec, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in, out, s)
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -177,7 +178,7 @@ func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnet
 	ip := PreferredIPAddress
 	if ip == "" {
 		ip = azure.DefaultInternalLBIPAddress
-		if subnetCIDR != azure.DefaultControlPlaneSubnetCIDR {
+		if subnetCIDR != infrav1.DefaultControlPlaneSubnetCIDR {
 			// If the user provided a custom subnet CIDR without providing a private IP, try finding an available IP in the subnet space
 			ip = subnetCIDR[0:7] + "0"
 		}

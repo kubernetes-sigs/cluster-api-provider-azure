@@ -84,14 +84,20 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 // validateSubnets validates a list of Subnets
 func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
+	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
 		"control-plane": false,
 		"node":          false,
 	}
+
 	for i, subnet := range subnets {
 		if err := validateSubnetName(subnet.Name, fldPath.Index(i).Child("name")); err != nil {
 			allErrs = append(allErrs, err)
 		}
+		if _, ok := subnetNames[subnet.Name]; ok {
+			allErrs = append(allErrs, field.Duplicate(fldPath, subnet.Name))
+		}
+		subnetNames[subnet.Name] = true
 		if subnet.InternalLBIPAddress != "" {
 			if err := validateInternalLBIPAddress(subnet.InternalLBIPAddress,
 				fldPath.Index(i).Child("internalLBIPAddress")); err != nil {

@@ -490,6 +490,15 @@ spec:
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
                           type: string
+                        routeTable:
+                          description: RouteTable defines the route table that should
+                            be attached to this subnet.
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          type: object
                         securityGroup:
                           description: SecurityGroup defines the NSG (network security
                             group) that should be attached to this subnet.

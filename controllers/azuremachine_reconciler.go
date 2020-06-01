@@ -90,7 +90,7 @@ func (s *azureMachineService) Delete() error {
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:     azure.GenerateNICName(s.machineScope.Name()),
-		VnetName: azure.GenerateVnetName(s.clusterScope.Name()),
+		VnetName: s.clusterScope.Vnet().Name,
 	}
 
 	if s.machineScope.Role() == infrav1.ControlPlane {
