@@ -45,7 +45,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: infrav1.AzureMachineSpec{
 							Image: &infrav1.Image{
 								SharedGallery: &infrav1.AzureSharedGalleryImage{
 									SubscriptionID: "foo",
@@ -68,7 +68,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: infrav1.AzureMachineSpec{
 							Image: new(infrav1.Image),
 						},
 					},
