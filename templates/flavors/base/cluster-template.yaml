@@ -68,6 +68,7 @@ spec:
           cloud-provider: azure
           cloud-config: /etc/kubernetes/azure.json
           allocate-node-cidrs: "false"
+          cluster-name: ${CLUSTER_NAME}
         extraVolumes:
           - hostPath: /etc/kubernetes/azure.json
             mountPath: /etc/kubernetes/azure.json
