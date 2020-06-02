@@ -64,3 +64,97 @@ func generateSSHPublicKey() string {
 	publicRsaKey, _ := ssh.NewPublicKey(&privateKey.PublicKey)
 	return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
 }
+
+type osDiskTestInput struct {
+	name    string
+	wantErr bool
+	osDisk  OSDisk
+}
+
+func TestAzureMachine_ValidateOSDisk(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []osDiskTestInput{
+		{
+			name:    "valid os disk spec",
+			wantErr: false,
+			osDisk:  generateValidOSDisk(),
+		},
+	}
+	testcases = append(testcases, generateNegativeTestCases()...)
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateOSDisk(test.osDisk, field.NewPath("osDisk"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
+func generateNegativeTestCases() []osDiskTestInput {
+	inputs := []osDiskTestInput{}
+	testCaseName := "invalid os disk spec"
+
+	invalidDiskSpecs := []OSDisk{
+		{},
+		{
+			DiskSizeGB: 0,
+			OSType:     "blah",
+		},
+		{
+			DiskSizeGB: -10,
+			OSType:     "blah",
+		},
+		{
+			DiskSizeGB: 2050,
+			OSType:     "blah",
+		},
+		{
+			DiskSizeGB: 20,
+			OSType:     "",
+		},
+		{
+			DiskSizeGB:  30,
+			OSType:      "blah",
+			ManagedDisk: ManagedDisk{},
+		},
+		{
+			DiskSizeGB: 30,
+			OSType:     "blah",
+			ManagedDisk: ManagedDisk{
+				StorageAccountType: "",
+			},
+		},
+		{
+			DiskSizeGB: 30,
+			OSType:     "blah",
+			ManagedDisk: ManagedDisk{
+				StorageAccountType: "invalid_type",
+			},
+		},
+	}
+
+	for _, input := range invalidDiskSpecs {
+		inputs = append(inputs, osDiskTestInput{
+			name:    testCaseName,
+			wantErr: true,
+			osDisk:  input,
+		})
+	}
+
+	return inputs
+}
+
+func generateValidOSDisk() OSDisk {
+	return OSDisk{
+		DiskSizeGB: 30,
+		OSType:     "Linux",
+		ManagedDisk: ManagedDisk{
+			StorageAccountType: "Premium_LRS",
+		},
+	}
+}

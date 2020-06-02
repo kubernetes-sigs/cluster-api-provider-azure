@@ -22,7 +22,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var validSSHPublicKey = generateSSHPublicKey()
+var (
+	validSSHPublicKey = generateSSHPublicKey()
+	validOSDisk       = generateValidOSDisk()
+)
 
 func TestAzureMachine_ValidateCreate(t *testing.T) {
 	g := NewWithT(t)
@@ -185,6 +188,7 @@ func createMachineWithSharedImage(t *testing.T, subscriptionID, resourceGroup, n
 		Spec: AzureMachineSpec{
 			Image:        image,
 			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
 		},
 	}
 
@@ -204,6 +208,7 @@ func createMachineWithtMarketPlaceImage(t *testing.T, publisher, offer, sku, ver
 		Spec: AzureMachineSpec{
 			Image:        image,
 			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
 		},
 	}
 }
@@ -217,6 +222,7 @@ func createMachineWithImageByID(t *testing.T, imageID string) *AzureMachine {
 		Spec: AzureMachineSpec{
 			Image:        image,
 			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
 		},
 	}
 }
