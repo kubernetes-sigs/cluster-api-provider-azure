@@ -20,6 +20,7 @@
     - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
+    - [Deploying a flavor cluster as a local tilt resource](../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource)
   - [Manual Testing](#manual-testing)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
@@ -144,6 +145,8 @@ By default, the Cluster API components deployed by Tilt have experimental featur
 If you would like to enable these features, add `extra_args` as specified in [The Cluster API Book](https://cluster-api.sigs.k8s.io/developer/tilt.html#create-a-tilt-settingsjson-file).
 
 Once your kind management cluster is up and running, you can [deploy a workload cluster](#deploying-a-workload-cluster).
+
+You can also [deploy a flavor cluster as a local tilt resource](../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource).
 
 To tear down the kind cluster built by the command above, just run:
 
