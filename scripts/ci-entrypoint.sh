@@ -82,6 +82,10 @@ create_cluster() {
         export CLUSTER_TEMPLATE="test/cluster-template-prow.yaml"
     fi
 
+    if [[ "${FEATURE_GATE_MACHINE_POOL:-}" == "true" ]]; then
+        export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
+    fi
+
     export CLUSTER_NAME="capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-1}
@@ -91,6 +95,19 @@ create_cluster() {
     # timestamp is in RFC-3339 format to match kubetest
     export TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
     ${REPO_ROOT}/hack/create-dev-cluster.sh
+}
+
+wait_for_nodes() {
+    echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s) and ${WORKER_MACHINE_COUNT} worker machine(s) to become Ready"
+
+    # Ensure that all nodes are registered with the API server before checking for readiness
+    local total_nodes="$((${CONTROL_PLANE_MACHINE_COUNT} + ${WORKER_MACHINE_COUNT}))"
+    while [[ $(kubectl get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
+        sleep 10
+    done
+
+    kubectl wait --for=condition=Ready node --all --timeout=5m
+    kubectl get nodes -owide
 }
 
 run_upstream_e2e_tests() {
@@ -107,19 +124,11 @@ run_upstream_e2e_tests() {
         fi
     fi
 
-    # get the number of worker nodes
-    NUM_NODES="$(kubectl get nodes --kubeconfig="$KUBECONFIG" \
-    -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}' \
-    | grep -cv "node-role.kubernetes.io/master" )"
-
-    # wait for all the nodes to be ready
-    kubectl wait --for=condition=Ready node --kubeconfig="$KUBECONFIG" --all || true
-
     # setting this env prevents ginkg e2e from trying to run provider setup
     export KUBERNETES_CONFORMANCE_TEST="y"
     # run the tests
     (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && ./hack/ginkgo-e2e.sh \
-    '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
+    '--provider=skeleton' \
     "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
     "--report-dir=${ARTIFACTS}" '--disable-log-dump=true')
 
@@ -162,6 +171,9 @@ fi
 
 # export the target cluster KUBECONFIG if not already set
 export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
+
+export -f wait_for_nodes
+timeout --foreground 1800 bash -c wait_for_nodes
 
 # build k8s binaries and run upstream e2e tests
 if [[ -z "${SKIP_UPSTREAM_E2E_TESTS:-}" ]]; then

@@ -30,4 +30,4 @@ find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} 
 mv "${root}/templates/cluster-template-default.yaml" "${root}/templates/cluster-template.yaml"
 
 rm -f "${test_dir}cluster-template"*
-find "${test_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | xargs -I {} sh -c "${kustomize} build --reorder none ${test_dir}{} > ${test_dir}cluster-template-{}.yaml"
+find "${test_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load_restrictor none --reorder none ${test_dir}{} > ${test_dir}cluster-template-{}.yaml"
