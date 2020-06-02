@@ -135,6 +135,16 @@ cat <<EOF > tilt-settings.json
 EOF
 ```
 
+To develop with support for [experimental MachinePools][machinepools] enabled, add the following `extra_args` to `tilt_settings.json`:
+
+```json
+  "extra_args": {
+    "core": ["--feature-gates=MachinePool=true"],
+    "kubeadm-bootstrap": ["--feature-gates=MachinePool=true"],
+    "azure": ["--feature-gates=MachinePool=true"]
+  }
+```
+
 To build a kind cluster and start Tilt, just run:
 
 ```shell
@@ -187,6 +197,16 @@ EOF
 ```
 
 > `$REGISTRY` should be in the format `docker.io/<dockerhub-username>`
+
+To develop with support for [experimental MachinePools][machinepools] enabled, add the following `extra_args` to `tilt_settings.json`:
+
+```json
+  "extra_args": {
+    "core": ["--feature-gates=MachinePool=true"],
+    "kubeadm-bootstrap": ["--feature-gates=MachinePool=true"],
+    "azure": ["--feature-gates=MachinePool=true"]
+  }
+```
 
 The cluster-api management components that are deployed are configured at the `/config` folder of each repository respectively. Making changes to those files will trigger a redeploy of the management cluster components.
 
@@ -397,8 +417,8 @@ export SKIP_UPSTREAM_E2E_TESTS="false"
 [go.mod]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/go.mod
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
-[manifests]: /docs/manifests.md
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
 [gomock]: https://github.com/golang/mock
 [timeout]: http://man7.org/linux/man-pages/man1/timeout.1.html
+[machinepools]: topics/machinepools.md
