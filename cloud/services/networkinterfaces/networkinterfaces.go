@@ -25,12 +25,14 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Spec specification for routetable
 type Spec struct {
 	Name                     string
+	MachineRole              string
 	SubnetName               string
 	VnetName                 string
 	StaticIPAddress          string
@@ -77,10 +79,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	backendAddressPools := []network.BackendAddressPool{}
 	if nicSpec.PublicLoadBalancerName != "" {
-		// only control planes have an attached public LB
 		lb, lberr := s.PublicLoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicLoadBalancerName)
 		if lberr != nil {
-			return errors.Wrap(lberr, "failed to get publicLB")
+			return errors.Wrap(lberr, "failed to get public LB")
 		}
 
 		backendAddressPools = append(backendAddressPools,
@@ -88,16 +89,18 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				ID: (*lb.BackendAddressPools)[0].ID,
 			})
 
-		ruleName := s.MachineScope.Name()
-		naterr := s.createInboundNatRule(ctx, lb, ruleName)
-		if naterr != nil {
-			return errors.Wrap(naterr, "failed to create NAT rule")
-		}
+		if nicSpec.MachineRole == infrav1.ControlPlane {
+			ruleName := s.MachineScope.Name()
+			naterr := s.createInboundNatRule(ctx, lb, ruleName)
+			if naterr != nil {
+				return errors.Wrap(naterr, "failed to create NAT rule")
+			}
 
-		nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
-			{
-				ID: to.StringPtr(fmt.Sprintf("%s/inboundNatRules/%s", to.String(lb.ID), ruleName)),
-			},
+			nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+				{
+					ID: to.StringPtr(fmt.Sprintf("%s/inboundNatRules/%s", to.String(lb.ID), ruleName)),
+				},
+			}
 		}
 	}
 	if nicSpec.InternalLoadBalancerName != "" {

@@ -490,20 +490,21 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 	}
 
 	vmssSpec := &scalesets.Spec{
-		Name:                  s.machinePoolScope.Name(),
-		ResourceGroup:         s.clusterScope.ResourceGroup(),
-		Location:              s.clusterScope.Location(),
-		ClusterName:           s.clusterScope.Name(),
-		MachinePoolName:       s.machinePoolScope.Name(),
-		Sku:                   ampSpec.Template.VMSize,
-		Capacity:              replicas,
-		SSHKeyData:            string(decoded),
-		Image:                 image,
-		OSDisk:                ampSpec.Template.OSDisk,
-		CustomData:            bootstrapData,
-		AdditionalTags:        s.machinePoolScope.AdditionalTags(),
-		SubnetID:              s.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-		AcceleratedNetworking: ampSpec.Template.AcceleratedNetworking,
+		Name:                   s.machinePoolScope.Name(),
+		ResourceGroup:          s.clusterScope.ResourceGroup(),
+		Location:               s.clusterScope.Location(),
+		ClusterName:            s.clusterScope.Name(),
+		MachinePoolName:        s.machinePoolScope.Name(),
+		Sku:                    ampSpec.Template.VMSize,
+		Capacity:               replicas,
+		SSHKeyData:             string(decoded),
+		Image:                  image,
+		OSDisk:                 ampSpec.Template.OSDisk,
+		CustomData:             bootstrapData,
+		AdditionalTags:         s.machinePoolScope.AdditionalTags(),
+		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+		PublicLoadBalancerName: s.clusterScope.Name(),
+		AcceleratedNetworking:  ampSpec.Template.AcceleratedNetworking,
 	}
 
 	err = s.virtualMachinesScaleSetSvc.Reconcile(context.TODO(), vmssSpec)

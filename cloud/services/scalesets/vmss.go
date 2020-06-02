@@ -34,20 +34,21 @@ import (
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type (
 	Spec struct {
-		Name                  string
-		ResourceGroup         string
-		Location              string
-		ClusterName           string
-		MachinePoolName       string
-		Sku                   string
-		Capacity              int64
-		SSHKeyData            string
-		Image                 *infrav1.Image
-		OSDisk                infrav1.OSDisk
-		CustomData            string
-		SubnetID              string
-		AdditionalTags        infrav1.Tags
-		AcceleratedNetworking *bool
+		Name                   string
+		ResourceGroup          string
+		Location               string
+		ClusterName            string
+		MachinePoolName        string
+		Sku                    string
+		Capacity               int64
+		SSHKeyData             string
+		Image                  *infrav1.Image
+		OSDisk                 infrav1.OSDisk
+		CustomData             string
+		SubnetID               string
+		PublicLoadBalancerName string
+		AdditionalTags         infrav1.Tags
+		AcceleratedNetworking  *bool
 	}
 )
 
@@ -95,6 +96,18 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			return errors.Wrap(err, "failed to get accelerated networking capability")
 		}
 		vmssSpec.AcceleratedNetworking = to.BoolPtr(accelNet)
+	}
+
+	// Get the node outbound LB backend pool ID
+	lb, lberr := s.PublicLoadBalancersClient.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.PublicLoadBalancerName)
+	if lberr != nil {
+		return errors.Wrap(lberr, "failed to get cloud provider LB")
+	}
+
+	backendAddressPools := []compute.SubResource{
+		{
+			ID: (*lb.BackendAddressPools)[0].ID,
+		},
 	}
 
 	vmss := compute.VirtualMachineScaleSet{
@@ -147,8 +160,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 											Subnet: &compute.APIEntityReference{
 												ID: to.StringPtr(vmssSpec.SubnetID),
 											},
-											Primary:                 to.BoolPtr(true),
-											PrivateIPAddressVersion: compute.IPv4,
+											Primary:                         to.BoolPtr(true),
+											PrivateIPAddressVersion:         compute.IPv4,
+											LoadBalancerBackendAddressPools: &backendAddressPools,
 										},
 									},
 								},

@@ -51,7 +51,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			ClusterName: s.Scope.Name(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        to.StringPtr(s.Scope.ResourceGroup()),
-			Role:        to.StringPtr(infrav1.CommonRoleTagValue),
+			Role:        to.StringPtr(infrav1.CommonRole),
 			Additional:  s.Scope.AdditionalTags(),
 		})),
 	}

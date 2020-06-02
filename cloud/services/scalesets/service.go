@@ -17,19 +17,22 @@ package scalesets
 
 import (
 	"github.com/Azure/go-autorest/autorest"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // Service provides operations on azure resources
 type Service struct {
 	Client
-	ResourceSkusClient resourceskus.Client
+	ResourceSkusClient        resourceskus.Client
+	PublicLoadBalancersClient publicloadbalancers.Client
 }
 
 // NewService creates a new service.
 func NewService(authorizer autorest.Authorizer, subscriptionID string) *Service {
 	return &Service{
-		Client:             NewClient(subscriptionID, authorizer),
-		ResourceSkusClient: resourceskus.NewClient(subscriptionID, authorizer),
+		Client:                    NewClient(subscriptionID, authorizer),
+		ResourceSkusClient:        resourceskus.NewClient(subscriptionID, authorizer),
+		PublicLoadBalancersClient: publicloadbalancers.NewClient(subscriptionID, authorizer),
 	}
 }

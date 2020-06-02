@@ -21,13 +21,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -35,6 +37,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers/mock_publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus/mock_resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
@@ -104,12 +107,13 @@ func TestService_Get(t *testing.T) {
 			Name: "WithValidSpecBut404FromAzureOnVMSS",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
 				}
 			},
 			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
@@ -130,12 +134,13 @@ func TestService_Get(t *testing.T) {
 			Name: "WithValidSpecBut404FromAzureOnInstances",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
 				}
 			},
 			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
@@ -157,12 +162,13 @@ func TestService_Get(t *testing.T) {
 			Name: "WithValidSpecWithVMSSAndInstancesReturned",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
 				}
 			},
 			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
@@ -247,15 +253,16 @@ func TestService_Reconcile(t *testing.T) {
 			Name: "WithValidSpec",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
-					Sku:             "skuName",
-					Capacity:        2,
-					SSHKeyData:      "sshKeyData",
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
+					Sku:                    "skuName",
+					Capacity:               2,
+					SSHKeyData:             "sshKeyData",
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 120,
@@ -275,6 +282,8 @@ func TestService_Reconcile(t *testing.T) {
 				svc.Client = vmssMock
 				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
 				svc.ResourceSkusClient = skusMock
+				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
+				svc.PublicLoadBalancersClient = lbMock
 
 				storageProfile, err := generateStorageProfile(*spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -329,8 +338,9 @@ func TestService_Reconcile(t *testing.T) {
 														Subnet: &compute.APIEntityReference{
 															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
 														},
-														Primary:                 to.BoolPtr(true),
-														PrivateIPAddressVersion: compute.IPv4,
+														Primary:                         to.BoolPtr(true),
+														PrivateIPAddressVersion:         compute.IPv4,
+														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
 													},
 												},
 											},
@@ -343,6 +353,7 @@ func TestService_Reconcile(t *testing.T) {
 				}
 
 				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(false, nil)
+				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
 			},
 			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
@@ -353,15 +364,16 @@ func TestService_Reconcile(t *testing.T) {
 			Name: "WithAcceleratedNetworking",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
-					Sku:             "skuName",
-					Capacity:        2,
-					SSHKeyData:      "sshKeyData",
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
+					Sku:                    "skuName",
+					Capacity:               2,
+					SSHKeyData:             "sshKeyData",
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 120,
@@ -381,6 +393,8 @@ func TestService_Reconcile(t *testing.T) {
 				svc.Client = vmssMock
 				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
 				svc.ResourceSkusClient = skusMock
+				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
+				svc.PublicLoadBalancersClient = lbMock
 
 				storageProfile, err := generateStorageProfile(*spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -435,8 +449,9 @@ func TestService_Reconcile(t *testing.T) {
 														Subnet: &compute.APIEntityReference{
 															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
 														},
-														Primary:                 to.BoolPtr(true),
-														PrivateIPAddressVersion: compute.IPv4,
+														Primary:                         to.BoolPtr(true),
+														PrivateIPAddressVersion:         compute.IPv4,
+														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
 													},
 												},
 											},
@@ -449,6 +464,7 @@ func TestService_Reconcile(t *testing.T) {
 				}
 
 				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(true, nil)
+				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
 			},
 			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
@@ -496,12 +512,13 @@ func TestService_Delete(t *testing.T) {
 			Name: "WithValidSpecBut404FromAzureOnVMSSAssumeAlreadyDeleted",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
 				}
 			},
 			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
@@ -521,12 +538,13 @@ func TestService_Delete(t *testing.T) {
 			Name: "WithValidSpecAndSuccessfulDelete",
 			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
 				return &Spec{
-					Name:            mpScope.Name(),
-					ResourceGroup:   scope.AzureCluster.Spec.ResourceGroup,
-					Location:        scope.AzureCluster.Spec.Location,
-					ClusterName:     scope.Cluster.Name,
-					SubnetID:        scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					MachinePoolName: mpScope.Name(),
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
 				}
 			},
 			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) {
@@ -604,4 +622,20 @@ func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolSc
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
 	return s, mps
+}
+
+func getFakeNodeOutboundLoadBalancer() network.LoadBalancer {
+	return network.LoadBalancer{
+		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+				{
+					ID: to.StringPtr("frontend-ip-config-id"),
+				},
+			},
+			BackendAddressPools: &[]network.BackendAddressPool{
+				{
+					ID: pointer.StringPtr("cluster-name-outboundBackendPool"),
+				},
+			},
+		}}
 }
