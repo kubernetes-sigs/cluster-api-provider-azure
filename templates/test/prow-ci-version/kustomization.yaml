@@ -4,4 +4,5 @@ namespace: default
 resources:
   - ../prow
 patchesStrategicMerge:
-  - patches/ci-version.yaml
+  - ../patches/control-plane-ci-version.yaml
+  - patches/machine-deployment-ci-version.yaml

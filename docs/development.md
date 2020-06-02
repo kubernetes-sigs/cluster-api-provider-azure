@@ -335,8 +335,6 @@ To generate the mocks you can run
 make generate-go
 ```
 
-
-
 #### E2E Testing
 
 To run E2E locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
@@ -377,6 +375,7 @@ You can optionally set the following variables:
 | `PARALLEL`                     | Skip serial tests and set --ginkgo-parallel.                                                                  |
 | `USE_CI_ARTIFACTS`             | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)         |
 | `CI_VERSION`                   | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                 |
+| `FEATURE_GATE_MACHINE_POOL`    | Use [Machine Pool](topics/machinepools.md) for worker machines.                                               |
 
 You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_WORKLOAD_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
 

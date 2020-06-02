@@ -52,7 +52,6 @@ KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
 GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
-EXP_DIR := exp
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -82,6 +81,10 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
+
+# Allow overriding the feature gates
+FEATURE_GATE_MACHINE_POOL ?= false
+FEATURE_GATES_JSON_PATCH := [{"op": "add", "path": "/spec/template/spec/containers/1/args/-", "value": "--feature-gates=MachinePool=$(FEATURE_GATE_MACHINE_POOL)"}]
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
@@ -350,13 +353,19 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
 	$(KUSTOMIZE) build config | $(ENVSUBST) | kubectl apply -f -
 
-	# Wait for CAPI pods
-	kubectl wait --for=condition=Ready --timeout=5m -n capi-system pod -l cluster.x-k8s.io/provider=cluster-api
-	kubectl wait --for=condition=Ready --timeout=5m -n capi-kubeadm-bootstrap-system pod -l cluster.x-k8s.io/provider=bootstrap-kubeadm
-	kubectl wait --for=condition=Ready --timeout=5m -n capi-kubeadm-control-plane-system pod -l cluster.x-k8s.io/provider=control-plane-kubeadm
+	# Patch controllers with feature gates flag
+	kubectl patch deployment capi-controller-manager -n capi-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
+	kubectl patch deployment capi-kubeadm-bootstrap-controller-manager -n capi-kubeadm-bootstrap-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
+	kubectl patch deployment capz-controller-manager -n capz-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
+	kubectl patch deployment capi-controller-manager -n capi-webhook-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
 
-	# Wait for CAPZ pods
-	kubectl wait --for=condition=Ready --timeout=5m -n capz-system pod -l cluster.x-k8s.io/provider=infrastructure-azure
+	# Wait for CAPI deployments
+	kubectl wait --for=condition=Available --timeout=5m -n capi-system deployment -l cluster.x-k8s.io/provider=cluster-api
+	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
+	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
+
+	# Wait for CAPZ deployments
+	kubectl wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
 
 	# required sleep for when creating management and workload cluster simultaneously
 	sleep 10
