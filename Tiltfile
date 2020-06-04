@@ -194,6 +194,86 @@ def capz():
 
     k8s_yaml(blob(yaml))
 
+
+# run worker clusters specified from 'tilt up' or in 'tilt_config.json'
+def flavors():
+    config.define_string_list("templates-to-run", args=True)
+    config.define_string_list("worker-flavors")
+    cfg = config.parse()
+    worker_templates = cfg.get('templates-to-run', [])
+    for flavor in cfg.get("worker-flavors", []):
+        if flavor not in worker_templates:
+            worker_templates.append(flavor)
+    for flavor in worker_templates:
+        deploy_worker_templates(flavor)
+
+
+def deploy_worker_templates(flavor):
+    # validate required metadata
+    required_metadata = ["AZURE_SUBSCRIPTION_ID","AZURE_TENANT_ID","AZURE_CLIENT_ID","AZURE_CLIENT_SECRET", "AZURE_SSH_PUBLIC_KEY"]
+    metadata = settings.get("kustomize_substitutions", {})
+    missing = [k for k in required_metadata if k not in metadata]
+    if missing:
+        fail("missing kustomize_substitutions keys {} in tilt-setting.json".format(missing))
+
+    # validate flavor exists
+    if flavor == "default":
+        yaml_file = "./templates/cluster-template.yaml"
+    else:
+        yaml_file = "./templates/cluster-template-" + flavor + ".yaml"
+        if not os.path.exists(yaml_file):
+            fail(yaml_file + " not found")
+
+    yaml = str(read_file(yaml_file))
+
+    # azure account information replacements
+    substitutions = settings.get("kustomize_substitutions", {})
+    for substitution in substitutions:
+        value = substitutions[substitution]
+        yaml = yaml.replace("${" + substitution + "}", value)
+
+    # if metadata defined for worker-templates in tilt_settings
+    if "worker-templates" in settings:
+        # first priority replacements defined per template
+        if "flavors" in settings.get("worker-templates", {}):
+            substitutions = settings.get("worker-templates").get("flavors").get(flavor, {})
+            for substitution in substitutions:
+                value = substitutions[substitution]
+                yaml = yaml.replace("${" + substitution + "}", value)
+
+        # second priority replacements defined common to templates
+        if "metadata" in settings.get("worker-templates", {}):
+            substitutions = settings.get("worker-templates").get("metadata", {})
+            for substitution in substitutions:
+                value = substitutions[substitution]
+                yaml = yaml.replace("${" + substitution + "}", value)
+
+    # programmatically define any remaining vars
+    substitutions = {
+        "CLUSTER_NAME": flavor + "-template",
+        "AZURE_LOCATION": "eastus",
+        "AZURE_VNET_NAME": flavor + "-template-vnet",
+        "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
+        "CONTROL_PLANE_MACHINE_COUNT": "1",
+        "KUBERNETES_VERSION": "v1.18.3",
+        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
+        "WORKER_MACHINE_COUNT": "2",
+        "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
+    }
+    for substitution in substitutions:
+        value = substitutions[substitution]
+        yaml = yaml.replace("${" + substitution + "}", value)
+
+    yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
+    
+    local_resource(
+        "worker-" + flavor,
+        cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/worker-" + flavor + ".yaml; kubectl apply -f ./.tiltbuild/worker-" + flavor + ".yaml",
+        auto_init = False,
+        trigger_mode = TRIGGER_MODE_MANUAL
+    )
+
+
 ##############################
 # Actual work happens here
 ##############################
@@ -208,3 +288,5 @@ if settings.get("deploy_cert_manager"):
 deploy_capi()
 
 capz()
+
+flavors()
