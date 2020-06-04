@@ -18,7 +18,6 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -52,10 +51,6 @@ type (
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
 	AzureMachinePoolSpec struct {
-		// FailureDomains is the list of failure domains this MachinePool should be attached to, as defined in Cluster API.
-		// This relates to an Azure Availability Zone.
-		FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
-
 		// Location is the Azure region location e.g. westus2
 		Location string `json:"location"`
 

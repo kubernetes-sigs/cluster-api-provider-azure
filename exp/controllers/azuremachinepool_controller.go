@@ -489,6 +489,11 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 		return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
 	}
 
+	failureDomains, err := getFailureDomains(s)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve failure domains")
+	}
+
 	vmssSpec := &scalesets.Spec{
 		Name:                   s.machinePoolScope.Name(),
 		ResourceGroup:          s.clusterScope.ResourceGroup(),
@@ -505,6 +510,7 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
 		PublicLoadBalancerName: s.clusterScope.Name(),
 		AcceleratedNetworking:  ampSpec.Template.AcceleratedNetworking,
+		FailureDomains:         failureDomains,
 	}
 
 	err = s.virtualMachinesScaleSetSvc.Reconcile(context.TODO(), vmssSpec)
@@ -537,6 +543,30 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 	}
 
 	return vmss, nil
+}
+
+func getFailureDomains(s *azureMachinePoolService) ([]string, error) {
+	if s.machinePoolScope.MachinePool.Spec.FailureDomains == nil {
+		return getFailureDomainsIDs(s.clusterScope.AzureCluster.Status.FailureDomains), nil
+	}
+
+	selectedFDsIDs := getFailureDomainsIDs(s.machinePoolScope.MachinePool.Spec.FailureDomains)
+	for _, fdName := range selectedFDsIDs {
+		if _, exists := s.clusterScope.AzureCluster.Status.FailureDomains[fdName]; !exists {
+			return []string{}, errors.Errorf("Selected FailureDomain %#q is not available on this location", fdName)
+		}
+	}
+
+	return selectedFDsIDs, nil
+}
+
+func getFailureDomainsIDs(selectedFailureDomains capiv1.FailureDomains) []string {
+	failureDomains := make([]string, 0, len(selectedFailureDomains))
+	for fdName := range selectedFailureDomains {
+		failureDomains = append(failureDomains, fdName)
+	}
+
+	return failureDomains
 }
 
 // Delete reconciles all the services in pre determined order

@@ -82,27 +82,6 @@ spec:
                   the same tag name with different values, the AzureMachine's value
                   takes precedence.
                 type: object
-              failureDomains:
-                additionalProperties:
-                  description: FailureDomainSpec is the Schema for Cluster API failure
-                    domains. It allows controllers to understand how many failure
-                    domains a cluster can optionally span across.
-                  properties:
-                    attributes:
-                      additionalProperties:
-                        type: string
-                      description: Attributes is a free form map of attributes an
-                        infrastructure provider might use or require.
-                      type: object
-                    controlPlane:
-                      description: ControlPlane determines if this failure domain
-                        is suitable for use by control plane machines.
-                      type: boolean
-                  type: object
-                description: FailureDomains is the list of failure domains this MachinePool
-                  should be attached to, as defined in Cluster API. This relates to
-                  an Azure Availability Zone.
-                type: object
               location:
                 description: Location is the Azure region location e.g. westus2
                 type: string

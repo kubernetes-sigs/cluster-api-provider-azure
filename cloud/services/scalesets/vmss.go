@@ -49,6 +49,7 @@ type (
 		PublicLoadBalancerName string
 		AdditionalTags         infrav1.Tags
 		AcceleratedNetworking  *bool
+		FailureDomains         []string
 	}
 )
 
@@ -173,6 +174,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				},
 			},
 		},
+		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
 	}
 
 	err = s.Client.CreateOrUpdate(
