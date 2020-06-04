@@ -82,6 +82,27 @@ spec:
                   the same tag name with different values, the AzureMachine's value
                   takes precedence.
                 type: object
+              failureDomains:
+                additionalProperties:
+                  description: FailureDomainSpec is the Schema for Cluster API failure
+                    domains. It allows controllers to understand how many failure
+                    domains a cluster can optionally span across.
+                  properties:
+                    attributes:
+                      additionalProperties:
+                        type: string
+                      description: Attributes is a free form map of attributes an
+                        infrastructure provider might use or require.
+                      type: object
+                    controlPlane:
+                      description: ControlPlane determines if this failure domain
+                        is suitable for use by control plane machines.
+                      type: boolean
+                  type: object
+                description: FailureDomains is the list of failure domains this MachinePool
+                  should be attached to, as defined in Cluster API. This relates to
+                  an Azure Availability Zone.
+                type: object
               location:
                 description: Location is the Azure region location e.g. westus2
                 type: string
@@ -108,49 +129,11 @@ spec:
                       is set to true with a VMSize that does not support it, Azure
                       will return an error.
                     type: boolean
-                  additionalTags:
-                    additionalProperties:
-                      type: string
-                    description: AdditionalTags is an optional set of tags to add
-                      to an instance, in addition to the ones added by default by
-                      the Azure provider. If both the AzureCluster and the AzureMachine
-                      specify the same tag name with different values, the AzureMachine's
-                      value takes precedence.
-                    type: object
-                  allocatePublicIP:
-                    description: AllocatePublicIP allows the ability to create dynamic
-                      public ips for machines where this value is true.
-                    type: boolean
-                  availabilityZone:
-                    description: 'DEPRECATED: use FailureDomain instead'
-                    properties:
-                      enabled:
-                        type: boolean
-                      id:
-                        type: string
-                    type: object
-                  failureDomain:
-                    description: FailureDomain is the failure domain unique identifier
-                      this Machine should be attached to, as defined in Cluster API.
-                      This relates to an Azure Availability Zone
-                    type: string
-                  identity:
-                    default: None
-                    description: Identity is the type of identity used for the virtual
-                      machine. The type 'SystemAssigned' is an implicitly created
-                      identity. The generated identity will be assigned a Subscription
-                      contributor role. The type 'UserAssigned' is a standalone Azure
-                      resource provided by the user and assigned to the VM
-                    enum:
-                    - None
-                    - SystemAssigned
-                    - UserAssigned
-                    type: string
                   image:
                     description: Image is used to provide details of an image to use
-                      during VM creation. If image details are omitted the image will
-                      default the Azure Marketplace "capi" offer, which is based on
-                      Ubuntu.
+                      during Virtual Machine creation. If image details are omitted
+                      the image will default the Azure Marketplace "capi" offer, which
+                      is based on Ubuntu.
                     properties:
                       id:
                         description: ID specifies an image to use by ID
@@ -233,10 +216,9 @@ spec:
                         - version
                         type: object
                     type: object
-                  location:
-                    type: string
                   osDisk:
-                    description: OSDisk defines the operating system disk for a VM.
+                    description: OSDisk contains the operating system disk information
+                      for a Virtual Machine
                     properties:
                       diskSizeGB:
                         format: int32
@@ -257,33 +239,15 @@ spec:
                     - managedDisk
                     - osType
                     type: object
-                  providerID:
-                    description: ProviderID is the unique identifier as specified
-                      by the cloud provider.
-                    type: string
                   sshPublicKey:
+                    description: SSHPublicKey is the SSH public key string base64
+                      encoded to add to a Virtual Machine
                     type: string
-                  userAssignedIdentities:
-                    description: UserAssignedIdentities is a list of standalone Azure
-                      identities provided by the user The lifecycle of a user-assigned
-                      identity is managed separately from the lifecycle of the AzureMachine.
-                    items:
-                      description: UserAssignedIdentity defines the user-assigned
-                        identities provided by the user to be assigned to Azure resources.
-                      properties:
-                        providerID:
-                          description: 'ProviderID is the identification ID of the
-                            user-assigned Identity, the format of an identity is:
-                            ''azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'''
-                          type: string
-                      required:
-                      - providerID
-                      type: object
-                    type: array
                   vmSize:
+                    description: VMSize is the size of the Virtual Machine to build.
+                      See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
                     type: string
                 required:
-                - location
                 - osDisk
                 - sshPublicKey
                 - vmSize

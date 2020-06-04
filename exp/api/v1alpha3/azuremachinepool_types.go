@@ -18,19 +18,49 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 type (
+	AzureMachineTemplate struct {
+		// VMSize is the size of the Virtual Machine to build.
+		// See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
+		VMSize string `json:"vmSize"`
+
+		// Image is used to provide details of an image to use during Virtual Machine creation.
+		// If image details are omitted the image will default the Azure Marketplace "capi" offer,
+		// which is based on Ubuntu.
+		// +kubebuilder:validation:nullable
+		// +optional
+		Image *infrav1.Image `json:"image,omitempty"`
+
+		// OSDisk contains the operating system disk information for a Virtual Machine
+		OSDisk infrav1.OSDisk `json:"osDisk"`
+
+		// SSHPublicKey is the SSH public key string base64 encoded to add to a Virtual Machine
+		SSHPublicKey string `json:"sshPublicKey"`
+
+		// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
+		// whether the requested VMSize supports accelerated networking.
+		// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
+		// +optional
+		AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
+	}
+
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
 	AzureMachinePoolSpec struct {
+		// FailureDomains is the list of failure domains this MachinePool should be attached to, as defined in Cluster API.
+		// This relates to an Azure Availability Zone.
+		FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
+
 		// Location is the Azure region location e.g. westus2
 		Location string `json:"location"`
 
 		// Template contains the details used to build a replica virtual machine within the Machine Pool
-		Template infrav1.AzureMachineSpec `json:"template"`
+		Template AzureMachineTemplate `json:"template"`
 
 		// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
 		// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the
