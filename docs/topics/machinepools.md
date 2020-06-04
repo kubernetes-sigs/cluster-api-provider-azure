@@ -36,6 +36,8 @@ Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` tho
 type `AzureMachinePool`. An `AzureMachinePool` corresponds to an [Azure Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview),
 which provides the cloud provider specific resource for orchestrating a group of Virtual Machines.
 
+⚠️ Cloud provider for Azure does not currently support clusters in mixed mode (both vmss and vmas node pools), so it is not supported to have both `AzureMachinePools` and `AzureMachines` in the same workload cluster.
+
 ### Using `clusterctl` to deploy
 To deploy a MachinePool / AzureMachinePool via `clusterctl config` there's a [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors) 
 for that.
