@@ -136,10 +136,6 @@ run_upstream_e2e_tests() {
     unset KUBERNETES_CONFORMANCE_TEST
 }
 
-get_logs() {
-    kubectl logs deploy/capz-controller-manager -n capz-system manager > "${ARTIFACTS}/logs/capz-manager.log" || true
-}
-
 # cleanup all resources we use
 cleanup() {
     timeout 600 kubectl \
@@ -153,7 +149,7 @@ cleanup() {
 
 on_exit() {
     unset KUBECONFIG
-    get_logs
+    source "${REPO_ROOT}/hack/log/log-dump.sh"
     # cleanup
     if [[ -z "${SKIP_CLEANUP:-}" ]]; then
         cleanup
@@ -161,8 +157,7 @@ on_exit() {
 }
 
 trap on_exit EXIT
-ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
-mkdir -p "${ARTIFACTS}/logs"
+export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 
 # create cluster
 if [[ -z "${SKIP_CREATE_WORKLOAD_CLUSTER:-}" ]]; then

@@ -70,6 +70,12 @@ export AZURE_SSH_PUBLIC_KEY=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -
 export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
 
+cleanup() {
+    source "${REPO_ROOT}/hack/log/redact.sh"
+}
+
+trap cleanup EXIT
+
 make test-e2e
 test_status="${?}"
 
