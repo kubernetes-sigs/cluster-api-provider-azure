@@ -51,6 +51,7 @@ bazel-*
 .tiltbuild
 /tilt.d
 tilt-settings.json
+tilt_config.json
 
 # e2e output
 test/e2e/junit.e2e_suite.*.xml

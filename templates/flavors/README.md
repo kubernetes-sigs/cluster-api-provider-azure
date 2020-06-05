@@ -38,11 +38,6 @@ Please note your tilt-settings.json must contain at minimum the following fields
         "AZURE_TENANT_ID_B64": "******",
         "AZURE_CLIENT_SECRET_B64": "******",
         "AZURE_CLIENT_ID_B64": "******",
-        "AZURE_SUBSCRIPTION_ID": "******",
-        "AZURE_TENANT_ID": "******",
-        "AZURE_CLIENT_ID": "******",
-        "AZURE_CLIENT_SECRET": "******",
-        "AZURE_SSH_PUBLIC_KEY": "********"
     }
 }
 ```
