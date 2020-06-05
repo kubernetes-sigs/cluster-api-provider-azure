@@ -201,21 +201,27 @@ def flavors():
     config.define_string_list("worker-flavors")
     cfg = config.parse()
     worker_templates = cfg.get('templates-to-run', [])
+
+    substitutions = settings.get("kustomize_substitutions", {})
+    for key in keys:
+        decode_blob = local("echo {} | base64 --decode -".format(substitutions[key]), quiet=True)
+        substitutions[key[:-4]] = str(decode_blob)
+
+    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
+    ssh_pub_key_path = "~/.ssh/id_rsa.pub"
+    if not substitutions.get(ssh_pub_key):
+        print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))
+        pub_key_data = local("cat {} | tr -d '\n' | base64 - | tr -d '\n'".format(ssh_pub_key_path), quiet=True)
+        substitutions[ssh_pub_key] = str(pub_key_data)
+
     for flavor in cfg.get("worker-flavors", []):
         if flavor not in worker_templates:
             worker_templates.append(flavor)
     for flavor in worker_templates:
-        deploy_worker_templates(flavor)
+        deploy_worker_templates(flavor, substitutions)
 
 
-def deploy_worker_templates(flavor):
-    # validate required metadata
-    required_metadata = ["AZURE_SUBSCRIPTION_ID","AZURE_TENANT_ID","AZURE_CLIENT_ID","AZURE_CLIENT_SECRET", "AZURE_SSH_PUBLIC_KEY"]
-    metadata = settings.get("kustomize_substitutions", {})
-    missing = [k for k in required_metadata if k not in metadata]
-    if missing:
-        fail("missing kustomize_substitutions keys {} in tilt-setting.json".format(missing))
-
+def deploy_worker_templates(flavor, substitutions):
     # validate flavor exists
     if flavor == "default":
         yaml_file = "./templates/cluster-template.yaml"
@@ -225,9 +231,7 @@ def deploy_worker_templates(flavor):
             fail(yaml_file + " not found")
 
     yaml = str(read_file(yaml_file))
-
     # azure account information replacements
-    substitutions = settings.get("kustomize_substitutions", {})
     for substitution in substitutions:
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
