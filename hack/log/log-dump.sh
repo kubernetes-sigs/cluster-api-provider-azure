@@ -126,7 +126,7 @@ dump_workload_cluster_logs() {
 }
 
 cleanup() {
-    kubectl delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml"
+    kubectl delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml" || true
     source "${REPO_ROOT}/hack/log/redact.sh"
 }
 
