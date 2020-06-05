@@ -59,7 +59,7 @@ If you wish to override the default variables for flavor workers, you can specif
         "AZURE_CLIENT_ID_B64": "****"
     },
     "worker-templates": {
-        "flavors": [{
+        "flavors": {
             "default": {
                 "CLUSTER_NAME": "example-default-cluster-name",
                 "AZURE_VNET_NAME": "example-vnet-one"
@@ -69,7 +69,7 @@ If you wish to override the default variables for flavor workers, you can specif
                 "AZURE_LOCATION": "westus",
                 "AZURE_VNET_NAME": "example-vnet-two"
             }
-        }],
+        },
         "metadata": {
             "AZURE_LOCATION": "eastus",
             "AZURE_RESOURCE_GROUP": "test-resource-group-name",
