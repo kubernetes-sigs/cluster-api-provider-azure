@@ -79,6 +79,11 @@ func GeneratePublicIPName(clusterName, hash string) string {
 	return fmt.Sprintf("%s-%s", clusterName, hash)
 }
 
+// GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.
+func GenerateNodeOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-node-outbound", clusterName)
+}
+
 // GenerateNodePublicIPName generates a node public IP name, based on the NIC name.
 func GenerateNodePublicIPName(nicName string) string {
 	return fmt.Sprintf("%s-public-ip", nicName)

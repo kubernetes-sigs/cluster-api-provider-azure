@@ -89,12 +89,15 @@ func (s *azureMachineService) Delete() error {
 	}
 
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:     azure.GenerateNICName(s.machineScope.Name()),
-		VnetName: s.clusterScope.Vnet().Name,
+		Name:        azure.GenerateNICName(s.machineScope.Name()),
+		VnetName:    s.clusterScope.Vnet().Name,
+		MachineRole: s.machineScope.Role(),
 	}
 
 	if s.machineScope.Role() == infrav1.ControlPlane {
 		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
+	} else if s.machineScope.Role() == infrav1.Node {
+		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.Name()
 	}
 
 	err = s.networkInterfacesSvc.Delete(s.clusterScope.Context, networkInterfaceSpec)
@@ -196,8 +199,9 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 
 func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:     nicName,
-		VnetName: s.clusterScope.Vnet().Name,
+		Name:        nicName,
+		VnetName:    s.clusterScope.Vnet().Name,
+		MachineRole: s.machineScope.Role(),
 	}
 
 	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
@@ -209,6 +213,7 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:
 		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
+		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.Name()
 	case infrav1.ControlPlane:
 		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name
 		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())

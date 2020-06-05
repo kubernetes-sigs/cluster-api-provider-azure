@@ -244,9 +244,11 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "get subnets fails",
 			netInterfaceSpec: Spec{
-				Name:       "my-net-interface",
-				VnetName:   "my-vnet",
-				SubnetName: "my-subnet",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "failed to get subnets: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -263,9 +265,11 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "node network interface create fails",
 			netInterfaceSpec: Spec{
-				Name:       "my-net-interface",
-				VnetName:   "my-vnet",
-				SubnetName: "my-subnet",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "failed to create network interface my-net-interface in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -279,6 +283,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").
 						Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})).
 						Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
@@ -286,10 +291,12 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "node network interface with Static private IP successfully created",
 			netInterfaceSpec: Spec{
-				Name:            "my-net-interface",
-				VnetName:        "my-vnet",
-				SubnetName:      "my-subnet",
-				StaticIPAddress: "1.2.3.4",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				StaticIPAddress:        "1.2.3.4",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -302,15 +309,18 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
 		},
 		{
 			name: "node network interface with Dynamic private IP successfully created",
 			netInterfaceSpec: Spec{
-				Name:       "my-net-interface",
-				VnetName:   "my-vnet",
-				SubnetName: "my-subnet",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -323,6 +333,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
 		},
@@ -334,6 +345,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				SubnetName:               "my-subnet",
 				PublicLoadBalancerName:   "my-publiclb",
 				InternalLoadBalancerName: "my-internal-lb",
+				MachineRole:              infrav1.ControlPlane,
 			},
 			expectedError: "",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -413,8 +425,9 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				SubnetName:               "my-subnet",
 				PublicLoadBalancerName:   "my-publiclb",
 				InternalLoadBalancerName: "my-internal-lb",
+				MachineRole:              infrav1.ControlPlane,
 			},
-			expectedError: "failed to get publicLB: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to get public LB: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
@@ -436,6 +449,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				SubnetName:               "my-subnet",
 				PublicLoadBalancerName:   "my-publiclb",
 				InternalLoadBalancerName: "my-internal-lb",
+				MachineRole:              infrav1.ControlPlane,
 			},
 			expectedError: "failed to create NAT rule: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -501,6 +515,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				VnetName:                 "my-vnet",
 				SubnetName:               "my-subnet",
 				InternalLoadBalancerName: "my-internal-lb",
+				MachineRole:              infrav1.ControlPlane,
 			},
 			expectedError: "failed to get internalLB: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -519,10 +534,12 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "network interface with Public IP successfully created",
 			netInterfaceSpec: Spec{
-				Name:         "my-net-interface",
-				VnetName:     "my-vnet",
-				SubnetName:   "my-subnet",
-				PublicIPName: "my-public-ip",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicIPName:           "my-public-ip",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -535,6 +552,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-public-ip", gomock.AssignableToTypeOf(network.PublicIPAddress{})),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
@@ -543,10 +561,12 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "network interface with Public IP fail to get Public IP",
 			netInterfaceSpec: Spec{
-				Name:         "my-net-interface",
-				VnetName:     "my-vnet",
-				SubnetName:   "my-subnet",
-				PublicIPName: "my-public-ip",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicIPName:           "my-public-ip",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "failed to get publicIP: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -558,17 +578,19 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku *mock_resourceskus.MockClient) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-public-ip", gomock.AssignableToTypeOf(network.PublicIPAddress{})),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
+					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
 		},
 		{
 			name: "network interface with accelerated networking successfully created",
 			netInterfaceSpec: Spec{
-				Name:       "my-net-interface",
-				VnetName:   "my-vnet",
-				SubnetName: "my-subnet",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -581,6 +603,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku.EXPECT().HasAcceleratedNetworking(context.TODO(), gomock.Any()).Return(true, nil)
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
 						Location: to.StringPtr("test-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -591,7 +614,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 										Subnet:                          &network.Subnet{},
 										PrivateIPAllocationMethod:       network.Dynamic,
-										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
+										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
 									},
 								},
 							},
@@ -603,9 +626,11 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "network interface without accelerated networking successfully created",
 			netInterfaceSpec: Spec{
-				Name:       "my-net-interface",
-				VnetName:   "my-vnet",
-				SubnetName: "my-subnet",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -618,6 +643,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku.EXPECT().HasAcceleratedNetworking(context.TODO(), gomock.Any()).Return(false, nil)
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
 						Location: to.StringPtr("test-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -628,7 +654,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 										Subnet:                          &network.Subnet{},
 										PrivateIPAllocationMethod:       network.Dynamic,
-										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
+										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
 									},
 								},
 							},
@@ -640,9 +666,11 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		{
 			name: "network interface fails to get accelerated networking capability",
 			netInterfaceSpec: Spec{
-				Name:       "my-net-interface",
-				VnetName:   "my-vnet",
-				SubnetName: "my-subnet",
+				Name:                   "my-net-interface",
+				VnetName:               "my-vnet",
+				SubnetName:             "my-subnet",
+				PublicLoadBalancerName: "my-cluster",
+				MachineRole:            infrav1.Node,
 			},
 			expectedError: "failed to get accelerated networking capability: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_networkinterfaces.MockClientMockRecorder,
@@ -656,6 +684,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					false, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})),
 				)
 			},
@@ -952,4 +981,20 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getFakeNodeOutboundLoadBalancer() network.LoadBalancer {
+	return network.LoadBalancer{
+		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+				{
+					ID: to.StringPtr("frontend-ip-config-id"),
+				},
+			},
+			BackendAddressPools: &[]network.BackendAddressPool{
+				{
+					ID: pointer.StringPtr("cluster-name-outboundBackendPool"),
+				},
+			},
+		}}
 }

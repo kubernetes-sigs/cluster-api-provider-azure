@@ -33,6 +33,7 @@ import (
 type Spec struct {
 	Name         string
 	PublicIPName string
+	Role         string
 }
 
 // Get provides information about a public load balancer.
@@ -56,11 +57,14 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")
 	}
-	probeName := "tcpHTTPSProbe"
-	frontEndIPConfigName := "controlplane-lbFrontEnd"
-	backEndAddressPoolName := "controlplane-backEndPool"
-	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ResourceGroup())
 	lbName := publicLBSpec.Name
+	frontEndIPConfigName := fmt.Sprintf("%s-%s", publicLBSpec.Name, "frontEnd")
+	backEndAddressPoolName := fmt.Sprintf("%s-%s", publicLBSpec.Name, "backendPool")
+	if publicLBSpec.Role == infrav1.NodeOutboundRole {
+		backEndAddressPoolName = fmt.Sprintf("%s-%s", publicLBSpec.Name, "outboundBackendPool")
+	}
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ResourceGroup())
+
 	klog.V(2).Infof("creating public load balancer %s", lbName)
 
 	klog.V(2).Infof("getting public ip %s", publicLBSpec.PublicIPName)
@@ -72,89 +76,91 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
 
-	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
-	err = s.Client.CreateOrUpdate(ctx,
-		s.Scope.ResourceGroup(),
-		lbName,
-		network.LoadBalancer{
-			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-				ClusterName: s.Scope.Name(),
-				Lifecycle:   infrav1.ResourceLifecycleOwned,
-				Role:        to.StringPtr(infrav1.APIServerRoleTagValue),
-				Additional:  s.Scope.AdditionalTags(),
-			})),
-			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
-			Location: to.StringPtr(s.Scope.Location()),
-			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-				FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
-					{
-						Name: &frontEndIPConfigName,
-						FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-							PrivateIPAllocationMethod: network.Dynamic,
-							PublicIPAddress:           &publicIP,
-						},
+	lb := network.LoadBalancer{
+		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
+		Location: to.StringPtr(s.Scope.Location()),
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.Scope.Name(),
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Role:        to.StringPtr(publicLBSpec.Role),
+			Additional:  s.Scope.AdditionalTags(),
+		})),
+		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+				{
+					Name: &frontEndIPConfigName,
+					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
+						PrivateIPAllocationMethod: network.Dynamic,
+						PublicIPAddress:           &publicIP,
 					},
 				},
-				BackendAddressPools: &[]network.BackendAddressPool{
-					{
-						Name: &backEndAddressPoolName,
-					},
+			},
+			BackendAddressPools: &[]network.BackendAddressPool{
+				{
+					Name: &backEndAddressPoolName,
 				},
-				Probes: &[]network.Probe{
-					{
-						Name: &probeName,
-						ProbePropertiesFormat: &network.ProbePropertiesFormat{
-							Protocol:          network.ProbeProtocolTCP,
-							Port:              to.Int32Ptr(s.Scope.APIServerPort()),
-							IntervalInSeconds: to.Int32Ptr(15),
-							NumberOfProbes:    to.Int32Ptr(4),
-						},
-					},
-				},
-				// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
-				// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
-				LoadBalancingRules: &[]network.LoadBalancingRule{
-					{
-						Name: to.StringPtr("LBRuleHTTPS"),
-						LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-							DisableOutboundSnat:  to.BoolPtr(true),
-							Protocol:             network.TransportProtocolTCP,
-							FrontendPort:         to.Int32Ptr(s.Scope.APIServerPort()),
-							BackendPort:          to.Int32Ptr(s.Scope.APIServerPort()),
-							IdleTimeoutInMinutes: to.Int32Ptr(4),
-							EnableFloatingIP:     to.BoolPtr(false),
-							LoadDistribution:     network.LoadDistributionDefault,
-							FrontendIPConfiguration: &network.SubResource{
+			},
+			OutboundRules: &[]network.OutboundRule{
+				{
+					Name: to.StringPtr("OutboundNATAllProtocols"),
+					OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
+						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
+						FrontendIPConfigurations: &[]network.SubResource{
+							{
 								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
 							},
-							BackendAddressPool: &network.SubResource{
-								ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
-							},
-							Probe: &network.SubResource{
-								ID: to.StringPtr(fmt.Sprintf("/%s/%s/probes/%s", idPrefix, lbName, probeName)),
-							},
 						},
-					},
-				},
-				OutboundRules: &[]network.OutboundRule{
-					{
-						Name: to.StringPtr("OutboundNATAllProtocols"),
-						OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
-							Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-							IdleTimeoutInMinutes: to.Int32Ptr(4),
-							FrontendIPConfigurations: &[]network.SubResource{
-								{
-									ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
-								},
-							},
-							BackendAddressPool: &network.SubResource{
-								ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
-							},
+						BackendAddressPool: &network.SubResource{
+							ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
 						},
 					},
 				},
 			},
-		})
+		},
+	}
+
+	if publicLBSpec.Role == infrav1.APIServerRole {
+		probeName := "tcpHTTPSProbe"
+		lb.LoadBalancerPropertiesFormat.Probes = &[]network.Probe{
+			{
+				Name: to.StringPtr(probeName),
+				ProbePropertiesFormat: &network.ProbePropertiesFormat{
+					Protocol:          network.ProbeProtocolTCP,
+					Port:              to.Int32Ptr(s.Scope.APIServerPort()),
+					IntervalInSeconds: to.Int32Ptr(15),
+					NumberOfProbes:    to.Int32Ptr(4),
+				},
+			},
+		}
+		// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
+		// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
+		lb.LoadBalancerPropertiesFormat.LoadBalancingRules = &[]network.LoadBalancingRule{
+			{
+				Name: to.StringPtr("LBRuleHTTPS"),
+				LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
+					DisableOutboundSnat:  to.BoolPtr(true),
+					Protocol:             network.TransportProtocolTCP,
+					FrontendPort:         to.Int32Ptr(s.Scope.APIServerPort()),
+					BackendPort:          to.Int32Ptr(s.Scope.APIServerPort()),
+					IdleTimeoutInMinutes: to.Int32Ptr(4),
+					EnableFloatingIP:     to.BoolPtr(false),
+					LoadDistribution:     network.LoadDistributionDefault,
+					FrontendIPConfiguration: &network.SubResource{
+						ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+					},
+					BackendAddressPool: &network.SubResource{
+						ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
+					},
+					Probe: &network.SubResource{
+						ID: to.StringPtr(fmt.Sprintf("/%s/%s/probes/%s", idPrefix, lbName, probeName)),
+					},
+				},
+			},
+		}
+	}
+
+	err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), lbName, lb)
 
 	if err != nil {
 		return errors.Wrap(err, "cannot create public load balancer")

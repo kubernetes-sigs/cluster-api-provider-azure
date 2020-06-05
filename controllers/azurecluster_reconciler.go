@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
@@ -159,9 +160,26 @@ func (r *azureClusterReconciler) Reconcile() error {
 	publicLBSpec := &publicloadbalancers.Spec{
 		Name:         azure.GeneratePublicLBName(r.scope.Name()),
 		PublicIPName: r.scope.Network().APIServerIP.Name,
+		Role:         infrav1.APIServerRole,
 	}
 	if err := r.publicLBSvc.Reconcile(r.scope.Context, publicLBSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane public load balancer for cluster %s", r.scope.Name())
+	}
+
+	nodeOutboundPublicIPSpec := &publicips.Spec{
+		Name: azure.GenerateNodeOutboundIPName(r.scope.Name()),
+	}
+	if err := r.publicIPSvc.Reconcile(r.scope.Context, nodeOutboundPublicIPSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile node outbound public ip for cluster %s", r.scope.Name())
+	}
+
+	nodeOutboundLBSpec := &publicloadbalancers.Spec{
+		Name:         r.scope.Name(),
+		PublicIPName: azure.GenerateNodeOutboundIPName(r.scope.Name()),
+		Role:         infrav1.NodeOutboundRole,
+	}
+	if err := r.publicLBSvc.Reconcile(r.scope.Context, nodeOutboundLBSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile node outbound public load balancer for cluster %s", r.scope.Name())
 	}
 
 	return nil
@@ -215,7 +233,7 @@ func (r *azureClusterReconciler) deleteLB() error {
 	}
 	if err := r.publicLBSvc.Delete(r.scope.Context, publicLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", azure.GeneratePublicLBName(r.scope.Name()), r.scope.Name())
+			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", publicLBSpec.Name, r.scope.Name())
 		}
 	}
 	publicIPSpec := &publicips.Spec{
@@ -223,7 +241,24 @@ func (r *azureClusterReconciler) deleteLB() error {
 	}
 	if err := r.publicIPSvc.Delete(r.scope.Context, publicIPSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", r.scope.Network().APIServerIP.Name, r.scope.Name())
+			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", publicIPSpec.Name, r.scope.Name())
+		}
+	}
+
+	nodeOutboundLBSpec := &publicloadbalancers.Spec{
+		Name: r.scope.Name(),
+	}
+	if err := r.publicLBSvc.Delete(r.scope.Context, nodeOutboundLBSpec); err != nil {
+		if !azure.ResourceNotFound(err) {
+			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", nodeOutboundLBSpec.Name, r.scope.Name())
+		}
+	}
+	nodeOutboundPublicIPSpec := &publicips.Spec{
+		Name: azure.GenerateNodeOutboundIPName(r.scope.Name()),
+	}
+	if err := r.publicIPSvc.Delete(r.scope.Context, nodeOutboundPublicIPSpec); err != nil {
+		if !azure.ResourceNotFound(err) {
+			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", nodeOutboundPublicIPSpec.Name, r.scope.Name())
 		}
 	}
 

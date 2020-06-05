@@ -98,7 +98,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			ClusterName: s.Scope.Name(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        to.StringPtr(vnetSpec.Name),
-			Role:        to.StringPtr(infrav1.CommonRoleTagValue),
+			Role:        to.StringPtr(infrav1.CommonRole),
 			Additional:  s.Scope.AdditionalTags(),
 		})),
 		Location: to.StringPtr(s.Scope.Location()),

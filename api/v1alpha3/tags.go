@@ -104,20 +104,23 @@ const (
 	// dedicated to this cluster api provider implementation.
 	NameAzureClusterAPIRole = NameAzureProviderPrefix + "role"
 
-	// APIServerRoleTagValue describes the value for the apiserver role
-	APIServerRoleTagValue = "apiserver"
+	// APIServerRole describes the value for the apiserver role
+	APIServerRole = "apiserver"
 
-	// BastionRoleTagValue describes the value for the bastion role
-	BastionRoleTagValue = "bastion"
+	// NodeOutboundRole describes the value for the node outbound LB role
+	NodeOutboundRole = "nodeOutbound"
 
-	// CommonRoleTagValue describes the value for the common role
-	CommonRoleTagValue = "common"
+	// BastionRole describes the value for the bastion role
+	BastionRole = "bastion"
 
-	// PublicRoleTagValue describes the value for the public role
-	PublicRoleTagValue = "public"
+	// CommonRole describes the value for the common role
+	CommonRole = "common"
 
-	// PrivateRoleTagValue describes the value for the private role
-	PrivateRoleTagValue = "private"
+	// PublicRole describes the value for the public role
+	PublicRole = "public"
+
+	// PrivateRole describes the value for the private role
+	PrivateRole = "private"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.
