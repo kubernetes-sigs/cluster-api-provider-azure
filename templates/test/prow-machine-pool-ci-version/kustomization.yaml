@@ -4,5 +4,5 @@ namespace: default
 resources:
   - ../prow-machine-pool
 patchesStrategicMerge:
-  - ../patches/control-plane-ci-version.yaml
+  - ../patches/control-plane-image-ci-version.yaml
   - patches/machine-pool-ci-version.yaml
