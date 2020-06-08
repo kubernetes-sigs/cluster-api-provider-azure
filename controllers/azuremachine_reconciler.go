@@ -199,16 +199,15 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 
 func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:        nicName,
-		VnetName:    s.clusterScope.Vnet().Name,
-		MachineRole: s.machineScope.Role(),
+		Name:                  nicName,
+		VnetName:              s.clusterScope.Vnet().Name,
+		MachineRole:           s.machineScope.Role(),
+		AcceleratedNetworking: s.machineScope.AzureMachine.Spec.AcceleratedNetworking,
 	}
 
 	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
 		networkInterfaceSpec.PublicIPName = azure.GenerateNodePublicIPName(nicName)
 	}
-
-	networkInterfaceSpec.AcceleratedNetworking = s.machineScope.AzureMachine.Spec.AcceleratedNetworking
 
 	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:

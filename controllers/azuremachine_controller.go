@@ -24,8 +24,6 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
@@ -196,17 +194,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		machineScope.Info("Bootstrap data secret reference is not yet available")
 		return reconcile.Result{}, nil
-	}
-
-	// Check that the image is valid
-	// NOTE: this validation logic is also in the validating webhook
-	if machineScope.AzureMachine.Spec.Image != nil {
-		if errs := infrav1.ValidateImage(machineScope.AzureMachine.Spec.Image, field.NewPath("image")); len(errs) > 0 {
-			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			machineScope.Info("Invalid image: %s", agg.Error())
-			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "InvalidImage", "Invalid image: %s", agg.Error())
-			return reconcile.Result{}, nil
-		}
 	}
 
 	if machineScope.AzureMachine.Spec.AvailabilityZone.ID != nil {
