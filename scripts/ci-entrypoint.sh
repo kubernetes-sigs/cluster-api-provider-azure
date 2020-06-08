@@ -36,10 +36,6 @@ source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
-random-string() {
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1
-}
-
 # build Kubernetes E2E binaries
 build_k8s() {
     # possibly enable bazel build caching before building kubernetes
@@ -138,10 +134,7 @@ run_upstream_e2e_tests() {
 
 # cleanup all resources we use
 cleanup() {
-    timeout 600 kubectl \
-        delete cluster "${CLUSTER_NAME}" || true
-        timeout 600 kubectl \
-        wait --for=delete cluster/"${CLUSTER_NAME}" || true
+    timeout 1800 kubectl delete cluster "${CLUSTER_NAME}" || true
     make kind-reset || true
     # clean up e2e.test symlink
     (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && rm -f _output/bin/e2e.test) || true
@@ -149,7 +142,7 @@ cleanup() {
 
 on_exit() {
     unset KUBECONFIG
-    source "${REPO_ROOT}/hack/log/log-dump.sh"
+    ${REPO_ROOT}/hack/log/log-dump.sh || true
     # cleanup
     if [[ -z "${SKIP_CLEANUP:-}" ]]; then
         cleanup
