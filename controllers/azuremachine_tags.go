@@ -17,6 +17,8 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
@@ -34,7 +36,7 @@ const (
 )
 
 // Ensure that the tags of the machine are correct
-func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
+func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
 	annotation, err := r.machineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation)
 	if err != nil {
 		return err
@@ -46,7 +48,7 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 			Name: machineScope.Name(),
 		}
 		svc := virtualmachines.NewService(clusterScope, machineScope)
-		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.ResourceGroup(), machineScope.Name())
+		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machineScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VM")
 		}
@@ -60,19 +62,12 @@ func (r *AzureMachineReconciler) reconcileTags(machineScope *scope.MachineScope,
 		}
 
 		vm.Tags = tags
-
-		err = svc.Client.CreateOrUpdate(
-			clusterScope.Context,
-			clusterScope.ResourceGroup(),
-			vmSpec.Name,
-			vm)
-		if err != nil {
+		if err := svc.Client.CreateOrUpdate(ctx, clusterScope.ResourceGroup(), vmSpec.Name, vm); err != nil {
 			return errors.Wrapf(err, "cannot update VM tags")
 		}
 
 		// We also need to update the annotation if anything changed.
-		err = r.updateMachineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation, newAnnotation)
-		if err != nil {
+		if err = r.updateMachineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation, newAnnotation); err != nil {
 			return err
 		}
 	}

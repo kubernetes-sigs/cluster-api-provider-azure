@@ -33,21 +33,24 @@ import (
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 
+	capifeature "sigs.k8s.io/cluster-api/feature"
+
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1alpha3exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	version "sigs.k8s.io/cluster-api-provider-azure/version"
-	capifeature "sigs.k8s.io/cluster-api/feature"
 
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
 )
 
 var (
@@ -78,6 +81,7 @@ var (
 	syncPeriod                  time.Duration
 	healthAddr                  string
 	webhookPort                 int
+	reconcileTimeout            time.Duration
 )
 
 func InitFlags(fs *pflag.FlagSet) {
@@ -142,6 +146,12 @@ func InitFlags(fs *pflag.FlagSet) {
 		"webhook-port",
 		0,
 		"Webhook Server port, disabled by default. When enabled, the manager will only work as webhook server, no reconcilers are installed.",
+	)
+
+	fs.DurationVar(&reconcileTimeout,
+		"reconcile-timeout",
+		reconciler.DefaultLoopTimeout,
+		"The maximum duration a reconcile loop can run (e.g. 90m)",
 	)
 
 	feature.MutableGates.AddFlag(fs)

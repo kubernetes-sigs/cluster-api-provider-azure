@@ -1,5 +1,5 @@
 run:
-  deadline: 3m
+  deadline: 5m
   skip-dirs:
     - mock*
   skip-files:

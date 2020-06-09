@@ -152,9 +152,8 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 }
 
 // PatchObject persists the machine spec and status.
-func (m *MachinePoolScope) PatchObject() error {
-	// TODO[dj]: any function we are building where we are not adding context to the signature is welcoming unbound execution times. This needs to be addressed.
-	return m.patchHelper.Patch(context.TODO(), m.AzureMachinePool)
+func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
+	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
 func (m *MachinePoolScope) AzureMachineTemplate(ctx context.Context) (*infrav1.AzureMachineTemplate, error) {
@@ -163,8 +162,8 @@ func (m *MachinePoolScope) AzureMachineTemplate(ctx context.Context) (*infrav1.A
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
-func (m *MachinePoolScope) Close() error {
-	return m.patchHelper.Patch(context.TODO(), m.AzureMachinePool)
+func (m *MachinePoolScope) Close(ctx context.Context) error {
+	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
 func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespace string) (*infrav1.AzureMachineTemplate, error) {
@@ -177,14 +176,14 @@ func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespa
 }
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
-func (m *MachinePoolScope) GetBootstrapData() (string, error) {
+func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error) {
 	dataSecretName := m.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName
 	if dataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked Machine Spec's bootstrap.dataSecretName is nil")
 	}
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: m.AzureMachinePool.Namespace, Name: *dataSecretName}
-	if err := m.client.Get(context.TODO(), key, secret); err != nil {
+	if err := m.client.Get(ctx, key, secret); err != nil {
 		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for AzureMachinePool %s/%s", m.AzureMachinePool.Namespace, m.Name())
 	}
 

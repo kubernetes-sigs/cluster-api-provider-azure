@@ -210,13 +210,13 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 }
 
 // PatchObject persists the machine spec and status.
-func (m *MachineScope) PatchObject() error {
-	return m.patchHelper.Patch(context.TODO(), m.AzureMachine)
+func (m *MachineScope) PatchObject(ctx context.Context) error {
+	return m.patchHelper.Patch(ctx, m.AzureMachine)
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
-func (m *MachineScope) Close() error {
-	return m.patchHelper.Patch(context.TODO(), m.AzureMachine)
+func (m *MachineScope) Close(ctx context.Context) error {
+	return m.patchHelper.Patch(ctx, m.AzureMachine)
 }
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachine. If the same key is present in both,
@@ -233,13 +233,13 @@ func (m *MachineScope) AdditionalTags() infrav1.Tags {
 }
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
-func (m *MachineScope) GetBootstrapData() (string, error) {
+func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
 	}
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: m.Namespace(), Name: *m.Machine.Spec.Bootstrap.DataSecretName}
-	if err := m.client.Get(context.TODO(), key, secret); err != nil {
+	if err := m.client.Get(ctx, key, secret); err != nil {
 		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for AzureMachine %s/%s", m.Namespace(), m.Name())
 	}
 

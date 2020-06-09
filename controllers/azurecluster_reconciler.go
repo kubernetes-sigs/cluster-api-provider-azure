@@ -17,11 +17,14 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -35,7 +38,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // azureClusterReconciler are list of services required by cluster controller
@@ -69,15 +71,17 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 }
 
 // Reconcile reconciles all the services in pre determined order
-func (r *azureClusterReconciler) Reconcile() error {
+func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 	klog.V(2).Infof("reconciling cluster %s", r.scope.Name())
-	r.createOrUpdateNetworkAPIServerIP()
+	if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
+		return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.Name(), r.scope.Location())
+	}
 
-	if err := r.setFailureDomainsForLocation(); err != nil {
+	if err := r.setFailureDomainsForLocation(ctx); err != nil {
 		return errors.Wrapf(err, "failed to get availability zones for cluster %s in location %s", r.scope.Name(), r.scope.Location())
 	}
 
-	if err := r.groupsSvc.Reconcile(r.scope.Context, nil); err != nil {
+	if err := r.groupsSvc.Reconcile(ctx, nil); err != nil {
 		return errors.Wrapf(err, "failed to reconcile resource group for cluster %s", r.scope.Name())
 	}
 
@@ -86,7 +90,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		Name:          r.scope.Vnet().Name,
 		CIDR:          r.scope.Vnet().CidrBlock,
 	}
-	if err := r.vnetSvc.Reconcile(r.scope.Context, vnetSpec); err != nil {
+	if err := r.vnetSvc.Reconcile(ctx, vnetSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile virtual network for cluster %s", r.scope.Name())
 	}
 
@@ -94,7 +98,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		Name:           r.scope.ControlPlaneSubnet().SecurityGroup.Name,
 		IsControlPlane: true,
 	}
-	if err := r.securityGroupSvc.Reconcile(r.scope.Context, sgSpec); err != nil {
+	if err := r.securityGroupSvc.Reconcile(ctx, sgSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane network security group for cluster %s", r.scope.Name())
 	}
 
@@ -102,14 +106,14 @@ func (r *azureClusterReconciler) Reconcile() error {
 		Name:           r.scope.NodeSubnet().SecurityGroup.Name,
 		IsControlPlane: false,
 	}
-	if err := r.securityGroupSvc.Reconcile(r.scope.Context, sgSpec); err != nil {
+	if err := r.securityGroupSvc.Reconcile(ctx, sgSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile node network security group for cluster %s", r.scope.Name())
 	}
 
 	rtSpec := &routetables.Spec{
 		Name: r.scope.NodeSubnet().RouteTable.Name,
 	}
-	if err := r.routeTableSvc.Reconcile(r.scope.Context, rtSpec); err != nil {
+	if err := r.routeTableSvc.Reconcile(ctx, rtSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile route table %s for cluster %s", r.scope.NodeSubnet().RouteTable.Name, r.scope.Name())
 	}
 
@@ -122,7 +126,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		RouteTableName:      r.scope.ControlPlaneSubnet().RouteTable.Name,
 		InternalLBIPAddress: r.scope.ControlPlaneSubnet().InternalLBIPAddress,
 	}
-	if err := r.subnetsSvc.Reconcile(r.scope.Context, subnetSpec); err != nil {
+	if err := r.subnetsSvc.Reconcile(ctx, subnetSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane subnet for cluster %s", r.scope.Name())
 	}
 
@@ -134,7 +138,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		RouteTableName:    r.scope.NodeSubnet().RouteTable.Name,
 		Role:              r.scope.NodeSubnet().Role,
 	}
-	if err := r.subnetsSvc.Reconcile(r.scope.Context, subnetSpec); err != nil {
+	if err := r.subnetsSvc.Reconcile(ctx, subnetSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile node subnet for cluster %s", r.scope.Name())
 	}
 
@@ -145,7 +149,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		VnetName:   r.scope.Vnet().Name,
 		IPAddress:  r.scope.ControlPlaneSubnet().InternalLBIPAddress,
 	}
-	if err := r.internalLBSvc.Reconcile(r.scope.Context, internalLBSpec); err != nil {
+	if err := r.internalLBSvc.Reconcile(ctx, internalLBSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane internal load balancer for cluster %s", r.scope.Name())
 	}
 
@@ -153,7 +157,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		Name:    r.scope.Network().APIServerIP.Name,
 		DNSName: r.scope.Network().APIServerIP.DNSName,
 	}
-	if err := r.publicIPSvc.Reconcile(r.scope.Context, publicIPSpec); err != nil {
+	if err := r.publicIPSvc.Reconcile(ctx, publicIPSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane public ip for cluster %s", r.scope.Name())
 	}
 
@@ -162,14 +166,14 @@ func (r *azureClusterReconciler) Reconcile() error {
 		PublicIPName: r.scope.Network().APIServerIP.Name,
 		Role:         infrav1.APIServerRole,
 	}
-	if err := r.publicLBSvc.Reconcile(r.scope.Context, publicLBSpec); err != nil {
+	if err := r.publicLBSvc.Reconcile(ctx, publicLBSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane public load balancer for cluster %s", r.scope.Name())
 	}
 
 	nodeOutboundPublicIPSpec := &publicips.Spec{
 		Name: azure.GenerateNodeOutboundIPName(r.scope.Name()),
 	}
-	if err := r.publicIPSvc.Reconcile(r.scope.Context, nodeOutboundPublicIPSpec); err != nil {
+	if err := r.publicIPSvc.Reconcile(ctx, nodeOutboundPublicIPSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile node outbound public ip for cluster %s", r.scope.Name())
 	}
 
@@ -178,7 +182,7 @@ func (r *azureClusterReconciler) Reconcile() error {
 		PublicIPName: azure.GenerateNodeOutboundIPName(r.scope.Name()),
 		Role:         infrav1.NodeOutboundRole,
 	}
-	if err := r.publicLBSvc.Reconcile(r.scope.Context, nodeOutboundLBSpec); err != nil {
+	if err := r.publicLBSvc.Reconcile(ctx, nodeOutboundLBSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile node outbound public load balancer for cluster %s", r.scope.Name())
 	}
 
@@ -186,25 +190,25 @@ func (r *azureClusterReconciler) Reconcile() error {
 }
 
 // Delete reconciles all the services in pre determined order
-func (r *azureClusterReconciler) Delete() error {
-	if err := r.deleteLB(); err != nil {
+func (r *azureClusterReconciler) Delete(ctx context.Context) error {
+	if err := r.deleteLB(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete load balancer")
 	}
 
-	if err := r.deleteSubnets(); err != nil {
+	if err := r.deleteSubnets(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete subnets")
 	}
 
 	rtSpec := &routetables.Spec{
 		Name: r.scope.NodeSubnet().RouteTable.Name,
 	}
-	if err := r.routeTableSvc.Delete(r.scope.Context, rtSpec); err != nil {
+	if err := r.routeTableSvc.Delete(ctx, rtSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete route table %s for cluster %s", r.scope.NodeSubnet().RouteTable.Name, r.scope.Name())
 		}
 	}
 
-	if err := r.deleteNSG(); err != nil {
+	if err := r.deleteNSG(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete network security group")
 	}
 
@@ -212,13 +216,13 @@ func (r *azureClusterReconciler) Delete() error {
 		ResourceGroup: r.scope.Vnet().ResourceGroup,
 		Name:          r.scope.Vnet().Name,
 	}
-	if err := r.vnetSvc.Delete(r.scope.Context, vnetSpec); err != nil {
+	if err := r.vnetSvc.Delete(ctx, vnetSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete virtual network %s for cluster %s", r.scope.Vnet().Name, r.scope.Name())
 		}
 	}
 
-	if err := r.groupsSvc.Delete(r.scope.Context, nil); err != nil {
+	if err := r.groupsSvc.Delete(ctx, nil); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete resource group for cluster %s", r.scope.Name())
 		}
@@ -227,11 +231,11 @@ func (r *azureClusterReconciler) Delete() error {
 	return nil
 }
 
-func (r *azureClusterReconciler) deleteLB() error {
+func (r *azureClusterReconciler) deleteLB(ctx context.Context) error {
 	publicLBSpec := &publicloadbalancers.Spec{
 		Name: azure.GeneratePublicLBName(r.scope.Name()),
 	}
-	if err := r.publicLBSvc.Delete(r.scope.Context, publicLBSpec); err != nil {
+	if err := r.publicLBSvc.Delete(ctx, publicLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", publicLBSpec.Name, r.scope.Name())
 		}
@@ -239,7 +243,7 @@ func (r *azureClusterReconciler) deleteLB() error {
 	publicIPSpec := &publicips.Spec{
 		Name: r.scope.Network().APIServerIP.Name,
 	}
-	if err := r.publicIPSvc.Delete(r.scope.Context, publicIPSpec); err != nil {
+	if err := r.publicIPSvc.Delete(ctx, publicIPSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", publicIPSpec.Name, r.scope.Name())
 		}
@@ -248,7 +252,7 @@ func (r *azureClusterReconciler) deleteLB() error {
 	nodeOutboundLBSpec := &publicloadbalancers.Spec{
 		Name: r.scope.Name(),
 	}
-	if err := r.publicLBSvc.Delete(r.scope.Context, nodeOutboundLBSpec); err != nil {
+	if err := r.publicLBSvc.Delete(ctx, nodeOutboundLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", nodeOutboundLBSpec.Name, r.scope.Name())
 		}
@@ -256,7 +260,7 @@ func (r *azureClusterReconciler) deleteLB() error {
 	nodeOutboundPublicIPSpec := &publicips.Spec{
 		Name: azure.GenerateNodeOutboundIPName(r.scope.Name()),
 	}
-	if err := r.publicIPSvc.Delete(r.scope.Context, nodeOutboundPublicIPSpec); err != nil {
+	if err := r.publicIPSvc.Delete(ctx, nodeOutboundPublicIPSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", nodeOutboundPublicIPSpec.Name, r.scope.Name())
 		}
@@ -265,7 +269,7 @@ func (r *azureClusterReconciler) deleteLB() error {
 	internalLBSpec := &internalloadbalancers.Spec{
 		Name: azure.GenerateInternalLBName(r.scope.Name()),
 	}
-	if err := r.internalLBSvc.Delete(r.scope.Context, internalLBSpec); err != nil {
+	if err := r.internalLBSvc.Delete(ctx, internalLBSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to internal load balancer %s for cluster %s", azure.GenerateInternalLBName(r.scope.Name()), r.scope.Name())
 		}
@@ -274,13 +278,13 @@ func (r *azureClusterReconciler) deleteLB() error {
 	return nil
 }
 
-func (r *azureClusterReconciler) deleteSubnets() error {
+func (r *azureClusterReconciler) deleteSubnets(ctx context.Context) error {
 	for _, s := range r.scope.Subnets() {
 		subnetSpec := &subnets.Spec{
 			Name:     s.Name,
 			VnetName: r.scope.Vnet().Name,
 		}
-		if err := r.subnetsSvc.Delete(r.scope.Context, subnetSpec); err != nil {
+		if err := r.subnetsSvc.Delete(ctx, subnetSpec); err != nil {
 			if !azure.ResourceNotFound(err) {
 				return errors.Wrapf(err, "failed to delete %s subnet for cluster %s", s.Name, r.scope.Name())
 			}
@@ -289,11 +293,11 @@ func (r *azureClusterReconciler) deleteSubnets() error {
 	return nil
 }
 
-func (r *azureClusterReconciler) deleteNSG() error {
+func (r *azureClusterReconciler) deleteNSG(ctx context.Context) error {
 	sgSpec := &securitygroups.Spec{
 		Name: r.scope.NodeSubnet().SecurityGroup.Name,
 	}
-	if err := r.securityGroupSvc.Delete(r.scope.Context, sgSpec); err != nil {
+	if err := r.securityGroupSvc.Delete(ctx, sgSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", r.scope.NodeSubnet().SecurityGroup.Name, r.scope.Name())
 		}
@@ -301,7 +305,7 @@ func (r *azureClusterReconciler) deleteNSG() error {
 	sgSpec = &securitygroups.Spec{
 		Name: r.scope.ControlPlaneSubnet().SecurityGroup.Name,
 	}
-	if err := r.securityGroupSvc.Delete(r.scope.Context, sgSpec); err != nil {
+	if err := r.securityGroupSvc.Delete(ctx, sgSpec); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete security group %s for cluster %s", r.scope.ControlPlaneSubnet().SecurityGroup.Name, r.scope.Name())
 		}
@@ -311,21 +315,22 @@ func (r *azureClusterReconciler) deleteNSG() error {
 }
 
 // CreateOrUpdateNetworkAPIServerIP creates or updates public ip name and dns name
-func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() {
+func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 	if r.scope.Network().APIServerIP.Name == "" {
 		h := fnv.New32a()
-		h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID, r.scope.ResourceGroup(), r.scope.Name())))
+		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID, r.scope.ResourceGroup(), r.scope.Name()))); err != nil {
+			return errors.Wrapf(err, "failed to write hash sum for api server ip")
+		}
 		r.scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(r.scope.Name(), fmt.Sprintf("%x", h.Sum32()))
 	}
 
 	r.scope.Network().APIServerIP.DNSName = azure.GenerateFQDN(r.scope.Network().APIServerIP.Name, r.scope.Location())
+	return nil
 }
 
-func (r *azureClusterReconciler) setFailureDomainsForLocation() error {
-
+func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Context) error {
 	spec := &availabilityzones.Spec{}
-
-	zonesInterface, err := r.availZoneSvc.Get(r.scope.Context, spec)
+	zonesInterface, err := r.availZoneSvc.Get(ctx, spec)
 	if err != nil {
 		return err
 	}

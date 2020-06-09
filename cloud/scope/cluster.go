@@ -68,7 +68,6 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		Cluster:      params.Cluster,
 		AzureCluster: params.AzureCluster,
 		patchHelper:  helper,
-		Context:      context.Background(),
 	}, nil
 }
 
@@ -81,7 +80,6 @@ type ClusterScope struct {
 	AzureClients
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
-	Context      context.Context
 }
 
 // Network returns the cluster network object.
@@ -142,13 +140,13 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 }
 
 // PatchObject persists the cluster configuration and status.
-func (s *ClusterScope) PatchObject() error {
-	return s.patchHelper.Patch(context.TODO(), s.AzureCluster)
+func (s *ClusterScope) PatchObject(ctx context.Context) error {
+	return s.patchHelper.Patch(ctx, s.AzureCluster)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
-func (s *ClusterScope) Close() error {
-	return s.patchHelper.Patch(context.TODO(), s.AzureCluster)
+func (s *ClusterScope) Close(ctx context.Context) error {
+	return s.patchHelper.Patch(ctx, s.AzureCluster)
 }
 
 // AdditionalTags returns AdditionalTags from the scope's AzureCluster.
