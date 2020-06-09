@@ -25,15 +25,20 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 // AzureManagedClusterReconciler reconciles a AzureManagedCluster object
@@ -45,10 +50,27 @@ type AzureManagedClusterReconciler struct {
 }
 
 func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	azManagedCluster := &infrav1exp.AzureManagedCluster{}
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&infrav1exp.AzureManagedCluster{}).
-		Complete(r)
+		For(azManagedCluster).
+		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		Build(r)
+	if err != nil {
+		return errors.Wrapf(err, "error creating controller")
+	}
+
+	// Add a watch on clusterv1.Cluster object for unpause notifications.
+	if err = c.Watch(
+		&source.Kind{Type: &clusterv1.Cluster{}},
+		&handler.EnqueueRequestsFromMapFunc{
+			ToRequests: util.ClusterToInfrastructureMapFunc(azManagedCluster.GroupVersionKind()),
+		},
+		predicates.ClusterUnpaused(r.Log),
+	); err != nil {
+		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+	}
+	return nil
 }
 
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedclusters,verbs=get;list;watch;create;update;patch;delete
@@ -88,6 +110,12 @@ func (r *AzureManagedClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Resu
 	}
 
 	log = log.WithValues("cluster", cluster.Name)
+
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, aksCluster) {
+		log.Info("AzureManagedCluster or linked Cluster is marked as paused. Won't reconcile")
+		return ctrl.Result{}, nil
+	}
 
 	if err := r.Get(ctx, controlPlaneRef, controlPlane); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to get control plane ref")

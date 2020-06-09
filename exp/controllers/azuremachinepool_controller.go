@@ -31,10 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
-	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -43,14 +45,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	capzcntr "sigs.k8s.io/cluster-api-provider-azure/controllers"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 type (
@@ -78,21 +79,51 @@ type (
 )
 
 func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	// create mapper to transform incoming AzureClusters into AzureMachinePool requests
+	azureClusterMapper, err := AzureClusterToAzureMachinePoolsMapper(r.Client, mgr.GetScheme(), r.Log)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachinePools mapper")
+	}
+
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1exp.AzureMachinePool{}).
+		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &capiv1exp.MachinePool{}},
 			&handler.EnqueueRequestsFromMapFunc{
 				ToRequests: machinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), r.Log),
 			},
 		).
+		// watch for changes in AzureCluster resources
 		Watches(
 			&source.Kind{Type: &infrav1.AzureCluster{}},
 			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: azureClusterToAzureMachinePoolsFunc(r.Client, r.Log),
+				ToRequests: azureClusterMapper,
 			}).
-		Complete(r)
+		Build(r)
+	if err != nil {
+		return errors.Wrapf(err, "error creating controller")
+	}
+
+	azureMachinePoolMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1exp.AzureMachinePoolList{}, mgr.GetScheme())
+	if err != nil {
+		return errors.Wrapf(err, "failed to create mapper for Cluster to AzureMachines")
+	}
+
+	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	if err := c.Watch(
+		&source.Kind{Type: &clusterv1.Cluster{}},
+		&handler.EnqueueRequestsFromMapFunc{
+			ToRequests: azureMachinePoolMapper,
+		},
+		predicates.ClusterUnpausedAndInfrastructureReady(r.Log),
+	); err != nil {
+		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+	}
+
+	return nil
 }
 
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=get;list;watch;create;update;patch;delete
@@ -136,12 +167,17 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 
 	logger = logger.WithValues("cluster", cluster.Name)
 
-	azureCluster := &infrav1.AzureCluster{}
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, azMachinePool) {
+		logger.Info("AzureMachinePool or linked Cluster is marked as paused. Won't reconcile")
+		return ctrl.Result{}, nil
+	}
 
 	azureClusterName := client.ObjectKey{
 		Namespace: azMachinePool.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
+	azureCluster := &infrav1.AzureCluster{}
 	if err := r.Client.Get(ctx, azureClusterName, azureCluster); err != nil {
 		logger.Info("AzureCluster is not available yet")
 		return reconcile.Result{}, nil
@@ -328,7 +364,7 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 			return nil
 		}
 
-		labels := map[string]string{capiv1.ClusterLabelName: cluster.Name}
+		labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
 		mpl := &capiv1exp.MachinePoolList{}
 		if err := kClient.List(ctx, mpl, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
 			logWithValues.Error(err, "failed to list Machines")
@@ -355,11 +391,11 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 // Ensure that the tags of the machine are correct
 func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
 	machinePoolScope.Info("Updating tags on AzureMachinePool")
-	annotation, err := r.AnnotationJSON(machinePoolScope.AzureMachinePool, capzcntr.TagsLastAppliedAnnotation)
+	annotation, err := r.AnnotationJSON(machinePoolScope.AzureMachinePool, controllers.TagsLastAppliedAnnotation)
 	if err != nil {
 		return err
 	}
-	changed, created, deleted, newAnnotation := capzcntr.TagsChanged(annotation, additionalTags)
+	changed, created, deleted, newAnnotation := controllers.TagsChanged(annotation, additionalTags)
 	if changed {
 		vmssSpec := &scalesets.Spec{
 			Name: machinePoolScope.Name(),
@@ -384,7 +420,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machineP
 		}
 
 		// We also need to update the annotation if anything changed.
-		err = r.updateAnnotationJSON(machinePoolScope.AzureMachinePool, capzcntr.TagsLastAppliedAnnotation, newAnnotation)
+		err = r.updateAnnotationJSON(machinePoolScope.AzureMachinePool, controllers.TagsLastAppliedAnnotation, newAnnotation)
 		if err != nil {
 			return err
 		}

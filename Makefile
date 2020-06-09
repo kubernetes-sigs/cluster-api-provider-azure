@@ -100,12 +100,15 @@ help:  ## Display this help
 ## Testing
 ## --------------------------------------
 
-test: export TEST_ASSET_KUBECTL = $(KUBECTL)
-test: export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
-test: export TEST_ASSET_ETCD = $(ETCD)
-
 .PHONY: test
-test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) generate lint ## Run tests
+test: generate lint go-test ## Run generate lint and tests
+
+go-test: export TEST_ASSET_KUBECTL = $(KUBECTL)
+go-test: export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
+go-test: export TEST_ASSET_ETCD = $(ETCD)
+
+.PHONY: go-test
+go-test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run go tests
 	go test ./...
 
 

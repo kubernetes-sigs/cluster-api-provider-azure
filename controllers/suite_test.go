@@ -17,37 +17,25 @@ limitations under the License.
 package controllers
 
 import (
-	"path/filepath"
+	"context"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/klog"
-	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
 	// +kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-
-func init() {
-	klog.InitFlags(nil)
-	klog.SetOutput(GinkgoWriter)
-	logf.SetLogger(klogr.New())
-}
+var (
+	testEnv *env.TestEnvironment
+)
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -59,31 +47,42 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func(done Done) {
 	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "config", "crd", "bases"),
-		},
-	}
+	testEnv = env.NewTestEnvironment()
 
-	var err error
-	cfg, err = testEnv.Start()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cfg).ToNot(BeNil())
+	Expect((&AzureClusterReconciler{
+		Client:   testEnv,
+		Log:      testEnv.Log,
+		Recorder: testEnv.GetEventRecorderFor("azurecluster-reconciler"),
+	}).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
-	Expect(clusterv1.AddToScheme(scheme.Scheme)).To(Succeed())
-	Expect(infrav1.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect((&AzureMachineReconciler{
+		Client:   testEnv,
+		Log:      testEnv.Log,
+		Recorder: testEnv.GetEventRecorderFor("azuremachine-reconciler"),
+	}).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).ToNot(HaveOccurred())
-	Expect(k8sClient).ToNot(BeNil())
+	By("starting the manager")
+	go func() {
+		defer GinkgoRecover()
+		Expect(testEnv.StartManager()).To(Succeed())
+	}()
+
+	Eventually(func() bool {
+		nodes := &v1.NodeList{}
+		if err := testEnv.Client.List(context.Background(), nodes); err != nil {
+			return false
+		}
+		return true
+	}).Should(BeTrue())
 
 	close(done)
 }, 60)
 
 var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	err := testEnv.Stop()
-	Expect(err).ToNot(HaveOccurred())
+	if testEnv != nil {
+		By("tearing down the test environment")
+		Expect(testEnv.Stop()).To(Succeed())
+	}
 })
