@@ -30,10 +30,22 @@ If you're new to the project and want to help, but don't know where to start, we
 ## Contributing a Patch
 
 1. If you haven't already done so, sign a Contributor License Agreement (see details above).
-1. Fork the desired repo, develop and test your code changes.
-1. Submit a pull request.
-  1. All code PR must be labeled with
-    ⚠️ (:warning:, major or breaking changes), ✨ (:sparkles:, minor or feature additions), 🐛 (:bug:, patch and bugfixes), 📖 (:book:, documentation or proposals), or 🏃 (:running:, other)
+2. Fork the desired repo, develop and test your code changes.
+    1. See the [Development Guide](docs/development.md) for more instructions on setting up your environment and testing changes locally.
+3. Submit a pull request.
+    1. All PRs should be labeled with one of
+         - ⚠️ (:warning:, major or breaking changes)
+         - ✨ (:sparkles:, feature additions)
+         - 🐛 (:bug:, patch and bug fixes)
+         - 📖 (:book:, documentation or proposals)
+         - 💚 (:green_heart:, testing)
+         - 💎 (:gem:, refactor)
+         - 🔧 (:wrench:, dev tooling and chores)
+         - 🌱 (:seedling:, update dependencies, minor or other)
+     2. All code changes must be covered by unit tests and E2E tests.
+     3. All new features should come with user documentation.
+ 4. Once the PR has been reviewed and is ready to be merged, commits should be [squashed](https://github.com/kubernetes/community/blob/master/contributors/guide/github-workflow.md#squash-commits). 
+    1. Ensure that commit message(s) are be meaningful and commit history is readable.
 
 All changes must be code reviewed. Coding conventions and standards are explained in the official [developer docs](https://github.com/kubernetes/community/tree/master/contributors/devel). Expect reviewers to request that you avoid common [go style mistakes](https://github.com/golang/go/wiki/CodeReviewComments) in your PRs.
 
