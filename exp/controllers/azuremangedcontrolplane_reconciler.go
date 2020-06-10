@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/pkg/errors"
@@ -51,15 +52,14 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 // Reconcile reconciles all the services in pre determined order
 func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	managedClusterSpec := &managedclusters.Spec{
-		Name:            scope.ControlPlane.Name,
-		ResourceGroup:   scope.ControlPlane.Spec.ResourceGroup,
-		Location:        scope.ControlPlane.Spec.Location,
-		Tags:            scope.ControlPlane.Spec.AdditionalTags,
-		Version:         scope.ControlPlane.Spec.Version,
-		LoadBalancerSKU: scope.ControlPlane.Spec.LoadBalancerSKU,
-		NetworkPlugin:   scope.ControlPlane.Spec.NetworkPlugin,
-		NetworkPolicy:   scope.ControlPlane.Spec.NetworkPolicy,
-		SSHPublicKey:    scope.ControlPlane.Spec.SSHPublicKey,
+		Name:          scope.ControlPlane.Name,
+		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
+		Location:      scope.ControlPlane.Spec.Location,
+		Tags:          scope.ControlPlane.Spec.AdditionalTags,
+		Version:       strings.TrimPrefix(scope.ControlPlane.Spec.Version, "v"),
+		NetworkPlugin: scope.ControlPlane.Spec.NetworkPlugin,
+		NetworkPolicy: scope.ControlPlane.Spec.NetworkPolicy,
+		SSHPublicKey:  scope.ControlPlane.Spec.SSHPublicKey,
 	}
 
 	scope.Logger.V(2).Info("Reconciling managed cluster")
@@ -83,15 +83,14 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 // Delete reconciles all the services in pre determined order
 func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	managedClusterSpec := &managedclusters.Spec{
-		Name:            scope.ControlPlane.Name,
-		ResourceGroup:   scope.ControlPlane.Spec.ResourceGroup,
-		Location:        scope.ControlPlane.Spec.Location,
-		Tags:            scope.ControlPlane.Spec.AdditionalTags,
-		Version:         scope.ControlPlane.Spec.Version,
-		LoadBalancerSKU: scope.ControlPlane.Spec.LoadBalancerSKU,
-		NetworkPlugin:   scope.ControlPlane.Spec.NetworkPlugin,
-		NetworkPolicy:   scope.ControlPlane.Spec.NetworkPolicy,
-		SSHPublicKey:    scope.ControlPlane.Spec.SSHPublicKey,
+		Name:          scope.ControlPlane.Name,
+		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
+		Location:      scope.ControlPlane.Spec.Location,
+		Tags:          scope.ControlPlane.Spec.AdditionalTags,
+		Version:       strings.TrimPrefix(scope.ControlPlane.Spec.Version, "v"),
+		NetworkPlugin: scope.ControlPlane.Spec.NetworkPlugin,
+		NetworkPolicy: scope.ControlPlane.Spec.NetworkPolicy,
+		SSHPublicKey:  scope.ControlPlane.Spec.SSHPublicKey,
 	}
 
 	if err := r.managedClustersSvc.Delete(ctx, managedClusterSpec); err != nil {
