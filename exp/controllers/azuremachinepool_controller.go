@@ -25,13 +25,10 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -212,18 +209,6 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	if machinePoolScope.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName == nil {
 		machinePoolScope.Info("Bootstrap data secret reference is not yet available")
 		return reconcile.Result{}, nil
-	}
-
-	// Check that the image is valid
-	// NOTE: this validation logic is also in the validating webhook
-	if machinePoolScope.AzureMachinePool.Spec.Template.Image != nil {
-		image := machinePoolScope.AzureMachinePool.Spec.Template.Image
-		if errs := infrav1.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
-			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
-			machinePoolScope.Info("Invalid image: %s", agg.Error())
-			r.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "InvalidImage", "Invalid image: %s", agg.Error())
-			return reconcile.Result{}, nil
-		}
 	}
 
 	ams := newAzureMachinePoolService(machinePoolScope, clusterScope)
