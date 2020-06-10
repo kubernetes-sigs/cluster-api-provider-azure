@@ -175,6 +175,21 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 	}
 
+	_, err = s.Client.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
+	if !azure.ResourceNotFound(err) {
+		if err != nil {
+			return errors.Wrapf(err, "failed to get scale set %s in %s", vmssSpec.Name, vmssSpec.ResourceGroup)
+		}
+		// scale set already exists, update it
+		// we do this to avoid overwriting fields in networkProfile modified by cloud-provider
+		update, err := getVMSSUpdateFromVMSS(vmss)
+		if err != nil {
+			return errors.Wrapf(err, "failed to generate scale set update parameters for %s", vmssSpec.Name)
+		}
+		update.VirtualMachineProfile.NetworkProfile = nil
+		return s.Client.Update(ctx, vmssSpec.ResourceGroup, vmssSpec.Name, update)
+	}
+
 	err = s.Client.CreateOrUpdate(
 		ctx,
 		vmssSpec.ResourceGroup,
@@ -228,4 +243,14 @@ func generateStorageProfile(vmssSpec Spec) (*compute.VirtualMachineScaleSetStora
 	storageProfile.ImageReference = imageRef
 
 	return storageProfile, nil
+}
+
+func getVMSSUpdateFromVMSS(vmss compute.VirtualMachineScaleSet) (compute.VirtualMachineScaleSetUpdate, error) {
+	json, err := vmss.MarshalJSON()
+	if err != nil {
+		return compute.VirtualMachineScaleSetUpdate{}, err
+	}
+	var update compute.VirtualMachineScaleSetUpdate
+	err = update.UnmarshalJSON(json)
+	return update, err
 }
