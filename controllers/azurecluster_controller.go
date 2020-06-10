@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,8 +40,9 @@ import (
 // AzureClusterReconciler reconciles a AzureCluster object
 type AzureClusterReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
+	Log              logr.Logger
+	Recorder         record.EventRecorder
+	ReconcileTimeout time.Duration
 }
 
 func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
@@ -55,7 +58,8 @@ func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates;azuremachinetemplates/status,verbs=get;list;watch
 
 func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "AzureCluster", req.Name)
 
 	// Fetch the AzureCluster instance
@@ -93,33 +97,32 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
-		if err := clusterScope.Close(); err != nil && reterr == nil {
+		if err := clusterScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
 	}()
 
 	// Handle deleted clusters
 	if !azureCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(clusterScope)
+		return r.reconcileDelete(ctx, clusterScope)
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileNormal(clusterScope)
+	return r.reconcileNormal(ctx, clusterScope)
 }
 
-func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	clusterScope.Info("Reconciling AzureCluster")
-
 	azureCluster := clusterScope.AzureCluster
 
 	// If the AzureCluster doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer)
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := clusterScope.PatchObject(); err != nil {
+	if err := clusterScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err := newAzureClusterReconciler(clusterScope).Reconcile()
+	err := newAzureClusterReconciler(clusterScope).Reconcile(ctx)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
@@ -141,12 +144,12 @@ func (r *AzureClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScop
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	clusterScope.Info("Reconciling AzureCluster delete")
 
 	azureCluster := clusterScope.AzureCluster
 
-	if err := newAzureClusterReconciler(clusterScope).Delete(); err != nil {
+	if err := newAzureClusterReconciler(clusterScope).Delete(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 	}
 

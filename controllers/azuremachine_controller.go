@@ -19,14 +19,18 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
@@ -42,8 +46,9 @@ import (
 // AzureMachineReconciler reconciles a AzureMachine object
 type AzureMachineReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
+	Log              logr.Logger
+	Recorder         record.EventRecorder
+	ReconcileTimeout time.Duration
 }
 
 func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
@@ -70,7 +75,8 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 
 func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	defer cancel()
 	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 
 	// Fetch the AzureMachine VM.
@@ -143,14 +149,14 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
-		if err := machineScope.Close(); err != nil && reterr == nil {
+		if err := machineScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
 	}()
 
 	// Handle deleted machines
 	if !azureMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(machineScope, clusterScope)
+		return r.reconcileDelete(ctx, machineScope, clusterScope)
 	}
 
 	// Handle non-deleted machines
@@ -158,11 +164,11 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 }
 
 // findVM queries the Azure APIs and retrieves the VM if it exists, returns nil otherwise.
-func (r *AzureMachineReconciler) findVM(scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
+func (r *AzureMachineReconciler) findVM(ctx context.Context, scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
 	var vm *infrav1.VM
 
 	// If the ProviderID is populated, describe the VM using its name and resource group name.
-	vm, err := ams.VMIfExists(scope.GetVMID())
+	vm, err := ams.VMIfExists(ctx, scope.GetVMID())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
 	}
@@ -181,7 +187,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	// If the AzureMachine doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := machineScope.PatchObject(); err != nil {
+	if err := machineScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -211,7 +217,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	ams := newAzureMachineService(machineScope, clusterScope)
 
 	// Get or create the virtual machine.
-	vm, err := r.getOrCreate(machineScope, ams)
+	vm, err := r.getOrCreate(ctx, machineScope, ams)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -255,7 +261,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	}
 
 	// Ensure that the tags are correct.
-	err = r.reconcileTags(machineScope, clusterScope, machineScope.AdditionalTags())
+	err = r.reconcileTags(ctx, machineScope, clusterScope, machineScope.AdditionalTags())
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
 	}
@@ -263,15 +269,15 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
-	vm, err := r.findVM(scope, ams)
+func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
+	vm, err := r.findVM(ctx, scope, ams)
 	if err != nil {
 		return nil, err
 	}
 
 	if vm == nil {
 		// Create a new AzureMachine VM if we couldn't find a running VM.
-		vm, err = ams.Create()
+		vm, err = ams.Create(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create AzureMachine VM")
 		}
@@ -280,10 +286,10 @@ func (r *AzureMachineReconciler) getOrCreate(scope *scope.MachineScope, ams *azu
 	return vm, nil
 }
 
-func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
 
-	if err := newAzureMachineService(machineScope, clusterScope).Delete(); err != nil {
+	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
 	}
 
@@ -300,8 +306,10 @@ func (r *AzureMachineReconciler) reconcileDelete(machineScope *scope.MachineScop
 // AzureClusterToAzureMachines is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
 // of AzureMachines.
 func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject) []ctrl.Request {
-	result := []ctrl.Request{}
+	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+	defer cancel()
 
+	result := []ctrl.Request{}
 	c, ok := o.Object.(*infrav1.AzureCluster)
 	if !ok {
 		r.Log.Error(errors.Errorf("expected a AzureCluster but got a %T", o.Object), "failed to get AzureMachine for AzureCluster")
@@ -309,7 +317,7 @@ func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject
 	}
 	log := r.Log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
 
-	cluster, err := util.GetOwnerCluster(context.TODO(), r.Client, c.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, r.Client, c.ObjectMeta)
 	switch {
 	case apierrors.IsNotFound(err) || cluster == nil:
 		return result
@@ -320,7 +328,7 @@ func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject
 
 	labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
 	machineList := &clusterv1.MachineList{}
-	if err := r.List(context.TODO(), machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
+	if err := r.List(ctx, machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
 		log.Error(err, "failed to list Machines")
 		return nil
 	}

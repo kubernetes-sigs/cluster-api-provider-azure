@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -37,8 +39,9 @@ import (
 // AzureManagedClusterReconciler reconciles a AzureManagedCluster object
 type AzureManagedClusterReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
+	Log              logr.Logger
+	Recorder         record.EventRecorder
+	ReconcileTimeout time.Duration
 }
 
 func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
@@ -54,7 +57,8 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, optio
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *AzureManagedClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "aksCluster", req.Name)
 
 	// Fetch the AzureManagedCluster instance

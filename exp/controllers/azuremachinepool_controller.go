@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
@@ -43,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	capzcntr "sigs.k8s.io/cluster-api-provider-azure/controllers"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -55,9 +57,10 @@ type (
 	// AzureMachinePoolReconciler reconciles a AzureMachinePool object
 	AzureMachinePoolReconciler struct {
 		client.Client
-		Log      logr.Logger
-		Scheme   *runtime.Scheme
-		Recorder record.EventRecorder
+		Log              logr.Logger
+		Scheme           *runtime.Scheme
+		Recorder         record.EventRecorder
+		ReconcileTimeout time.Duration
 	}
 
 	// azureMachinePoolService provides structure and behavior around the operations needed to reconcile Azure Machine Pools
@@ -99,7 +102,8 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 
 func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.TODO()
+	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	defer cancel()
 	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	azMachinePool := &infrav1exp.AzureMachinePool{}
@@ -171,14 +175,14 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
-		if err := machinePoolScope.Close(); err != nil && reterr == nil {
+		if err := machinePoolScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
 	}()
 
 	// Handle deleted machine pools
 	if !azMachinePool.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(machinePoolScope, clusterScope)
+		return r.reconcileDelete(ctx, machinePoolScope, clusterScope)
 	}
 
 	// Handle non-deleted machine pools
@@ -196,7 +200,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	// If the AzureMachine doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(machinePoolScope.AzureMachinePool, capiv1exp.MachinePoolFinalizer)
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
-	if err := machinePoolScope.PatchObject(); err != nil {
+	if err := machinePoolScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -214,7 +218,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	ams := newAzureMachinePoolService(machinePoolScope, clusterScope)
 
 	// Get or create the virtual machine.
-	vmss, err := ams.CreateOrUpdate()
+	vmss, err := ams.CreateOrUpdate(ctx)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -246,7 +250,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	}
 
 	// Ensure that the tags are correct.
-	err = r.reconcileTags(machinePoolScope, clusterScope, machinePoolScope.AdditionalTags())
+	err = r.reconcileTags(ctx, machinePoolScope, clusterScope, machinePoolScope.AdditionalTags())
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
 	}
@@ -254,10 +258,10 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureMachinePoolReconciler) reconcileDelete(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+func (r *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machinePoolScope.Info("Handling deleted AzureMachinePool")
 
-	if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(); err != nil {
+	if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
 	}
 
@@ -304,6 +308,9 @@ func machinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Lo
 // requests for reconciliation of AzureMachinePools.
 func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger) handler.ToRequestsFunc {
 	return func(o handler.MapObject) []reconcile.Request {
+		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		defer cancel()
+
 		c, ok := o.Object.(*infrav1.AzureCluster)
 		if !ok {
 			log.Error(errors.Errorf("expected a AzureCluster but got a %T", o.Object), "failed to get AzureCluster")
@@ -311,7 +318,7 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 		}
 		logWithValues := log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
 
-		cluster, err := util.GetOwnerCluster(context.TODO(), kClient, c.ObjectMeta)
+		cluster, err := util.GetOwnerCluster(ctx, kClient, c.ObjectMeta)
 		switch {
 		case apierrors.IsNotFound(err) || cluster == nil:
 			logWithValues.Info("owning cluster not found")
@@ -323,7 +330,7 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 
 		labels := map[string]string{capiv1.ClusterLabelName: cluster.Name}
 		mpl := &capiv1exp.MachinePoolList{}
-		if err := kClient.List(context.TODO(), mpl, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
+		if err := kClient.List(ctx, mpl, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
 			logWithValues.Error(err, "failed to list Machines")
 			return nil
 		}
@@ -346,7 +353,7 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 }
 
 // Ensure that the tags of the machine are correct
-func (r *AzureMachinePoolReconciler) reconcileTags(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
+func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
 	machinePoolScope.Info("Updating tags on AzureMachinePool")
 	annotation, err := r.AnnotationJSON(machinePoolScope.AzureMachinePool, capzcntr.TagsLastAppliedAnnotation)
 	if err != nil {
@@ -358,7 +365,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(machinePoolScope *scope.Machi
 			Name: machinePoolScope.Name(),
 		}
 		svc := scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.SubscriptionID)
-		vm, err := svc.Client.Get(clusterScope.Context, clusterScope.ResourceGroup(), machinePoolScope.Name())
+		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machinePoolScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VMSS")
 		}
@@ -372,13 +379,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(machinePoolScope *scope.Machi
 		}
 
 		vm.Tags = tags
-
-		err = svc.Client.CreateOrUpdate(
-			clusterScope.Context,
-			clusterScope.ResourceGroup(),
-			vmssSpec.Name,
-			vm)
-		if err != nil {
+		if err := svc.Client.CreateOrUpdate(ctx, clusterScope.ResourceGroup(), vmssSpec.Name, vm); err != nil {
 			return errors.Wrapf(err, "cannot update VMSS tags")
 		}
 
@@ -452,7 +453,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	}
 }
 
-func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
+func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1exp.VMSS, error) {
 	ampSpec := s.machinePoolScope.AzureMachinePool.Spec
 	var replicas int64
 	if s.machinePoolScope.MachinePool.Spec.Replicas != nil {
@@ -469,7 +470,7 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 		return nil, errors.Wrap(err, "failed to get VMSS image")
 	}
 
-	bootstrapData, err := s.machinePoolScope.GetBootstrapData()
+	bootstrapData, err := s.machinePoolScope.GetBootstrapData(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
 	}
@@ -492,12 +493,12 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 		AcceleratedNetworking:  ampSpec.Template.AcceleratedNetworking,
 	}
 
-	err = s.virtualMachinesScaleSetSvc.Reconcile(context.TODO(), vmssSpec)
+	err = s.virtualMachinesScaleSetSvc.Reconcile(ctx, vmssSpec)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or get machine")
 	}
 
-	newVMSS, err := s.virtualMachinesScaleSetSvc.Get(s.clusterScope.Context, vmssSpec)
+	newVMSS, err := s.virtualMachinesScaleSetSvc.Get(ctx, vmssSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get VMSS")
 	}
@@ -512,7 +513,7 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 
 	if vmss.State == infrav1.VMStateFailed {
 		// If VM failed provisioning, delete it so it can be recreated
-		err = s.virtualMachinesScaleSetSvc.Delete(s.clusterScope.Context, vmssSpec)
+		err = s.virtualMachinesScaleSetSvc.Delete(ctx, vmssSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to delete machine pool")
 		}
@@ -525,12 +526,12 @@ func (s *azureMachinePoolService) CreateOrUpdate() (*infrav1exp.VMSS, error) {
 }
 
 // Delete reconciles all the services in pre determined order
-func (s *azureMachinePoolService) Delete() error {
+func (s *azureMachinePoolService) Delete(ctx context.Context) error {
 	vmssSpec := &scalesets.Spec{
 		Name: s.machinePoolScope.Name(),
 	}
 
-	err := s.virtualMachinesScaleSetSvc.Delete(s.clusterScope.Context, vmssSpec)
+	err := s.virtualMachinesScaleSetSvc.Delete(ctx, vmssSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete machine pool")
 	}
@@ -539,12 +540,12 @@ func (s *azureMachinePoolService) Delete() error {
 }
 
 // Get fetches a VMSS if it exists
-func (s *azureMachinePoolService) Get() (*infrav1exp.VMSS, error) {
+func (s *azureMachinePoolService) Get(ctx context.Context) (*infrav1exp.VMSS, error) {
 	vmssSpec := &scalesets.Spec{
 		Name: s.machinePoolScope.Name(),
 	}
 
-	vmss, err := s.virtualMachinesScaleSetSvc.Get(s.clusterScope.Context, vmssSpec)
+	vmss, err := s.virtualMachinesScaleSetSvc.Get(ctx, vmssSpec)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "failed to fetch machine pool")
 	}

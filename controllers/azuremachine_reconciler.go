@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"encoding/base64"
 	"time"
 
@@ -62,14 +63,14 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (s *azureMachineService) Create() (*infrav1.VM, error) {
+func (s *azureMachineService) Create(ctx context.Context) (*infrav1.VM, error) {
 	nicName := azure.GenerateNICName(s.machineScope.Name())
-	nicErr := s.reconcileNetworkInterface(nicName)
+	nicErr := s.reconcileNetworkInterface(ctx, nicName)
 	if nicErr != nil {
 		return nil, errors.Wrapf(nicErr, "failed to create NIC %s for machine %s", nicName, s.machineScope.Name())
 	}
 
-	vm, vmErr := s.createVirtualMachine(nicName)
+	vm, vmErr := s.createVirtualMachine(ctx, nicName)
 	if vmErr != nil {
 		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
 	}
@@ -78,12 +79,12 @@ func (s *azureMachineService) Create() (*infrav1.VM, error) {
 }
 
 // Delete reconciles all the services in pre determined order
-func (s *azureMachineService) Delete() error {
+func (s *azureMachineService) Delete(ctx context.Context) error {
 	vmSpec := &virtualmachines.Spec{
 		Name: s.machineScope.Name(),
 	}
 
-	err := s.virtualMachinesSvc.Delete(s.clusterScope.Context, vmSpec)
+	err := s.virtualMachinesSvc.Delete(ctx, vmSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete machine")
 	}
@@ -100,7 +101,7 @@ func (s *azureMachineService) Delete() error {
 		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.Name()
 	}
 
-	err = s.networkInterfacesSvc.Delete(s.clusterScope.Context, networkInterfaceSpec)
+	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
@@ -108,7 +109,7 @@ func (s *azureMachineService) Delete() error {
 	OSDiskSpec := &disks.Spec{
 		Name: azure.GenerateOSDiskName(s.machineScope.Name()),
 	}
-	err = s.disksSvc.Delete(s.clusterScope.Context, OSDiskSpec)
+	err = s.disksSvc.Delete(ctx, OSDiskSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", s.machineScope.Name())
 	}
@@ -116,7 +117,7 @@ func (s *azureMachineService) Delete() error {
 	return nil
 }
 
-func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
+func (s *azureMachineService) VMIfExists(ctx context.Context, id *string) (*infrav1.VM, error) {
 	if id == nil {
 		s.clusterScope.Info("VM does not have an ID")
 		return nil, nil
@@ -125,7 +126,7 @@ func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 	vmSpec := &virtualmachines.Spec{
 		Name: s.machineScope.Name(),
 	}
-	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
+	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
 
 	if err != nil && vmInterface == nil {
 		return nil, nil
@@ -147,7 +148,7 @@ func (s *azureMachineService) VMIfExists(id *string) (*infrav1.VM, error) {
 
 // getVirtualMachineZone gets a random availability zones from available set,
 // this will hopefully be an input from upstream machinesets so all the vms are balanced
-func (s *azureMachineService) getVirtualMachineZone() (string, error) {
+func (s *azureMachineService) getVirtualMachineZone(ctx context.Context) (string, error) {
 	vmName := s.machineScope.AzureMachine.Name
 	vmSize := s.machineScope.AzureMachine.Spec.VMSize
 	location := s.machineScope.AzureMachine.Spec.Location
@@ -155,7 +156,7 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 	zonesSpec := &availabilityzones.Spec{
 		VMSize: to.StringPtr(vmSize),
 	}
-	zonesInterface, err := s.availabilityZonesSvc.Get(s.clusterScope.Context, zonesSpec)
+	zonesInterface, err := s.availabilityZonesSvc.Get(ctx, zonesSpec)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", vmSize, location)
 	}
@@ -197,7 +198,7 @@ func (s *azureMachineService) getVirtualMachineZone() (string, error) {
 	return selectedZone, nil
 }
 
-func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
+func (s *azureMachineService) reconcileNetworkInterface(ctx context.Context, nicName string) error {
 	networkInterfaceSpec := &networkinterfaces.Spec{
 		Name:                  nicName,
 		VnetName:              s.clusterScope.Vnet().Name,
@@ -221,7 +222,7 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", role, s.machineScope.Name())
 	}
 
-	err := s.networkInterfacesSvc.Reconcile(s.clusterScope.Context, networkInterfaceSpec)
+	err := s.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrap(err, "unable to create VM network interface")
 	}
@@ -229,7 +230,7 @@ func (s *azureMachineService) reconcileNetworkInterface(nicName string) error {
 	return err
 }
 
-func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM, error) {
+func (s *azureMachineService) createVirtualMachine(ctx context.Context, nicName string) (*infrav1.VM, error) {
 	var vm *infrav1.VM
 	decoded, err := base64.StdEncoding.DecodeString(s.machineScope.AzureMachine.Spec.SSHPublicKey)
 	if err != nil {
@@ -240,7 +241,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 		Name: s.machineScope.Name(),
 	}
 
-	vmInterface, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
+	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil && vmInterface == nil {
 		var vmZone string
 
@@ -255,7 +256,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 
 			if useAZ {
 				var zoneErr error
-				vmZone, zoneErr = s.getVirtualMachineZone()
+				vmZone, zoneErr = s.getVirtualMachineZone(ctx)
 				if zoneErr != nil {
 					return nil, errors.Wrap(zoneErr, "failed to get availability zone")
 				}
@@ -267,7 +268,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			return nil, errors.Wrap(err, "failed to get VM image")
 		}
 
-		bootstrapData, err := s.machineScope.GetBootstrapData()
+		bootstrapData, err := s.machineScope.GetBootstrapData(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
 		}
@@ -285,7 +286,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 			UserAssignedIdentities: s.machineScope.AzureMachine.Spec.UserAssignedIdentities,
 		}
 
-		err = s.virtualMachinesSvc.Reconcile(s.clusterScope.Context, vmSpec)
+		err = s.virtualMachinesSvc.Reconcile(ctx, vmSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create or get machine")
 		}
@@ -293,7 +294,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 		return nil, errors.Wrap(err, "failed to get vm")
 	}
 
-	newVM, err := s.virtualMachinesSvc.Get(s.clusterScope.Context, vmSpec)
+	newVM, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get vm")
 	}
@@ -308,7 +309,7 @@ func (s *azureMachineService) createVirtualMachine(nicName string) (*infrav1.VM,
 
 	if vm.State == infrav1.VMStateFailed {
 		// If VM failed provisioning, delete it so it can be recreated
-		err = s.virtualMachinesSvc.Delete(s.clusterScope.Context, vmSpec)
+		err = s.virtualMachinesSvc.Delete(ctx, vmSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to delete machine")
 		}
