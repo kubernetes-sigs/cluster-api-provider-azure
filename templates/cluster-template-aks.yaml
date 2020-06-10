@@ -36,8 +36,6 @@ kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
   namespace: default
-spec:
-  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool

@@ -43,8 +43,6 @@ apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedCluster
 metadata:
   name: ${CLUSTER_NAME}
-spec:
-  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 # We provision a default machine pool with no boostrap data (AKS will provide it).
 # We specify an AzureManagedMachinePool as the infrastructure machine it, which
