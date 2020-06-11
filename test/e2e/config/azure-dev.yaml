@@ -47,7 +47,7 @@ providers:
       - sourcePath: ../../../templates/cluster-template.yaml
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.17.4}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.3}"
   CNI: "../../templates/addons/calico.yaml"
 
 intervals:
