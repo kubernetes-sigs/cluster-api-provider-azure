@@ -178,7 +178,22 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		*properties.AgentPoolProfiles = append(*properties.AgentPoolProfiles, profile)
 	}
 
-	err := s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name, properties)
+	existingSpec, err := s.Get(ctx, spec)
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "failed to get existing managed cluster")
+	} else if !azure.ResourceNotFound(err) {
+		existingPool, ok := existingSpec.(containerservice.ManagedCluster)
+		if !ok {
+			return errors.New("expected managed cluster")
+		}
+		ps := *existingPool.ManagedClusterProperties.ProvisioningState
+		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
+			klog.V(2).Infof("Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded")
+			return nil
+		}
+	}
+
+	err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name, properties)
 	if err != nil {
 		return fmt.Errorf("failed to create or update managed cluster, %#+v", err)
 	}

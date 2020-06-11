@@ -68,10 +68,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to get existing agent pool")
 	}
-	existingPool, ok := existingSpec.(containerservice.AgentPool)
-	if !ok {
-		return errors.New("expected agent pool specification")
-	}
 
 	// For updates, we want to pass whatever we find in the existing
 	// cluster, normalized to reflect the input we originally provided.
@@ -84,6 +80,16 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			return fmt.Errorf("failed to create or update agent pool, %#+v", err)
 		}
 	} else {
+		existingPool, ok := existingSpec.(containerservice.AgentPool)
+		if !ok {
+			return errors.New("expected agent pool specification")
+		}
+		ps := *existingPool.ManagedClusterAgentPoolProfileProperties.ProvisioningState
+		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
+			klog.V(2).Infof("Unable to update existing agent pool in non terminal state.  Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded")
+			return nil
+		}
+
 		// Normalize individual agent pools to diff in case we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
