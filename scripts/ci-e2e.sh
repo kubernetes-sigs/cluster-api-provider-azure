@@ -95,6 +95,6 @@ if [[ "${RUN_CAPI_E2E:-false}" == "true" ]]; then
 fi 
 
 # run cluster-api-provider-azure e2e test suite
-if [[ -z "${RUN_CAPZ_E2E:-true}" == "true" ]]; then
+if [[ "${RUN_CAPZ_E2E:-true}" == "true" ]]; then
     make test-e2e
 fi
