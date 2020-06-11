@@ -19,6 +19,7 @@
 # This script is executed by presubmit `pull-cluster-api-provider-azure-e2e`
 # To run locally, set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID
 
+set -o errexit
 set -o nounset
 set -o pipefail
 
@@ -72,12 +73,9 @@ export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
 
 cleanup() {
-    source "${REPO_ROOT}/hack/log/redact.sh"
+    ${REPO_ROOT}/hack/log/redact.sh || true
 }
 
 trap cleanup EXIT
 
 make test-e2e
-test_status="${?}"
-
-exit "${test_status}"
