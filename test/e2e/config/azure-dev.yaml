@@ -42,13 +42,13 @@ providers:
     type: InfrastructureProvider
     versions:
       - name: v0.4.0
-        value: ../../../config
+        value: "${PWD}/config"
     files:
-      - sourcePath: ../../../templates/cluster-template.yaml
+      - sourcePath: "${PWD}/templates/cluster-template.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.3}"
-  CNI: "../../templates/addons/calico.yaml"
+  CNI: "${PWD}/templates/addons/calico.yaml"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]

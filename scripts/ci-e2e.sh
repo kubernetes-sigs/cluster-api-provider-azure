@@ -19,6 +19,7 @@
 # This script is executed by presubmit `pull-cluster-api-provider-azure-e2e`
 # To run locally, set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID
 
+set -o errexit
 set -o nounset
 set -o pipefail
 
@@ -47,6 +48,9 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
+export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
+mkdir -p "$ARTIFACTS"
+
 export REGISTRY="e2e"
 export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
 export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
@@ -71,12 +75,26 @@ export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
 
 cleanup() {
-    source "${REPO_ROOT}/hack/log/redact.sh"
+    ${REPO_ROOT}/hack/log/redact.sh || true
 }
 
 trap cleanup EXIT
 
-make test-e2e
-test_status="${?}"
+run_capi_e2e() {
+    pushd "$(go env GOPATH)/src/sigs.k8s.io/cluster-api"
+    make test-e2e
+    popd
+}
 
-exit "${test_status}"
+make generate-e2e-conf
+export E2E_CONF_FILE="${PWD}/test/e2e/config/azure-dev-envsubst.yaml"
+
+# run core cluster-api e2e test suite
+if [[ "${RUN_CAPI_E2E:-false}" == "true" ]]; then
+    run_capi_e2e
+fi 
+
+# run cluster-api-provider-azure e2e test suite
+if [[ -z "${RUN_CAPZ_E2E:-true}" == "true" ]]; then
+    make test-e2e
+fi

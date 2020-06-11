@@ -113,11 +113,14 @@ test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) generate lint ## Run tests
 test-integration: ## Run integration tests
 	go test -v -tags=integration ./test/integration/...
 
-.PHONY: test-e2e
-test-e2e: $(ENVSUBST) ## Run e2e tests
+.PHONY: generate-e2e-conf
+generate-e2e-conf: $(ENVSUBST) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
+	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST)
+
+.PHONY: test-e2e
+test-e2e: $(ENVSUBST) ## Run e2e tests
 	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=90m \
 		-e2e.artifacts-folder="$(ARTIFACTS)" \
 		-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
