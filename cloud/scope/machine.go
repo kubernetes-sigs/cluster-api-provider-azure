@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -185,6 +186,17 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 	}
 
 	return []azure.DiskSpec{spec}
+}
+
+// BastionSpecs returns the bastion specs.
+func (m *MachineScope) BastionSpecs() []azure.BastionSpec {
+	spec := azure.BastionSpec{
+		Name:         azure.GenerateOSDiskName(m.Name()),
+		SubnetName:   m.Subnet().Name,
+		PublicIPName: azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name())),
+		VNetName:     m.Vnet().Name,
+	}
+	return []azure.BastionSpec{spec}
 }
 
 // RoleAssignmentSpecs returns the role assignment specs.
