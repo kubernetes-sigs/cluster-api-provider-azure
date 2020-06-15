@@ -90,10 +90,6 @@ func TestInvalidVM(t *testing.T) {
 	// Wrong Spec
 	wrongSpec := &network.PublicIPAddress{}
 
-	_, err = s.Get(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-
 	err = s.Reconcile(context.TODO(), &wrongSpec)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))

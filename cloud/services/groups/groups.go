@@ -28,19 +28,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
 
-// Get provides information about a resource group.
-func (s *Service) Get(ctx context.Context, spec interface{}) (resources.Group, error) {
-	resourceGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup())
-	if err != nil && azure.ResourceNotFound(err) {
-		return resources.Group{}, errors.Wrapf(err, "resource group %s not found", s.Scope.ResourceGroup())
-	}
-
-	return resourceGroup, err
-}
-
 // Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	if _, err := s.Get(ctx, spec); err == nil {
+	if _, err := s.Client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
 		// resource group already exists, skip creation
 		return nil
 	}
@@ -62,7 +52,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the resource group with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	managed, err := s.isGroupManaged(ctx, spec)
+	managed, err := s.isGroupManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get resource group management state")
 	}
@@ -85,8 +75,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	return nil
 }
 
-func (s *Service) isGroupManaged(ctx context.Context, spec interface{}) (bool, error) {
-	group, err := s.Get(ctx, spec)
+func (s *Service) isGroupManaged(ctx context.Context) (bool, error) {
+	group, err := s.Client.Get(ctx, s.Scope.ResourceGroup())
 	if err != nil {
 		return false, err
 	}

@@ -91,22 +91,13 @@ func TestNewService(t *testing.T) {
 func TestService_Get(t *testing.T) {
 	cases := []struct {
 		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{}
+		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec
 		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope)
 		Expect      func(ctx context.Context, g *gomega.GomegaWithT, result interface{}, err error)
 	}{
 		{
-			Name: "WithInvalidSepcType",
-			SpecFactory: func(g *gomega.GomegaWithT, _ *scope.ClusterScope, _ *scope.MachinePoolScope) interface{} {
-				return "bin"
-			},
-			Expect: func(_ context.Context, g *gomega.GomegaWithT, result interface{}, err error) {
-				g.Expect(err).To(gomega.MatchError("invalid VMSS specification"))
-			},
-		},
-		{
 			Name: "WithValidSpecBut404FromAzureOnVMSS",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec {
 				return &Spec{
 					Name:                   mpScope.Name(),
 					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
@@ -133,7 +124,7 @@ func TestService_Get(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecBut404FromAzureOnInstances",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec {
 				return &Spec{
 					Name:                   mpScope.Name(),
 					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
@@ -161,7 +152,7 @@ func TestService_Get(t *testing.T) {
 		},
 		{
 			Name: "WithValidSpecWithVMSSAndInstancesReturned",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec {
 				return &Spec{
 					Name:                   mpScope.Name(),
 					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,

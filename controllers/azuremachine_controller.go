@@ -276,10 +276,10 @@ func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.M
 	}
 
 	if vm == nil {
-		// Create a new AzureMachine VM if we couldn't find a running VM.
-		vm, err = ams.Create(ctx)
+		// Create a new VM if we couldn't find a running VM.
+		vm, err = ams.Reconcile(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create AzureMachine VM")
+			return nil, errors.Wrapf(err, "failed to reconcile AzureMachine")
 		}
 	}
 

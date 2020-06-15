@@ -32,13 +32,11 @@ type Service interface {
 // Cluster/Machine specs, this interface should be removed.
 type GetterService interface {
 	Get(ctx context.Context, spec interface{}) (interface{}, error)
-	Reconcile(ctx context.Context, spec interface{}) error
-	Delete(ctx context.Context, spec interface{}) error
 }
 
-// CredentialGetter is a GetterService which knows how to retrieve credentials for an Azure
+// CredentialGetter is a Service which knows how to retrieve credentials for an Azure
 // resource in a resource group.
 type CredentialGetter interface {
-	GetterService
+	Service
 	GetCredentials(ctx context.Context, group string, cluster string) ([]byte, error)
 }

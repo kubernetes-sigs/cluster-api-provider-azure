@@ -37,7 +37,7 @@ import (
 // azureManagedControlPlaneReconciler are list of services required by cluster controller
 type azureManagedControlPlaneReconciler struct {
 	kubeclient         client.Client
-	managedClustersSvc azure.CredentialGetter
+	managedClustersSvc *managedclusters.Service
 }
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope

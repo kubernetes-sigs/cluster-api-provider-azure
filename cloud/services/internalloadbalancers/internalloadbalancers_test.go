@@ -91,10 +91,6 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
-	_, err = s.Get(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-
 	err = s.Delete(context.TODO(), &wrongSpec)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))

@@ -37,15 +37,6 @@ type Spec struct {
 	IPAddress  string
 }
 
-// Get provides information about an internal load balancer.
-func (s *Service) Get(ctx context.Context, spec interface{}) (network.LoadBalancer, error) {
-	internalLBSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.LoadBalancer{}, errors.New("invalid internal load balancer specification")
-	}
-	return s.Client.Get(ctx, s.Scope.ResourceGroup(), internalLBSpec.Name)
-}
-
 // Reconcile gets/creates/updates an internal load balancer.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	internalLBSpec, ok := spec.(*Spec)
@@ -60,7 +51,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	lbName := internalLBSpec.Name
 	var privateIP string
 
-	internalLB, err := s.Get(ctx, internalLBSpec)
+	internalLB, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), internalLBSpec.Name)
 	if err == nil {
 		ipConfigs := internalLB.LoadBalancerPropertiesFormat.FrontendIPConfigurations
 		if ipConfigs != nil && len(*ipConfigs) > 0 {

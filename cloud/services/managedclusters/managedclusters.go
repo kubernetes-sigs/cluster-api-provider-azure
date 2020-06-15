@@ -88,7 +88,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	return s.Client.Get(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
 }
 
-// Get fetches a managed cluster kubeconfig from Azure.
+// GetCredentials fetches a managed cluster kubeconfig from Azure.
 func (s *Service) GetCredentials(ctx context.Context, group, name string) ([]byte, error) {
 	return s.Client.GetCredentials(ctx, group, name)
 }
@@ -178,15 +178,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		*properties.AgentPoolProfiles = append(*properties.AgentPoolProfiles, profile)
 	}
 
-	existingSpec, err := s.Get(ctx, spec)
+	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to get existing managed cluster")
 	} else if !azure.ResourceNotFound(err) {
-		existingPool, ok := existingSpec.(containerservice.ManagedCluster)
-		if !ok {
-			return errors.New("expected managed cluster")
-		}
-		ps := *existingPool.ManagedClusterProperties.ProvisioningState
+		ps := *existingMC.ManagedClusterProperties.ProvisioningState
 		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
 			klog.V(2).Infof("Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded")
 			return nil

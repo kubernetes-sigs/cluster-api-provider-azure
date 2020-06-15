@@ -126,18 +126,6 @@ func (s *Service) filterUniqueForLocation(ctx context.Context, res *compute.Reso
 	return zones, nil
 }
 
-// Reconcile no-op.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	// Not implemented since there is nothing to reconcile
-	return nil
-}
-
-// Delete no-op.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	// Not implemented since there is nothing to delete
-	return nil
-}
-
 func contains(strSlice []string, val string) bool {
 	for _, c := range strSlice {
 		if c == val {

@@ -36,21 +36,6 @@ type Spec struct {
 	Role         string
 }
 
-// Get provides information about a public load balancer.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	publicLBSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.LoadBalancer{}, errors.New("invalid public loadbalancer specification")
-	}
-	lb, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), publicLBSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "load balancer %s not found", publicLBSpec.Name)
-	} else if err != nil {
-		return lb, err
-	}
-	return lb, nil
-}
-
 // Reconcile gets/creates/updates a public load balancer.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	publicLBSpec, ok := spec.(*Spec)

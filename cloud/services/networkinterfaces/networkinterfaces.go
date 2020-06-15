@@ -42,20 +42,6 @@ type Spec struct {
 	AcceleratedNetworking    *bool
 }
 
-// Get provides information about a network interface.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	nicSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.Interface{}, errors.New("invalid network interface specification")
-	}
-	nic, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "network interface %s not found", nicSpec.Name)
-	}
-
-	return nic, err
-}
-
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	nicSpec, ok := spec.(*Spec)
