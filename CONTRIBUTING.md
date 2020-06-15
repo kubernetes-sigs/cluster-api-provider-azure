@@ -34,14 +34,14 @@ If you're new to the project and want to help, but don't know where to start, we
     1. See the [Development Guide](docs/development.md) for more instructions on setting up your environment and testing changes locally.
 3. Submit a pull request.
     1. All PRs should be labeled with one of
-         - ⚠️ (:warning:, major or breaking changes)
-         - ✨ (:sparkles:, feature additions)
-         - 🐛 (:bug:, patch and bug fixes)
-         - 📖 (:book:, documentation or proposals)
-         - 💚 (:green_heart:, testing)
-         - 💎 (:gem:, refactor)
-         - 🔧 (:wrench:, dev tooling and chores)
-         - 🌱 (:seedling:, update dependencies, minor or other)
+         - ⚠️ (`:warning:`, major or breaking changes)
+         - ✨ (`:sparkles:`, feature additions)
+         - 🐛 (`:bug:`, patch and bug fixes)
+         - 📖 (`:book:`, documentation or proposals)
+         - 💚 (`:green_heart:`, testing)
+         - 💎 (`:gem:`, refactor)
+         - 🔧 (`:wrench:`, dev tooling and chores)
+         - 🌱 (`:seedling:`, update dependencies, minor or other)
      2. All code changes must be covered by unit tests and E2E tests.
      3. All new features should come with user documentation.
  4. Once the PR has been reviewed and is ready to be merged, commits should be [squashed](https://github.com/kubernetes/community/blob/master/contributors/guide/github-workflow.md#squash-commits). 
