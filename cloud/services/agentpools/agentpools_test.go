@@ -22,25 +22,124 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools/mock_agentpools"
 )
 
-func TestReconcile(t *testing.T) {
+const (
+	expectedInvalidSpec = "invalid agent pool specification"
+)
+
+func TestInvalidAgentPoolsSpec(t *testing.T) {
 	g := NewWithT(t)
 
+	mockCtrl := gomock.NewController(t)
+	agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+
+	s := &Service{
+		Client: agentpoolsMock,
+	}
+
+	// Wrong Spec
+	wrongSpec := &network.LoadBalancer{}
+
+	err := s.Reconcile(context.TODO(), &wrongSpec)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
+
+	_, err = s.Get(context.TODO(), &wrongSpec)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
+
+	err = s.Delete(context.TODO(), &wrongSpec)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
+}
+
+func TestGetAgentPools(t *testing.T) {
+	testcases := []struct {
+		name           string
+		agentPoolsSpec Spec
+		expectedError  string
+		expect         func(m *mock_agentpools.MockClientMockRecorder)
+	}{
+		{
+			name: "get existing agent pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, nil)
+			},
+		},
+		{
+			name: "agent pool not found",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+			},
+			expectedError: "agent pool my-agent-pool not found: #: Not found: StatusCode=404",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+		},
+		{
+			name: "fail to get agent pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+			},
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			mockCtrl := gomock.NewController(t)
+			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+
+			tc.expect(agentpoolsMock.EXPECT())
+
+			s := &Service{
+				Client: agentpoolsMock,
+			}
+
+			_, err := s.Get(context.TODO(), &tc.agentPoolsSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestReconcile(t *testing.T) {
 	provisioningstatetestcases := []struct {
 		name                     string
-		agentpoolspec            Spec
+		agentpoolSpec            Spec
 		provisioningStatesToTest []string
 		expectedError            string
 		expect                   func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string)
 	}{
 		{
 			name: "agentpool in terminal provisioning state",
-			agentpoolspec: Spec{
+			agentpoolSpec: Spec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				Name:          "my-agentpool",
@@ -56,7 +155,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "agentpool in nonterminal provisioning state",
-			agentpoolspec: Spec{
+			agentpoolSpec: Spec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				Name:          "my-agentpool",
@@ -75,6 +174,8 @@ func TestReconcile(t *testing.T) {
 		for _, provisioningstate := range tc.provisioningStatesToTest {
 			t.Logf("Testing agentpool provision state: " + provisioningstate)
 			t.Run(tc.name, func(t *testing.T) {
+				g := NewWithT(t)
+
 				mockCtrl := gomock.NewController(t)
 				agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
 
@@ -84,7 +185,7 @@ func TestReconcile(t *testing.T) {
 					Client: agentpoolsMock,
 				}
 
-				err := s.Reconcile(context.TODO(), &tc.agentpoolspec)
+				err := s.Reconcile(context.TODO(), &tc.agentpoolSpec)
 				if tc.expectedError != "" {
 					g.Expect(err).To(HaveOccurred())
 					g.Expect(err).To(MatchError(tc.expectedError))
@@ -97,14 +198,14 @@ func TestReconcile(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name          string
-		agentpoolspec Spec
-		expectedError string
-		expect        func(m *mock_agentpools.MockClientMockRecorder)
+		name           string
+		agentPoolsSpec Spec
+		expectedError  string
+		expect         func(m *mock_agentpools.MockClientMockRecorder)
 	}{
 		{
 			name: "no agentpool exists",
-			agentpoolspec: Spec{
+			agentPoolsSpec: Spec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				Name:          "my-agentpool",
@@ -115,11 +216,112 @@ func TestReconcile(t *testing.T) {
 				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
+		{
+			name: "fail to get existing agent pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+				SKU:           "SKU123",
+				Version:       to.StringPtr("9.99.9999"),
+				Replicas:      2,
+				OSDiskSizeGB:  100,
+			},
+			expectedError: "failed to get existing agent pool: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name: "can create an Agent Pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+				SKU:           "SKU123",
+				Version:       to.StringPtr("9.99.9999"),
+				Replicas:      2,
+				OSDiskSizeGB:  100,
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(nil)
+			},
+		},
+		{
+			name: "fail to create an Agent Pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+				SKU:           "SKU123",
+				Version:       to.StringPtr("9.99.9999"),
+				Replicas:      2,
+				OSDiskSizeGB:  100,
+			},
+			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name: "fail to update an Agent Pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+				SKU:           "SKU123",
+				Version:       to.StringPtr("9.99.9999"),
+				Replicas:      2,
+				OSDiskSizeGB:  100,
+			},
+			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+						Count:               to.Int32Ptr(3),
+						OsDiskSizeGB:        to.Int32Ptr(20),
+						VMSize:              containerservice.VMSizeTypesStandardA1,
+						OrchestratorVersion: to.StringPtr("9.99.9999"),
+						ProvisioningState:   to.StringPtr("Failed"),
+					},
+				}, nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name: "no update needed on Agent Pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+				SKU:           "Standard_A1",
+				Version:       to.StringPtr("9.99.9999"),
+				Replicas:      2,
+				OSDiskSizeGB:  100,
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+						Count:               to.Int32Ptr(2),
+						OsDiskSizeGB:        to.Int32Ptr(100),
+						VMSize:              containerservice.VMSizeTypesStandardA1,
+						OrchestratorVersion: to.StringPtr("9.99.9999"),
+						ProvisioningState:   to.StringPtr("Succeeded"),
+					},
+				}, nil)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
 		t.Logf("Testing " + tc.name)
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
 			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
 
@@ -129,13 +331,84 @@ func TestReconcile(t *testing.T) {
 				Client: agentpoolsMock,
 			}
 
-			err := s.Reconcile(context.TODO(), &tc.agentpoolspec)
+			err := s.Reconcile(context.TODO(), &tc.agentPoolsSpec)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 				mockCtrl.Finish()
+			}
+		})
+	}
+}
+
+func TestDeleteAgentPools(t *testing.T) {
+	testcases := []struct {
+		name           string
+		agentPoolsSpec Spec
+		expectedError  string
+		expect         func(m *mock_agentpools.MockClientMockRecorder)
+	}{
+		{
+			name: "successfully delete an existing agent pool",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-cluster", "my-agent-pool")
+			},
+		},
+		{
+			name: "agent pool already deleted",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+			},
+			expectedError: "",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+		},
+		{
+			name: "agent pool deletion fails",
+			agentPoolsSpec: Spec{
+				Name:          "my-agent-pool",
+				ResourceGroup: "my-rg",
+				Cluster:       "my-cluster",
+			},
+			expectedError: "failed to delete agent pool my-agent-pool in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_agentpools.MockClientMockRecorder) {
+				m.Delete(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			mockCtrl := gomock.NewController(t)
+			agentPoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+
+			tc.expect(agentPoolsMock.EXPECT())
+
+			s := &Service{
+				Client: agentPoolsMock,
+			}
+
+			err := s.Delete(context.TODO(), &tc.agentPoolsSpec)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}

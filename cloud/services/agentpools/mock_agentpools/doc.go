@@ -17,4 +17,5 @@ limitations under the License.
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination agentpools_mock.go -package mock_agentpools -source ../client.go Client
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt agentpools_mock.go > _agentpools_mock.go && mv _agentpools_mock.go agentpools_mock.go"
+
 package mock_agentpools //nolint
