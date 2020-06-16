@@ -18,7 +18,6 @@ package agentpools
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/google/go-cmp/cmp"
@@ -42,16 +41,24 @@ type Spec struct {
 func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
 	agentPoolSpec, ok := spec.(*Spec)
 	if !ok {
-		return containerservice.AgentPool{}, errors.New("expected agent pool specification")
+		return containerservice.AgentPool{}, errors.New("invalid agent pool specification")
 	}
-	return s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
+
+	agentPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
+	if err != nil && azure.ResourceNotFound(err) {
+		return containerservice.AgentPool{}, errors.Wrapf(err, "agent pool %s not found", agentPoolSpec.Name)
+	} else if err != nil {
+		return agentPool, err
+	}
+
+	return agentPool, nil
 }
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	agentPoolSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("expected agent pool specification")
+		return errors.New("invalid agent pool specification")
 	}
 
 	profile := containerservice.AgentPool{
@@ -77,7 +84,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if isCreate {
 		err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
 		if err != nil {
-			return fmt.Errorf("failed to create or update agent pool, %#+v", err)
+			return errors.Wrap(err, "failed to create or update agent pool")
 		}
 	} else {
 		existingPool, ok := existingSpec.(containerservice.AgentPool)
@@ -107,7 +114,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
 			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
 			if err != nil {
-				return fmt.Errorf("failed to create or update agent pool, %#+v", err.Error())
+				return errors.Wrap(err, "failed to create or update agent pool")
 			}
 		} else {
 			klog.V(2).Infof("Normalized and desired agent pool matched, no update needed")
@@ -121,7 +128,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	agentPoolSpec, ok := spec.(*Spec)
 	if !ok {
-		return errors.New("expected agent pool specification")
+		return errors.New("invalid agent pool specification")
 	}
 
 	klog.V(2).Infof("deleting agent pool  %s ", agentPoolSpec.Name)

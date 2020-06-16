@@ -29,6 +29,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 
+	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -42,12 +43,29 @@ func init() {
 }
 
 const (
-	subscriptionID = "123"
+	expectedInvalidSpec = "invalid availability zones specification"
+	subscriptionID      = "123"
 )
 
-func TestGetAvailabilityZones(t *testing.T) {
+func TestInvalidAvailabilityZonesSpec(t *testing.T) {
 	g := NewWithT(t)
 
+	mockCtrl := gomock.NewController(t)
+	agentpoolsMock := mock_availabilityzones.NewMockClient(mockCtrl)
+
+	s := &Service{
+		Client: agentpoolsMock,
+	}
+
+	// Wrong Spec
+	wrongSpec := &network.LoadBalancer{}
+
+	_, err := s.Get(context.TODO(), &wrongSpec)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(expectedInvalidSpec))
+}
+
+func TestGetAvailabilityZones(t *testing.T) {
 	testcases := []struct {
 		name                 string
 		availabilityZoneSpec Spec
@@ -98,6 +116,8 @@ func TestGetAvailabilityZones(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
 			azMock := mock_availabilityzones.NewMockClient(mockCtrl)
 
