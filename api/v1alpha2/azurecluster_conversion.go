@@ -68,6 +68,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	// Manually convert conditions
+	dst.SetConditions(restored.GetConditions())
+
 	return nil
 }
 

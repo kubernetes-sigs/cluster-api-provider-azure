@@ -30,6 +30,7 @@ import (
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -186,6 +187,12 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
+		conditions.SetSummary(machineScope.AzureMachine,
+			conditions.WithConditions(
+				infrav1.VMRunningCondition,
+			),
+		)
+
 		if err := machineScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
@@ -230,12 +237,14 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 	if !clusterScope.Cluster.Status.InfrastructureReady {
 		machineScope.Info("Cluster infrastructure is not ready yet")
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
 	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		machineScope.Info("Bootstrap data secret reference is not yet available")
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.WaitingForBootstrapDataReason, clusterv1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
 	}
 
@@ -272,16 +281,20 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	switch vm.State {
 	case infrav1.VMStateSucceeded:
 		machineScope.V(2).Info("VM is running", "id", *machineScope.GetVMID())
+		conditions.MarkTrue(machineScope.AzureMachine, infrav1.VMRunningCondition)
 		machineScope.SetReady()
 	case infrav1.VMStateCreating:
 		machineScope.V(2).Info("VM is creating", "id", *machineScope.GetVMID())
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNCreatingReason, clusterv1.ConditionSeverityInfo, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateUpdating:
 		machineScope.V(2).Info("VM is updating", "id", *machineScope.GetVMID())
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNUpdatingReason, clusterv1.ConditionSeverityInfo, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateDeleting:
 		machineScope.Info("Unexpected VM deletion", "state", vm.State, "instance-id", *machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure VM deletion")
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDDeletingReason, clusterv1.ConditionSeverityWarning, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateFailed:
 		machineScope.SetNotReady()
@@ -289,12 +302,14 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "FailedVMState", "Azure VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", vm.State))
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityWarning, "")
 	default:
 		machineScope.SetNotReady()
 		machineScope.Info("VM state is undefined", "state", vm.State, "instance-id", *machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnhandledVMState", "Azure VM state is undefined")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state %q is undefined", vm.State))
+		conditions.MarkUnknown(machineScope.AzureMachine, infrav1.VMRunningCondition, "", "")
 	}
 
 	// Ensure that the tags are correct.
@@ -309,6 +324,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
 	vm, err := r.findVM(ctx, scope, ams)
 	if err != nil {
+		conditions.MarkFalse(scope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNotFoundReason, clusterv1.ConditionSeverityError, err.Error())
 		return nil, err
 	}
 
@@ -316,6 +332,7 @@ func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.M
 		// Create a new VM if we couldn't find a running VM.
 		vm, err = ams.Reconcile(ctx)
 		if err != nil {
+			conditions.MarkFalse(scope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 			return nil, errors.Wrapf(err, "failed to reconcile AzureMachine")
 		}
 	}
