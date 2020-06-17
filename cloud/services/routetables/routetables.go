@@ -31,21 +31,6 @@ type Spec struct {
 	Name string
 }
 
-// Get provides information about a route table.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	routeTableSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.RouteTable{}, errors.New("invalid Route Table Specification")
-	}
-	routeTable, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "route table %s not found", routeTableSpec.Name)
-	} else if err != nil {
-		return routeTable, err
-	}
-	return routeTable, nil
-}
-
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {

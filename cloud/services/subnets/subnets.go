@@ -40,13 +40,9 @@ type Spec struct {
 	InternalLBIPAddress string
 }
 
-// Get provides information about a subnet.
-func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.SubnetSpec, error) {
-	subnetSpec, ok := spec.(*Spec)
-	if !ok {
-		return nil, errors.New("Invalid Subnet Specification")
-	}
-	subnet, err := s.Client.Get(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec.VnetName, subnetSpec.Name)
+// getExisting provides information about an existing subnet.
+func (s *Service) getExisting(ctx context.Context, rgName string, spec *Spec) (*infrav1.SubnetSpec, error) {
+	subnet, err := s.Client.Get(ctx, rgName, spec.VnetName, spec.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +62,8 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.SubnetSpe
 		}
 	}
 	return &infrav1.SubnetSpec{
-		Role:                subnetSpec.Role,
-		InternalLBIPAddress: subnetSpec.InternalLBIPAddress,
+		Role:                spec.Role,
+		InternalLBIPAddress: spec.InternalLBIPAddress,
 		Name:                to.String(subnet.Name),
 		ID:                  to.String(subnet.ID),
 		CidrBlock:           to.String(subnet.SubnetPropertiesFormat.AddressPrefix),
@@ -82,17 +78,23 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("Invalid Subnet Specification")
 	}
-	if subnet, err := s.Get(ctx, subnetSpec); err == nil {
-		// subnet already exists, skip creation
+	existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
+	if err == nil {
+		// subnet already exists, update the spec and skip creation
 		if subnetSpec.Role == infrav1.SubnetControlPlane {
-			subnet.DeepCopyInto(s.Scope.ControlPlaneSubnet())
+			existingSubnet.DeepCopyInto(s.Scope.ControlPlaneSubnet())
 		} else if subnetSpec.Role == infrav1.SubnetNode {
-			subnet.DeepCopyInto(s.Scope.NodeSubnet())
+			existingSubnet.DeepCopyInto(s.Scope.NodeSubnet())
 		}
 		return nil
 	}
+	if !azure.ResourceNotFound(err) {
+		if err != nil {
+			return errors.Wrap(err, "failed to get subnet")
+		}
+	}
 	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
-		// if vnet is unmanaged, we expect all subnets to be created as well
+		// if the vnet is unmanaged, we expect all subnets to be created as well
 		return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
 	}
 

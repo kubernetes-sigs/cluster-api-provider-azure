@@ -51,82 +51,9 @@ func TestInvalidAgentPoolsSpec(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))
 
-	_, err = s.Get(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-
 	err = s.Delete(context.TODO(), &wrongSpec)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))
-}
-
-func TestGetAgentPools(t *testing.T) {
-	testcases := []struct {
-		name           string
-		agentPoolsSpec Spec
-		expectedError  string
-		expect         func(m *mock_agentpools.MockClientMockRecorder)
-	}{
-		{
-			name: "get existing agent pool",
-			agentPoolsSpec: Spec{
-				Name:          "my-agent-pool",
-				ResourceGroup: "my-rg",
-				Cluster:       "my-cluster",
-			},
-			expectedError: "",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, nil)
-			},
-		},
-		{
-			name: "agent pool not found",
-			agentPoolsSpec: Spec{
-				Name:          "my-agent-pool",
-				ResourceGroup: "my-rg",
-				Cluster:       "my-cluster",
-			},
-			expectedError: "agent pool my-agent-pool not found: #: Not found: StatusCode=404",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-			},
-		},
-		{
-			name: "fail to get agent pool",
-			agentPoolsSpec: Spec{
-				Name:          "my-agent-pool",
-				ResourceGroup: "my-rg",
-				Cluster:       "my-cluster",
-			},
-			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-
-			mockCtrl := gomock.NewController(t)
-			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
-
-			tc.expect(agentpoolsMock.EXPECT())
-
-			s := &Service{
-				Client: agentpoolsMock,
-			}
-
-			_, err := s.Get(context.TODO(), &tc.agentPoolsSpec)
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
 }
 
 func TestReconcile(t *testing.T) {

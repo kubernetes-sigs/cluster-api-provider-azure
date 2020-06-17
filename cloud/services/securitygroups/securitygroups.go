@@ -39,21 +39,6 @@ type Spec struct {
 	IsControlPlane bool
 }
 
-// Get provides information about a network security group.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	nsgSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.SecurityGroup{}, errors.New("invalid security groups specification")
-	}
-	securityGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "security group %s not found", nsgSpec.Name)
-	} else if err != nil {
-		return securityGroup, err
-	}
-	return securityGroup, nil
-}
-
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {

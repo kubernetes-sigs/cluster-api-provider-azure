@@ -40,33 +40,33 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 )
 
-// azureClusterReconciler are list of services required by cluster controller
+// azureClusterReconciler is the reconciler called by the AzureCluster controller
 type azureClusterReconciler struct {
-	scope            *scope.ClusterScope
-	groupsSvc        azure.Service
-	vnetSvc          azure.Service
-	securityGroupSvc azure.Service
-	routeTableSvc    azure.Service
-	subnetsSvc       azure.Service
-	internalLBSvc    azure.Service
-	publicIPSvc      azure.Service
-	publicLBSvc      azure.Service
-	availZoneSvc     azure.GetterService
+	scope                *scope.ClusterScope
+	groupsSvc            azure.Service
+	vnetSvc              azure.Service
+	securityGroupSvc     azure.Service
+	routeTableSvc        azure.Service
+	subnetsSvc           azure.Service
+	internalLBSvc        azure.Service
+	publicIPSvc          azure.Service
+	publicLBSvc          azure.Service
+	availabilityZonesSvc azure.GetterService
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
 func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
 	return &azureClusterReconciler{
-		scope:            scope,
-		groupsSvc:        groups.NewService(scope),
-		vnetSvc:          virtualnetworks.NewService(scope),
-		securityGroupSvc: securitygroups.NewService(scope),
-		routeTableSvc:    routetables.NewService(scope),
-		subnetsSvc:       subnets.NewService(scope),
-		internalLBSvc:    internalloadbalancers.NewService(scope),
-		publicIPSvc:      publicips.NewService(scope),
-		publicLBSvc:      publicloadbalancers.NewService(scope),
-		availZoneSvc:     availabilityzones.NewService(scope),
+		scope:                scope,
+		groupsSvc:            groups.NewService(scope),
+		vnetSvc:              virtualnetworks.NewService(scope),
+		securityGroupSvc:     securitygroups.NewService(scope),
+		routeTableSvc:        routetables.NewService(scope),
+		subnetsSvc:           subnets.NewService(scope),
+		internalLBSvc:        internalloadbalancers.NewService(scope),
+		publicIPSvc:          publicips.NewService(scope),
+		publicLBSvc:          publicloadbalancers.NewService(scope),
+		availabilityZonesSvc: availabilityzones.NewService(scope),
 	}
 }
 
@@ -330,7 +330,7 @@ func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 
 func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Context) error {
 	spec := &availabilityzones.Spec{}
-	zonesInterface, err := r.availZoneSvc.Get(ctx, spec)
+	zonesInterface, err := r.availabilityZonesSvc.Get(ctx, spec)
 	if err != nil {
 		return err
 	}

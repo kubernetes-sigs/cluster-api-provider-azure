@@ -67,7 +67,7 @@ type (
 	azureMachinePoolService struct {
 		machinePoolScope           *scope.MachinePoolScope
 		clusterScope               *scope.ClusterScope
-		virtualMachinesScaleSetSvc azure.GetterService
+		virtualMachinesScaleSetSvc *scalesets.Service
 	}
 
 	// annotationReaderWriter provides an interface to read and write annotations
@@ -503,26 +503,22 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		return nil, errors.Wrap(err, "failed to get VMSS")
 	}
 
-	vmss, ok := newVMSS.(*infrav1exp.VMSS)
-	if !ok {
-		return nil, errors.New("returned incorrect VMSS interface")
-	}
-	if vmss.State == "" {
+	if newVMSS.State == "" {
 		return nil, errors.Errorf("VMSS %s is nil provisioning state, reconcile", s.machinePoolScope.Name())
 	}
 
-	if vmss.State == infrav1.VMStateFailed {
+	if newVMSS.State == infrav1.VMStateFailed {
 		// If VM failed provisioning, delete it so it can be recreated
 		err = s.virtualMachinesScaleSetSvc.Delete(ctx, vmssSpec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to delete machine pool")
 		}
 		return nil, errors.Errorf("VMSS %s is deleted, retry creating in next reconcile", s.machinePoolScope.Name())
-	} else if vmss.State != infrav1.VMStateSucceeded {
-		return nil, errors.Errorf("VMSS %s is still in provisioningState %s, reconcile", s.machinePoolScope.Name(), vmss.State)
+	} else if newVMSS.State != infrav1.VMStateSucceeded {
+		return nil, errors.Errorf("VMSS %s is still in provisioningState %s, reconcile", s.machinePoolScope.Name(), newVMSS.State)
 	}
 
-	return vmss, nil
+	return newVMSS, nil
 }
 
 // Delete reconciles all the services in pre determined order
@@ -554,7 +550,7 @@ func (s *azureMachinePoolService) Get(ctx context.Context) (*infrav1exp.VMSS, er
 		return nil, nil
 	}
 
-	return vmss.(*infrav1exp.VMSS), err
+	return vmss, err
 }
 
 // getOwnerMachinePool returns the MachinePool object owning the current resource.

@@ -37,23 +37,6 @@ type Spec struct {
 	OSDiskSizeGB  int32
 }
 
-// Get fetches a agent pool from Azure.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	agentPoolSpec, ok := spec.(*Spec)
-	if !ok {
-		return containerservice.AgentPool{}, errors.New("invalid agent pool specification")
-	}
-
-	agentPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return containerservice.AgentPool{}, errors.Wrapf(err, "agent pool %s not found", agentPoolSpec.Name)
-	} else if err != nil {
-		return agentPool, err
-	}
-
-	return agentPool, nil
-}
-
 // Reconcile idempotently creates or updates a agent pool, if possible.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	agentPoolSpec, ok := spec.(*Spec)
@@ -71,7 +54,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 	}
 
-	existingSpec, err := s.Get(ctx, spec)
+	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to get existing agent pool")
 	}
@@ -87,10 +70,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			return errors.Wrap(err, "failed to create or update agent pool")
 		}
 	} else {
-		existingPool, ok := existingSpec.(containerservice.AgentPool)
-		if !ok {
-			return errors.New("expected agent pool specification")
-		}
 		ps := *existingPool.ManagedClusterAgentPoolProfileProperties.ProvisioningState
 		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
 			klog.V(2).Infof("Unable to update existing agent pool in non terminal state.  Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded")

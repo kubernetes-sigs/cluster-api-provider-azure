@@ -32,7 +32,7 @@ import (
 // azureManagedMachinePoolReconciler are list of services required by cluster controller
 type azureManagedMachinePoolReconciler struct {
 	kubeclient    client.Client
-	agentPoolsSvc azure.GetterService
+	agentPoolsSvc azure.Service
 	scaleSetsSvc  NodeLister
 }
 

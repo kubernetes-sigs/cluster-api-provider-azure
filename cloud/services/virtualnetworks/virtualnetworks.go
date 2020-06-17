@@ -35,18 +35,14 @@ type Spec struct {
 	CIDR          string
 }
 
-// Get provides information about a virtual network.
-func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.VnetSpec, error) {
-	vnetSpec, ok := spec.(*Spec)
-	if !ok {
-		return nil, errors.New("Invalid VNET Specification")
-	}
-	vnet, err := s.Client.Get(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
+// getExisting provides information about an existing virtual network.
+func (s *Service) getExisting(ctx context.Context, spec *Spec) (*infrav1.VnetSpec, error) {
+	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			return nil, err
 		}
-		return nil, errors.Wrapf(err, "failed to get vnet %s", vnetSpec.Name)
+		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
 	}
 	cidr := ""
 	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
@@ -56,7 +52,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.VnetSpec,
 		}
 	}
 	return &infrav1.VnetSpec{
-		ResourceGroup: vnetSpec.ResourceGroup,
+		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
 		Name:          to.String(vnet.Name),
 		CidrBlock:     cidr,
@@ -67,32 +63,32 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (*infrav1.VnetSpec,
 // Reconcile gets/creates/updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	// Following should be created upstream and provided as an input to NewService
-	// A vnet has following dependencies
-	//    * Vnet Cidr
+	// A VNet has following dependencies
+	//    * VNet Cidr
 	//    * Control Plane Subnet Cidr
 	//    * Node Subnet Cidr
 	//    * Control Plane NSG
 	//    * Node NSG
-	//    * Node Routetable
+	//    * Node Route Table
 	vnetSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid VNET Specification")
 	}
 
-	vnet, err := s.Get(ctx, vnetSpec)
+	existingVnet, err := s.getExisting(ctx, vnetSpec)
 	if !azure.ResourceNotFound(err) {
 		if err != nil {
-			return errors.Wrap(err, "failed to get vnet")
+			return errors.Wrap(err, "failed to get VNet")
 		}
 
-		if !vnet.IsManaged(s.Scope.Name()) {
-			s.Scope.V(2).Info("Working on custom vnet", "vnet-id", vnet.ID)
+		if !existingVnet.IsManaged(s.Scope.Name()) {
+			s.Scope.V(2).Info("Working on custom VNet", "vnet-id", existingVnet.ID)
 		}
 		// vnet already exists, cannot update since it's immutable
-		vnet.DeepCopyInto(s.Scope.Vnet())
+		existingVnet.DeepCopyInto(s.Scope.Vnet())
 		return nil
 	}
-	klog.V(2).Infof("creating vnet %s ", vnetSpec.Name)
+	klog.V(2).Infof("creating VNet %s ", vnetSpec.Name)
 	vnetProperties := network.VirtualNetwork{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.Scope.Name(),
@@ -113,30 +109,30 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	klog.V(2).Infof("successfully created vnet %s ", vnetSpec.Name)
+	klog.V(2).Infof("successfully created VNet %s ", vnetSpec.Name)
 	return nil
 }
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
-		s.Scope.V(4).Info("Skipping vnet deletion in custom vnet mode")
+		s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
 		return nil
 	}
 	vnetSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("Invalid VNET Specification")
 	}
-	klog.V(2).Infof("deleting vnet %s ", vnetSpec.Name)
+	klog.V(2).Infof("deleting VNet %s ", vnetSpec.Name)
 	err := s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete vnet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete VNet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
 	}
 
-	klog.V(2).Infof("successfully deleted vnet %s ", vnetSpec.Name)
+	klog.V(2).Infof("successfully deleted VNet %s ", vnetSpec.Name)
 	return nil
 }

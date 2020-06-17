@@ -52,16 +52,12 @@ type Spec struct {
 }
 
 // Get provides information about a virtual machine.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	vmSpec, ok := spec.(*Spec)
-	if !ok {
-		return compute.VirtualMachine{}, errors.New("invalid VM specification")
-	}
+func (s *Service) Get(ctx context.Context, vmSpec *Spec) (*infrav1.VM, error) {
 	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		return nil, errors.Wrapf(err, "VM %s not found", vmSpec.Name)
 	} else if err != nil {
-		return vm, err
+		return nil, err
 	}
 
 	convertedVM, err := converters.SDKToVM(vm)
@@ -69,7 +65,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 		return convertedVM, err
 	}
 
-	// Discover addresses for nics associated with the VM
+	// Discover addresses for NICs associated with the VM
 	// and add them to our converted vm struct
 	addresses, err := s.getAddresses(ctx, vm)
 	if err != nil {

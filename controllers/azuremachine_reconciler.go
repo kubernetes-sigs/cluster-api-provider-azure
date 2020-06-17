@@ -40,14 +40,14 @@ const (
 	DefaultBootstrapTokenTTL = 10 * time.Minute
 )
 
-// azureMachineService are list of services required by cluster actuator, easy to create a fake
+// azureMachineService is the group of services called by the AzureMachine controller
 type azureMachineService struct {
 	machineScope         *scope.MachineScope
 	clusterScope         *scope.ClusterScope
 	availabilityZonesSvc azure.GetterService
 	networkInterfacesSvc azure.Service
-	virtualMachinesSvc   azure.GetterService
-	disksSvc             azure.GetterService
+	virtualMachinesSvc   *virtualmachines.Service
+	disksSvc             azure.Service
 }
 
 // newAzureMachineService populates all the services based on input scope
@@ -62,15 +62,15 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 	}
 }
 
-// Create creates machine if and only if machine exists, handled by cluster-api
-func (s *azureMachineService) Create(ctx context.Context) (*infrav1.VM, error) {
+// Reconcile reconciles all the services in pre determined order
+func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error) {
 	nicName := azure.GenerateNICName(s.machineScope.Name())
 	nicErr := s.reconcileNetworkInterface(ctx, nicName)
 	if nicErr != nil {
 		return nil, errors.Wrapf(nicErr, "failed to create NIC %s for machine %s", nicName, s.machineScope.Name())
 	}
 
-	vm, vmErr := s.createVirtualMachine(ctx, nicName)
+	vm, vmErr := s.reconcileVirtualMachine(ctx, nicName)
 	if vmErr != nil {
 		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
 	}
@@ -78,7 +78,7 @@ func (s *azureMachineService) Create(ctx context.Context) (*infrav1.VM, error) {
 	return vm, nil
 }
 
-// Delete reconciles all the services in pre determined order
+// Delete deletes all the services in pre determined order
 func (s *azureMachineService) Delete(ctx context.Context) error {
 	vmSpec := &virtualmachines.Spec{
 		Name: s.machineScope.Name(),
@@ -120,25 +120,21 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 func (s *azureMachineService) VMIfExists(ctx context.Context, id *string) (*infrav1.VM, error) {
 	if id == nil {
 		s.clusterScope.Info("VM does not have an ID")
+		s.clusterScope.Info("VM does not have an ID")
 		return nil, nil
 	}
 
 	vmSpec := &virtualmachines.Spec{
 		Name: s.machineScope.Name(),
 	}
-	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
+	vm, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
 
-	if err != nil && vmInterface == nil {
+	if azure.ResourceNotFound(err) {
 		return nil, nil
 	}
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get VM")
-	}
-
-	vm, ok := vmInterface.(*infrav1.VM)
-	if !ok {
-		return nil, errors.New("returned incorrect vm interface")
 	}
 
 	klog.V(2).Infof("Found VM for AzureMachine %s", s.machineScope.Name())
@@ -230,95 +226,75 @@ func (s *azureMachineService) reconcileNetworkInterface(ctx context.Context, nic
 	return err
 }
 
-func (s *azureMachineService) createVirtualMachine(ctx context.Context, nicName string) (*infrav1.VM, error) {
-	var vm *infrav1.VM
+func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicName string) (*infrav1.VM, error) {
 	decoded, err := base64.StdEncoding.DecodeString(s.machineScope.AzureMachine.Spec.SSHPublicKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode ssh public key")
 	}
 
-	vmSpec := &virtualmachines.Spec{
-		Name: s.machineScope.Name(),
+	var vmZone string
+	azSupported := s.isAvailabilityZoneSupported()
+	if azSupported {
+		useAZ := true
+
+		if s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled != nil {
+			useAZ = *s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled
+		}
+
+		if useAZ {
+			var zoneErr error
+			vmZone, zoneErr = s.getVirtualMachineZone(ctx)
+			if zoneErr != nil {
+				return nil, errors.Wrap(zoneErr, "failed to get availability zone")
+			}
+		}
 	}
 
-	vmInterface, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
-	if err != nil && vmInterface == nil {
-		var vmZone string
+	image, err := getVMImage(s.machineScope)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get VM image")
+	}
 
-		azSupported := s.isAvailabilityZoneSupported()
+	bootstrapData, err := s.machineScope.GetBootstrapData(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
+	}
 
-		if azSupported {
-			useAZ := true
+	vmSpec := &virtualmachines.Spec{
+		Name:                   s.machineScope.Name(),
+		NICName:                nicName,
+		SSHKeyData:             string(decoded),
+		Size:                   s.machineScope.AzureMachine.Spec.VMSize,
+		OSDisk:                 s.machineScope.AzureMachine.Spec.OSDisk,
+		Image:                  image,
+		CustomData:             bootstrapData,
+		Zone:                   vmZone,
+		Identity:               s.machineScope.AzureMachine.Spec.Identity,
+		UserAssignedIdentities: s.machineScope.AzureMachine.Spec.UserAssignedIdentities,
+	}
 
-			if s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled != nil {
-				useAZ = *s.machineScope.AzureMachine.Spec.AvailabilityZone.Enabled
-			}
-
-			if useAZ {
-				var zoneErr error
-				vmZone, zoneErr = s.getVirtualMachineZone(ctx)
-				if zoneErr != nil {
-					return nil, errors.Wrap(zoneErr, "failed to get availability zone")
-				}
-			}
-		}
-
-		image, err := getVMImage(s.machineScope)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get VM image")
-		}
-
-		bootstrapData, err := s.machineScope.GetBootstrapData(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
-		}
-
-		vmSpec = &virtualmachines.Spec{
-			Name:                   s.machineScope.Name(),
-			NICName:                nicName,
-			SSHKeyData:             string(decoded),
-			Size:                   s.machineScope.AzureMachine.Spec.VMSize,
-			OSDisk:                 s.machineScope.AzureMachine.Spec.OSDisk,
-			Image:                  image,
-			CustomData:             bootstrapData,
-			Zone:                   vmZone,
-			Identity:               s.machineScope.AzureMachine.Spec.Identity,
-			UserAssignedIdentities: s.machineScope.AzureMachine.Spec.UserAssignedIdentities,
-		}
-
-		err = s.virtualMachinesSvc.Reconcile(ctx, vmSpec)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create or get machine")
-		}
-	} else if err != nil {
-		return nil, errors.Wrap(err, "failed to get vm")
+	err = s.virtualMachinesSvc.Reconcile(ctx, vmSpec)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to reconcile virtual machine")
 	}
 
 	newVM, err := s.virtualMachinesSvc.Get(ctx, vmSpec)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get vm")
+		return newVM, errors.Wrapf(err, "failed to get VM %s in %s", vmSpec.Name, s.clusterScope.ResourceGroup())
 	}
-
-	vm, ok := newVM.(*infrav1.VM)
-	if !ok {
-		return nil, errors.New("returned incorrect vm interface")
-	}
-	if vm.State == "" {
-		return nil, errors.Errorf("vm %s is nil provisioning state, reconcile", s.machineScope.Name())
-	}
-
-	if vm.State == infrav1.VMStateFailed {
-		// If VM failed provisioning, delete it so it can be recreated
-		err = s.virtualMachinesSvc.Delete(ctx, vmSpec)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to delete machine")
+	if newVM != nil {
+		if newVM.State == infrav1.VMStateFailed {
+			// If VM failed provisioning, delete it so it can be recreated
+			err = s.virtualMachinesSvc.Delete(ctx, vmSpec)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to delete machine")
+			}
+			return nil, errors.Errorf("virtual machine %s is deleted, retry creating in next reconcile", s.machineScope.Name())
+		} else if newVM.State != infrav1.VMStateSucceeded {
+			return nil, errors.Errorf("virtual machine %s is still in provisioning state %s, reconcile", s.machineScope.Name(), newVM.State)
 		}
-		return nil, errors.Errorf("vm %s is deleted, retry creating in next reconcile", s.machineScope.Name())
-	} else if vm.State != infrav1.VMStateSucceeded {
-		return nil, errors.Errorf("vm %s is still in provisioningstate %s, reconcile", s.machineScope.Name(), vm.State)
 	}
-
-	return vm, nil
+	return newVM, nil
 }
 
 // GetControlPlaneMachines retrieves all non-deleted control plane nodes from a MachineList

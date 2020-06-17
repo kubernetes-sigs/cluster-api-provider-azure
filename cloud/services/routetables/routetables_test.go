@@ -84,10 +84,6 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 	// Wrong Spec
 	wrongSpec := &network.PublicIPAddress{}
 
-	_, err = s.Get(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-
 	err = s.Reconcile(context.TODO(), &wrongSpec)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))
@@ -95,95 +91,6 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 	err = s.Delete(context.TODO(), &wrongSpec)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(MatchError(expectedInvalidSpec))
-}
-
-func TestGetRouteTable(t *testing.T) {
-	g := NewWithT(t)
-
-	testcases := []struct {
-		name           string
-		routetableSpec Spec
-		expectedError  string
-		expect         func(m *mock_routetables.MockClientMockRecorder)
-	}{
-		{
-			name: "get existing route table",
-			routetableSpec: Spec{
-				Name: "my-routetable",
-			},
-			expectedError: "",
-			expect: func(m *mock_routetables.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{}, nil)
-			},
-		},
-		{
-			name: "route table not found",
-			routetableSpec: Spec{
-				Name: "my-routetable",
-			},
-			expectedError: "route table my-routetable not found: #: Not found: StatusCode=404",
-			expect: func(m *mock_routetables.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-			},
-		},
-		{
-			name: "route table retrieval fails",
-			routetableSpec: Spec{
-				Name: "my-routetable",
-			},
-			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_routetables.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			mockCtrl := gomock.NewController(t)
-			routetableMock := mock_routetables.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClient(cluster)
-
-			tc.expect(routetableMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
-
-			s := &Service{
-				Scope:  clusterScope,
-				Client: routetableMock,
-			}
-
-			_, err = s.Get(context.TODO(), &tc.routetableSpec)
-			if tc.expectedError != "" {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-		})
-	}
 }
 
 func TestReconcileRouteTables(t *testing.T) {

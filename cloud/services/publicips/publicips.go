@@ -33,21 +33,6 @@ type Spec struct {
 	DNSName string
 }
 
-// Get provides information about a public ip.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	publicIPSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.PublicIPAddress{}, errors.New("invalid PublicIP Specification")
-	}
-	publicIP, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), publicIPSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "publicip %s not found", publicIPSpec.Name)
-	} else if err != nil {
-		return publicIP, err
-	}
-	return publicIP, nil
-}
-
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	publicIPSpec, ok := spec.(*Spec)

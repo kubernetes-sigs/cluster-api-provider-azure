@@ -19,6 +19,7 @@ package scalesets
 import (
 	"context"
 	"fmt"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -52,20 +53,15 @@ type (
 	}
 )
 
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	vmssSpec, ok := spec.(*Spec)
-	if !ok {
-		return compute.VirtualMachineScaleSet{}, errors.New("invalid VMSS specification")
-	}
-
+func (s *Service) Get(ctx context.Context, vmssSpec *Spec) (*infrav1exp.VMSS, error) {
 	vmss, err := s.Client.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
 	if err != nil {
-		return vmss, err
+		return nil, err
 	}
 
 	vmssInstances, err := s.Client.ListInstances(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)
 	if err != nil {
-		return vmss, err
+		return nil, err
 	}
 
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
