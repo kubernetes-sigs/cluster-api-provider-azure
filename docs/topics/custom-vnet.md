@@ -82,3 +82,60 @@ spec:
 If no CIDR block is provided, `10.0.0.0/8` will be used by default, with default internal LB private IP `10.0.0.100`.
 
 Whenever using custom vnet and subnet names and/or a different vnet resource group, please make sure to update the `azure.json` content part of both the nodes and control planes' `kubeadmConfigSpec` accordingly before creating the cluster.
+
+### Custom Ingress Rules
+
+Ingress rules can also be customized as part of the subnet specification in a custom network spec.
+Note that ingress rules for the Kubernetes API Server port (default 6443) and SSH (22) are automatically added to the controlplane subnet only if Ingress Rules aren't specified.
+It is the responsibility of the user to supply those rules themselves if using custom ingresses.
+
+Here is an illustrative example of customizing ingresses that builds on the one above by adding an ingress rule to the control plane nodes:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+kind: AzureCluster
+metadata:
+  name: cluster-example
+  namespace: default
+spec:
+  location: southcentralus
+  networkSpec:
+    vnet:
+      name: my-vnet
+      cidrBlock: 10.0.0.0/16
+    subnets:
+      - name: my-subnet-cp
+        role: control-plane
+        cidrBlock: 10.0.1.0/24
+        securityGroup:
+          name: my-subnet-cp-nsg
+          ingressRule:
+            - name: "allow_ssh"
+              description: "allow SSH"
+              priority: 100
+              protocol: "*"
+              destination: "*"
+              destinationPorts: "22"
+              source: "*"
+              sourcePorts: "*"
+            - name: "allow_apiserver"
+              description: "Allow K8s API Server"
+              priority: 101
+              protocol: "*"
+              destination: "*"
+              destinationPorts: "6443"
+              source: "*"
+              sourcePorts: "*"
+            - name: "allow_port_50000"
+              description: "allow port 50000"
+              priority: 102
+              protocol: "*"
+              destination: "*"
+              destinationPorts: "50000"
+              source: "*"
+              sourcePorts: "*"
+      - name: my-subnet-node
+        role: node
+        cidrBlock: 10.0.2.0/24
+  resourceGroup: cluster-example
+```

@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"strconv"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -92,6 +94,11 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 	}
 	if err := r.vnetSvc.Reconcile(ctx, vnetSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile virtual network for cluster %s", r.scope.Name())
+	}
+
+	cpSubnet := r.scope.ControlPlaneSubnet()
+	if cpSubnet.SecurityGroup.IngressRules == nil {
+		cpSubnet.SecurityGroup.IngressRules = r.generateControlPlaneIngressRules()
 	}
 
 	sgSpec := &securitygroups.Spec{
@@ -320,4 +327,38 @@ func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Contex
 	}
 
 	return nil
+}
+
+func (r *azureClusterReconciler) generateControlPlaneIngressRules() infrav1.IngressRules {
+	apiPort := "6443"
+	if r.scope.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
+		apiPort = strconv.Itoa(
+			int(
+				to.Int32(r.scope.Cluster.Spec.ClusterNetwork.APIServerPort),
+			),
+		)
+	}
+
+	return infrav1.IngressRules{
+		&infrav1.IngressRule{
+			Name:             "allow_ssh",
+			Description:      "Allow SSH",
+			Priority:         100,
+			Protocol:         infrav1.SecurityGroupProtocolTCP,
+			Source:           to.StringPtr("*"),
+			SourcePorts:      to.StringPtr("*"),
+			Destination:      to.StringPtr("*"),
+			DestinationPorts: to.StringPtr("22"),
+		},
+		&infrav1.IngressRule{
+			Name:             "allow_apiserver",
+			Description:      "Allow K8s API Server",
+			Priority:         101,
+			Protocol:         infrav1.SecurityGroupProtocolTCP,
+			Source:           to.StringPtr("*"),
+			SourcePorts:      to.StringPtr("*"),
+			Destination:      to.StringPtr("*"),
+			DestinationPorts: to.StringPtr(apiPort),
+		},
+	}
 }

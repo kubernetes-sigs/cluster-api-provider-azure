@@ -109,6 +109,16 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				requiredSubnetRoles[role] = true
 			}
 		}
+		if subnet.SecurityGroup.IngressRules != nil {
+			for _, ingressRule := range subnet.SecurityGroup.IngressRules {
+				if err := validateIngressRule(
+					ingressRule,
+					fldPath.Index(i).Child("securityGroup").Child("ingressRules").Index(i),
+				); err != nil {
+					allErrs = append(allErrs, err)
+				}
+			}
+		}
 	}
 	for k, v := range requiredSubnetRoles {
 		if v == false {
@@ -137,5 +147,15 @@ func validateInternalLBIPAddress(address string, fldPath *field.Path) *field.Err
 		return field.Invalid(fldPath, address,
 			fmt.Sprintf("internalLBIPAddress doesn't match regex %s", ipv4Regex))
 	}
+	return nil
+}
+
+// validateIngressRule validates an IngressRule
+func validateIngressRule(ingressRule *IngressRule, fldPath *field.Path) *field.Error {
+	if ingressRule.Priority < 100 || ingressRule.Priority > 4096 {
+		return field.Invalid(fldPath, ingressRule.Priority,
+			fmt.Sprintf("ingress priorities should be between 100 and 4096"))
+	}
+
 	return nil
 }
