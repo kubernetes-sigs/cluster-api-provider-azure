@@ -18,6 +18,7 @@ package routetables
 
 import (
 	"context"
+	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 	"testing"
 
@@ -115,7 +116,8 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_routetables.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
+				m.Get(context.TODO(), gomock.Any(), gomock.Any()).Times(0)
+				m.CreateOrUpdate(context.TODO(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.RouteTable{})).Times(0)
 			},
 		},
 		{
@@ -130,7 +132,43 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_routetables.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
+			},
+		},
+		{
+			name: "do not create route table if already exists",
+			routetableSpec: Spec{
+				Name: "my-routetable",
+			},
+			tags: infrav1.Tags{
+				"Name": "my-vnet",
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
+				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+			},
+			expectedError: "",
+			expect: func(m *mock_routetables.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{
+					Name: to.StringPtr("my-routetable"),
+					ID:   to.StringPtr("1"),
+				}, nil)
+				m.CreateOrUpdate(context.TODO(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.RouteTable{})).Times(0)
+			},
+		},
+		{
+			name: "fail when getting existing route table",
+			routetableSpec: Spec{
+				Name: "my-routetable",
+			},
+			tags: infrav1.Tags{
+				"Name": "my-vnet",
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
+				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+			},
+			expectedError: "failed to get route table my-routetable in my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(m *mock_routetables.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(context.TODO(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.RouteTable{})).Times(0)
 			},
 		},
 		{
@@ -145,6 +183,7 @@ func TestReconcileRouteTables(t *testing.T) {
 			},
 			expectedError: "failed to create route table my-routetable in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_routetables.MockClientMockRecorder) {
+				m.Get(context.TODO(), "my-rg", "my-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-routetable", gomock.AssignableToTypeOf(network.RouteTable{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -153,6 +192,8 @@ func TestReconcileRouteTables(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			routetableMock := mock_routetables.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
@@ -180,6 +221,15 @@ func TestReconcileRouteTables(t *testing.T) {
 								Name:          "my-vnet",
 								ResourceGroup: "my-rg",
 								Tags:          tc.tags,
+							},
+							Subnets: []*infrav1.SubnetSpec{
+								{
+									Name: "my-subnet-node",
+									Role: infrav1.SubnetNode,
+								}, {
+									Name: "my-subnet-cp",
+									Role: infrav1.SubnetControlPlane,
+								},
 							},
 						},
 					},

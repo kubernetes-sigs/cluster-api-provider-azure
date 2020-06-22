@@ -18,7 +18,6 @@ package routetables
 
 import (
 	"context"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -41,8 +40,27 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid Route Table Specification")
 	}
+
+	existingRouteTable, err := s.Get(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
+	if !azure.ResourceNotFound(err) {
+		if err != nil {
+			return errors.Wrapf(err, "failed to get route table %s in %s", routeTableSpec.Name, s.Scope.ResourceGroup())
+		}
+
+		// route table already exists
+		// currently don't support:
+		//  1. creating separate control plane and node (#718) so update both
+		//  2. specifying your own routes via spec
+		s.Scope.NodeSubnet().RouteTable.Name = to.String(existingRouteTable.Name)
+		s.Scope.NodeSubnet().RouteTable.ID = to.String(existingRouteTable.ID)
+		s.Scope.ControlPlaneSubnet().RouteTable.Name = to.String(existingRouteTable.Name)
+		s.Scope.ControlPlaneSubnet().RouteTable.ID = to.String(existingRouteTable.ID)
+
+		return nil
+	}
+
 	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
-	err := s.Client.CreateOrUpdate(
+	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.ResourceGroup(),
 		routeTableSpec.Name,
