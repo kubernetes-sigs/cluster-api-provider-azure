@@ -14,20 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package managedclusters
+package azure
 
-import (
-	"github.com/Azure/go-autorest/autorest"
-)
-
-// Service provides operations on azure resources
-type Service struct {
-	Client
-}
-
-// NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, baseURI, subscriptionID string) *Service {
-	return &Service{
-		Client: NewClient(baseURI, subscriptionID, authorizer),
-	}
+// ClientSettings contains all the settings used to create clients.
+type ClientSettings struct {
+	SubscriptionID string
+	BaseURI        string
 }

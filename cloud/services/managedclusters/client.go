@@ -41,15 +41,15 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
+func NewClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
 	return &AzureClient{
-		managedclusters: newManagedClustersClient(subscriptionID, authorizer),
+		managedclusters: newManagedClustersClient(baseURI, subscriptionID, authorizer),
 	}
 }
 
 // newManagedClustersClient creates a new managed clusters client from subscription ID.
-func newManagedClustersClient(subscriptionID string, authorizer autorest.Authorizer) containerservice.ManagedClustersClient {
-	managedClustersClient := containerservice.NewManagedClustersClient(subscriptionID)
+func newManagedClustersClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) containerservice.ManagedClustersClient {
+	managedClustersClient := containerservice.NewManagedClustersClientWithBaseURI(baseURI, subscriptionID)
 	managedClustersClient.Authorizer = authorizer
 	managedClustersClient.AddToUserAgent(azure.UserAgent())
 	return managedClustersClient

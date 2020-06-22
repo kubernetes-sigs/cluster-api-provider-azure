@@ -39,14 +39,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newInterfacesClient(subscriptionID, authorizer)
+func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
+	c := newInterfacesClient(settings, authorizer)
 	return &AzureClient{c}
 }
 
 // newInterfacesClient creates a new network interfaces client from subscription ID.
-func newInterfacesClient(subscriptionID string, authorizer autorest.Authorizer) network.InterfacesClient {
-	nicClient := network.NewInterfacesClient(subscriptionID)
+func newInterfacesClient(settings azure.ClientSettings, authorizer autorest.Authorizer) network.InterfacesClient {
+	nicClient := network.NewInterfacesClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
 	nicClient.Authorizer = authorizer
 	nicClient.AddToUserAgent(azure.UserAgent())
 	return nicClient

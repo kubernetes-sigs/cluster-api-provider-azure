@@ -84,7 +84,7 @@ func TestNewService(t *testing.T) {
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-	actual := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+	actual := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
 	g.Expect(actual).ToNot(gomega.BeNil())
 }
 
@@ -212,7 +212,7 @@ func TestService_Get(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+			svc := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -627,7 +627,7 @@ func TestService_Reconcile(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+			svc := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -713,7 +713,7 @@ func TestService_Delete(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s.Authorizer, mps.AzureClients.SubscriptionID)
+			svc := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

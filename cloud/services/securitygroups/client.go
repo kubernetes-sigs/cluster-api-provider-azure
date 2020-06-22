@@ -39,14 +39,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newSecurityGroupsClient(subscriptionID, authorizer)
+func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
+	c := newSecurityGroupsClient(settings, authorizer)
 	return &AzureClient{c}
 }
 
 // newSecurityGroupsClient creates a new security groups client from subscription ID.
-func newSecurityGroupsClient(subscriptionID string, authorizer autorest.Authorizer) network.SecurityGroupsClient {
-	securityGroupsClient := network.NewSecurityGroupsClient(subscriptionID)
+func newSecurityGroupsClient(settings azure.ClientSettings, authorizer autorest.Authorizer) network.SecurityGroupsClient {
+	securityGroupsClient := network.NewSecurityGroupsClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
 	securityGroupsClient.Authorizer = authorizer
 	securityGroupsClient.AddToUserAgent(azure.UserAgent())
 	return securityGroupsClient

@@ -38,6 +38,7 @@ Please note your tilt-settings.json must contain at minimum the following fields
         "AZURE_TENANT_ID_B64": "******",
         "AZURE_CLIENT_SECRET_B64": "******",
         "AZURE_CLIENT_ID_B64": "******",
+        "AZURE_ENVIRONMENT": "AzurePublicCloud"
     }
 }
 ```
@@ -56,7 +57,8 @@ If you wish to override the default variables for flavor workers, you can specif
         "AZURE_SUBSCRIPTION_ID_B64": "****",
         "AZURE_TENANT_ID_B64": "****",
         "AZURE_CLIENT_SECRET_B64": "****",
-        "AZURE_CLIENT_ID_B64": "****"
+        "AZURE_CLIENT_ID_B64": "****",
+        "AZURE_ENVIRONMENT": "AzurePublicCloud"
     },
     "worker-templates": {
         "flavors": {

@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -130,6 +131,11 @@ func (s *ClusterScope) Namespace() string {
 // Location returns the cluster location.
 func (s *ClusterScope) Location() string {
 	return s.AzureCluster.Spec.Location
+}
+
+// GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
+func (s *ClusterScope) GenerateFQDN() string {
+	return fmt.Sprintf("%s.%s.%s", s.Network().APIServerIP.Name, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
 }
 
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.

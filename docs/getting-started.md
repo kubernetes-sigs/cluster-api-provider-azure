@@ -74,6 +74,18 @@ An Azure Service Principal is needed for populating the controller manifests. Th
   export AZURE_CLIENT_SECRET=<Password>
   export AZURE_LOCATION="eastus"
   ```
+
+  5. Set the name of the AzureCloud to be used, the default value that would be used by most users is "AzurePublicCloud", other values are:
+
+  - ChinaCloud: "AzureChinaCloud"
+ - GermanCloud: "AzureGermanCloud"
+ - PublicCloud: "AzurePublicCloud"
+ - USGovernmentCloud: "AzureUSGovernmentCloud"
+
+```bash
+export AZURE_ENVIRONMENT="AzurePublicCloud"
+```
+
 <!--An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Note that the service principals created by the scripts will not be deleted automatically._ -->
 
 ### Using images
