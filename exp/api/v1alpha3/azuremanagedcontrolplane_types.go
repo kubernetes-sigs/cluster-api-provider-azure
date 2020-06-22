@@ -47,10 +47,6 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	AdditionalTags map[string]string `json:"additionalTags,omitempty"`
 
-	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to standard.
-	// +kubebuilder:validation:Enum=Standard;Basic
-	LoadBalancerSKU *string `json:"loadBalancerSku,omitempty"`
-
 	// NetworkPlugin used for building Kubernetes network. Possible values include: 'Azure', 'Kubenet'. Defaults to Azure.
 	// +kubebuilder:validation:Enum=Azure;Kubenet
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`

@@ -74,13 +74,6 @@ spec:
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
-              loadBalancerSku:
-                description: 'LoadBalancerSKU for the managed cluster. Possible values
-                  include: ''Standard'', ''Basic''. Defaults to standard.'
-                enum:
-                - Standard
-                - Basic
-                type: string
               location:
                 description: 'Location is a string matching one of the canonical Azure
                   region names. Examples: "westus2", "eastus".'

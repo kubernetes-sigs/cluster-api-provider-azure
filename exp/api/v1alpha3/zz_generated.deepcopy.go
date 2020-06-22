@@ -329,11 +329,6 @@ func (in *AzureManagedControlPlaneSpec) DeepCopyInto(out *AzureManagedControlPla
 			(*out)[key] = val
 		}
 	}
-	if in.LoadBalancerSKU != nil {
-		in, out := &in.LoadBalancerSKU, &out.LoadBalancerSKU
-		*out = new(string)
-		**out = **in
-	}
 	if in.NetworkPlugin != nil {
 		in, out := &in.NetworkPlugin, &out.NetworkPlugin
 		*out = new(string)
