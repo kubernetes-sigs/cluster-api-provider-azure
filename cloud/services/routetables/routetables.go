@@ -50,7 +50,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// route table already exists
 		// currently don't support:
 		//  1. creating separate control plane and node (#718) so update both
-		//  2. can not specify your own routes via spec
+		//  2. specifying your own routes via spec
 		s.Scope.NodeSubnet().RouteTable.Name = to.String(existingRouteTable.Name)
 		s.Scope.NodeSubnet().RouteTable.ID = to.String(existingRouteTable.ID)
 		s.Scope.ControlPlaneSubnet().RouteTable.Name = to.String(existingRouteTable.Name)
