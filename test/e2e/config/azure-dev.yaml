@@ -44,7 +44,8 @@ providers:
       - name: v0.4.0
         value: "${PWD}/config"
     files:
-      - sourcePath: "${PWD}/templates/cluster-template.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow.yaml"
+        targetName: "cluster-template.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.3}"
