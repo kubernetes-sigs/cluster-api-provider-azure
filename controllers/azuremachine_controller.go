@@ -26,14 +26,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -41,6 +38,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 // AzureMachineReconciler reconciles a AzureMachine object
@@ -52,20 +53,52 @@ type AzureMachineReconciler struct {
 }
 
 func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	// create mapper to transform incoming AzureClusters into AzureMachine requests
+	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(r.Client, mgr.GetScheme(), r.Log)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachines mapper")
+	}
+
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureMachine{}).
+		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		// watch for changes in CAPI Machine resources
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
 			&handler.EnqueueRequestsFromMapFunc{
 				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureMachine")),
 			},
 		).
+		// watch for changes in AzureCluster
 		Watches(
 			&source.Kind{Type: &infrav1.AzureCluster{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(r.AzureClusterToAzureMachines)},
+			&handler.EnqueueRequestsFromMapFunc{
+				ToRequests: azureClusterToAzureMachinesMapper,
+			},
 		).
-		Complete(r)
+		Build(r)
+	if err != nil {
+		return errors.Wrapf(err, "error creating controller")
+	}
+
+	azureMachineMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1.AzureMachineList{}, mgr.GetScheme())
+	if err != nil {
+		return errors.Wrapf(err, "failed to create mapper for Cluster to AzureMachines")
+	}
+
+	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	if err := c.Watch(
+		&source.Kind{Type: &clusterv1.Cluster{}},
+		&handler.EnqueueRequestsFromMapFunc{
+			ToRequests: azureMachineMapper,
+		},
+		predicates.ClusterUnpausedAndInfrastructureReady(r.Log),
+	); err != nil {
+		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+	}
+
+	return nil
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachines,verbs=get;list;watch;create;update;patch;delete
@@ -110,12 +143,17 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	logger = logger.WithValues("cluster", cluster.Name)
 
-	azureCluster := &infrav1.AzureCluster{}
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(cluster, azureMachine) {
+		logger.Info("AzureMachine or linked Cluster is marked as paused. Won't reconcile")
+		return ctrl.Result{}, nil
+	}
 
 	azureClusterName := client.ObjectKey{
 		Namespace: azureMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
+	azureCluster := &infrav1.AzureCluster{}
 	if err := r.Client.Get(ctx, azureClusterName, azureCluster); err != nil {
 		logger.Info("AzureCluster is not available yet")
 		return reconcile.Result{}, nil
@@ -301,44 +339,4 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	}()
 
 	return reconcile.Result{}, nil
-}
-
-// AzureClusterToAzureMachines is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
-// of AzureMachines.
-func (r *AzureMachineReconciler) AzureClusterToAzureMachines(o handler.MapObject) []ctrl.Request {
-	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
-	defer cancel()
-
-	result := []ctrl.Request{}
-	c, ok := o.Object.(*infrav1.AzureCluster)
-	if !ok {
-		r.Log.Error(errors.Errorf("expected a AzureCluster but got a %T", o.Object), "failed to get AzureMachine for AzureCluster")
-		return nil
-	}
-	log := r.Log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
-
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, c.ObjectMeta)
-	switch {
-	case apierrors.IsNotFound(err) || cluster == nil:
-		return result
-	case err != nil:
-		log.Error(err, "failed to get owning cluster")
-		return result
-	}
-
-	labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
-	machineList := &clusterv1.MachineList{}
-	if err := r.List(ctx, machineList, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
-		log.Error(err, "failed to list Machines")
-		return nil
-	}
-	for _, m := range machineList.Items {
-		if m.Spec.InfrastructureRef.Name == "" {
-			continue
-		}
-		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.InfrastructureRef.Name}
-		result = append(result, ctrl.Request{NamespacedName: name})
-	}
-
-	return result
 }

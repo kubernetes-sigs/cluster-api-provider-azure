@@ -13,12 +13,13 @@ require (
 	github.com/golang/mock v1.4.3
 	github.com/google/go-cmp v0.4.1
 	github.com/google/gofuzz v1.1.0
+	github.com/google/uuid v1.1.1
 	github.com/onsi/ginkgo v1.13.0
 	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v0.17.2
