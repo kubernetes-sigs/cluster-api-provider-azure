@@ -13,7 +13,7 @@ settings = {
     "cert_manager_version": "v0.11.0",
 }
 
-keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
+keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64", "AZURE_ENVIRONMENT"]
 
 # global settings
 settings.update(read_json(
