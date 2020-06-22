@@ -52,6 +52,7 @@ KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
 GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
+GINKGO := $(TOOLS_BIN_DIR)/ginkgo
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -73,6 +74,9 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 PULL_POLICY ?= Always
 
 # Allow overriding the e2e configurations
+GINKGO_FOCUS  ?=
+GINKGO_NODES  ?= 1
+GINKGO_NOCOLOR ?= false
 ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
@@ -117,15 +121,14 @@ test-integration: ## Run integration tests
 	go test -v -tags=integration ./test/integration/...
 
 .PHONY: test-e2e
-test-e2e: $(ENVSUBST) ## Run e2e tests
+test-e2e: $(ENVSUBST) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	go test ./test/e2e -v -tags=e2e -ginkgo.v -ginkgo.trace -count=1 -timeout=90m \
-		-e2e.artifacts-folder="$(ARTIFACTS)" \
-		-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
-		-e2e.skip-resource-cleanup="$(SKIP_CLEANUP)" \
-		-e2e.use-existing-cluster="$(SKIP_CREATE_MGMT_CLUSTER)"
+	$(GINKGO) -v -trace -tags=e2e -focus=$(GINKGO_FOCUS) -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
+	    -e2e.artifacts-folder="$(ARTIFACTS)" \
+	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
 
 $(KUBECTL) $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
@@ -172,6 +175,9 @@ $(RELEASE_NOTES): ## Build release notes
 
 $(GO_APIDIFF): ## Build go-apidiff.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff
+
+$(GINKGO):
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo
 
 ## --------------------------------------
 ## Linting
