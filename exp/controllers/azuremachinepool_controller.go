@@ -524,7 +524,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		OSDisk:                 ampSpec.Template.OSDisk,
 		CustomData:             bootstrapData,
 		AdditionalTags:         s.machinePoolScope.AdditionalTags(),
-		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().ID,
 		PublicLoadBalancerName: s.clusterScope.Name(),
 		AcceleratedNetworking:  ampSpec.Template.AcceleratedNetworking,
 	}
