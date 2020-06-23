@@ -18,23 +18,24 @@ package publicips
 
 import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )
 
-// Service provides operations on azure resources
+// PublicIPScope defines the scope interface for a public IP service.
+type PublicIPScope interface {
+	azure.ClusterDescriber
+	PublicIPSpecs() []azure.PublicIPSpec
+}
+
+// Service provides operations on Azure resources.
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope PublicIPScope
 	Client
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
-	settings := azure.ClientSettings{
-		BaseURI:        scope.ResourceManagerEndpoint,
-		SubscriptionID: scope.SubscriptionID,
-	}
+func NewService(scope PublicIPScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(settings, scope.Authorizer),
+		Client: NewClient(scope),
 	}
 }

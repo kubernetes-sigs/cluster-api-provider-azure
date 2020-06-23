@@ -39,14 +39,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new load balancer client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newLoadBalancersClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newLoadBalancersClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newLoadbalancersClient creates a new load balancer client from subscription ID.
-func newLoadBalancersClient(settings azure.ClientSettings, authorizer autorest.Authorizer) network.LoadBalancersClient {
-	loadBalancersClient := network.NewLoadBalancersClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newLoadBalancersClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.LoadBalancersClient {
+	loadBalancersClient := network.NewLoadBalancersClientWithBaseURI(baseURI, subscriptionID)
 	loadBalancersClient.Authorizer = authorizer
 	loadBalancersClient.AddToUserAgent(azure.UserAgent())
 	return loadBalancersClient

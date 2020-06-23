@@ -40,14 +40,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newVirtualNetworksClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newVirtualNetworksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newVirtualNetworksClient creates a new vnet client from subscription ID.
-func newVirtualNetworksClient(settings azure.ClientSettings, authorizer autorest.Authorizer) network.VirtualNetworksClient {
-	vnetsClient := network.NewVirtualNetworksClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.VirtualNetworksClient {
+	vnetsClient := network.NewVirtualNetworksClientWithBaseURI(baseURI, subscriptionID)
 	vnetsClient.Authorizer = authorizer
 	vnetsClient.AddToUserAgent(azure.UserAgent())
 	return vnetsClient

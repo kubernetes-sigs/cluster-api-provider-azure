@@ -17,7 +17,6 @@ limitations under the License.
 package virtualmachines
 
 import (
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
@@ -36,16 +35,12 @@ type Service struct {
 
 // NewService creates a new service.
 func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
-	settings := azure.ClientSettings{
-		BaseURI:        scope.ResourceManagerEndpoint,
-		SubscriptionID: scope.SubscriptionID,
-	}
 	return &Service{
 		Scope:                 scope,
 		MachineScope:          machineScope,
-		Client:                NewClient(settings, scope.Authorizer),
-		InterfacesClient:      networkinterfaces.NewClient(settings, scope.Authorizer),
-		PublicIPsClient:       publicips.NewClient(settings, scope.Authorizer),
-		RoleAssignmentsClient: roleassignments.NewClient(settings, scope.Authorizer),
+		Client:                NewClient(scope),
+		InterfacesClient:      networkinterfaces.NewClient(scope),
+		PublicIPsClient:       publicips.NewClient(scope),
+		RoleAssignmentsClient: roleassignments.NewClient(scope),
 	}
 }

@@ -200,10 +200,9 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	machinePoolScope, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
 		Logger:           logger,
 		Client:           r.Client,
-		Cluster:          cluster,
 		MachinePool:      machinePool,
-		AzureCluster:     azureCluster,
 		AzureMachinePool: azMachinePool,
+		ClusterScope:     clusterScope,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -240,7 +239,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		return reconcile.Result{}, err
 	}
 
-	if !machinePoolScope.Cluster.Status.InfrastructureReady {
+	if !clusterScope.Cluster.Status.InfrastructureReady {
 		machinePoolScope.Info("Cluster infrastructure is not ready yet")
 		return reconcile.Result{}, nil
 	}
@@ -400,7 +399,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machineP
 		vmssSpec := &scalesets.Spec{
 			Name: machinePoolScope.Name(),
 		}
-		svc := scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.ResourceManagerEndpoint, machinePoolScope.AzureClients.SubscriptionID)
+		svc := scalesets.NewService(machinePoolScope)
 		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machinePoolScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VMSS")
@@ -485,7 +484,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	return &azureMachinePoolService{
 		machinePoolScope:           machinePoolScope,
 		clusterScope:               clusterScope,
-		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope.AzureClients.Authorizer, machinePoolScope.AzureClients.ResourceManagerEndpoint, machinePoolScope.AzureClients.SubscriptionID),
+		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope),
 	}
 }
 

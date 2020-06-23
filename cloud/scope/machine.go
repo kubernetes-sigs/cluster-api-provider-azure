@@ -19,7 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +27,7 @@ import (
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -40,9 +41,8 @@ type MachineScopeParams struct {
 	AzureClients
 	Client       client.Client
 	Logger       logr.Logger
-	Cluster      *clusterv1.Cluster
+	ClusterScope *ClusterScope
 	Machine      *clusterv1.Machine
-	AzureCluster *infrav1.AzureCluster
 	AzureMachine *infrav1.AzureMachine
 }
 
@@ -55,16 +55,9 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.Machine == nil {
 		return nil, errors.New("machine is required when creating a MachineScope")
 	}
-	if params.Cluster == nil {
-		return nil, errors.New("cluster is required when creating a MachineScope")
-	}
-	if params.AzureCluster == nil {
-		return nil, errors.New("azure cluster is required when creating a MachineScope")
-	}
 	if params.AzureMachine == nil {
 		return nil, errors.New("azure machine is required when creating a MachineScope")
 	}
-
 	if params.Logger == nil {
 		params.Logger = klogr.New()
 	}
@@ -75,12 +68,11 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}
 	return &MachineScope{
 		client:       params.Client,
-		Cluster:      params.Cluster,
 		Machine:      params.Machine,
-		AzureCluster: params.AzureCluster,
 		AzureMachine: params.AzureMachine,
 		Logger:       params.Logger,
 		patchHelper:  helper,
+		ClusterScope: params.ClusterScope,
 	}, nil
 }
 
@@ -90,15 +82,51 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	Cluster      *clusterv1.Cluster
+	ClusterScope azure.ClusterDescriber
 	Machine      *clusterv1.Machine
-	AzureCluster *infrav1.AzureCluster
 	AzureMachine *infrav1.AzureMachine
 }
 
-// Location returns the AzureMachine location.
+// PublicIPSpec returns the public IP specs.
+func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
+	var spec []azure.PublicIPSpec
+	if m.AzureMachine.Spec.AllocatePublicIP == true {
+		nicName := azure.GenerateNICName(m.Name())
+		spec = append(spec, azure.PublicIPSpec{
+			Name: azure.GenerateNodePublicIPName(nicName),
+		})
+	}
+	return spec
+}
+
+// Location returns the AzureCluster location.
 func (m *MachineScope) Location() string {
-	return m.AzureCluster.Spec.Location
+	return m.ClusterScope.Location()
+}
+
+// ResourceGroup returns the AzureCluster resource group.
+func (m *MachineScope) ResourceGroup() string {
+	return m.ClusterScope.ResourceGroup()
+}
+
+// ClusterName returns the AzureCluster name.
+func (m *MachineScope) ClusterName() string {
+	return m.ClusterScope.ClusterName()
+}
+
+// SubscriptionID returns the Azure client Subscription ID.
+func (m *MachineScope) SubscriptionID() string {
+	return m.ClusterScope.SubscriptionID()
+}
+
+// BaseURI returns the Azure ResourceManagerEndpoint.
+func (m *MachineScope) BaseURI() string {
+	return m.ClusterScope.BaseURI()
+}
+
+// Authorizer returns the Azure client Authorizer.
+func (m *MachineScope) Authorizer() autorest.Authorizer {
+	return m.ClusterScope.Authorizer()
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
@@ -225,7 +253,7 @@ func (m *MachineScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
 
 	// Start with the cluster-wide tags...
-	tags.Merge(m.AzureCluster.Spec.AdditionalTags)
+	tags.Merge(m.ClusterScope.AdditionalTags())
 	// ... and merge in the Machine's
 	tags.Merge(m.AzureMachine.Spec.AdditionalTags)
 

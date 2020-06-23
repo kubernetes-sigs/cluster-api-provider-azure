@@ -19,14 +19,14 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
-	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -44,10 +44,9 @@ type (
 		AzureClients
 		Client           client.Client
 		Logger           logr.Logger
-		Cluster          *capiv1.Cluster
 		MachinePool      *capiv1exp.MachinePool
-		AzureCluster     *infrav1.AzureCluster
 		AzureMachinePool *infrav1exp.AzureMachinePool
+		ClusterScope     *ClusterScope
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -56,10 +55,9 @@ type (
 		AzureClients
 		client           client.Client
 		patchHelper      *patch.Helper
-		Cluster          *capiv1.Cluster
 		MachinePool      *capiv1exp.MachinePool
-		AzureCluster     *infrav1.AzureCluster
 		AzureMachinePool *infrav1exp.AzureMachinePool
+		ClusterScope     azure.ClusterDescriber
 	}
 )
 
@@ -72,12 +70,6 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 	if params.MachinePool == nil {
 		return nil, errors.New("machine pool is required when creating a MachinePoolScope")
 	}
-	if params.Cluster == nil {
-		return nil, errors.New("cluster is required when creating a MachinePoolScope")
-	}
-	if params.AzureCluster == nil {
-		return nil, errors.New("azure cluster is required when creating a MachinePoolScope")
-	}
 	if params.AzureMachinePool == nil {
 		return nil, errors.New("azure machine pool is required when creating a MachinePoolScope")
 	}
@@ -86,26 +78,51 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		params.Logger = klogr.New()
 	}
 
-	if err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID); err != nil {
-		return nil, errors.Wrap(err, "failed to create Azure session")
-	}
-
 	helper, err := patch.NewHelper(params.AzureMachinePool, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &MachinePoolScope{
 		client:           params.Client,
-		Cluster:          params.Cluster,
 		MachinePool:      params.MachinePool,
-		AzureCluster:     params.AzureCluster,
 		AzureMachinePool: params.AzureMachinePool,
-		AzureClients:     params.AzureClients,
 		Logger:           params.Logger,
 		patchHelper:      helper,
+		ClusterScope:     params.ClusterScope,
 	}, nil
 }
 
+// Location returns the AzureCluster location.
+func (m *MachinePoolScope) Location() string {
+	return m.ClusterScope.Location()
+}
+
+// ResourceGroup returns the AzureCluster resource group.
+func (m *MachinePoolScope) ResourceGroup() string {
+	return m.ClusterScope.ResourceGroup()
+}
+
+// ClusterName returns the AzureCluster name.
+func (m *MachinePoolScope) ClusterName() string {
+	return m.ClusterScope.ClusterName()
+}
+
+// SubscriptionID returns the Azure client Subscription ID.
+func (m *MachinePoolScope) SubscriptionID() string {
+	return m.ClusterScope.SubscriptionID()
+}
+
+// BaseURI returns the Azure ResourceManagerEndpoint.
+func (m *MachinePoolScope) BaseURI() string {
+	return m.ClusterScope.BaseURI()
+}
+
+// Authorizer returns the Azure client Authorizer.
+func (m *MachinePoolScope) Authorizer() autorest.Authorizer {
+	return m.ClusterScope.Authorizer()
+}
+
+// Name returns the Azure Machine Pool Name.
 func (m *MachinePoolScope) Name() string {
 	return m.AzureMachinePool.Name
 }
@@ -138,7 +155,7 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 // the value from AzureMachinePool takes precedence.
 func (m *MachinePoolScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
-	tags.Merge(m.AzureCluster.Spec.AdditionalTags)
+	tags.Merge(m.ClusterScope.AdditionalTags())
 	tags.Merge(m.AzureMachinePool.Spec.AdditionalTags)
 	return tags
 }

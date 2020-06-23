@@ -16,7 +16,6 @@ limitations under the License.
 package scalesets
 
 import (
-	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
@@ -30,14 +29,10 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, baseURI, subscriptionID string) *Service {
-	settings := azure.ClientSettings{
-		BaseURI:        baseURI,
-		SubscriptionID: subscriptionID,
-	}
+func NewService(auth azure.Authorizer) *Service {
 	return &Service{
-		Client:                    NewClient(baseURI, subscriptionID, authorizer),
-		ResourceSkusClient:        resourceskus.NewClient(baseURI, subscriptionID, authorizer),
-		PublicLoadBalancersClient: publicloadbalancers.NewClient(settings, authorizer),
+		Client:                    NewClient(auth),
+		ResourceSkusClient:        resourceskus.NewClient(auth),
+		PublicLoadBalancersClient: publicloadbalancers.NewClient(auth),
 	}
 }

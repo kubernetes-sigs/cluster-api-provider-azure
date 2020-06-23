@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/base64"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -45,9 +46,10 @@ type azureMachineService struct {
 	machineScope         *scope.MachineScope
 	clusterScope         *scope.ClusterScope
 	availabilityZonesSvc azure.GetterService
-	networkInterfacesSvc azure.Service
+	networkInterfacesSvc azure.OldService
 	virtualMachinesSvc   *virtualmachines.Service
-	disksSvc             azure.Service
+	disksSvc             azure.OldService
+	publicIPsSvc         azure.Service
 }
 
 // newAzureMachineService populates all the services based on input scope
@@ -59,11 +61,17 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		networkInterfacesSvc: networkinterfaces.NewService(clusterScope, machineScope),
 		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
 		disksSvc:             disks.NewService(clusterScope),
+		publicIPsSvc:         publicips.NewService(machineScope),
 	}
 }
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error) {
+	err := s.publicIPsSvc.Reconcile(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create public IPs")
+	}
+
 	nicName := azure.GenerateNICName(s.machineScope.Name())
 	nicErr := s.reconcileNetworkInterface(ctx, nicName)
 	if nicErr != nil {
@@ -104,6 +112,11 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
+	}
+
+	err = s.publicIPsSvc.Delete(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete public IPs")
 	}
 
 	OSDiskSpec := &disks.Spec{

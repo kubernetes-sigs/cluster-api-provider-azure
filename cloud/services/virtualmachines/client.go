@@ -39,14 +39,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newVirtualMachinesClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newVirtualMachinesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newVirtualMachinesClient creates a new VM client from subscription ID.
-func newVirtualMachinesClient(settings azure.ClientSettings, authorizer autorest.Authorizer) compute.VirtualMachinesClient {
-	vmClient := compute.NewVirtualMachinesClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newVirtualMachinesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachinesClient {
+	vmClient := compute.NewVirtualMachinesClientWithBaseURI(baseURI, subscriptionID)
 	vmClient.Authorizer = authorizer
 	vmClient.AddToUserAgent(azure.UserAgent())
 	return vmClient

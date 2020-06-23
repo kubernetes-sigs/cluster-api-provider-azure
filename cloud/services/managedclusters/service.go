@@ -17,7 +17,7 @@ limitations under the License.
 package managedclusters
 
 import (
-	"github.com/Azure/go-autorest/autorest"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Service provides operations on azure resources
@@ -26,8 +26,8 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, baseURI, subscriptionID string) *Service {
+func NewService(auth azure.Authorizer) *Service {
 	return &Service{
-		Client: NewClient(baseURI, subscriptionID, authorizer),
+		Client: NewClient(auth),
 	}
 }

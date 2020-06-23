@@ -19,8 +19,6 @@ package networkinterfaces
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -104,10 +102,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 	if nicSpec.PublicIPName != "" {
-		iperr := s.createNodePublicIP(ctx, nicSpec.PublicIPName)
-		if iperr != nil {
-			return errors.Wrap(iperr, "failed to create node public IP")
-		}
 		publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicIPName)
 		if err != nil {
 			return errors.Wrap(err, "failed to get publicIP")
@@ -154,13 +148,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	nicSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("invalid network interface specification")
-	}
-	if nicSpec.PublicIPName != "" {
-		err := s.PublicIPsClient.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.PublicIPName)
-		if err != nil && !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete public IP %s", nicSpec.PublicIPName)
-		}
-		klog.V(2).Infof("successfully deleted IP %s", nicSpec.PublicIPName)
 	}
 	klog.V(2).Infof("deleting nic %s", nicSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
@@ -219,26 +206,4 @@ func (s *Service) createInboundNatRule(ctx context.Context, lb network.LoadBalan
 	}
 	klog.V(3).Infof("Creating rule %s using port %d", ruleName, sshFrontendPort)
 	return s.InboundNATRulesClient.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), to.String(lb.Name), ruleName, rule)
-}
-
-func (s *Service) createNodePublicIP(ctx context.Context, ipName string) error {
-	klog.V(2).Infof("creating public IP %s", ipName)
-
-	return s.PublicIPsClient.CreateOrUpdate(
-		ctx,
-		s.Scope.ResourceGroup(),
-		ipName,
-		network.PublicIPAddress{
-			Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-			Name:     to.StringPtr(ipName),
-			Location: to.StringPtr(s.Scope.Location()),
-			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-				PublicIPAddressVersion:   network.IPv4,
-				PublicIPAllocationMethod: network.Static,
-				DNSSettings: &network.PublicIPAddressDNSSettings{
-					DomainNameLabel: to.StringPtr(strings.ToLower(ipName)),
-				},
-			},
-		},
-	)
 }

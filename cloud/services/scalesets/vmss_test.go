@@ -78,13 +78,12 @@ func TestNewService(t *testing.T) {
 		AzureClients:     s.AzureClients,
 		Client:           client,
 		Logger:           s.Logger,
-		Cluster:          s.Cluster,
 		MachinePool:      new(clusterv1exp.MachinePool),
-		AzureCluster:     s.AzureCluster,
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
+		ClusterScope:     s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-	actual := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
+	actual := NewService(mps)
 	g.Expect(actual).ToNot(gomega.BeNil())
 }
 
@@ -212,7 +211,7 @@ func TestService_Get(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
+			svc := NewService(s)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -627,7 +626,7 @@ func TestService_Reconcile(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
+			svc := NewService(s)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -713,7 +712,7 @@ func TestService_Delete(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s.Authorizer, mps.AzureClients.ResourceManagerEndpoint, mps.AzureClients.SubscriptionID)
+			svc := NewService(s)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -829,14 +828,13 @@ func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolSc
 		AzureClients: s.AzureClients,
 		Client:       client,
 		Logger:       s.Logger,
-		Cluster:      s.Cluster,
 		MachinePool:  new(clusterv1exp.MachinePool),
-		AzureCluster: s.AzureCluster,
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "capz-mp-0",
 			},
 		},
+		ClusterScope: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 

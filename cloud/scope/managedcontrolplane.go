@@ -18,7 +18,7 @@ package scope
 
 import (
 	"context"
-
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,6 +92,21 @@ type ManagedControlPlaneScope struct {
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	PatchTarget      runtime.Object
+}
+
+// SubscriptionID returns the Azure client Subscription ID.
+func (s *ManagedControlPlaneScope) SubscriptionID() string {
+	return s.AzureClients.SubscriptionID
+}
+
+// BaseURI returns the Azure ResourceManagerEndpoint.
+func (s *ManagedControlPlaneScope) BaseURI() string {
+	return s.AzureClients.ResourceManagerEndpoint
+}
+
+// Authorizer returns the Azure client Authorizer.
+func (s *ManagedControlPlaneScope) Authorizer() autorest.Authorizer {
+	return s.AzureClients.Authorizer
 }
 
 // PatchObject persists the cluster configuration and status.

@@ -37,14 +37,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newResourceSkusClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newResourceSkusClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // getResourceSkusClient creates a new availability zones client from subscription ID.
-func newResourceSkusClient(settings azure.ClientSettings, authorizer autorest.Authorizer) compute.ResourceSkusClient {
-	skusClient := compute.NewResourceSkusClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newResourceSkusClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
+	skusClient := compute.NewResourceSkusClientWithBaseURI(baseURI, subscriptionID)
 	skusClient.Authorizer = authorizer
 	skusClient.AddToUserAgent(azure.UserAgent())
 	return skusClient

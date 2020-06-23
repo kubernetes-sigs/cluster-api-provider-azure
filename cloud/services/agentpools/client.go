@@ -40,14 +40,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new agent pools client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newAgentPoolsClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newAgentPoolsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newAgentPoolsClient creates a new agent pool client from subscription ID.
-func newAgentPoolsClient(settings azure.ClientSettings, authorizer autorest.Authorizer) containerservice.AgentPoolsClient {
-	agentPoolsClient := containerservice.NewAgentPoolsClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newAgentPoolsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) containerservice.AgentPoolsClient {
+	agentPoolsClient := containerservice.NewAgentPoolsClientWithBaseURI(baseURI, subscriptionID)
 	agentPoolsClient.Authorizer = authorizer
 	agentPoolsClient.AddToUserAgent(azure.UserAgent())
 	return agentPoolsClient

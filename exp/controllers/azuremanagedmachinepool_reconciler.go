@@ -32,7 +32,7 @@ import (
 // azureManagedMachinePoolReconciler are list of services required by cluster controller
 type azureManagedMachinePoolReconciler struct {
 	kubeclient    client.Client
-	agentPoolsSvc azure.Service
+	agentPoolsSvc azure.OldService
 	scaleSetsSvc  NodeLister
 }
 
@@ -46,8 +46,8 @@ type NodeLister interface {
 func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
 	return &azureManagedMachinePoolReconciler{
 		kubeclient:    scope.Client,
-		agentPoolsSvc: agentpools.NewService(scope.AzureClients.Authorizer, azure.ClientSettings{BaseURI: scope.AzureClients.ResourceManagerEndpoint, SubscriptionID: scope.AzureClients.SubscriptionID}),
-		scaleSetsSvc:  scalesets.NewService(scope.AzureClients.Authorizer, scope.AzureClients.ResourceManagerEndpoint, scope.AzureClients.SubscriptionID),
+		agentPoolsSvc: agentpools.NewService(scope),
+		scaleSetsSvc:  scalesets.NewService(scope),
 	}
 }
 
