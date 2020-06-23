@@ -20,13 +20,11 @@
     - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
-    - [Deploying a flavor cluster as a local tilt resource](../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource)
   - [Manual Testing](#manual-testing)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
       - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
       - [Creating the cluster](#creating-the-cluster)
-    - [Debugging cluster creation](#debugging-cluster-creation)
   - [Submitting PRs and testing](#submitting-prs-and-testing)
     - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
@@ -209,6 +207,8 @@ To delete the cluster:
 make delete-workload-cluster
 ```
 
+> Check out the [troubleshooting guide](troubleshooting.md) for common errors you might run into.
+
 ### Manual Testing
 
 #### Creating a dev cluster
@@ -297,25 +297,7 @@ Create the cluster:
 make create-cluster
 ```
 
-#### Debugging cluster creation
-
-While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
-
-```bash
-time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure-provider-controller-manager-0 is available
-
-kubectl logs -n capz-system azure-provider-controller-manager-0 manager -f # Follow the controller logs
-```
-
-An error such as the following in the manager could point to a mismatch between a current CAPI and an old CAPZ version:
-
-```
-E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}
-```
-
-After the workload cluster is finished deploying you will have a kubeconfig in `./kubeconfig`.
-You can debug most issues by SSHing into the VMs that have been created and
-reading `/var/lib/waagent/custom-script/download/0/stdout`.
+> Check out the [troubleshooting](troubleshooting.md) guide for common errors you might run into.
 
 ### Submitting PRs and testing
 
