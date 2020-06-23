@@ -8,8 +8,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v0.3.6
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/core-components.yaml
+      - name: v0.3.7-alpha.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-alpha.0/core-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -19,8 +19,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-      - name: v0.3.6
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/bootstrap-components.yaml
+      - name: v0.3.7-alpha.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-alpha.0/bootstrap-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -30,8 +30,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: v0.3.6
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.6/control-plane-components.yaml
+      - name: v0.3.7-alpha.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-alpha.0/control-plane-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
