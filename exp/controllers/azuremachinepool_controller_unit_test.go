@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -33,6 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
@@ -244,6 +247,32 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			c.Expect(g, reqs)
 		})
 	}
+}
+
+func Test_newAzureMachinePoolService(t *testing.T) {
+	cluster := newAzureCluster("foo")
+	cluster.Spec.ResourceGroup = "resourceGroup"
+	mps := &scope.MachinePoolScope{
+		AzureCluster: cluster,
+		AzureMachinePool: &infrav1exp.AzureMachinePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "poolName",
+			},
+		},
+	}
+
+	cs := &scope.ClusterScope{
+		AzureCluster: cluster,
+	}
+
+	subject := newAzureMachinePoolService(mps, cs)
+	mockCtrl := gomock.NewController(t)
+	svcMock := mock_scalesets.NewMockClient(mockCtrl)
+	svcMock.EXPECT().Delete(gomock.Any(), "resourceGroup", "poolName").Return(nil)
+	defer mockCtrl.Finish()
+	subject.virtualMachinesScaleSetSvc.Client = svcMock
+	g := gomega.NewWithT(t)
+	g.Expect(subject.Delete(context.Background())).ToNot(gomega.HaveOccurred())
 }
 
 func newScheme(g *gomega.GomegaWithT) *runtime.Scheme {
