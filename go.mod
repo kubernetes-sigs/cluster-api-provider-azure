@@ -26,8 +26,8 @@ require (
 	k8s.io/component-base v0.17.2
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab
-	sigs.k8s.io/cluster-api v0.3.6
-	sigs.k8s.io/controller-runtime v0.5.5
+	sigs.k8s.io/cluster-api v0.3.7-alpha.0
+	sigs.k8s.io/controller-runtime v0.5.6
 )
 
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.0.1+incompatible
