@@ -560,7 +560,8 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 // Delete reconciles all the services in pre determined order
 func (s *azureMachinePoolService) Delete(ctx context.Context) error {
 	vmssSpec := &scalesets.Spec{
-		Name: s.machinePoolScope.Name(),
+		Name:          s.machinePoolScope.Name(),
+		ResourceGroup: s.clusterScope.ResourceGroup(),
 	}
 
 	err := s.virtualMachinesScaleSetSvc.Delete(ctx, vmssSpec)
