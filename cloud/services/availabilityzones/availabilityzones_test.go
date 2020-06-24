@@ -125,7 +125,7 @@ func TestGetAvailabilityZones(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(azMock.EXPECT())
 

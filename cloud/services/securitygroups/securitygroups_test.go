@@ -91,7 +91,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(sgMock.EXPECT(), sgMock.EXPECT())
 
@@ -161,7 +161,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(sgMock.EXPECT())
 

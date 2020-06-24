@@ -56,7 +56,7 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
 
-	client := fake.NewFakeClient(cluster)
+	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
@@ -200,7 +200,7 @@ func TestReconcileRouteTables(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(routetableMock.EXPECT())
 
@@ -334,7 +334,7 @@ func TestDeleteRouteTable(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(routetableMock.EXPECT())
 
