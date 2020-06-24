@@ -64,7 +64,7 @@ func TestInvalidNetworkInterface(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
 
-	client := fake.NewFakeClient(cluster)
+	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
@@ -581,7 +581,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
@@ -789,7 +789,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{

@@ -61,7 +61,7 @@ func TestInvalidVM(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
 
-	client := fake.NewFakeClient(cluster)
+	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
@@ -295,7 +295,7 @@ func TestGetVM(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
 
@@ -624,7 +624,7 @@ func TestReconcileVM(t *testing.T) {
 				},
 			}
 
-			client := fake.NewFakeClient(secret, cluster, &tc.machine)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, secret, cluster, &tc.machine)
 
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 				Client:  client,
@@ -732,7 +732,7 @@ func TestDeleteVM(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(publicIPsMock.EXPECT())
 

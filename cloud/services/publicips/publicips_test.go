@@ -55,7 +55,7 @@ func TestInvalidPublicIPSpec(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
 
-	client := fake.NewFakeClient(cluster)
+	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
@@ -133,7 +133,7 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(publicIPsMock.EXPECT())
 
@@ -224,7 +224,7 @@ func TestDeletePublicIP(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(publicIPsMock.EXPECT())
 

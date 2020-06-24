@@ -153,7 +153,7 @@ func TestReconcileSubnets(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(subnetMock.EXPECT(), rtMock.EXPECT(), sgMock.EXPECT())
 
@@ -261,7 +261,7 @@ func TestDeleteSubnets(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(subnetMock.EXPECT())
 

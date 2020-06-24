@@ -136,7 +136,7 @@ func TestReconcileVnet(t *testing.T) {
 				Spec:       clusterv1.ClusterSpec{},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(vnetMock.EXPECT())
 
@@ -228,7 +228,7 @@ func TestDeleteVnet(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 			}
 
-			client := fake.NewFakeClient(cluster)
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
 			tc.expect(vnetMock.EXPECT())
 
