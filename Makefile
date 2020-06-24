@@ -20,6 +20,7 @@ SHELL:=/usr/bin/env bash
 
 .DEFAULT_GOAL:=help
 
+GOPATH := $(shell go env GOPATH)
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
 ifeq ($(GOPROXY),)
@@ -38,6 +39,11 @@ TEMPLATES_DIR := $(ROOT_DIR)/templates
 BIN_DIR := $(abspath $(ROOT_DIR)/bin)
 EXP_DIR := exp
 GO_INSTALL = ./scripts/go_install.sh
+
+# set --output-base used for conversion-gen which needs to be different for in GOPATH and outside GOPATH dev
+ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure)
+  OUTPUT_BASE := --output-base=$(ROOT_DIR)
+endif
 
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
@@ -155,7 +161,7 @@ $(CONTROLLER_GEN): ## Build controller-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
 
 $(CONVERSION_GEN): ## Build conversion-gen
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen@v0.18.2
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen@v0.18.4
 
 $(ENVSUBST): ## Build envsubst from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst@v1.1.0
@@ -214,7 +220,7 @@ generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related g
 	$(CONVERSION_GEN) \
 		--input-dirs=./api/v1alpha2 \
 		--output-file-base=zz_generated.conversion \
-		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
+		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt $(OUTPUT_BASE)
 	go generate ./...
 
 .PHONY: generate-manifests
