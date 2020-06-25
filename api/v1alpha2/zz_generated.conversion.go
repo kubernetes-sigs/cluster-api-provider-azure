@@ -586,6 +586,7 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha2_AzureMachineSpec(in *v1al
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.AllocatePublicIP = in.AllocatePublicIP
 	// WARNING: in.AcceleratedNetworking requires manual conversion: does not exist in peer-type
+	// WARNING: in.SpotVMOptions requires manual conversion: does not exist in peer-type
 	return nil
 }
 

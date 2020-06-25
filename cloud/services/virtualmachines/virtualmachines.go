@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
@@ -49,6 +50,7 @@ type Spec struct {
 	OSDisk                 infrav1.OSDisk
 	CustomData             string
 	UserAssignedIdentities []infrav1.UserAssignedIdentity
+	SpotVMOptions          *infrav1.SpotVMOptions
 }
 
 // Get provides information about a virtual machine.
@@ -101,6 +103,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	// Set the cloud provider tag
 	additionalTags[infrav1.ClusterAzureCloudProviderTagKey(s.MachineScope.Name())] = string(infrav1.ResourceLifecycleOwned)
 
+	priority, evictionPolicy, billingProfile, err := getSpotVMOptions(vmSpec.SpotVMOptions)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get Spot VM options")
+	}
+
 	virtualMachine := compute.VirtualMachine{
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -141,6 +148,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 					},
 				},
 			},
+			Priority:       priority,
+			EvictionPolicy: evictionPolicy,
+			BillingProfile: billingProfile,
 		},
 	}
 
@@ -337,6 +347,24 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 	storageProfile.ImageReference = imageRef
 
 	return storageProfile, nil
+}
+
+func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
+	// Spot VM not requested, return zero values to apply defaults
+	if spotVMOptions == nil {
+		return compute.VirtualMachinePriorityTypes(""), compute.VirtualMachineEvictionPolicyTypes(""), nil, nil
+	}
+	var billingProfile *compute.BillingProfile
+	if spotVMOptions.MaxPrice != nil {
+		maxPrice, err := strconv.ParseFloat(*spotVMOptions.MaxPrice, 64)
+		if err != nil {
+			return compute.VirtualMachinePriorityTypes(""), compute.VirtualMachineEvictionPolicyTypes(""), nil, err
+		}
+		billingProfile = &compute.BillingProfile{
+			MaxPrice: &maxPrice,
+		}
+	}
+	return compute.Spot, compute.Deallocate, billingProfile, nil
 }
 
 // GenerateRandomString returns a URL-safe, base64 encoded
