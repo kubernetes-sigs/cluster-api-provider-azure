@@ -153,6 +153,11 @@ func Convert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *infr
 	return nil
 }
 
+// Convert_v1alpha2_Network_To_v1alpha3_Network.
+func Convert_v1alpha2_Network_To_v1alpha3_Network(in *Network, out *infrav1alpha3.Network, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha2_Network_To_v1alpha3_Network(in, out, s)
+}
+
 // Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec.
 func Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec(in *NetworkSpec, out *infrav1alpha3.NetworkSpec, s apiconversion.Scope) error { //nolint
 	if err := Convert_v1alpha2_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {

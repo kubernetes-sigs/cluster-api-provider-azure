@@ -29,9 +29,6 @@ const (
 
 // Network encapsulates the state of Azure networking resources.
 type Network struct {
-	// SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
-	SecurityGroups map[SecurityGroupRole]SecurityGroup `json:"securityGroups,omitempty"`
-
 	// APIServerLB is the Kubernetes API server load balancer.
 	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
 
