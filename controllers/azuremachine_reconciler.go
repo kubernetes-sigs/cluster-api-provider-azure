@@ -104,9 +104,9 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 	}
 
 	if s.machineScope.Role() == infrav1.ControlPlane {
-		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
+		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.ClusterName())
 	} else if s.machineScope.Role() == infrav1.Node {
-		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.Name()
+		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.ClusterName()
 	}
 
 	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
@@ -222,11 +222,11 @@ func (s *azureMachineService) reconcileNetworkInterface(ctx context.Context, nic
 	switch role := s.machineScope.Role(); role {
 	case infrav1.Node:
 		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
-		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.Name()
+		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.ClusterName()
 	case infrav1.ControlPlane:
 		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name
-		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.Name())
-		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.Name())
+		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.ClusterName())
+		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.ClusterName())
 	default:
 		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", role, s.machineScope.Name())
 	}

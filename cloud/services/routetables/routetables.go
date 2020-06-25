@@ -32,7 +32,7 @@ type Spec struct {
 
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route tables reconcile in custom vnet mode")
 		return nil
 	}
@@ -79,7 +79,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the route table with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil
 	}

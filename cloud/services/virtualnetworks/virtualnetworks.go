@@ -81,7 +81,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			return errors.Wrap(err, "failed to get VNet")
 		}
 
-		if !existingVnet.IsManaged(s.Scope.Name()) {
+		if !existingVnet.IsManaged(s.Scope.ClusterName()) {
 			s.Scope.V(2).Info("Working on custom VNet", "vnet-id", existingVnet.ID)
 		}
 		// vnet already exists, cannot update since it's immutable
@@ -91,7 +91,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	klog.V(2).Infof("creating VNet %s ", vnetSpec.Name)
 	vnetProperties := network.VirtualNetwork{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.Name(),
+			ClusterName: s.Scope.ClusterName(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        to.StringPtr(vnetSpec.Name),
 			Role:        to.StringPtr(infrav1.CommonRole),
@@ -115,7 +115,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
 		return nil
 	}

@@ -41,7 +41,7 @@ type Spec struct {
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping network security group reconcile in custom vnet mode")
 		return nil
 	}
