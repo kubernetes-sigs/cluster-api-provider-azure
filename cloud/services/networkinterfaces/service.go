@@ -17,7 +17,8 @@ limitations under the License.
 package networkinterfaces
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
@@ -26,10 +27,16 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
 
+// NICScope defines the scope interface for a network interfaces service.
+type NICScope interface {
+	azure.ClusterDescriber
+	logr.Logger
+	NICSpecs() []azure.NICSpec
+}
+
 // Service provides operations on azure resources
 type Service struct {
-	Scope        *scope.ClusterScope
-	MachineScope *scope.MachineScope
+	Scope NICScope
 	Client
 	SubnetsClient               subnets.Client
 	PublicLoadBalancersClient   publicloadbalancers.Client
@@ -40,10 +47,9 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
+func NewService(scope NICScope) *Service {
 	return &Service{
 		Scope:                       scope,
-		MachineScope:                machineScope,
 		Client:                      NewClient(scope),
 		SubnetsClient:               subnets.NewClient(scope),
 		PublicLoadBalancersClient:   publicloadbalancers.NewClient(scope),

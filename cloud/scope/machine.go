@@ -99,6 +99,31 @@ func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return spec
 }
 
+// NICSpecs returns the network interface specs.
+func (m *MachineScope) NICSpecs() []azure.NICSpec {
+	spec := azure.NICSpec{
+		Name:                  azure.GenerateNICName(m.Name()),
+		MachineName:           m.Name(),
+		MachineRole:           m.Role(),
+		VNetName:              m.ClusterScope.Vnet().Name,
+		VNetResourceGroup:     m.ClusterScope.Vnet().ResourceGroup,
+		SubnetName:            m.Subnet().Name,
+		VMSize:                m.AzureMachine.Spec.VMSize,
+		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+	}
+	if m.Role() == infrav1.ControlPlane {
+		spec.PublicLoadBalancerName = azure.GeneratePublicLBName(m.ClusterName())
+		spec.InternalLoadBalancerName = azure.GenerateInternalLBName(m.ClusterName())
+	} else if m.Role() == infrav1.Node {
+		spec.PublicLoadBalancerName = m.ClusterName()
+	}
+	if m.AzureMachine.Spec.AllocatePublicIP == true {
+		spec.PublicIPName = azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name()))
+	}
+
+	return []azure.NICSpec{spec}
+}
+
 // Location returns the AzureCluster location.
 func (m *MachineScope) Location() string {
 	return m.ClusterScope.Location()
@@ -127,6 +152,29 @@ func (m *MachineScope) BaseURI() string {
 // Authorizer returns the Azure client Authorizer.
 func (m *MachineScope) Authorizer() autorest.Authorizer {
 	return m.ClusterScope.Authorizer()
+}
+
+// Vnet returns the cluster VNet.
+func (m *MachineScope) Vnet() *infrav1.VnetSpec {
+	return m.ClusterScope.Vnet()
+}
+
+// NodeSubnet returns the cluster node subnet.
+func (m *MachineScope) NodeSubnet() *infrav1.SubnetSpec {
+	return m.ClusterScope.NodeSubnet()
+}
+
+// ControlPlaneSubnet returns the cluster control plane subnet.
+func (m *MachineScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
+	return m.ClusterScope.ControlPlaneSubnet()
+}
+
+// Subnet returns the machine's subnet based on its role
+func (m *MachineScope) Subnet() *infrav1.SubnetSpec {
+	if m.IsControlPlane() {
+		return m.ControlPlaneSubnet()
+	}
+	return m.NodeSubnet()
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.

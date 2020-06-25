@@ -149,6 +149,48 @@ func (mr *MockPublicIPScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockPublicIPScope)(nil).AdditionalTags))
 }
 
+// Vnet mocks base method.
+func (m *MockPublicIPScope) Vnet() *v1alpha3.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
+	return ret0
+}
+
+// Vnet indicates an expected call of Vnet.
+func (mr *MockPublicIPScopeMockRecorder) Vnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockPublicIPScope)(nil).Vnet))
+}
+
+// NodeSubnet mocks base method.
+func (m *MockPublicIPScope) NodeSubnet() *v1alpha3.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnet")
+	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	return ret0
+}
+
+// NodeSubnet indicates an expected call of NodeSubnet.
+func (mr *MockPublicIPScopeMockRecorder) NodeSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockPublicIPScope)(nil).NodeSubnet))
+}
+
+// ControlPlaneSubnet mocks base method.
+func (m *MockPublicIPScope) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
+	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	return ret0
+}
+
+// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
+func (mr *MockPublicIPScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockPublicIPScope)(nil).ControlPlaneSubnet))
+}
+
 // PublicIPSpecs mocks base method.
 func (m *MockPublicIPScope) PublicIPSpecs() []azure.PublicIPSpec {
 	m.ctrl.T.Helper()
