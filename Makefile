@@ -46,19 +46,45 @@ ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azu
 endif
 
 # Binaries.
-CLUSTERCTL := $(BIN_DIR)/clusterctl
-CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
-ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
-ETCD=$(TOOLS_BIN_DIR)/etcd
-GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+CONTROLLER_GEN_VER := v0.2.9
+CONTROLLER_GEN_BIN := controller-gen
+CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
+
+CONVERSION_GEN_VER := v0.18.4
+CONVERSION_GEN_BIN := conversion-gen
+CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
+
+ENVSUBST_VER := v1.1.0
+ENVSUBST_BIN := envsubst
+ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
+
+GOLANGCI_LINT_VER := v1.27.0
+GOLANGCI_LINT_BIN := golangci-lint
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
+
+KUSTOMIZE_VER := v3.5.4
+KUSTOMIZE_BIN := kustomize
+KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
+
+MOCKGEN_VER := v1.4.3
+MOCKGEN_BIN := mockgen
+MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
+
+RELEASE_NOTES_VER := v0.3.4
+RELEASE_NOTES_BIN := release-notes
+RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
+
+GO_APIDIFF_VER := latest
+GO_APIDIFF_BIN := go-apidiff
+GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
+
+GINKGO_VER := v1.13.0
+GINKGO_BIN := ginkgo
+GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
+
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 KUBECTL=$(TOOLS_BIN_DIR)/kubectl
-KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
-MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
-RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
-GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
-GINKGO := $(TOOLS_BIN_DIR)/ginkgo
+ETCD=$(TOOLS_BIN_DIR)/etcd
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
@@ -154,36 +180,32 @@ manager: ## Build manager binary.
 ## Tooling Binaries
 ## --------------------------------------
 
-$(CLUSTERCTL): ## Build clusterctl binary.
-	GOBIN=$(BIN_DIR) $(GO_INSTALL) sigs.k8s.io/cluster-api/cmd/clusterctl@v0.3.5
-
 $(CONTROLLER_GEN): ## Build controller-gen from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen $(CONTROLLER_GEN_BIN) $(CONTROLLER_GEN_VER)
 
-$(CONVERSION_GEN): ## Build conversion-gen
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen@v0.18.4
+$(CONVERSION_GEN): ## Build conversion-gen.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
 
 $(ENVSUBST): ## Build envsubst from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst@v1.1.0
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
 $(KUSTOMIZE): ## Build kustomize from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v3@v3.5.4
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v3 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
 
 $(MOCKGEN): ## Build mockgen from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen@v1.4.3
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
 
-$(RELEASE_NOTES): ## Build release notes
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/cluster-api/hack/tools/release
-	mv $(TOOLS_BIN_DIR)/release $(RELEASE_NOTES)
+$(RELEASE_NOTES): ## Build release notes.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/release/cmd/release-notes $(RELEASE_NOTES_BIN) $(RELEASE_NOTES_VER)
 
 $(GO_APIDIFF): ## Build go-apidiff.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
-$(GINKGO):
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo
+$(GINKGO): ## Build ginkgo.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
 ## --------------------------------------
 ## Linting
