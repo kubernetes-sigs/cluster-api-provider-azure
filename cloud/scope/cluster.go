@@ -108,11 +108,6 @@ func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
 	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
 }
 
-// SecurityGroups returns the cluster security groups as a map, it creates the map if empty.
-func (s *ClusterScope) SecurityGroups() map[infrav1.SecurityGroupRole]infrav1.SecurityGroup {
-	return s.AzureCluster.Status.Network.SecurityGroups
-}
-
 // ResourceGroup returns the cluster resource group.
 func (s *ClusterScope) ResourceGroup() string {
 	return s.AzureCluster.Spec.ResourceGroup

@@ -401,14 +401,6 @@ func TestReconcileVM(t *testing.T) {
 				},
 				Status: infrav1.AzureClusterStatus{
 					Network: infrav1.Network{
-						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
-							infrav1.SecurityGroupControlPlane: {
-								ID: "1",
-							},
-							infrav1.SecurityGroupNode: {
-								ID: "2",
-							},
-						},
 						APIServerIP: infrav1.PublicIP{
 							DNSName: "azure-test-dns",
 						},
@@ -454,14 +446,6 @@ func TestReconcileVM(t *testing.T) {
 				},
 				Status: infrav1.AzureClusterStatus{
 					Network: infrav1.Network{
-						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
-							infrav1.SecurityGroupControlPlane: {
-								ID: "1",
-							},
-							infrav1.SecurityGroupNode: {
-								ID: "2",
-							},
-						},
 						APIServerIP: infrav1.PublicIP{
 							DNSName: "azure-test-dns",
 						},
@@ -509,14 +493,6 @@ func TestReconcileVM(t *testing.T) {
 				},
 				Status: infrav1.AzureClusterStatus{
 					Network: infrav1.Network{
-						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
-							infrav1.SecurityGroupControlPlane: {
-								ID: "1",
-							},
-							infrav1.SecurityGroupNode: {
-								ID: "2",
-							},
-						},
 						APIServerIP: infrav1.PublicIP{
 							DNSName: "azure-test-dns",
 						},
@@ -563,14 +539,6 @@ func TestReconcileVM(t *testing.T) {
 				},
 				Status: infrav1.AzureClusterStatus{
 					Network: infrav1.Network{
-						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
-							infrav1.SecurityGroupControlPlane: {
-								ID: "1",
-							},
-							infrav1.SecurityGroupNode: {
-								ID: "2",
-							},
-						},
 						APIServerIP: infrav1.PublicIP{
 							DNSName: "azure-test-dns",
 						},
@@ -619,14 +587,6 @@ func TestReconcileVM(t *testing.T) {
 				},
 				Status: infrav1.AzureClusterStatus{
 					Network: infrav1.Network{
-						SecurityGroups: map[infrav1.SecurityGroupRole]infrav1.SecurityGroup{
-							infrav1.SecurityGroupControlPlane: {
-								ID: "1",
-							},
-							infrav1.SecurityGroupNode: {
-								ID: "2",
-							},
-						},
 						APIServerIP: infrav1.PublicIP{
 							DNSName: "azure-test-dns",
 						},
