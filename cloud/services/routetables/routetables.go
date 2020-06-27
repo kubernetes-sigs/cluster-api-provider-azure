@@ -18,6 +18,7 @@ package routetables
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -59,7 +60,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return nil
 	}
 
-	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
+	s.Scope.Logger.V(2).Info("creating route table", "route table", routeTableSpec.Name)
 	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.ResourceGroup(),
@@ -73,7 +74,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully created route table %s", routeTableSpec.Name)
+	s.Scope.Logger.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
 	return nil
 }
 

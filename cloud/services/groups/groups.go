@@ -34,7 +34,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// resource group already exists, skip creation
 		return nil
 	}
-	klog.V(2).Infof("creating resource group %s", s.Scope.ResourceGroup())
+	s.Scope.Logger.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
 	group := resources.Group{
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -46,7 +46,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		})),
 	}
 	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
-	klog.V(2).Infof("successfully created resource group %s", s.Scope.ResourceGroup())
+	s.Scope.Logger.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
 	return err
 }
 

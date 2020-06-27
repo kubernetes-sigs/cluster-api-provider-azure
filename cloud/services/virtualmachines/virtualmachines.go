@@ -89,14 +89,14 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	klog.V(2).Infof("getting NIC %s", vmSpec.NICName)
+	s.Scope.Logger.V(2).Info("getting network interface", "network interface", vmSpec.NICName)
 	nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), vmSpec.NICName)
 	if err != nil {
 		return err
 	}
-	klog.V(2).Infof("got NIC %s", vmSpec.NICName)
+	s.Scope.Logger.V(2).Info("got network interface", "network interface", vmSpec.NICName)
 
-	klog.V(2).Infof("creating VM %s ", vmSpec.Name)
+	s.Scope.Logger.V(2).Info("creating VM", "vm", vmSpec.Name)
 
 	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
 	additionalTags := s.MachineScope.AdditionalTags()
@@ -154,7 +154,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 	}
 
-	klog.V(2).Infof("Setting zone %s ", vmSpec.Zone)
+	s.Scope.Logger.V(2).Info("Setting zone", "zone", vmSpec.Zone)
 
 	if vmSpec.Zone != "" {
 		zones := []string{vmSpec.Zone}
@@ -202,7 +202,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 	}
 
-	klog.V(2).Infof("successfully created VM %s ", vmSpec.Name)
+	s.Scope.Logger.V(2).Info("successfully created VM", "vm", vmSpec.Name)
 	return nil
 }
 

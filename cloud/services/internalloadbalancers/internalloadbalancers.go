@@ -43,7 +43,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid internal load balancer specification")
 	}
-	klog.V(2).Infof("creating internal load balancer %s", internalLBSpec.Name)
+	s.Scope.Logger.V(2).Info("creating internal load balancer", "internal lb", internalLBSpec.Name)
 	probeName := "HTTPSProbe"
 	frontEndIPConfigName := "controlplane-internal-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-internal-backEndPool"
@@ -58,23 +58,23 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			privateIP = to.String((*ipConfigs)[0].FrontendIPConfigurationPropertiesFormat.PrivateIPAddress)
 		}
 	} else if azure.ResourceNotFound(err) {
-		klog.V(2).Infof("internalLB %s not found in RG %s", internalLBSpec.Name, s.Scope.ResourceGroup())
+		s.Scope.Logger.V(2).Info("internalLB not found in RG", "internal lb", internalLBSpec.Name, "resource group", s.Scope.ResourceGroup())
 		privateIP, err = s.getAvailablePrivateIP(ctx, s.Scope.Vnet().ResourceGroup, internalLBSpec.VnetName, internalLBSpec.SubnetCidr, internalLBSpec.IPAddress)
 		if err != nil {
 			return err
 		}
-		klog.V(2).Infof("setting internal load balancer IP to %s", privateIP)
+		s.Scope.Logger.V(2).Info("setting internal load balancer IP", "private ip", privateIP)
 	} else {
 		return errors.Wrap(err, "failed to look for existing internal LB")
 	}
 
-	klog.V(2).Infof("getting subnet %s", internalLBSpec.SubnetName)
+	s.Scope.Logger.V(2).Info("getting subnet", "subnet", internalLBSpec.SubnetName)
 	subnet, err := s.SubnetsClient.Get(ctx, s.Scope.Vnet().ResourceGroup, internalLBSpec.VnetName, internalLBSpec.SubnetName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get subnet")
 	}
 
-	klog.V(2).Infof("successfully got subnet %s", internalLBSpec.SubnetName)
+	s.Scope.Logger.V(2).Info("successfully got subnet", "subnet", internalLBSpec.SubnetName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	err = s.Client.CreateOrUpdate(ctx,
@@ -140,7 +140,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create load balancer")
 	}
 
-	klog.V(2).Infof("successfully created internal load balancer %s", internalLBSpec.Name)
+	s.Scope.Logger.V(2).Info("successfully created internal load balancer", "internal lb", internalLBSpec.Name)
 	return err
 }
 

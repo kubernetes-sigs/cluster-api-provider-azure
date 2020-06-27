@@ -66,7 +66,6 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			for _, ingressRule := range cpSubnet.SecurityGroup.IngressRules {
 				ingressRules[ingressRule.Name] = newIngressSecurityRule(*ingressRule)
 			}
-
 		}
 	} else {
 		// Add any specified ingress rules from node security group spec
@@ -89,11 +88,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 		if !update {
 			// Skip update for control-plane NSG as the required default rules are present
-			klog.V(2).Infof("security group %s exists and no default rules are missing, skipping update", nsgSpec.Name)
+			s.Scope.V(2).Info("security group exists and no default rules are missing, skipping update", "security group", nsgSpec.Name)
 			return nil
 		}
 	} else {
-		klog.V(2).Infof("applying missing default rules for control plane NSG %s", nsgSpec.Name)
+		s.Scope.V(2).Info("applying missing default rules for control plane security group", "security group", nsgSpec.Name)
 		for _, rule := range ingressRules {
 			securityRules = append(securityRules, rule)
 		}
@@ -109,13 +108,13 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// We append the existing NSG etag to the header to ensure we only apply the updates if the NSG has not been modified.
 		sg.Etag = securityGroup.Etag
 	}
-	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
+	s.Scope.Logger.V(2).Info("creating security group", "security group", nsgSpec.Name)
 	err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), nsgSpec.Name, sg)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("created security group %s", nsgSpec.Name)
+	s.Scope.Logger.V(2).Info("created security group", "security group", nsgSpec.Name)
 	return err
 }
 
