@@ -24,9 +24,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
@@ -44,32 +44,18 @@ type Spec struct {
 func (s *Service) getExisting(ctx context.Context, rgName string, spec *Spec) (*infrav1.SubnetSpec, error) {
 	subnet, err := s.Client.Get(ctx, rgName, spec.VnetName, spec.Name)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to fetch subnet named %q in vnet %q", spec.VnetName, spec.Name)
 	}
-	var sg infrav1.SecurityGroup
-	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.NetworkSecurityGroup != nil {
-		sg = infrav1.SecurityGroup{
-			Name: to.String(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.Name),
-			ID:   to.String(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.ID),
-			Tags: converters.MapToTags(subnet.SubnetPropertiesFormat.NetworkSecurityGroup.Tags),
-		}
-	}
-	var rt infrav1.RouteTable
-	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.RouteTable != nil {
-		rt = infrav1.RouteTable{
-			Name: to.String(subnet.SubnetPropertiesFormat.RouteTable.Name),
-			ID:   to.String(subnet.SubnetPropertiesFormat.RouteTable.ID),
-		}
-	}
-	return &infrav1.SubnetSpec{
+
+	subnetSpec := &infrav1.SubnetSpec{
 		Role:                spec.Role,
 		InternalLBIPAddress: spec.InternalLBIPAddress,
 		Name:                to.String(subnet.Name),
 		ID:                  to.String(subnet.ID),
 		CidrBlock:           to.String(subnet.SubnetPropertiesFormat.AddressPrefix),
-		SecurityGroup:       sg,
-		RouteTable:          rt,
-	}, nil
+	}
+
+	return subnetSpec, nil
 }
 
 // Reconcile gets/creates/updates a subnet.
@@ -81,11 +67,20 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
 	if err == nil {
 		// subnet already exists, update the spec and skip creation
+		var subnet *infrav1.SubnetSpec
 		if subnetSpec.Role == infrav1.SubnetControlPlane {
-			existingSubnet.DeepCopyInto(s.Scope.ControlPlaneSubnet())
+			subnet = s.Scope.ControlPlaneSubnet()
 		} else if subnetSpec.Role == infrav1.SubnetNode {
-			existingSubnet.DeepCopyInto(s.Scope.NodeSubnet())
+			subnet = s.Scope.NodeSubnet()
+		} else {
+			return nil
 		}
+
+		subnet.Role = subnetSpec.Role
+		subnet.Name = existingSubnet.Name
+		subnet.CidrBlock = existingSubnet.CidrBlock
+		subnet.ID = existingSubnet.ID
+
 		return nil
 	}
 	if !azure.ResourceNotFound(err) {
