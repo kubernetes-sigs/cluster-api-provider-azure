@@ -17,7 +17,6 @@ limitations under the License.
 package subnets
 
 import (
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
@@ -33,14 +32,10 @@ type Service struct {
 
 // NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
-	settings := azure.ClientSettings{
-		BaseURI:        scope.ResourceManagerEndpoint,
-		SubscriptionID: scope.SubscriptionID,
-	}
 	return &Service{
 		Scope:                scope,
-		Client:               NewClient(settings, scope.Authorizer),
-		SecurityGroupsClient: securitygroups.NewClient(settings, scope.Authorizer),
-		RouteTablesClient:    routetables.NewClient(settings, scope.Authorizer),
+		Client:               NewClient(scope),
+		SecurityGroupsClient: securitygroups.NewClient(scope),
+		RouteTablesClient:    routetables.NewClient(scope),
 	}
 }

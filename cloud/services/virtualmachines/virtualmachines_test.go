@@ -643,21 +643,6 @@ func TestReconcileVM(t *testing.T) {
 
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, secret, cluster, &tc.machine)
 
-			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-				Client:  client,
-				Cluster: cluster,
-				Machine: &tc.machine,
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureMachine: azureMachine,
-				AzureCluster: tc.azureCluster,
-			})
-			g.Expect(err).NotTo(HaveOccurred())
-
-			machineScope.AzureMachine.Spec = *tc.machineConfig
-			tc.expect(g, vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), roleAssignmentMock.EXPECT())
-
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
@@ -667,6 +652,20 @@ func TestReconcileVM(t *testing.T) {
 				AzureCluster: tc.azureCluster,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
+
+			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+				Client:  client,
+				Machine: &tc.machine,
+				AzureClients: scope.AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				AzureMachine: azureMachine,
+				ClusterScope: clusterScope,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			machineScope.AzureMachine.Spec = *tc.machineConfig
+			tc.expect(g, vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT(), roleAssignmentMock.EXPECT())
 
 			s := &Service{
 				Scope:                 clusterScope,
@@ -687,6 +686,7 @@ func TestReconcileVM(t *testing.T) {
 				CustomData:    *machineScope.Machine.Spec.Bootstrap.Data,
 				SpotVMOptions: machineScope.AzureMachine.Spec.SpotVMOptions,
 			}
+
 			err = s.Reconcile(context.TODO(), vmSpec)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
@@ -744,7 +744,7 @@ func TestDeleteVM(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			publicIPsMock := mock_virtualmachines.NewMockClient(mockCtrl)
+			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
@@ -752,7 +752,7 @@ func TestDeleteVM(t *testing.T) {
 
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
 
-			tc.expect(publicIPsMock.EXPECT())
+			tc.expect(vmMock.EXPECT())
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
@@ -775,7 +775,7 @@ func TestDeleteVM(t *testing.T) {
 
 			s := &Service{
 				Scope:  clusterScope,
-				Client: publicIPsMock,
+				Client: vmMock,
 			}
 
 			err = s.Delete(context.TODO(), &tc.vmSpec)

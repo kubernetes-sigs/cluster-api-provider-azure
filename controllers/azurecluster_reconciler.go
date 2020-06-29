@@ -43,14 +43,14 @@ import (
 // azureClusterReconciler is the reconciler called by the AzureCluster controller
 type azureClusterReconciler struct {
 	scope                *scope.ClusterScope
-	groupsSvc            azure.Service
-	vnetSvc              azure.Service
-	securityGroupSvc     azure.Service
-	routeTableSvc        azure.Service
-	subnetsSvc           azure.Service
-	internalLBSvc        azure.Service
+	groupsSvc            azure.OldService
+	vnetSvc              azure.OldService
+	securityGroupSvc     azure.OldService
+	routeTableSvc        azure.OldService
+	subnetsSvc           azure.OldService
+	internalLBSvc        azure.OldService
 	publicIPSvc          azure.Service
-	publicLBSvc          azure.Service
+	publicLBSvc          azure.OldService
 	availabilityZonesSvc azure.GetterService
 }
 
@@ -153,12 +153,8 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile control plane internal load balancer for cluster %s", r.scope.Name())
 	}
 
-	publicIPSpec := &publicips.Spec{
-		Name:    r.scope.Network().APIServerIP.Name,
-		DNSName: r.scope.Network().APIServerIP.DNSName,
-	}
-	if err := r.publicIPSvc.Reconcile(ctx, publicIPSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile control plane public ip for cluster %s", r.scope.Name())
+	if err := r.publicIPSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile public IPs for cluster %s", r.scope.ClusterName())
 	}
 
 	publicLBSpec := &publicloadbalancers.Spec{
@@ -168,13 +164,6 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 	}
 	if err := r.publicLBSvc.Reconcile(ctx, publicLBSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane public load balancer for cluster %s", r.scope.Name())
-	}
-
-	nodeOutboundPublicIPSpec := &publicips.Spec{
-		Name: azure.GenerateNodeOutboundIPName(r.scope.Name()),
-	}
-	if err := r.publicIPSvc.Reconcile(ctx, nodeOutboundPublicIPSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile node outbound public ip for cluster %s", r.scope.Name())
 	}
 
 	nodeOutboundLBSpec := &publicloadbalancers.Spec{
@@ -240,14 +229,6 @@ func (r *azureClusterReconciler) deleteLB(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", publicLBSpec.Name, r.scope.Name())
 		}
 	}
-	publicIPSpec := &publicips.Spec{
-		Name: r.scope.Network().APIServerIP.Name,
-	}
-	if err := r.publicIPSvc.Delete(ctx, publicIPSpec); err != nil {
-		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", publicIPSpec.Name, r.scope.Name())
-		}
-	}
 
 	nodeOutboundLBSpec := &publicloadbalancers.Spec{
 		Name: r.scope.Name(),
@@ -257,13 +238,9 @@ func (r *azureClusterReconciler) deleteLB(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", nodeOutboundLBSpec.Name, r.scope.Name())
 		}
 	}
-	nodeOutboundPublicIPSpec := &publicips.Spec{
-		Name: azure.GenerateNodeOutboundIPName(r.scope.Name()),
-	}
-	if err := r.publicIPSvc.Delete(ctx, nodeOutboundPublicIPSpec); err != nil {
-		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete public ip %s for cluster %s", nodeOutboundPublicIPSpec.Name, r.scope.Name())
-		}
+
+	if err := r.publicIPSvc.Delete(ctx); err != nil {
+		return errors.Wrapf(err, "failed to delete public IPs for cluster %s", r.scope.ClusterName())
 	}
 
 	internalLBSpec := &internalloadbalancers.Spec{
@@ -318,7 +295,7 @@ func (r *azureClusterReconciler) deleteNSG(ctx context.Context) error {
 func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 	if r.scope.Network().APIServerIP.Name == "" {
 		h := fnv.New32a()
-		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID, r.scope.ResourceGroup(), r.scope.Name()))); err != nil {
+		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID(), r.scope.ResourceGroup(), r.scope.Name()))); err != nil {
 			return errors.Wrapf(err, "failed to write hash sum for api server ip")
 		}
 		r.scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(r.scope.Name(), fmt.Sprintf("%x", h.Sum32()))

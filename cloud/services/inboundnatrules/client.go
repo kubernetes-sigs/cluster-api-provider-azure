@@ -39,14 +39,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new inbound NAT rules client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newInboundNatRulesClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newInboundNatRulesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newLoadbalancersClient creates a new inbound NAT rules client from subscription ID.
-func newInboundNatRulesClient(settings azure.ClientSettings, authorizer autorest.Authorizer) network.InboundNatRulesClient {
-	inboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newInboundNatRulesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
+	inboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(baseURI, subscriptionID)
 	inboundNatRulesClient.Authorizer = authorizer
 	inboundNatRulesClient.AddToUserAgent(azure.UserAgent())
 	return inboundNatRulesClient

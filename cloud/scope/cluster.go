@@ -19,11 +19,12 @@ package scope
 import (
 	"context"
 	"fmt"
-
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,9 +84,37 @@ type ClusterScope struct {
 	AzureCluster *infrav1.AzureCluster
 }
 
+// SubscriptionID returns the Azure client Subscription ID.
+func (s *ClusterScope) SubscriptionID() string {
+	return s.AzureClients.SubscriptionID
+}
+
+// BaseURI returns the Azure ResourceManagerEndpoint.
+func (s *ClusterScope) BaseURI() string {
+	return s.ResourceManagerEndpoint
+}
+
+// Authorizer returns the Azure client Authorizer.
+func (s *ClusterScope) Authorizer() autorest.Authorizer {
+	return s.AzureClients.Authorizer
+}
+
 // Network returns the cluster network object.
 func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
+}
+
+// PublicIPSpec returns the public IP specs.
+func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
+	return []azure.PublicIPSpec{
+		{
+			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+		},
+		{
+			Name:    s.Network().APIServerIP.Name,
+			DNSName: s.Network().APIServerIP.DNSName,
+		},
+	}
 }
 
 // Vnet returns the cluster Vnet.
@@ -113,7 +142,13 @@ func (s *ClusterScope) ResourceGroup() string {
 	return s.AzureCluster.Spec.ResourceGroup
 }
 
+// ClusterName returns the cluster name.
+func (s *ClusterScope) ClusterName() string {
+	return s.Cluster.Name
+}
+
 // Name returns the cluster name.
+// DEPRECATED: use ClusterName() instead
 func (s *ClusterScope) Name() string {
 	return s.Cluster.Name
 }

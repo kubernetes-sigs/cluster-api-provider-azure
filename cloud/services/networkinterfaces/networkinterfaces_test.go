@@ -429,7 +429,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
-					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-public-ip", gomock.AssignableToTypeOf(network.PublicIPAddress{})),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
@@ -455,7 +454,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
-					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-public-ip", gomock.AssignableToTypeOf(network.PublicIPAddress{})),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
 		},
@@ -623,13 +621,12 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			}
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 				Client:  client,
-				Cluster: cluster,
 				Machine: &clusterv1.Machine{},
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
-				AzureCluster: &infrav1.AzureCluster{},
+				ClusterScope: clusterScope,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
@@ -733,50 +730,6 @@ func TestDeleteNetworkInterface(t *testing.T) {
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
-		{
-			name: "Delete NIC with public IP",
-			netInterfaceSpec: Spec{
-				Name:                   "my-net-interface",
-				PublicLoadBalancerName: "my-public-lb",
-				PublicIPName:           "my-public-ip",
-			},
-			expectedError: "",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-net-interface")
-				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
-				mPublicIP.Delete(context.TODO(), "my-rg", "my-public-ip")
-			},
-		},
-		{
-			name: "Public IP already deleted",
-			netInterfaceSpec: Spec{
-				Name:                   "my-net-interface",
-				PublicLoadBalancerName: "my-public-lb",
-				PublicIPName:           "my-public-ip",
-			},
-			expectedError: "",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-net-interface")
-				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
-				mPublicIP.Delete(context.TODO(), "my-rg", "my-public-ip").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-			},
-		},
-		{
-			name: "Public IP deletion fails",
-			netInterfaceSpec: Spec{
-				Name:                   "my-net-interface",
-				PublicLoadBalancerName: "my-public-lb",
-				PublicIPName:           "my-public-ip",
-			},
-			expectedError: "failed to delete public IP my-public-ip: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_networkinterfaces.MockClientMockRecorder, mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-net-interface")
-				mInboundNATRules.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-test1")
-				mPublicIP.Delete(context.TODO(), "my-rg", "my-public-ip").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-		},
 	}
 
 	for _, tc := range testcases {
@@ -828,13 +781,12 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			}
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 				Client:  client,
-				Cluster: cluster,
 				Machine: &clusterv1.Machine{},
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
 				},
 				AzureMachine: azureMachine,
-				AzureCluster: &infrav1.AzureCluster{},
+				ClusterScope: clusterScope,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

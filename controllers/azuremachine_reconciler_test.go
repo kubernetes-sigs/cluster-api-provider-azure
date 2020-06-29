@@ -17,13 +17,13 @@ limitations under the License.
 package controllers
 
 import (
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -117,19 +117,23 @@ func TestGetControlPlaneMachines(t *testing.T) {
 func TestIsAvailabilityZoneSupported(t *testing.T) {
 	g := NewWithT(t)
 
-	s := azureMachineService{
-		machineScope: &scope.MachineScope{
-			Logger: log.Log.Logger,
-			AzureCluster: &v1alpha3.AzureCluster{
-				Spec: v1alpha3.AzureClusterSpec{
-					Location: "",
-				},
+	clusterScope := &scope.ClusterScope{
+		AzureCluster: &infrav1.AzureCluster{
+			Spec: infrav1.AzureClusterSpec{
+				Location: "",
 			},
 		},
 	}
 
+	s := azureMachineService{
+		machineScope: &scope.MachineScope{
+			Logger:       log.Log.Logger,
+			ClusterScope: clusterScope,
+		},
+	}
+
 	for _, l := range azure.SupportedAvailabilityZoneLocations {
-		s.machineScope.AzureCluster.Spec.Location = l
+		clusterScope.AzureCluster.Spec.Location = l
 		g.Expect(s.isAvailabilityZoneSupported()).To(BeTrue())
 	}
 
@@ -139,7 +143,7 @@ func TestIsAvailabilityZoneSupported(t *testing.T) {
 	}
 
 	for _, l := range unSupportedLocations {
-		s.machineScope.AzureCluster.Spec.Location = l
+		clusterScope.AzureCluster.Spec.Location = l
 		g.Expect(s.isAvailabilityZoneSupported()).To(BeFalse())
 	}
 }

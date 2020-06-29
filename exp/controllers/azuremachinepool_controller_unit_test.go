@@ -252,17 +252,17 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 func Test_newAzureMachinePoolService(t *testing.T) {
 	cluster := newAzureCluster("foo")
 	cluster.Spec.ResourceGroup = "resourceGroup"
-	mps := &scope.MachinePoolScope{
+	cs := &scope.ClusterScope{
 		AzureCluster: cluster,
+	}
+
+	mps := &scope.MachinePoolScope{
+		ClusterScope: cs,
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "poolName",
 			},
 		},
-	}
-
-	cs := &scope.ClusterScope{
-		AzureCluster: cluster,
 	}
 
 	subject := newAzureMachinePoolService(mps, cs)

@@ -37,14 +37,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newDisksClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newDisksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newDisksClient creates a new disks client from subscription ID.
-func newDisksClient(settings azure.ClientSettings, authorizer autorest.Authorizer) compute.DisksClient {
-	disksClient := compute.NewDisksClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.DisksClient {
+	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
 	disksClient.Authorizer = authorizer
 	disksClient.AddToUserAgent(azure.UserAgent())
 	return disksClient

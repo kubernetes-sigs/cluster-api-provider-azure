@@ -17,7 +17,6 @@ limitations under the License.
 package agentpools
 
 import (
-	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -27,8 +26,8 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(authorizer autorest.Authorizer, settings azure.ClientSettings) *Service {
+func NewService(auth azure.Authorizer) *Service {
 	return &Service{
-		Client: NewClient(settings, authorizer),
+		Client: NewClient(auth),
 	}
 }

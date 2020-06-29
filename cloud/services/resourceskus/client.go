@@ -41,14 +41,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new Resource SKUs client from subscription ID.
-func NewClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
+func NewClient(auth azure.Authorizer) *AzureClient {
 	return &AzureClient{
-		skus: newResourceSkusClient(baseURI, subscriptionID, authorizer),
+		skus: newResourceSkusClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
 	}
 }
 
 // newResourceSkusClient creates a new Resource SKUs client from subscription ID.
-func newResourceSkusClient(baseURI, subscriptionID string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
+func newResourceSkusClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
 	c := compute.NewResourceSkusClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
 	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter

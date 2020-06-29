@@ -16,8 +16,8 @@ limitations under the License.
 
 package azure
 
-// ClientSettings contains all the settings used to create clients.
-type ClientSettings struct {
-	SubscriptionID string
-	BaseURI        string
+// PublicIPSpec defines the specification for a public IP.
+type PublicIPSpec struct {
+	Name    string
+	DNSName string
 }

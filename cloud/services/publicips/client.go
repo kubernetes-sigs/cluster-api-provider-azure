@@ -39,14 +39,14 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new public IP client from subscription ID.
-func NewClient(settings azure.ClientSettings, authorizer autorest.Authorizer) *AzureClient {
-	c := newPublicIPAddressesClient(settings, authorizer)
+func NewClient(auth azure.Authorizer) *AzureClient {
+	c := newPublicIPAddressesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 
 // newPublicIPAddressesClient creates a new public IP client from subscription ID.
-func newPublicIPAddressesClient(settings azure.ClientSettings, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
-	publicIPsClient := network.NewPublicIPAddressesClientWithBaseURI(settings.BaseURI, settings.SubscriptionID)
+func newPublicIPAddressesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
+	publicIPsClient := network.NewPublicIPAddressesClientWithBaseURI(baseURI, subscriptionID)
 	publicIPsClient.Authorizer = authorizer
 	publicIPsClient.AddToUserAgent(azure.UserAgent())
 	return publicIPsClient

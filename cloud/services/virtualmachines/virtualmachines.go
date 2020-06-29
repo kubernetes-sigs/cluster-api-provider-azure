@@ -212,9 +212,9 @@ func (s *Service) createRoleAssignmentForIdentity(ctx context.Context, vmName st
 		return errors.Wrapf(err, "cannot get VM to assign role to system assigned identity")
 	}
 
-	scope := fmt.Sprintf("/subscriptions/%s/", s.Scope.SubscriptionID)
+	scope := fmt.Sprintf("/subscriptions/%s/", s.Scope.SubscriptionID())
 	// Azure built-in roles https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-	contributorRoleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", s.Scope.SubscriptionID, azureBuiltInContributorID)
+	contributorRoleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", s.Scope.SubscriptionID(), azureBuiltInContributorID)
 	params := authorization.RoleAssignmentCreateParameters{
 		Properties: &authorization.RoleAssignmentProperties{
 			RoleDefinitionID: to.StringPtr(contributorRoleDefinitionID),

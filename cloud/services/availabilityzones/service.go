@@ -17,7 +17,6 @@ limitations under the License.
 package availabilityzones
 
 import (
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )
 
@@ -29,12 +28,8 @@ type Service struct {
 
 // NewService creates a new service.
 func NewService(scope *scope.ClusterScope) *Service {
-	settings := azure.ClientSettings{
-		BaseURI:        scope.ResourceManagerEndpoint,
-		SubscriptionID: scope.SubscriptionID,
-	}
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(settings, scope.Authorizer),
+		Client: NewClient(scope),
 	}
 }

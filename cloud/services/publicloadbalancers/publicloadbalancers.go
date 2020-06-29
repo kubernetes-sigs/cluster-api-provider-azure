@@ -48,7 +48,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if publicLBSpec.Role == infrav1.NodeOutboundRole {
 		backEndAddressPoolName = fmt.Sprintf("%s-%s", publicLBSpec.Name, "outboundBackendPool")
 	}
-	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID, s.Scope.ResourceGroup())
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID(), s.Scope.ResourceGroup())
 
 	klog.V(2).Infof("creating public load balancer %s", lbName)
 
