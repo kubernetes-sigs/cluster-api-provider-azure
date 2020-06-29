@@ -100,7 +100,7 @@ type AzureClusterList struct {
 	Items           []AzureCluster `json:"items"`
 }
 
-// GetConditions returns the list of conditions for a AzureCluster API object.
+// GetConditions returns the list of conditions for an AzureCluster API object.
 func (c *AzureCluster) GetConditions() clusterv1.Conditions {
 	return c.Status.Conditions
 }

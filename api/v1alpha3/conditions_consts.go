@@ -22,10 +22,10 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 const (
 	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure
 	NetworkInfrastructureReadyCondition = "NetworkInfrastructureReady"
-	// APIServerProvisioningReason API Server endpoint for the loadbalancer
-	APIServerProvisioningReason = "APIServerProvisioning"
-	// APIServerProvisioningFailedReason used for failure during provisioning of API Server.
-	APIServerProvisioningFailedReason = "APIServerProvisioningFailed"
+	// LoadBalancerProvisioningReason API Server endpoint for the loadbalancer
+	LoadBalancerProvisioningReason = "LoadBalancerProvisioning"
+	// LoadBalancerProvisioningFailedReason used for failure during provisioning of loadbalancer.
+	LoadBalancerProvisioningFailedReason = "LoadBalancerProvisioningFailed"
 )
 
 // AzureMachine Conditions and Reasons

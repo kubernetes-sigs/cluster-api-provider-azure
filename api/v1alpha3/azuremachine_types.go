@@ -187,7 +187,7 @@ type AzureMachineList struct {
 	Items           []AzureMachine `json:"items"`
 }
 
-// GetConditions returns the list of conditions for a AzureMachine API object.
+// GetConditions returns the list of conditions for an AzureMachine API object.
 func (m *AzureMachine) GetConditions() clusterv1.Conditions {
 	return m.Status.Conditions
 }
