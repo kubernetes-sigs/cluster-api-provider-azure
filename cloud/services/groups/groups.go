@@ -38,7 +38,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	group := resources.Group{
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.Name(),
+			ClusterName: s.Scope.ClusterName(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        to.StringPtr(s.Scope.ResourceGroup()),
 			Role:        to.StringPtr(infrav1.CommonRole),
@@ -81,5 +81,5 @@ func (s *Service) isGroupManaged(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	tags := converters.MapToTags(group.Tags)
-	return tags.HasOwned(s.Scope.Name()), nil
+	return tags.HasOwned(s.Scope.ClusterName()), nil
 }

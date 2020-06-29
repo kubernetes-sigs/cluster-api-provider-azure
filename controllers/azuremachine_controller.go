@@ -327,7 +327,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	machineScope.Info("Handling deleted AzureMachine")
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
+		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 	}
 
 	defer func() {

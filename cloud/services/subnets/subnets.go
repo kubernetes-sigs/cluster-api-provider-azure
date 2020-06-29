@@ -88,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			return errors.Wrap(err, "failed to get subnet")
 		}
 	}
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		// if the vnet is unmanaged, we expect all subnets to be created as well
 		return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
 	}
@@ -135,7 +135,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the subnet with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping subnets deletion in custom vnet mode")
 		return nil
 	}

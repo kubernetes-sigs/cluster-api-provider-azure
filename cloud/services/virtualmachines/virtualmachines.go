@@ -111,7 +111,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	virtualMachine := compute.VirtualMachine{
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.Name(),
+			ClusterName: s.Scope.ClusterName(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        to.StringPtr(s.MachineScope.Name()),
 			Role:        to.StringPtr(s.MachineScope.Role()),

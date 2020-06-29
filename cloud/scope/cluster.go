@@ -147,12 +147,6 @@ func (s *ClusterScope) ClusterName() string {
 	return s.Cluster.Name
 }
 
-// Name returns the cluster name.
-// DEPRECATED: use ClusterName() instead
-func (s *ClusterScope) Name() string {
-	return s.Cluster.Name
-}
-
 // Namespace returns the cluster namespace.
 func (s *ClusterScope) Namespace() string {
 	return s.Cluster.Namespace

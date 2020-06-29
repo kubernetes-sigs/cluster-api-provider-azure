@@ -297,7 +297,7 @@ func (r *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, machin
 	machinePoolScope.Info("Handling deleted AzureMachinePool")
 
 	if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.Name())
+		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 	}
 
 	defer func() {
@@ -514,7 +514,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		Name:                   s.machinePoolScope.Name(),
 		ResourceGroup:          s.clusterScope.ResourceGroup(),
 		Location:               s.clusterScope.Location(),
-		ClusterName:            s.clusterScope.Name(),
+		ClusterName:            s.clusterScope.ClusterName(),
 		MachinePoolName:        s.machinePoolScope.Name(),
 		Sku:                    ampSpec.Template.VMSize,
 		Capacity:               replicas,
@@ -524,7 +524,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		CustomData:             bootstrapData,
 		AdditionalTags:         s.machinePoolScope.AdditionalTags(),
 		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().ID,
-		PublicLoadBalancerName: s.clusterScope.Name(),
+		PublicLoadBalancerName: s.clusterScope.ClusterName(),
 		AcceleratedNetworking:  ampSpec.Template.AcceleratedNetworking,
 	}
 

@@ -65,7 +65,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.Name(),
+			ClusterName: s.Scope.ClusterName(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Role:        to.StringPtr(publicLBSpec.Role),
 			Additional:  s.Scope.AdditionalTags(),
