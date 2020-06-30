@@ -26,7 +26,7 @@ import (
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
 	// +kubebuilder:validation:MinLength:=2
-	// +kubebuilder:validation:Pattern:=^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$
+	// +kubebuilder:validation:Pattern:=^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$
 	Version string `json:"version"`
 
 	// ResourceGroup is the name of the Azure resource group for this AKS Cluster.
