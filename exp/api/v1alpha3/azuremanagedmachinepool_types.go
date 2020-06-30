@@ -26,7 +26,7 @@ type AzureManagedMachinePoolSpec struct {
 	// SKU is the size of the VMs in the node pool.
 	SKU string `json:"sku"`
 
-	// OSDiskSizeGB is the disk size for every machine in this master/agent pool.
+	// OSDiskSizeGB is the disk size for every machine in this agent pool.
 	// If you specify 0, it will apply the default osDisk size according to the vmSize specified.
 	OSDiskSizeGB *int32 `json:"osDiskSizeGB,omitempty"`
 
