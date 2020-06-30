@@ -46,7 +46,10 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 	}
 	client := fake.NewFakeClientWithScheme(scheme, initObjects...)
 
-	log := mock_log.NewMockLogger(gomock.NewController(t))
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	log := mock_log.NewMockLogger(mockCtrl)
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default")
 	mapper, err := AzureClusterToAzureMachinesMapper(client, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())

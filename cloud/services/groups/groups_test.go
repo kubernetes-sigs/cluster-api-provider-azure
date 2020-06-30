@@ -46,8 +46,6 @@ const (
 )
 
 func TestReconcileGroups(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name               string
 		clusterScopeParams scope.ClusterScopeParams
@@ -73,7 +71,6 @@ func TestReconcileGroups(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", gomock.AssignableToTypeOf(resources.Group{}))
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, nil)
 			},
 		},
@@ -125,7 +122,11 @@ func TestReconcileGroups(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			groupsMock := mock_groups.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
@@ -158,8 +159,6 @@ func TestReconcileGroups(t *testing.T) {
 }
 
 func TestDeleteGroups(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name               string
 		clusterScopeParams scope.ClusterScopeParams
@@ -185,7 +184,6 @@ func TestDeleteGroups(t *testing.T) {
 			},
 			expectedError: "could not get resource group management state: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg")
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -205,7 +203,6 @@ func TestDeleteGroups(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg")
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, nil)
 			},
 		},
@@ -309,7 +306,11 @@ func TestDeleteGroups(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			groupsMock := mock_groups.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

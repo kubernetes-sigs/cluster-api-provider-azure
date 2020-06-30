@@ -51,6 +51,8 @@ func TestInvalidAvailabilityZonesSpec(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	agentpoolsMock := mock_availabilityzones.NewMockClient(mockCtrl)
 
 	s := &Service{
@@ -119,6 +121,8 @@ func TestGetAvailabilityZones(t *testing.T) {
 			g := NewWithT(t)
 
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			azMock := mock_availabilityzones.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

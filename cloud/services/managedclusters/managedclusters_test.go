@@ -29,8 +29,6 @@ import (
 )
 
 func TestReconcile(t *testing.T) {
-	g := NewWithT(t)
-
 	provisioningstatetestcases := []struct {
 		name                     string
 		managedclusterspec       Spec
@@ -73,7 +71,11 @@ func TestReconcile(t *testing.T) {
 		for _, provisioningstate := range tc.provisioningStatesToTest {
 			t.Logf("Testing managedcluster provision state: " + provisioningstate)
 			t.Run(tc.name, func(t *testing.T) {
+				g := NewWithT(t)
+
 				mockCtrl := gomock.NewController(t)
+				defer mockCtrl.Finish()
+
 				managedclusterMock := mock_managedclusters.NewMockClient(mockCtrl)
 
 				tc.expect(managedclusterMock.EXPECT(), provisioningstate)
@@ -88,7 +90,6 @@ func TestReconcile(t *testing.T) {
 					g.Expect(err).To(MatchError(tc.expectedError))
 				} else {
 					g.Expect(err).NotTo(HaveOccurred())
-					mockCtrl.Finish()
 				}
 			})
 		}
@@ -117,7 +118,11 @@ func TestReconcile(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Testing " + tc.name)
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			managedclusterMock := mock_managedclusters.NewMockClient(mockCtrl)
 
 			tc.expect(managedclusterMock.EXPECT())
@@ -132,9 +137,7 @@ func TestReconcile(t *testing.T) {
 				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
-				mockCtrl.Finish()
 			}
 		})
 	}
-
 }

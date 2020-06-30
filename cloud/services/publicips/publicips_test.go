@@ -39,8 +39,6 @@ func init() {
 }
 
 func TestReconcilePublicIP(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		expectedError string
@@ -89,6 +87,8 @@ func TestReconcilePublicIP(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
@@ -114,8 +114,6 @@ func TestReconcilePublicIP(t *testing.T) {
 }
 
 func TestDeletePublicIP(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		expectedError string
@@ -170,6 +168,8 @@ func TestDeletePublicIP(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()

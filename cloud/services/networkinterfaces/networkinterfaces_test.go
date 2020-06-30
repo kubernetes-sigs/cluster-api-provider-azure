@@ -58,6 +58,8 @@ func TestInvalidNetworkInterface(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	netInterfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
@@ -103,8 +105,6 @@ func TestInvalidNetworkInterface(t *testing.T) {
 }
 
 func TestReconcileNetworkInterface(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name             string
 		netInterfaceSpec Spec
@@ -559,7 +559,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-cluster").Return(getFakeNodeOutboundLoadBalancer(), nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})),
 				)
 			},
 		},
@@ -567,7 +566,11 @@ func TestReconcileNetworkInterface(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			netInterfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
 			publicLoadBalancerMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
@@ -659,8 +662,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 }
 
 func TestDeleteNetworkInterface(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name             string
 		netInterfaceSpec Spec
@@ -734,7 +735,11 @@ func TestDeleteNetworkInterface(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			netInterfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			inboundNatRulesMock := mock_inboundnatrules.NewMockClient(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)

@@ -52,6 +52,8 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
@@ -97,8 +99,6 @@ func TestInvalidPublicLBSpec(t *testing.T) {
 }
 
 func TestReconcilePublicLoadBalancer(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		publicLBSpec  Spec
@@ -115,7 +115,6 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 			expectedError: "public ip my-publicip not found in RG my-rg: #: Not found: StatusCode=404",
 			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder,
 				publicIP *mock_publicips.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
 				publicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -128,7 +127,6 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 			expectedError: "failed to look for existing public IP: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_publicloadbalancers.MockClientMockRecorder,
 				publicIP *mock_publicips.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
 				publicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -302,7 +300,11 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
 			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 
@@ -351,8 +353,6 @@ func TestReconcilePublicLoadBalancer(t *testing.T) {
 }
 
 func TestDeletePublicLB(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		publicLBSpec  Spec
@@ -398,7 +398,11 @@ func TestDeletePublicLB(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			publicLBMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

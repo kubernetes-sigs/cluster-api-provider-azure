@@ -45,8 +45,6 @@ func init() {
 }
 
 func TestReconcileSecurityGroups(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name           string
 		sgName         string
@@ -84,7 +82,11 @@ func TestReconcileSecurityGroups(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			sgMock := mock_securitygroups.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
@@ -129,8 +131,6 @@ func TestReconcileSecurityGroups(t *testing.T) {
 }
 
 func TestDeleteSecurityGroups(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name   string
 		sgName string
@@ -154,7 +154,11 @@ func TestDeleteSecurityGroups(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			sgMock := mock_securitygroups.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

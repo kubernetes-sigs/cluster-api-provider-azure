@@ -48,8 +48,6 @@ func init() {
 }
 
 func TestReconcileSubnets(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		subnetSpec    Spec
@@ -144,7 +142,11 @@ func TestReconcileSubnets(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
 			rtMock := mock_routetables.NewMockClient(mockCtrl)
 			sgMock := mock_securitygroups.NewMockClient(mockCtrl)
@@ -196,8 +198,6 @@ func TestReconcileSubnets(t *testing.T) {
 }
 
 func TestDeleteSubnets(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name       string
 		subnetSpec Spec
@@ -254,7 +254,11 @@ func TestDeleteSubnets(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

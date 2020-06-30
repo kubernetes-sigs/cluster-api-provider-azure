@@ -55,6 +55,8 @@ func TestInvalidVM(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
@@ -100,8 +102,6 @@ func TestInvalidVM(t *testing.T) {
 }
 
 func TestGetVM(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		vmSpec        Spec
@@ -169,8 +169,6 @@ func TestGetVM(t *testing.T) {
 			},
 			expectedError: "VM my-vm not found: #: Not found: StatusCode=404",
 			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, nil)
-				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{}, nil)
 				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -181,8 +179,6 @@ func TestGetVM(t *testing.T) {
 			},
 			expectedError: "#: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, nil)
-				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{}, nil)
 				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -286,7 +282,11 @@ func TestGetVM(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 			interfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
@@ -455,7 +455,6 @@ func TestReconcileVM(t *testing.T) {
 			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder) {
 				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
 				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-				mra.Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			expectedError: "",
 		},
@@ -502,7 +501,6 @@ func TestReconcileVM(t *testing.T) {
 			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder, mra *mock_roleassignments.MockClientMockRecorder) {
 				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
 				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-				mra.Create(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			expectedError: "",
 		},
@@ -606,6 +604,8 @@ func TestReconcileVM(t *testing.T) {
 			g := NewWithT(t)
 
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 			interfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
@@ -699,8 +699,6 @@ func TestReconcileVM(t *testing.T) {
 }
 
 func TestDeleteVM(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		vmSpec        Spec
@@ -743,7 +741,10 @@ func TestDeleteVM(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
