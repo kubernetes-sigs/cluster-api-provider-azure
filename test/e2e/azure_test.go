@@ -35,12 +35,12 @@ import (
 
 var _ = Describe("Workoad cluster creation", func() {
 	var (
-		ctx           = context.TODO()
-		specName      = "create-workload-cluster"
-		namespace     *corev1.Namespace
-		cancelWatches context.CancelFunc
-		cluster       *clusterv1.Cluster
-		clusterName   string
+		ctx                                               = context.TODO()
+		specName                                          = "create-workload-cluster"
+		namespace                                         *corev1.Namespace
+		cancelWatches                                     context.CancelFunc
+		cluster                                           *clusterv1.Cluster
+		clusterName, standardCloudConfig, vmssCloudConfig string
 	)
 
 	BeforeEach(func() {
@@ -59,6 +59,16 @@ var _ = Describe("Workoad cluster creation", func() {
 		clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+
+		var err error
+		standardCloudConfig, err = getCloudProviderConfig(clusterName, "standard")
+		Expect(err).NotTo(HaveOccurred())
+
+		vmssCloudConfig, err = getCloudProviderConfig(clusterName, "vmss")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(os.Setenv(AzureStandardJson, standardCloudConfig)).NotTo(HaveOccurred())
+		Expect(os.Setenv(AzureVMSSJson, vmssCloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {

@@ -207,6 +207,15 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
+apiVersion: v1
+data:
+  standard: ${AZURE_STANDARD_JSON_B64}
+  vmss: ${AZURE_VMSS_JSON_B64}
+kind: Secret
+metadata:
+  name: azure-secret
+  namespace: default
+---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
