@@ -44,8 +44,8 @@ spec:
             properties:
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this
-                  master/agent pool. If you specify 0, it will apply the default osDisk
-                  size according to the vmSize specified.
+                  agent pool. If you specify 0, it will apply the default osDisk size
+                  according to the vmSize specified.
                 format: int32
                 type: integer
               providerIDList:
