@@ -485,6 +485,58 @@ func TestInternalLBIPAddressInvalid(t *testing.T) {
 	g.Expect(err.BadValue).To(BeEquivalentTo(internalLBIPAddress))
 }
 
+func TestIngressRules(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name      string
+		validRule *IngressRule
+		wantErr   bool
+	}{
+		{
+			name: "ingressRule - valid priority",
+			validRule: &IngressRule{
+				Name:        "allow_apiserver",
+				Description: "Allow K8s API Server",
+				Priority:    101,
+			},
+			wantErr: false,
+		},
+		{
+			name: "ingressRule - invalid low priority",
+			validRule: &IngressRule{
+				Name:        "allow_apiserver",
+				Description: "Allow K8s API Server",
+				Priority:    99,
+			},
+			wantErr: true,
+		},
+		{
+			name: "ingressRule - invalid high priority",
+			validRule: &IngressRule{
+				Name:        "allow_apiserver",
+				Description: "Allow K8s API Server",
+				Priority:    5000,
+			},
+			wantErr: true,
+		},
+	}
+	for _, testCase := range tests {
+
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateIngressRule(
+				testCase.validRule,
+				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("ingressRules").Index(0),
+			)
+			if testCase.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
 func createValidCluster() *AzureCluster {
 	return &AzureCluster{
 		Spec: AzureClusterSpec{

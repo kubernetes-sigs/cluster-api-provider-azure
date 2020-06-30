@@ -527,6 +527,16 @@ spec:
                                       65535. Asterix '*' can also be used to match
                                       all ports.
                                     type: string
+                                  name:
+                                    type: string
+                                  priority:
+                                    description: Priority - A number between 100 and
+                                      4096. Each rule should have a unique value for
+                                      priority. Rules are processed in priority order,
+                                      with lower numbers processed before higher numbers.
+                                      Once traffic matches a rule, processing stops.
+                                    format: int32
+                                    type: integer
                                   protocol:
                                     description: SecurityGroupProtocol defines the
                                       protocol type for a security group rule.
@@ -546,6 +556,7 @@ spec:
                                     type: string
                                 required:
                                 - description
+                                - name
                                 - protocol
                                 type: object
                               type: array
