@@ -48,6 +48,8 @@ func TestInvalidDiskSpec(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	disksMock := mock_disks.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
@@ -89,8 +91,6 @@ func TestInvalidDiskSpec(t *testing.T) {
 }
 
 func TestDeleteDisk(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name          string
 		disksSpec     Spec
@@ -131,7 +131,11 @@ func TestDeleteDisk(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			disksMock := mock_disks.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

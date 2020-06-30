@@ -52,6 +52,8 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	internalLBMock := mock_internalloadbalancers.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
@@ -97,8 +99,6 @@ func TestInvalidInternalLBSpec(t *testing.T) {
 }
 
 func TestReconcileInternalLoadBalancer(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name           string
 		internalLBSpec Spec
@@ -162,7 +162,6 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 								FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{},
 							},
 						}}}, nil)
-				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 				mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil)
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
 			},
@@ -206,7 +205,11 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			internalLBMock := mock_internalloadbalancers.NewMockClient(mockCtrl)
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
 			vnetMock := mock_virtualnetworks.NewMockClient(mockCtrl)
@@ -261,8 +264,6 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 }
 
 func TestDeleteInternalLB(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name           string
 		internalLBSpec Spec
@@ -317,7 +318,11 @@ func TestDeleteInternalLB(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			internalLBMock := mock_internalloadbalancers.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

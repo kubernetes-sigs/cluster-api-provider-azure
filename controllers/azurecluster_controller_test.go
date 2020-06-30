@@ -70,7 +70,10 @@ var _ = Describe("AzureClusterReconciler", func() {
 		})
 
 		It("should fail with context timeout error if context expires", func() {
-			log := mock_log.NewMockLogger(gomock.NewController(GinkgoT()))
+			mockCtrl := gomock.NewController(GinkgoT())
+			defer mockCtrl.Finish()
+
+			log := mock_log.NewMockLogger(mockCtrl)
 			log.EXPECT().WithValues(gomock.Any()).DoAndReturn(func(args ...interface{}) logr.Logger {
 				time.Sleep(3 * time.Second)
 				return log

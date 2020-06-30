@@ -18,9 +18,10 @@ package routetables
 
 import (
 	"context"
-	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 	"testing"
+
+	"github.com/Azure/go-autorest/autorest/to"
 
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
@@ -50,6 +51,8 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 	g := NewWithT(t)
 
 	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	routetableMock := mock_routetables.NewMockClient(mockCtrl)
 
 	cluster := &clusterv1.Cluster{
@@ -95,8 +98,6 @@ func TestInvalidRouteTableSpec(t *testing.T) {
 }
 
 func TestReconcileRouteTables(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name           string
 		routetableSpec Spec
@@ -191,6 +192,8 @@ func TestReconcileRouteTables(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
@@ -254,8 +257,6 @@ func TestReconcileRouteTables(t *testing.T) {
 }
 
 func TestDeleteRouteTable(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name           string
 		routetableSpec Spec
@@ -275,7 +276,6 @@ func TestDeleteRouteTable(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_routetables.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-routetable")
 			},
 		},
 		{
@@ -327,7 +327,11 @@ func TestDeleteRouteTable(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			routetableMock := mock_routetables.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{

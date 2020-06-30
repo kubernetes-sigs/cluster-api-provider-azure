@@ -48,8 +48,6 @@ func init() {
 }
 
 func TestReconcileVnet(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name   string
 		input  *infrav1.VnetSpec
@@ -128,7 +126,11 @@ func TestReconcileVnet(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			vnetMock := mock_virtualnetworks.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
@@ -183,8 +185,6 @@ func TestReconcileVnet(t *testing.T) {
 }
 
 func TestDeleteVnet(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name   string
 		input  *infrav1.VnetSpec
@@ -221,7 +221,11 @@ func TestDeleteVnet(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
 			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
 			vnetMock := mock_virtualnetworks.NewMockClient(mockCtrl)
 
 			cluster := &clusterv1.Cluster{
