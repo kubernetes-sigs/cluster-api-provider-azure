@@ -59,7 +59,7 @@ var _ = Describe("AzureMachineReconciler", func() {
 		})
 
 		It("should exit early if the cluster is paused", func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 
 			logListener := record.NewListener(testEnv.LogRecorder)
