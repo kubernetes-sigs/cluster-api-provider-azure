@@ -229,7 +229,7 @@ func TestReconcile(t *testing.T) {
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
-				SKU:           "Standard_A1",
+				SKU:           "Standard_D2s_v3",
 				Version:       to.StringPtr("9.99.9999"),
 				Replicas:      2,
 				OSDiskSizeGB:  100,
@@ -240,7 +240,7 @@ func TestReconcile(t *testing.T) {
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(2),
 						OsDiskSizeGB:        to.Int32Ptr(100),
-						VMSize:              containerservice.VMSizeTypesStandardA1,
+						VMSize:              containerservice.VMSizeTypesStandardD2sV3,
 						OrchestratorVersion: to.StringPtr("9.99.9999"),
 						ProvisioningState:   to.StringPtr("Succeeded"),
 					},
