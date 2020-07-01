@@ -23,15 +23,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
 	for _, ip := range s.Scope.PublicIPSpecs() {
-		klog.V(2).Infof("creating public IP %s", ip.Name)
-
+		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
 		err := s.Client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -54,15 +52,17 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "cannot create public IP")
 		}
-		klog.V(2).Infof("successfully created public IP %s", ip.Name)
+
+		s.Scope.V(2).Info("successfully created public IP", "public ip", ip.Name)
 	}
+
 	return nil
 }
 
 // Delete deletes the public IP with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
 	for _, ip := range s.Scope.PublicIPSpecs() {
-		klog.V(2).Infof("deleting public IP %s", ip.Name)
+		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -72,7 +72,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete public IP %s in resource group %s", ip.Name, s.Scope.ResourceGroup())
 		}
 
-		klog.V(2).Infof("deleted public IP %s", ip.Name)
+		s.Scope.V(2).Info("deleted public IP", "public ip", ip.Name)
 	}
 	return nil
 }
