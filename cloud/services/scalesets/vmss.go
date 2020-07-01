@@ -19,6 +19,7 @@ package scalesets
 import (
 	"context"
 	"fmt"
+
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"

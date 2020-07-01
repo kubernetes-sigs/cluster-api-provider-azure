@@ -139,7 +139,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully created network interface %s", nicSpec.Name)
+	s.Scope.Logger.V(2).Info("successfully created network interface", "network interface", nicSpec.Name)
 	return nil
 }
 

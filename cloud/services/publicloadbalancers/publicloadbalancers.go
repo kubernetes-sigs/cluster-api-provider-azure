@@ -50,16 +50,16 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID(), s.Scope.ResourceGroup())
 
-	klog.V(2).Infof("creating public load balancer %s", lbName)
+	s.Scope.Logger.V(2).Info("creating public load balancer", "load balancer", lbName)
 
-	klog.V(2).Infof("getting public ip %s", publicLBSpec.PublicIPName)
+	s.Scope.Logger.V(2).Info("getting public ip", "public ip", publicLBSpec.PublicIPName)
 	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicLBSpec.PublicIPName)
 	if err != nil && azure.ResourceNotFound(err) {
 		return errors.Wrap(err, fmt.Sprintf("public ip %s not found in RG %s", publicLBSpec.PublicIPName, s.Scope.ResourceGroup()))
 	} else if err != nil {
 		return errors.Wrap(err, "failed to look for existing public IP")
 	}
-	klog.V(2).Infof("successfully got public ip %s", publicLBSpec.PublicIPName)
+	s.Scope.Logger.V(2).Info("successfully got public ip", "public ip", publicLBSpec.PublicIPName)
 
 	lb := network.LoadBalancer{
 		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
@@ -151,7 +151,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create public load balancer")
 	}
 
-	klog.V(2).Infof("successfully created public load balancer %s", lbName)
+	s.Scope.Logger.V(2).Info("successfully created public load balancer", "load balancer", lbName)
 	return nil
 }
 

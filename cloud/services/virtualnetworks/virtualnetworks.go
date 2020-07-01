@@ -88,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		existingVnet.DeepCopyInto(s.Scope.Vnet())
 		return nil
 	}
-	klog.V(2).Infof("creating VNet %s ", vnetSpec.Name)
+	s.Scope.Logger.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
 	vnetProperties := network.VirtualNetwork{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.Scope.ClusterName(),
@@ -109,7 +109,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	klog.V(2).Infof("successfully created VNet %s ", vnetSpec.Name)
+	s.Scope.Logger.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
 	return nil
 }
 

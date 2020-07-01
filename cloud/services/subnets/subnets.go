@@ -97,24 +97,24 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		AddressPrefix: to.StringPtr(subnetSpec.CIDR),
 	}
 	if subnetSpec.RouteTableName != "" {
-		klog.V(2).Infof("getting route table %s", subnetSpec.RouteTableName)
+		s.Scope.Logger.V(2).Info("getting route table", "route table", subnetSpec.RouteTableName)
 		rt, err := s.RouteTablesClient.Get(ctx, s.Scope.ResourceGroup(), subnetSpec.RouteTableName)
 		if err != nil {
 			return err
 		}
-		klog.V(2).Infof("successfully got route table %s", subnetSpec.RouteTableName)
+		s.Scope.Logger.V(2).Info("successfully got route table", "route table", subnetSpec.RouteTableName)
 		subnetProperties.RouteTable = &rt
 	}
 
-	klog.V(2).Infof("getting nsg %s", subnetSpec.SecurityGroupName)
+	s.Scope.Logger.V(2).Info("getting security group", "security group", subnetSpec.SecurityGroupName)
 	nsg, err := s.SecurityGroupsClient.Get(ctx, s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)
 	if err != nil {
 		return err
 	}
-	klog.V(2).Infof("got nsg %s", subnetSpec.SecurityGroupName)
+	s.Scope.Logger.V(2).Info("successfully got security group", "security group", subnetSpec.SecurityGroupName)
 	subnetProperties.NetworkSecurityGroup = &nsg
 
-	klog.V(2).Infof("creating subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
+	s.Scope.Logger.V(2).Info("creating subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VnetName)
 	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.Vnet().ResourceGroup,
@@ -129,7 +129,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
 	}
 
-	klog.V(2).Infof("successfully created subnet %s in vnet %s", subnetSpec.Name, subnetSpec.VnetName)
+	s.Scope.Logger.V(2).Info("successfully created subnet in vnet ", "subnet", subnetSpec.Name, "vnet", subnetSpec.VnetName)
 	return nil
 }
 
