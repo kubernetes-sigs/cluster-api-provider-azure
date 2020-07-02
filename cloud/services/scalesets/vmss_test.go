@@ -75,12 +75,11 @@ func TestNewService(t *testing.T) {
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
-		AzureClients:     s.AzureClients,
 		Client:           client,
 		Logger:           s.Logger,
 		MachinePool:      new(clusterv1exp.MachinePool),
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
-		ClusterScope:     s,
+		ClusterDescriber: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	actual := NewService(mps)
@@ -869,16 +868,15 @@ func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolSc
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
-		AzureClients: s.AzureClients,
-		Client:       client,
-		Logger:       s.Logger,
-		MachinePool:  new(clusterv1exp.MachinePool),
+		Client:      client,
+		Logger:      s.Logger,
+		MachinePool: new(clusterv1exp.MachinePool),
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "capz-mp-0",
 			},
 		},
-		ClusterScope: s,
+		ClusterDescriber: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 

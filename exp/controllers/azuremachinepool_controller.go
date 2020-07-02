@@ -202,7 +202,7 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 		Client:           r.Client,
 		MachinePool:      machinePool,
 		AzureMachinePool: azMachinePool,
-		ClusterScope:     clusterScope,
+		ClusterDescriber: clusterScope,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
