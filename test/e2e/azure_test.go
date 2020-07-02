@@ -75,6 +75,8 @@ var _ = Describe("Workoad cluster creation", func() {
 		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureStandardJson)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureVMSSJson)).NotTo(HaveOccurred())
 	})
 
 	Context("Create single controlplane cluster", func() {

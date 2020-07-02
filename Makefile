@@ -190,6 +190,9 @@ $(CONVERSION_GEN): ## Build conversion-gen.
 $(ENVSUBST): ## Build envsubst from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
+.PHONY: $(ENVSUBST_BIN)
+$(ENVSUBST_BIN): $(ENVSUBST) ## Build envsubst from tools folder.
+
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 

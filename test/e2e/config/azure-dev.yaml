@@ -54,6 +54,7 @@ variables:
   KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.18.3}"
   KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.17.4}"
   CNI: "${PWD}/templates/addons/calico.yaml"
+  REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
