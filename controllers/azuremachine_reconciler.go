@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 	"encoding/base64"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -31,14 +29,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
-)
-
-const (
-	// DefaultBootstrapTokenTTL default ttl for bootstrap token
-	DefaultBootstrapTokenTTL = 10 * time.Minute
 )
 
 // azureMachineService is the group of services called by the AzureMachine controller
@@ -46,7 +40,7 @@ type azureMachineService struct {
 	machineScope         *scope.MachineScope
 	clusterScope         *scope.ClusterScope
 	availabilityZonesSvc azure.GetterService
-	networkInterfacesSvc azure.OldService
+	networkInterfacesSvc azure.Service
 	virtualMachinesSvc   *virtualmachines.Service
 	disksSvc             azure.OldService
 	publicIPsSvc         azure.Service
@@ -58,7 +52,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		machineScope:         machineScope,
 		clusterScope:         clusterScope,
 		availabilityZonesSvc: availabilityzones.NewService(clusterScope),
-		networkInterfacesSvc: networkinterfaces.NewService(clusterScope, machineScope),
+		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
 		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
 		disksSvc:             disks.NewService(clusterScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
@@ -72,13 +66,12 @@ func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error
 		return nil, errors.Wrap(err, "unable to create public IPs")
 	}
 
-	nicName := azure.GenerateNICName(s.machineScope.Name())
-	nicErr := s.reconcileNetworkInterface(ctx, nicName)
-	if nicErr != nil {
-		return nil, errors.Wrapf(nicErr, "failed to create NIC %s for machine %s", nicName, s.machineScope.Name())
+	err = s.networkInterfacesSvc.Reconcile(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create VM network interface")
 	}
 
-	vm, vmErr := s.reconcileVirtualMachine(ctx, nicName)
+	vm, vmErr := s.reconcileVirtualMachine(ctx, azure.GenerateNICName(s.machineScope.Name()))
 	if vmErr != nil {
 		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
 	}
@@ -97,19 +90,7 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete machine")
 	}
 
-	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:        azure.GenerateNICName(s.machineScope.Name()),
-		VnetName:    s.clusterScope.Vnet().Name,
-		MachineRole: s.machineScope.Role(),
-	}
-
-	if s.machineScope.Role() == infrav1.ControlPlane {
-		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.ClusterName())
-	} else if s.machineScope.Role() == infrav1.Node {
-		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.ClusterName()
-	}
-
-	err = s.networkInterfacesSvc.Delete(ctx, networkInterfaceSpec)
+	err = s.networkInterfacesSvc.Delete(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
@@ -205,38 +186,6 @@ func (s *azureMachineService) getVirtualMachineZone(ctx context.Context) (string
 	klog.Infof("Selected availability zone %s for %s", selectedZone, vmName)
 
 	return selectedZone, nil
-}
-
-func (s *azureMachineService) reconcileNetworkInterface(ctx context.Context, nicName string) error {
-	networkInterfaceSpec := &networkinterfaces.Spec{
-		Name:                  nicName,
-		VnetName:              s.clusterScope.Vnet().Name,
-		MachineRole:           s.machineScope.Role(),
-		AcceleratedNetworking: s.machineScope.AzureMachine.Spec.AcceleratedNetworking,
-	}
-
-	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
-		networkInterfaceSpec.PublicIPName = azure.GenerateNodePublicIPName(nicName)
-	}
-
-	switch role := s.machineScope.Role(); role {
-	case infrav1.Node:
-		networkInterfaceSpec.SubnetName = s.clusterScope.NodeSubnet().Name
-		networkInterfaceSpec.PublicLoadBalancerName = s.clusterScope.ClusterName()
-	case infrav1.ControlPlane:
-		networkInterfaceSpec.SubnetName = s.clusterScope.ControlPlaneSubnet().Name
-		networkInterfaceSpec.PublicLoadBalancerName = azure.GeneratePublicLBName(s.clusterScope.ClusterName())
-		networkInterfaceSpec.InternalLoadBalancerName = azure.GenerateInternalLBName(s.clusterScope.ClusterName())
-	default:
-		return errors.Errorf("unknown value %s for label `set` on machine %s, skipping machine creation", role, s.machineScope.Name())
-	}
-
-	err := s.networkInterfacesSvc.Reconcile(ctx, networkInterfaceSpec)
-	if err != nil {
-		return errors.Wrap(err, "unable to create VM network interface")
-	}
-
-	return err
 }
 
 func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicName string) (*infrav1.VM, error) {

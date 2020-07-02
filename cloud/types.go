@@ -21,3 +21,19 @@ type PublicIPSpec struct {
 	Name    string
 	DNSName string
 }
+
+// NICSpec defines the specification for a network interface.
+type NICSpec struct {
+	Name                     string
+	MachineName              string
+	MachineRole              string
+	SubnetName               string
+	VNetName                 string
+	VNetResourceGroup        string
+	StaticIPAddress          string
+	PublicLoadBalancerName   string
+	InternalLoadBalancerName string
+	PublicIPName             string
+	VMSize                   string
+	AcceleratedNetworking    *bool
+}
