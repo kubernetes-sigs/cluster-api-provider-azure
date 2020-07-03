@@ -87,27 +87,10 @@ spec:
     - path: /etc/kubernetes/azure.json
       owner: "root:root"
       permissions: "0644"
-      content: |
-        {
-          "cloud": "AzurePublicCloud",
-          "tenantId": "${AZURE_TENANT_ID}",
-          "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-          "aadClientId": "${AZURE_CLIENT_ID}",
-          "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-          "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-          "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-          "location": "${AZURE_LOCATION}",
-          "vmType": "vmss",
-          "vnetName": "${CLUSTER_NAME}-vnet",
-          "vnetResourceGroup": "${CLUSTER_NAME}",
-          "subnetName": "${CLUSTER_NAME}-node-subnet",
-          "routeTableName": "${CLUSTER_NAME}-node-routetable",
-          "userAssignedID": "${CLUSTER_NAME}",
-          "loadBalancerSku": "standard",
-          "maximumLoadBalancerRuleCount": 250,
-          "useManagedIdentityExtension": false,
-          "useInstanceMetadata": true
-        }
+      contentFrom:
+        secret:
+          key: vmss
+          name: azure-secret
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
@@ -196,26 +179,10 @@ spec:
         - path: /etc/kubernetes/azure.json
           owner: "root:root"
           permissions: "0644"
-          content: |
-            {
-              "cloud": "AzurePublicCloud",
-              "tenantId": "${AZURE_TENANT_ID}",
-              "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-              "aadClientId": "${AZURE_CLIENT_ID}",
-              "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-              "resourceGroup": "${CLUSTER_NAME}",
-              "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-              "location": "${AZURE_LOCATION}",
-              "vmType": "vmss",
-              "vnetName": "${CLUSTER_NAME}-vnet",
-              "vnetResourceGroup": "${CLUSTER_NAME}",
-              "subnetName": "${CLUSTER_NAME}-node-subnet",
-              "routeTableName": "${CLUSTER_NAME}-node-routetable",
-              "loadBalancerSku": "standard",
-              "maximumLoadBalancerRuleCount": 250,
-              "useManagedIdentityExtension": false,
-              "useInstanceMetadata": true
-            }
+          contentFrom:
+            secret:
+              key: vmss
+              name: azure-secret
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachineTemplate

@@ -18,26 +18,20 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Verify the required Environment Variables are present.
-: "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
-: "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
-: "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
-: "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
-
 echo "================ REDACTING LOGS ================"
 
 log_files=( $(find "${ARTIFACTS:-${PWD}/_artifacts}" -type f) )
 redact_vars=(
-    "${AZURE_CLIENT_ID}"
-    "${AZURE_CLIENT_SECRET}"
-    "${AZURE_SUBSCRIPTION_ID}"
-    "${AZURE_TENANT_ID}"
+    "${AZURE_CLIENT_ID:-}"
+    "${AZURE_CLIENT_SECRET:-}"
+    "${AZURE_SUBSCRIPTION_ID:-}"
+    "${AZURE_TENANT_ID:-}"
     "${AZURE_STANDARD_JSON_B64:-}"
     "${AZURE_VMSS_JSON_B64:-}"
-    "$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
-    "$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
-    "$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
-    "$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+    "$(echo -n "${AZURE_SUBSCRIPTION_ID:-}" | base64 | tr -d '\n')"
+    "$(echo -n "${AZURE_TENANT_ID:-}" | base64 | tr -d '\n')"
+    "$(echo -n "${AZURE_CLIENT_ID:-}" | base64 | tr -d '\n')"
+    "$(echo -n "${AZURE_CLIENT_SECRET:-}" | base64 | tr -d '\n')"
 )
 
 for log_file in "${log_files[@]}"; do
@@ -45,9 +39,9 @@ for log_file in "${log_files[@]}"; do
         # LC_CTYPE=C and LANG=C will prevent "illegal byte sequence" error from sed
         if [[ "$(uname)" == "Darwin" ]]; then
             # sed on Mac OS requires an empty string for -i flag
-            LC_CTYPE=C LANG=C sed -i "" "s|${redact_var}|===REDACTED===|g" "${log_file}" || true
+            LC_CTYPE=C LANG=C sed -i "" "s|${redact_var}|===REDACTED===|g" "${log_file}" &> /dev/null || true
         else
-            LC_CTYPE=C LANG=C sed -i "s|${redact_var}|===REDACTED===|g" "${log_file}" || true
+            LC_CTYPE=C LANG=C sed -i "s|${redact_var}|===REDACTED===|g" "${log_file}" &> /dev/null || true
         fi
     done
 done

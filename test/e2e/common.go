@@ -24,9 +24,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -35,12 +37,13 @@ import (
 
 // Test suite constants for e2e config variables
 const (
-	KubernetesVersion  = "KUBERNETES_VERSION"
-	CNIPath            = "CNI"
-	AzureResourceGroup = "AZURE_RESOURCE_GROUP"
-	AzureVNetName      = "AZURE_VNET_NAME"
-	AzureStandardJson  = "AZURE_STANDARD_JSON_B64"
-	AzureVMSSJson      = "AZURE_VMSS_JSON_B64"
+	KubernetesVersion   = "KUBERNETES_VERSION"
+	CNIPath             = "CNI"
+	RedactLogScriptPath = "REDACT_LOG_SCRIPT"
+	AzureResourceGroup  = "AZURE_RESOURCE_GROUP"
+	AzureVNetName       = "AZURE_VNET_NAME"
+	AzureStandardJson   = "AZURE_STANDARD_JSON_B64"
+	AzureVMSSJson       = "AZURE_VMSS_JSON_B64"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -85,6 +88,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		})
 	}
 	cancelWatches()
+	redactLogs()
 }
 
 type cloudProviderConfig struct {
@@ -117,12 +121,12 @@ func getCloudProviderConfig(cluster, vmType string) (string, error) {
 		ResourceGroup:                cluster,
 		SecurityGroupName:            fmt.Sprintf("%s-node-nsg", cluster),
 		Location:                     os.Getenv("AZURE_LOCATION"),
-		VMType:                       "standard",
+		VMType:                       vmType,
 		VnetName:                     fmt.Sprintf("%s-vnet", cluster),
 		VnetResourceGroup:            cluster,
 		SubnetName:                   fmt.Sprintf("%s-node-subnet", cluster),
 		RouteTableName:               fmt.Sprintf("%s-node-routetable", cluster),
-		LoadBalancerSku:              vmType,
+		LoadBalancerSku:              "standard",
 		MaximumLoadBalancerRuleCount: 250,
 		UseManagedIdentityExtension:  false,
 		UseInstanceMetadata:          true,
@@ -132,4 +136,11 @@ func getCloudProviderConfig(cluster, vmType string) (string, error) {
 		return "", err
 	}
 	return base64.StdEncoding.EncodeToString(b), err
+}
+
+func redactLogs() {
+	By("Redacting sensitive information from logs")
+	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
+	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
+	cmd.Run()
 }
