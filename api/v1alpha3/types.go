@@ -310,6 +310,8 @@ type OSDisk struct {
 	OSType      string      `json:"osType"`
 	DiskSizeGB  int32       `json:"diskSizeGB"`
 	ManagedDisk ManagedDisk `json:"managedDisk"`
+	// +optional
+	CachingType string `json:"cachingType"`
 }
 
 // ManagedDisk defines the managed disk options for a VM.

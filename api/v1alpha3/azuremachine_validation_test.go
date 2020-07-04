@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -79,6 +80,11 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			name:    "valid os disk spec",
 			wantErr: false,
 			osDisk:  generateValidOSDisk(),
+		},
+		{
+			name:    "invalid os disk cache type",
+			wantErr: true,
+			osDisk:  createOSDiskWithCacheType("invalid_cache_type"),
 		},
 	}
 	testcases = append(testcases, generateNegativeTestCases()...)
@@ -156,5 +162,12 @@ func generateValidOSDisk() OSDisk {
 		ManagedDisk: ManagedDisk{
 			StorageAccountType: "Premium_LRS",
 		},
+		CachingType: string(compute.PossibleCachingTypesValues()[0]),
 	}
+}
+
+func createOSDiskWithCacheType(cacheType string) OSDisk {
+	osDisk := generateValidOSDisk()
+	osDisk.CachingType = cacheType
+	return osDisk
 }

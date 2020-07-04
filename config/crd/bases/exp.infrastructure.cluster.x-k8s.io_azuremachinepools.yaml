@@ -199,6 +199,8 @@ spec:
                     description: OSDisk contains the operating system disk information
                       for a Virtual Machine
                     properties:
+                      cachingType:
+                        type: string
                       diskSizeGB:
                         format: int32
                         type: integer

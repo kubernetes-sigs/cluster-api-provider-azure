@@ -336,6 +336,7 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 			ManagedDisk: &compute.ManagedDiskParameters{
 				StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
 			},
+			Caching: compute.CachingTypes(vmSpec.OSDisk.CachingType),
 		},
 	}
 

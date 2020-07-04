@@ -68,6 +68,8 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 
 	allErrs = append(allErrs, validateStorageAccountType(osDisk.ManagedDisk.StorageAccountType, fieldPath)...)
 
+	allErrs = append(allErrs, validateCachingType(osDisk.CachingType, fieldPath)...)
+
 	return allErrs
 }
 
@@ -86,5 +88,19 @@ func validateStorageAccountType(storageAccountType string, fieldPath *field.Path
 		}
 	}
 	allErrs = append(allErrs, field.Invalid(storageAccTypeChildPath, "", fmt.Sprintf("allowed values are %v", compute.PossibleDiskStorageAccountTypesValues())))
+	return allErrs
+}
+
+func validateCachingType(cachingType string, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	cachingTypeChildPath := fieldPath.Child("CachingType")
+
+	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
+		if string(possibleCachingType) == cachingType {
+			return allErrs
+		}
+	}
+
+	allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("allowed values are %v", compute.PossibleCachingTypesValues())))
 	return allErrs
 }

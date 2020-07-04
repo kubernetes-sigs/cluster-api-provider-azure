@@ -36,6 +36,7 @@ func (m *AzureMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachine,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachines,versions=v1alpha3,name=validation.azuremachine.infrastructure.cluster.x-k8s.io,sideEffects=None
+// +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachine,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachines,versions=v1alpha3,name=default.azuremachine.infrastructure.cluster.x-k8s.io,sideEffects=None
 
 var _ webhook.Validator = &AzureMachine{}
 
@@ -71,6 +72,10 @@ func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
 	var allErrs field.ErrorList
 
+	if errs := ValidateOSDisk(m.Spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -99,5 +104,10 @@ func (m *AzureMachine) Default() {
 	err := m.SetDefaultSSHPublicKey()
 	if err != nil {
 		machinelog.Error(err, "SetDefaultSshPublicKey failed")
+	}
+
+	err = m.SetDefaultCachingType()
+	if err != nil {
+		machinelog.Error(err, "SetDefaultCachingType failed")
 	}
 }

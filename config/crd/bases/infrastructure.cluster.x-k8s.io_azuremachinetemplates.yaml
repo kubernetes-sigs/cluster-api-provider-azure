@@ -311,6 +311,8 @@ spec:
                         description: OSDisk defines the operating system disk for
                           a VM.
                         properties:
+                          cachingType:
+                            type: string
                           diskSizeGB:
                             format: int32
                             type: integer

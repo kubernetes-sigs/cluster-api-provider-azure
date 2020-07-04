@@ -43,3 +43,11 @@ func (m *AzureMachine) SetDefaultSSHPublicKey() error {
 
 	return nil
 }
+
+// SetDefaultCachingType sets the default cache type for an AzureMachine
+func (m *AzureMachine) SetDefaultCachingType() error {
+	if m.Spec.OSDisk.CachingType == "" {
+		m.Spec.OSDisk.CachingType = "None"
+	}
+	return nil
+}

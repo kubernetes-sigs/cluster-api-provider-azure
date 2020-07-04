@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	. "github.com/onsi/gomega"
 )
 
@@ -90,6 +91,16 @@ func TestAzureMachine_ValidateCreate(t *testing.T) {
 			machine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{}),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachine with valid osDisk cache type",
+			machine: createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[1])),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with invalid osDisk cache type",
+			machine: createMachineWithOsDiskCacheType(t, "invalid_cache_type"),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -142,6 +153,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			machine:    createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{}),
 			wantErr:    true,
 		},
+		{
+			name:       "azuremachine with valid osDisk cache type",
+			oldMachine: createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[0])),
+			machine:    createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[1])),
+			wantErr:    false,
+		},
+		{
+			name:       "azuremachine with invalid osDisk cache type",
+			oldMachine: createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[0])),
+			machine:    createMachineWithOsDiskCacheType(t, "invalid_cache_type"),
+			wantErr:    true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -171,6 +194,16 @@ func TestAzureMachine_Default(t *testing.T) {
 
 	publicKeyNotExistTest.machine.Default()
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
+
+	cacheTypeNotSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: ""}}}}
+	cacheTypeNotSpecifiedTest.machine.Default()
+	g.Expect(cacheTypeNotSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal("None"))
+
+	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
+		cacheTypeSpecifiedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{OSDisk: OSDisk{CachingType: string(possibleCachingType)}}}}
+		cacheTypeSpecifiedTest.machine.Default()
+		g.Expect(cacheTypeSpecifiedTest.machine.Spec.OSDisk.CachingType).To(Equal(string(possibleCachingType)))
+	}
 }
 
 func createMachineWithSharedImage(t *testing.T, subscriptionID, resourceGroup, name, gallery, version string) *AzureMachine {
@@ -225,4 +258,15 @@ func createMachineWithImageByID(t *testing.T, imageID string) *AzureMachine {
 			OSDisk:       validOSDisk,
 		},
 	}
+}
+
+func createMachineWithOsDiskCacheType(t *testing.T, cacheType string) *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+		},
+	}
+	machine.Spec.OSDisk.CachingType = cacheType
+	return machine
 }
