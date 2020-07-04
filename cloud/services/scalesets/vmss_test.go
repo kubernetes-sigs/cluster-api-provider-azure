@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -304,7 +304,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -418,7 +418,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -532,7 +532,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -595,7 +595,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetUpdateProperties: &compute.VirtualMachineScaleSetUpdateProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetUpdateVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetUpdateOSProfile{
@@ -760,7 +760,7 @@ func TestGetVMSSUpdateFromVMSS(t *testing.T) {
 		},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.Manual,
+				Mode: compute.UpgradeModeManual,
 			},
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -792,7 +792,7 @@ func TestGetVMSSUpdateFromVMSS(t *testing.T) {
 		},
 		VirtualMachineScaleSetUpdateProperties: &compute.VirtualMachineScaleSetUpdateProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.Manual,
+				Mode: compute.UpgradeModeManual,
 			},
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetUpdateVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetUpdateOSProfile{
