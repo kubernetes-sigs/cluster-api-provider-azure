@@ -90,14 +90,14 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	s.Scope.Logger.V(2).Info("getting network interface", "network interface", vmSpec.NICName)
+	s.Scope.V(2).Info("getting network interface", "network interface", vmSpec.NICName)
 	nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), vmSpec.NICName)
 	if err != nil {
 		return err
 	}
-	s.Scope.Logger.V(2).Info("got network interface", "network interface", vmSpec.NICName)
+	s.Scope.V(2).Info("got network interface", "network interface", vmSpec.NICName)
 
-	s.Scope.Logger.V(2).Info("creating VM", "vm", vmSpec.Name)
+	s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
 
 	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
 	additionalTags := s.MachineScope.AdditionalTags()
@@ -155,7 +155,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 	}
 
-	s.Scope.Logger.V(2).Info("Setting zone", "zone", vmSpec.Zone)
+	s.Scope.V(2).Info("Setting zone", "zone", vmSpec.Zone)
 
 	if vmSpec.Zone != "" {
 		zones := []string{vmSpec.Zone}
@@ -203,7 +203,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 	}
 
-	s.Scope.Logger.V(2).Info("successfully created VM", "vm", vmSpec.Name)
+	s.Scope.V(2).Info("successfully created VM", "vm", vmSpec.Name)
 	return nil
 }
 
@@ -237,7 +237,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid VM specification")
 	}
-	klog.V(2).Infof("deleting VM %s ", vmSpec.Name)
+	s.Scope.V(2).Info("deleting VM", "vm", vmSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -247,7 +247,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted VM %s ", vmSpec.Name)
+	s.Scope.V(2).Info("successfully deleted VM", "vm", vmSpec.Name)
 	return nil
 }
 

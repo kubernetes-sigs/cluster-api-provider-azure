@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
@@ -88,7 +87,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		existingVnet.DeepCopyInto(s.Scope.Vnet())
 		return nil
 	}
-	s.Scope.Logger.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
+	s.Scope.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
 	vnetProperties := network.VirtualNetwork{
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.Scope.ClusterName(),
@@ -109,7 +108,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	s.Scope.Logger.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
+	s.Scope.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
 	return nil
 }
 
@@ -123,7 +122,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("Invalid VNET Specification")
 	}
-	klog.V(2).Infof("deleting VNet %s ", vnetSpec.Name)
+	s.Scope.V(2).Info("deleting VNet", "VNet", vnetSpec.Name)
 	err := s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -133,6 +132,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete VNet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
 	}
 
-	klog.V(2).Infof("successfully deleted VNet %s ", vnetSpec.Name)
+	s.Scope.V(2).Info("successfully deleted VNet", "VNet", vnetSpec.Name)
 	return nil
 }
