@@ -65,6 +65,10 @@ type AzureClusterStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
+
+	// Conditions defines current service state of the AzureCluster.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -94,6 +98,16 @@ type AzureClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AzureCluster `json:"items"`
+}
+
+// GetConditions returns the list of conditions for an AzureCluster API object.
+func (c *AzureCluster) GetConditions() clusterv1.Conditions {
+	return c.Status.Conditions
+}
+
+// SetConditions will set the given conditions on an AzureCluster object
+func (c *AzureCluster) SetConditions(conditions clusterv1.Conditions) {
+	c.Status.Conditions = conditions
 }
 
 func init() {

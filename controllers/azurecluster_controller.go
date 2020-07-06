@@ -27,6 +27,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -126,6 +127,15 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
+		conditions.SetSummary(azureCluster,
+			conditions.WithConditions(
+				infrav1.NetworkInfrastructureReadyCondition,
+			),
+			conditions.WithStepCounterIfOnly(
+				infrav1.NetworkInfrastructureReadyCondition,
+			),
+		)
+
 		if err := clusterScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
@@ -157,7 +167,8 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	}
 
 	if azureCluster.Status.Network.APIServerIP.DNSName == "" {
-		clusterScope.Info("Waiting for API server endpoint to exist")
+		clusterScope.Info("Waiting for Load Balancer to exist")
+		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.LoadBalancerProvisioningReason, clusterv1.ConditionSeverityWarning, err.Error())
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
@@ -169,6 +180,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	azureCluster.Status.Ready = true
+	conditions.MarkTrue(azureCluster, infrav1.NetworkInfrastructureReadyCondition)
 
 	return reconcile.Result{}, nil
 }

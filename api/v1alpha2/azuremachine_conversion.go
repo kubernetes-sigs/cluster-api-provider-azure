@@ -38,6 +38,10 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	}
 
 	restoreAzureMachineSpec(&restored.Spec, &dst.Spec)
+
+	// Manual conversion for conditions
+	dst.SetConditions(restored.GetConditions())
+
 	return nil
 }
 

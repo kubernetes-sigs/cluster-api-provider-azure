@@ -458,6 +458,7 @@ func autoConvert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *
 		return err
 	}
 	out.Ready = in.Ready
+	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -605,6 +606,7 @@ func autoConvert_v1alpha3_AzureMachineStatus_To_v1alpha2_AzureMachineStatus(in *
 	out.VMState = (*VMState)(unsafe.Pointer(in.VMState))
 	// WARNING: in.FailureReason requires manual conversion: does not exist in peer-type
 	// WARNING: in.FailureMessage requires manual conversion: does not exist in peer-type
+	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
 	return nil
 }
 
