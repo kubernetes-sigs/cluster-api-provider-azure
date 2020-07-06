@@ -18,10 +18,13 @@ package publicips
 
 import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+
+	"github.com/go-logr/logr"
 )
 
 // PublicIPScope defines the scope interface for a public IP service.
 type PublicIPScope interface {
+	logr.Logger
 	azure.ClusterDescriber
 	PublicIPSpecs() []azure.PublicIPSpec
 }
