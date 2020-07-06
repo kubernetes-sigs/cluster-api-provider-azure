@@ -36,8 +36,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to get subnets")
 		}
-
 		nicConfig.Subnet = &network.Subnet{ID: subnet.ID}
+
 		nicConfig.PrivateIPAllocationMethod = network.Dynamic
 		if nicSpec.StaticIPAddress != "" {
 			nicConfig.PrivateIPAllocationMethod = network.Static
@@ -50,7 +50,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if lberr != nil {
 				return errors.Wrap(lberr, "failed to get public LB")
 			}
-
 			backendAddressPools = append(backendAddressPools,
 				network.BackendAddressPool{
 					ID: (*lb.BackendAddressPools)[0].ID,

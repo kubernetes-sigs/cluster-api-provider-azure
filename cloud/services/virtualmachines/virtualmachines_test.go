@@ -675,7 +675,7 @@ func TestReconcileVM(t *testing.T) {
 
 			vmSpec := &Spec{
 				Name:          machineScope.Name(),
-				NICName:       "test-nic",
+				NICNames:      []string{"test-nic"},
 				SSHKeyData:    "fake-key",
 				Size:          machineScope.AzureMachine.Spec.VMSize,
 				OSDisk:        machineScope.AzureMachine.Spec.OSDisk,

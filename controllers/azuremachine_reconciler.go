@@ -209,6 +209,11 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 		}
 	}
 
+	nicNames := []string{nicName}
+	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
+		nicNames = append(nicNames, azure.GeneratePublicNICName(s.machineScope.Name()))
+	}
+
 	image, err := getVMImage(s.machineScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get VM image")
@@ -221,7 +226,7 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 
 	vmSpec := &virtualmachines.Spec{
 		Name:                   s.machineScope.Name(),
-		NICName:                nicName,
+		NICNames:               nicNames,
 		SSHKeyData:             string(decoded),
 		Size:                   s.machineScope.AzureMachine.Spec.VMSize,
 		OSDisk:                 s.machineScope.AzureMachine.Spec.OSDisk,
