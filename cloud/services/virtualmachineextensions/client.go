@@ -19,7 +19,7 @@ package virtualmachineextensions
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )

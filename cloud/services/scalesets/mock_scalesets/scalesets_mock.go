@@ -22,7 +22,7 @@ package mock_scalesets
 
 import (
 	context "context"
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
