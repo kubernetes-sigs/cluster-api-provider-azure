@@ -51,7 +51,7 @@ spec:
   - contentFrom:
       secret:
         name: azure-secret
-        key: vmss
+        key: azure.json
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"

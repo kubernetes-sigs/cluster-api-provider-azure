@@ -42,8 +42,7 @@ const (
 	RedactLogScriptPath = "REDACT_LOG_SCRIPT"
 	AzureResourceGroup  = "AZURE_RESOURCE_GROUP"
 	AzureVNetName       = "AZURE_VNET_NAME"
-	AzureStandardJson   = "AZURE_STANDARD_JSON_B64"
-	AzureVMSSJson       = "AZURE_VMSS_JSON_B64"
+	AzureJson           = "AZURE_JSON_B64"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -111,7 +110,7 @@ type cloudProviderConfig struct {
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
 }
 
-func getCloudProviderConfig(cluster, vmType string) (string, error) {
+func getCloudProviderConfig(cluster string) (string, error) {
 	config := &cloudProviderConfig{
 		Cloud:                        os.Getenv("AZURE_ENVIRONMENT"),
 		TenantID:                     os.Getenv("AZURE_TENANT_ID"),
@@ -121,7 +120,7 @@ func getCloudProviderConfig(cluster, vmType string) (string, error) {
 		ResourceGroup:                cluster,
 		SecurityGroupName:            fmt.Sprintf("%s-node-nsg", cluster),
 		Location:                     os.Getenv("AZURE_LOCATION"),
-		VMType:                       vmType,
+		VMType:                       "vmss",
 		VnetName:                     fmt.Sprintf("%s-vnet", cluster),
 		VnetResourceGroup:            cluster,
 		SubnetName:                   fmt.Sprintf("%s-node-subnet", cluster),

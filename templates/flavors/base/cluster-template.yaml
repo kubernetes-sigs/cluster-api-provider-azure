@@ -78,7 +78,7 @@ spec:
     - contentFrom:
         secret:
           name: azure-secret
-          key: standard
+          key: azure.json
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
@@ -105,5 +105,4 @@ kind: Secret
 metadata:
   name: azure-secret
 data:
-  standard: ${AZURE_STANDARD_JSON_B64}
-  vmss: ${AZURE_VMSS_JSON_B64}
+  azure.json: ${AZURE_JSON_B64}
