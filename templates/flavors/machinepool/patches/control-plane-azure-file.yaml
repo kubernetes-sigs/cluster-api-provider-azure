@@ -10,6 +10,6 @@ spec:
     - contentFrom:
         secret:
           name: azure-secret
-          key: standard
+          key: azure.json
       owner: root:root
       path: /etc/kubernetes/azure.json

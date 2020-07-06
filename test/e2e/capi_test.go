@@ -32,8 +32,7 @@ import (
 
 var _ = Describe("Running the Cluster API E2E tests", func() {
 	var (
-		standardCloudConfig string
-		vmssCloudConfig     string
+		cloudConfig string
 	)
 
 	BeforeEach(func() {
@@ -42,22 +41,17 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", rgName))).NotTo(HaveOccurred())
 
 		var err error
-		standardCloudConfig, err = getCloudProviderConfig(rgName, "standard")
+		cloudConfig, err = getCloudProviderConfig(rgName)
 		Expect(err).NotTo(HaveOccurred())
 
-		vmssCloudConfig, err = getCloudProviderConfig(rgName, "vmss")
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(os.Setenv(AzureStandardJson, standardCloudConfig)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVMSSJson, vmssCloudConfig)).NotTo(HaveOccurred())
+		Expect(os.Setenv(AzureJson, cloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		redactLogs()
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureStandardJson)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVMSSJson)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureJson)).NotTo(HaveOccurred())
 	})
 
 	Context("Running the quick-start spec", func() {

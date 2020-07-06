@@ -32,7 +32,7 @@ spec:
         contentFrom:
           secret:
             name: azure-secret
-            key: vmss
+            key: azure.json
   version: "${KUBERNETES_VERSION}"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
@@ -53,4 +53,4 @@ spec:
           contentFrom:
             secret:
               name: azure-secret
-              key: vmss
+              key: azure.json

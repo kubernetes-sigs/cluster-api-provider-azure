@@ -35,12 +35,13 @@ import (
 
 var _ = Describe("Workoad cluster creation", func() {
 	var (
-		ctx                                               = context.TODO()
-		specName                                          = "create-workload-cluster"
-		namespace                                         *corev1.Namespace
-		cancelWatches                                     context.CancelFunc
-		cluster                                           *clusterv1.Cluster
-		clusterName, standardCloudConfig, vmssCloudConfig string
+		ctx           = context.TODO()
+		specName      = "create-workload-cluster"
+		namespace     *corev1.Namespace
+		cancelWatches context.CancelFunc
+		cluster       *clusterv1.Cluster
+		clusterName   string
+		cloudConfig   string
 	)
 
 	BeforeEach(func() {
@@ -61,22 +62,17 @@ var _ = Describe("Workoad cluster creation", func() {
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 
 		var err error
-		standardCloudConfig, err = getCloudProviderConfig(clusterName, "standard")
+		cloudConfig, err = getCloudProviderConfig(clusterName)
 		Expect(err).NotTo(HaveOccurred())
 
-		vmssCloudConfig, err = getCloudProviderConfig(clusterName, "vmss")
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(os.Setenv(AzureStandardJson, standardCloudConfig)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVMSSJson, vmssCloudConfig)).NotTo(HaveOccurred())
+		Expect(os.Setenv(AzureJson, cloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureStandardJson)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVMSSJson)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(AzureJson)).NotTo(HaveOccurred())
 	})
 
 	Context("Create single controlplane cluster", func() {
