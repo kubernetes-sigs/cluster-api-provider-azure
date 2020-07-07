@@ -252,6 +252,13 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to delete machine")
 			}
+			OSDiskSpec := &disks.Spec{
+				Name: azure.GenerateOSDiskName(s.machineScope.Name()),
+			}
+			err = s.disksSvc.Delete(ctx, OSDiskSpec)
+			if err != nil && !azure.ResourceNotFound(err) {
+				return nil, errors.Wrapf(err, "failed to delete OS disk of machine %s", s.machineScope.Name())
+			}
 			return nil, errors.Errorf("virtual machine %s is deleted, retry creating in next reconcile", s.machineScope.Name())
 		} else if newVM.State != infrav1.VMStateSucceeded {
 			return nil, errors.Errorf("virtual machine %s is still in provisioning state %s, reconcile", s.machineScope.Name(), newVM.State)
