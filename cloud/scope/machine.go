@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -122,6 +123,14 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	}
 
 	return []azure.NICSpec{spec}
+}
+
+// DiskSpecs returns the public IP specs.
+func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
+	spec := azure.DiskSpec{
+		Name: azure.GenerateOSDiskName(m.Name()),
+	}
+	return []azure.DiskSpec{spec}
 }
 
 // Location returns the AzureCluster location.

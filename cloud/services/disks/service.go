@@ -17,17 +17,25 @@ limitations under the License.
 package disks
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
+
+// DiskScope defines the scope interface for a disk service.
+type DiskScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	DiskSpecs() []azure.DiskSpec
+}
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope DiskScope
 	Client
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
+func NewService(scope DiskScope) *Service {
 	return &Service{
 		Scope:  scope,
 		Client: NewClient(scope),
