@@ -46,6 +46,7 @@ type (
 		SSHKeyData             string
 		Image                  *infrav1.Image
 		OSDisk                 infrav1.OSDisk
+		DataDisks              []infrav1.DataDisk
 		CustomData             string
 		SubnetID               string
 		PublicLoadBalancerName string
@@ -231,6 +232,17 @@ func generateStorageProfile(vmssSpec Spec) (*compute.VirtualMachineScaleSetStora
 			},
 		},
 	}
+
+	dataDisks := []compute.VirtualMachineScaleSetDataDisk{}
+	for _, disk := range vmssSpec.DataDisks {
+		dataDisks = append(dataDisks, compute.VirtualMachineScaleSetDataDisk{
+			CreateOption: compute.DiskCreateOptionTypesEmpty,
+			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
+			Lun:          disk.Lun,
+			Name:         to.StringPtr(azure.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
+		})
+	}
+	storageProfile.DataDisks = &dataDisks
 
 	imageRef, err := converters.ImageToSDK(vmssSpec.Image)
 	if err != nil {

@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"encoding/json"
+	"github.com/Azure/go-autorest/autorest/to"
+	"reflect"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -40,6 +43,133 @@ func TestAzureMachine_SetDefaultSSHPublicKey(t *testing.T) {
 	err = publicKeyNotExistTest.machine.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
+}
+
+func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
+	cases := []struct {
+		name   string
+		disks  []DataDisk
+		output []DataDisk
+	}{
+		{
+			name:   "no disks",
+			disks:  []DataDisk{},
+			output: []DataDisk{},
+		},
+		{
+			name: "no LUNs specified",
+			disks: []DataDisk{
+				{
+					NameSuffix: "testdisk1",
+					DiskSizeGB: 30,
+				},
+				{
+					NameSuffix: "testdisk2",
+					DiskSizeGB: 30,
+				},
+			},
+			output: []DataDisk{
+				{
+					NameSuffix: "testdisk1",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "testdisk2",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(1),
+				},
+			},
+		},
+		{
+			name: "All LUNs specified",
+			disks: []DataDisk{
+				{
+					NameSuffix: "testdisk1",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(5),
+				},
+				{
+					NameSuffix: "testdisk2",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(3),
+				},
+			},
+			output: []DataDisk{
+				{
+					NameSuffix: "testdisk1",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(5),
+				},
+				{
+					NameSuffix: "testdisk2",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(3),
+				},
+			},
+		},
+		{
+			name: "Some LUNs missing",
+			disks: []DataDisk{
+				{
+					NameSuffix: "testdisk1",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "testdisk2",
+					DiskSizeGB: 30,
+				},
+				{
+					NameSuffix: "testdisk3",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(1),
+				},
+				{
+					NameSuffix: "testdisk4",
+					DiskSizeGB: 30,
+				},
+			},
+			output: []DataDisk{
+				{
+					NameSuffix: "testdisk1",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "testdisk2",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(2),
+				},
+				{
+					NameSuffix: "testdisk3",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(1),
+				},
+				{
+					NameSuffix: "testdisk4",
+					DiskSizeGB: 30,
+					Lun:        to.Int32Ptr(3),
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey())
+			machine.Spec.DataDisks = tc.disks
+			machine.SetDataDisksDefaults()
+			if !reflect.DeepEqual(machine.Spec.DataDisks, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(machine.Spec.DataDisks, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+
 }
 
 func createMachineWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMachine {

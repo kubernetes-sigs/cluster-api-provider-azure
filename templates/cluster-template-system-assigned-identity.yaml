@@ -63,6 +63,26 @@ spec:
           mountPath: /etc/kubernetes/azure.json
           name: cloud-config
           readOnly: true
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
     files:
     - contentFrom:
         secret:
@@ -83,6 +103,9 @@ spec:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
@@ -95,6 +118,10 @@ metadata:
 spec:
   template:
     spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
       identity: SystemAssigned
       location: ${AZURE_LOCATION}
       osDisk:
