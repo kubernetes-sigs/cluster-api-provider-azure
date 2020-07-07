@@ -26,7 +26,7 @@ require (
 	k8s.io/component-base v0.17.7
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
-	sigs.k8s.io/cluster-api v0.3.7-beta.0
+	sigs.k8s.io/cluster-api v0.3.7-rc.0
 	sigs.k8s.io/controller-runtime v0.5.7
 )
 

@@ -726,8 +726,8 @@ modernc.org/strutil v1.0.0/go.mod h1:lstksw84oURvj9y3tn8lGvRxyRC1S2+g5uuIzNfIOBs
 modernc.org/xc v1.0.0/go.mod h1:mRNCo0bvLjGhHO9WsyuKVU4q0ceiDDDoEeWDJHrNx8I=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-sigs.k8s.io/cluster-api v0.3.7-beta.0 h1:ThSdwIAxEhzb2XllWQZ9QWe/ok+R05PCMeaPD9dDsHk=
-sigs.k8s.io/cluster-api v0.3.7-beta.0/go.mod h1:unQmk4qqZSAeWP4qWxmyDG4kLg2kQwiSHVH7zpXF5j0=
+sigs.k8s.io/cluster-api v0.3.7-rc.0 h1:Ds4G9IYErY/Y2O+qN7SIk5Tg7kOg1UgZtM0wddb3cQ0=
+sigs.k8s.io/cluster-api v0.3.7-rc.0/go.mod h1:unQmk4qqZSAeWP4qWxmyDG4kLg2kQwiSHVH7zpXF5j0=
 sigs.k8s.io/controller-runtime v0.5.7 h1:QcB8YQTyMshLLspHiqAkKHO74PgmUAUmTDhol4VccOw=
 sigs.k8s.io/controller-runtime v0.5.7/go.mod h1:KjjGQrdWFaSTHwB5A5VDmX9sMLlvkXjVazxVbfOI3a8=
 sigs.k8s.io/kind v0.7.1-0.20200303021537-981bd80d3802 h1:L6/8hETA7jvdx3xBcbDifrIN2xaYHE7tA58n+Kdp2Zw=
