@@ -15,7 +15,7 @@ spec:
             "securityGroupName": "${CLUSTER_NAME}-node-nsg",
             "location": "${AZURE_LOCATION}",
             "vmType": "vmss",
-            "vnetName": "${CLUSTER_NAME}-vnet",
+            "vnetName": "${AZURE_VNET_NAME}",
             "vnetResourceGroup": "${AZURE_RESOURCE_GROUP}",
             "subnetName": "${CLUSTER_NAME}-node-subnet",
             "routeTableName": "${CLUSTER_NAME}-node-routetable",
