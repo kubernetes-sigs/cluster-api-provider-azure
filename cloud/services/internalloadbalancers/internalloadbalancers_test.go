@@ -263,6 +263,80 @@ func TestReconcileInternalLoadBalancer(t *testing.T) {
 	}
 }
 
+func TestGetAvailablePrivateIP(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name       string
+		subnetCidr string
+		expectedIP string
+		expect     func(mVnet *mock_virtualnetworks.MockClientMockRecorder)
+	}{
+		{
+			name:       "internal load balancer with a valid subnet cidr",
+			subnetCidr: "10.0.8.0/16",
+			expectedIP: "10.0.8.0",
+			expect: func(mVnet *mock_virtualnetworks.MockClientMockRecorder) {
+				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
+			},
+		},
+		{
+			name:       "internal load balancer subnet cidr not 8 characters in length",
+			subnetCidr: "10.64.8.0",
+			expectedIP: "10.64.8.0",
+			expect: func(mVnet *mock_virtualnetworks.MockClientMockRecorder) {
+				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.64.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
+			},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			vnetMock := mock_virtualnetworks.NewMockClient(mockCtrl)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+			}
+
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
+
+			tc.expect(vnetMock.EXPECT())
+
+			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+				AzureClients: scope.AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Client:  client,
+				Cluster: cluster,
+				AzureCluster: &infrav1.AzureCluster{
+					Spec: infrav1.AzureClusterSpec{
+						Location: "test-location",
+						ResourceGroup:  "my-rg",
+						SubscriptionID: subscriptionID,
+						NetworkSpec: infrav1.NetworkSpec{
+							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
+							Subnets: []*infrav1.SubnetSpec{{
+								Name: "my-subnet",
+								Role: infrav1.SubnetNode,
+							}},
+						},
+					},
+				},
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			s := &Service{
+				Scope:                 clusterScope,
+				VirtualNetworksClient: vnetMock,
+			}
+
+			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", tc.subnetCidr, "")
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(resultIP).To(Equal(tc.expectedIP))
+		})
+	}
+}
+
 func TestDeleteInternalLB(t *testing.T) {
 	testcases := []struct {
 		name           string
