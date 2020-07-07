@@ -19,6 +19,7 @@ package internalloadbalancers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -171,7 +172,8 @@ func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnet
 		ip = azure.DefaultInternalLBIPAddress
 		if subnetCIDR != infrav1.DefaultControlPlaneSubnetCIDR {
 			// If the user provided a custom subnet CIDR without providing a private IP, try finding an available IP in the subnet space
-			ip = subnetCIDR[0:7] + "0"
+			index := strings.LastIndex(subnetCIDR, ".")
+			ip = subnetCIDR[0:(index+1)] + "0"
 		}
 	}
 	result, err := s.VirtualNetworksClient.CheckIPAddressAvailability(ctx, resourceGroup, vnetName, ip)
