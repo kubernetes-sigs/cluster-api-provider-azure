@@ -14,27 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package internalloadbalancers
+package loadbalancers
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 )
 
+// LBScope defines the scope interface for a load balancer service.
+type LBScope interface {
+	azure.ClusterDescriber
+	logr.Logger
+	LBSpecs() []azure.LBSpec
+}
+
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope LBScope
 	Client
+	PublicIPsClient       publicips.Client
 	SubnetsClient         subnets.Client
 	VirtualNetworksClient virtualnetworks.Client
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
+func NewService(scope LBScope) *Service {
 	return &Service{
 		Scope:                 scope,
 		Client:                NewClient(scope),
+		PublicIPsClient:       publicips.NewClient(scope),
 		SubnetsClient:         subnets.NewClient(scope),
 		VirtualNetworksClient: virtualnetworks.NewClient(scope),
 	}

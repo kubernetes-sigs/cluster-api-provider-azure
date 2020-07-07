@@ -33,9 +33,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
@@ -50,9 +49,8 @@ type azureClusterReconciler struct {
 	securityGroupSvc     azure.OldService
 	routeTableSvc        azure.OldService
 	subnetsSvc           azure.OldService
-	internalLBSvc        azure.OldService
 	publicIPSvc          azure.Service
-	publicLBSvc          azure.OldService
+	loadBalancerSvc      azure.Service
 	availabilityZonesSvc azure.GetterService
 }
 
@@ -65,9 +63,8 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		securityGroupSvc:     securitygroups.NewService(scope),
 		routeTableSvc:        routetables.NewService(scope),
 		subnetsSvc:           subnets.NewService(scope),
-		internalLBSvc:        internalloadbalancers.NewService(scope),
 		publicIPSvc:          publicips.NewService(scope),
-		publicLBSvc:          publicloadbalancers.NewService(scope),
+		loadBalancerSvc:      loadbalancers.NewService(scope),
 		availabilityZonesSvc: availabilityzones.NewService(scope),
 	}
 }
@@ -149,37 +146,12 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile node subnet for cluster %s", r.scope.ClusterName())
 	}
 
-	internalLBSpec := &internalloadbalancers.Spec{
-		Name:       azure.GenerateInternalLBName(r.scope.ClusterName()),
-		SubnetName: r.scope.ControlPlaneSubnet().Name,
-		SubnetCidr: r.scope.ControlPlaneSubnet().CidrBlock,
-		VnetName:   r.scope.Vnet().Name,
-		IPAddress:  r.scope.ControlPlaneSubnet().InternalLBIPAddress,
-	}
-	if err := r.internalLBSvc.Reconcile(ctx, internalLBSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile control plane internal load balancer for cluster %s", r.scope.ClusterName())
-	}
-
 	if err := r.publicIPSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile public IPs for cluster %s", r.scope.ClusterName())
 	}
 
-	publicLBSpec := &publicloadbalancers.Spec{
-		Name:         azure.GeneratePublicLBName(r.scope.ClusterName()),
-		PublicIPName: r.scope.Network().APIServerIP.Name,
-		Role:         infrav1.APIServerRole,
-	}
-	if err := r.publicLBSvc.Reconcile(ctx, publicLBSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile control plane public load balancer for cluster %s", r.scope.ClusterName())
-	}
-
-	nodeOutboundLBSpec := &publicloadbalancers.Spec{
-		Name:         r.scope.ClusterName(),
-		PublicIPName: azure.GenerateNodeOutboundIPName(r.scope.ClusterName()),
-		Role:         infrav1.NodeOutboundRole,
-	}
-	if err := r.publicLBSvc.Reconcile(ctx, nodeOutboundLBSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile node outbound public load balancer for cluster %s", r.scope.ClusterName())
+	if err := r.loadBalancerSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile load balancers for cluster %s", r.scope.ClusterName())
 	}
 
 	return nil
@@ -187,8 +159,10 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Delete(ctx context.Context) error {
-	if err := r.deleteLB(ctx); err != nil {
-		return errors.Wrap(err, "failed to delete load balancer")
+	if err := r.loadBalancerSvc.Delete(ctx); err != nil {
+		if !azure.ResourceNotFound(err) {
+			return errors.Wrapf(err, "failed to delete load balancers for cluster %s", r.scope.ClusterName())
+		}
 	}
 
 	if err := r.deleteSubnets(ctx); err != nil {
@@ -221,41 +195,6 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 	if err := r.groupsSvc.Delete(ctx); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete resource group for cluster %s", r.scope.ClusterName())
-		}
-	}
-
-	return nil
-}
-
-func (r *azureClusterReconciler) deleteLB(ctx context.Context) error {
-	publicLBSpec := &publicloadbalancers.Spec{
-		Name: azure.GeneratePublicLBName(r.scope.ClusterName()),
-	}
-	if err := r.publicLBSvc.Delete(ctx, publicLBSpec); err != nil {
-		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", publicLBSpec.Name, r.scope.ClusterName())
-		}
-	}
-
-	nodeOutboundLBSpec := &publicloadbalancers.Spec{
-		Name: r.scope.ClusterName(),
-	}
-	if err := r.publicLBSvc.Delete(ctx, nodeOutboundLBSpec); err != nil {
-		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete lb %s for cluster %s", nodeOutboundLBSpec.Name, r.scope.ClusterName())
-		}
-	}
-
-	if err := r.publicIPSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete public IPs for cluster %s", r.scope.ClusterName())
-	}
-
-	internalLBSpec := &internalloadbalancers.Spec{
-		Name: azure.GenerateInternalLBName(r.scope.ClusterName()),
-	}
-	if err := r.internalLBSvc.Delete(ctx, internalLBSpec); err != nil {
-		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to internal load balancer %s for cluster %s", azure.GenerateInternalLBName(r.scope.ClusterName()), r.scope.ClusterName())
 		}
 	}
 

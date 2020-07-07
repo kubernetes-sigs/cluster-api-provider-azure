@@ -46,7 +46,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		backendAddressPools := []network.BackendAddressPool{}
 		if nicSpec.PublicLoadBalancerName != "" {
-			lb, lberr := s.PublicLoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicLoadBalancerName)
+			lb, lberr := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicLoadBalancerName)
 			if lberr != nil {
 				return errors.Wrap(lberr, "failed to get public LB")
 			}
@@ -72,7 +72,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		if nicSpec.InternalLoadBalancerName != "" {
 			// only control planes have an attached internal LB
-			internalLB, ilberr := s.InternalLoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.InternalLoadBalancerName)
+			internalLB, ilberr := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.InternalLoadBalancerName)
 			if ilberr != nil {
 				return errors.Wrap(ilberr, "failed to get internalLB")
 			}

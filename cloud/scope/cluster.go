@@ -117,6 +117,34 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	}
 }
 
+// LBSpecs returns the load balancer specs.
+func (s *ClusterScope) LBSpecs() []azure.LBSpec {
+	return []azure.LBSpec{
+		{
+			// Internal control plane LB
+			Name:             azure.GenerateInternalLBName(s.ClusterName()),
+			SubnetName:       s.ControlPlaneSubnet().Name,
+			SubnetCidr:       s.ControlPlaneSubnet().CidrBlock,
+			PrivateIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
+			APIServerPort:    s.APIServerPort(),
+			Role:             infrav1.InternalRole,
+		},
+		{
+			// Public API Server LB
+			Name:          azure.GeneratePublicLBName(s.ClusterName()),
+			PublicIPName:  s.Network().APIServerIP.Name,
+			APIServerPort: s.APIServerPort(),
+			Role:          infrav1.APIServerRole,
+		},
+		{
+			// Public Node outbound LB
+			Name:         s.ClusterName(),
+			PublicIPName: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+			Role:         infrav1.NodeOutboundRole,
+		},
+	}
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet

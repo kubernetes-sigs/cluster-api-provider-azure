@@ -31,10 +31,9 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules/mock_inboundnatrules"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/internalloadbalancers/mock_internalloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers/mock_publicloadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus/mock_resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 
@@ -49,9 +48,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 		expect        func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 			m *mock_networkinterfaces.MockClientMockRecorder,
 			mSubnet *mock_subnets.MockClientMockRecorder,
-			mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+			mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 			mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-			mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 			mPublicIP *mock_publicips.MockClientMockRecorder,
 			mResourceSku *mock_resourceskus.MockClientMockRecorder)
 	}{
@@ -61,10 +59,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
-				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
-				mPublicIP *mock_publicips.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
+				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder, mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
@@ -86,9 +82,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -109,7 +104,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").
 						Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})).
 						Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
@@ -121,9 +116,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -144,7 +138,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
 						Location: to.StringPtr("test-location"),
@@ -169,9 +163,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -191,7 +184,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
 						Location: to.StringPtr("test-location"),
@@ -215,9 +208,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -239,7 +231,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").
 						Return(network.Subnet{ID: to.StringPtr("my-subnet-id")}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-public-lb"),
 						ID:   pointer.StringPtr("my-public-lb-id"),
 						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -268,7 +260,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 							Protocol: network.TransportProtocolTCP,
 						},
 					}),
-					mInternalLoadBalancer.Get(context.TODO(), "my-rg", "my-internal-lb").
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-internal-lb").
 						Return(network.LoadBalancer{
 							ID: pointer.StringPtr("my-internal-lb-id"),
 							LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -304,9 +296,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -327,7 +318,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").
 						Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
 		},
@@ -337,9 +328,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -360,7 +350,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-public-lb"),
 						ID:   pointer.StringPtr("my-public-lb-id"),
 						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -413,9 +403,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -436,7 +425,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mInternalLoadBalancer.Get(context.TODO(), "my-rg", "my-internal-lb").
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-internal-lb").
 						Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
 		},
@@ -446,9 +435,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -470,7 +458,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
@@ -482,9 +470,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -506,7 +493,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
 		},
@@ -516,9 +503,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -538,7 +524,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
 						Location: to.StringPtr("test-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -564,9 +550,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -586,7 +571,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
 						Location: to.StringPtr("test-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -612,9 +597,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder,
 				m *mock_networkinterfaces.MockClientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
-				mPublicLoadBalancer *mock_publicloadbalancers.MockClientMockRecorder,
+				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder,
 				mInboundNATRules *mock_inboundnatrules.MockClientMockRecorder,
-				mInternalLoadBalancer *mock_internalloadbalancers.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder,
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
@@ -634,7 +618,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mResourceSku.HasAcceleratedNetworking(context.TODO(), gomock.Any()).Return(
 						false, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 				)
@@ -651,26 +635,23 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			scopeMock := mock_networkinterfaces.NewMockNICScope(mockCtrl)
 			clientMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
-			publicLoadBalancerMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
+			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
 			inboundNatRulesMock := mock_inboundnatrules.NewMockClient(mockCtrl)
-			internalLoadBalancerMock := mock_internalloadbalancers.NewMockClient(mockCtrl)
 			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 			resourceSkusMock := mock_resourceskus.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), subnetMock.EXPECT(),
-				publicLoadBalancerMock.EXPECT(), inboundNatRulesMock.EXPECT(),
-				internalLoadBalancerMock.EXPECT(), publicIPsMock.EXPECT(),
+				loadBalancerMock.EXPECT(), inboundNatRulesMock.EXPECT(), publicIPsMock.EXPECT(),
 				resourceSkusMock.EXPECT())
 
 			s := &Service{
-				Scope:                       scopeMock,
-				Client:                      clientMock,
-				SubnetsClient:               subnetMock,
-				PublicLoadBalancersClient:   publicLoadBalancerMock,
-				InboundNATRulesClient:       inboundNatRulesMock,
-				InternalLoadBalancersClient: internalLoadBalancerMock,
-				PublicIPsClient:             publicIPsMock,
-				ResourceSkusClient:          resourceSkusMock,
+				Scope:                 scopeMock,
+				Client:                clientMock,
+				SubnetsClient:         subnetMock,
+				LoadBalancersClient:   loadBalancerMock,
+				InboundNATRulesClient: inboundNatRulesMock,
+				PublicIPsClient:       publicIPsMock,
+				ResourceSkusClient:    resourceSkusMock,
 			}
 
 			err := s.Reconcile(context.TODO())
