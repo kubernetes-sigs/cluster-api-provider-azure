@@ -42,7 +42,7 @@ type azureMachineService struct {
 	availabilityZonesSvc azure.GetterService
 	networkInterfacesSvc azure.Service
 	virtualMachinesSvc   *virtualmachines.Service
-	disksSvc             azure.OldService
+	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
 }
 
@@ -54,7 +54,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		availabilityZonesSvc: availabilityzones.NewService(clusterScope),
 		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
 		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
-		disksSvc:             disks.NewService(clusterScope),
+		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
 	}
 }
@@ -100,10 +100,7 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to delete public IPs")
 	}
 
-	OSDiskSpec := &disks.Spec{
-		Name: azure.GenerateOSDiskName(s.machineScope.Name()),
-	}
-	err = s.disksSvc.Delete(ctx, OSDiskSpec)
+	err = s.disksSvc.Delete(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", s.machineScope.Name())
 	}
@@ -253,10 +250,8 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to delete machine")
 			}
-			OSDiskSpec := &disks.Spec{
-				Name: azure.GenerateOSDiskName(s.machineScope.Name()),
-			}
-			err = s.disksSvc.Delete(ctx, OSDiskSpec)
+
+			err = s.disksSvc.Delete(ctx)
 			if err != nil && !azure.ResourceNotFound(err) {
 				return nil, errors.Wrapf(err, "failed to delete OS disk of machine %s", s.machineScope.Name())
 			}

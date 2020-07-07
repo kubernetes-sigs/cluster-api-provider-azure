@@ -37,3 +37,8 @@ type NICSpec struct {
 	VMSize                   string
 	AcceleratedNetworking    *bool
 }
+
+// DiskSpec defines the specification for a Disk.
+type DiskSpec struct {
+	Name string
+}

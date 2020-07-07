@@ -19,37 +19,30 @@ package disks
 import (
 	"context"
 
-	"github.com/pkg/errors"
-	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+
+	"github.com/pkg/errors"
 )
 
-// Spec specification for disk
-type Spec struct {
-	Name string
-}
-
 // Reconcile on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+func (s *Service) Reconcile(ctx context.Context) error {
 	return nil
 }
 
 // Delete deletes the disk associated with a VM.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	diskSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid disk specification")
-	}
-	klog.V(2).Infof("deleting disk %s", diskSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete disk %s in resource group %s", diskSpec.Name, s.Scope.ResourceGroup())
-	}
+func (s *Service) Delete(ctx context.Context) error {
+	for _, diskSpec := range s.Scope.DiskSpecs() {
+		s.Scope.V(2).Info("deleting disk", "disk", diskSpec.Name)
+		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
+		if err != nil && azure.ResourceNotFound(err) {
+			// already deleted
+			return nil
+		}
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete disk %s in resource group %s", diskSpec.Name, s.Scope.ResourceGroup())
+		}
 
-	klog.V(2).Infof("successfully deleted disk %s", diskSpec.Name)
+		s.Scope.V(2).Info("successfully deleted disk", "disk", diskSpec.Name)
+	}
 	return nil
 }

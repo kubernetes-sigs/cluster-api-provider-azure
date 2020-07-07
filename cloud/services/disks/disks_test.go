@@ -21,110 +21,72 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks/mock_disks"
 
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 
-	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func init() {
-	clusterv1.AddToScheme(scheme.Scheme)
-}
-
-const (
-	subscriptionID = "123"
-)
-
-func TestInvalidDiskSpec(t *testing.T) {
-	g := NewWithT(t)
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	disksMock := mock_disks.NewMockClient(mockCtrl)
-
-	cluster := &clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-	}
-
-	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		AzureClients: scope.AzureClients{
-			Authorizer: autorest.NullAuthorizer{},
-		},
-		Client:  client,
-		Cluster: cluster,
-		AzureCluster: &infrav1.AzureCluster{
-			Spec: infrav1.AzureClusterSpec{
-				Location: "test-location",
-				ResourceGroup:  "my-rg",
-				SubscriptionID: subscriptionID,
-				NetworkSpec: infrav1.NetworkSpec{
-					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-				},
-			},
-		},
-	})
-	g.Expect(err).NotTo(HaveOccurred())
-
-	s := &Service{
-		Scope:  clusterScope,
-		Client: disksMock,
-	}
-
-	// Wrong Spec
-	wrongSpec := &network.PublicIPAddress{}
-
-	err = s.Delete(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError("invalid disk specification"))
+	_ = clusterv1.AddToScheme(scheme.Scheme)
 }
 
 func TestDeleteDisk(t *testing.T) {
 	testcases := []struct {
 		name          string
-		disksSpec     Spec
 		expectedError string
-		expect        func(m *mock_disks.MockClientMockRecorder)
+		expect        func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockClientMockRecorder)
 	}{
 		{
-			name: "delete the disk",
-			disksSpec: Spec{
-				Name: "my-disk",
-			},
+			name:          "delete the disk",
 			expectedError: "",
-			expect: func(m *mock_disks.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-disk")
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.DiskSpecs().Return([]azure.DiskSpec{
+					{
+						Name: "my-disk-1",
+					},
+					{
+						Name: "honk-disk",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Delete(context.TODO(), "my-rg", "my-disk-1")
+				m.Delete(context.TODO(), "my-rg", "honk-disk")
 			},
 		},
 		{
-			name: "disk already deleted",
-			disksSpec: Spec{
-				Name: "my-disk",
-			},
+			name:          "disk already deleted",
 			expectedError: "",
-			expect: func(m *mock_disks.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-disk").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.DiskSpecs().Return([]azure.DiskSpec{
+					{
+						Name: "my-disk-1",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Delete(context.TODO(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{
-			name: "error while trying to delete the disk",
-			disksSpec: Spec{
-				Name: "my-disk",
-			},
-			expectedError: "failed to delete disk my-disk in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_disks.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-disk").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			name:          "error while trying to delete the disk",
+			expectedError: "failed to delete disk my-disk-1 in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_disks.MockDiskScopeMockRecorder, m *mock_disks.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.DiskSpecs().Return([]azure.DiskSpec{
+					{
+						Name: "my-disk-1",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Delete(context.TODO(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -133,41 +95,20 @@ func TestDeleteDisk(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
+			scopeMock := mock_disks.NewMockDiskScope(mockCtrl)
+			clientMock := mock_disks.NewMockClient(mockCtrl)
 
-			disksMock := mock_disks.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(disksMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: disksMock,
+				Scope:  scopeMock,
+				Client: clientMock,
 			}
 
-			err = s.Delete(context.TODO(), &tc.disksSpec)
+			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
