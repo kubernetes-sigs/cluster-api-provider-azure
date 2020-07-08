@@ -22,100 +22,56 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups/mock_groups"
 
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-)
-
-func init() {
-	clusterv1.AddToScheme(scheme.Scheme)
-}
-
-const (
-	subscriptionID = "123"
+	"github.com/Azure/go-autorest/autorest"
 )
 
 func TestReconcileGroups(t *testing.T) {
 	testcases := []struct {
-		name               string
-		clusterScopeParams scope.ClusterScopeParams
-		expectedError      string
-		expect             func(m *mock_groups.MockClientMockRecorder)
+		name          string
+		expectedError string
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder)
 	}{
 		{
-			name: "resource group already exist",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			},
+			name:          "resource group already exist",
 			expectedError: "",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().Return("my-rg")
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, nil)
 			},
 		},
 		{
-			name: "create a resource group",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			},
+			name:          "create a resource group",
 			expectedError: "",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, nil)
-				m.Get(context.TODO(), "").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("fake-location")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
+				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(context.TODO(), "my-rg", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, nil)
 			},
 		},
 		{
-			name: "return error when creating a resource group",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			},
-			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-				m.Get(context.TODO(), "").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			name:          "return error when creating a resource group",
+			expectedError: "failed to create resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("fake-location")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
+				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(context.TODO(), "my-rg", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -124,30 +80,20 @@ func TestReconcileGroups(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
+			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
+			clientMock := mock_groups.NewMockClient(mockCtrl)
 
-			groupsMock := mock_groups.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(groupsMock.EXPECT())
-
-			tc.clusterScopeParams.Client = client
-			tc.clusterScopeParams.Cluster = cluster
-			clusterScope, err := scope.NewClusterScope(tc.clusterScopeParams)
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: groupsMock,
+				Scope:  scopeMock,
+				Client: clientMock,
 			}
 
-			err = s.Reconcile(context.TODO(), nil)
+			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -160,146 +106,84 @@ func TestReconcileGroups(t *testing.T) {
 
 func TestDeleteGroups(t *testing.T) {
 	testcases := []struct {
-		name               string
-		clusterScopeParams scope.ClusterScopeParams
-		expectedError      string
-		expect             func(m *mock_groups.MockClientMockRecorder)
+		name          string
+		expectedError string
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder)
 	}{
 		{
-			name: "error getting the resource group management state",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						ResourceGroup:  "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			},
+			name:          "error getting the resource group management state",
 			expectedError: "could not get resource group management state: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
-			name: "skip deletion in unmanaged mode",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						ResourceGroup:  "my-rg",
-					},
-				},
-			},
+			name:          "skip deletion in unmanaged mode",
 			expectedError: "",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
 				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, nil)
 			},
 		},
 		{
-			name: "resource group already deleted",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						ResourceGroup:  "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-						AdditionalTags: infrav1.Tags{
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-						},
-					},
-				},
-			},
+			name:          "resource group already deleted",
 			expectedError: "",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{
-					Tags: converters.TagsToMap(infrav1.Tags{
-						"Name": "my-rg",
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-					}),
-				}, nil)
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				gomock.InOrder(
+					m.Get(context.TODO(), "my-rg").Return(resources.Group{
+						Tags: converters.TagsToMap(infrav1.Tags{
+							"Name": "my-rg",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+						}),
+					}, nil),
+					m.Delete(context.TODO(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")),
+				)
 			},
 		},
 		{
-			name: "resource group deletion fails",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						ResourceGroup:  "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-						AdditionalTags: infrav1.Tags{
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-						},
-					},
-				},
-			},
+			name:          "resource group deletion fails",
 			expectedError: "failed to delete resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{
-					Tags: converters.TagsToMap(infrav1.Tags{
-						"Name": "my-rg",
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-					}),
-				}, nil)
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				gomock.InOrder(
+					m.Get(context.TODO(), "my-rg").Return(resources.Group{
+						Tags: converters.TagsToMap(infrav1.Tags{
+							"Name": "my-rg",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+						}),
+					}, nil),
+					m.Delete(context.TODO(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
+				)
 			},
 		},
 		{
-			name: "resource group deletion successfully",
-			clusterScopeParams: scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						SubscriptionID: subscriptionID,
-						ResourceGroup:  "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-						AdditionalTags: infrav1.Tags{
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-						},
-					},
-				},
-			},
+			name:          "resource group deletion successfully",
 			expectedError: "",
-			expect: func(m *mock_groups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg").Return(nil)
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{
-					Tags: converters.TagsToMap(infrav1.Tags{
-						"Name": "my-rg",
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
-					}),
-				}, nil)
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				gomock.InOrder(
+					m.Get(context.TODO(), "my-rg").Return(resources.Group{
+						Tags: converters.TagsToMap(infrav1.Tags{
+							"Name": "my-rg",
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+						}),
+					}, nil),
+					m.Delete(context.TODO(), "my-rg").Return(nil),
+				)
 			},
 		},
 	}
@@ -308,30 +192,20 @@ func TestDeleteGroups(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
+			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
+			clientMock := mock_groups.NewMockClient(mockCtrl)
 
-			groupsMock := mock_groups.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(groupsMock.EXPECT())
-
-			tc.clusterScopeParams.Client = client
-			tc.clusterScopeParams.Cluster = cluster
-			clusterScope, err := scope.NewClusterScope(tc.clusterScopeParams)
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: groupsMock,
+				Scope:  scopeMock,
+				Client: clientMock,
 			}
 
-			err = s.Delete(context.TODO(), nil)
+			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

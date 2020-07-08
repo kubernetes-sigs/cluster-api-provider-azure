@@ -28,7 +28,7 @@ import (
 )
 
 // Reconcile gets/creates/updates a resource group.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+func (s *Service) Reconcile(ctx context.Context) error {
 	if _, err := s.Client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
 		// resource group already exists, skip creation
 		return nil
@@ -44,13 +44,18 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Additional:  s.Scope.AdditionalTags(),
 		})),
 	}
+
 	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create resource group %s", s.Scope.ResourceGroup())
+	}
+
 	s.Scope.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
-	return err
+	return nil
 }
 
 // Delete deletes the resource group with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+func (s *Service) Delete(ctx context.Context) error {
 	managed, err := s.isGroupManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get resource group management state")
@@ -60,8 +65,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		s.Scope.V(4).Info("Skipping resource group deletion in unmanaged mode")
 		return nil
 	}
-	s.Scope.V(2).Info("deleting resource group", "resource group", s.Scope.ResourceGroup())
 
+	s.Scope.V(2).Info("deleting resource group", "resource group", s.Scope.ResourceGroup())
 	err = s.Client.Delete(ctx, s.Scope.ResourceGroup())
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
