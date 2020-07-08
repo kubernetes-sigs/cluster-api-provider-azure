@@ -45,7 +45,7 @@ import (
 // azureClusterReconciler is the reconciler called by the AzureCluster controller
 type azureClusterReconciler struct {
 	scope                *scope.ClusterScope
-	groupsSvc            azure.OldService
+	groupsSvc            azure.Service
 	vnetSvc              azure.OldService
 	securityGroupSvc     azure.OldService
 	routeTableSvc        azure.OldService
@@ -83,7 +83,7 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to get availability zones for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
 	}
 
-	if err := r.groupsSvc.Reconcile(ctx, nil); err != nil {
+	if err := r.groupsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile resource group for cluster %s", r.scope.ClusterName())
 	}
 
@@ -218,7 +218,7 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 		}
 	}
 
-	if err := r.groupsSvc.Delete(ctx, nil); err != nil {
+	if err := r.groupsSvc.Delete(ctx); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete resource group for cluster %s", r.scope.ClusterName())
 		}

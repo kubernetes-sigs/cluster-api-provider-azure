@@ -17,17 +17,24 @@ limitations under the License.
 package groups
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope GroupScope
 	Client
 }
 
+// GroupScope defines the scope interface for a disk service.
+type GroupScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+}
+
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
+func NewService(scope GroupScope) *Service {
 	return &Service{
 		Scope:  scope,
 		Client: NewClient(scope),
