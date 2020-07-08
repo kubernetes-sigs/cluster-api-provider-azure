@@ -68,7 +68,7 @@ export AZURE_JSON_B64=$(echo '{
     "securityGroupName": "${CLUSTER_NAME}-node-nsg",
     "location": "${AZURE_LOCATION}",
     "vmType": "vmss",
-    "vnetName": "${CLUSTER_NAME}-vnet",
+    "vnetName": "${AZURE_VNET_NAME}",
     "vnetResourceGroup": "${CLUSTER_NAME}",
     "subnetName": "${CLUSTER_NAME}-node-subnet",
     "routeTableName": "${CLUSTER_NAME}-node-routetable",
