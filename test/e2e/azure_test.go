@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
-var _ = Describe("Workoad cluster creation", func() {
+var _ = Describe("Workload cluster creation", func() {
 	var (
 		ctx           = context.TODO()
 		specName      = "create-workload-cluster"
