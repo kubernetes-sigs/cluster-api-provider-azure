@@ -129,6 +129,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, err
 	}
 	if machine == nil {
+		r.Recorder.Eventf(azureMachine, corev1.EventTypeNormal, "Machine controller dependency not yet met", "Machine Controller has not yet set OwnerRef")
 		logger.Info("Machine Controller has not yet set OwnerRef")
 		return reconcile.Result{}, nil
 	}
@@ -138,6 +139,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
+		r.Recorder.Eventf(azureMachine, corev1.EventTypeNormal, "Unable to get cluster from metadata", "Machine is missing cluster label or cluster does not exist")
 		logger.Info("Machine is missing cluster label or cluster does not exist")
 		return reconcile.Result{}, nil
 	}
@@ -156,6 +158,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	}
 	azureCluster := &infrav1.AzureCluster{}
 	if err := r.Client.Get(ctx, azureClusterName, azureCluster); err != nil {
+		r.Recorder.Eventf(azureMachine, corev1.EventTypeNormal, "AzureCluster unavailable", "AzureCluster is not available yet")
 		logger.Info("AzureCluster is not available yet")
 		return reconcile.Result{}, nil
 	}
@@ -170,6 +173,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "Error creating the cluster scope", err.Error())
 		return reconcile.Result{}, err
 	}
 
@@ -182,6 +186,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		ClusterScope: clusterScope,
 	})
 	if err != nil {
+		r.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error creating the machine scope", err.Error())
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
 
@@ -214,6 +219,7 @@ func (r *AzureMachineReconciler) findVM(ctx context.Context, scope *scope.Machin
 	// If the ProviderID is populated, describe the VM using its name and resource group name.
 	vm, err := ams.VMIfExists(ctx, scope.GetVMID())
 	if err != nil {
+		r.Recorder.Eventf(scope.AzureMachine, corev1.EventTypeWarning, "failed to query AzureMachine VM", errors.Wrapf(err, "failed to query AzureMachine VM").Error())
 		return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
 	}
 
@@ -315,6 +321,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	// Ensure that the tags are correct.
 	err = r.reconcileTags(ctx, machineScope, clusterScope, machineScope.AdditionalTags())
 	if err != nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Tags are incorrect", errors.Errorf("failed to ensure tags: %+v", err).Error())
 		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
 	}
 
@@ -324,6 +331,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
 	vm, err := r.findVM(ctx, scope, ams)
 	if err != nil {
+		r.Recorder.Eventf(scope.AzureMachine, corev1.EventTypeWarning, "Error while searching for AzureMachine VM", err.Error())
 		conditions.MarkFalse(scope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNotFoundReason, clusterv1.ConditionSeverityError, err.Error())
 		return nil, err
 	}
@@ -332,6 +340,7 @@ func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.M
 		// Create a new VM if we couldn't find a running VM.
 		vm, err = ams.Reconcile(ctx)
 		if err != nil {
+			r.Recorder.Eventf(scope.AzureMachine, corev1.EventTypeWarning, "Error creating new AzureMachine", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 			conditions.MarkFalse(scope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 			return nil, errors.Wrapf(err, "failed to reconcile AzureMachine")
 		}
@@ -344,6 +353,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	machineScope.Info("Handling deleted AzureMachine")
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 	}
 
