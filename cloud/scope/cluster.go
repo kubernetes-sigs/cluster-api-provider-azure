@@ -153,9 +153,37 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	}}
 }
 
+// SubnetSpecs returns the subnets specs.
+func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
+	return []azure.SubnetSpec{
+		{
+			Name:                s.ControlPlaneSubnet().Name,
+			CIDR:                s.ControlPlaneSubnet().CidrBlock,
+			VNetName:            s.Vnet().Name,
+			SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
+			Role:                s.ControlPlaneSubnet().Role,
+			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
+			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
+		},
+		{
+			Name:              s.NodeSubnet().Name,
+			CIDR:              s.NodeSubnet().CidrBlock,
+			VNetName:          s.Vnet().Name,
+			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
+			RouteTableName:    s.NodeSubnet().RouteTable.Name,
+			Role:              s.NodeSubnet().Role,
+		},
+	}
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet
+}
+
+// IsVnetManaged returns true if the vnet is managed.
+func (s *ClusterScope) IsVnetManaged() bool {
+	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
 }
 
 // Subnets returns the cluster subnets.

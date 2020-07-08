@@ -16,13 +16,17 @@ limitations under the License.
 
 package azure
 
-// PublicIPSpec defines the specification for a public IP.
+import (
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+)
+
+// PublicIPSpec defines the specification for a Public IP.
 type PublicIPSpec struct {
 	Name    string
 	DNSName string
 }
 
-// NICSpec defines the specification for a network interface.
+// NICSpec defines the specification for a Network Interface.
 type NICSpec struct {
 	Name                     string
 	MachineName              string
@@ -63,4 +67,15 @@ type RouteTableSpec struct {
 type InboundNatSpec struct {
 	Name             string
 	LoadBalancerName string
+}
+
+// SubnetSpec defines the specification for a Subnet.
+type SubnetSpec struct {
+	Name                string
+	CIDR                string
+	VNetName            string
+	RouteTableName      string
+	SecurityGroupName   string
+	Role                infrav1.SubnetRole
+	InternalLBIPAddress string
 }

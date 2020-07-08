@@ -164,6 +164,20 @@ func (mr *MockLBScopeMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockLBScope)(nil).Vnet))
 }
 
+// IsVnetManaged mocks base method.
+func (m *MockLBScope) IsVnetManaged() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsVnetManaged indicates an expected call of IsVnetManaged.
+func (mr *MockLBScopeMockRecorder) IsVnetManaged() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockLBScope)(nil).IsVnetManaged))
+}
+
 // NodeSubnet mocks base method.
 func (m *MockLBScope) NodeSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()

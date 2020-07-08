@@ -151,6 +151,7 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 	spec := azure.DiskSpec{
 		Name: azure.GenerateOSDiskName(m.Name()),
 	}
+
 	return []azure.DiskSpec{spec}
 }
 
