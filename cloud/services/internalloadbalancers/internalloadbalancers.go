@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
@@ -44,7 +43,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid internal load balancer specification")
 	}
-	s.Scope.Logger.V(2).Info("creating internal load balancer", "internal lb", internalLBSpec.Name)
+	s.Scope.V(2).Info("creating internal load balancer", "internal lb", internalLBSpec.Name)
 	probeName := "HTTPSProbe"
 	frontEndIPConfigName := "controlplane-internal-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-internal-backEndPool"
@@ -59,23 +58,23 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			privateIP = to.String((*ipConfigs)[0].FrontendIPConfigurationPropertiesFormat.PrivateIPAddress)
 		}
 	} else if azure.ResourceNotFound(err) {
-		s.Scope.Logger.V(2).Info("internalLB not found in RG", "internal lb", internalLBSpec.Name, "resource group", s.Scope.ResourceGroup())
+		s.Scope.V(2).Info("internalLB not found in RG", "internal lb", internalLBSpec.Name, "resource group", s.Scope.ResourceGroup())
 		privateIP, err = s.getAvailablePrivateIP(ctx, s.Scope.Vnet().ResourceGroup, internalLBSpec.VnetName, internalLBSpec.SubnetCidr, internalLBSpec.IPAddress)
 		if err != nil {
 			return err
 		}
-		s.Scope.Logger.V(2).Info("setting internal load balancer IP", "private ip", privateIP)
+		s.Scope.V(2).Info("setting internal load balancer IP", "private ip", privateIP)
 	} else {
 		return errors.Wrap(err, "failed to look for existing internal LB")
 	}
 
-	s.Scope.Logger.V(2).Info("getting subnet", "subnet", internalLBSpec.SubnetName)
+	s.Scope.V(2).Info("getting subnet", "subnet", internalLBSpec.SubnetName)
 	subnet, err := s.SubnetsClient.Get(ctx, s.Scope.Vnet().ResourceGroup, internalLBSpec.VnetName, internalLBSpec.SubnetName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get subnet")
 	}
 
-	s.Scope.Logger.V(2).Info("successfully got subnet", "subnet", internalLBSpec.SubnetName)
+	s.Scope.V(2).Info("successfully got subnet", "subnet", internalLBSpec.SubnetName)
 
 	// https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#zone-redundant-by-default
 	err = s.Client.CreateOrUpdate(ctx,
@@ -141,7 +140,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create load balancer")
 	}
 
-	s.Scope.Logger.V(2).Info("successfully created internal load balancer", "internal lb", internalLBSpec.Name)
+	s.Scope.V(2).Info("successfully created internal load balancer", "internal lb", internalLBSpec.Name)
 	return err
 }
 
@@ -151,7 +150,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid internal load balancer specification")
 	}
-	klog.V(2).Infof("deleting internal load balancer %s", internalLBSpec.Name)
+	s.Scope.V(2).Info("deleting internal load balancer", "internal lb", internalLBSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), internalLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -160,7 +159,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete internal load balancer %s in resource group %s", internalLBSpec.Name, s.Scope.ResourceGroup())
 	}
-	klog.V(2).Infof("successfully deleted internal load balancer %s", internalLBSpec.Name)
+
+	s.Scope.V(2).Info("successfully deleted internal load balancer", "internal lb", internalLBSpec.Name)
 	return nil
 }
 

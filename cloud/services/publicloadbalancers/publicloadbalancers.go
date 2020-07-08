@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
@@ -50,16 +49,16 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID(), s.Scope.ResourceGroup())
 
-	s.Scope.Logger.V(2).Info("creating public load balancer", "load balancer", lbName)
+	s.Scope.V(2).Info("creating public load balancer", "load balancer", lbName)
 
-	s.Scope.Logger.V(2).Info("getting public ip", "public ip", publicLBSpec.PublicIPName)
+	s.Scope.V(2).Info("getting public ip", "public ip", publicLBSpec.PublicIPName)
 	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicLBSpec.PublicIPName)
 	if err != nil && azure.ResourceNotFound(err) {
 		return errors.Wrap(err, fmt.Sprintf("public ip %s not found in RG %s", publicLBSpec.PublicIPName, s.Scope.ResourceGroup()))
 	} else if err != nil {
 		return errors.Wrap(err, "failed to look for existing public IP")
 	}
-	s.Scope.Logger.V(2).Info("successfully got public ip", "public ip", publicLBSpec.PublicIPName)
+	s.Scope.V(2).Info("successfully got public ip", "public ip", publicLBSpec.PublicIPName)
 
 	lb := network.LoadBalancer{
 		Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
@@ -151,7 +150,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrap(err, "cannot create public load balancer")
 	}
 
-	s.Scope.Logger.V(2).Info("successfully created public load balancer", "load balancer", lbName)
+	s.Scope.V(2).Info("successfully created public load balancer", "load balancer", lbName)
 	return nil
 }
 
@@ -161,7 +160,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid public loadbalancer specification")
 	}
-	klog.V(2).Infof("deleting public load balancer %s", publicLBSpec.Name)
+	s.Scope.V(2).Info("deleting public load balancer", "load balancer", publicLBSpec.Name)
+
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), publicLBSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -171,6 +171,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete public load balancer %s in resource group %s", publicLBSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("deleted public load balancer %s", publicLBSpec.Name)
+	s.Scope.V(2).Info("successfully deleted public load balancer", "load balancer", publicLBSpec.Name)
 	return nil
 }

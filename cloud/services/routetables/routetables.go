@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -60,7 +59,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return nil
 	}
 
-	s.Scope.Logger.V(2).Info("creating route table", "route table", routeTableSpec.Name)
+	s.Scope.V(2).Info("creating route table", "route table", routeTableSpec.Name)
 	err = s.Client.CreateOrUpdate(
 		ctx,
 		s.Scope.ResourceGroup(),
@@ -74,7 +73,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	s.Scope.Logger.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
+	s.Scope.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
 	return nil
 }
 
@@ -88,7 +87,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid Route Table Specification")
 	}
-	klog.V(2).Infof("deleting route table %s", routeTableSpec.Name)
+	s.Scope.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -98,6 +97,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted route table %s", routeTableSpec.Name)
+	s.Scope.V(2).Info("successfully deleted route table", "route table", routeTableSpec.Name)
 	return nil
 }

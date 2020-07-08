@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
@@ -108,13 +107,13 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// We append the existing NSG etag to the header to ensure we only apply the updates if the NSG has not been modified.
 		sg.Etag = securityGroup.Etag
 	}
-	s.Scope.Logger.V(2).Info("creating security group", "security group", nsgSpec.Name)
+	s.Scope.V(2).Info("creating security group", "security group", nsgSpec.Name)
 	err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), nsgSpec.Name, sg)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	s.Scope.Logger.V(2).Info("created security group", "security group", nsgSpec.Name)
+	s.Scope.V(2).Info("created security group", "security group", nsgSpec.Name)
 	return err
 }
 
@@ -174,7 +173,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	if !ok {
 		return errors.New("invalid security groups specification")
 	}
-	klog.V(2).Infof("deleting security group %s", nsgSpec.Name)
+	s.Scope.V(2).Info("deleting security group", "security group", nsgSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -184,6 +183,6 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("deleted security group %s", nsgSpec.Name)
+	s.Scope.V(2).Info("successfully deleted security group", "security group", nsgSpec.Name)
 	return nil
 }
