@@ -28,14 +28,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
-
-func init() {
-	_ = clusterv1.AddToScheme(scheme.Scheme)
-}
 
 func TestDeleteDisk(t *testing.T) {
 	testcases := []struct {

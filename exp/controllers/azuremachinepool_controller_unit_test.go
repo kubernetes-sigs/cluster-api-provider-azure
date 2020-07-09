@@ -269,7 +269,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	}
 
 	mps := &scope.MachinePoolScope{
-		ClusterScope: cs,
+		ClusterDescriber: cs,
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "poolName",

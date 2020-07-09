@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -39,12 +38,11 @@ import (
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	AzureClients
-	Client       client.Client
-	Logger       logr.Logger
-	ClusterScope *ClusterScope
-	Machine      *clusterv1.Machine
-	AzureMachine *infrav1.AzureMachine
+	Client           client.Client
+	Logger           logr.Logger
+	ClusterDescriber azure.ClusterDescriber
+	Machine          *clusterv1.Machine
+	AzureMachine     *infrav1.AzureMachine
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -68,12 +66,12 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &MachineScope{
-		client:       params.Client,
-		Machine:      params.Machine,
-		AzureMachine: params.AzureMachine,
-		Logger:       params.Logger,
-		patchHelper:  helper,
-		ClusterScope: params.ClusterScope,
+		client:           params.Client,
+		Machine:          params.Machine,
+		AzureMachine:     params.AzureMachine,
+		Logger:           params.Logger,
+		patchHelper:      helper,
+		ClusterDescriber: params.ClusterDescriber,
 	}, nil
 }
 
@@ -83,7 +81,7 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	ClusterScope azure.ClusterDescriber
+	azure.ClusterDescriber
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 }
@@ -106,8 +104,8 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		Name:                  azure.GenerateNICName(m.Name()),
 		MachineName:           m.Name(),
 		MachineRole:           m.Role(),
-		VNetName:              m.ClusterScope.Vnet().Name,
-		VNetResourceGroup:     m.ClusterScope.Vnet().ResourceGroup,
+		VNetName:              m.Vnet().Name,
+		VNetResourceGroup:     m.Vnet().ResourceGroup,
 		SubnetName:            m.Subnet().Name,
 		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
@@ -131,51 +129,6 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 		Name: azure.GenerateOSDiskName(m.Name()),
 	}
 	return []azure.DiskSpec{spec}
-}
-
-// Location returns the AzureCluster location.
-func (m *MachineScope) Location() string {
-	return m.ClusterScope.Location()
-}
-
-// ResourceGroup returns the AzureCluster resource group.
-func (m *MachineScope) ResourceGroup() string {
-	return m.ClusterScope.ResourceGroup()
-}
-
-// ClusterName returns the AzureCluster name.
-func (m *MachineScope) ClusterName() string {
-	return m.ClusterScope.ClusterName()
-}
-
-// SubscriptionID returns the Azure client Subscription ID.
-func (m *MachineScope) SubscriptionID() string {
-	return m.ClusterScope.SubscriptionID()
-}
-
-// BaseURI returns the Azure ResourceManagerEndpoint.
-func (m *MachineScope) BaseURI() string {
-	return m.ClusterScope.BaseURI()
-}
-
-// Authorizer returns the Azure client Authorizer.
-func (m *MachineScope) Authorizer() autorest.Authorizer {
-	return m.ClusterScope.Authorizer()
-}
-
-// Vnet returns the cluster VNet.
-func (m *MachineScope) Vnet() *infrav1.VnetSpec {
-	return m.ClusterScope.Vnet()
-}
-
-// NodeSubnet returns the cluster node subnet.
-func (m *MachineScope) NodeSubnet() *infrav1.SubnetSpec {
-	return m.ClusterScope.NodeSubnet()
-}
-
-// ControlPlaneSubnet returns the cluster control plane subnet.
-func (m *MachineScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return m.ClusterScope.ControlPlaneSubnet()
 }
 
 // Subnet returns the machine's subnet based on its role
@@ -310,7 +263,7 @@ func (m *MachineScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
 
 	// Start with the cluster-wide tags...
-	tags.Merge(m.ClusterScope.AdditionalTags())
+	tags.Merge(m.ClusterDescriber.AdditionalTags())
 	// ... and merge in the Machine's
 	tags.Merge(m.AzureMachine.Spec.AdditionalTags)
 

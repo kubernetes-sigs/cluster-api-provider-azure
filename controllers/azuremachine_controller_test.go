@@ -303,13 +303,10 @@ func TestConditions(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:       client,
-				ClusterScope: clusterScope,
-				Machine:      tc.machine,
-				AzureMachine: tc.azureMachine,
+				Client:           client,
+				ClusterDescriber: clusterScope,
+				Machine:          tc.machine,
+				AzureMachine:     tc.azureMachine,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

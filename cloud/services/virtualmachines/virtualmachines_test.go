@@ -654,13 +654,10 @@ func TestReconcileVM(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-				Client:  client,
-				Machine: &tc.machine,
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				AzureMachine: azureMachine,
-				ClusterScope: clusterScope,
+				Client:           client,
+				Machine:          &tc.machine,
+				AzureMachine:     azureMachine,
+				ClusterDescriber: clusterScope,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

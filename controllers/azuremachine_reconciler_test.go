@@ -127,8 +127,8 @@ func TestIsAvailabilityZoneSupported(t *testing.T) {
 
 	s := azureMachineService{
 		machineScope: &scope.MachineScope{
-			Logger:       log.Log.Logger,
-			ClusterScope: clusterScope,
+			Logger:           log.Log.Logger,
+			ClusterDescriber: clusterScope,
 		},
 	}
 
