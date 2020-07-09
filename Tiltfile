@@ -9,7 +9,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v0.3.7-rc.0",
+    "capi_version": "v0.3.7-rc.1",
     "cert_manager_version": "v0.11.0",
 }
 
@@ -269,7 +269,7 @@ def deploy_worker_templates(flavor, substitutions):
         yaml = yaml.replace("${" + substitution + "}", value)
 
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
-    
+
     local_resource(
         "worker-" + flavor,
         cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/worker-" + flavor + ".yaml; kubectl apply -f ./.tiltbuild/worker-" + flavor + ".yaml",
