@@ -204,15 +204,13 @@ def flavors():
 
     substitutions = settings.get("kustomize_substitutions", {})
     for key in keys:
-        decode_blob = local("echo {} | base64 --decode -".format(substitutions[key]), quiet=True)
-        substitutions[key[:-4]] = str(decode_blob)
+        substitutions[key[:-4]] = base64_decode(substitutions[key])
 
     ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
     ssh_pub_key_path = "~/.ssh/id_rsa.pub"
     if not substitutions.get(ssh_pub_key):
         print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))
-        pub_key_data = local("cat {} | tr -d '\n' | base64 - | tr -d '\n'".format(ssh_pub_key_path), quiet=True)
-        substitutions[ssh_pub_key] = str(pub_key_data)
+        substitutions[ssh_pub_key] = base64_encode_file(ssh_pub_key_path)
 
     for flavor in cfg.get("worker-flavors", []):
         if flavor not in worker_templates:
@@ -231,10 +229,26 @@ def deploy_worker_templates(flavor, substitutions):
             fail(yaml_file + " not found")
 
     yaml = str(read_file(yaml_file))
-    # azure account information replacements
-    for substitution in substitutions:
-        value = substitutions[substitution]
-        yaml = yaml.replace("${" + substitution + "}", value)
+
+    # programmatically define any remaining vars
+    defaults = {
+        "CLUSTER_NAME": flavor + "-template",
+        "AZURE_LOCATION": "eastus",
+        "AZURE_VNET_NAME": flavor + "-template-vnet",
+        "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
+        "CONTROL_PLANE_MACHINE_COUNT": "1",
+        "KUBERNETES_VERSION": "v1.18.3",
+        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
+        "WORKER_MACHINE_COUNT": "2",
+        "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
+    }
+
+    for k in defaults:
+        if k not in substitutions:
+            substitutions[k] = defaults[k]
+
+    az_json = azure_json(flavor, substitutions)
+    substitutions["AZURE_JSON_B64"] = base64_encode(az_json)
 
     # if metadata defined for worker-templates in tilt_settings
     if "worker-templates" in settings:
@@ -252,18 +266,6 @@ def deploy_worker_templates(flavor, substitutions):
                 value = substitutions[substitution]
                 yaml = yaml.replace("${" + substitution + "}", value)
 
-    # programmatically define any remaining vars
-    substitutions = {
-        "CLUSTER_NAME": flavor + "-template",
-        "AZURE_LOCATION": "eastus",
-        "AZURE_VNET_NAME": flavor + "-template-vnet",
-        "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
-        "CONTROL_PLANE_MACHINE_COUNT": "1",
-        "KUBERNETES_VERSION": "v1.18.3",
-        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
-        "WORKER_MACHINE_COUNT": "2",
-        "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
-    }
     for substitution in substitutions:
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
@@ -277,6 +279,49 @@ def deploy_worker_templates(flavor, substitutions):
         trigger_mode = TRIGGER_MODE_MANUAL
     )
 
+
+def azure_json(flavor, substitutions):
+    azure_settings = {
+        "cloud": substitutions.get("AZURE_ENVIRONMENT"),
+        "tenantId": substitutions.get("AZURE_TENANT_ID"),
+        "subscriptionId": substitutions.get("AZURE_SUBSCRIPTION_ID"),
+        "resourceGroup": substitutions.get("CLUSTER_NAME"),
+        "securityGroupName": "{}-node-nsg".format(substitutions.get("CLUSTER_NAME")),
+        "location": substitutions.get("AZURE_LOCATION"),
+        "vmType": "vmss",
+        "vnetName": "{}-vnet".format(substitutions.get("CLUSTER_NAME")),
+        "vnetResourceGroup": substitutions.get("CLUSTER_NAME"),
+        "subnetName": "{}-node-subnet".format(substitutions.get("CLUSTER_NAME")),
+        "routeTableName": "{}-node-routetable".format(substitutions.get("CLUSTER_NAME")),
+        "loadBalancerSku": "standard",
+        "maximumLoadBalancerRuleCount": 250,
+        "useManagedIdentityExtension": False,
+        "useInstanceMetadata": True
+    }
+
+    if flavor not in ["system-assigned-identity", "user-assigned-identity"]:
+        azure_settings["aadClientId"] = substitutions.get("AZURE_CLIENT_ID}")
+        azure_settings["aadClientSecret"] = substitutions.get("AZURE_CLIENT_SECRET}")
+
+    if flavor == "user-assigned-identity":
+        azure_settings["userAssignedIdentityID"] = substitutions.get("AZURE_USER_ASSIGNED_ID")
+
+    return str(encode_json(azure_settings))
+
+
+def base64_encode(to_encode):
+    encode_blob = local("echo '{}' | tr -d '\n' | base64 - | tr -d '\n'".format(to_encode), quiet=True)
+    return str(encode_blob)
+
+
+def base64_encode_file(path_to_encode):
+    encode_blob = local("cat {} | tr -d '\n' | base64 - | tr -d '\n'".format(path_to_encode), quiet=True)
+    return str(encode_blob)
+
+
+def base64_decode(to_decode):
+    decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True)
+    return str(decode_blob)
 
 ##############################
 # Actual work happens here
