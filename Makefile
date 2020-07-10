@@ -120,8 +120,8 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 LDFLAGS := $(shell hack/version.sh)
 
 # Allow overriding the feature gates
-FEATURE_GATE_MACHINE_POOL ?= false
-FEATURE_GATES_JSON_PATCH := [{"op": "add", "path": "/spec/template/spec/containers/1/args/-", "value": "--feature-gates=MachinePool=$(FEATURE_GATE_MACHINE_POOL)"}]
+EXP_MACHINE_POOL ?= false
+FEATURE_GATES_JSON_PATCH := [{"op": "add", "path": "/spec/template/spec/containers/1/args/-", "value": "--feature-gates=MachinePool=$(EXP_MACHINE_POOL)"}]
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
