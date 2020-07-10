@@ -19,9 +19,10 @@ aliases:
   cluster-api-azure-maintainers:
     - awesomenix
     - CecileRobertMichon
+    - devigned
     - justaugustus
+    - nader-ziada
   cluster-api-azure-reviewers:
     - alexeldeib
-    - devigned
+    - cpanato
     - juan-lee
-    - nader-ziada
