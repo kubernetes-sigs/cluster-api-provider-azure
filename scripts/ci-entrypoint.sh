@@ -78,7 +78,7 @@ create_cluster() {
         export CLUSTER_TEMPLATE="test/cluster-template-prow.yaml"
     fi
 
-    if [[ "${FEATURE_GATE_MACHINE_POOL:-}" == "true" ]]; then
+    if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
         export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
     fi
 
