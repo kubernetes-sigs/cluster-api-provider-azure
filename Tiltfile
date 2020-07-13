@@ -204,7 +204,8 @@ def flavors():
 
     substitutions = settings.get("kustomize_substitutions", {})
     for key in keys:
-        substitutions[key[:-4]] = base64_decode(substitutions[key])
+        if key[-4:] == "_B64":
+            substitutions[key[:-4]] = base64_decode(substitutions[key])
 
     ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
     ssh_pub_key_path = "~/.ssh/id_rsa.pub"
@@ -230,25 +231,10 @@ def deploy_worker_templates(flavor, substitutions):
 
     yaml = str(read_file(yaml_file))
 
-    # programmatically define any remaining vars
-    defaults = {
-        "CLUSTER_NAME": flavor + "-template",
-        "AZURE_LOCATION": "eastus",
-        "AZURE_VNET_NAME": flavor + "-template-vnet",
-        "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
-        "CONTROL_PLANE_MACHINE_COUNT": "1",
-        "KUBERNETES_VERSION": "v1.18.3",
-        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
-        "WORKER_MACHINE_COUNT": "2",
-        "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
-    }
-
-    for k in defaults:
-        if k not in substitutions:
-            substitutions[k] = defaults[k]
-
-    az_json = azure_json(flavor, substitutions)
-    substitutions["AZURE_JSON_B64"] = base64_encode(az_json)
+    # azure account and ssh replacements
+    for substitution in substitutions:
+        value = substitutions[substitution]
+        yaml = yaml.replace("${" + substitution + "}", value)
 
     # if metadata defined for worker-templates in tilt_settings
     if "worker-templates" in settings:
@@ -265,6 +251,20 @@ def deploy_worker_templates(flavor, substitutions):
             for substitution in substitutions:
                 value = substitutions[substitution]
                 yaml = yaml.replace("${" + substitution + "}", value)
+
+    # programmatically define any remaining vars
+    substitutions = {
+        "CLUSTER_NAME": flavor + "-template",
+        "AZURE_LOCATION": "eastus",
+        "AZURE_VNET_NAME": flavor + "-template-vnet",
+        "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
+        "CONTROL_PLANE_MACHINE_COUNT": "1",
+        "KUBERNETES_VERSION": "v1.18.3",
+        "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
+        "WORKER_MACHINE_COUNT": "2",
+        "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
+        "AZURE_JSON_B64": base64_encode(azure_json(flavor, substitutions)),
+    }
 
     for substitution in substitutions:
         value = substitutions[substitution]
