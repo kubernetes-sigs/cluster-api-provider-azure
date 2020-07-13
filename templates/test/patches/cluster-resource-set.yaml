@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cni-calico
+type: addons.cluster.x-k8s.io/resource-set
+data:
+  addon.yaml: ${CNI_RESOURCES}
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
+metadata:
+  name:  "${CLUSTER_NAME}-crs-0"
+spec:
+  strategy: ApplyOnce
+  clusterSelector:
+    matchLabels:
+      cni: "calico"
+  resources:
+    - name: cni-calico
+      kind: Secret
+---

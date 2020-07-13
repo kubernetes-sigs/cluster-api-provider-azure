@@ -23,12 +23,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -39,6 +41,7 @@ import (
 const (
 	KubernetesVersion   = "KUBERNETES_VERSION"
 	CNIPath             = "CNI"
+	CNIResources        = "CNI_RESOURCES"
 	RedactLogScriptPath = "REDACT_LOG_SCRIPT"
 	AzureResourceGroup  = "AZURE_RESOURCE_GROUP"
 	AzureVNetName       = "AZURE_VNET_NAME"
@@ -142,4 +145,11 @@ func redactLogs() {
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
 	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
 	cmd.Run()
+}
+
+func setCNIResources(cniManifestPath string) {
+	cniData, err := ioutil.ReadFile(cniManifestPath)
+	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test CNI file")
+	Expect(cniData).ToNot(BeEmpty(), "CNI file should not be empty")
+	Expect(os.Setenv(CNIResources, base64.StdEncoding.EncodeToString(cniData)))
 }
