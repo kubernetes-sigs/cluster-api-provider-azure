@@ -42,3 +42,14 @@ type NICSpec struct {
 type DiskSpec struct {
 	Name string
 }
+
+// LBSpec defines the specification for a load balancer.
+type LBSpec struct {
+	Name             string
+	PublicIPName     string
+	Role             string
+	SubnetName       string
+	SubnetCidr       string
+	PrivateIPAddress string
+	APIServerPort    int32
+}

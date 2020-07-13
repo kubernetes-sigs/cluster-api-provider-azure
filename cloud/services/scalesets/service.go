@@ -17,22 +17,22 @@ package scalesets
 
 import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // Service provides operations on azure resources
 type Service struct {
 	Client
-	ResourceSkusClient        resourceskus.Client
-	PublicLoadBalancersClient publicloadbalancers.Client
+	ResourceSkusClient  resourceskus.Client
+	LoadBalancersClient loadbalancers.Client
 }
 
 // NewService creates a new service.
 func NewService(auth azure.Authorizer) *Service {
 	return &Service{
-		Client:                    NewClient(auth),
-		ResourceSkusClient:        resourceskus.NewClient(auth),
-		PublicLoadBalancersClient: publicloadbalancers.NewClient(auth),
+		Client:              NewClient(auth),
+		ResourceSkusClient:  resourceskus.NewClient(auth),
+		LoadBalancersClient: loadbalancers.NewClient(auth),
 	}
 }

@@ -38,7 +38,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers/mock_publicloadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus/mock_resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
@@ -289,8 +289,8 @@ func TestService_Reconcile(t *testing.T) {
 				svc.Client = vmssMock
 				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
 				svc.ResourceSkusClient = skusMock
-				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-				svc.PublicLoadBalancersClient = lbMock
+				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
+				svc.LoadBalancersClient = lbMock
 
 				storageProfile, err := generateStorageProfile(*spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -403,8 +403,8 @@ func TestService_Reconcile(t *testing.T) {
 				svc.Client = vmssMock
 				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
 				svc.ResourceSkusClient = skusMock
-				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-				svc.PublicLoadBalancersClient = lbMock
+				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
+				svc.LoadBalancersClient = lbMock
 
 				storageProfile, err := generateStorageProfile(*spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
@@ -524,8 +524,8 @@ func TestService_Reconcile(t *testing.T) {
 				svc.Client = vmssMock
 				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
 				svc.ResourceSkusClient = skusMock
-				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-				svc.PublicLoadBalancersClient = lbMock
+				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
+				svc.LoadBalancersClient = lbMock
 
 				storageProfile, err := generateStorageProfile(*spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())

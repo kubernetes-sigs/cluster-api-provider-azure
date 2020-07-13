@@ -97,7 +97,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	// Get the node outbound LB backend pool ID
-	lb, lberr := s.PublicLoadBalancersClient.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.PublicLoadBalancerName)
+	lb, lberr := s.LoadBalancersClient.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.PublicLoadBalancerName)
 	if lberr != nil {
 		return errors.Wrap(lberr, "failed to get cloud provider LB")
 	}
