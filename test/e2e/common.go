@@ -22,12 +22,14 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,6 +44,7 @@ import (
 const (
 	KubernetesVersion   = "KUBERNETES_VERSION"
 	CNIPath             = "CNI"
+	CNIResources        = "CNI_RESOURCES"
 	RedactLogScriptPath = "REDACT_LOG_SCRIPT"
 	AzureResourceGroup  = "AZURE_RESOURCE_GROUP"
 	AzureVNetName       = "AZURE_VNET_NAME"
@@ -114,4 +117,11 @@ func createRestConfig(tmpdir, namespace, clusterName string) *rest.Config {
 	Expect(err).NotTo(HaveOccurred())
 
 	return config
+}
+
+func setCNIResources(cniManifestPath string) {
+	cniData, err := ioutil.ReadFile(cniManifestPath)
+	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test CNI file")
+	Expect(cniData).ToNot(BeEmpty(), "CNI file should not be empty")
+	Expect(os.Setenv(CNIResources, base64.StdEncoding.EncodeToString(cniData)))
 }

@@ -3,5 +3,8 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../flavors/default
+  - ../patches/cluster-resource-set.yaml
+
 patchesStrategicMerge:
   - ../patches/tags.yaml
+  - ../patches/cluster-resource-set-label.yaml

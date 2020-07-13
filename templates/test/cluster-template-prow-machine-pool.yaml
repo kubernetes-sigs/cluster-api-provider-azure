@@ -1,6 +1,8 @@
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster
 metadata:
+  labels:
+    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -193,3 +195,26 @@ spec:
         cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
   useExperimentalRetryJoin: true
+---
+apiVersion: v1
+data:
+  addon.yaml: ${CNI_RESOURCES}
+kind: Secret
+metadata:
+  name: cni-calico
+  namespace: default
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-crs-0
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  resources:
+  - kind: Secret
+    name: cni-calico
+  strategy: ApplyOnce
