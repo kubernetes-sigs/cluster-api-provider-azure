@@ -21,14 +21,14 @@ require (
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
-	k8s.io/api v0.17.7
-	k8s.io/apimachinery v0.17.7
-	k8s.io/client-go v0.17.7
-	k8s.io/component-base v0.17.7
+	k8s.io/api v0.17.8
+	k8s.io/apimachinery v0.17.8
+	k8s.io/client-go v0.17.8
+	k8s.io/component-base v0.17.8
 	k8s.io/klog v1.0.0
-	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451
-	sigs.k8s.io/cluster-api v0.3.7-rc.1
-	sigs.k8s.io/controller-runtime v0.5.7
+	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
+	sigs.k8s.io/cluster-api v0.3.7
+	sigs.k8s.io/controller-runtime v0.5.8
 )
 
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
