@@ -1,7 +1,11 @@
 # -*- mode: Python -*-
 
-# set defaults
+kustomize_cmd = "./hack/tools/bin/kustomize"
+envsubst_cmd = "./hack/tools/bin/envsubst"
 
+update_settings(k8s_upsert_timeout_secs=60)  # on first tilt up, often can take longer than 30 seconds
+
+# set defaults
 settings = {
     "allowed_contexts": [
         "kind-capz"
@@ -53,7 +57,9 @@ def deploy_cert_manager():
 # deploy CAPI
 def deploy_capi():
     version = settings.get("capi_version")
-    local("kubectl apply -f https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version))
+    capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
+    cmd = "curl -sSL {} | {} | kubectl apply -f -".format(capi_uri, envsubst_cmd)
+    local(cmd, quiet=True)
     if settings.get("extra_args"):
         extra_args = settings.get("extra_args")
         if extra_args.get("core"):
@@ -142,6 +148,7 @@ COPY --from=tilt-helper /restart.sh .
 COPY manager .
 """
 
+
 # Build CAPZ and add feature gates
 def capz():
     # Apply the kustomized yaml for this provider
@@ -164,7 +171,7 @@ def capz():
     local_resource(
         "manager",
         cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
-        deps = ["./api", "./main.go", "./pkg", "./controllers", "./cloud", "./exp"]
+        deps = ["api", "cloud", "config", "controllers", "exp", "feature", "pkg", "go.mod", "go.sum", "main.go"]
     )
 
     dockerfile_contents = "\n".join([
@@ -187,11 +194,13 @@ def capz():
         entrypoint = entrypoint,
         only = "manager",
         live_update = [
-            sync("./.tiltbuild/manager", "/manager"),
+            sync(".tiltbuild/manager", "/manager"),
             run("sh /restart.sh"),
         ],
+        ignore = ["templates"]
     )
 
+    yaml = envsubst(yaml)
     k8s_yaml(blob(yaml))
 
 
@@ -270,11 +279,12 @@ def deploy_worker_templates(flavor, substitutions):
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
 
+    yaml = envsubst(yaml)
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
 
     local_resource(
         "worker-" + flavor,
-        cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/worker-" + flavor + ".yaml; kubectl apply -f ./.tiltbuild/worker-" + flavor + ".yaml",
+        cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/worker-" + flavor + ".yaml; cat ./.tiltbuild/worker-" + flavor + ".yaml | " + envsubst_cmd + " | kubectl apply -f -",
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL
     )
@@ -322,6 +332,11 @@ def base64_encode_file(path_to_encode):
 def base64_decode(to_decode):
     decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True)
     return str(decode_blob)
+
+
+def envsubst(yaml):
+    yaml = yaml.replace('"', '\\"')
+    return str(local("echo \"{}\" | {}".format(yaml, envsubst_cmd), quiet=True))
 
 ##############################
 # Actual work happens here
