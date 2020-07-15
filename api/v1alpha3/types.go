@@ -307,9 +307,10 @@ type UserAssignedIdentity struct {
 
 // OSDisk defines the operating system disk for a VM.
 type OSDisk struct {
-	OSType      string      `json:"osType"`
-	DiskSizeGB  int32       `json:"diskSizeGB"`
-	ManagedDisk ManagedDisk `json:"managedDisk"`
+	OSType           string            `json:"osType"`
+	DiskSizeGB       int32             `json:"diskSizeGB"`
+	ManagedDisk      ManagedDisk       `json:"managedDisk"`
+	DiffDiskSettings *DiffDiskSettings `json:"diffDiskSettings,omitempty"`
 }
 
 // DataDisk specifies the parameters that are used to add one or more data disks to the machine.
@@ -327,6 +328,14 @@ type DataDisk struct {
 // ManagedDisk defines the managed disk options for a VM.
 type ManagedDisk struct {
 	StorageAccountType string `json:"storageAccountType"`
+}
+
+// DiffDiskSettings describe ephemeral disk settings for the os disk.
+type DiffDiskSettings struct {
+	// Option enables ephemeral OS when set to "Local"
+	// See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks for full details
+	// +kubebuilder:validation:Enum=Local
+	Option string `json:"option"`
 }
 
 // SubnetRole defines the unique role of a subnet.

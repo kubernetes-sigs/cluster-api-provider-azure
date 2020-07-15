@@ -31,6 +31,7 @@ import (
 type Client interface {
 	List(context.Context, string) ([]compute.ResourceSku, error)
 	HasAcceleratedNetworking(context.Context, string) (bool, error)
+	HasEphemeralOSDiskSupport(context.Context, string) (bool, error)
 }
 
 // AzureClient contains the Azure go-sdk Client
@@ -87,6 +88,32 @@ func (ac *AzureClient) HasAcceleratedNetworking(ctx context.Context, name string
 			if sku.Capabilities != nil {
 				for _, c := range *sku.Capabilities {
 					if c.Name != nil && *c.Name == "AcceleratedNetworkingEnabled" {
+						if c.Value != nil && strings.EqualFold(*c.Value, "True") {
+							return true, nil
+						}
+					}
+				}
+			}
+			break
+		}
+	}
+	return false, nil
+}
+
+// HasEphemeralOSDiskSupport returns whether the given compute SKU supports ephemeral os.
+func (ac *AzureClient) HasEphemeralOSDiskSupport(ctx context.Context, name string) (bool, error) {
+	if name == "" {
+		return false, nil
+	}
+	skus, err := ac.List(ctx, "") // "filter" argument only works for location, so filter in code
+	if err != nil {
+		return false, err
+	}
+	for _, sku := range skus {
+		if sku.Name != nil && *sku.Name == name {
+			if sku.Capabilities != nil {
+				for _, c := range *sku.Capabilities {
+					if c.Name != nil && *c.Name == "EphemeralOSDiskSupported" {
 						if c.Value != nil && strings.EqualFold(*c.Value, "True") {
 							return true, nil
 						}

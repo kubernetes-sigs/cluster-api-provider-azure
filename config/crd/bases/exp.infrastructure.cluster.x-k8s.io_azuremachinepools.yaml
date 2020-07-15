@@ -228,6 +228,20 @@ spec:
                     description: OSDisk contains the operating system disk information
                       for a Virtual Machine
                     properties:
+                      diffDiskSettings:
+                        description: DiffDiskSettings describe ephemeral disk settings
+                          for the os disk.
+                        properties:
+                          option:
+                            description: Option enables ephemeral OS when set to "Local"
+                              See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks
+                              for full details
+                            enum:
+                            - Local
+                            type: string
+                        required:
+                        - option
+                        type: object
                       diskSizeGB:
                         format: int32
                         type: integer

@@ -292,7 +292,7 @@ func TestService_Reconcile(t *testing.T) {
 				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
 				svc.LoadBalancersClient = lbMock
 
-				storageProfile, err := generateStorageProfile(*spec)
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -406,7 +406,7 @@ func TestService_Reconcile(t *testing.T) {
 				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
 				svc.LoadBalancersClient = lbMock
 
-				storageProfile, err := generateStorageProfile(*spec)
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -527,7 +527,7 @@ func TestService_Reconcile(t *testing.T) {
 				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
 				svc.LoadBalancersClient = lbMock
 
-				storageProfile, err := generateStorageProfile(*spec)
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec)
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
