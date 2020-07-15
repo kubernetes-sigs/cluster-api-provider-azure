@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/base64"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -41,6 +42,7 @@ type azureMachineService struct {
 	clusterScope         *scope.ClusterScope
 	availabilityZonesSvc azure.GetterService
 	networkInterfacesSvc azure.Service
+	inboundNatRulesSvc   azure.Service
 	virtualMachinesSvc   *virtualmachines.Service
 	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
@@ -53,6 +55,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		clusterScope:         clusterScope,
 		availabilityZonesSvc: availabilityzones.NewService(clusterScope),
 		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
+		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
 		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
 		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
@@ -64,6 +67,11 @@ func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error
 	err := s.publicIPsSvc.Reconcile(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create public IPs")
+	}
+
+	err = s.inboundNatRulesSvc.Reconcile(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create inbound NAT rule")
 	}
 
 	err = s.networkInterfacesSvc.Reconcile(ctx)
@@ -93,6 +101,11 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 	err = s.networkInterfacesSvc.Delete(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to delete network interface")
+	}
+
+	err = s.inboundNatRulesSvc.Delete(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to delete inbound NAT rule")
 	}
 
 	err = s.publicIPsSvc.Delete(ctx)

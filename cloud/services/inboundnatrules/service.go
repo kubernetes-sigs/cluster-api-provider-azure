@@ -14,29 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package groups
+package inboundnatrules
 
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 )
+
+// InboundNatScope defines the scope interface for an inbound NAT service.
+type InboundNatScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	InboundNatSpecs() []azure.InboundNatSpec
+}
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope GroupScope
+	Scope InboundNatScope
 	Client
-}
-
-// GroupScope defines the scope interface for a group service.
-type GroupScope interface {
-	logr.Logger
-	azure.ClusterDescriber
+	LoadBalancersClient loadbalancers.Client
 }
 
 // NewService creates a new service.
-func NewService(scope GroupScope) *Service {
+func NewService(scope InboundNatScope) *Service {
 	return &Service{
-		Scope:  scope,
-		Client: NewClient(scope),
+		Scope:               scope,
+		Client:              NewClient(scope),
+		LoadBalancersClient: loadbalancers.NewClient(scope),
 	}
 }
