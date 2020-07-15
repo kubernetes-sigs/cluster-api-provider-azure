@@ -286,6 +286,20 @@ func (mr *MockPublicIPScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockPublicIPScope)(nil).ControlPlaneSubnet))
 }
 
+// RouteTable mocks base method.
+func (m *MockPublicIPScope) RouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// RouteTable indicates an expected call of RouteTable.
+func (mr *MockPublicIPScopeMockRecorder) RouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockPublicIPScope)(nil).RouteTable))
+}
+
 // PublicIPSpecs mocks base method.
 func (m *MockPublicIPScope) PublicIPSpecs() []azure.PublicIPSpec {
 	m.ctrl.T.Helper()

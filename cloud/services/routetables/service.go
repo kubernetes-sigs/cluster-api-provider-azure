@@ -17,12 +17,21 @@ limitations under the License.
 package routetables
 
 import (
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )
 
+// RouteTableScope defines the scope interface for route table service
+type RouteTableScope interface {
+	azure.ClusterDescriber
+	logr.Logger
+	RouteTableSpecs() []azure.RouteTableSpec
+}
+
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope RouteTableScope
 	Client
 }
 

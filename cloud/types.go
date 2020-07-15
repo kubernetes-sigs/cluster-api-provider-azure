@@ -53,3 +53,8 @@ type LBSpec struct {
 	PrivateIPAddress string
 	APIServerPort    int32
 }
+
+// RouteTableSpec defines the specification for a route table
+type RouteTableSpec struct {
+	Name string
+}

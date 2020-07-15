@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"fmt"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -145,6 +146,13 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	}
 }
 
+// RouteTableSpecs returns the node route table(s)
+func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
+	return []azure.RouteTableSpec{{
+		Name: s.RouteTable().Name,
+	}}
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet
@@ -163,6 +171,11 @@ func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
 // NodeSubnet returns the cluster node subnet.
 func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
 	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+}
+
+// RouteTable returns the cluster node routetable.
+func (s *ClusterScope) RouteTable() *infrav1.RouteTable {
+	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
 }
 
 // ResourceGroup returns the cluster resource group.

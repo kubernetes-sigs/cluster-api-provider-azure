@@ -47,7 +47,7 @@ type azureClusterReconciler struct {
 	groupsSvc            azure.Service
 	vnetSvc              azure.OldService
 	securityGroupSvc     azure.OldService
-	routeTableSvc        azure.OldService
+	routeTableSvc        azure.Service
 	subnetsSvc           azure.OldService
 	publicIPSvc          azure.Service
 	loadBalancerSvc      azure.Service
@@ -114,11 +114,8 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile node network security group for cluster %s", r.scope.ClusterName())
 	}
 
-	rtSpec := &routetables.Spec{
-		Name: r.scope.NodeSubnet().RouteTable.Name,
-	}
-	if err := r.routeTableSvc.Reconcile(ctx, rtSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile route table %s for cluster %s", r.scope.NodeSubnet().RouteTable.Name, r.scope.ClusterName())
+	if err := r.routeTableSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile route table %s for cluster %s", r.scope.RouteTable().Name, r.scope.ClusterName())
 	}
 
 	subnetSpec := &subnets.Spec{
@@ -127,7 +124,7 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		VnetName:            r.scope.Vnet().Name,
 		SecurityGroupName:   r.scope.ControlPlaneSubnet().SecurityGroup.Name,
 		Role:                r.scope.ControlPlaneSubnet().Role,
-		RouteTableName:      r.scope.ControlPlaneSubnet().RouteTable.Name,
+		RouteTableName:      r.scope.RouteTable().Name,
 		InternalLBIPAddress: r.scope.ControlPlaneSubnet().InternalLBIPAddress,
 	}
 	if err := r.subnetsSvc.Reconcile(ctx, subnetSpec); err != nil {
@@ -139,7 +136,7 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		CIDR:              r.scope.NodeSubnet().CidrBlock,
 		VnetName:          r.scope.Vnet().Name,
 		SecurityGroupName: r.scope.NodeSubnet().SecurityGroup.Name,
-		RouteTableName:    r.scope.NodeSubnet().RouteTable.Name,
+		RouteTableName:    r.scope.RouteTable().Name,
 		Role:              r.scope.NodeSubnet().Role,
 	}
 	if err := r.subnetsSvc.Reconcile(ctx, subnetSpec); err != nil {
@@ -169,12 +166,9 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to delete subnets")
 	}
 
-	rtSpec := &routetables.Spec{
-		Name: r.scope.NodeSubnet().RouteTable.Name,
-	}
-	if err := r.routeTableSvc.Delete(ctx, rtSpec); err != nil {
+	if err := r.routeTableSvc.Delete(ctx); err != nil {
 		if !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete route table %s for cluster %s", r.scope.NodeSubnet().RouteTable.Name, r.scope.ClusterName())
+			return errors.Wrapf(err, "failed to delete route table %s for cluster %s", r.scope.RouteTable().Name, r.scope.ClusterName())
 		}
 	}
 

@@ -69,4 +69,5 @@ type ClusterDescriber interface {
 	Vnet() *infrav1.VnetSpec
 	NodeSubnet() *infrav1.SubnetSpec
 	ControlPlaneSubnet() *infrav1.SubnetSpec
+	RouteTable() *infrav1.RouteTable
 }
