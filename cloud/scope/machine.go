@@ -90,9 +90,8 @@ type MachineScope struct {
 func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	var spec []azure.PublicIPSpec
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
-		nicName := azure.GenerateNICName(m.Name())
 		spec = append(spec, azure.PublicIPSpec{
-			Name: azure.GenerateNodePublicIPName(nicName),
+			Name: azure.GenerateNodePublicIPName(m.Name()),
 		})
 	}
 	return spec
@@ -116,11 +115,22 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	} else if m.Role() == infrav1.Node {
 		spec.PublicLoadBalancerName = m.ClusterName()
 	}
+	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
-		spec.PublicIPName = azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name()))
+		specs = append(specs, azure.NICSpec{
+			Name:                  azure.GeneratePublicNICName(m.Name()),
+			MachineName:           m.Name(),
+			MachineRole:           m.Role(),
+			VNetName:              m.Vnet().Name,
+			VNetResourceGroup:     m.Vnet().ResourceGroup,
+			SubnetName:            m.Subnet().Name,
+			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
+			VMSize:                m.AzureMachine.Spec.VMSize,
+			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		})
 	}
 
-	return []azure.NICSpec{spec}
+	return specs
 }
 
 // DiskSpecs returns the public IP specs.

@@ -448,10 +448,20 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VNetName:                 "my-vnet",
 						VNetResourceGroup:        "my-rg",
 						PublicLoadBalancerName:   "my-public-lb",
-						PublicIPName:             "my-public-ip",
 						InternalLoadBalancerName: "my-internal-lb",
 						VMSize:                   "Standard_D2v2",
 						AcceleratedNetworking:    nil,
+					},
+					{
+						Name:                  "my-public-net-interface",
+						MachineName:           "azure-test1",
+						MachineRole:           infrav1.Node,
+						SubnetName:            "my-subnet",
+						VNetName:              "my-vnet",
+						VNetResourceGroup:     "my-rg",
+						PublicIPName:          "my-public-ip",
+						VMSize:                "Standard_D2v2",
+						AcceleratedNetworking: nil,
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -461,7 +471,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
+					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})),
+					m.CreateOrUpdate(context.TODO(), "my-rg", "my-public-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
 		},
 		{

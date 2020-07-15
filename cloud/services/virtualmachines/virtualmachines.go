@@ -41,7 +41,7 @@ const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
 	Name                   string
-	NICName                string
+	NICNames               []string
 	SSHKeyData             string
 	Size                   string
 	Zone                   string
@@ -90,12 +90,22 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return err
 	}
 
-	s.Scope.V(2).Info("getting network interface", "network interface", vmSpec.NICName)
-	nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), vmSpec.NICName)
-	if err != nil {
-		return err
+	nicRefs := make([]compute.NetworkInterfaceReference, len(vmSpec.NICNames))
+	for i, nicName := range vmSpec.NICNames {
+		primary := i == 0
+		s.Scope.V(2).Info("getting network interface", "network interface", nicName)
+		nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
+		if err != nil {
+			return err
+		}
+		s.Scope.V(2).Info("got network interface", "network interface", nicName)
+		nicRefs[i] = compute.NetworkInterfaceReference{
+			ID: nic.ID,
+			NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
+				Primary: to.BoolPtr(primary),
+			},
+		}
 	}
-	s.Scope.V(2).Info("got network interface", "network interface", vmSpec.NICName)
 
 	s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
 
@@ -140,14 +150,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				},
 			},
 			NetworkProfile: &compute.NetworkProfile{
-				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
-					{
-						ID: nic.ID,
-						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-							Primary: to.BoolPtr(true),
-						},
-					},
-				},
+				NetworkInterfaces: &nicRefs,
 			},
 			Priority:       priority,
 			EvictionPolicy: evictionPolicy,
