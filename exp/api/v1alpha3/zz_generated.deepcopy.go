@@ -331,7 +331,7 @@ func (in *AzureManagedControlPlaneSpec) DeepCopyInto(out *AzureManagedControlPla
 	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	if in.AdditionalTags != nil {
 		in, out := &in.AdditionalTags, &out.AdditionalTags
-		*out = make(map[string]string, len(*in))
+		*out = make(apiv1alpha3.Tags, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
 		}

@@ -14,6 +14,8 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v0.3.7",
     "cert_manager_version": "v0.11.0",
+    "kubernetes_version": "v1.18.6",
+    "aks_kubernetes_version": "v1.17.7"
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64", "AZURE_ENVIRONMENT"]
@@ -152,8 +154,7 @@ COPY manager .
 def capz():
     # Apply the kustomized yaml for this provider
     substitutions = settings.get("kustomize_substitutions", {})
-    for substitution in substitutions:
-        os.putenv(substitution, substitutions[substitution])
+    os.environ.update(substitutions)
     yaml = str(kustomizesub("./config"))
 
 
@@ -266,12 +267,16 @@ def deploy_worker_templates(flavor, substitutions):
         "AZURE_VNET_NAME": flavor + "-template-vnet",
         "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
         "CONTROL_PLANE_MACHINE_COUNT": "1",
-        "KUBERNETES_VERSION": "v1.18.6",
+        "KUBERNETES_VERSION": settings.get("kubernetes_version"),
         "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
         "WORKER_MACHINE_COUNT": "2",
         "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
         "AZURE_JSON_B64": base64_encode(azure_json(flavor, substitutions)),
     }
+
+    if flavor == "aks":
+        # AKS version support is usually a bit behind CAPI version, so use an older version
+        substitutions["KUBERNETES_VERSION"] = settings.get("aks_kubernetes_version")
 
     for substitution in substitutions:
         value = substitutions[substitution]
