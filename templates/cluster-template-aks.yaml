@@ -26,7 +26,7 @@ spec:
   defaultPoolRef:
     name: agentpool0
   location: ${AZURE_LOCATION}
-  resourceGroup: ${AZURE_RESOURCE_GROUP}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=$CLUSTER_NAME}
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   version: ${KUBERNETES_VERSION}

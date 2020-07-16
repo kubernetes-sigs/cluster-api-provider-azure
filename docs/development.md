@@ -282,7 +282,7 @@ export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 
 # To populate secret in azure.json file.
 export AZURE_JSON_B64=$(echo '{
-    "cloud": "${AZURE_ENVIRONMENT}",
+    "cloud": "${AZURE_ENVIRONMENT:="AzurePublicCloud"}",
     "tenantId": "${AZURE_TENANT_ID}",
     "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
     "aadClientId": "${AZURE_CLIENT_ID}",
@@ -291,7 +291,7 @@ export AZURE_JSON_B64=$(echo '{
     "securityGroupName": "${CLUSTER_NAME}-node-nsg",
     "location": "${AZURE_LOCATION}",
     "vmType": "vmss",
-    "vnetName": "${AZURE_VNET_NAME}",
+    "vnetName": "${AZURE_VNET_NAME:=$CLUSTER_NAME-vnet}",
     "vnetResourceGroup": "${CLUSTER_NAME}",
     "subnetName": "${CLUSTER_NAME}-node-subnet",
     "routeTableName": "${CLUSTER_NAME}-node-routetable",
@@ -301,6 +301,9 @@ export AZURE_JSON_B64=$(echo '{
     "useInstanceMetadata": true
 }' | envsubst | base64 | tr -d '\r\n')
 ```
+
+⚠️ Please note the generated templates include default values and therefore requrie the use of `clusterctl` to create the cluster 
+or the use of `envsubst` to replace these values 
 
 ##### Creating the cluster
 

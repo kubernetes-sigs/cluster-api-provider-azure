@@ -29,7 +29,7 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
 spec:
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
-  resourceGroup: "${AZURE_RESOURCE_GROUP}"
+  resourceGroup: "${AZURE_RESOURCE_GROUP:=$CLUSTER_NAME}"
   location: "${AZURE_LOCATION}"
   defaultPoolRef:
     name: "agentpool0"
