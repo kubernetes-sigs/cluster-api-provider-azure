@@ -4,5 +4,4 @@ metadata:
   name: manager-bootstrap-cloud-env
   namespace: system
 data:
-  cloud-env: ${AZURE_ENVIRONMENT:-"AzurePublicCloud"}
-  
+  cloud-env: ${AZURE_ENVIRONMENT:="AzurePublicCloud"}
