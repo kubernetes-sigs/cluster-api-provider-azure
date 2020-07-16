@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster
 metadata:
   labels:
-    cni: calico
+    cni: ${CLUSTER_NAME}-crs-0
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -202,13 +202,11 @@ spec:
       useExperimentalRetryJoin: true
 ---
 apiVersion: v1
-data:
-  addon.yaml: ${CNI_RESOURCES}
-kind: Secret
+data: ${CNI_RESOURCES}
+kind: ConfigMap
 metadata:
-  name: cni-calico
+  name: cni-${CLUSTER_NAME}-crs-0
   namespace: default
-type: addons.cluster.x-k8s.io/resource-set
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha3
 kind: ClusterResourceSet
@@ -218,8 +216,8 @@ metadata:
 spec:
   clusterSelector:
     matchLabels:
-      cni: calico
+      cni: ${CLUSTER_NAME}-crs-0
   resources:
-  - kind: Secret
-    name: cni-calico
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-crs-0
   strategy: ApplyOnce

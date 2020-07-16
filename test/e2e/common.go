@@ -123,5 +123,9 @@ func setCNIResources(cniManifestPath string) {
 	cniData, err := ioutil.ReadFile(cniManifestPath)
 	Expect(err).ToNot(HaveOccurred(), "Failed to read the e2e test CNI file")
 	Expect(cniData).ToNot(BeEmpty(), "CNI file should not be empty")
-	Expect(os.Setenv(CNIResources, base64.StdEncoding.EncodeToString(cniData)))
+	data := map[string]interface{}{}
+	data["resources"] = string(cniData)
+	marshalledData, err := json.Marshal(data)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(os.Setenv(CNIResources, string(marshalledData))).NotTo(HaveOccurred())
 }
