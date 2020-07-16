@@ -85,7 +85,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid VM specification")
 	}
 
-	storageProfile, err := generateStorageProfile(*vmSpec)
+	storageProfile, err := s.generateStorageProfile(ctx, *vmSpec)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func getResourceNameByID(resourceID string) string {
 }
 
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
-func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
+func (s *Service) generateStorageProfile(ctx context.Context, vmSpec Spec) (*compute.StorageProfile, error) {
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
 			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
@@ -341,6 +341,22 @@ func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
 				StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
 			},
 		},
+	}
+
+	// enable ephemeral OS
+	if vmSpec.OSDisk.DiffDiskSettings != nil {
+		hasEpehemeralOS, err := s.ResourceSkusClient.HasEphemeralOSDiskSupport(ctx, vmSpec.Size)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get ephemeral os capability for vm")
+		}
+
+		if !hasEpehemeralOS {
+			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmSpec.Size)
+		}
+
+		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
+			Option: compute.DiffDiskOptions(vmSpec.OSDisk.DiffDiskSettings.Option),
+		}
 	}
 
 	dataDisks := []compute.DataDisk{}

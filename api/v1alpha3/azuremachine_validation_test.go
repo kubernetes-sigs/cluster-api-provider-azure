@@ -20,8 +20,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
-	"github.com/Azure/go-autorest/autorest/to"
+	"fmt"
 	"testing"
+
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
 
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
@@ -81,6 +84,20 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			wantErr: false,
 			osDisk:  generateValidOSDisk(),
 		},
+		{
+			name:    "valid ephemeral os disk spec",
+			wantErr: false,
+			osDisk: OSDisk{
+				DiskSizeGB: 30,
+				OSType:     "blah",
+				DiffDiskSettings: &DiffDiskSettings{
+					Option: string(compute.Local),
+				},
+				ManagedDisk: ManagedDisk{
+					StorageAccountType: "Standard_LRS",
+				},
+			},
+		},
 	}
 	testcases = append(testcases, generateNegativeTestCases()...)
 
@@ -137,11 +154,21 @@ func generateNegativeTestCases() []osDiskTestInput {
 				StorageAccountType: "invalid_type",
 			},
 		},
+		{
+			DiskSizeGB: 30,
+			OSType:     "blah",
+			ManagedDisk: ManagedDisk{
+				StorageAccountType: "Premium_LRS",
+			},
+			DiffDiskSettings: &DiffDiskSettings{
+				Option: string(compute.Local),
+			},
+		},
 	}
 
-	for _, input := range invalidDiskSpecs {
+	for i, input := range invalidDiskSpecs {
 		inputs = append(inputs, osDiskTestInput{
-			name:    testCaseName,
+			name:    fmt.Sprintf("%s-%d", testCaseName, i),
 			wantErr: true,
 			osDisk:  input,
 		})
@@ -159,7 +186,6 @@ func generateValidOSDisk() OSDisk {
 		},
 	}
 }
-
 func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 	g := NewWithT(t)
 

@@ -79,3 +79,18 @@ func (mr *MockClientMockRecorder) HasAcceleratedNetworking(arg0, arg1 interface{
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasAcceleratedNetworking", reflect.TypeOf((*MockClient)(nil).HasAcceleratedNetworking), arg0, arg1)
 }
+
+// HasEphemeralOSDiskSupport mocks base method.
+func (m *MockClient) HasEphemeralOSDiskSupport(arg0 context.Context, arg1 string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasEphemeralOSDiskSupport", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasEphemeralOSDiskSupport indicates an expected call of HasEphemeralOSDiskSupport.
+func (mr *MockClientMockRecorder) HasEphemeralOSDiskSupport(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasEphemeralOSDiskSupport", reflect.TypeOf((*MockClient)(nil).HasEphemeralOSDiskSupport), arg0, arg1)
+}

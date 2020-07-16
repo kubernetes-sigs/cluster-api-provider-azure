@@ -75,7 +75,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("invalid VMSS specification")
 	}
 
-	storageProfile, err := generateStorageProfile(*vmssSpec)
+	storageProfile, err := s.generateStorageProfile(ctx, *vmssSpec)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 }
 
 // generateStorageProfile generates a pointer to a compute.VirtualMachineScaleSetStorageProfile which can utilized for VM creation.
-func generateStorageProfile(vmssSpec Spec) (*compute.VirtualMachineScaleSetStorageProfile, error) {
+func (s *Service) generateStorageProfile(ctx context.Context, vmssSpec Spec) (*compute.VirtualMachineScaleSetStorageProfile, error) {
 	storageProfile := &compute.VirtualMachineScaleSetStorageProfile{
 		OsDisk: &compute.VirtualMachineScaleSetOSDisk{
 			OsType:       compute.OperatingSystemTypes(vmssSpec.OSDisk.OSType),
@@ -231,6 +231,22 @@ func generateStorageProfile(vmssSpec Spec) (*compute.VirtualMachineScaleSetStora
 				StorageAccountType: compute.StorageAccountTypes(vmssSpec.OSDisk.ManagedDisk.StorageAccountType),
 			},
 		},
+	}
+
+	// enable ephemeral OS
+	if vmssSpec.OSDisk.DiffDiskSettings != nil {
+		hasEpehemeralOS, err := s.ResourceSkusClient.HasEphemeralOSDiskSupport(ctx, vmssSpec.Sku)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get ephemeral os capability for vm")
+		}
+
+		if !hasEpehemeralOS {
+			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmssSpec.Sku)
+		}
+
+		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
+			Option: compute.DiffDiskOptions(vmssSpec.OSDisk.DiffDiskSettings.Option),
+		}
 	}
 
 	dataDisks := []compute.VirtualMachineScaleSetDataDisk{}

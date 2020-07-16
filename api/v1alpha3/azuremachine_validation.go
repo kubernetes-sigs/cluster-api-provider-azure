@@ -102,6 +102,76 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 
 	allErrs = append(allErrs, validateStorageAccountType(osDisk.ManagedDisk.StorageAccountType, fieldPath)...)
 
+	if errs := ValidateManagedDisk(osDisk.ManagedDisk, osDisk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if err := validateDiffDiskSetings(osDisk.DiffDiskSettings, fieldPath.Child("diffDiskSettings")); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if osDisk.DiffDiskSettings != nil && osDisk.DiffDiskSettings.Option == string(compute.Local) && osDisk.ManagedDisk.StorageAccountType != "Standard_LRS" {
+		allErrs = append(allErrs, field.Invalid(
+			fieldPath.Child("managedDisks").Child("storageAccountType"),
+			osDisk.ManagedDisk.StorageAccountType,
+			"storageAccountType must be Standard_LRS when diffDiskSettings.option is 'Local'",
+		))
+	}
+
+	return allErrs
+}
+
+// ValidateManagedDisk validates updates to the ManagedDisk field.
+func ValidateManagedDisk(old, new ManagedDisk, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if old.StorageAccountType != new.StorageAccountType {
+		allErrs = append(allErrs, field.Invalid(fieldPath.Child("storageAccountType"), new, "changing storage account type after machine creation is not allowed"))
+	}
+
+	return allErrs
+}
+
+func validateDiffDiskSetings(d *DiffDiskSettings, fldPath *field.Path) *field.Error {
+	if d != nil {
+		if d.Option != string(compute.Local) {
+			return field.Invalid(
+				fldPath.Child("option"),
+				d,
+				fmt.Sprintf("changing ephemeral os settings after machine creation is not allowed"),
+			)
+		}
+	}
+	return nil
+}
+
+func validateDiffDiskSettingsUpdate(old, new *DiffDiskSettings, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	fldPath := fieldPath.Child("diffDiskSettings")
+
+	if old == nil && new != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, new, fmt.Sprintf("enabling ephemeral os after machine creation is not allowed")))
+		return allErrs
+	}
+	if old != nil && new == nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, new, fmt.Sprintf("disabling ephemeral os after machine creation is not allowed")))
+		return allErrs
+	}
+
+	if old != nil && new != nil {
+		if old.Option != new.Option {
+			allErrs = append(
+				allErrs,
+				field.Invalid(
+					fldPath.Child("option"),
+					new,
+					fmt.Sprintf("changing ephemeral os settings after machine creation is not allowed"),
+				),
+			)
+			return allErrs
+		}
+	}
+
 	return allErrs
 }
 
