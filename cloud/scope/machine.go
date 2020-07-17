@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -146,13 +147,26 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	return specs
 }
 
-// DiskSpecs returns the public IP specs.
+// DiskSpecs returns the disk specs.
 func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 	spec := azure.DiskSpec{
 		Name: azure.GenerateOSDiskName(m.Name()),
 	}
 
 	return []azure.DiskSpec{spec}
+}
+
+// RoleAssignmentSpecs returns the role assignment specs.
+func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
+	if m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned {
+		return []azure.RoleAssignmentSpec{
+			{
+				MachineName: m.Name(),
+				UUID:        string(uuid.NewUUID()),
+			},
+		}
+	}
+	return []azure.RoleAssignmentSpec{}
 }
 
 // Subnet returns the machine's subnet based on its role

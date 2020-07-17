@@ -22,6 +22,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -44,6 +45,7 @@ type azureMachineService struct {
 	networkInterfacesSvc azure.Service
 	inboundNatRulesSvc   azure.Service
 	virtualMachinesSvc   *virtualmachines.Service
+	roleAssignmentsSvc   azure.Service
 	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
 	skuCache             *resourceskus.Cache
@@ -59,6 +61,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
 		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
 		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope, cache),
+		roleAssignmentsSvc:   roleassignments.NewService(machineScope),
 		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
 		skuCache:             cache,
@@ -85,6 +88,11 @@ func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error
 	vm, vmErr := s.reconcileVirtualMachine(ctx, azure.GenerateNICName(s.machineScope.Name()))
 	if vmErr != nil {
 		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
+	}
+
+	err = s.roleAssignmentsSvc.Reconcile(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create role assignment")
 	}
 
 	return vm, nil

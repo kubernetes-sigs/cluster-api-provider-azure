@@ -18,26 +18,19 @@ package virtualmachines
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
-
-const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type Spec struct {
@@ -200,38 +193,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "cannot create VM")
 	}
 
-	if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
-		err = s.createRoleAssignmentForIdentity(ctx, vmSpec.Name)
-		if err != nil {
-			return errors.Wrapf(err, "cannot create VM")
-		}
-	}
-
 	s.Scope.V(2).Info("successfully created VM", "vm", vmSpec.Name)
-	return nil
-}
-
-func (s *Service) createRoleAssignmentForIdentity(ctx context.Context, vmName string) error {
-	resultVM, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmName)
-	if err != nil {
-		return errors.Wrapf(err, "cannot get VM to assign role to system assigned identity")
-	}
-
-	scope := fmt.Sprintf("/subscriptions/%s/", s.Scope.SubscriptionID())
-	// Azure built-in roles https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-	contributorRoleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", s.Scope.SubscriptionID(), azureBuiltInContributorID)
-	params := authorization.RoleAssignmentCreateParameters{
-		Properties: &authorization.RoleAssignmentProperties{
-			RoleDefinitionID: to.StringPtr(contributorRoleDefinitionID),
-			PrincipalID:      to.StringPtr(*resultVM.Identity.PrincipalID),
-		},
-	}
-	_, err = s.RoleAssignmentsClient.Create(ctx, scope, string(uuid.NewUUID()), params)
-	if err != nil {
-		return errors.Wrapf(err, "cannot assign role to VM system assigned identity")
-	}
-
-	klog.V(2).Infof("successfully created Role assignment for generated Identity for VM %s ", vmName)
 	return nil
 }
 
@@ -384,7 +346,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec Spec) (*com
 func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
 	// Spot VM not requested, return zero values to apply defaults
 	if spotVMOptions == nil {
-		return compute.VirtualMachinePriorityTypes(""), compute.VirtualMachineEvictionPolicyTypes(""), nil, nil
+		return "", "", nil, nil
 	}
 	var billingProfile *compute.BillingProfile
 	if spotVMOptions.MaxPrice != nil {
@@ -397,19 +359,4 @@ func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMach
 		}
 	}
 	return compute.Spot, compute.Deallocate, billingProfile, nil
-}
-
-// GenerateRandomString returns a URL-safe, base64 encoded
-// securely generated random string.
-// It will return an error if the system's secure random
-// number generator fails to function correctly, in which
-// case the caller should not continue.
-func GenerateRandomString(n int) (string, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	// Note that err == nil only if we read len(b) bytes.
-	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(b), err
 }

@@ -47,6 +47,6 @@ To use the System assigned identity, you should use the template for the `system
 
 ### User-assigned managed identity
 
-A standalone Azure resource that is created by the user outside of the scope of this provider. The identity can be assigned to one or more Azure Machines. The lifecycle of a user-assigned identity is managed separately from the lifecycle of the Azure Machines to which it's assigned
+A standalone Azure resource that is created by the user outside of the scope of this provider. The identity can be assigned to one or more Azure Machines. The lifecycle of a user-assigned identity is managed separately from the lifecycle of the Azure Machines to which it's assigned.
 
-To use the System assigned identity, you should use the template for the `user-assigned-identity` flavor, `{flavor}` is the name the user can pass to the `clusterctl config cluster --flavor` flag to identify the specific template to use.
+To use the User assigned identity, you should use the template for the `user-assigned-identity` flavor, `{flavor}` is the name the user can pass to the `clusterctl config cluster --flavor` flag to identify the specific template to use.
