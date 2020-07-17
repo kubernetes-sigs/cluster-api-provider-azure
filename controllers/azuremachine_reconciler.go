@@ -70,18 +70,15 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error) {
-	err := s.publicIPsSvc.Reconcile(ctx)
-	if err != nil {
+	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
 		return nil, errors.Wrap(err, "unable to create public IPs")
 	}
 
-	err = s.inboundNatRulesSvc.Reconcile(ctx)
-	if err != nil {
+	if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
 		return nil, errors.Wrap(err, "unable to create inbound NAT rule")
 	}
 
-	err = s.networkInterfacesSvc.Reconcile(ctx)
-	if err != nil {
+	if err := s.networkInterfacesSvc.Reconcile(ctx); err != nil {
 		return nil, errors.Wrap(err, "unable to create VM network interface")
 	}
 
@@ -90,8 +87,7 @@ func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error
 		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
 	}
 
-	err = s.roleAssignmentsSvc.Reconcile(ctx)
-	if err != nil {
+	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
 		return nil, errors.Wrap(err, "unable to create role assignment")
 	}
 

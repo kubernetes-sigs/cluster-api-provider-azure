@@ -6,14 +6,17 @@ metadata:
 spec:
   template:
     spec:
-      location: ${AZURE_LOCATION}
       identity: UserAssigned
       userAssignedIdentities:
       - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}
-      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
-      osDisk:
-        osType: "Linux"
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: "Premium_LRS"
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+---
+kind: AzureMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      identity: UserAssigned
+      userAssignedIdentities:
+      - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}

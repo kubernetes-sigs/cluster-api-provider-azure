@@ -80,7 +80,7 @@ spec:
     files:
     - contentFrom:
         secret:
-          name: azure-secret
+          name: ${CLUSTER_NAME}-control-plane-azure-json
           key: azure.json
       owner: root:root
       path: /etc/kubernetes/azure.json
@@ -126,10 +126,3 @@ spec:
           diskSizeGB: 256
           lun: 0
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: azure-secret
-data:
-  azure.json: ${AZURE_JSON_B64}

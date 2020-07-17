@@ -41,7 +41,6 @@ var _ = Describe("Workload cluster creation", func() {
 		cancelWatches context.CancelFunc
 		cluster       *clusterv1.Cluster
 		clusterName   string
-		cloudConfig   string
 	)
 
 	BeforeEach(func() {
@@ -61,18 +60,12 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 
-		var err error
-		cloudConfig, err = getCloudProviderConfig(clusterName)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(os.Setenv(AzureJson, cloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureJson)).NotTo(HaveOccurred())
 	})
 
 	Context("Creating a single control-plane cluster", func() {

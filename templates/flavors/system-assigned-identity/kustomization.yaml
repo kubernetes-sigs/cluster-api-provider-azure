@@ -1,6 +1,5 @@
 namespace: default
 resources:
-  - ../base
-  - system-assigned-identity-md.yaml
+  - ../default
 patchesStrategicMerge:
   - patches/system-assigned-identity.yaml

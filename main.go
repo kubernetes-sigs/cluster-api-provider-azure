@@ -217,6 +217,22 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
 		}
+		if err = (&controllers.AzureJSONTemplateReconciler{
+			Client:   mgr.GetClient(),
+			Log:      ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
+			Recorder: mgr.GetEventRecorderFor("azurejsontemplate-reconciler"),
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONTemplate")
+			os.Exit(1)
+		}
+		if err = (&controllers.AzureJSONMachineReconciler{
+			Client:   mgr.GetClient(),
+			Log:      ctrl.Log.WithName("controllers").WithName("AzureJSONMachine"),
+			Recorder: mgr.GetEventRecorderFor("azurejsonmachine-reconciler"),
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
+			os.Exit(1)
+		}
 		// just use CAPI MachinePool feature flag rather than create a new one
 		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 		if feature.Gates.Enabled(capifeature.MachinePool) {
@@ -226,6 +242,14 @@ func main() {
 				Recorder: mgr.GetEventRecorderFor("azurecluster-reconciler"),
 			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
+				os.Exit(1)
+			}
+			if err = (&controllers.AzureJSONMachinePoolReconciler{
+				Client:   mgr.GetClient(),
+				Log:      ctrl.Log.WithName("controllers").WithName("AzureJSONMachinePool"),
+				Recorder: mgr.GetEventRecorderFor("azurejsonmachinepool-reconciler"),
+			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachinePool")
 				os.Exit(1)
 			}
 			if feature.Gates.Enabled(feature.AKS) {
@@ -255,7 +279,6 @@ func main() {
 				}
 			}
 		}
-		// }
 	} else {
 		if err = (&infrav1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")

@@ -18,14 +18,21 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
@@ -120,4 +128,218 @@ func GetObjectsToRequestsByNamespaceAndClusterName(ctx context.Context, c client
 		}
 	}
 	return results
+}
+
+// Returns true if a and b point to the same object
+func referSameObject(a, b metav1.OwnerReference) bool {
+	aGV, err := schema.ParseGroupVersion(a.APIVersion)
+	if err != nil {
+		return false
+	}
+
+	bGV, err := schema.ParseGroupVersion(b.APIVersion)
+	if err != nil {
+		return false
+	}
+
+	return aGV.Group == bGV.Group && a.Kind == b.Kind && a.Name == b.Name
+}
+
+// GetCloudProviderSecret returns the required azure json secret for the provided parameters.
+func GetCloudProviderSecret(d azure.ClusterDescriber, namespace, name string, identityType infrav1.VMIdentity, userIdentityID string) (*corev1.Secret, error) {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      fmt.Sprintf("%s-azure-json", name),
+			Labels: map[string]string{
+				d.ClusterName(): string(infrav1.ResourceLifecycleOwned),
+			},
+		},
+	}
+
+	var data []byte
+	var err error
+
+	switch identityType {
+	case infrav1.VMIdentitySystemAssigned:
+		data, err = systemAssignedIdentityCloudProviderConfig(d)
+		if err != nil {
+			return nil, err
+		}
+	case infrav1.VMIdentityUserAssigned:
+		if len(userIdentityID) < 1 {
+			return nil, errors.New("expected a non-empty userIdentityID")
+		}
+		data, err = userAssignedIdentityCloudProviderConfig(d, userIdentityID)
+		if err != nil {
+			return nil, err
+		}
+	case infrav1.VMIdentityNone:
+		data, err = servicePrincipalCloudProviderConfig(d)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	secret.Data = map[string][]byte{
+		"azure.json": data,
+	}
+
+	return secret, nil
+}
+
+func servicePrincipalCloudProviderConfig(d azure.ClusterDescriber) ([]byte, error) {
+	return json.MarshalIndent(newCloudProviderConfig(d), "", "    ")
+}
+
+func systemAssignedIdentityCloudProviderConfig(d azure.ClusterDescriber) ([]byte, error) {
+	config := newCloudProviderConfig(d)
+	config.AadClientID = ""
+	config.AadClientSecret = ""
+	config.UseManagedIdentityExtension = true
+	return json.MarshalIndent(config, "", "    ")
+}
+
+func userAssignedIdentityCloudProviderConfig(d azure.ClusterDescriber, identityID string) ([]byte, error) {
+	config := newCloudProviderConfig(d)
+	config.AadClientID = ""
+	config.AadClientSecret = ""
+	config.UseManagedIdentityExtension = true
+	config.UserAssignedIdentityID = identityID
+	return json.MarshalIndent(config, "", "    ")
+}
+
+func newCloudProviderConfig(d azure.ClusterDescriber) *CloudProviderConfig {
+	return &CloudProviderConfig{
+		Cloud:                        d.CloudEnvironment(),
+		AadClientID:                  d.ClientID(),
+		AadClientSecret:              d.ClientSecret(),
+		TenantID:                     d.TenantID(),
+		SubscriptionID:               d.SubscriptionID(),
+		ResourceGroup:                d.ResourceGroup(),
+		SecurityGroupName:            d.NodeSubnet().SecurityGroup.Name,
+		SecurityGroupResourceGroup:   d.ResourceGroup(),
+		Location:                     d.Location(),
+		VMType:                       "vmss",
+		VnetName:                     d.Vnet().Name,
+		VnetResourceGroup:            d.Vnet().ResourceGroup,
+		SubnetName:                   d.NodeSubnet().Name,
+		RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
+		LoadBalancerSku:              "standard",
+		MaximumLoadBalancerRuleCount: 250,
+		UseManagedIdentityExtension:  false,
+		UseInstanceMetadata:          true,
+	}
+}
+
+// CloudProviderConfig is an abbreviated version of the same struct in k/k
+type CloudProviderConfig struct {
+	Cloud                        string `json:"cloud"`
+	TenantID                     string `json:"tenantId"`
+	SubscriptionID               string `json:"subscriptionId"`
+	AadClientID                  string `json:"aadClientId"`
+	AadClientSecret              string `json:"aadClientSecret"`
+	ResourceGroup                string `json:"resourceGroup"`
+	SecurityGroupName            string `json:"securityGroupName"`
+	SecurityGroupResourceGroup   string `json:"securityGroupResourceGroup"`
+	Location                     string `json:"location"`
+	VMType                       string `json:"vmType"`
+	VnetName                     string `json:"vnetName"`
+	VnetResourceGroup            string `json:"vnetResourceGroup"`
+	SubnetName                   string `json:"subnetName"`
+	RouteTableName               string `json:"routeTableName"`
+	LoadBalancerSku              string `json:"loadBalancerSku"`
+	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
+	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
+	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
+	UserAssignedIdentityID       string `json:"userAssignedIdentityId"`
+}
+
+func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient client.Client, owner metav1.OwnerReference, new *corev1.Secret, clusterName string) error {
+	// Fetch previous secret, if it exists
+	key := types.NamespacedName{
+		Namespace: new.Namespace,
+		Name:      new.Name,
+	}
+	old := &corev1.Secret{}
+	err := kubeclient.Get(ctx, key, old)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrap(err, "failed to fetch existing azure json")
+	}
+
+	// Create if it wasn't found
+	if apierrors.IsNotFound(err) {
+		if err := kubeclient.Create(ctx, new); err != nil {
+			return errors.Wrap(err, "failed to create cluster azure json")
+		}
+		return nil
+	}
+
+	tag, exists := old.Labels[clusterName]
+
+	if exists && tag == string(infrav1.ResourceLifecycleOwned) {
+		log.Info("returning early from json reconcile, user provided secret already exists")
+		return nil
+	}
+
+	// Otherwise, check ownership and data freshness. Update as necessary
+	hasOwner := false
+	for _, ownerRef := range old.OwnerReferences {
+		if referSameObject(ownerRef, new.OwnerReferences[0]) {
+			hasOwner = true
+			break
+		}
+	}
+
+	hasData := equality.Semantic.DeepEqual(old.Data, new.Data)
+	if hasData && hasOwner {
+		// no update required
+		log.Info("returning early from json reconcile, no update needed")
+		return nil
+	}
+
+	if !hasOwner {
+		old.OwnerReferences = append(old.OwnerReferences)
+	}
+
+	if !hasData {
+		old.Data = new.Data
+	}
+
+	log.Info("updating azure json")
+	if err := kubeclient.Update(ctx, old); err != nil {
+		return errors.Wrap(err, "failed to update cluster azure json when diff was required")
+	}
+
+	log.Info("done updating azure json")
+
+	return nil
+}
+
+// GetOwnerMachinePool returns the MachinePool object owning the current resource.
+func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
+	for _, ref := range obj.OwnerReferences {
+		if ref.Kind != "MachinePool" {
+			continue
+		}
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		if gv.Group == capiv1exp.GroupVersion.Group {
+			return GetMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
+		}
+	}
+	return nil, nil
+}
+
+// GetMachinePoolByName finds and return a Machine object using the specified params.
+func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
+	m := &capiv1exp.MachinePool{}
+	key := client.ObjectKey{Name: name, Namespace: namespace}
+	if err := c.Get(ctx, key, m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }

@@ -3,13 +3,13 @@ resources:
   - ../default
 
 patchesJson6902:
-- path: machine-deployment.yaml
+- path: patches/ephemeral.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
     version: v1alpha3
     kind: AzureMachineTemplate
     name: "${CLUSTER_NAME}-md-0"
-- path: machine-deployment.yaml
+- path: patches/ephemeral.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
     version: v1alpha3

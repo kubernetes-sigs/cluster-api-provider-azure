@@ -87,7 +87,7 @@ spec:
     - contentFrom:
         secret:
           key: azure.json
-          name: azure-secret
+          name: ${CLUSTER_NAME}-control-plane-azure-json
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
@@ -116,29 +116,7 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
-  template:
-    spec:
-      dataDisks:
-      - diskSizeGB: 256
-        lun: 0
-        nameSuffix: etcddisk
-      identity: SystemAssigned
-      location: ${AZURE_LOCATION}
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
-      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
----
-apiVersion: v1
-data:
-  azure.json: ${AZURE_JSON_B64}
-kind: Secret
-metadata:
-  name: azure-secret
-  namespace: default
+  template: {}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
@@ -175,7 +153,7 @@ spec:
       identity: SystemAssigned
       location: ${AZURE_LOCATION}
       osDisk:
-        diskSizeGB: 30
+        diskSizeGB: 128
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
@@ -191,24 +169,10 @@ spec:
   template:
     spec:
       files:
-      - content: |
-          {
-            "cloud": "${AZURE_ENVIRONMENT}",
-            "tenantId": "${AZURE_TENANT_ID}",
-            "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-            "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-            "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-            "location": "${AZURE_LOCATION}",
-            "vmType": "vmss",
-            "vnetName": "${AZURE_VNET_NAME}",
-            "vnetResourceGroup": "${AZURE_RESOURCE_GROUP}",
-            "subnetName": "${CLUSTER_NAME}-node-subnet",
-            "routeTableName": "${CLUSTER_NAME}-node-routetable",
-            "loadBalancerSku": "standard",
-            "maximumLoadBalancerRuleCount": 250,
-            "useManagedIdentityExtension": true,
-            "useInstanceMetadata": true
-          }
+      - contentFrom:
+          secret:
+            key: azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"

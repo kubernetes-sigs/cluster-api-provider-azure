@@ -270,7 +270,6 @@ def deploy_worker_templates(flavor, substitutions):
         "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
         "WORKER_MACHINE_COUNT": "2",
         "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3",
-        "AZURE_JSON_B64": base64_encode(azure_json(flavor, substitutions)),
     }
 
     for substitution in substitutions:
@@ -286,35 +285,6 @@ def deploy_worker_templates(flavor, substitutions):
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL
     )
-
-
-def azure_json(flavor, substitutions):
-    azure_settings = {
-        "cloud": substitutions.get("AZURE_ENVIRONMENT"),
-        "tenantId": substitutions.get("AZURE_TENANT_ID"),
-        "subscriptionId": substitutions.get("AZURE_SUBSCRIPTION_ID"),
-        "resourceGroup": substitutions.get("CLUSTER_NAME"),
-        "securityGroupName": "{}-node-nsg".format(substitutions.get("CLUSTER_NAME")),
-        "location": substitutions.get("AZURE_LOCATION"),
-        "vmType": "vmss",
-        "vnetName": "{}-vnet".format(substitutions.get("CLUSTER_NAME")),
-        "vnetResourceGroup": substitutions.get("CLUSTER_NAME"),
-        "subnetName": "{}-node-subnet".format(substitutions.get("CLUSTER_NAME")),
-        "routeTableName": "{}-node-routetable".format(substitutions.get("CLUSTER_NAME")),
-        "loadBalancerSku": "standard",
-        "maximumLoadBalancerRuleCount": 250,
-        "useManagedIdentityExtension": False,
-        "useInstanceMetadata": True
-    }
-
-    if flavor not in ["system-assigned-identity", "user-assigned-identity"]:
-        azure_settings["aadClientId"] = substitutions.get("AZURE_CLIENT_ID}")
-        azure_settings["aadClientSecret"] = substitutions.get("AZURE_CLIENT_SECRET}")
-
-    if flavor == "user-assigned-identity":
-        azure_settings["userAssignedIdentityID"] = substitutions.get("AZURE_USER_ASSIGNED_ID")
-
-    return str(encode_json(azure_settings))
 
 
 def base64_encode(to_encode):

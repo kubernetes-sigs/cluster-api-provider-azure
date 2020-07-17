@@ -4,11 +4,6 @@ apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
-  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-  infrastructureTemplate:
-    kind: AzureMachineTemplate
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-    name: "${CLUSTER_NAME}-control-plane"
   kubeadmConfigSpec:
     useExperimentalRetryJoin: true
     initConfiguration:
@@ -25,14 +20,6 @@ spec:
       controllerManager:
         extraArgs:
           cloud-provider: external
-    files:
-      - path: /etc/kubernetes/azure.json
-        owner: "root:root"
-        permissions: "0644"
-        contentFrom:
-          secret:
-            name: azure-secret
-            key: azure.json
   version: "${KUBERNETES_VERSION}"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
@@ -47,11 +34,3 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-provider: external
-      files:
-        - path: /etc/kubernetes/azure.json
-          owner: "root:root"
-          permissions: "0644"
-          contentFrom:
-            secret:
-              name: azure-secret
-              key: azure.json
