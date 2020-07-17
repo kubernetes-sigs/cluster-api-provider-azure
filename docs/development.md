@@ -270,7 +270,7 @@ export CONTROL_PLANE_MACHINE_COUNT=3
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.18.3"
+export KUBERNETES_VERSION="v1.18.6"
 
 # Generate SSH key.
 # If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY to your existing file.
@@ -302,8 +302,8 @@ export AZURE_JSON_B64=$(echo '{
 }' | envsubst | base64 | tr -d '\r\n')
 ```
 
-⚠️ Please note the generated templates include default values and therefore requrie the use of `clusterctl` to create the cluster 
-or the use of `envsubst` to replace these values 
+⚠️ Please note the generated templates include default values and therefore requrie the use of `clusterctl` to create the cluster
+or the use of `envsubst` to replace these values
 
 ##### Creating the cluster
 
