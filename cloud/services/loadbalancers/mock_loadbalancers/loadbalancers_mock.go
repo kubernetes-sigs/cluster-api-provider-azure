@@ -192,6 +192,20 @@ func (mr *MockLBScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockLBScope)(nil).ControlPlaneSubnet))
 }
 
+// RouteTable mocks base method.
+func (m *MockLBScope) RouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// RouteTable indicates an expected call of RouteTable.
+func (mr *MockLBScopeMockRecorder) RouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockLBScope)(nil).RouteTable))
+}
+
 // Info mocks base method.
 func (m *MockLBScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
