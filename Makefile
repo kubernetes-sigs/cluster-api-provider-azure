@@ -54,9 +54,8 @@ CONVERSION_GEN_VER := v0.18.4
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := v1.1.0
 ENVSUBST_BIN := envsubst
-ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
+ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
 
 GOLANGCI_LINT_VER := v1.27.0
 GOLANGCI_LINT_BIN := golangci-lint
@@ -184,7 +183,7 @@ $(CONVERSION_GEN): ## Build conversion-gen.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
 
 $(ENVSUBST): ## Build envsubst from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
+	mkdir -p $(TOOLS_DIR) && cd $(TOOLS_DIR) && go build -tags=tools -o $(ENVSUBST) github.com/drone/envsubst/cmd/envsubst
 
 .PHONY: $(ENVSUBST_BIN)
 $(ENVSUBST_BIN): $(ENVSUBST) ## Build envsubst from tools folder.
