@@ -32,8 +32,10 @@ type AzureClusterSpec struct {
 	// NetworkSpec encapsulates all things related to Azure network.
 	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
 
-	ResourceGroup string `json:"resourceGroup"`
+	// +optional
+	ResourceGroup string `json:"resourceGroup,omitempty"`
 
+	// +optional
 	SubscriptionID string `json:"subscriptionID,omitempty"`
 
 	Location string `json:"location"`

@@ -606,7 +606,6 @@ spec:
                 type: string
             required:
             - location
-            - resourceGroup
             type: object
           status:
             description: AzureClusterStatus defines the observed state of AzureCluster

@@ -34,8 +34,15 @@ func (c *AzureCluster) setDefaults() {
 }
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
+	c.setResourceGroupDefault()
 	c.setVnetDefaults()
 	c.setSubnetDefaults()
+}
+
+func (c *AzureCluster) setResourceGroupDefault() {
+	if c.Spec.ResourceGroup == "" {
+		c.Spec.ResourceGroup = c.Name
+	}
 }
 
 func (c *AzureCluster) setVnetDefaults() {
