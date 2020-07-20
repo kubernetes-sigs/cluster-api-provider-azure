@@ -26,8 +26,8 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
-      name: ${AZURE_VNET_NAME:=$CLUSTER_NAME-vnet}
-  resourceGroup: ${AZURE_RESOURCE_GROUP:=$CLUSTER_NAME}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
