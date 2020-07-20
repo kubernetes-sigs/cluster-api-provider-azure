@@ -18,12 +18,13 @@ package loadbalancers
 
 import (
 	"context"
-	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
+	"testing"
+
+	"github.com/Azure/go-autorest/autorest/to"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
-	"testing"
 
 	"k8s.io/klog/klogr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -521,6 +522,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -612,6 +614,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
