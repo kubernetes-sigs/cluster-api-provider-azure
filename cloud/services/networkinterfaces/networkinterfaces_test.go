@@ -18,9 +18,10 @@ package networkinterfaces
 
 import (
 	"context"
-	"k8s.io/klog/klogr"
 	"net/http"
 	"testing"
+
+	"k8s.io/klog/klogr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -64,15 +65,16 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:        "my-net-interface",
-						MachineName: "azure-test1",
-						SubnetName:  "my-subnet",
-						VNetName:    "my-vnet",
+						Name:              "my-net-interface",
+						MachineName:       "azure-test1",
+						SubnetName:        "my-subnet",
+						VNetName:          "my-vnet",
+						VNetResourceGroup: "vnet-rg",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
-				mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").
+				mSubnet.Get(context.TODO(), "vnet-rg", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -136,20 +138,23 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
-						Location: to.StringPtr("test-location"),
+						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 							EnableAcceleratedNetworking: to.BoolPtr(false),
 							IPConfigurations: &[]network.InterfaceIPConfiguration{
 								{
 									Name: to.StringPtr("pipConfig"),
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-										PrivateIPAllocationMethod: network.Static,
-										PrivateIPAddress:          to.StringPtr("fake.static.ip"),
+										PrivateIPAllocationMethod:       network.Static,
+										PrivateIPAddress:                to.StringPtr("fake.static.ip"),
+										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
+										Subnet:                          &network.Subnet{},
 									},
 								},
 							},
@@ -182,19 +187,22 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
-						Location: to.StringPtr("test-location"),
+						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 							EnableAcceleratedNetworking: to.BoolPtr(false),
 							IPConfigurations: &[]network.InterfaceIPConfiguration{
 								{
 									Name: to.StringPtr("pipConfig"),
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-										PrivateIPAllocationMethod: network.Dynamic,
+										PrivateIPAllocationMethod:       network.Dynamic,
+										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
+										Subnet:                          &network.Subnet{},
 									},
 								},
 							},
@@ -228,6 +236,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.AssignableToTypeOf(3)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").
 						Return(network.Subnet{ID: to.StringPtr("my-subnet-id")}, nil),
@@ -272,7 +281,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 							}}, nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
-						Location: to.StringPtr("test-location"),
+						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 							EnableAcceleratedNetworking: to.BoolPtr(false),
 							IPConfigurations: &[]network.InterfaceIPConfiguration{
@@ -348,6 +357,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.Any()).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
@@ -415,7 +425,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						SubnetName:               "my-subnet",
 						VNetName:                 "my-vnet",
 						VNetResourceGroup:        "my-rg",
-						PublicLoadBalancerName:   "my-public-lb",
 						InternalLoadBalancerName: "my-internal-lb",
 						VMSize:                   "Standard_D2v2",
 						AcceleratedNetworking:    nil,
@@ -441,18 +450,6 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:                     "my-net-interface",
-						MachineName:              "azure-test1",
-						MachineRole:              infrav1.ControlPlane,
-						SubnetName:               "my-subnet",
-						VNetName:                 "my-vnet",
-						VNetResourceGroup:        "my-rg",
-						PublicLoadBalancerName:   "my-public-lb",
-						InternalLoadBalancerName: "my-internal-lb",
-						VMSize:                   "Standard_D2v2",
-						AcceleratedNetworking:    nil,
-					},
-					{
 						Name:                  "my-public-net-interface",
 						MachineName:           "azure-test1",
 						MachineRole:           infrav1.Node,
@@ -466,12 +463,11 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					mPublicIP.Get(context.TODO(), "my-rg", "my-public-ip").Return(network.PublicIPAddress{}, nil),
 					mResourceSku.HasAcceleratedNetworking(gomock.Any(), gomock.Any()),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomock.AssignableToTypeOf(network.Interface{})),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-public-net-interface", gomock.AssignableToTypeOf(network.Interface{})))
 			},
 		},
@@ -487,21 +483,21 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				mResourceSku *mock_resourceskus.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:                     "my-net-interface",
-						MachineName:              "azure-test1",
-						MachineRole:              infrav1.ControlPlane,
-						SubnetName:               "my-subnet",
-						VNetName:                 "my-vnet",
-						VNetResourceGroup:        "my-rg",
-						PublicLoadBalancerName:   "my-public-lb",
-						PublicIPName:             "my-public-ip",
-						InternalLoadBalancerName: "my-internal-lb",
-						VMSize:                   "Standard_D2v2",
-						AcceleratedNetworking:    nil,
+						Name:                   "my-net-interface",
+						MachineName:            "azure-test1",
+						MachineRole:            infrav1.ControlPlane,
+						SubnetName:             "my-subnet",
+						VNetName:               "my-vnet",
+						VNetResourceGroup:      "my-rg",
+						PublicLoadBalancerName: "my-public-lb",
+						PublicIPName:           "my-public-ip",
+						VMSize:                 "Standard_D2v2",
+						AcceleratedNetworking:  nil,
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.Any()).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
@@ -533,11 +529,13 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
+					mResourceSku.HasAcceleratedNetworking(context.TODO(), "Standard_D2v2").Return(true, nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
-						Location: to.StringPtr("test-location"),
+						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 							EnableAcceleratedNetworking: to.BoolPtr(true),
 							IPConfigurations: &[]network.InterfaceIPConfiguration{
@@ -579,12 +577,13 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
 					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(getFakeNodeOutboundLoadBalancer(), nil),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", matchers.DiffEq(network.Interface{
-						Location: to.StringPtr("test-location"),
+						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 							EnableAcceleratedNetworking: to.BoolPtr(false),
 							IPConfigurations: &[]network.InterfaceIPConfiguration{
@@ -638,6 +637,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -779,6 +779,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
@@ -812,6 +813,19 @@ func TestDeleteNetworkInterface(t *testing.T) {
 func getFakeNodeOutboundLoadBalancer() network.LoadBalancer {
 	return network.LoadBalancer{
 		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+			InboundNatRules: &[]network.InboundNatRule{{
+				Name: pointer.StringPtr("azure-test1"),
+				InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+					FrontendPort:         to.Int32Ptr(22),
+					BackendPort:          to.Int32Ptr(22),
+					EnableFloatingIP:     to.BoolPtr(false),
+					IdleTimeoutInMinutes: to.Int32Ptr(4),
+					FrontendIPConfiguration: &network.SubResource{
+						ID: to.StringPtr("frontend-ip-config-id"),
+					},
+					Protocol: network.TransportProtocolTCP,
+				},
+			}},
 			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
 				{
 					ID: to.StringPtr("frontend-ip-config-id"),
