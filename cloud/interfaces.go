@@ -67,6 +67,7 @@ type ClusterDescriber interface {
 	Location() string
 	AdditionalTags() infrav1.Tags
 	Vnet() *infrav1.VnetSpec
+	IsVnetManaged() bool
 	NodeSubnet() *infrav1.SubnetSpec
 	ControlPlaneSubnet() *infrav1.SubnetSpec
 	RouteTable() *infrav1.RouteTable

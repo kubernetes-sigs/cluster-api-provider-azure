@@ -258,6 +258,20 @@ func (mr *MockDiskScopeMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockDiskScope)(nil).Vnet))
 }
 
+// IsVnetManaged mocks base method.
+func (m *MockDiskScope) IsVnetManaged() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsVnetManaged indicates an expected call of IsVnetManaged.
+func (mr *MockDiskScopeMockRecorder) IsVnetManaged() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockDiskScope)(nil).IsVnetManaged))
+}
+
 // NodeSubnet mocks base method.
 func (m *MockDiskScope) NodeSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()

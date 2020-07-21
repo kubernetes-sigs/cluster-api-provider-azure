@@ -22,104 +22,227 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
-
-const (
-	subscriptionID = "123"
-)
-
-func init() {
-	clusterv1.AddToScheme(scheme.Scheme)
-}
 
 func TestReconcileSubnets(t *testing.T) {
 	testcases := []struct {
 		name          string
-		subnetSpec    Spec
-		vnetSpec      *infrav1.VnetSpec
-		subnets       []*infrav1.SubnetSpec
 		expectedError string
-		expect        func(m *mock_subnets.MockClientMockRecorder, m1 *mock_routetables.MockClientMockRecorder, m2 *mock_securitygroups.MockClientMockRecorder)
+		expect        func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+			mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder)
 	}{
 		{
-			name: "subnet does not exist",
-			subnetSpec: Spec{
-				Name:                "my-subnet",
-				CIDR:                "10.0.0.0/16",
-				VnetName:            "my-vnet",
-				RouteTableName:      "my-subnet_route_table",
-				SecurityGroupName:   "my-sg",
-				Role:                infrav1.SubnetNode,
-				InternalLBIPAddress: "10.0.0.10",
-			},
-			vnetSpec:      &infrav1.VnetSpec{Name: "my-vnet"},
-			subnets:       []*infrav1.SubnetSpec{},
+			name:          "subnet does not exist",
 			expectedError: "",
-			expect: func(m *mock_subnets.MockClientMockRecorder, m1 *mock_routetables.MockClientMockRecorder, m2 *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.IsVnetManaged().Return(true)
 				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-
-				m1.Get(context.TODO(), "my-rg", "my-subnet_route_table").
-					Return(network.RouteTable{}, nil)
-
-				m2.Get(context.TODO(), "my-rg", "my-sg").
-					Return(network.SecurityGroup{}, nil)
-
+				mRouteTables.Get(context.TODO(), "my-rg", "my-subnet_route_table").Return(network.RouteTable{}, nil)
+				mSecurityGroups.Get(context.TODO(), "my-rg", "my-sg").Return(network.SecurityGroup{}, nil)
 				m.CreateOrUpdate(context.TODO(), "", "my-vnet", "my-subnet", gomock.AssignableToTypeOf(network.Subnet{}))
 			},
 		},
 		{
-			name: "vnet was provided but subnet is missing",
-			subnetSpec: Spec{
-				Name:                "my-subnet",
-				CIDR:                "10.0.0.0/16",
-				VnetName:            "custom-vnet",
-				RouteTableName:      "my-subnet_route_table",
-				SecurityGroupName:   "my-sg",
-				Role:                infrav1.SubnetNode,
-				InternalLBIPAddress: "10.0.0.10",
+			name:          "fail to create subnet",
+			expectedError: "failed to create subnet my-subnet in resource group : #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.IsVnetManaged().Return(true)
+				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
+					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mRouteTables.Get(context.TODO(), "my-rg", "my-subnet_route_table").Return(network.RouteTable{}, nil)
+				mSecurityGroups.Get(context.TODO(), "my-rg", "my-sg").Return(network.SecurityGroup{}, nil)
+				m.CreateOrUpdate(context.TODO(), "", "my-vnet", "my-subnet", gomock.AssignableToTypeOf(network.Subnet{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
-			vnetSpec:      &infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"},
-			subnets:       []*infrav1.SubnetSpec{},
+		},
+		{
+			name:          "fail to get existing subnet",
+			expectedError: "failed to get subnet my-subnet: failed to fetch subnet named my-vnet in vnet my-subnet: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
+					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name:          "fail to get routeTable",
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.IsVnetManaged().Return(true)
+				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
+					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mRouteTables.Get(context.TODO(), "my-rg", "my-subnet_route_table").
+					Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name:          "fail to get security group",
+			expectedError: "#: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.IsVnetManaged().Return(true)
+				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
+					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mRouteTables.Get(context.TODO(), "my-rg", "my-subnet_route_table").Return(network.RouteTable{}, nil)
+				mSecurityGroups.Get(context.TODO(), "my-rg", "my-sg").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+		{
+			name:          "vnet was provided but subnet is missing",
 			expectedError: "vnet was provided but subnet my-subnet is missing",
-			expect: func(m *mock_subnets.MockClientMockRecorder, m1 *mock_routetables.MockClientMockRecorder, m2 *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "custom-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1", Tags: infrav1.Tags{
+					"Name": "vnet-exists",
+					"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "not",
+					"sigs.k8s.io_cluster-api-provider-azure_role":                 "dd",
+				}})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("custom-vnet-rg")
+				s.IsVnetManaged().Return(false)
 				m.Get(context.TODO(), "custom-vnet-rg", "custom-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name: "vnet was provided and subnet exists",
-			subnetSpec: Spec{
-				Name:                "my-subnet",
-				CIDR:                "10.0.0.0/16",
-				VnetName:            "my-vnet",
-				RouteTableName:      "my-subnet_route_table",
-				SecurityGroupName:   "my-sg",
-				Role:                infrav1.SubnetNode,
-				InternalLBIPAddress: "10.0.0.10",
-			},
-			vnetSpec: &infrav1.VnetSpec{Name: "my-vnet"},
-			subnets: []*infrav1.SubnetSpec{{
-				Name: "my-subnet",
-				Role: infrav1.SubnetNode,
-			}},
+			name:          "vnet was provided and subnet exists",
 			expectedError: "",
-			expect: func(m *mock_subnets.MockClientMockRecorder, m1 *mock_routetables.MockClientMockRecorder, m2 *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+					{
+						Name:                "my-subnet-1",
+						CIDR:                "10.2.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg-1",
+						Role:                infrav1.SubnetControlPlane,
+						InternalLBIPAddress: "10.2.0.20",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.NodeSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+					Name: "my-subnet",
+					Role: infrav1.SubnetNode,
+				})
+				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+					Name: "my-subnet-1",
+					Role: infrav1.SubnetControlPlane,
+				})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(context.TODO(), "", "my-vnet", "my-subnet").
 					Return(network.Subnet{
 						ID:   to.StringPtr("subnet-id"),
@@ -136,6 +259,22 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				m.Get(context.TODO(), "", "my-vnet", "my-subnet-1").
+					Return(network.Subnet{
+						ID:   to.StringPtr("subnet-id-1"),
+						Name: to.StringPtr("my-subnet-1"),
+						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+							AddressPrefix: to.StringPtr("10.2.0.0/16"),
+							RouteTable: &network.RouteTable{
+								ID:   to.StringPtr("rt-id"),
+								Name: to.StringPtr("my-subnet_route_table"),
+							},
+							NetworkSecurityGroup: &network.SecurityGroup{
+								ID:   to.StringPtr("sg-id"),
+								Name: to.StringPtr("my-sg-1"),
+							},
+						},
+					}, nil)
 			},
 		},
 	}
@@ -144,50 +283,26 @@ func TestReconcileSubnets(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
+
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
+			scopeMock := mock_subnets.NewMockSubnetScope(mockCtrl)
+			clientMock := mock_subnets.NewMockClient(mockCtrl)
+			securityGroupsMock := mock_securitygroups.NewMockClient(mockCtrl)
+			routeTablesMock := mock_routetables.NewMockClient(mockCtrl)
 
-			subnetMock := mock_subnets.NewMockClient(mockCtrl)
-			rtMock := mock_routetables.NewMockClient(mockCtrl)
-			sgMock := mock_securitygroups.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(subnetMock.EXPECT(), rtMock.EXPECT(), sgMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet:    *tc.vnetSpec,
-							Subnets: tc.subnets,
-						},
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(),
+				routeTablesMock.EXPECT(), securityGroupsMock.EXPECT())
 
 			s := &Service{
-				Scope:                clusterScope,
-				Client:               subnetMock,
-				SecurityGroupsClient: sgMock,
-				RouteTablesClient:    rtMock,
+				Scope:                scopeMock,
+				Client:               clientMock,
+				SecurityGroupsClient: securityGroupsMock,
+				RouteTablesClient:    routeTablesMock,
 			}
 
-			err = s.Reconcile(context.TODO(), &tc.subnetSpec)
+			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -200,102 +315,178 @@ func TestReconcileSubnets(t *testing.T) {
 
 func TestDeleteSubnets(t *testing.T) {
 	testcases := []struct {
-		name       string
-		subnetSpec Spec
-		vnetSpec   *infrav1.VnetSpec
-		expect     func(m *mock_subnets.MockClientMockRecorder)
+		name          string
+		expectedError string
+		expect        func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+			mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder)
 	}{
 		{
-			name: "subnet exists",
-			subnetSpec: Spec{
-				Name:                "my-subnet",
-				CIDR:                "10.0.0.0/16",
-				VnetName:            "my-vnet",
-				RouteTableName:      "my-subnet_route_table",
-				SecurityGroupName:   "my-sg",
-				Role:                infrav1.SubnetNode,
-				InternalLBIPAddress: "10.0.0.10",
-			},
-			vnetSpec: &infrav1.VnetSpec{Name: "my-vnet"},
-			expect: func(m *mock_subnets.MockClientMockRecorder) {
+			name:          "subnet deleted successfully",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+					{
+						Name:                "my-subnet-1",
+						CIDR:                "10.1.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetControlPlane,
+						InternalLBIPAddress: "10.1.0.20",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(context.TODO(), "", "my-vnet", "my-subnet")
+				m.Delete(context.TODO(), "", "my-vnet", "my-subnet-1")
 			},
 		},
 		{
-			name: "subnet already deleted",
-			subnetSpec: Spec{
-				Name:                "my-subnet",
-				CIDR:                "10.0.0.0/16",
-				VnetName:            "my-vnet",
-				RouteTableName:      "my-subnet_route_table",
-				SecurityGroupName:   "my-sg",
-				Role:                infrav1.SubnetNode,
-				InternalLBIPAddress: "10.0.0.10",
-			},
-			vnetSpec: &infrav1.VnetSpec{Name: "my-vnet"},
-			expect: func(m *mock_subnets.MockClientMockRecorder) {
+			name:          "subnet already deleted",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(context.TODO(), "", "my-vnet", "my-subnet").
 					Return(autorest.NewErrorWithResponse("", "my-vnet", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name: "skip delete if vnet is managed",
-			subnetSpec: Spec{
-				Name:                "my-subnet",
-				CIDR:                "10.0.0.0/16",
-				VnetName:            "custom-vnet",
-				RouteTableName:      "my-subnet_route_table",
-				SecurityGroupName:   "my-sg",
-				Role:                infrav1.SubnetNode,
-				InternalLBIPAddress: "10.0.0.10",
+			name:          "node subnet already deleted and controlplane subnet deleted successfully",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+					{
+						Name:                "my-subnet-1",
+						CIDR:                "10.1.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetControlPlane,
+						InternalLBIPAddress: "10.1.0.20",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Delete(context.TODO(), "", "my-vnet", "my-subnet").
+					Return(autorest.NewErrorWithResponse("", "my-vnet", &http.Response{StatusCode: 404}, "Not found"))
+				m.Delete(context.TODO(), "", "my-vnet", "my-subnet-1")
 			},
-			vnetSpec: &infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"},
-			expect:   func(m *mock_subnets.MockClientMockRecorder) {},
+		},
+		{
+			name:          "skip delete if vnet is managed",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "custom-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+			},
+		},
+		{
+			name:          "fail delete subnet",
+			expectedError: "failed to delete subnet my-subnet in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder,
+				mRouteTables *mock_routetables.MockClientMockRecorder, mSecurityGroups *mock_securitygroups.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubnetSpecs().Return([]azure.SubnetSpec{
+					{
+						Name:                "my-subnet",
+						CIDR:                "10.0.0.0/16",
+						VNetName:            "my-vnet",
+						RouteTableName:      "my-subnet_route_table",
+						SecurityGroupName:   "my-sg",
+						Role:                infrav1.SubnetNode,
+						InternalLBIPAddress: "10.0.0.10",
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Delete(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
 		},
 	}
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
+
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
+			scopeMock := mock_subnets.NewMockSubnetScope(mockCtrl)
+			clientMock := mock_subnets.NewMockClient(mockCtrl)
+			securityGroupsMock := mock_securitygroups.NewMockClient(mockCtrl)
+			routeTablesMock := mock_routetables.NewMockClient(mockCtrl)
 
-			subnetMock := mock_subnets.NewMockClient(mockCtrl)
-
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(subnetMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: *tc.vnetSpec,
-						},
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(),
+				routeTablesMock.EXPECT(), securityGroupsMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: subnetMock,
+				Scope:                scopeMock,
+				Client:               clientMock,
+				SecurityGroupsClient: securityGroupsMock,
+				RouteTablesClient:    routeTablesMock,
 			}
 
-			g.Expect(s.Delete(context.TODO(), &tc.subnetSpec)).To(Succeed())
+			err := s.Delete(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
