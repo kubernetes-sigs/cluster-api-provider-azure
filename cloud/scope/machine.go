@@ -97,6 +97,19 @@ func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return spec
 }
 
+// InboundNatSpecs returns the inbound NAT specs.
+func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
+	if m.Role() == infrav1.ControlPlane {
+		return []azure.InboundNatSpec{
+			{
+				Name:             m.Name(),
+				LoadBalancerName: azure.GeneratePublicLBName(m.ClusterName()),
+			},
+		}
+	}
+	return []azure.InboundNatSpec{}
+}
+
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	spec := azure.NICSpec{

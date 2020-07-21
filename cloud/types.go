@@ -43,7 +43,7 @@ type DiskSpec struct {
 	Name string
 }
 
-// LBSpec defines the specification for a load balancer.
+// LBSpec defines the specification for a Load Balancer.
 type LBSpec struct {
 	Name             string
 	PublicIPName     string
@@ -57,4 +57,10 @@ type LBSpec struct {
 // RouteTableSpec defines the specification for a route table
 type RouteTableSpec struct {
 	Name string
+}
+
+// InboundNatSpec defines the specification for an inbound NAT rule.
+type InboundNatSpec struct {
+	Name             string
+	LoadBalancerName string
 }
