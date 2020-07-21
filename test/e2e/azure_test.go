@@ -131,6 +131,17 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
+
+			Context("validate networkpolicies", func() {
+				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
+					return AzureNetPolSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
 		})
 	})
 })
