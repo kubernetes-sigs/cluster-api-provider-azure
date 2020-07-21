@@ -34,6 +34,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
@@ -345,12 +346,12 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec Spec) (*com
 
 	// enable ephemeral OS
 	if vmSpec.OSDisk.DiffDiskSettings != nil {
-		hasEpehemeralOS, err := s.ResourceSkusClient.HasEphemeralOSDiskSupport(ctx, vmSpec.Size)
+		sku, err := s.Scope.SKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get ephemeral os capability for vm")
+			return nil, errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
 		}
 
-		if !hasEpehemeralOS {
+		if !sku.HasCapability(resourceskus.EphemeralOSDisk) {
 			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmSpec.Size)
 		}
 

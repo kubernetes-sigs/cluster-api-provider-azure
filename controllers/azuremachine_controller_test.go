@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -299,6 +301,7 @@ func TestConditions(t *testing.T) {
 				Client:       client,
 				Cluster:      cluster,
 				AzureCluster: azureCluster,
+				NewSKUCache:  resourceskus.NewStaticCacheFn(nil),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

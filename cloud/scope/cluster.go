@@ -26,6 +26,7 @@ import (
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +39,7 @@ type ClusterScopeParams struct {
 	Logger       logr.Logger
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
-	Context      context.Context
+	NewSKUCache  resourceskus.NewCacheFunc
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -64,14 +65,23 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
-	return &ClusterScope{
+
+	// mockable for testing
+	if params.NewSKUCache == nil {
+		params.NewSKUCache = resourceskus.NewCache
+	}
+
+	scope := &ClusterScope{
 		Logger:       params.Logger,
 		client:       params.Client,
 		AzureClients: params.AzureClients,
 		Cluster:      params.Cluster,
 		AzureCluster: params.AzureCluster,
 		patchHelper:  helper,
-	}, nil
+	}
+
+	scope.SKUCache = params.NewSKUCache(scope, scope.Location())
+	return scope, nil
 }
 
 // ClusterScope defines the basic context for an actuator to operate upon.
@@ -83,6 +93,7 @@ type ClusterScope struct {
 	AzureClients
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
+	SKUCache     *resourceskus.Cache
 }
 
 // SubscriptionID returns the Azure client Subscription ID.
@@ -105,7 +116,7 @@ func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
 }
 
-// PublicIPSpec returns the public IP specs.
+// PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return []azure.PublicIPSpec{
 		{

@@ -39,7 +39,7 @@ import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus/mock_resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
@@ -70,7 +70,9 @@ func TestNewService(t *testing.T) {
 				},
 			},
 		},
+		NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 	})
+
 	g := gomega.NewGomegaWithT(t)
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
@@ -82,7 +84,7 @@ func TestNewService(t *testing.T) {
 		ClusterDescriber: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-	actual := NewService(mps)
+	actual := NewService(mps, resourceskus.NewStaticCache(nil))
 	g.Expect(actual).ToNot(gomega.BeNil())
 }
 
@@ -219,7 +221,23 @@ func TestService_Get(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s)
+			resourceSkusCache := resourceskus.NewStaticCache([]compute.ResourceSku{
+				{
+					Name: to.StringPtr("Standard"),
+					Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+					Locations: &[]string{
+						"fake-location",
+					},
+					LocationInfo: &[]compute.ResourceSkuLocationInfo{
+						{
+							Location: to.StringPtr("fake-location"),
+							Zones:    &[]string{"1"},
+						},
+					},
+				},
+			})
+
+			svc := NewService(s, resourceSkusCache)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -287,12 +305,28 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
-				svc.ResourceSkusClient = skusMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
+
+				svc.ResourceSKUCache = resourceSkusCache
 				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
 				svc.LoadBalancersClient = lbMock
 
-				storageProfile, err := svc.generateStorageProfile(ctx, *spec)
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -359,7 +393,6 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
-				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(false, nil)
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
@@ -401,12 +434,34 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
-				svc.ResourceSkusClient = skusMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+								Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
+
+				svc.ResourceSKUCache = resourceSkusCache
 				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
 				svc.LoadBalancersClient = lbMock
 
-				storageProfile, err := svc.generateStorageProfile(ctx, *spec)
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -473,7 +528,6 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
-				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(true, nil)
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
@@ -522,12 +576,28 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
-				svc.ResourceSkusClient = skusMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
+
+				svc.ResourceSKUCache = resourceSkusCache
 				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
 				svc.LoadBalancersClient = lbMock
 
-				storageProfile, err := svc.generateStorageProfile(ctx, *spec)
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -644,7 +714,6 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
-				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(false, nil)
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(vmss, nil)
 				vmssMock.EXPECT().Update(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(update)).Return(nil)
@@ -663,7 +732,7 @@ func TestService_Reconcile(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s)
+			svc := NewService(s, resourceskus.NewStaticCache(nil))
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -754,7 +823,7 @@ func TestService_Delete(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s)
+			svc := NewService(s, resourceskus.NewStaticCache(nil))
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -865,6 +934,7 @@ func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolSc
 				},
 			},
 		},
+		NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{

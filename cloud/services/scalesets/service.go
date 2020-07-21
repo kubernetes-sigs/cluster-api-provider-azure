@@ -24,15 +24,15 @@ import (
 // Service provides operations on azure resources
 type Service struct {
 	Client
-	ResourceSkusClient  resourceskus.Client
+	ResourceSKUCache    *resourceskus.Cache
 	LoadBalancersClient loadbalancers.Client
 }
 
 // NewService creates a new service.
-func NewService(auth azure.Authorizer) *Service {
+func NewService(auth azure.Authorizer, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Client:              NewClient(auth),
-		ResourceSkusClient:  resourceskus.NewClient(auth),
+		ResourceSKUCache:    skuCache,
 		LoadBalancersClient: loadbalancers.NewClient(auth),
 	}
 }
