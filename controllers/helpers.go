@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -91,7 +92,14 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 // GetOwnerClusterName returns the name of the owning Cluster by finding a clusterv1.Cluster in the ownership references.
 func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 	for _, ref := range obj.OwnerReferences {
-		if ref.Kind == "Cluster" && ref.APIVersion == clusterv1.GroupVersion.String() {
+		if ref.Kind != "Cluster" {
+			continue
+		}
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return "", false
+		}
+		if gv.Group == clusterv1.GroupVersion.Group {
 			return ref.Name, true
 		}
 	}
