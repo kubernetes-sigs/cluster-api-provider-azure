@@ -176,6 +176,17 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
+/// VNetSpecs returns the virtual network specs.
+func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
+	return []azure.VNetSpec{
+		{
+			ResourceGroup: s.Vnet().ResourceGroup,
+			Name:          s.Vnet().Name,
+			CIDR:          s.Vnet().CidrBlock,
+		},
+	}
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet

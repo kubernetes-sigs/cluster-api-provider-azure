@@ -17,17 +17,25 @@ limitations under the License.
 package virtualnetworks
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
+
+// VNetScope defines the scope interface for a virtual network service.
+type VNetScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	VNetSpecs() []azure.VNetSpec
+}
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope VNetScope
 	Client
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
+func NewService(scope VNetScope) *Service {
 	return &Service{
 		Scope:  scope,
 		Client: NewClient(scope),

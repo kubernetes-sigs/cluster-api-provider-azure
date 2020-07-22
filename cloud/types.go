@@ -79,3 +79,10 @@ type SubnetSpec struct {
 	Role                infrav1.SubnetRole
 	InternalLBIPAddress string
 }
+
+// VNetSpec defines the specification for a Virtual Network.
+type VNetSpec struct {
+	ResourceGroup string
+	Name          string
+	CIDR          string
+}

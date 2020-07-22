@@ -45,7 +45,7 @@ import (
 type azureClusterReconciler struct {
 	scope                *scope.ClusterScope
 	groupsSvc            azure.Service
-	vnetSvc              azure.OldService
+	vnetSvc              azure.Service
 	securityGroupSvc     azure.OldService
 	routeTableSvc        azure.Service
 	subnetsSvc           azure.Service
@@ -84,12 +84,7 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile resource group for cluster %s", r.scope.ClusterName())
 	}
 
-	vnetSpec := &virtualnetworks.Spec{
-		ResourceGroup: r.scope.Vnet().ResourceGroup,
-		Name:          r.scope.Vnet().Name,
-		CIDR:          r.scope.Vnet().CidrBlock,
-	}
-	if err := r.vnetSvc.Reconcile(ctx, vnetSpec); err != nil {
+	if err := r.vnetSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile virtual network for cluster %s", r.scope.ClusterName())
 	}
 
@@ -155,11 +150,7 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to delete network security group")
 	}
 
-	vnetSpec := &virtualnetworks.Spec{
-		ResourceGroup: r.scope.Vnet().ResourceGroup,
-		Name:          r.scope.Vnet().Name,
-	}
-	if err := r.vnetSvc.Delete(ctx, vnetSpec); err != nil {
+	if err := r.vnetSvc.Delete(ctx); err != nil {
 		if !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete virtual network %s for cluster %s", r.scope.Vnet().Name, r.scope.ClusterName())
 		}
