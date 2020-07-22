@@ -593,7 +593,14 @@ func (s *azureMachinePoolService) Get(ctx context.Context) (*infrav1exp.VMSS, er
 // getOwnerMachinePool returns the MachinePool object owning the current resource.
 func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
 	for _, ref := range obj.OwnerReferences {
-		if ref.Kind == "MachinePool" && ref.APIVersion == capiv1exp.GroupVersion.String() {
+		if ref.Kind != "MachinePool" {
+			continue
+		}
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if gv.Group == capiv1exp.GroupVersion.Group {
 			return getMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
 		}
 	}
