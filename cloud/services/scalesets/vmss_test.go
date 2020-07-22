@@ -70,7 +70,6 @@ func TestNewService(t *testing.T) {
 				},
 			},
 		},
-		NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 	})
 
 	g := gomega.NewGomegaWithT(t)
@@ -934,7 +933,6 @@ func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolSc
 				},
 			},
 		},
-		NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{

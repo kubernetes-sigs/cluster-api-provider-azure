@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 )
 
@@ -31,10 +32,11 @@ type Service struct {
 	InterfacesClient      networkinterfaces.Client
 	PublicIPsClient       publicips.Client
 	RoleAssignmentsClient roleassignments.Client
+	ResourceSKUCache      *resourceskus.Cache
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
+func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:                 scope,
 		MachineScope:          machineScope,
@@ -42,5 +44,6 @@ func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Se
 		InterfacesClient:      networkinterfaces.NewClient(scope),
 		PublicIPsClient:       publicips.NewClient(scope),
 		RoleAssignmentsClient: roleassignments.NewClient(scope),
+		ResourceSKUCache:      skuCache,
 	}
 }

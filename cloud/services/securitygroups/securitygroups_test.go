@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -115,7 +114,6 @@ func TestReconcileSecurityGroups(t *testing.T) {
 						},
 					},
 				},
-				NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
@@ -186,7 +184,6 @@ func TestDeleteSecurityGroups(t *testing.T) {
 						SubscriptionID: subscriptionID,
 					},
 				},
-				NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

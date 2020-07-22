@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
@@ -50,6 +51,7 @@ type azureClusterReconciler struct {
 	subnetsSvc       azure.Service
 	publicIPSvc      azure.Service
 	loadBalancerSvc  azure.Service
+	skuCache         *resourceskus.Cache
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
@@ -63,6 +65,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		subnetsSvc:       subnets.NewService(scope),
 		publicIPSvc:      publicips.NewService(scope),
 		loadBalancerSvc:  loadbalancers.NewService(scope),
+		skuCache:         resourceskus.NewCache(scope, scope.Location()),
 	}
 }
 
@@ -209,7 +212,7 @@ func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 }
 
 func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Context) error {
-	zones, err := r.scope.SKUCache.GetZones(ctx, r.scope.Location())
+	zones, err := r.skuCache.GetZones(ctx, r.scope.Location())
 	if err != nil {
 		return errors.Wrapf(err, "failed to get zones for location %s", r.scope.Location())
 	}

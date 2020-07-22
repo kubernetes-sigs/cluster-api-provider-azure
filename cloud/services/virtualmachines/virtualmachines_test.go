@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments/mock_roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
 
@@ -82,7 +81,6 @@ func TestInvalidVM(t *testing.T) {
 				},
 			},
 		},
-		NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -324,7 +322,6 @@ func TestGetVM(t *testing.T) {
 						},
 					},
 				},
-				NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
@@ -655,7 +652,6 @@ func TestReconcileVM(t *testing.T) {
 				Client:       client,
 				Cluster:      cluster,
 				AzureCluster: tc.azureCluster,
-				NewSKUCache:  resourceskus.NewStaticCacheFn(nil),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
@@ -775,7 +771,6 @@ func TestDeleteVM(t *testing.T) {
 						},
 					},
 				},
-				NewSKUCache: resourceskus.NewStaticCacheFn(nil),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

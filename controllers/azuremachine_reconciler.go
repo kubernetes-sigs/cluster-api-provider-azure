@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -45,18 +46,22 @@ type azureMachineService struct {
 	virtualMachinesSvc   *virtualmachines.Service
 	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
+	skuCache             *resourceskus.Cache
 }
 
 // newAzureMachineService populates all the services based on input scope
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
+	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+
 	return &azureMachineService{
 		machineScope:         machineScope,
 		clusterScope:         clusterScope,
 		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
-		networkInterfacesSvc: networkinterfaces.NewService(machineScope, clusterScope.SKUCache),
-		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
+		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
+		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope, cache),
 		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
+		skuCache:             cache,
 	}
 }
 
@@ -151,7 +156,7 @@ func (s *azureMachineService) getVirtualMachineZone(ctx context.Context) (string
 	vmSize := s.machineScope.AzureMachine.Spec.VMSize
 	location := s.machineScope.AzureMachine.Spec.Location
 
-	zones, err := s.clusterScope.SKUCache.GetZonesWithVMSize(ctx, vmSize, location)
+	zones, err := s.skuCache.GetZonesWithVMSize(ctx, vmSize, location)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get zones for VM size %s", vmSize)
 	}

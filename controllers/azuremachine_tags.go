@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
@@ -36,7 +37,7 @@ const (
 )
 
 // Ensure that the tags of the machine are correct
-func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
+func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, skuCache *resourceskus.Cache, additionalTags map[string]string) error {
 	annotation, err := r.machineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation)
 	if err != nil {
 		return err
@@ -47,7 +48,7 @@ func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, machineScope
 		vmSpec := &virtualmachines.Spec{
 			Name: machineScope.Name(),
 		}
-		svc := virtualmachines.NewService(clusterScope, machineScope)
+		svc := virtualmachines.NewService(clusterScope, machineScope, skuCache)
 		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machineScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VM")
