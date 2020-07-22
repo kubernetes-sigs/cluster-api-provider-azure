@@ -75,8 +75,8 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Unsetenv(AzureJson)).NotTo(HaveOccurred())
 	})
 
-	Context("Create single controlplane cluster", func() {
-		It("Should create a single node cluster", func() {
+	Context("Creating a single control-plane cluster", func() {
+		It("With 1 worker node", func() {
 			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -89,7 +89,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: pointer.Int64Ptr(1),
-					WorkerMachineCount:       pointer.Int64Ptr(0),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
 				CNIManifestPath:              e2eConfig.GetVariable(CNIPath),
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -99,8 +99,8 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Create multiple controlplane cluster with machine deployments", func() {
-		It("Should create a 3 node cluster", func() {
+	Context("Creating highly available control-plane cluster", func() {
+		It("With 3 control-plane nodes and 2 worker nodes", func() {
 			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -113,7 +113,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: pointer.Int64Ptr(3),
-					WorkerMachineCount:       pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(2),
 				},
 				CNIManifestPath:              e2eConfig.GetVariable(CNIPath),
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -121,7 +121,7 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			})
 
-			Context("in a cluster with one or more nodes", func() {
+			Context("Creating a accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -132,7 +132,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("validate networkpolicies", func() {
+			Context("Validating network policies", func() {
 				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
 					return AzureNetPolSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
