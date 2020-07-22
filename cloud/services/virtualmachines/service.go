@@ -31,19 +31,19 @@ type Service struct {
 	Client
 	InterfacesClient      networkinterfaces.Client
 	PublicIPsClient       publicips.Client
-	ResourceSkusClient    resourceskus.Client
 	RoleAssignmentsClient roleassignments.Client
+	ResourceSKUCache      *resourceskus.Cache
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope) *Service {
+func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:                 scope,
 		MachineScope:          machineScope,
 		Client:                NewClient(scope),
 		InterfacesClient:      networkinterfaces.NewClient(scope),
 		PublicIPsClient:       publicips.NewClient(scope),
-		ResourceSkusClient:    resourceskus.NewClient(scope),
 		RoleAssignmentsClient: roleassignments.NewClient(scope),
+		ResourceSKUCache:      skuCache,
 	}
 }

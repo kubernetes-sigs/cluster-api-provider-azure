@@ -31,10 +31,10 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
@@ -43,29 +43,29 @@ import (
 
 // azureClusterReconciler is the reconciler called by the AzureCluster controller
 type azureClusterReconciler struct {
-	scope                *scope.ClusterScope
-	groupsSvc            azure.Service
-	vnetSvc              azure.Service
-	securityGroupSvc     azure.OldService
-	routeTableSvc        azure.Service
-	subnetsSvc           azure.Service
-	publicIPSvc          azure.Service
-	loadBalancerSvc      azure.Service
-	availabilityZonesSvc azure.GetterService
+	scope            *scope.ClusterScope
+	groupsSvc        azure.Service
+	vnetSvc          azure.Service
+	securityGroupSvc azure.OldService
+	routeTableSvc    azure.Service
+	subnetsSvc       azure.Service
+	publicIPSvc      azure.Service
+	loadBalancerSvc  azure.Service
+	skuCache         *resourceskus.Cache
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
 func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
 	return &azureClusterReconciler{
-		scope:                scope,
-		groupsSvc:            groups.NewService(scope),
-		vnetSvc:              virtualnetworks.NewService(scope),
-		securityGroupSvc:     securitygroups.NewService(scope),
-		routeTableSvc:        routetables.NewService(scope),
-		subnetsSvc:           subnets.NewService(scope),
-		publicIPSvc:          publicips.NewService(scope),
-		loadBalancerSvc:      loadbalancers.NewService(scope),
-		availabilityZonesSvc: availabilityzones.NewService(scope),
+		scope:            scope,
+		groupsSvc:        groups.NewService(scope),
+		vnetSvc:          virtualnetworks.NewService(scope),
+		securityGroupSvc: securitygroups.NewService(scope),
+		routeTableSvc:    routetables.NewService(scope),
+		subnetsSvc:       subnets.NewService(scope),
+		publicIPSvc:      publicips.NewService(scope),
+		loadBalancerSvc:  loadbalancers.NewService(scope),
+		skuCache:         resourceskus.NewCache(scope, scope.Location()),
 	}
 }
 
@@ -212,13 +212,11 @@ func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 }
 
 func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Context) error {
-	spec := &availabilityzones.Spec{}
-	zonesInterface, err := r.availabilityZonesSvc.Get(ctx, spec)
+	zones, err := r.skuCache.GetZones(ctx, r.scope.Location())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get zones for location %s", r.scope.Location())
 	}
 
-	zones := zonesInterface.([]string)
 	for _, zone := range zones {
 		r.scope.SetFailureDomain(zone, clusterv1.FailureDomainSpec{
 			ControlPlane: true,

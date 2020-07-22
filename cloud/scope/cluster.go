@@ -38,7 +38,6 @@ type ClusterScopeParams struct {
 	Logger       logr.Logger
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
-	Context      context.Context
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -64,6 +63,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
+
 	return &ClusterScope{
 		Logger:       params.Logger,
 		client:       params.Client,
@@ -105,7 +105,7 @@ func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
 }
 
-// PublicIPSpec returns the public IP specs.
+// PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return []azure.PublicIPSpec{
 		{

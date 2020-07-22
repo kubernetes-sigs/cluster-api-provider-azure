@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // Reconcile gets/creates/updates a network interface.
@@ -34,6 +35,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
 		subnet, err := s.SubnetsClient.Get(ctx, nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName)
+
 		if err != nil {
 			return errors.Wrap(err, "failed to get subnets")
 		}
@@ -88,12 +90,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		if nicSpec.AcceleratedNetworking == nil {
 			// set accelerated networking to the capability of the VMSize
-			sku := nicSpec.VMSize
-			accelNet, err := s.ResourceSkusClient.HasAcceleratedNetworking(ctx, sku)
+			sku, err := s.ResourceSKUCache.Get(ctx, nicSpec.VMSize, resourceskus.VirtualMachines)
 			if err != nil {
-				return errors.Wrap(err, "failed to get accelerated networking capability")
+				return errors.Wrapf(err, "failed to get find vm sku %s in compute api", nicSpec.VMSize)
 			}
-			nicSpec.AcceleratedNetworking = to.BoolPtr(accelNet)
+
+			accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
+			nicSpec.AcceleratedNetworking = &accelNet
 		}
 
 		err = s.Client.CreateOrUpdate(ctx,

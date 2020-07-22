@@ -41,11 +41,11 @@ type Service struct {
 	LoadBalancersClient   loadbalancers.Client
 	PublicIPsClient       publicips.Client
 	InboundNATRulesClient inboundnatrules.Client
-	ResourceSkusClient    resourceskus.Client
+	ResourceSKUCache      *resourceskus.Cache
 }
 
 // NewService creates a new service.
-func NewService(scope NICScope) *Service {
+func NewService(scope NICScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:                 scope,
 		Client:                NewClient(scope),
@@ -53,6 +53,6 @@ func NewService(scope NICScope) *Service {
 		LoadBalancersClient:   loadbalancers.NewClient(scope),
 		PublicIPsClient:       publicips.NewClient(scope),
 		InboundNATRulesClient: inboundnatrules.NewClient(scope),
-		ResourceSkusClient:    resourceskus.NewClient(scope),
+		ResourceSKUCache:      skuCache,
 	}
 }

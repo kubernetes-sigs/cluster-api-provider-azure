@@ -47,7 +47,7 @@ func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope)
 	return &azureManagedMachinePoolReconciler{
 		kubeclient:    scope.Client,
 		agentPoolsSvc: agentpools.NewService(scope),
-		scaleSetsSvc:  scalesets.NewService(scope),
+		scaleSetsSvc:  scalesets.NewService(scope, nil), // ManagedMachinePoolReconciler does not use sku cache at the moment
 	}
 }
 

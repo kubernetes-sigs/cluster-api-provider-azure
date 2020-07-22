@@ -19,7 +19,9 @@ package controllers
 import (
 	"context"
 	"encoding/base64"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -27,7 +29,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
@@ -40,25 +41,27 @@ import (
 type azureMachineService struct {
 	machineScope         *scope.MachineScope
 	clusterScope         *scope.ClusterScope
-	availabilityZonesSvc azure.GetterService
 	networkInterfacesSvc azure.Service
 	inboundNatRulesSvc   azure.Service
 	virtualMachinesSvc   *virtualmachines.Service
 	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
+	skuCache             *resourceskus.Cache
 }
 
 // newAzureMachineService populates all the services based on input scope
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
+	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+
 	return &azureMachineService{
 		machineScope:         machineScope,
 		clusterScope:         clusterScope,
-		availabilityZonesSvc: availabilityzones.NewService(clusterScope),
-		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
 		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
-		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
+		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
+		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope, cache),
 		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
+		skuCache:             cache,
 	}
 }
 
@@ -153,20 +156,9 @@ func (s *azureMachineService) getVirtualMachineZone(ctx context.Context) (string
 	vmSize := s.machineScope.AzureMachine.Spec.VMSize
 	location := s.machineScope.AzureMachine.Spec.Location
 
-	zonesSpec := &availabilityzones.Spec{
-		VMSize: to.StringPtr(vmSize),
-	}
-	zonesInterface, err := s.availabilityZonesSvc.Get(ctx, zonesSpec)
+	zones, err := s.skuCache.GetZonesWithVMSize(ctx, vmSize, location)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", vmSize, location)
-	}
-	if zonesInterface == nil {
-		// if its nil, probably means no zones found
-		return "", nil
-	}
-	zones, ok := zonesInterface.([]string)
-	if !ok {
-		return "", errors.New("availability zones Get returned invalid interface")
+		return "", errors.Wrapf(err, "failed to get zones for VM size %s", vmSize)
 	}
 
 	if len(zones) <= 0 {
