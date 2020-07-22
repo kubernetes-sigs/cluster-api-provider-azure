@@ -262,20 +262,6 @@ func (mr *MockSubnetScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockSubnetScope)(nil).ControlPlaneSubnet))
 }
 
-// RouteTable mocks base method.
-func (m *MockSubnetScope) RouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// RouteTable indicates an expected call of RouteTable.
-func (mr *MockSubnetScopeMockRecorder) RouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockSubnetScope)(nil).RouteTable))
-}
-
 // IsIPv6Enabled mocks base method.
 func (m *MockSubnetScope) IsIPv6Enabled() bool {
 	m.ctrl.T.Helper()
@@ -288,6 +274,34 @@ func (m *MockSubnetScope) IsIPv6Enabled() bool {
 func (mr *MockSubnetScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockSubnetScope)(nil).IsIPv6Enabled))
+}
+
+// NodeRouteTable mocks base method.
+func (m *MockSubnetScope) NodeRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// NodeRouteTable indicates an expected call of NodeRouteTable.
+func (mr *MockSubnetScopeMockRecorder) NodeRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockSubnetScope)(nil).NodeRouteTable))
+}
+
+// ControlPlaneRouteTable mocks base method.
+func (m *MockSubnetScope) ControlPlaneRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
+func (mr *MockSubnetScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockSubnetScope)(nil).ControlPlaneRouteTable))
 }
 
 // Info mocks base method.

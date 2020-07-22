@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 
@@ -223,7 +224,7 @@ func newCloudProviderConfig(d azure.ClusterDescriber) (controlPlaneConfig *Cloud
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
 			SubnetName:                   d.NodeSubnet().Name,
-			RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
+			RouteTableName:               d.NodeRouteTable().Name,
 			LoadBalancerSku:              "Standard",
 			MaximumLoadBalancerRuleCount: 250,
 			UseManagedIdentityExtension:  false,
@@ -241,7 +242,7 @@ func newCloudProviderConfig(d azure.ClusterDescriber) (controlPlaneConfig *Cloud
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
 			SubnetName:                   d.NodeSubnet().Name,
-			RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
+			RouteTableName:               d.NodeRouteTable().Name,
 			LoadBalancerSku:              "Standard",
 			MaximumLoadBalancerRuleCount: 250,
 			UseManagedIdentityExtension:  false,

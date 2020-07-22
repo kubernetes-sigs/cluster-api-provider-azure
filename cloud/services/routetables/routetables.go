@@ -32,40 +32,35 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	for _, rtSpec := range s.Scope.RouteTableSpecs() {
-		existingRouteTable, err := s.Get(ctx, s.Scope.ResourceGroup(), rtSpec.Name)
+	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
+		existingRouteTable, err := s.Get(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
 		if !azure.ResourceNotFound(err) {
 			if err != nil {
-				return errors.Wrapf(err, "failed to get route table %s in %s", rtSpec.Name, s.Scope.ResourceGroup())
+				return errors.Wrapf(err, "failed to get route table %s in %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 			}
 
 			// route table already exists
-			// currently don't support:
-			//  1. creating separate control plane and node (#718) so update both
-			//  2. specifying your own routes via spec
-			s.Scope.NodeSubnet().RouteTable.Name = to.String(existingRouteTable.Name)
-			s.Scope.NodeSubnet().RouteTable.ID = to.String(existingRouteTable.ID)
-			s.Scope.ControlPlaneSubnet().RouteTable.Name = to.String(existingRouteTable.Name)
-			s.Scope.ControlPlaneSubnet().RouteTable.ID = to.String(existingRouteTable.ID)
+			// currently don't support specifying your own routes via spec
+			routeTableSpec.Subnet.RouteTable.Name = to.String(existingRouteTable.Name)
+			routeTableSpec.Subnet.RouteTable.ID = to.String(existingRouteTable.ID)
 
-			return nil
+			continue
 		}
 
-		s.Scope.V(2).Info("creating route table", "route table", rtSpec.Name)
+		s.Scope.V(2).Info("creating Route Table", "route table", routeTableSpec.Name)
 		err = s.Client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
-			rtSpec.Name,
+			routeTableSpec.Name,
 			network.RouteTable{
 				Location:                   to.StringPtr(s.Scope.Location()),
 				RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
 			},
 		)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create route table %s in resource group %s", rtSpec.Name, s.Scope.ResourceGroup())
+			return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 		}
-
-		s.Scope.V(2).Info("successfully created route table", "route table", rtSpec.Name)
+		s.Scope.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
 	}
 	return nil
 }
@@ -76,18 +71,18 @@ func (s *Service) Delete(ctx context.Context) error {
 		s.Scope.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil
 	}
-	for _, rtSpec := range s.Scope.RouteTableSpecs() {
-		s.Scope.V(2).Info("deleting route table", "route table", rtSpec.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), rtSpec.Name)
+	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
+		s.Scope.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
+		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
 			continue
 		}
 		if err != nil {
-			return errors.Wrapf(err, "failed to delete route table %s in resource group %s", rtSpec.Name, s.Scope.ResourceGroup())
+			return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
 		}
 
-		s.Scope.V(2).Info("successfully deleted route table", "route table", rtSpec.Name)
+		s.Scope.V(2).Info("successfully deleted route table", "route table", routeTableSpec.Name)
 	}
 	return nil
 }

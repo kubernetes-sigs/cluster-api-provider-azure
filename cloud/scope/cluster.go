@@ -19,8 +19,9 @@ package scope
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/net"
 	"strconv"
+
+	"k8s.io/utils/net"
 
 	"github.com/Azure/go-autorest/autorest/to"
 
@@ -152,11 +153,16 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	return specs
 }
 
-// RouteTableSpecs returns the node route table(s)
+// RouteTableSpecs returns the node route table
 func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
-	return []azure.RouteTableSpec{{
-		Name: s.RouteTable().Name,
-	}}
+	routetables := []azure.RouteTableSpec{}
+	if s.ControlPlaneRouteTable().Name != "" {
+		routetables = append(routetables, azure.RouteTableSpec{Name: s.ControlPlaneRouteTable().Name, Subnet: s.ControlPlaneSubnet()})
+	}
+	if s.NodeRouteTable().Name != "" {
+		routetables = append(routetables, azure.RouteTableSpec{Name: s.NodeRouteTable().Name, Subnet: s.NodeSubnet()})
+	}
+	return routetables
 }
 
 // NSGSpecs returns the security group specs.
@@ -196,7 +202,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
-/// VNetSpecs returns the virtual network specs.
+// VNetSpecs returns the virtual network specs.
 func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
 	return []azure.VNetSpec{
 		{
@@ -242,8 +248,13 @@ func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
 	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
 }
 
-// RouteTable returns the cluster node routetable.
-func (s *ClusterScope) RouteTable() *infrav1.RouteTable {
+// ControlPlaneRouteTable returns the cluster controlplane routetable.
+func (s *ClusterScope) ControlPlaneRouteTable() *infrav1.RouteTable {
+	return &s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet().RouteTable
+}
+
+// NodeRouteTable returns the cluster node routetable.
+func (s *ClusterScope) NodeRouteTable() *infrav1.RouteTable {
 	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
 }
 
@@ -320,6 +331,7 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 
+// SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
 func (s *ClusterScope) SetControlPlaneIngressRules() {
 	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
 		s.ControlPlaneSubnet().SecurityGroup.IngressRules = infrav1.IngressRules{
