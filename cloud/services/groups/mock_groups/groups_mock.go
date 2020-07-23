@@ -594,6 +594,20 @@ func (mr *MockGroupScopeMockRecorder) DeepCopyObject() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeepCopyObject", reflect.TypeOf((*MockGroupScope)(nil).DeepCopyObject))
 }
 
+// LoadBalancerName mocks base method.
+func (m *MockGroupScope) LoadBalancerName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadBalancerName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// LoadBalancerName indicates an expected call of LoadBalancerName.
+func (mr *MockGroupScopeMockRecorder) LoadBalancerName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadBalancerName", reflect.TypeOf((*MockGroupScope)(nil).LoadBalancerName))
+}
+
 // Network mocks base method.
 func (m *MockGroupScope) Network() *v1alpha3.Network {
 	m.ctrl.T.Helper()

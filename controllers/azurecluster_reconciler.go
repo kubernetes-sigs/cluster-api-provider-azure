@@ -65,7 +65,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		subnetsSvc:       subnets.NewService(scope),
 		publicIPSvc:      publicips.NewService(scope),
 		loadBalancerSvc:  loadbalancers.NewService(scope),
-		skuCache:         resourceskus.NewCache(scope, scope.Location()),
+		skuCache:         resourceskus.NewCache(scope.SubscriptionID(), scope, scope.Location()),
 	}
 }
 

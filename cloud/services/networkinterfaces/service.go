@@ -49,11 +49,11 @@ type Service struct {
 func NewService(scope NICScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:                 scope,
-		Client:                NewClient(scope),
-		SubnetsClient:         subnets.NewClient(scope),
-		LoadBalancersClient:   loadbalancers.NewClient(scope),
-		PublicIPsClient:       publicips.NewClient(scope),
-		InboundNATRulesClient: inboundnatrules.NewClient(scope),
+		Client:                NewClient(scope.SubscriptionID(), scope),
+		SubnetsClient:         subnets.NewClient(scope.SubscriptionID(), scope),
+		LoadBalancersClient:   loadbalancers.NewClient(scope.SubscriptionID(), scope),
+		PublicIPsClient:       publicips.NewClient(scope.SubscriptionID(), scope),
+		InboundNATRulesClient: inboundnatrules.NewClient(scope.SubscriptionID(), scope),
 		ResourceSKUCache:      skuCache,
 	}
 }

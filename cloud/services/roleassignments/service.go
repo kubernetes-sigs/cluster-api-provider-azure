@@ -25,6 +25,7 @@ import (
 // RoleAssignmentScope defines the scope interface for a role assignment service.
 type RoleAssignmentScope interface {
 	logr.Logger
+	azure.Authorizer
 	azure.ClusterDescriber
 	RoleAssignmentSpecs() []azure.RoleAssignmentSpec
 }

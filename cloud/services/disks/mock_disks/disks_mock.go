@@ -595,6 +595,20 @@ func (mr *MockDiskScopeMockRecorder) DeepCopyObject() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeepCopyObject", reflect.TypeOf((*MockDiskScope)(nil).DeepCopyObject))
 }
 
+// LoadBalancerName mocks base method.
+func (m *MockDiskScope) LoadBalancerName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadBalancerName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// LoadBalancerName indicates an expected call of LoadBalancerName.
+func (mr *MockDiskScopeMockRecorder) LoadBalancerName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadBalancerName", reflect.TypeOf((*MockDiskScope)(nil).LoadBalancerName))
+}
+
 // Network mocks base method.
 func (m *MockDiskScope) Network() *v1alpha3.Network {
 	m.ctrl.T.Helper()
