@@ -31,12 +31,13 @@ type Service struct {
 type GroupScope interface {
 	logr.Logger
 	azure.ClusterDescriber
+	azure.Authorizer
 }
 
 // NewService creates a new service.
 func NewService(scope GroupScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope),
+		Client: NewClient(scope.SubscriptionID(), scope),
 	}
 }

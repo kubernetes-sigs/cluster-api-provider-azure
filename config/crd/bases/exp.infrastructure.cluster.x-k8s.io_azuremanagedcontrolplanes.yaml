@@ -107,7 +107,6 @@ spec:
               version:
                 description: Version defines the desired Kubernetes version.
                 minLength: 2
-                pattern: ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$
                 type: string
             required:
             - defaultPoolRef
@@ -129,6 +128,10 @@ spec:
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean
+              virtualNetwork:
+                description: VirtualNetwork is the name of the AKS-generated VNET.
+                  It's not predictable unless we pre-create it. Consider pre-creating?
+                type: string
             type: object
         type: object
     served: true

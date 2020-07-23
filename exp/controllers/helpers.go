@@ -174,6 +174,11 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 			return nil
 		}
 
+		if cluster == nil {
+			log.Error(err, "owning cluster has not set owner ref yet")
+			return nil
+		}
+
 		ref := cluster.Spec.ControlPlaneRef
 		if ref == nil || ref.Name == "" {
 			return nil

@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
@@ -110,6 +111,101 @@ func (c *AzureCluster) GetConditions() clusterv1.Conditions {
 // SetConditions will set the given conditions on an AzureCluster object
 func (c *AzureCluster) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
+}
+
+// ClusterDescriber implementation
+
+// SubscriptionID returns the cluster resource group.
+func (c *AzureCluster) SubscriptionID() string {
+	return c.Spec.SubscriptionID
+}
+
+// ResourceGroup returns the cluster resource group.
+func (c *AzureCluster) ResourceGroup() string {
+	return c.Spec.ResourceGroup
+}
+
+// ClusterName returns the cluster name.
+func (c *AzureCluster) ClusterName() string {
+	for _, ref := range c.OwnerReferences {
+		if ref.Kind != "Cluster" {
+			continue
+		}
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return ""
+		}
+		if gv.Group == clusterv1.GroupVersion.Group {
+			return ref.Name
+		}
+	}
+	return ""
+}
+
+// Location returns the cluster location.
+func (c *AzureCluster) Location() string {
+	return c.Spec.Location
+}
+
+// SetFailureDomain will set the spec for a for a given key
+func (c *AzureCluster) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
+	if c.Status.FailureDomains == nil {
+		c.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
+	}
+	c.Status.FailureDomains[id] = spec
+}
+
+// AdditionalTags returns AdditionalTags from the scope's AzureCluster.
+func (c *AzureCluster) AdditionalTags() Tags {
+	tags := make(Tags)
+	if c.Spec.AdditionalTags != nil {
+		tags = c.Spec.AdditionalTags.DeepCopy()
+	}
+	return tags
+}
+
+// END
+
+// NetworkDescriber implementation
+
+// LoadBalancerName returns the node load balancer name.
+func (c *AzureCluster) LoadBalancerName() string {
+	return c.ClusterName()
+}
+
+// Network returns the cluster network object.
+func (c *AzureCluster) Network() *Network {
+	return &c.Status.Network
+}
+
+// Vnet returns the cluster Vnet.
+func (c *AzureCluster) Vnet() *VnetSpec {
+	return &c.Spec.NetworkSpec.Vnet
+}
+
+// IsVnetManaged returns true if the vnet is managed.
+func (c *AzureCluster) IsVnetManaged() bool {
+	return c.Spec.NetworkSpec.Vnet.ID == "" || c.Spec.NetworkSpec.Vnet.Tags.HasOwned(c.ClusterName())
+}
+
+// Subnets returns the cluster subnets.
+func (c *AzureCluster) Subnets() Subnets {
+	return c.Spec.NetworkSpec.Subnets
+}
+
+// ControlPlaneSubnet returns the cluster control plane subnet.
+func (c *AzureCluster) ControlPlaneSubnet() *SubnetSpec {
+	return c.Spec.NetworkSpec.GetControlPlaneSubnet()
+}
+
+// NodeSubnet returns the cluster node subnet.
+func (c *AzureCluster) NodeSubnet() *SubnetSpec {
+	return c.Spec.NetworkSpec.GetNodeSubnet()
+}
+
+// RouteTable returns the cluster node routetable.
+func (c *AzureCluster) RouteTable() *RouteTable {
+	return &c.Spec.NetworkSpec.GetNodeSubnet().RouteTable
 }
 
 func init() {

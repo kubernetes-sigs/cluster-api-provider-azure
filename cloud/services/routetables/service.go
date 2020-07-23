@@ -24,6 +24,7 @@ import (
 
 // RouteTableScope defines the scope interface for route table service
 type RouteTableScope interface {
+	azure.Authorizer
 	azure.ClusterDescriber
 	logr.Logger
 	RouteTableSpecs() []azure.RouteTableSpec
@@ -39,6 +40,6 @@ type Service struct {
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope),
+		Client: NewClient(scope.SubscriptionID(), scope),
 	}
 }

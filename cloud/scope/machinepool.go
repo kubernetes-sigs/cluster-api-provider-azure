@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -45,6 +46,7 @@ type (
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		azure.ClusterDescriber
+		*AzureClients
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -55,6 +57,7 @@ type (
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		azure.ClusterDescriber
+		*AzureClients
 	}
 )
 
@@ -69,6 +72,10 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 	}
 	if params.AzureMachinePool == nil {
 		return nil, errors.New("azure machine pool is required when creating a MachinePoolScope")
+	}
+
+	if params.AzureClients == nil {
+		return nil, errors.New("azure clients are required when creating a MachinePoolScope")
 	}
 
 	if params.Logger == nil {

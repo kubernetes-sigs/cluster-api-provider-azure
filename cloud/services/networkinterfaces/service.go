@@ -28,6 +28,7 @@ import (
 
 // NICScope defines the scope interface for a network interfaces service.
 type NICScope interface {
+	azure.Authorizer
 	azure.ClusterDescriber
 	logr.Logger
 	NICSpecs() []azure.NICSpec

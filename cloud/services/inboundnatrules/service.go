@@ -26,6 +26,7 @@ import (
 type InboundNatScope interface {
 	logr.Logger
 	azure.ClusterDescriber
+	azure.Authorizer
 	InboundNatSpecs() []azure.InboundNatSpec
 }
 
@@ -40,7 +41,7 @@ type Service struct {
 func NewService(scope InboundNatScope) *Service {
 	return &Service{
 		Scope:               scope,
-		Client:              NewClient(scope),
-		LoadBalancersClient: loadbalancers.NewClient(scope),
+		Client:              NewClient(scope.SubscriptionID(), scope),
+		LoadBalancersClient: loadbalancers.NewClient(scope.SubscriptionID(), scope),
 	}
 }

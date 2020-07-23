@@ -17,11 +17,9 @@ limitations under the License.
 package scope
 
 import (
-	"os"
-
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/pkg/errors"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 const (
@@ -35,56 +33,45 @@ const (
 	USGovernmentCloud = "AzureUSGovernmentCloud"
 )
 
+var _ azure.Authorizer = new(AzureClients)
+
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	SubscriptionID             string
+	auth.EnvironmentSettings
+	subscriptionID             string
 	ResourceManagerEndpoint    string
 	ResourceManagerVMDNSSuffix string
-	Authorizer                 autorest.Authorizer
+	authorizer                 autorest.Authorizer
 }
 
-func (c *AzureClients) setCredentials(subscriptionID string) error {
-	subID, err := getSubscriptionID(subscriptionID)
-	if err != nil {
-		return err
-	}
-	c.SubscriptionID = subID
+// NewAzureClients discovers and initializes
+func NewAzureClients(subscriptionID string) (*AzureClients, error) {
+	c := new(AzureClients)
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
-	c.ResourceManagerVMDNSSuffix = GetAzureDNSZoneForEnvironment(settings.Environment.Name)
-	settings.Values[auth.SubscriptionID] = subscriptionID
-	c.Authorizer, err = settings.GetAuthorizer()
-	return err
-}
-
-func getSubscriptionID(subscriptionID string) (string, error) {
 	if subscriptionID != "" {
-		return subscriptionID, nil
+		settings.Values[auth.SubscriptionID] = subscriptionID
 	}
-	subscriptionID = os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return "", errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
+
+	c.subscriptionID = settings.Values[auth.SubscriptionID]
+	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
+	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
+	c.EnvironmentSettings = settings
+	c.authorizer, err = settings.GetAuthorizer()
+	if err != nil {
+		return nil, err
 	}
-	return subscriptionID, nil
+	return c, err
 }
 
-// GetAzureDNSZoneForEnvironment returnes the DNSZone to be used with the
-// cloud environment, the default is the public cloud
-func GetAzureDNSZoneForEnvironment(environmentName string) string {
-	// default is public cloud
-	switch environmentName {
-	case ChinaCloud:
-		return "cloudapp.chinacloudapi.cn"
-	case GermanCloud:
-		return "cloudapp.microsoftazure.de"
-	case PublicCloud:
-		return "cloudapp.azure.com"
-	case USGovernmentCloud:
-		return "cloudapp.usgovcloudapi.net"
-	default:
-		return "cloudapp.azure.com"
-	}
+// BaseURI returns the Azure ResourceManagerEndpoint.
+func (c *AzureClients) BaseURI() string {
+	return c.Environment.ResourceManagerEndpoint
+}
+
+// Authorizer returns the Azure client Authorizer.
+func (c *AzureClients) Authorizer() autorest.Authorizer {
+	return c.authorizer
 }

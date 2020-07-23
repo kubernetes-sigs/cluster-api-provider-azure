@@ -24,6 +24,7 @@ import (
 // VNetScope defines the scope interface for a virtual network service.
 type VNetScope interface {
 	logr.Logger
+	azure.Authorizer
 	azure.ClusterDescriber
 	VNetSpecs() []azure.VNetSpec
 }
@@ -38,6 +39,6 @@ type Service struct {
 func NewService(scope VNetScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope),
+		Client: NewClient(scope.SubscriptionID(), scope),
 	}
 }

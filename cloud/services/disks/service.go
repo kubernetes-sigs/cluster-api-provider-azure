@@ -25,6 +25,7 @@ import (
 type DiskScope interface {
 	logr.Logger
 	azure.ClusterDescriber
+	azure.Authorizer
 	DiskSpecs() []azure.DiskSpec
 }
 
@@ -38,6 +39,6 @@ type Service struct {
 func NewService(scope DiskScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope),
+		Client: NewClient(scope.SubscriptionID(), scope),
 	}
 }

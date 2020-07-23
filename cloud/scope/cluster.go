@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
@@ -33,11 +32,11 @@ import (
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
-	AzureClients
-	Client       client.Client
-	Logger       logr.Logger
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
+	*AzureClients
+	Client           client.Client
+	Logger           logr.Logger
+	Cluster          *clusterv1.Cluster
+	ClusterDescriber azure.ClusterDescriber
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -46,31 +45,27 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
-	if params.AzureCluster == nil {
-		return nil, errors.New("failed to generate new scope from nil AzureCluster")
+
+	if params.ClusterDescriber == nil {
+		return nil, errors.New("failed to generate new scope from nil ClusterDescriber")
 	}
 
 	if params.Logger == nil {
 		params.Logger = klogr.New()
 	}
 
-	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Azure session")
-	}
-
-	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
+	helper, err := patch.NewHelper(params.ClusterDescriber, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
 	return &ClusterScope{
-		Logger:       params.Logger,
-		client:       params.Client,
-		AzureClients: params.AzureClients,
-		Cluster:      params.Cluster,
-		AzureCluster: params.AzureCluster,
-		patchHelper:  helper,
+		Logger:           params.Logger,
+		client:           params.Client,
+		AzureClients:     params.AzureClients,
+		Cluster:          params.Cluster,
+		ClusterDescriber: params.ClusterDescriber,
+		patchHelper:      helper,
 	}, nil
 }
 
@@ -80,29 +75,9 @@ type ClusterScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	AzureClients
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
-}
-
-// SubscriptionID returns the Azure client Subscription ID.
-func (s *ClusterScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID
-}
-
-// BaseURI returns the Azure ResourceManagerEndpoint.
-func (s *ClusterScope) BaseURI() string {
-	return s.ResourceManagerEndpoint
-}
-
-// Authorizer returns the Azure client Authorizer.
-func (s *ClusterScope) Authorizer() autorest.Authorizer {
-	return s.AzureClients.Authorizer
-}
-
-// Network returns the cluster network object.
-func (s *ClusterScope) Network() *infrav1.Network {
-	return &s.AzureCluster.Status.Network
+	*AzureClients
+	Cluster *clusterv1.Cluster
+	azure.ClusterDescriber
 }
 
 // PublicIPSpecs returns the public IP specs.
@@ -176,7 +151,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
-/// VNetSpecs returns the virtual network specs.
+// VNetSpecs returns the virtual network specs.
 func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
 	return []azure.VNetSpec{
 		{
@@ -187,54 +162,9 @@ func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
 	}
 }
 
-// Vnet returns the cluster Vnet.
-func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
-	return &s.AzureCluster.Spec.NetworkSpec.Vnet
-}
-
-// IsVnetManaged returns true if the vnet is managed.
-func (s *ClusterScope) IsVnetManaged() bool {
-	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
-}
-
-// Subnets returns the cluster subnets.
-func (s *ClusterScope) Subnets() infrav1.Subnets {
-	return s.AzureCluster.Spec.NetworkSpec.Subnets
-}
-
-// ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-}
-
-// NodeSubnet returns the cluster node subnet.
-func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-}
-
-// RouteTable returns the cluster node routetable.
-func (s *ClusterScope) RouteTable() *infrav1.RouteTable {
-	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
-}
-
-// ResourceGroup returns the cluster resource group.
-func (s *ClusterScope) ResourceGroup() string {
-	return s.AzureCluster.Spec.ResourceGroup
-}
-
-// ClusterName returns the cluster name.
-func (s *ClusterScope) ClusterName() string {
-	return s.Cluster.Name
-}
-
 // Namespace returns the cluster namespace.
 func (s *ClusterScope) Namespace() string {
 	return s.Cluster.Namespace
-}
-
-// Location returns the cluster location.
-func (s *ClusterScope) Location() string {
-	return s.AzureCluster.Spec.Location
 }
 
 // GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
@@ -251,21 +181,12 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
-	return s.patchHelper.Patch(ctx, s.AzureCluster)
+	return s.patchHelper.Patch(ctx, s.ClusterDescriber)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close(ctx context.Context) error {
-	return s.patchHelper.Patch(ctx, s.AzureCluster)
-}
-
-// AdditionalTags returns AdditionalTags from the scope's AzureCluster.
-func (s *ClusterScope) AdditionalTags() infrav1.Tags {
-	tags := make(infrav1.Tags)
-	if s.AzureCluster.Spec.AdditionalTags != nil {
-		tags = s.AzureCluster.Spec.AdditionalTags.DeepCopy()
-	}
-	return tags
+	return s.patchHelper.Patch(ctx, s.ClusterDescriber)
 }
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.
@@ -274,12 +195,4 @@ func (s *ClusterScope) APIServerPort() int32 {
 		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return 6443
-}
-
-// SetFailureDomain will set the spec for a for a given key
-func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
-	if s.AzureCluster.Status.FailureDomains == nil {
-		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
-	}
-	s.AzureCluster.Status.FailureDomains[id] = spec
 }

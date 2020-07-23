@@ -126,6 +126,12 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
 			},
+			DiagnosticsProfile: &compute.DiagnosticsProfile{
+				BootDiagnostics: &compute.BootDiagnostics{
+					Enabled:    to.BoolPtr(true),
+					StorageURI: to.StringPtr("https://bootdiagace.blob.core.windows.net"),
+				},
+			},
 			StorageProfile: storageProfile,
 			OsProfile: &compute.OSProfile{
 				ComputerName:  to.StringPtr(vmSpec.Name),

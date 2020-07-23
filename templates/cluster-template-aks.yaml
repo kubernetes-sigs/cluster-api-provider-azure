@@ -11,7 +11,7 @@ spec:
   controlPlaneRef:
     apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureManagedControlPlane
-    name: ${CLUSTER_NAME}-control-plane
+    name: ${CLUSTER_NAME}
   infrastructureRef:
     apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureManagedCluster
@@ -20,7 +20,7 @@ spec:
 apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedControlPlane
 metadata:
-  name: ${CLUSTER_NAME}-control-plane
+  name: ${CLUSTER_NAME}
   namespace: default
 spec:
   defaultPoolRef:
@@ -96,3 +96,77 @@ metadata:
 spec:
   osDiskSizeGB: 1024
   sku: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      location: ${AZURE_LOCATION}
+      osDisk:
+        diskSizeGB: 30
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: value
+            name: ${CLUSTER_NAME}-kubeconfig
+        owner: root:root
+        path: /etc/kubernetes/admin.conf
+        permissions: "0644"
+      - contentFrom:
+          secret:
+            key: azure.json
+            name: azure-secret
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        discovery:
+          file:
+            kubeConfigPath: /etc/kubernetes/admin.conf
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'

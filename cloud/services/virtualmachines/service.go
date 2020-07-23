@@ -38,9 +38,9 @@ func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope, sku
 	return &Service{
 		Scope:            scope,
 		MachineScope:     machineScope,
-		Client:           NewClient(scope),
-		InterfacesClient: networkinterfaces.NewClient(scope),
-		PublicIPsClient:  publicips.NewClient(scope),
+		Client:           NewClient(scope.SubscriptionID(), scope),
+		InterfacesClient: networkinterfaces.NewClient(scope.SubscriptionID(), scope),
+		PublicIPsClient:  publicips.NewClient(scope.SubscriptionID(), scope),
 		ResourceSKUCache: skuCache,
 	}
 }

@@ -39,8 +39,9 @@ import (
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	Client           client.Client
-	Logger           logr.Logger
+	Client client.Client
+	Logger logr.Logger
+	*AzureClients
 	ClusterDescriber azure.ClusterDescriber
 	Machine          *clusterv1.Machine
 	AzureMachine     *infrav1.AzureMachine
@@ -73,6 +74,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		Logger:           params.Logger,
 		patchHelper:      helper,
 		ClusterDescriber: params.ClusterDescriber,
+		AzureClients:     params.AzureClients,
 	}, nil
 }
 
@@ -83,6 +85,7 @@ type MachineScope struct {
 	patchHelper *patch.Helper
 
 	azure.ClusterDescriber
+	*AzureClients
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 }
@@ -127,7 +130,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		spec.PublicLoadBalancerName = azure.GeneratePublicLBName(m.ClusterName())
 		spec.InternalLoadBalancerName = azure.GenerateInternalLBName(m.ClusterName())
 	} else if m.Role() == infrav1.Node {
-		spec.PublicLoadBalancerName = m.ClusterName()
+		spec.PublicLoadBalancerName = m.LoadBalancerName()
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {

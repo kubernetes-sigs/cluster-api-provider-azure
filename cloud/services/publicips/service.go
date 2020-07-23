@@ -25,6 +25,7 @@ import (
 // PublicIPScope defines the scope interface for a public IP service.
 type PublicIPScope interface {
 	logr.Logger
+	azure.Authorizer
 	azure.ClusterDescriber
 	PublicIPSpecs() []azure.PublicIPSpec
 }
@@ -39,6 +40,6 @@ type Service struct {
 func NewService(scope PublicIPScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope),
+		Client: NewClient(scope.SubscriptionID(), scope),
 	}
 }

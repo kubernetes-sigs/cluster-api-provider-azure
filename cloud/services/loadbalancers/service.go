@@ -26,6 +26,7 @@ import (
 
 // LBScope defines the scope interface for a load balancer service.
 type LBScope interface {
+	azure.Authorizer
 	azure.ClusterDescriber
 	logr.Logger
 	LBSpecs() []azure.LBSpec
@@ -44,9 +45,9 @@ type Service struct {
 func NewService(scope LBScope) *Service {
 	return &Service{
 		Scope:                 scope,
-		Client:                NewClient(scope),
-		PublicIPsClient:       publicips.NewClient(scope),
-		SubnetsClient:         subnets.NewClient(scope),
-		VirtualNetworksClient: virtualnetworks.NewClient(scope),
+		Client:                NewClient(scope.SubscriptionID(), scope),
+		PublicIPsClient:       publicips.NewClient(scope.SubscriptionID(), scope),
+		SubnetsClient:         subnets.NewClient(scope.SubscriptionID(), scope),
+		VirtualNetworksClient: virtualnetworks.NewClient(scope.SubscriptionID(), scope),
 	}
 }

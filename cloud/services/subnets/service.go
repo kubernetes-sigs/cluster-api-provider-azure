@@ -25,6 +25,7 @@ import (
 
 // SubnetScope defines the scope interface for a network interfaces service.
 type SubnetScope interface {
+	azure.Authorizer
 	azure.ClusterDescriber
 	logr.Logger
 	SubnetSpecs() []azure.SubnetSpec
@@ -42,8 +43,8 @@ type Service struct {
 func NewService(scope SubnetScope) *Service {
 	return &Service{
 		Scope:                scope,
-		Client:               NewClient(scope),
-		SecurityGroupsClient: securitygroups.NewClient(scope),
-		RouteTablesClient:    routetables.NewClient(scope),
+		Client:               NewClient(scope.SubscriptionID(), scope),
+		SecurityGroupsClient: securitygroups.NewClient(scope.SubscriptionID(), scope),
+		RouteTablesClient:    routetables.NewClient(scope.SubscriptionID(), scope),
 	}
 }

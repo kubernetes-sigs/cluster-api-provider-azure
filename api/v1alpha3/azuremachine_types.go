@@ -96,6 +96,8 @@ type AzureMachineSpec struct {
 	// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
 	// +optional
 	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`
+
+	Subnet *string `json:"subnet,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs

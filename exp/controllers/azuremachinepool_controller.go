@@ -187,12 +187,18 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 
 	logger = logger.WithValues("AzureCluster", azureCluster.Name)
 
+	azClients, err := scope.NewAzureClients(azureCluster.SubscriptionID())
+	if err != nil {
+		return reconcile.Result{}, errors.Errorf("failed to create azure settings: %+v", err)
+	}
+
 	// Create the cluster scope
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:       r.Client,
-		Logger:       logger,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
+		Client:           r.Client,
+		Logger:           logger,
+		Cluster:          cluster,
+		ClusterDescriber: azureCluster,
+		AzureClients:     azClients,
 	})
 	if err != nil {
 		return reconcile.Result{}, err
@@ -205,6 +211,7 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 		MachinePool:      machinePool,
 		AzureMachinePool: azMachinePool,
 		ClusterDescriber: clusterScope,
+		AzureClients:     azClients,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -401,7 +408,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machineP
 		vmssSpec := &scalesets.Spec{
 			Name: machinePoolScope.Name(),
 		}
-		svc := scalesets.NewService(machinePoolScope, skuCache)
+		svc := scalesets.NewService(clusterScope.SubscriptionID(), machinePoolScope)
 		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machinePoolScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VMSS")
@@ -487,7 +494,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	return &azureMachinePoolService{
 		machinePoolScope:           machinePoolScope,
 		clusterScope:               clusterScope,
-		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
+		virtualMachinesScaleSetSvc: scalesets.NewService(clusterScope.SubscriptionID(), machinePoolScope),
 		skuCache:                   cache,
 	}
 }
@@ -528,7 +535,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		DataDisks:              ampSpec.Template.DataDisks,
 		CustomData:             bootstrapData,
 		AdditionalTags:         s.machinePoolScope.AdditionalTags(),
-		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().ID,
+		SubnetID:               s.clusterScope.NodeSubnet().ID,
 		PublicLoadBalancerName: s.clusterScope.ClusterName(),
 		AcceleratedNetworking:  ampSpec.Template.AcceleratedNetworking,
 	}

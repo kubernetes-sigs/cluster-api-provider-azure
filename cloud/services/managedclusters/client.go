@@ -29,7 +29,7 @@ import (
 type Client interface {
 	Get(context.Context, string, string) (containerservice.ManagedCluster, error)
 	GetCredentials(context.Context, string, string) ([]byte, error)
-	CreateOrUpdate(context.Context, string, string, containerservice.ManagedCluster) error
+	CreateOrUpdate(context.Context, string, string, containerservice.ManagedCluster) (containerservice.ManagedCluster, error)
 	Delete(context.Context, string, string) error
 }
 
@@ -41,9 +41,9 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(subscriptionID string, auth azure.Authorizer) *AzureClient {
 	return &AzureClient{
-		managedclusters: newManagedClustersClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
+		managedclusters: newManagedClustersClient(subscriptionID, auth.BaseURI(), auth.Authorizer()),
 	}
 }
 
@@ -75,16 +75,15 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 }
 
 // CreateOrUpdate creates or updates a managed cluster.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) error {
+func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) (containerservice.ManagedCluster, error) {
 	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin operation")
+		return containerservice.ManagedCluster{}, errors.Wrapf(err, "failed to begin operation")
 	}
 	if err := future.WaitForCompletionRef(ctx, ac.managedclusters.Client); err != nil {
-		return errors.Wrapf(err, "failed to end operation")
+		return containerservice.ManagedCluster{}, errors.Wrapf(err, "failed to end operation")
 	}
-	_, err = future.Result(ac.managedclusters)
-	return err
+	return future.Result(ac.managedclusters)
 }
 
 // Delete deletes a managed cluster.

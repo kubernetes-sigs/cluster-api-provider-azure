@@ -81,11 +81,12 @@ func (mr *MockClientMockRecorder) GetCredentials(arg0, arg1, arg2 interface{}) *
 }
 
 // CreateOrUpdate mocks base method.
-func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 containerservice.ManagedCluster) error {
+func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 containerservice.ManagedCluster) (containerservice.ManagedCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(containerservice.ManagedCluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateOrUpdate indicates an expected call of CreateOrUpdate.

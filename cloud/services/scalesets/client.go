@@ -48,11 +48,11 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VMSS client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(subscriptionID string, auth azure.Authorizer) *AzureClient {
 	return &AzureClient{
-		scalesetvms: newVirtualMachineScaleSetVMsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
-		scalesets:   newVirtualMachineScaleSetsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
-		publicIPs:   newPublicIPsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
+		scalesetvms: newVirtualMachineScaleSetVMsClient(subscriptionID, auth.BaseURI(), auth.Authorizer()),
+		scalesets:   newVirtualMachineScaleSetsClient(subscriptionID, auth.BaseURI(), auth.Authorizer()),
+		publicIPs:   newPublicIPsClient(subscriptionID, auth.BaseURI(), auth.Authorizer()),
 	}
 }
 

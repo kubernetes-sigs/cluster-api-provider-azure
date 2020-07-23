@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -49,6 +50,7 @@ type AzureManagedMachinePoolReconciler struct {
 	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
+	Scheme           *runtime.Scheme
 }
 
 func (r *AzureManagedMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
@@ -154,6 +156,11 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.
 		return reconcile.Result{}, err
 	}
 
+	azClients, err := scope.NewAzureClients(controlPlane.SubscriptionID())
+	if err != nil {
+		return reconcile.Result{}, errors.Errorf("failed to create azure settings: %+v", err)
+	}
+
 	// Create the scope.
 	mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
 		Client:           r.Client,
@@ -163,6 +170,8 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.
 		MachinePool:      ownerPool,
 		InfraMachinePool: infraPool,
 		PatchTarget:      infraPool,
+		AzureClients:     azClients,
+		Scheme:           r.Scheme,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)

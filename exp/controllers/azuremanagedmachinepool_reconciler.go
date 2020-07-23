@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/pkg/errors"
@@ -46,21 +47,28 @@ type NodeLister interface {
 func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
 	return &azureManagedMachinePoolReconciler{
 		kubeclient:    scope.Client,
-		agentPoolsSvc: agentpools.NewService(scope),
-		scaleSetsSvc:  scalesets.NewService(scope, nil), // ManagedMachinePoolReconciler does not use sku cache at the moment
+		agentPoolsSvc: agentpools.NewService(scope.SubscriptionID(), scope),
+		scaleSetsSvc:  scalesets.NewService(scope.SubscriptionID(), scope, nil),
 	}
 }
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	scope.Logger.Info("reconciling machine pool")
+
+	var normalizedVersion *string
+	if scope.MachinePool.Spec.Template.Spec.Version != nil {
+		v := strings.TrimPrefix(*scope.MachinePool.Spec.Template.Spec.Version, "v")
+		normalizedVersion = &v
+	}
+
 	agentPoolSpec := &agentpools.Spec{
 		Name:          scope.InfraMachinePool.Name,
 		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
 		Cluster:       scope.ControlPlane.Name,
 		SKU:           scope.InfraMachinePool.Spec.SKU,
 		Replicas:      1,
-		Version:       scope.MachinePool.Spec.Template.Spec.Version,
+		Version:       normalizedVersion,
 	}
 
 	if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {
