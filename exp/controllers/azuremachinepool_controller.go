@@ -286,12 +286,6 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		machinePoolScope.SetFailureMessage(errors.Errorf("Azure VMSS state %q is unexpected", vmss.State))
 	}
 
-	// Ensure that the tags are correct.
-	err = r.reconcileTags(ctx, machinePoolScope, clusterScope, ams.skuCache, machinePoolScope.AdditionalTags())
-	if err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
-	}
-
 	return reconcile.Result{}, nil
 }
 
