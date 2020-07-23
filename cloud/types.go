@@ -58,7 +58,7 @@ type LBSpec struct {
 	APIServerPort    int32
 }
 
-// RouteTableSpec defines the specification for a route table
+// RouteTableSpec defines the specification for a Route Table.
 type RouteTableSpec struct {
 	Name string
 }
@@ -85,4 +85,10 @@ type VNetSpec struct {
 	ResourceGroup string
 	Name          string
 	CIDR          string
+}
+
+// RoleAssignmentSpec defines the specification for a Role Assignment.
+type RoleAssignmentSpec struct {
+	MachineName string
+	UUID        string
 }
