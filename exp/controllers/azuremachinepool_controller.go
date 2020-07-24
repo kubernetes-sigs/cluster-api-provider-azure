@@ -498,7 +498,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		return nil, errors.Wrapf(err, "failed to base64 decode ssh public key")
 	}
 
-	image, err := getVMImage(s.machinePoolScope)
+	image, err := s.machinePoolScope.GetVMImage()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get VMSS image")
 	}
@@ -586,14 +586,4 @@ func (s *azureMachinePoolService) Get(ctx context.Context) (*infrav1exp.VMSS, er
 	}
 
 	return vmss, err
-}
-
-// Pick image from the machine configuration, or use a default one.
-func getVMImage(scope *scope.MachinePoolScope) (*infrav1.Image, error) {
-	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
-	if scope.AzureMachinePool.Spec.Template.Image != nil {
-		return scope.AzureMachinePool.Spec.Template.Image, nil
-	}
-	scope.Info("No image specified for machine pool, using default", "machinePool", scope.AzureMachinePool.GetName())
-	return azure.GetDefaultUbuntuImage(to.String(scope.MachinePool.Spec.Template.Spec.Version))
 }
