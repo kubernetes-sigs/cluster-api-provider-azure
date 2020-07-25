@@ -1,6 +1,5 @@
 # -*- mode: Python -*-
 
-kustomize_cmd = "./hack/tools/bin/kustomize"
 envsubst_cmd = "./hack/tools/bin/envsubst"
 
 update_settings(k8s_upsert_timeout_secs=60)  # on first tilt up, often can take longer than 30 seconds
@@ -152,7 +151,7 @@ COPY manager .
 # Build CAPZ and add feature gates
 def capz():
     # Apply the kustomized yaml for this provider
-    yaml = str(kustomize("./config"))
+    yaml = str(kustomizesub("./config"))
     substitutions = settings.get("kustomize_substitutions", {})
     for substitution in substitutions:
         value = substitutions[substitution]
@@ -200,7 +199,6 @@ def capz():
         ignore = ["templates"]
     )
 
-    yaml = envsubst(yaml)
     k8s_yaml(blob(yaml))
 
 
@@ -333,10 +331,13 @@ def base64_decode(to_decode):
     decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True)
     return str(decode_blob)
 
-
 def envsubst(yaml):
     yaml = yaml.replace('"', '\\"')
     return str(local("echo \"{}\" | {}".format(yaml, envsubst_cmd), quiet=True))
+
+def kustomizesub(folder):
+    yaml = local('hack/kustomize-sub.sh {}'.format(folder), quiet=True)
+    return yaml
 
 ##############################
 # Actual work happens here
