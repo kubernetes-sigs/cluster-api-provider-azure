@@ -191,7 +191,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
-			return nil
+			continue
 		}
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete load balancer %s in resource group %s", lbSpec.Name, s.Scope.ResourceGroup())

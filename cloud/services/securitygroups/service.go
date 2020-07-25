@@ -17,17 +17,25 @@ limitations under the License.
 package securitygroups
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/go-logr/logr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
+
+// NSGScope defines the scope interface for a security groups service.
+type NSGScope interface {
+	azure.ClusterDescriber
+	logr.Logger
+	NSGSpecs() []azure.NSGSpec
+}
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope *scope.ClusterScope
+	Scope NSGScope
 	Client
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope) *Service {
+func NewService(scope NSGScope) *Service {
 	return &Service{
 		Scope:  scope,
 		Client: NewClient(scope),
