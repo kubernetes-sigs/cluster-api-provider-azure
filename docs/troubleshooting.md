@@ -70,9 +70,16 @@ If as a result of a new cluster create operation, or as a result of adding a new
 $ export CLUSTER_RESOURCE_GROUP=my-cluster-rg
 $ export VM_PREFIX=my-cluster-md-0-
 $ export KUBECONFIG=/Users/me/.kube/my-cluster.kubeconfig
-$ $ for vm in $(az vm list -g $CLUSTER_RESOURCE_GROUP |  jq -r --arg VM_PREFIX "${VM_PREFIX}" '.[] | select (.name | startswith($VM_PREFIX)).name'); do kubectl get node $vm 2>&1 >/dev/null && continue || echo node $vm did not join the cluster; done
+$ for vm in $(az vm list -g $CLUSTER_RESOURCE_GROUP | jq -r --arg VM_PREFIX "${VM_PREFIX}" '.[] | select (.name | startswith($VM_PREFIX)).name'); do kubectl get node $vm 2>&1 >/dev/null && continue || echo node $vm did not join the cluster; done
 Error from server (NotFound): nodes "my-cluster-md-0-8qlrg" not found
 node my-cluster-md-0-8qlrg did not join the cluster
+```
+
+The above assumes nodes as "machine" resources. If you're using "machinepool" resources:
+
+```
+$ export VMSS_NAME=$(az vmss list -g $CLUSTER_RESOURCE_GROUP | jq -r --arg VM_PREFIX "${VM_PREFIX}" '.[] | select (.name | startswith($VM_PREFIX)).name')
+$ for vm in $(az vmss list-instances -g $CLUSTER_RESOURCE_GROUP -n $VMSS_NAME | jq -r --arg VM_PREFIX "${VM_PREFIX}" '.[] | select (.name | startswith($VM_PREFIX)).name'); do kubectl get node $vm 2>&1 >/dev/null && continue || echo node $vm did not join the cluster; done
 ```
 
 (The above uses the `az` command line tool to talk to Azure, and the `jq` utility to parse JSON output. Use your preferred toolchain following the general pattern.)
