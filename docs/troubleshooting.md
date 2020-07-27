@@ -64,7 +64,7 @@ As part of [CI](../scripts/ci-e2e.sh) there is a [log collection script](hack/..
 
 ### Nodes did not come online
 
-If as a result of a new cluster create operation, or a new machine or machinepool resource to an existing cluster, one or more nodes did not join the cluster, you can use some of the above guidance to SSH into the VM(s) and debug what happened. First, let's find out which VMs were created but failed to join the cluster by introspecting all VMs in the cluster resource group, and comparing them to the nodes present in the cluster:
+If as a result of a new cluster create operation, or as a result of adding a new machine or machinepool resource to an existing cluster, one or more nodes did not join the cluster, you can use some of the above guidance to SSH into the VM(s) and debug what happened. First, let's find out which VMs were created but failed to join the cluster by introspecting all VMs in the cluster resource group, and comparing them to the nodes present in the cluster:
 
 ```
 $ export CLUSTER_RESOURCE_GROUP=my-cluster-rg
@@ -79,7 +79,7 @@ node my-cluster-md-0-8qlrg did not join the cluster
 
 So, above we discover that the VM `my-cluster-md-0-8qlrg` is present in the resource group, but not as a node in the cluster. Let's hop on to the VM and look around.
 
-We'll assume we have SSH access onto the control plane VM behind the apiserver as described above. Add the SSH private key to your local ssh client keychain so that you can log into any node from the control plane VM:
+We'll assume we have SSH access onto the control plane VM behind the apiserver [as described above](#Remoting-to-workload-clusters). Add the SSH private key to your local ssh client keychain so that you can log into any node from the control plane VM:
 
 ```
 $ ssh-add -D
