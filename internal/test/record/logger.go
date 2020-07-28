@@ -71,6 +71,8 @@ func NewLogger(options ...Option) *Logger {
 	return l
 }
 
+var _ logr.Logger = (*Logger)(nil)
+
 type (
 	// Logger defines a test friendly logr.Logger
 	Logger struct {
@@ -82,6 +84,7 @@ type (
 		listeners  map[string]*Listener
 		writer     io.Writer
 		root       *Logger
+		cloneMu    sync.Mutex
 	}
 
 	Listener struct {
@@ -139,22 +142,17 @@ func (l *Logger) removeListener(id string) {
 	delete(l.listeners, id)
 }
 
-// Enabled tests whether this Logger is enabled.
+// Enabled is always enabled
 func (l *Logger) Enabled() bool {
-	if l.threshold == nil {
-		return true
-	}
-	return l.level <= *l.threshold
+	return true
 }
 
 // Info logs a non-error message with the given key/value pairs as context.
 func (l *Logger) Info(msg string, kvs ...interface{}) {
-	if l.Enabled() {
-		values := copySlice(l.values)
-		values = append(values, kvs...)
-		values = append(values, "msg", msg)
-		l.write("Info", values)
-	}
+	values := copySlice(l.values)
+	values = append(values, kvs...)
+	values = append(values, "msg", msg)
+	l.write("Info", values)
 }
 
 // Error logs an error message with the given key/value pairs as context.
@@ -194,7 +192,7 @@ func (l *Logger) write(logFunc string, values []interface{}) {
 		Prefix:  l.prefix,
 		LogFunc: logFunc,
 		Level:   l.level,
-		Values:  values,
+		Values:  copySlice(values),
 	}
 	f, err := flatten(entry)
 	if err != nil {
@@ -229,6 +227,9 @@ func (l *Logger) writeToListeners(entry LogEntry) {
 }
 
 func (l *Logger) clone() *Logger {
+	l.cloneMu.Lock()
+	defer l.cloneMu.Unlock()
+
 	root := l.root
 	if root == nil {
 		root = l

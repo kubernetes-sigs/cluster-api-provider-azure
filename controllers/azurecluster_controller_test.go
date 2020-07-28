@@ -25,7 +25,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -96,67 +95,6 @@ var _ = Describe("AzureClusterReconciler", func() {
 			})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Or(Equal("context deadline exceeded"), Equal("rate: Wait(n=1) would exceed context deadline")))
-		})
-
-		It("should skip reconciliation if cluster is paused", func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			logListener := record.NewListener(testEnv.LogRecorder)
-			del := logListener.Listen()
-			defer del()
-
-			clusterName := test.RandomName("foo", 10)
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      clusterName,
-					Namespace: "default",
-				},
-				Spec: clusterv1.ClusterSpec{
-					Paused: true,
-				},
-			}
-			Expect(testEnv.Create(ctx, cluster)).To(Succeed())
-			defer func() {
-				err := testEnv.Delete(ctx, cluster)
-				Expect(err).NotTo(HaveOccurred())
-			}()
-
-			azClusterName := test.RandomName("foo", 10)
-			azCluster := &infrav1.AzureCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      azClusterName,
-					Namespace: "default",
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: clusterv1.GroupVersion.String(),
-							Kind:       "Cluster",
-							Name:       cluster.Name,
-							UID:        cluster.GetUID(),
-						},
-					},
-				},
-			}
-			Expect(testEnv.Create(ctx, azCluster)).To(Succeed())
-			defer func() {
-				err := testEnv.Delete(ctx, azCluster)
-				Expect(err).NotTo(HaveOccurred())
-			}()
-
-			Eventually(logListener.GetEntries).Should(ContainElement(
-				record.LogEntry{
-					LogFunc: "Info",
-					Values: []interface{}{
-						"namespace",
-						cluster.Namespace,
-						"AzureCluster",
-						azCluster.Name,
-						"cluster",
-						cluster.Name,
-						"msg",
-						"AzureCluster or linked Cluster is marked as paused. Won't reconcile",
-					},
-				}))
 		})
 	})
 })

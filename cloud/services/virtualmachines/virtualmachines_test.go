@@ -18,15 +18,18 @@ package virtualmachines
 
 import (
 	"context"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog/klogr"
 	"net/http"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/klogr"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+
 	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
@@ -334,7 +337,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", matchers.DiffEq(compute.VirtualMachine{
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
 						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
 						StorageProfile: &compute.StorageProfile{

@@ -18,8 +18,13 @@ package test
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/rand"
+)
+
+const (
+	DefaultEventualTimeout = 20 * time.Second
 )
 
 // RandomName will generate a random name "{prefix}-{rand(len)}"

@@ -52,9 +52,10 @@ type AzureManagedControlPlaneReconciler struct {
 }
 
 func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
 	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(r.Client, r.Log)
+	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(r.Client, log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
 	}
@@ -62,7 +63,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(azManagedControlPlane).
-		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
 		// watch AzureManagedCluster resources
 		Watches(
 			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},
@@ -79,9 +80,9 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, 
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		&handler.EnqueueRequestsFromMapFunc{
-			ToRequests: util.ClusterToInfrastructureMapFunc(azManagedControlPlane.GroupVersionKind()),
+			ToRequests: util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane")),
 		},
-		predicates.ClusterUnpausedAndInfrastructureReady(r.Log),
+		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
 	}
