@@ -151,11 +151,11 @@ COPY manager .
 # Build CAPZ and add feature gates
 def capz():
     # Apply the kustomized yaml for this provider
-    yaml = str(kustomizesub("./config"))
     substitutions = settings.get("kustomize_substitutions", {})
     for substitution in substitutions:
-        value = substitutions[substitution]
-        yaml = yaml.replace("${" + substitution + "}", value)
+        os.putenv(substitution, substitutions[substitution])
+    yaml = str(kustomizesub("./config"))
+
 
     # add extra_args if they are defined
     if settings.get("extra_args"):
