@@ -27,14 +27,14 @@ import (
 // SKU is a thin layer over the Azure resource SKU API to better introspect capabilities
 type SKU compute.ResourceSku
 
-// Kind models available resource types as a set of known string constants.
-type Kind string
+// ResourceType models available resource types as a set of known string constants.
+type ResourceType string
 
 const (
 	// VirtualMachines is a convenience constant to filter resource SKUs to only include VMs.
-	VirtualMachines Kind = "virtualMachines"
+	VirtualMachines ResourceType = "virtualMachines"
 	// Disks is a convenience constant to filter resource SKUs to only include disks.
-	Disks Kind = "disks"
+	Disks ResourceType = "disks"
 )
 
 // Supported models an enum of possible boolean values for resource support in the Azure API.

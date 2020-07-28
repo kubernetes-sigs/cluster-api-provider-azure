@@ -84,7 +84,7 @@ func (c *Cache) refresh(ctx context.Context, location string) error {
 // enhancing this function to handle restrictions (e.g. SKU not
 // supported in region), which is why it returns an error and not a
 // boolean.
-func (c *Cache) Get(ctx context.Context, name string, kind Kind) (SKU, error) {
+func (c *Cache) Get(ctx context.Context, name string, kind ResourceType) (SKU, error) {
 	if c.data == nil {
 		if err := c.refresh(ctx, c.location); err != nil {
 			return SKU{}, err
@@ -97,22 +97,6 @@ func (c *Cache) Get(ctx context.Context, name string, kind Kind) (SKU, error) {
 		}
 	}
 	return SKU{}, fmt.Errorf("resource sku with name '%s' and category '%s' not found", name, string(kind))
-}
-
-// List returns a list of all known SKUs, useful for further filtering.
-func (c *Cache) List(ctx context.Context, name string, kind Kind) ([]SKU, error) {
-	if c.data == nil {
-		if err := c.refresh(ctx, c.location); err != nil {
-			return nil, err
-		}
-	}
-
-	// return a converted copy so clients do not mutate underlying data.
-	var skus = make([]SKU, len(c.data))
-	for i := range c.data {
-		skus[i] = SKU(c.data[i])
-	}
-	return skus, nil
 }
 
 // Map invokes a function over all cached values.
@@ -138,7 +122,7 @@ func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error)
 	var allZones = make(map[string]bool)
 	mapFn := func(sku SKU) {
 		// Look for VMs only
-		if sku.Kind != nil && strings.EqualFold(*sku.Kind, string(VirtualMachines)) {
+		if sku.ResourceType != nil && strings.EqualFold(*sku.ResourceType, string(VirtualMachines)) {
 			// find matching location
 			for _, locationInfo := range *sku.LocationInfo {
 				if strings.EqualFold(*locationInfo.Location, location) {
@@ -196,7 +180,7 @@ func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error)
 func (c *Cache) GetZonesWithVMSize(ctx context.Context, size, location string) ([]string, error) {
 	var allZones = make(map[string]bool)
 	mapFn := func(sku SKU) {
-		if sku.Name != nil && strings.EqualFold(*sku.Name, size) && sku.Kind != nil && strings.EqualFold(*sku.Kind, string(VirtualMachines)) {
+		if sku.Name != nil && strings.EqualFold(*sku.Name, size) && sku.ResourceType != nil && strings.EqualFold(*sku.ResourceType, string(VirtualMachines)) {
 			// find matching location
 			for _, locationInfo := range *sku.LocationInfo {
 				if strings.EqualFold(*locationInfo.Location, location) {
