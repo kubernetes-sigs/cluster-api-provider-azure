@@ -302,7 +302,7 @@ export AZURE_JSON_B64=$(echo '{
 }' | envsubst | base64 | tr -d '\r\n')
 ```
 
-⚠️ Please note the generated templates include default values and therefore requrie the use of `clusterctl` to create the cluster
+⚠️ Please note the generated templates include default values and therefore require the use of `clusterctl` to create the cluster
 or the use of `envsubst` to replace these values
 
 ##### Creating the cluster
