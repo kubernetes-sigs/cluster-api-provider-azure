@@ -28,28 +28,28 @@ import (
 
 func TestCacheGet(t *testing.T) {
 	cases := map[string]struct {
-		sku  string
-		kind Kind
-		have []compute.ResourceSku
-		err  string
+		sku          string
+		resourceType ResourceType
+		have         []compute.ResourceSku
+		err          string
 	}{
 		"should find": {
-			sku:  "foo",
-			kind: "bar",
+			sku:          "foo",
+			resourceType: "bar",
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("other"),
-					Kind: to.StringPtr("baz"),
+					Name:         to.StringPtr("other"),
+					ResourceType: to.StringPtr("baz"),
 				},
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr("bar"),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr("bar"),
 				},
 			},
 		},
 		"should not find": {
-			sku:  "foo",
-			kind: "bar",
+			sku:          "foo",
+			resourceType: "bar",
 			have: []compute.ResourceSku{
 				{
 					Name: to.StringPtr("other"),
@@ -68,7 +68,7 @@ func TestCacheGet(t *testing.T) {
 				data: tc.have,
 			}
 
-			val, err := cache.Get(context.Background(), tc.sku, tc.kind)
+			val, err := cache.Get(context.Background(), tc.sku, tc.resourceType)
 			if tc.err != "" {
 				if err == nil {
 					t.Fatalf("expected cache.get to fail with error %s, but actual error was nil", tc.err)
@@ -86,12 +86,12 @@ func TestCacheGet(t *testing.T) {
 				if *val.Name != tc.sku {
 					t.Fatalf("expected name to be %s, but was %s", tc.sku, *val.Name)
 				}
-				if val.Kind == nil {
+				if val.ResourceType == nil {
 					t.Fatalf("expected name to be %s, but was nil", tc.sku)
 					return
 				}
-				if *val.Kind != string(tc.kind) {
-					t.Fatalf("expected kind to be %s, but was %s", tc.kind, *val.Kind)
+				if *val.ResourceType != string(tc.resourceType) {
+					t.Fatalf("expected kind to be %s, but was %s", tc.resourceType, *val.ResourceType)
 				}
 			}
 
@@ -107,8 +107,8 @@ func TestCacheGetZones(t *testing.T) {
 		"should find 1 result": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -125,8 +125,8 @@ func TestCacheGetZones(t *testing.T) {
 		"should find 2 results": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -138,8 +138,8 @@ func TestCacheGetZones(t *testing.T) {
 					},
 				},
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -156,8 +156,8 @@ func TestCacheGetZones(t *testing.T) {
 		"should not find due to location mismatch": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"foobar",
 					},
@@ -174,8 +174,8 @@ func TestCacheGetZones(t *testing.T) {
 		"should not find due to location restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -198,8 +198,8 @@ func TestCacheGetZones(t *testing.T) {
 		"should not find due to zone restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -251,8 +251,8 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should find 1 result": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -269,8 +269,8 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should find 2 results": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -287,8 +287,8 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to size mismatch": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foobar"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foobar"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -305,8 +305,8 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to location mismatch": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"foobar",
 					},
@@ -323,8 +323,8 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to location restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
@@ -347,8 +347,8 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 		"should not find due to zone restriction": {
 			have: []compute.ResourceSku{
 				{
-					Name: to.StringPtr("foo"),
-					Kind: to.StringPtr(string(VirtualMachines)),
+					Name:         to.StringPtr("foo"),
+					ResourceType: to.StringPtr(string(VirtualMachines)),
 					Locations: &[]string{
 						"baz",
 					},
