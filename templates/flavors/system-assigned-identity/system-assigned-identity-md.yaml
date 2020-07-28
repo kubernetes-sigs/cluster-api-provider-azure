@@ -46,6 +46,7 @@ metadata:
 spec:
   template:
     spec:
+      useExperimentalRetryJoin: true
       joinConfiguration:
         nodeRegistration:
           name: '{{ ds.meta_data["local_hostname"] }}'

@@ -370,3 +370,4 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
       - bash -c /tmp/kubeadm-bootstrap.sh
+      useExperimentalRetryJoin: true
