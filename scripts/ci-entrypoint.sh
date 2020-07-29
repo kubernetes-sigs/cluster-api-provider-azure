@@ -69,7 +69,7 @@ create_cluster() {
         if [[ "${KUBERNETES_BRANCH:-}" =~ "release-" ]]; then
             CI_VERSION_URL="https://dl.k8s.io/ci/latest-${KUBERNETES_BRANCH/release-}.txt"
         else
-            CI_VERSION_URL="https://dl.k8s.io/ci/k8s-master.txt"
+            CI_VERSION_URL="https://dl.k8s.io/ci/latest.txt"
         fi
         export CLUSTER_TEMPLATE="test/cluster-template-prow-ci-version.yaml"
         export CI_VERSION="${CI_VERSION:-$(curl -sSL ${CI_VERSION_URL})}"
