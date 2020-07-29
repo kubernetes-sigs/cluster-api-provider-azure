@@ -51,10 +51,9 @@ type AzureClusterReconciler struct {
 }
 
 func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
-	azCluster := &infrav1.AzureCluster{}
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(azCluster).
+		For(&infrav1.AzureCluster{}).
 		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
 		Build(r)
 	if err != nil {
@@ -65,7 +64,7 @@ func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		&handler.EnqueueRequestsFromMapFunc{
-			ToRequests: util.ClusterToInfrastructureMapFunc(azCluster.GroupVersionKind()),
+			ToRequests: util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster")),
 		},
 		predicates.ClusterUnpaused(r.Log),
 	); err != nil {
