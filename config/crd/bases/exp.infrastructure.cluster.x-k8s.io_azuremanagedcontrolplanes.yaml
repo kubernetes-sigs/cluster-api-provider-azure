@@ -98,7 +98,7 @@ spec:
                 type: string
               sshPublicKey:
                 description: SSHPublicKey is a string literal containing an ssh public
-                  key.
+                  key base64 encoded.
                 type: string
               subscriptionID:
                 description: SubscriotionID is the GUID of the Azure subscription
