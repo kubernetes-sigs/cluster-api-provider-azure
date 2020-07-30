@@ -31,27 +31,16 @@ import (
 )
 
 var _ = Describe("Running the Cluster API E2E tests", func() {
-	var (
-		cloudConfig string
-	)
-
 	BeforeEach(func() {
 		rgName := fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
 		Expect(os.Setenv(AzureResourceGroup, rgName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", rgName))).NotTo(HaveOccurred())
-
-		var err error
-		cloudConfig, err = getCloudProviderConfig(rgName)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(os.Setenv(AzureJson, cloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		redactLogs()
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureJson)).NotTo(HaveOccurred())
 	})
 
 	Context("Running the quick-start spec", func() {

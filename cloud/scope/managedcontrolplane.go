@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -96,7 +97,7 @@ type ManagedControlPlaneScope struct {
 
 // SubscriptionID returns the Azure client Subscription ID.
 func (s *ManagedControlPlaneScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID
+	return s.AzureClients.SubscriptionID()
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.

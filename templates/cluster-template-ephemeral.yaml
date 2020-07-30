@@ -87,7 +87,7 @@ spec:
     - contentFrom:
         secret:
           key: azure.json
-          name: azure-secret
+          name: ${CLUSTER_NAME}-control-plane-azure-json
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
@@ -133,14 +133,6 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: v1
-data:
-  azure.json: ${AZURE_JSON_B64}
-kind: Secret
-metadata:
-  name: azure-secret
-  namespace: default
----
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
 metadata:
@@ -177,7 +169,7 @@ spec:
       osDisk:
         diffDiskSettings:
           option: Local
-        diskSizeGB: 30
+        diskSizeGB: 128
         managedDisk:
           storageAccountType: Standard_LRS
         osType: Linux
@@ -196,7 +188,7 @@ spec:
       - contentFrom:
           secret:
             key: azure.json
-            name: azure-secret
+            name: ${CLUSTER_NAME}-md-0-azure-json
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"

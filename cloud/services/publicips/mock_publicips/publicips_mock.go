@@ -160,6 +160,62 @@ func (mr *MockPublicIPScopeMockRecorder) SubscriptionID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockPublicIPScope)(nil).SubscriptionID))
 }
 
+// ClientID mocks base method.
+func (m *MockPublicIPScope) ClientID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientID indicates an expected call of ClientID.
+func (mr *MockPublicIPScopeMockRecorder) ClientID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockPublicIPScope)(nil).ClientID))
+}
+
+// ClientSecret mocks base method.
+func (m *MockPublicIPScope) ClientSecret() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientSecret")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientSecret indicates an expected call of ClientSecret.
+func (mr *MockPublicIPScopeMockRecorder) ClientSecret() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockPublicIPScope)(nil).ClientSecret))
+}
+
+// CloudEnvironment mocks base method.
+func (m *MockPublicIPScope) CloudEnvironment() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudEnvironment")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CloudEnvironment indicates an expected call of CloudEnvironment.
+func (mr *MockPublicIPScopeMockRecorder) CloudEnvironment() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockPublicIPScope)(nil).CloudEnvironment))
+}
+
+// TenantID mocks base method.
+func (m *MockPublicIPScope) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockPublicIPScopeMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockPublicIPScope)(nil).TenantID))
+}
+
 // BaseURI mocks base method.
 func (m *MockPublicIPScope) BaseURI() string {
 	m.ctrl.T.Helper()

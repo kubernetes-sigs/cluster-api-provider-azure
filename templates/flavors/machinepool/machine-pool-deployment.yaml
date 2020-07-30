@@ -50,7 +50,7 @@ spec:
   files:
   - contentFrom:
       secret:
-        name: azure-secret
+        name: ${CLUSTER_NAME}-mp-0-azure-json
         key: azure.json
     owner: root:root
     path: /etc/kubernetes/azure.json

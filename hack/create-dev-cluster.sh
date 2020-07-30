@@ -58,26 +58,6 @@ if ! [ -n "$SSH_KEY_FILE" ]; then
 fi
 export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 
-export AZURE_JSON_B64=$(echo '{
-    "cloud": "${AZURE_ENVIRONMENT:="AzurePublicCloud"}",
-    "tenantId": "${AZURE_TENANT_ID}",
-    "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-    "aadClientId": "${AZURE_CLIENT_ID}",
-    "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-    "resourceGroup": "${CLUSTER_NAME}",
-    "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-    "location": "${AZURE_LOCATION}",
-    "vmType": "vmss",
-    "vnetName": "${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}",
-    "vnetResourceGroup": "${CLUSTER_NAME}",
-    "subnetName": "${CLUSTER_NAME}-node-subnet",
-    "routeTableName": "${CLUSTER_NAME}-node-routetable",
-    "loadBalancerSku": "standard",
-    "maximumLoadBalancerRuleCount": 250,
-    "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
-}' | "${PWD}/hack/tools/bin/envsubst" | base64 | tr -d '\r\n')
-
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build
 

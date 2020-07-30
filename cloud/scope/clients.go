@@ -17,11 +17,12 @@ limitations under the License.
 package scope
 
 import (
-	"os"
+	"fmt"
+	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -37,38 +38,71 @@ const (
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	SubscriptionID             string
+	Authorizer                 autorest.Authorizer
+	environment                string
 	ResourceManagerEndpoint    string
 	ResourceManagerVMDNSSuffix string
-	Authorizer                 autorest.Authorizer
+	subscriptionID             string
+	tenantID                   string
+	clientID                   string
+	clientSecret               string
+}
+
+// CloudEnvironment returns the Azure environment the controller runs in.
+func (c *AzureClients) CloudEnvironment() string {
+	return c.environment
+}
+
+// SubscriptionID returns the Azure subscription id from the controller environment
+func (c *AzureClients) SubscriptionID() string {
+	return c.subscriptionID
+}
+
+// TenantID returns the Azure tenant id the controller runs in.
+func (c *AzureClients) TenantID() string {
+	return c.tenantID
+}
+
+// ClientID returns the Azure client id from the controller environment
+func (c *AzureClients) ClientID() string {
+	return c.clientID
+}
+
+// ClientSecret returns the Azure client secret from the controller environment
+func (c *AzureClients) ClientSecret() string {
+	return c.clientSecret
 }
 
 func (c *AzureClients) setCredentials(subscriptionID string) error {
-	subID, err := getSubscriptionID(subscriptionID)
-	if err != nil {
-		return err
-	}
-	c.SubscriptionID = subID
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
 		return err
 	}
+
+	if subscriptionID == "" {
+		subscriptionID = settings.GetSubscriptionID()
+		if subscriptionID == "" {
+			return fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
+		}
+	}
+
+	c.subscriptionID = subscriptionID
+	c.tenantID = strings.TrimSuffix(settings.Values[auth.TenantID], "\n")
+	c.clientID = strings.TrimSuffix(settings.Values[auth.ClientID], "\n")
+	c.clientSecret = strings.TrimSuffix(settings.Values[auth.ClientSecret], "\n")
+
+	c.environment = settings.Values[auth.EnvironmentName]
+	if c.environment == "" {
+		c.environment = azure.PublicCloud.Name
+	}
+
 	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
 	c.ResourceManagerVMDNSSuffix = GetAzureDNSZoneForEnvironment(settings.Environment.Name)
 	settings.Values[auth.SubscriptionID] = subscriptionID
+	settings.Values[auth.TenantID] = c.tenantID
+
 	c.Authorizer, err = settings.GetAuthorizer()
 	return err
-}
-
-func getSubscriptionID(subscriptionID string) (string, error) {
-	if subscriptionID != "" {
-		return subscriptionID, nil
-	}
-	subscriptionID = os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		return "", errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
-	}
-	return subscriptionID, nil
 }
 
 // GetAzureDNSZoneForEnvironment returnes the DNSZone to be used with the

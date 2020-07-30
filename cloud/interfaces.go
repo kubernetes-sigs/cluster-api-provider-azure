@@ -55,6 +55,10 @@ type CredentialGetter interface {
 // Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
 type Authorizer interface {
 	SubscriptionID() string
+	ClientID() string
+	ClientSecret() string
+	CloudEnvironment() string
+	TenantID() string
 	BaseURI() string
 	Authorizer() autorest.Authorizer
 }

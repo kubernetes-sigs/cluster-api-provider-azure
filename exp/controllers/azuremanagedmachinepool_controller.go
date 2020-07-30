@@ -39,6 +39,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -117,7 +118,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.
 	}
 
 	// Fetch the owning MachinePool.
-	ownerPool, err := getOwnerMachinePool(ctx, r.Client, infraPool.ObjectMeta)
+	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.Client, infraPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

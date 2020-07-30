@@ -66,6 +66,62 @@ func (mr *MockRouteTableScopeMockRecorder) SubscriptionID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockRouteTableScope)(nil).SubscriptionID))
 }
 
+// ClientID mocks base method.
+func (m *MockRouteTableScope) ClientID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientID indicates an expected call of ClientID.
+func (mr *MockRouteTableScopeMockRecorder) ClientID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockRouteTableScope)(nil).ClientID))
+}
+
+// ClientSecret mocks base method.
+func (m *MockRouteTableScope) ClientSecret() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientSecret")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientSecret indicates an expected call of ClientSecret.
+func (mr *MockRouteTableScopeMockRecorder) ClientSecret() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockRouteTableScope)(nil).ClientSecret))
+}
+
+// CloudEnvironment mocks base method.
+func (m *MockRouteTableScope) CloudEnvironment() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudEnvironment")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CloudEnvironment indicates an expected call of CloudEnvironment.
+func (mr *MockRouteTableScopeMockRecorder) CloudEnvironment() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockRouteTableScope)(nil).CloudEnvironment))
+}
+
+// TenantID mocks base method.
+func (m *MockRouteTableScope) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockRouteTableScopeMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockRouteTableScope)(nil).TenantID))
+}
+
 // BaseURI mocks base method.
 func (m *MockRouteTableScope) BaseURI() string {
 	m.ctrl.T.Helper()

@@ -38,6 +38,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -137,10 +138,8 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(req ctrl.Request) (_ ctrl
 
 	log = log.WithValues("azureManagedMachinePool", defaultPoolKey.Name)
 
-	// fetch owner of default pool
-	// TODO(ace): create a helper in util for this
 	// Fetch the owning MachinePool.
-	ownerPool, err := getOwnerMachinePool(ctx, r.Client, defaultPool.ObjectMeta)
+	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.Client, defaultPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
