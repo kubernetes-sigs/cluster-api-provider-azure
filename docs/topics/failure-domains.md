@@ -14,7 +14,7 @@ Full details of availability zones, regions can be found in the [Azure docs](htt
 
 ### Default Behaviour
 
-The default behaviour of Cluster API is to try and spread machines out across all the failure domains. The controller for the `AzureCluster` queries the Resource Manager API for the availability zones for the **Location** of the cluster. The availability zones are reported back to Cluster API via the **FailureDomains** field in the status of `AzureCluster`.
+By default, only control plane machines get automatically spread to all cluster zones. A workaround for spreading worker machines is to create n `MachineDelpoyments` for your n failure domains, scaling them independently. Resiliency to failures comes through having multiple `MachineDeployments`, but it does require you to create e.g. 3 separate resources to cover 3 failure domains, vs. a single `MachineDeployment` with built-in failure domain spreading.
 
 The Cluster API controller will look for the **FailureDomains** status field and will set the **FailureDomain** field in a `Machine` if a value hasn't already been explicitly set. It will try to ensure that the machines are spread across all the failure domains.
 
