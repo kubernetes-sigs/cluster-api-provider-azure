@@ -219,6 +219,8 @@ The steps below are provided in a convenient script in [hack/create-dev-cluster.
 CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
 ```
 
+   NOTE: `CLUSTER_NAME` can only include letters, numbers, and hyphens and can't be longer than 44 characters.
+
 ##### Building and pushing dev images
 
 1. To build images with custom tags,

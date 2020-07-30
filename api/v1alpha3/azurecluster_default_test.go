@@ -90,6 +90,9 @@ func TestVnetDefaults(t *testing.T) {
 			name:    "resource group vnet specified",
 			cluster: createValidCluster(),
 			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
