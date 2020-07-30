@@ -77,22 +77,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				AddressPrefix: to.StringPtr(subnetSpec.CIDR),
 			}
 			if subnetSpec.RouteTableName != "" {
-				s.Scope.V(2).Info("getting route table", "route table", subnetSpec.RouteTableName)
-				rt, err := s.RouteTablesClient.Get(ctx, s.Scope.ResourceGroup(), subnetSpec.RouteTableName)
-				if err != nil {
-					return err
+				subnetProperties.RouteTable = &network.RouteTable{
+					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),
 				}
-				s.Scope.V(2).Info("successfully got route table", "route table", subnetSpec.RouteTableName)
-				subnetProperties.RouteTable = &rt
 			}
 
-			s.Scope.V(2).Info("getting security group", "security group", subnetSpec.SecurityGroupName)
-			nsg, err := s.SecurityGroupsClient.Get(ctx, s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)
-			if err != nil {
-				return err
+			if subnetSpec.SecurityGroupName != "" {
+				subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
+					ID: to.StringPtr(azure.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
+				}
 			}
-			s.Scope.V(2).Info("successfully got security group", "security group", subnetSpec.SecurityGroupName)
-			subnetProperties.NetworkSecurityGroup = &nsg
 
 			s.Scope.V(2).Info("creating subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 			err = s.Client.CreateOrUpdate(
@@ -101,7 +95,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				subnetSpec.VNetName,
 				subnetSpec.Name,
 				network.Subnet{
-					Name:                   to.StringPtr(subnetSpec.Name),
 					SubnetPropertiesFormat: &subnetProperties,
 				},
 			)

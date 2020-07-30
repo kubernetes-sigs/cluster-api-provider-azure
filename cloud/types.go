@@ -28,18 +28,20 @@ type PublicIPSpec struct {
 
 // NICSpec defines the specification for a Network Interface.
 type NICSpec struct {
-	Name                     string
-	MachineName              string
-	MachineRole              string
-	SubnetName               string
-	VNetName                 string
-	VNetResourceGroup        string
-	StaticIPAddress          string
-	PublicLoadBalancerName   string
-	InternalLoadBalancerName string
-	PublicIPName             string
-	VMSize                   string
-	AcceleratedNetworking    *bool
+	Name                      string
+	MachineName               string
+	SubnetName                string
+	VNetName                  string
+	VNetResourceGroup         string
+	StaticIPAddress           string
+	PublicLBName              string
+	PublicLBAddressPoolName   string
+	PublicLBNATRuleName       string
+	InternalLBName            string
+	InternalLBAddressPoolName string
+	PublicIPName              string
+	VMSize                    string
+	AcceleratedNetworking     *bool
 }
 
 // DiskSpec defines the specification for a Disk.

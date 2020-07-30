@@ -36,9 +36,7 @@ import (
 // Get provides information about a virtual machine.
 func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
 	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "VM %s not found", name)
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -81,14 +79,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			nicRefs := make([]compute.NetworkInterfaceReference, len(vmSpec.NICNames))
 			for i, nicName := range vmSpec.NICNames {
 				primary := i == 0
-				s.Scope.V(2).Info("getting network interface", "network interface", nicName)
-				nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
-				if err != nil {
-					return err
-				}
-				s.Scope.V(2).Info("got network interface", "network interface", nicName)
 				nicRefs[i] = compute.NetworkInterfaceReference{
-					ID: nic.ID,
+					ID: to.StringPtr(azure.NetworkInterfaceID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicName)),
 					NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
 						Primary: to.BoolPtr(primary),
 					},

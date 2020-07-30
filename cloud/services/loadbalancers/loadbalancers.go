@@ -18,7 +18,6 @@ package loadbalancers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
@@ -33,12 +32,11 @@ import (
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
 	for _, lbSpec := range s.Scope.LBSpecs() {
-		frontEndIPConfigName := fmt.Sprintf("%s-%s", lbSpec.Name, "frontEnd")
-		backEndAddressPoolName := fmt.Sprintf("%s-%s", lbSpec.Name, "backendPool")
+		frontEndIPConfigName := azure.GenerateFrontendIPConfigName(lbSpec.Name)
+		backEndAddressPoolName := azure.GenerateBackendAddressPoolName(lbSpec.Name)
 		if lbSpec.Role == infrav1.NodeOutboundRole {
-			backEndAddressPoolName = fmt.Sprintf("%s-%s", lbSpec.Name, "outboundBackendPool")
+			backEndAddressPoolName = azure.GenerateOutboundBackendddressPoolName(lbSpec.Name)
 		}
-		idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", s.Scope.SubscriptionID(), s.Scope.ResourceGroup())
 
 		s.Scope.V(2).Info("creating load balancer", "load balancer", lbSpec.Name)
 
@@ -61,29 +59,19 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			} else {
 				return errors.Wrap(err, "failed to look for existing internal LB")
 			}
-			s.Scope.V(2).Info("getting subnet", "subnet", lbSpec.SubnetName)
-			subnet, err := s.SubnetsClient.Get(ctx, s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)
-			if err != nil {
-				return errors.Wrap(err, "failed to get subnet")
-			}
-			s.Scope.V(2).Info("successfully got subnet", "subnet", lbSpec.SubnetName)
 			frontIPConfig = network.FrontendIPConfigurationPropertiesFormat{
 				PrivateIPAllocationMethod: network.Static,
-				Subnet:                    &subnet,
-				PrivateIPAddress:          to.StringPtr(privateIP),
+				Subnet: &network.Subnet{
+					ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
+				},
+				PrivateIPAddress: to.StringPtr(privateIP),
 			}
 		} else {
-			s.Scope.V(2).Info("getting public ip", "public ip", lbSpec.PublicIPName)
-			publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), lbSpec.PublicIPName)
-			if err != nil && azure.ResourceNotFound(err) {
-				return errors.Wrap(err, fmt.Sprintf("public ip %s not found in RG %s", lbSpec.PublicIPName, s.Scope.ResourceGroup()))
-			} else if err != nil {
-				return errors.Wrap(err, "failed to look for existing public IP")
-			}
-			s.Scope.V(2).Info("successfully got public ip", "public ip", lbSpec.PublicIPName)
 			frontIPConfig = network.FrontendIPConfigurationPropertiesFormat{
 				PrivateIPAllocationMethod: network.Dynamic,
-				PublicIPAddress:           &publicIP,
+				PublicIPAddress: &network.PublicIPAddress{
+					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.PublicIPName)),
+				},
 			}
 		}
 
@@ -116,11 +104,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 							IdleTimeoutInMinutes: to.Int32Ptr(4),
 							FrontendIPConfigurations: &[]network.SubResource{
 								{
-									ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbSpec.Name, frontEndIPConfigName)),
+									ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, frontEndIPConfigName)),
 								},
 							},
 							BackendAddressPool: &network.SubResource{
-								ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbSpec.Name, backEndAddressPoolName)),
+								ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, backEndAddressPoolName)),
 							},
 						},
 					},
@@ -152,13 +140,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					EnableFloatingIP:     to.BoolPtr(false),
 					LoadDistribution:     network.LoadDistributionDefault,
 					FrontendIPConfiguration: &network.SubResource{
-						ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbSpec.Name, frontEndIPConfigName)),
+						ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, frontEndIPConfigName)),
 					},
 					BackendAddressPool: &network.SubResource{
-						ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbSpec.Name, backEndAddressPoolName)),
+						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, backEndAddressPoolName)),
 					},
 					Probe: &network.SubResource{
-						ID: to.StringPtr(fmt.Sprintf("/%s/%s/probes/%s", idPrefix, lbSpec.Name, probeName)),
+						ID: to.StringPtr(azure.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, probeName)),
 					},
 				},
 			}

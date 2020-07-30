@@ -19,11 +19,7 @@ package networkinterfaces
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 )
 
 // NICScope defines the scope interface for a network interfaces service.
@@ -37,22 +33,14 @@ type NICScope interface {
 type Service struct {
 	Scope NICScope
 	Client
-	SubnetsClient         subnets.Client
-	LoadBalancersClient   loadbalancers.Client
-	PublicIPsClient       publicips.Client
-	InboundNATRulesClient inboundnatrules.Client
-	ResourceSKUCache      *resourceskus.Cache
+	ResourceSKUCache *resourceskus.Cache
 }
 
 // NewService creates a new service.
 func NewService(scope NICScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
-		Scope:                 scope,
-		Client:                NewClient(scope),
-		SubnetsClient:         subnets.NewClient(scope),
-		LoadBalancersClient:   loadbalancers.NewClient(scope),
-		PublicIPsClient:       publicips.NewClient(scope),
-		InboundNATRulesClient: inboundnatrules.NewClient(scope),
-		ResourceSKUCache:      skuCache,
+		Scope:            scope,
+		Client:           NewClient(scope),
+		ResourceSKUCache: skuCache,
 	}
 }
