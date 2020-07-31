@@ -44,6 +44,7 @@ kubeconfig
 # Ignore output manifests
 config/samples
 manager_image_patch.yaml-e
+manager_pull_policy.yaml-e
 
 # Bazel
 bazel-*

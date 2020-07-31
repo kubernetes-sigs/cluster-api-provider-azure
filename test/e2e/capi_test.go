@@ -80,16 +80,17 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	// TODO: fix and enable
-	// Context("Running the self-hosted spec", func() {
-	// 	capi_e2e.SelfHostedSpec(context.TODO(), func() capi_e2e.SelfHostedSpecInput {
-	// 		return capi_e2e.SelfHostedSpecInput{
-	// 			E2EConfig:             e2eConfig,
-	// 			ClusterctlConfigPath:  clusterctlConfigPath,
-	// 			BootstrapClusterProxy: bootstrapClusterProxy,
-	// 			ArtifactFolder:        artifactFolder,
-	// 			SkipCleanup:           skipCleanup,
-	// 		}
-	// 	})
-	// })
+	if os.Getenv("LOCAL_ONLY") != "true" {
+		Context("Running the self-hosted spec", func() {
+			capi_e2e.SelfHostedSpec(context.TODO(), func() capi_e2e.SelfHostedSpecInput {
+				return capi_e2e.SelfHostedSpecInput{
+					E2EConfig:             e2eConfig,
+					ClusterctlConfigPath:  clusterctlConfigPath,
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					ArtifactFolder:        artifactFolder,
+					SkipCleanup:           skipCleanup,
+				}
+			})
+		})
+	}
 })
