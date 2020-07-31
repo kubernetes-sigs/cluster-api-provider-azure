@@ -92,3 +92,9 @@ type RoleAssignmentSpec struct {
 	MachineName string
 	UUID        string
 }
+
+// NSGSpec defines the specification for a Security Group.
+type NSGSpec struct {
+	Name         string
+	IngressRules infrav1.IngressRules
+}

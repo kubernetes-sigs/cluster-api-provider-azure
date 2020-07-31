@@ -19,6 +19,8 @@ package scope
 import (
 	"context"
 	"fmt"
+	"github.com/Azure/go-autorest/autorest/to"
+	"strconv"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
@@ -153,6 +155,20 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	}}
 }
 
+// NSGSpecs returns the security group specs.
+func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
+	return []azure.NSGSpec{
+		{
+			Name:         s.ControlPlaneSubnet().SecurityGroup.Name,
+			IngressRules: s.ControlPlaneSubnet().SecurityGroup.IngressRules,
+		},
+		{
+			Name:         s.NodeSubnet().SecurityGroup.Name,
+			IngressRules: s.NodeSubnet().SecurityGroup.IngressRules,
+		},
+	}
+}
+
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	return []azure.SubnetSpec{
@@ -282,4 +298,31 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
 	}
 	s.AzureCluster.Status.FailureDomains[id] = spec
+}
+
+func (s *ClusterScope) SetControlPlaneIngressRules() {
+	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
+		s.ControlPlaneSubnet().SecurityGroup.IngressRules = infrav1.IngressRules{
+			&infrav1.IngressRule{
+				Name:             "allow_ssh",
+				Description:      "Allow SSH",
+				Priority:         100,
+				Protocol:         infrav1.SecurityGroupProtocolTCP,
+				Source:           to.StringPtr("*"),
+				SourcePorts:      to.StringPtr("*"),
+				Destination:      to.StringPtr("*"),
+				DestinationPorts: to.StringPtr("22"),
+			},
+			&infrav1.IngressRule{
+				Name:             "allow_apiserver",
+				Description:      "Allow K8s API Server",
+				Priority:         101,
+				Protocol:         infrav1.SecurityGroupProtocolTCP,
+				Source:           to.StringPtr("*"),
+				SourcePorts:      to.StringPtr("*"),
+				Destination:      to.StringPtr("*"),
+				DestinationPorts: to.StringPtr(strconv.Itoa(int(s.APIServerPort()))),
+			},
+		}
+	}
 }
