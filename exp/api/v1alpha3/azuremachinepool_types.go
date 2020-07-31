@@ -39,6 +39,10 @@ type (
 		// OSDisk contains the operating system disk information for a Virtual Machine
 		OSDisk infrav1.OSDisk `json:"osDisk"`
 
+		// DataDisks specifies the list of data disks to be created for a Virtual Machine
+		// +optional
+		DataDisks []infrav1.DataDisk `json:"dataDisks,omitempty"`
+
 		// SSHPublicKey is the SSH public key string base64 encoded to add to a Virtual Machine
 		SSHPublicKey string `json:"sshPublicKey"`
 

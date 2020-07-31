@@ -26,6 +26,12 @@ import (
 )
 
 const (
+	// can't use: \/"'[]:|<>+=;,.?*@&, Can't start with underscore. Can't end with period or hyphen.
+	// not using . in the name to avoid issues when the name is part of DNS name
+	clusterNameRegex = `^[a-z][a-z0-9-]{0,44}[a-z0-9]$`
+	// max length of 44 to allow for cluster name to be used as a prefix for VMs and other resources that
+	// have limitations as outlined here https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
+	clusterNameMaxLength = 44
 	// obtained from https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups/createorupdate#uri-parameters
 	resourceGroupRegex = `^[-\w\._\(\)]+$`
 	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
@@ -36,6 +42,7 @@ const (
 // validateCluster validates a cluster
 func (c *AzureCluster) validateCluster() error {
 	var allErrs field.ErrorList
+	allErrs = append(allErrs, c.validateClusterName()...)
 	allErrs = append(allErrs, c.validateClusterSpec()...)
 	if len(allErrs) == 0 {
 		return nil
@@ -51,6 +58,24 @@ func (c *AzureCluster) validateClusterSpec() field.ErrorList {
 	return validateNetworkSpec(
 		c.Spec.NetworkSpec,
 		field.NewPath("spec").Child("networkSpec"))
+}
+
+// validateClusterName validates ClusterName
+func (c *AzureCluster) validateClusterName() field.ErrorList {
+	var allErrs field.ErrorList
+	if len(c.Name) > clusterNameMaxLength {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("Name"), c.Name,
+			fmt.Sprintf("Cluster Name longer than allowed length of %d characters", clusterNameMaxLength)))
+	}
+	if success, _ := regexp.MatchString(clusterNameRegex, c.Name); !success {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("Name"), c.Name,
+			fmt.Sprintf("Cluster Name doesn't match regex %s, can contain only lowercase alphanumeric characters and '-', must start/end with an alphanumeric character",
+				clusterNameRegex)))
+	}
+	if len(allErrs) == 0 {
+		return nil
+	}
+	return allErrs
 }
 
 // validateNetworkSpec validates a NetworkSpec

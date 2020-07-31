@@ -219,6 +219,8 @@ The steps below are provided in a convenient script in [hack/create-dev-cluster.
 CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
 ```
 
+   NOTE: `CLUSTER_NAME` can only include letters, numbers, and hyphens and can't be longer than 44 characters.
+
 ##### Building and pushing dev images
 
 1. To build images with custom tags,
@@ -270,7 +272,7 @@ export CONTROL_PLANE_MACHINE_COUNT=3
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.18.3"
+export KUBERNETES_VERSION="v1.18.6"
 
 # Generate SSH key.
 # If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY to your existing file.
@@ -279,31 +281,10 @@ rm -f "${SSH_KEY_FILE}" 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
-
-# To populate secret in azure.json file.
-export AZURE_STANDARD_JSON_B64=$(echo '{
-    "cloud": "${AZURE_ENVIRONMENT}",
-    "tenantId": "${AZURE_TENANT_ID}",
-    "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-    "aadClientId": "${AZURE_CLIENT_ID}",
-    "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-    "resourceGroup": "${CLUSTER_NAME}",
-    "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-    "location": "${AZURE_LOCATION}",
-    "vmType": "standard",
-    "vnetName": "${CLUSTER_NAME}-vnet",
-    "vnetResourceGroup": "${CLUSTER_NAME}",
-    "subnetName": "${CLUSTER_NAME}-node-subnet",
-    "routeTableName": "${CLUSTER_NAME}-node-routetable",
-    "loadBalancerSku": "standard",
-    "maximumLoadBalancerRuleCount": 250,
-    "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
-}' | envsubst | base64 | tr -d '\r\n')
-
-# VMSS requires different values
-export AZURE_VMSS_JSON_B64=$(echo "$AZURE_STANDARD_JSON_B64" | base64 -d | jq '.vmType = "vmss"' | base64 | tr -d '\r\n')
 ```
+
+⚠️ Please note the generated templates include default values and therefore require the use of `clusterctl` to create the cluster
+or the use of `envsubst` to replace these values
 
 ##### Creating the cluster
 
@@ -390,7 +371,7 @@ You can optionally set the following variables:
 | `PARALLEL`                     | Skip serial tests and set --ginkgo-parallel.                                                                  |
 | `USE_CI_ARTIFACTS`             | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)         |
 | `CI_VERSION`                   | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                 |
-| `FEATURE_GATE_MACHINE_POOL`    | Use [Machine Pool](topics/machinepools.md) for worker machines.                                               |
+| `EXP_MACHINE_POOL`             | Use [Machine Pool](topics/machinepools.md) for worker machines.                                               |
 
 You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_WORKLOAD_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
 

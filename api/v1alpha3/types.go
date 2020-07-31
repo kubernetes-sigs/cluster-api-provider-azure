@@ -307,16 +307,37 @@ type UserAssignedIdentity struct {
 
 // OSDisk defines the operating system disk for a VM.
 type OSDisk struct {
-	OSType      string      `json:"osType"`
-	DiskSizeGB  int32       `json:"diskSizeGB"`
-	ManagedDisk ManagedDisk `json:"managedDisk"`
+	OSType           string            `json:"osType"`
+	DiskSizeGB       int32             `json:"diskSizeGB"`
+	ManagedDisk      ManagedDisk       `json:"managedDisk"`
+	DiffDiskSettings *DiffDiskSettings `json:"diffDiskSettings,omitempty"`
 	// +optional
 	CachingType string `json:"cachingType"`
+}
+
+// DataDisk specifies the parameters that are used to add one or more data disks to the machine.
+type DataDisk struct {
+	// NameSuffix is the suffix to be appended to the machine name to generate the disk name.
+	// Each disk name will be in format <machineName>_<nameSuffix>.
+	NameSuffix string `json:"nameSuffix"`
+	// DiskSizeGB is the size in GB to assign to the data disk.
+	DiskSizeGB int32 `json:"diskSizeGB"`
+	// Lun Specifies the logical unit number of the data disk. This value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
+	// The value must be between 0 and 63.
+	Lun *int32 `json:"lun,omitempty"`
 }
 
 // ManagedDisk defines the managed disk options for a VM.
 type ManagedDisk struct {
 	StorageAccountType string `json:"storageAccountType"`
+}
+
+// DiffDiskSettings describe ephemeral disk settings for the os disk.
+type DiffDiskSettings struct {
+	// Option enables ephemeral OS when set to "Local"
+	// See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks for full details
+	// +kubebuilder:validation:Enum=Local
+	Option string `json:"option"`
 }
 
 // SubnetRole defines the unique role of a subnet.

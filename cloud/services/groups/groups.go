@@ -22,19 +22,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 )
 
 // Reconcile gets/creates/updates a resource group.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+func (s *Service) Reconcile(ctx context.Context) error {
 	if _, err := s.Client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
 		// resource group already exists, skip creation
 		return nil
 	}
-	s.Scope.Logger.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
+	s.Scope.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
 	group := resources.Group{
 		Location: to.StringPtr(s.Scope.Location()),
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -45,13 +44,18 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Additional:  s.Scope.AdditionalTags(),
 		})),
 	}
+
 	_, err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
-	s.Scope.Logger.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
-	return err
+	if err != nil {
+		return errors.Wrapf(err, "failed to create resource group %s", s.Scope.ResourceGroup())
+	}
+
+	s.Scope.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
+	return nil
 }
 
 // Delete deletes the resource group with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+func (s *Service) Delete(ctx context.Context) error {
 	managed, err := s.isGroupManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get resource group management state")
@@ -61,7 +65,8 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		s.Scope.V(4).Info("Skipping resource group deletion in unmanaged mode")
 		return nil
 	}
-	klog.V(2).Infof("deleting resource group %s", s.Scope.ResourceGroup())
+
+	s.Scope.V(2).Info("deleting resource group", "resource group", s.Scope.ResourceGroup())
 	err = s.Client.Delete(ctx, s.Scope.ResourceGroup())
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -71,7 +76,7 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete resource group %s", s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted resource group %s", s.Scope.ResourceGroup())
+	s.Scope.V(2).Info("successfully deleted resource group", "resource group", s.Scope.ResourceGroup())
 	return nil
 }
 

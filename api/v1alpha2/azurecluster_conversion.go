@@ -59,6 +59,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	}
 
 	dst.Status.FailureDomains = restored.Status.FailureDomains
+	dst.Status.Bastion.OSDisk.DiffDiskSettings = restored.Status.Bastion.OSDisk.DiffDiskSettings
 
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		if restoredSubnet != nil {
@@ -71,6 +72,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 			}
 		}
 	}
+
+	// Manually convert conditions
+	dst.SetConditions(restored.GetConditions())
 
 	return nil
 }

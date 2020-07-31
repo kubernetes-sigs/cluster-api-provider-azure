@@ -45,7 +45,7 @@ export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_D2s_v3}"
 export AZURE_NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_D2s_v3}"
 export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
-export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.18.3}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.18.6}"
 export TEMPLATE_PATH="${TEMPLATE_PATH:-cluster-template.yaml}"
 
 # Generate SSH key.
@@ -57,28 +57,6 @@ if ! [ -n "$SSH_KEY_FILE" ]; then
     echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 fi
 export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
-
-export AZURE_STANDARD_JSON_B64=$(echo '{
-    "cloud": "${AZURE_ENVIRONMENT}",
-    "tenantId": "${AZURE_TENANT_ID}",
-    "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-    "aadClientId": "${AZURE_CLIENT_ID}",
-    "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-    "resourceGroup": "${CLUSTER_NAME}",
-    "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-    "location": "${AZURE_LOCATION}",
-    "vmType": "standard",
-    "vnetName": "${CLUSTER_NAME}-vnet",
-    "vnetResourceGroup": "${CLUSTER_NAME}",
-    "subnetName": "${CLUSTER_NAME}-node-subnet",
-    "routeTableName": "${CLUSTER_NAME}-node-routetable",
-    "loadBalancerSku": "standard",
-    "maximumLoadBalancerRuleCount": 250,
-    "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true
-}' | "${PWD}/hack/tools/bin/envsubst" | base64 | tr -d '\r\n')
-
-export AZURE_VMSS_JSON_B64=$(echo "$AZURE_STANDARD_JSON_B64" | base64 -d | jq '.vmType = "vmss"' | base64 | tr -d '\r\n')
 
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build

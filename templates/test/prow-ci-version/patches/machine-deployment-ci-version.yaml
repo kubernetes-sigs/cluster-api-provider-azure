@@ -89,7 +89,7 @@ spec:
       permissions: "0644"
       contentFrom:
         secret:
-          key: vmss
+          key: azure.json
           name: azure-secret
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
@@ -181,7 +181,7 @@ spec:
           permissions: "0644"
           contentFrom:
             secret:
-              key: vmss
+              key: azure.json
               name: azure-secret
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3

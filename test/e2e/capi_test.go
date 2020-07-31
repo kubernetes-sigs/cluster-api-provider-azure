@@ -31,33 +31,16 @@ import (
 )
 
 var _ = Describe("Running the Cluster API E2E tests", func() {
-	var (
-		standardCloudConfig string
-		vmssCloudConfig     string
-	)
-
 	BeforeEach(func() {
 		rgName := fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
 		Expect(os.Setenv(AzureResourceGroup, rgName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", rgName))).NotTo(HaveOccurred())
-
-		var err error
-		standardCloudConfig, err = getCloudProviderConfig(rgName, "standard")
-		Expect(err).NotTo(HaveOccurred())
-
-		vmssCloudConfig, err = getCloudProviderConfig(rgName, "vmss")
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(os.Setenv(AzureStandardJson, standardCloudConfig)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVMSSJson, vmssCloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		redactLogs()
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureStandardJson)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVMSSJson)).NotTo(HaveOccurred())
 	})
 
 	Context("Running the quick-start spec", func() {

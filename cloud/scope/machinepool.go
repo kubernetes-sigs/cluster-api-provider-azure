@@ -19,7 +19,6 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -41,23 +40,21 @@ import (
 type (
 	// MachinePoolScopeParams defines the input parameters used to create a new MachinePoolScope.
 	MachinePoolScopeParams struct {
-		AzureClients
 		Client           client.Client
 		Logger           logr.Logger
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		ClusterScope     *ClusterScope
+		azure.ClusterDescriber
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
 	MachinePoolScope struct {
 		logr.Logger
-		AzureClients
 		client           client.Client
 		patchHelper      *patch.Helper
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		ClusterScope     azure.ClusterDescriber
+		azure.ClusterDescriber
 	}
 )
 
@@ -88,38 +85,8 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		AzureMachinePool: params.AzureMachinePool,
 		Logger:           params.Logger,
 		patchHelper:      helper,
-		ClusterScope:     params.ClusterScope,
+		ClusterDescriber: params.ClusterDescriber,
 	}, nil
-}
-
-// Location returns the AzureCluster location.
-func (m *MachinePoolScope) Location() string {
-	return m.ClusterScope.Location()
-}
-
-// ResourceGroup returns the AzureCluster resource group.
-func (m *MachinePoolScope) ResourceGroup() string {
-	return m.ClusterScope.ResourceGroup()
-}
-
-// ClusterName returns the AzureCluster name.
-func (m *MachinePoolScope) ClusterName() string {
-	return m.ClusterScope.ClusterName()
-}
-
-// SubscriptionID returns the Azure client Subscription ID.
-func (m *MachinePoolScope) SubscriptionID() string {
-	return m.ClusterScope.SubscriptionID()
-}
-
-// BaseURI returns the Azure ResourceManagerEndpoint.
-func (m *MachinePoolScope) BaseURI() string {
-	return m.ClusterScope.BaseURI()
-}
-
-// Authorizer returns the Azure client Authorizer.
-func (m *MachinePoolScope) Authorizer() autorest.Authorizer {
-	return m.ClusterScope.Authorizer()
 }
 
 // Name returns the Azure Machine Pool Name.
@@ -155,7 +122,7 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 // the value from AzureMachinePool takes precedence.
 func (m *MachinePoolScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
-	tags.Merge(m.ClusterScope.AdditionalTags())
+	tags.Merge(m.ClusterDescriber.AdditionalTags())
 	tags.Merge(m.AzureMachinePool.Spec.AdditionalTags)
 	return tags
 }

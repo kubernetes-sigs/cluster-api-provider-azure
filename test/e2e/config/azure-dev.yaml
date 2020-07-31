@@ -8,8 +8,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v0.3.7-beta.0
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-beta.0/core-components.yaml
+      - name: v0.3.7
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7/core-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -19,8 +19,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-      - name: v0.3.7-beta.0
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-beta.0/bootstrap-components.yaml
+      - name: v0.3.7
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7/bootstrap-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -30,8 +30,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: v0.3.7-beta.0
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-beta.0/control-plane-components.yaml
+      - name: v0.3.7
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7/control-plane-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -48,13 +48,17 @@ providers:
         targetName: "cluster-template.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.3}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.6}"
   ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
   COREDNS_VERSION_UPGRADE_TO: "1.6.7"
-  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.18.3}"
-  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.17.4}"
+  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.18.6}"
+  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.17.9}"
   CNI: "${PWD}/templates/addons/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
+  EXP_AKS: "true"
+  EXP_MACHINE_POOL: "true"
+  # TODO: Fix the typo when updating CAPI urls above to a v0.3.8 release.
+  EXP_CLUSTER_RESOURSE_SET: "true"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
@@ -64,3 +68,6 @@ intervals:
   default/wait-delete-cluster: ["30m", "10s"]
   default/wait-machine-upgrade: ["20m", "10s"]
   default/wait-machine-remediation: ["20m", "10s"]
+  default/wait-deployment: ["5m", "10s"]
+  default/wait-job: ["5m", "10s"]
+  default/wait-service: ["3m", "10s"]

@@ -27,7 +27,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
@@ -48,8 +47,10 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -69,6 +70,7 @@ type (
 		machinePoolScope           *scope.MachinePoolScope
 		clusterScope               *scope.ClusterScope
 		virtualMachinesScaleSetSvc *scalesets.Service
+		skuCache                   *resourceskus.Cache
 	}
 
 	// annotationReaderWriter provides an interface to read and write annotations
@@ -147,7 +149,7 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	}
 
 	// Fetch the CAPI MachinePool.
-	machinePool, err := getOwnerMachinePool(ctx, r.Client, azMachinePool.ObjectMeta)
+	machinePool, err := infracontroller.GetOwnerMachinePool(ctx, r.Client, azMachinePool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -202,7 +204,7 @@ func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 		Client:           r.Client,
 		MachinePool:      machinePool,
 		AzureMachinePool: azMachinePool,
-		ClusterScope:     clusterScope,
+		ClusterDescriber: clusterScope,
 	})
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -282,12 +284,6 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	default:
 		machinePoolScope.SetFailureReason(capierrors.UpdateMachineError)
 		machinePoolScope.SetFailureMessage(errors.Errorf("Azure VMSS state %q is unexpected", vmss.State))
-	}
-
-	// Ensure that the tags are correct.
-	err = r.reconcileTags(ctx, machinePoolScope, clusterScope, machinePoolScope.AdditionalTags())
-	if err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
 	}
 
 	return reconcile.Result{}, nil
@@ -388,7 +384,7 @@ func azureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 }
 
 // Ensure that the tags of the machine are correct
-func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope, additionalTags map[string]string) error {
+func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope, skuCache *resourceskus.Cache, additionalTags map[string]string) error {
 	machinePoolScope.Info("Updating tags on AzureMachinePool")
 	annotation, err := r.AnnotationJSON(machinePoolScope.AzureMachinePool, controllers.TagsLastAppliedAnnotation)
 	if err != nil {
@@ -399,7 +395,7 @@ func (r *AzureMachinePoolReconciler) reconcileTags(ctx context.Context, machineP
 		vmssSpec := &scalesets.Spec{
 			Name: machinePoolScope.Name(),
 		}
-		svc := scalesets.NewService(machinePoolScope)
+		svc := scalesets.NewService(machinePoolScope, skuCache)
 		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machinePoolScope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VMSS")
@@ -481,10 +477,12 @@ func (r *AzureMachinePoolReconciler) Annotation(rw annotationReaderWriter, annot
 
 // newAzureMachinePoolService populates all the services based on input scope
 func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) *azureMachinePoolService {
+	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 	return &azureMachinePoolService{
 		machinePoolScope:           machinePoolScope,
 		clusterScope:               clusterScope,
-		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope),
+		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
+		skuCache:                   cache,
 	}
 }
 
@@ -521,6 +519,7 @@ func (s *azureMachinePoolService) CreateOrUpdate(ctx context.Context) (*infrav1e
 		SSHKeyData:             string(decoded),
 		Image:                  image,
 		OSDisk:                 ampSpec.Template.OSDisk,
+		DataDisks:              ampSpec.Template.DataDisks,
 		CustomData:             bootstrapData,
 		AdditionalTags:         s.machinePoolScope.AdditionalTags(),
 		SubnetID:               s.clusterScope.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().ID,
@@ -587,26 +586,6 @@ func (s *azureMachinePoolService) Get(ctx context.Context) (*infrav1exp.VMSS, er
 	}
 
 	return vmss, err
-}
-
-// getOwnerMachinePool returns the MachinePool object owning the current resource.
-func getOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
-	for _, ref := range obj.OwnerReferences {
-		if ref.Kind == "MachinePool" && ref.APIVersion == capiv1exp.GroupVersion.String() {
-			return getMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
-		}
-	}
-	return nil, nil
-}
-
-// getMachinePoolByName finds and return a Machine object using the specified params.
-func getMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
-	m := &capiv1exp.MachinePool{}
-	key := client.ObjectKey{Name: name, Namespace: namespace}
-	if err := c.Get(ctx, key, m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 // Pick image from the machine configuration, or use a default one.

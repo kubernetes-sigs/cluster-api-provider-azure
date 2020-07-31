@@ -21,8 +21,64 @@ import (
 	"reflect"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestResourceGroupDefault(t *testing.T) {
+	cases := map[string]struct {
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		"default empty rg": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "foo",
+				},
+			},
+		},
+		"don't change if mismatched": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "bar",
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "bar",
+				},
+			},
+		},
+	}
+
+	for name := range cases {
+		c := cases[name]
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			c.cluster.setResourceGroupDefault()
+			if !reflect.DeepEqual(c.cluster, c.output) {
+				expected, _ := json.MarshalIndent(c.output, "", "\t")
+				actual, _ := json.MarshalIndent(c.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
 
 func TestVnetDefaults(t *testing.T) {
 	cases := []struct {
@@ -34,6 +90,9 @@ func TestVnetDefaults(t *testing.T) {
 			name:    "resource group vnet specified",
 			cluster: createValidCluster(),
 			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-cluster",
+				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{

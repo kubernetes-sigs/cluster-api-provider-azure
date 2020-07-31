@@ -82,9 +82,9 @@ func GenerateNodeOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-node-outbound", clusterName)
 }
 
-// GenerateNodePublicIPName generates a node public IP name, based on the NIC name.
-func GenerateNodePublicIPName(nicName string) string {
-	return fmt.Sprintf("%s-public-ip", nicName)
+// GenerateNodePublicIPName generates a node public IP name, based on the machine name.
+func GenerateNodePublicIPName(machineName string) string {
+	return fmt.Sprintf("pip-%s", machineName)
 }
 
 // GenerateNICName generates the name of a network interface based on the name of a VM.
@@ -92,9 +92,19 @@ func GenerateNICName(machineName string) string {
 	return fmt.Sprintf("%s-nic", machineName)
 }
 
+// GeneratePublicNICName generates the name of a public network interface based on the name of a VM.
+func GeneratePublicNICName(machineName string) string {
+	return fmt.Sprintf("%s-public-nic", machineName)
+}
+
 // GenerateOSDiskName generates the name of an OS disk based on the name of a VM.
 func GenerateOSDiskName(machineName string) string {
 	return fmt.Sprintf("%s_OSDisk", machineName)
+}
+
+// GenerateDataDiskName generates the name of a data disk based on the name of a VM.
+func GenerateDataDiskName(machineName, nameSuffix string) string {
+	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.

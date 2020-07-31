@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -38,8 +38,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicloadbalancers/mock_publicloadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus/mock_resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
@@ -71,19 +71,19 @@ func TestNewService(t *testing.T) {
 			},
 		},
 	})
+
 	g := gomega.NewGomegaWithT(t)
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
-		AzureClients:     s.AzureClients,
 		Client:           client,
 		Logger:           s.Logger,
 		MachinePool:      new(clusterv1exp.MachinePool),
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
-		ClusterScope:     s,
+		ClusterDescriber: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-	actual := NewService(mps)
+	actual := NewService(mps, resourceskus.NewStaticCache(nil))
 	g.Expect(actual).ToNot(gomega.BeNil())
 }
 
@@ -220,7 +220,23 @@ func TestService_Get(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s)
+			resourceSkusCache := resourceskus.NewStaticCache([]compute.ResourceSku{
+				{
+					Name: to.StringPtr("Standard"),
+					Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+					Locations: &[]string{
+						"fake-location",
+					},
+					LocationInfo: &[]compute.ResourceSkuLocationInfo{
+						{
+							Location: to.StringPtr("fake-location"),
+							Zones:    &[]string{"1"},
+						},
+					},
+				},
+			})
+
+			svc := NewService(s, resourceSkusCache)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -271,6 +287,13 @@ func TestService_Reconcile(t *testing.T) {
 							StorageAccountType: "accountType",
 						},
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
 					Image: &infrav1.Image{
 						ID: to.StringPtr("image"),
 					},
@@ -281,12 +304,28 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
-				svc.ResourceSkusClient = skusMock
-				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-				svc.PublicLoadBalancersClient = lbMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
 
-				storageProfile, err := generateStorageProfile(*spec)
+				svc.ResourceSKUCache = resourceSkusCache
+				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
+				svc.LoadBalancersClient = lbMock
+
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -304,7 +343,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -353,7 +392,6 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
-				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(false, nil)
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
@@ -395,12 +433,34 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
-				svc.ResourceSkusClient = skusMock
-				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-				svc.PublicLoadBalancersClient = lbMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+								Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
 
-				storageProfile, err := generateStorageProfile(*spec)
+				svc.ResourceSKUCache = resourceSkusCache
+				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
+				svc.LoadBalancersClient = lbMock
+
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -418,7 +478,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -467,7 +527,6 @@ func TestService_Reconcile(t *testing.T) {
 					},
 				}
 
-				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(true, nil)
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
@@ -499,6 +558,13 @@ func TestService_Reconcile(t *testing.T) {
 							StorageAccountType: "accountType",
 						},
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
 					Image: &infrav1.Image{
 						ID: to.StringPtr("image"),
 					},
@@ -509,12 +575,28 @@ func TestService_Reconcile(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 				svc.Client = vmssMock
-				skusMock := mock_resourceskus.NewMockClient(mockCtrl)
-				svc.ResourceSkusClient = skusMock
-				lbMock := mock_publicloadbalancers.NewMockClient(mockCtrl)
-				svc.PublicLoadBalancersClient = lbMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
 
-				storageProfile, err := generateStorageProfile(*spec)
+				svc.ResourceSKUCache = resourceSkusCache
+				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
+				svc.LoadBalancersClient = lbMock
+
+				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
 				g.Expect(err).ToNot(gomega.HaveOccurred())
 
 				vmss := compute.VirtualMachineScaleSet{
@@ -532,7 +614,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -595,7 +677,7 @@ func TestService_Reconcile(t *testing.T) {
 					},
 					VirtualMachineScaleSetUpdateProperties: &compute.VirtualMachineScaleSetUpdateProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.Manual,
+							Mode: compute.UpgradeModeManual,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetUpdateVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetUpdateOSProfile{
@@ -618,12 +700,19 @@ func TestService_Reconcile(t *testing.T) {
 									DiskSizeGB:  to.Int32Ptr(120),
 									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{StorageAccountType: "accountType"},
 								},
+								DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
+									{
+										Name:         to.StringPtr("capz-mp-0_my_disk"),
+										Lun:          to.Int32Ptr(0),
+										CreateOption: "Empty",
+										DiskSizeGB:   to.Int32Ptr(128),
+									},
+								},
 							},
 						},
 					},
 				}
 
-				skusMock.EXPECT().HasAcceleratedNetworking(gomock.Any(), gomock.Any()).Return(false, nil)
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(vmss, nil)
 				vmssMock.EXPECT().Update(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(update)).Return(nil)
@@ -642,7 +731,7 @@ func TestService_Reconcile(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s)
+			svc := NewService(s, resourceskus.NewStaticCache(nil))
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -733,7 +822,7 @@ func TestService_Delete(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s)
+			svc := NewService(s, resourceskus.NewStaticCache(nil))
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -760,7 +849,7 @@ func TestGetVMSSUpdateFromVMSS(t *testing.T) {
 		},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.Manual,
+				Mode: compute.UpgradeModeManual,
 			},
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
@@ -792,7 +881,7 @@ func TestGetVMSSUpdateFromVMSS(t *testing.T) {
 		},
 		VirtualMachineScaleSetUpdateProperties: &compute.VirtualMachineScaleSetUpdateProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.Manual,
+				Mode: compute.UpgradeModeManual,
 			},
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetUpdateVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetUpdateOSProfile{
@@ -847,16 +936,15 @@ func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolSc
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
-		AzureClients: s.AzureClients,
-		Client:       client,
-		Logger:       s.Logger,
-		MachinePool:  new(clusterv1exp.MachinePool),
+		Client:      client,
+		Logger:      s.Logger,
+		MachinePool: new(clusterv1exp.MachinePool),
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "capz-mp-0",
 			},
 		},
-		ClusterScope: s,
+		ClusterDescriber: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 

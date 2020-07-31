@@ -61,6 +61,10 @@ func (m *AzureMachine) ValidateCreate() error {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -68,7 +72,7 @@ func (m *AzureMachine) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
+func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
 	var allErrs field.ErrorList
 
@@ -76,11 +80,25 @@ func (m *AzureMachine) ValidateUpdate(old runtime.Object) error {
 		allErrs = append(allErrs, errs...)
 	}
 
+	old := oldRaw.(*AzureMachine)
+
 	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
 	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateManagedDisk(old.Spec.OSDisk.ManagedDisk, m.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := validateDiffDiskSettingsUpdate(old.Spec.OSDisk.DiffDiskSettings, m.Spec.OSDisk.DiffDiskSettings, field.NewPath("osDisk").Child("diffDiskSettings")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
@@ -110,4 +128,6 @@ func (m *AzureMachine) Default() {
 	if err != nil {
 		machinelog.Error(err, "SetDefaultCachingType failed")
 	}
+
+	m.SetDataDisksDefaults()
 }

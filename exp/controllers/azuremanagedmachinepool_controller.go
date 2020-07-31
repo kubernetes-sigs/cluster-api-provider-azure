@@ -39,6 +39,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -117,7 +118,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.
 	}
 
 	// Fetch the owning MachinePool.
-	ownerPool, err := getOwnerMachinePool(ctx, r.Client, infraPool.ObjectMeta)
+	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.Client, infraPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -168,6 +169,13 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
 
+	// Always patch when exiting so we can persist changes to finalizers and status
+	defer func() {
+		if err := mcpScope.PatchObject(ctx); err != nil && reterr == nil {
+			reterr = err
+		}
+	}()
+
 	// Handle deleted clusters
 	if !infraPool.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, mcpScope)
@@ -188,6 +196,12 @@ func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context,
 	}
 
 	if err := newAzureManagedMachinePoolReconciler(scope).Reconcile(ctx, scope); err != nil {
+		if IsAgentPoolVMSSNotFoundError(err) {
+			// if the underlying VMSS is not yet created, requeue for 30s in the future
+			return reconcile.Result{
+				RequeueAfter: 30 * time.Second,
+			}, nil
+		}
 		return reconcile.Result{}, errors.Wrapf(err, "error creating AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 	}
 

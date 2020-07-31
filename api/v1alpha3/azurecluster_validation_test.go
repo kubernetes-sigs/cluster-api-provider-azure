@@ -20,8 +20,81 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
+
+func TestClusterNameValidation(t *testing.T) {
+	g := NewWithT(t)
+	tests := []struct {
+		name        string
+		clusterName string
+		wantErr     bool
+	}{
+		{
+			name:        "cluster name more than 44 characters",
+			clusterName: "vegkebfadbczdtevzjiyookobkdgfofjxmlquonomzoes",
+			wantErr:     true,
+		},
+		{
+			name:        "cluster name with letters",
+			clusterName: "cluster",
+			wantErr:     false,
+		},
+		{
+			name:        "cluster name with upper case letters",
+			clusterName: "clusterName",
+			wantErr:     true,
+		},
+		{
+			name:        "cluster name with hyphen",
+			clusterName: "test-cluster",
+			wantErr:     false,
+		},
+		{
+			name:        "cluster name with letters and numbers",
+			clusterName: "clustername1",
+			wantErr:     false,
+		},
+		{
+			name:        "cluster name with special characters",
+			clusterName: "cluster$?name",
+			wantErr:     true,
+		},
+		{
+			name:        "cluster name starting with underscore",
+			clusterName: "_clustername",
+			wantErr:     true,
+		},
+		{
+			name:        "cluster name with underscore",
+			clusterName: "cluster_name",
+			wantErr:     true,
+		},
+		{
+			name:        "cluster name with period",
+			clusterName: "cluster.name",
+			wantErr:     true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			azureCluster := AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.clusterName,
+				},
+			}
+
+			allErrs := azureCluster.validateClusterName()
+			if tc.wantErr {
+				g.Expect(allErrs).ToNot(BeNil())
+			} else {
+				g.Expect(allErrs).To(BeNil())
+			}
+		})
+	}
+}
 
 func TestClusterWithPreexistingVnetValid(t *testing.T) {
 	g := NewWithT(t)
@@ -539,6 +612,9 @@ func TestIngressRules(t *testing.T) {
 
 func createValidCluster() *AzureCluster {
 	return &AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-cluster",
+		},
 		Spec: AzureClusterSpec{
 			NetworkSpec: createValidNetworkSpec(),
 		},

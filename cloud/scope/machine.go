@@ -19,7 +19,8 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-	"github.com/Azure/go-autorest/autorest"
+	"k8s.io/apimachinery/pkg/util/uuid"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -38,12 +39,11 @@ import (
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	AzureClients
-	Client       client.Client
-	Logger       logr.Logger
-	ClusterScope *ClusterScope
-	Machine      *clusterv1.Machine
-	AzureMachine *infrav1.AzureMachine
+	Client           client.Client
+	Logger           logr.Logger
+	ClusterDescriber azure.ClusterDescriber
+	Machine          *clusterv1.Machine
+	AzureMachine     *infrav1.AzureMachine
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -67,12 +67,12 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &MachineScope{
-		client:       params.Client,
-		Machine:      params.Machine,
-		AzureMachine: params.AzureMachine,
-		Logger:       params.Logger,
-		patchHelper:  helper,
-		ClusterScope: params.ClusterScope,
+		client:           params.Client,
+		Machine:          params.Machine,
+		AzureMachine:     params.AzureMachine,
+		Logger:           params.Logger,
+		patchHelper:      helper,
+		ClusterDescriber: params.ClusterDescriber,
 	}, nil
 }
 
@@ -82,7 +82,7 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	ClusterScope azure.ClusterDescriber
+	azure.ClusterDescriber
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 }
@@ -91,12 +91,24 @@ type MachineScope struct {
 func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	var spec []azure.PublicIPSpec
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
-		nicName := azure.GenerateNICName(m.Name())
 		spec = append(spec, azure.PublicIPSpec{
-			Name: azure.GenerateNodePublicIPName(nicName),
+			Name: azure.GenerateNodePublicIPName(m.Name()),
 		})
 	}
 	return spec
+}
+
+// InboundNatSpecs returns the inbound NAT specs.
+func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
+	if m.Role() == infrav1.ControlPlane {
+		return []azure.InboundNatSpec{
+			{
+				Name:             m.Name(),
+				LoadBalancerName: azure.GeneratePublicLBName(m.ClusterName()),
+			},
+		}
+	}
+	return []azure.InboundNatSpec{}
 }
 
 // NICSpecs returns the network interface specs.
@@ -105,8 +117,8 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		Name:                  azure.GenerateNICName(m.Name()),
 		MachineName:           m.Name(),
 		MachineRole:           m.Role(),
-		VNetName:              m.ClusterScope.Vnet().Name,
-		VNetResourceGroup:     m.ClusterScope.Vnet().ResourceGroup,
+		VNetName:              m.Vnet().Name,
+		VNetResourceGroup:     m.Vnet().ResourceGroup,
 		SubnetName:            m.Subnet().Name,
 		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
@@ -117,56 +129,44 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	} else if m.Role() == infrav1.Node {
 		spec.PublicLoadBalancerName = m.ClusterName()
 	}
+	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
-		spec.PublicIPName = azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name()))
+		specs = append(specs, azure.NICSpec{
+			Name:                  azure.GeneratePublicNICName(m.Name()),
+			MachineName:           m.Name(),
+			MachineRole:           m.Role(),
+			VNetName:              m.Vnet().Name,
+			VNetResourceGroup:     m.Vnet().ResourceGroup,
+			SubnetName:            m.Subnet().Name,
+			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
+			VMSize:                m.AzureMachine.Spec.VMSize,
+			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		})
 	}
 
-	return []azure.NICSpec{spec}
+	return specs
 }
 
-// Location returns the AzureCluster location.
-func (m *MachineScope) Location() string {
-	return m.ClusterScope.Location()
+// DiskSpecs returns the disk specs.
+func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
+	spec := azure.DiskSpec{
+		Name: azure.GenerateOSDiskName(m.Name()),
+	}
+
+	return []azure.DiskSpec{spec}
 }
 
-// ResourceGroup returns the AzureCluster resource group.
-func (m *MachineScope) ResourceGroup() string {
-	return m.ClusterScope.ResourceGroup()
-}
-
-// ClusterName returns the AzureCluster name.
-func (m *MachineScope) ClusterName() string {
-	return m.ClusterScope.ClusterName()
-}
-
-// SubscriptionID returns the Azure client Subscription ID.
-func (m *MachineScope) SubscriptionID() string {
-	return m.ClusterScope.SubscriptionID()
-}
-
-// BaseURI returns the Azure ResourceManagerEndpoint.
-func (m *MachineScope) BaseURI() string {
-	return m.ClusterScope.BaseURI()
-}
-
-// Authorizer returns the Azure client Authorizer.
-func (m *MachineScope) Authorizer() autorest.Authorizer {
-	return m.ClusterScope.Authorizer()
-}
-
-// Vnet returns the cluster VNet.
-func (m *MachineScope) Vnet() *infrav1.VnetSpec {
-	return m.ClusterScope.Vnet()
-}
-
-// NodeSubnet returns the cluster node subnet.
-func (m *MachineScope) NodeSubnet() *infrav1.SubnetSpec {
-	return m.ClusterScope.NodeSubnet()
-}
-
-// ControlPlaneSubnet returns the cluster control plane subnet.
-func (m *MachineScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return m.ClusterScope.ControlPlaneSubnet()
+// RoleAssignmentSpecs returns the role assignment specs.
+func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
+	if m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned {
+		return []azure.RoleAssignmentSpec{
+			{
+				MachineName: m.Name(),
+				UUID:        string(uuid.NewUUID()),
+			},
+		}
+	}
+	return []azure.RoleAssignmentSpec{}
 }
 
 // Subnet returns the machine's subnet based on its role
@@ -301,7 +301,7 @@ func (m *MachineScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
 
 	// Start with the cluster-wide tags...
-	tags.Merge(m.ClusterScope.AdditionalTags())
+	tags.Merge(m.ClusterDescriber.AdditionalTags())
 	// ... and merge in the Machine's
 	tags.Merge(m.AzureMachine.Spec.AdditionalTags)
 

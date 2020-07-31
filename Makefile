@@ -54,9 +54,8 @@ CONVERSION_GEN_VER := v0.18.4
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := v1.1.0
 ENVSUBST_BIN := envsubst
-ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-$(ENVSUBST_VER)
+ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-drone
 
 GOLANGCI_LINT_VER := v1.27.0
 GOLANGCI_LINT_BIN := golangci-lint
@@ -118,10 +117,6 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
-
-# Allow overriding the feature gates
-FEATURE_GATE_MACHINE_POOL ?= false
-FEATURE_GATES_JSON_PATCH := [{"op": "add", "path": "/spec/template/spec/containers/1/args/-", "value": "--feature-gates=MachinePool=$(FEATURE_GATE_MACHINE_POOL)"}]
 
 CLUSTER_TEMPLATE ?= cluster-template.yaml
 MANAGED_CLUSTER_TEMPLATE ?= cluster-template-aks.yaml
@@ -188,7 +183,9 @@ $(CONVERSION_GEN): ## Build conversion-gen.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/conversion-gen $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
 
 $(ENVSUBST): ## Build envsubst from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
+	rm -f $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)*
+	mkdir -p $(TOOLS_DIR) && cd $(TOOLS_DIR) && go build -tags=tools -o $(ENVSUBST) github.com/drone/envsubst/cmd/envsubst
+	ln -sf $(ENVSUBST) $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
 
 .PHONY: $(ENVSUBST_BIN)
 $(ENVSUBST_BIN): $(ENVSUBST) ## Build envsubst from tools folder.
@@ -229,7 +226,6 @@ lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues
 .PHONY: modules
 modules: ## Runs go mod to ensure proper vendoring.
 	go mod tidy
-	cd $(TOOLS_DIR); go mod tidy
 
 .PHONY: generate
 generate: ## Generate code
@@ -388,17 +384,11 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kubectl wait --for=condition=Available --timeout=5m apiservice v1beta1.webhook.cert-manager.io
 
 	# Deploy CAPI
-	kubectl apply -f https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7-beta.0/cluster-api-components.yaml
+	curl -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
 	$(KUSTOMIZE) build config | $(ENVSUBST) | kubectl apply -f -
-
-	# Patch controllers with feature gates flag
-	kubectl patch deployment capi-controller-manager -n capi-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
-	kubectl patch deployment capi-kubeadm-bootstrap-controller-manager -n capi-kubeadm-bootstrap-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
-	kubectl patch deployment capz-controller-manager -n capz-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
-	kubectl patch deployment capi-controller-manager -n capi-webhook-system --type=json -p='$(FEATURE_GATES_JSON_PATCH)'
 
 	# Wait for CAPI deployments
 	kubectl wait --for=condition=Available --timeout=5m -n capi-system deployment -l cluster.x-k8s.io/provider=cluster-api
@@ -459,7 +449,7 @@ kind-create: ## create capz kind cluster if needed
 	./scripts/kind-with-registry.sh
 
 .PHONY: tilt-up
-tilt-up: kind-create ## start tilt and build kind cluster if needed
+tilt-up: $(ENVSUBST) $(KUSTOMIZE) kind-create ## start tilt and build kind cluster if needed
 	tilt up
 
 .PHONY: delete-cluster

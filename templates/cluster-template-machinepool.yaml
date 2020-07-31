@@ -26,8 +26,8 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
-      name: ${AZURE_VNET_NAME}
-  resourceGroup: ${AZURE_RESOURCE_GROUP}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
@@ -63,13 +63,34 @@ spec:
           mountPath: /etc/kubernetes/azure.json
           name: cloud-config
           readOnly: true
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
     files:
     - contentFrom:
         secret:
-          key: standard
-          name: azure-secret
+          key: azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
       owner: root:root
       path: /etc/kubernetes/azure.json
+      permissions: "0644"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -82,6 +103,9 @@ spec:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
@@ -94,6 +118,10 @@ metadata:
 spec:
   template:
     spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
       location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
@@ -102,15 +130,6 @@ spec:
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
----
-apiVersion: v1
-data:
-  standard: ${AZURE_STANDARD_JSON_B64}
-  vmss: ${AZURE_VMSS_JSON_B64}
-kind: Secret
-metadata:
-  name: azure-secret
-  namespace: default
 ---
 apiVersion: exp.cluster.x-k8s.io/v1alpha3
 kind: MachinePool
@@ -159,8 +178,8 @@ spec:
   files:
   - contentFrom:
       secret:
-        key: vmss
-        name: azure-secret
+        key: azure.json
+        name: ${CLUSTER_NAME}-mp-0-azure-json
     owner: root:root
     path: /etc/kubernetes/azure.json
     permissions: "0644"

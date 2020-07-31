@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+
 	"github.com/Azure/go-autorest/autorest"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
@@ -54,6 +55,10 @@ type CredentialGetter interface {
 // Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
 type Authorizer interface {
 	SubscriptionID() string
+	ClientID() string
+	ClientSecret() string
+	CloudEnvironment() string
+	TenantID() string
 	BaseURI() string
 	Authorizer() autorest.Authorizer
 }
@@ -66,6 +71,8 @@ type ClusterDescriber interface {
 	Location() string
 	AdditionalTags() infrav1.Tags
 	Vnet() *infrav1.VnetSpec
+	IsVnetManaged() bool
 	NodeSubnet() *infrav1.SubnetSpec
 	ControlPlaneSubnet() *infrav1.SubnetSpec
+	RouteTable() *infrav1.RouteTable
 }

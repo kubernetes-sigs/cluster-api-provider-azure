@@ -20,9 +20,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
+
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -86,6 +89,21 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			wantErr: true,
 			osDisk:  createOSDiskWithCacheType("invalid_cache_type"),
 		},
+		{
+			name:    "valid ephemeral os disk spec",
+			wantErr: false,
+			osDisk: OSDisk{
+				DiskSizeGB:  30,
+				CachingType: "None",
+				OSType:      "blah",
+				DiffDiskSettings: &DiffDiskSettings{
+					Option: string(compute.Local),
+				},
+				ManagedDisk: ManagedDisk{
+					StorageAccountType: "Standard_LRS",
+				},
+			},
+		},
 	}
 	testcases = append(testcases, generateNegativeTestCases()...)
 
@@ -142,11 +160,21 @@ func generateNegativeTestCases() []osDiskTestInput {
 				StorageAccountType: "invalid_type",
 			},
 		},
+		{
+			DiskSizeGB: 30,
+			OSType:     "blah",
+			ManagedDisk: ManagedDisk{
+				StorageAccountType: "Premium_LRS",
+			},
+			DiffDiskSettings: &DiffDiskSettings{
+				Option: string(compute.Local),
+			},
+		},
 	}
 
-	for _, input := range invalidDiskSpecs {
+	for i, input := range invalidDiskSpecs {
 		inputs = append(inputs, osDiskTestInput{
-			name:    testCaseName,
+			name:    fmt.Sprintf("%s-%d", testCaseName, i),
 			wantErr: true,
 			osDisk:  input,
 		})
@@ -170,4 +198,106 @@ func createOSDiskWithCacheType(cacheType string) OSDisk {
 	osDisk := generateValidOSDisk()
 	osDisk.CachingType = cacheType
 	return osDisk
+}
+
+func TestAzureMachine_ValidateDataDisks(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name    string
+		disks   []DataDisk
+		wantErr bool
+	}{
+		{
+			name:    "valid nil data disks",
+			disks:   nil,
+			wantErr: false,
+		},
+		{
+			name:    "valid empty data disks",
+			disks:   []DataDisk{},
+			wantErr: false,
+		},
+		{
+			name: "valid disks",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "duplicate names",
+			disks: []DataDisk{
+				{
+					NameSuffix: "disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate LUNs",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid disk size",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 0,
+					Lun:        to.Int32Ptr(0),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty name",
+			disks: []DataDisk{
+				{
+					NameSuffix: "",
+					DiskSizeGB: 0,
+					Lun:        to.Int32Ptr(0),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateDataDisks(test.disks, field.NewPath("dataDisks"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
 }

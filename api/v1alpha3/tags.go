@@ -107,6 +107,9 @@ const (
 	// APIServerRole describes the value for the apiserver role
 	APIServerRole = "apiserver"
 
+	// InternalRole describes the value for the internal role
+	InternalRole = "internal"
+
 	// NodeOutboundRole describes the value for the node outbound LB role
 	NodeOutboundRole = "nodeOutbound"
 
@@ -115,12 +118,6 @@ const (
 
 	// CommonRole describes the value for the common role
 	CommonRole = "common"
-
-	// PublicRole describes the value for the public role
-	PublicRole = "public"
-
-	// PrivateRole describes the value for the private role
-	PrivateRole = "private"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.

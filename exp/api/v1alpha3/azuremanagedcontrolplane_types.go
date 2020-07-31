@@ -20,13 +20,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
 	// +kubebuilder:validation:MinLength:=2
-	// +kubebuilder:validation:Pattern:=^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$
 	Version string `json:"version"`
 
 	// ResourceGroup is the name of the Azure resource group for this AKS Cluster.
@@ -45,7 +46,7 @@ type AzureManagedControlPlaneSpec struct {
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
-	AdditionalTags map[string]string `json:"additionalTags,omitempty"`
+	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 
 	// NetworkPlugin used for building Kubernetes network. Possible values include: 'Azure', 'Kubenet'. Defaults to Azure.
 	// +kubebuilder:validation:Enum=Azure;Kubenet
@@ -55,7 +56,7 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=Calico;Azure
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
-	// SSHPublicKey is a string literal containing an ssh public key.
+	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
 	SSHPublicKey string `json:"sshPublicKey"`
 
 	// DefaultPoolRef is the specification for the default pool, without which an AKS cluster cannot be created.

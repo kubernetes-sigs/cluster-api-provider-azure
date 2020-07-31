@@ -66,6 +66,62 @@ func (mr *MockNICScopeMockRecorder) SubscriptionID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockNICScope)(nil).SubscriptionID))
 }
 
+// ClientID mocks base method.
+func (m *MockNICScope) ClientID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientID indicates an expected call of ClientID.
+func (mr *MockNICScopeMockRecorder) ClientID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientID", reflect.TypeOf((*MockNICScope)(nil).ClientID))
+}
+
+// ClientSecret mocks base method.
+func (m *MockNICScope) ClientSecret() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientSecret")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ClientSecret indicates an expected call of ClientSecret.
+func (mr *MockNICScopeMockRecorder) ClientSecret() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientSecret", reflect.TypeOf((*MockNICScope)(nil).ClientSecret))
+}
+
+// CloudEnvironment mocks base method.
+func (m *MockNICScope) CloudEnvironment() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudEnvironment")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CloudEnvironment indicates an expected call of CloudEnvironment.
+func (mr *MockNICScopeMockRecorder) CloudEnvironment() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockNICScope)(nil).CloudEnvironment))
+}
+
+// TenantID mocks base method.
+func (m *MockNICScope) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockNICScopeMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockNICScope)(nil).TenantID))
+}
+
 // BaseURI mocks base method.
 func (m *MockNICScope) BaseURI() string {
 	m.ctrl.T.Helper()
@@ -164,6 +220,20 @@ func (mr *MockNICScopeMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockNICScope)(nil).Vnet))
 }
 
+// IsVnetManaged mocks base method.
+func (m *MockNICScope) IsVnetManaged() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsVnetManaged indicates an expected call of IsVnetManaged.
+func (mr *MockNICScopeMockRecorder) IsVnetManaged() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNICScope)(nil).IsVnetManaged))
+}
+
 // NodeSubnet mocks base method.
 func (m *MockNICScope) NodeSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()
@@ -190,6 +260,20 @@ func (m *MockNICScope) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
 func (mr *MockNICScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockNICScope)(nil).ControlPlaneSubnet))
+}
+
+// RouteTable mocks base method.
+func (m *MockNICScope) RouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// RouteTable indicates an expected call of RouteTable.
+func (mr *MockNICScopeMockRecorder) RouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockNICScope)(nil).RouteTable))
 }
 
 // Info mocks base method.

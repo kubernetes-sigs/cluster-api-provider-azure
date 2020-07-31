@@ -33,7 +33,7 @@ spec:
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
       osDisk:
         osType: "Linux"
-        diskSizeGB: 30
+        diskSizeGB: 128
         managedDisk:
           storageAccountType: "Premium_LRS"
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
@@ -45,6 +45,7 @@ metadata:
 spec:
   template:
     spec:
+      useExperimentalRetryJoin: true
       joinConfiguration:
         nodeRegistration:
           name: '{{ ds.meta_data["local_hostname"] }}'
@@ -54,8 +55,8 @@ spec:
       files:
       - contentFrom:
           secret:
-            name: azure-secret
-            key: standard
+            name: ${CLUSTER_NAME}-md-0-azure-json
+            key: azure.json
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"

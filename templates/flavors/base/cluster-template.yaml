@@ -21,12 +21,12 @@ kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
 spec:
-  resourceGroup: "${AZURE_RESOURCE_GROUP}"
+  resourceGroup: "${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}"
   location: "${AZURE_LOCATION}"
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   networkSpec:
     vnet:
-      name: "${AZURE_VNET_NAME}"
+      name: "${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}"
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
@@ -74,14 +74,37 @@ spec:
             mountPath: /etc/kubernetes/azure.json
             name: cloud-config
             readOnly: true
+      etcd:
+        local:
+          dataDir: "/var/lib/etcddisk/etcd"
     files:
     - contentFrom:
         secret:
-          name: azure-secret
-          key: standard
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+          key: azure.json
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
+    diskSetup:
+      partitions:
+        - device: /dev/disk/azure/scsi1/lun0
+          tableType: gpt
+          layout: true
+          overwrite: false
+      filesystems:
+        - label: etcd_disk
+          filesystem: ext4
+          device: /dev/disk/azure/scsi1/lun0
+          extraOpts:
+            - "-E"
+            - "lazy_itable_init=1,lazy_journal_init=1"
+        - label: ephemeral0
+          filesystem: ext4
+          device: ephemeral0.1
+          replaceFS: ntfs
+    mounts:
+      - - LABEL=etcd_disk
+        - /var/lib/etcddisk
   version: "${KUBERNETES_VERSION}"
 ---
 kind: AzureMachineTemplate
@@ -98,12 +121,8 @@ spec:
         diskSizeGB: 128
         managedDisk:
           storageAccountType: "Premium_LRS"
+      dataDisks:
+        - nameSuffix: etcddisk
+          diskSizeGB: 256
+          lun: 0
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: azure-secret
-data:
-  standard: ${AZURE_STANDARD_JSON_B64}
-  vmss: ${AZURE_VMSS_JSON_B64}

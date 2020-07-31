@@ -69,15 +69,18 @@ An Azure Service Principal is needed for populating the controller manifests. Th
   4. Save the output from the above command in environment variables.
 
   ```bash
-  export AZURE_TENANT_ID=<Tenant>
-  export AZURE_CLIENT_ID=<AppId>
-  export AZURE_CLIENT_SECRET=<Password>
-  export AZURE_LOCATION="eastus"
+  export AZURE_TENANT_ID="<Tenant>"
+  export AZURE_CLIENT_ID="<AppId>"
+  export AZURE_CLIENT_SECRET='<Password>'
+  export AZURE_LOCATION="eastus" # this should be an Azure region that your subscription has quota for.
   ```
+
+:warning: NOTE: If your password contains single quotes (`'`), make sure to escape them. To escape a single quote, close the quoting before it, insert the single quote, and re-open the quoting.
+For example, if your password is `foo'blah$`, you should do `export AZURE_CLIENT_SECRET='foo'\''blah$'`.
 
   5. Set the name of the AzureCloud to be used, the default value that would be used by most users is "AzurePublicCloud", other values are:
 
-  - ChinaCloud: "AzureChinaCloud"
+ - ChinaCloud: "AzureChinaCloud"
  - GermanCloud: "AzureGermanCloud"
  - PublicCloud: "AzurePublicCloud"
  - USGovernmentCloud: "AzureUSGovernmentCloud"
@@ -90,32 +93,22 @@ export AZURE_ENVIRONMENT="AzurePublicCloud"
 
 ### Using images
 
-By default, the code will use the Azure Marketplace "capi" offer. You can list the available images with:
+By default, images offered by "capi" in the Azure Marketplace are used. You can list these *reference images* with this command:
 
 ```bash
 az vm image list --publisher cncf-upstream --offer capi --all -o table
 ```
 
-You can also [build your own image](https://image-builder.sigs.k8s.io/capi/providers/azure.html) and specify the image ID in the manifests generated in the AzureMachine specs.
+For more control over your nodes, you can use a [*custom image*][custom-images].
 
 ## Troubleshooting
 
-### Bootstrap running, but resources aren't being created
-
-Logs can be tailed using [`kubectl`][kubectl-logs]:
-
-```bash
-kubectl logs azure-provider-controller-manager-0 -n azure-provider-system -f
-```
-
-### Resources are created but control plane is taking a long time to become ready
-
-You can check the custom script logs by SSHing into the VM created and reading `/var/lib/waagent/custom-script/download/0/{stdout,stderr}`.
-
-[development]: /docs/development.md
+Please refer to the [troubleshooting guide][troubleshooting].
 
 ## Building from master
 
 If you're interested in developing cluster-api-provider-azure and getting the latest version from `master`, please follow the [development guide][development].
 
-[kubectl-logs]: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods
+[custom-images]: /docs/topics/custom-images.md
+[development]: /docs/development.md
+[troubleshooting]: /docs/troubleshooting.md

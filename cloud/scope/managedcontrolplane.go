@@ -18,14 +18,17 @@ package scope
 
 import (
 	"context"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/klogr"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,9 +97,36 @@ type ManagedControlPlaneScope struct {
 	PatchTarget      runtime.Object
 }
 
+func (s *ManagedControlPlaneScope) ResourceGroup() string {
+	if s.ControlPlane == nil {
+		return ""
+	}
+	return s.ControlPlane.Spec.ResourceGroup
+}
+
+func (s *ManagedControlPlaneScope) ClusterName() string {
+	return s.Cluster.Name
+}
+
+func (s *ManagedControlPlaneScope) Location() string {
+	if s.ControlPlane == nil {
+		return ""
+	}
+	return s.ControlPlane.Spec.Location
+}
+
+// AdditionalTags returns AdditionalTags from the ControlPlane spec.
+func (s *ManagedControlPlaneScope) AdditionalTags() infrav1.Tags {
+	tags := make(infrav1.Tags)
+	if s.ControlPlane.Spec.AdditionalTags != nil {
+		tags = s.ControlPlane.Spec.AdditionalTags.DeepCopy()
+	}
+	return tags
+}
+
 // SubscriptionID returns the Azure client Subscription ID.
 func (s *ManagedControlPlaneScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID
+	return s.AzureClients.SubscriptionID()
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.

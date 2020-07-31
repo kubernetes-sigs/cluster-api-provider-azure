@@ -16,13 +16,17 @@ limitations under the License.
 
 package azure
 
-// PublicIPSpec defines the specification for a public IP.
+import (
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+)
+
+// PublicIPSpec defines the specification for a Public IP.
 type PublicIPSpec struct {
 	Name    string
 	DNSName string
 }
 
-// NICSpec defines the specification for a network interface.
+// NICSpec defines the specification for a Network Interface.
 type NICSpec struct {
 	Name                     string
 	MachineName              string
@@ -36,4 +40,55 @@ type NICSpec struct {
 	PublicIPName             string
 	VMSize                   string
 	AcceleratedNetworking    *bool
+}
+
+// DiskSpec defines the specification for a Disk.
+type DiskSpec struct {
+	Name string
+}
+
+// LBSpec defines the specification for a Load Balancer.
+type LBSpec struct {
+	Name             string
+	PublicIPName     string
+	Role             string
+	SubnetName       string
+	SubnetCidr       string
+	PrivateIPAddress string
+	APIServerPort    int32
+}
+
+// RouteTableSpec defines the specification for a Route Table.
+type RouteTableSpec struct {
+	Name string
+}
+
+// InboundNatSpec defines the specification for an inbound NAT rule.
+type InboundNatSpec struct {
+	Name             string
+	LoadBalancerName string
+}
+
+// SubnetSpec defines the specification for a Subnet.
+type SubnetSpec struct {
+	Name                string
+	CIDR                string
+	VNetName            string
+	RouteTableName      string
+	SecurityGroupName   string
+	Role                infrav1.SubnetRole
+	InternalLBIPAddress string
+}
+
+// VNetSpec defines the specification for a Virtual Network.
+type VNetSpec struct {
+	ResourceGroup string
+	Name          string
+	CIDR          string
+}
+
+// RoleAssignmentSpec defines the specification for a Role Assignment.
+type RoleAssignmentSpec struct {
+	MachineName string
+	UUID        string
 }

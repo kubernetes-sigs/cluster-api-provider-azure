@@ -51,3 +51,27 @@ func (m *AzureMachine) SetDefaultCachingType() error {
 	}
 	return nil
 }
+
+// SetDefaultsDataDisks sets the data disk defaults for an AzureMachine
+func (m *AzureMachine) SetDataDisksDefaults() {
+	set := make(map[int32]struct{})
+	// populate all the existing values in the set
+	for _, disk := range m.Spec.DataDisks {
+		if disk.Lun != nil {
+			set[*disk.Lun] = struct{}{}
+		}
+	}
+	// Look for unique values for unassigned LUNs
+	for i, disk := range m.Spec.DataDisks {
+		if disk.Lun == nil {
+			for l := range m.Spec.DataDisks {
+				lun := int32(l)
+				if _, ok := set[lun]; !ok {
+					m.Spec.DataDisks[i].Lun = &lun
+					set[lun] = struct{}{}
+					break
+				}
+			}
+		}
+	}
+}

@@ -20,19 +20,22 @@ package e2e
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"os/exec"
+	"path"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Test suite constants for e2e config variables
@@ -42,8 +45,6 @@ const (
 	RedactLogScriptPath = "REDACT_LOG_SCRIPT"
 	AzureResourceGroup  = "AZURE_RESOURCE_GROUP"
 	AzureVNetName       = "AZURE_VNET_NAME"
-	AzureStandardJson   = "AZURE_STANDARD_JSON_B64"
-	AzureVMSSJson       = "AZURE_VMSS_JSON_B64"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -91,56 +92,26 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 	redactLogs()
 }
 
-type cloudProviderConfig struct {
-	Cloud                        string `json:"cloud"`
-	TenantID                     string `json:"tenantId"`
-	SubscriptionID               string `json:"subscriptionId"`
-	AadClientID                  string `json:"aadClientId"`
-	AadClientSecret              string `json:"aadClientSecret"`
-	ResourceGroup                string `json:"resourceGroup"`
-	SecurityGroupName            string `json:"securityGroupName"`
-	Location                     string `json:"location"`
-	VMType                       string `json:"vmType"`
-	VnetName                     string `json:"vnetName"`
-	VnetResourceGroup            string `json:"vnetResourceGroup"`
-	SubnetName                   string `json:"subnetName"`
-	RouteTableName               string `json:"routeTableName"`
-	LoadBalancerSku              string `json:"loadBalancerSku"`
-	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
-	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
-	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
-}
-
-func getCloudProviderConfig(cluster, vmType string) (string, error) {
-	config := &cloudProviderConfig{
-		Cloud:                        os.Getenv("AZURE_ENVIRONMENT"),
-		TenantID:                     os.Getenv("AZURE_TENANT_ID"),
-		SubscriptionID:               os.Getenv("AZURE_SUBSCRIPTION_ID"),
-		AadClientID:                  os.Getenv("AZURE_CLIENT_ID"),
-		AadClientSecret:              os.Getenv("AZURE_CLIENT_SECRET"),
-		ResourceGroup:                cluster,
-		SecurityGroupName:            fmt.Sprintf("%s-node-nsg", cluster),
-		Location:                     os.Getenv("AZURE_LOCATION"),
-		VMType:                       vmType,
-		VnetName:                     fmt.Sprintf("%s-vnet", cluster),
-		VnetResourceGroup:            cluster,
-		SubnetName:                   fmt.Sprintf("%s-node-subnet", cluster),
-		RouteTableName:               fmt.Sprintf("%s-node-routetable", cluster),
-		LoadBalancerSku:              "standard",
-		MaximumLoadBalancerRuleCount: 250,
-		UseManagedIdentityExtension:  false,
-		UseInstanceMetadata:          true,
-	}
-	b, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(b), err
-}
-
 func redactLogs() {
 	By("Redacting sensitive information from logs")
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
 	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
 	cmd.Run()
+}
+
+func createRestConfig(tmpdir, namespace, clusterName string) *rest.Config {
+	cluster := crclient.ObjectKey{
+		Namespace: namespace,
+		Name:      clusterName,
+	}
+	kubeConfigData, err := kubeconfig.FromSecret(context.TODO(), bootstrapClusterProxy.GetClient(), cluster)
+	Expect(err).NotTo(HaveOccurred())
+
+	kubeConfigPath := path.Join(tmpdir, clusterName+".kubeconfig")
+	Expect(ioutil.WriteFile(kubeConfigPath, kubeConfigData, 0640)).To(Succeed())
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	Expect(err).NotTo(HaveOccurred())
+
+	return config
 }

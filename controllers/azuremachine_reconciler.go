@@ -20,13 +20,16 @@ import (
 	"context"
 	"encoding/base64"
 
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilityzones"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
@@ -39,41 +42,53 @@ import (
 type azureMachineService struct {
 	machineScope         *scope.MachineScope
 	clusterScope         *scope.ClusterScope
-	availabilityZonesSvc azure.GetterService
 	networkInterfacesSvc azure.Service
+	inboundNatRulesSvc   azure.Service
 	virtualMachinesSvc   *virtualmachines.Service
-	disksSvc             azure.OldService
+	roleAssignmentsSvc   azure.Service
+	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
+	skuCache             *resourceskus.Cache
 }
 
 // newAzureMachineService populates all the services based on input scope
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
+	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+
 	return &azureMachineService{
 		machineScope:         machineScope,
 		clusterScope:         clusterScope,
-		availabilityZonesSvc: availabilityzones.NewService(clusterScope),
-		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
-		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope),
-		disksSvc:             disks.NewService(clusterScope),
+		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
+		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
+		virtualMachinesSvc:   virtualmachines.NewService(clusterScope, machineScope, cache),
+		roleAssignmentsSvc:   roleassignments.NewService(machineScope),
+		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
+		skuCache:             cache,
 	}
 }
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureMachineService) Reconcile(ctx context.Context) (*infrav1.VM, error) {
-	err := s.publicIPsSvc.Reconcile(ctx)
-	if err != nil {
+	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
 		return nil, errors.Wrap(err, "unable to create public IPs")
 	}
 
-	err = s.networkInterfacesSvc.Reconcile(ctx)
-	if err != nil {
+	if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
+		return nil, errors.Wrap(err, "unable to create inbound NAT rule")
+	}
+
+	if err := s.networkInterfacesSvc.Reconcile(ctx); err != nil {
 		return nil, errors.Wrap(err, "unable to create VM network interface")
 	}
 
 	vm, vmErr := s.reconcileVirtualMachine(ctx, azure.GenerateNICName(s.machineScope.Name()))
 	if vmErr != nil {
 		return nil, errors.Wrapf(vmErr, "failed to create VM %s ", s.machineScope.Name())
+	}
+
+	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
+		return nil, errors.Wrap(err, "unable to create role assignment")
 	}
 
 	return vm, nil
@@ -95,15 +110,17 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "Unable to delete network interface")
 	}
 
+	err = s.inboundNatRulesSvc.Delete(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to delete inbound NAT rule")
+	}
+
 	err = s.publicIPsSvc.Delete(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete public IPs")
 	}
 
-	OSDiskSpec := &disks.Spec{
-		Name: azure.GenerateOSDiskName(s.machineScope.Name()),
-	}
-	err = s.disksSvc.Delete(ctx, OSDiskSpec)
+	err = s.disksSvc.Delete(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete OS disk of machine %s", s.machineScope.Name())
 	}
@@ -143,20 +160,9 @@ func (s *azureMachineService) getVirtualMachineZone(ctx context.Context) (string
 	vmSize := s.machineScope.AzureMachine.Spec.VMSize
 	location := s.machineScope.AzureMachine.Spec.Location
 
-	zonesSpec := &availabilityzones.Spec{
-		VMSize: to.StringPtr(vmSize),
-	}
-	zonesInterface, err := s.availabilityZonesSvc.Get(ctx, zonesSpec)
+	zones, err := s.skuCache.GetZonesWithVMSize(ctx, vmSize, location)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to check availability zones for %s in region %s", vmSize, location)
-	}
-	if zonesInterface == nil {
-		// if its nil, probably means no zones found
-		return "", nil
-	}
-	zones, ok := zonesInterface.([]string)
-	if !ok {
-		return "", errors.New("availability zones Get returned invalid interface")
+		return "", errors.Wrapf(err, "failed to get zones for VM size %s", vmSize)
 	}
 
 	if len(zones) <= 0 {
@@ -212,6 +218,11 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 		}
 	}
 
+	nicNames := []string{nicName}
+	if s.machineScope.AzureMachine.Spec.AllocatePublicIP == true {
+		nicNames = append(nicNames, azure.GeneratePublicNICName(s.machineScope.Name()))
+	}
+
 	image, err := getVMImage(s.machineScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get VM image")
@@ -224,10 +235,11 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 
 	vmSpec := &virtualmachines.Spec{
 		Name:                   s.machineScope.Name(),
-		NICName:                nicName,
+		NICNames:               nicNames,
 		SSHKeyData:             string(decoded),
 		Size:                   s.machineScope.AzureMachine.Spec.VMSize,
 		OSDisk:                 s.machineScope.AzureMachine.Spec.OSDisk,
+		DataDisks:              s.machineScope.AzureMachine.Spec.DataDisks,
 		Image:                  image,
 		CustomData:             bootstrapData,
 		Zone:                   vmZone,
@@ -251,6 +263,11 @@ func (s *azureMachineService) reconcileVirtualMachine(ctx context.Context, nicNa
 			err = s.virtualMachinesSvc.Delete(ctx, vmSpec)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to delete machine")
+			}
+
+			err = s.disksSvc.Delete(ctx)
+			if err != nil && !azure.ResourceNotFound(err) {
+				return nil, errors.Wrapf(err, "failed to delete OS disk of machine %s", s.machineScope.Name())
 			}
 			return nil, errors.Errorf("virtual machine %s is deleted, retry creating in next reconcile", s.machineScope.Name())
 		} else if newVM.State != infrav1.VMStateSucceeded {

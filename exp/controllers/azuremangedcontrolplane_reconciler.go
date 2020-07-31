@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -25,20 +26,23 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
 // azureManagedControlPlaneReconciler are list of services required by cluster controller
 type azureManagedControlPlaneReconciler struct {
 	kubeclient         client.Client
 	managedClustersSvc *managedclusters.Service
+	groupsSvc          azure.Service
 }
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope
@@ -46,11 +50,17 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	return &azureManagedControlPlaneReconciler{
 		kubeclient:         scope.Client,
 		managedClustersSvc: managedclusters.NewService(scope),
+		groupsSvc:          groups.NewService(scope),
 	}
 }
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(scope.ControlPlane.Spec.SSHPublicKey)
+	if err != nil {
+		return errors.Wrapf(err, "failed to decode SSHPublicKey")
+	}
+
 	managedClusterSpec := &managedclusters.Spec{
 		Name:          scope.ControlPlane.Name,
 		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
@@ -59,20 +69,25 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		Version:       strings.TrimPrefix(scope.ControlPlane.Spec.Version, "v"),
 		NetworkPlugin: scope.ControlPlane.Spec.NetworkPlugin,
 		NetworkPolicy: scope.ControlPlane.Spec.NetworkPolicy,
-		SSHPublicKey:  scope.ControlPlane.Spec.SSHPublicKey,
+		SSHPublicKey:  string(decodedSSHPublicKey),
 	}
 
-	scope.Logger.V(2).Info("Reconciling managed cluster")
+	scope.V(2).Info("Reconciling managed cluster resource group")
+	if err := r.groupsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile managed cluster resource group")
+	}
+
+	scope.V(2).Info("Reconciling managed cluster")
 	if err := r.reconcileManagedCluster(ctx, scope, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile managed cluster")
 	}
 
-	scope.Logger.V(2).Info("Reconciling endpoint")
+	scope.V(2).Info("Reconciling endpoint")
 	if err := r.reconcileEndpoint(ctx, scope, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane endpoint")
 	}
 
-	scope.Logger.V(2).Info("Reconciling kubeconfig")
+	scope.V(2).Info("Reconciling kubeconfig")
 	if err := r.reconcileKubeconfig(ctx, scope, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile kubeconfig secret")
 	}
@@ -93,8 +108,14 @@ func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *
 		SSHPublicKey:  scope.ControlPlane.Spec.SSHPublicKey,
 	}
 
+	scope.V(2).Info("Deleting managed cluster")
 	if err := r.managedClustersSvc.Delete(ctx, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to delete managed cluster %s", scope.ControlPlane.Name)
+	}
+
+	scope.V(2).Info("Deleting managed cluster resource group")
+	if err := r.groupsSvc.Delete(ctx); err != nil {
+		return errors.Wrapf(err, "failed to delete managed cluster resource group")
 	}
 
 	return nil

@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"fmt"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -37,7 +38,6 @@ type ClusterScopeParams struct {
 	Logger       logr.Logger
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
-	Context      context.Context
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -63,9 +63,10 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
+
 	return &ClusterScope{
 		Logger:       params.Logger,
-		client:       params.Client,
+		Client:       params.Client,
 		AzureClients: params.AzureClients,
 		Cluster:      params.Cluster,
 		AzureCluster: params.AzureCluster,
@@ -76,7 +77,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
 	logr.Logger
-	client      client.Client
+	Client      client.Client
 	patchHelper *patch.Helper
 
 	AzureClients
@@ -86,7 +87,7 @@ type ClusterScope struct {
 
 // SubscriptionID returns the Azure client Subscription ID.
 func (s *ClusterScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID
+	return s.AzureClients.SubscriptionID()
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
@@ -104,7 +105,7 @@ func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
 }
 
-// PublicIPSpec returns the public IP specs.
+// PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return []azure.PublicIPSpec{
 		{
@@ -117,9 +118,83 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	}
 }
 
+// LBSpecs returns the load balancer specs.
+func (s *ClusterScope) LBSpecs() []azure.LBSpec {
+	return []azure.LBSpec{
+		{
+			// Internal control plane LB
+			Name:             azure.GenerateInternalLBName(s.ClusterName()),
+			SubnetName:       s.ControlPlaneSubnet().Name,
+			SubnetCidr:       s.ControlPlaneSubnet().CidrBlock,
+			PrivateIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
+			APIServerPort:    s.APIServerPort(),
+			Role:             infrav1.InternalRole,
+		},
+		{
+			// Public API Server LB
+			Name:          azure.GeneratePublicLBName(s.ClusterName()),
+			PublicIPName:  s.Network().APIServerIP.Name,
+			APIServerPort: s.APIServerPort(),
+			Role:          infrav1.APIServerRole,
+		},
+		{
+			// Public Node outbound LB
+			Name:         s.ClusterName(),
+			PublicIPName: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+			Role:         infrav1.NodeOutboundRole,
+		},
+	}
+}
+
+// RouteTableSpecs returns the node route table(s)
+func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
+	return []azure.RouteTableSpec{{
+		Name: s.RouteTable().Name,
+	}}
+}
+
+// SubnetSpecs returns the subnets specs.
+func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
+	return []azure.SubnetSpec{
+		{
+			Name:                s.ControlPlaneSubnet().Name,
+			CIDR:                s.ControlPlaneSubnet().CidrBlock,
+			VNetName:            s.Vnet().Name,
+			SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
+			Role:                s.ControlPlaneSubnet().Role,
+			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
+			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
+		},
+		{
+			Name:              s.NodeSubnet().Name,
+			CIDR:              s.NodeSubnet().CidrBlock,
+			VNetName:          s.Vnet().Name,
+			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
+			RouteTableName:    s.NodeSubnet().RouteTable.Name,
+			Role:              s.NodeSubnet().Role,
+		},
+	}
+}
+
+/// VNetSpecs returns the virtual network specs.
+func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
+	return []azure.VNetSpec{
+		{
+			ResourceGroup: s.Vnet().ResourceGroup,
+			Name:          s.Vnet().Name,
+			CIDR:          s.Vnet().CidrBlock,
+		},
+	}
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet
+}
+
+// IsVnetManaged returns true if the vnet is managed.
+func (s *ClusterScope) IsVnetManaged() bool {
+	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
 }
 
 // Subnets returns the cluster subnets.
@@ -135,6 +210,11 @@ func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
 // NodeSubnet returns the cluster node subnet.
 func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
 	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+}
+
+// RouteTable returns the cluster node routetable.
+func (s *ClusterScope) RouteTable() *infrav1.RouteTable {
+	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
 }
 
 // ResourceGroup returns the cluster resource group.

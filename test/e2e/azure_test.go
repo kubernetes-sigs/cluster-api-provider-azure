@@ -33,14 +33,14 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
-var _ = Describe("Workoad cluster creation", func() {
+var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx                                               = context.TODO()
-		specName                                          = "create-workload-cluster"
-		namespace                                         *corev1.Namespace
-		cancelWatches                                     context.CancelFunc
-		cluster                                           *clusterv1.Cluster
-		clusterName, standardCloudConfig, vmssCloudConfig string
+		ctx           = context.TODO()
+		specName      = "create-workload-cluster"
+		namespace     *corev1.Namespace
+		cancelWatches context.CancelFunc
+		cluster       *clusterv1.Cluster
+		clusterName   string
 	)
 
 	BeforeEach(func() {
@@ -60,27 +60,16 @@ var _ = Describe("Workoad cluster creation", func() {
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 
-		var err error
-		standardCloudConfig, err = getCloudProviderConfig(clusterName, "standard")
-		Expect(err).NotTo(HaveOccurred())
-
-		vmssCloudConfig, err = getCloudProviderConfig(clusterName, "vmss")
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(os.Setenv(AzureStandardJson, standardCloudConfig)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVMSSJson, vmssCloudConfig)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureStandardJson)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVMSSJson)).NotTo(HaveOccurred())
 	})
 
-	Context("Create single controlplane cluster", func() {
-		It("Should create a single node cluster", func() {
+	Context("Creating a single control-plane cluster", func() {
+		It("With 1 worker node", func() {
 			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -93,7 +82,7 @@ var _ = Describe("Workoad cluster creation", func() {
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: pointer.Int64Ptr(1),
-					WorkerMachineCount:       pointer.Int64Ptr(0),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
 				CNIManifestPath:              e2eConfig.GetVariable(CNIPath),
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -103,8 +92,8 @@ var _ = Describe("Workoad cluster creation", func() {
 		})
 	})
 
-	Context("Create multiple controlplane cluster with machine deployments", func() {
-		It("Should create a 3 node cluster", func() {
+	Context("Creating highly available control-plane cluster", func() {
+		It("With 3 control-plane nodes and 2 worker nodes", func() {
 			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -117,12 +106,34 @@ var _ = Describe("Workoad cluster creation", func() {
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: pointer.Int64Ptr(3),
-					WorkerMachineCount:       pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(2),
 				},
 				CNIManifestPath:              e2eConfig.GetVariable(CNIPath),
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			})
+
+			Context("Creating a accessible load balancer", func() {
+				AzureLBSpec(ctx, func() AzureLBSpecInput {
+					return AzureLBSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			Context("Validating network policies", func() {
+				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
+					return AzureNetPolSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
 			})
 		})
 	})

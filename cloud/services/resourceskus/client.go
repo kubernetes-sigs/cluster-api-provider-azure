@@ -18,9 +18,8 @@ package resourceskus
 
 import (
 	"context"
-	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
 
@@ -30,7 +29,6 @@ import (
 // Client wraps go-sdk
 type Client interface {
 	List(context.Context, string) ([]compute.ResourceSku, error)
-	HasAcceleratedNetworking(context.Context, string) (bool, error)
 }
 
 // AzureClient contains the Azure go-sdk Client
@@ -71,30 +69,4 @@ func (ac *AzureClient) List(ctx context.Context, filter string) ([]compute.Resou
 	}
 
 	return skus, nil
-}
-
-// HasAcceleratedNetworking returns whether the given compute SKU supports accelerated networking.
-func (ac *AzureClient) HasAcceleratedNetworking(ctx context.Context, name string) (bool, error) {
-	if name == "" {
-		return false, nil
-	}
-	skus, err := ac.List(ctx, "") // "filter" argument only works for location, so filter in code
-	if err != nil {
-		return false, err
-	}
-	for _, sku := range skus {
-		if sku.Name != nil && *sku.Name == name {
-			if sku.Capabilities != nil {
-				for _, c := range *sku.Capabilities {
-					if c.Name != nil && *c.Name == "AcceleratedNetworkingEnabled" {
-						if c.Value != nil && strings.EqualFold(*c.Value, "True") {
-							return true, nil
-						}
-					}
-				}
-			}
-			break
-		}
-	}
-	return false, nil
 }
