@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -212,20 +211,6 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	return r.reconcileNormal(ctx, machineScope, clusterScope)
 }
 
-// findVM queries the Azure APIs and retrieves the VM if it exists, returns nil otherwise.
-func (r *AzureMachineReconciler) findVM(ctx context.Context, scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
-	var vm *infrav1.VM
-
-	// If the ProviderID is populated, describe the VM using its name and resource group name.
-	vm, err := ams.VMIfExists(ctx, scope.GetVMID())
-	if err != nil {
-		r.Recorder.Eventf(scope.AzureMachine, corev1.EventTypeWarning, "failed to query AzureMachine VM", errors.Wrapf(err, "failed to query AzureMachine VM").Error())
-		return nil, errors.Wrapf(err, "failed to query AzureMachine VM")
-	}
-
-	return vm, nil
-}
-
 func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
 	machineScope.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
@@ -259,7 +244,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		machineScope.Info(message)
 		r.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
 
-		// Set FailureDomain if its not set
+		// Set FailureDomain if it is not set.
 		if machineScope.AzureMachine.Spec.FailureDomain == nil {
 			machineScope.V(2).Info("Failure domain not set, setting with value from AvailabilityZone.ID")
 			machineScope.AzureMachine.Spec.FailureDomain = machineScope.AzureMachine.Spec.AvailabilityZone.ID
@@ -268,85 +253,59 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 	ams := newAzureMachineService(machineScope, clusterScope)
 
-	// Get or create the virtual machine.
-	vm, err := r.getOrCreate(ctx, machineScope, ams)
+	err := ams.Reconcile(ctx)
 	if err != nil {
-		return reconcile.Result{}, err
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error creating new AzureMachine", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
+		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
+		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachine")
 	}
 
-	// Make sure Spec.ProviderID is always set.
-	machineScope.SetProviderID(fmt.Sprintf("azure:///%s", vm.ID))
-
-	machineScope.SetAnnotation("cluster-api-provider-azure", "true")
-
-	machineScope.SetAddresses(vm.Addresses)
-
-	// Proceed to reconcile the AzureMachine state.
-	machineScope.SetVMState(vm.State)
-
-	switch vm.State {
+	switch machineScope.GetVMState() {
 	case infrav1.VMStateSucceeded:
-		machineScope.V(2).Info("VM is running", "id", *machineScope.GetVMID())
+		machineScope.V(2).Info("VM is running", "id", machineScope.GetVMID())
 		conditions.MarkTrue(machineScope.AzureMachine, infrav1.VMRunningCondition)
 		machineScope.SetReady()
 	case infrav1.VMStateCreating:
-		machineScope.V(2).Info("VM is creating", "id", *machineScope.GetVMID())
+		machineScope.V(2).Info("VM is creating", "id", machineScope.GetVMID())
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNCreatingReason, clusterv1.ConditionSeverityInfo, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateUpdating:
-		machineScope.V(2).Info("VM is updating", "id", *machineScope.GetVMID())
+		machineScope.V(2).Info("VM is updating", "id", machineScope.GetVMID())
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNUpdatingReason, clusterv1.ConditionSeverityInfo, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateDeleting:
-		machineScope.Info("Unexpected VM deletion", "state", vm.State, "instance-id", *machineScope.GetVMID())
+		machineScope.Info("Unexpected VM deletion", "state", machineScope.GetVMState(), "instance-id", machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure VM deletion")
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDDeletingReason, clusterv1.ConditionSeverityWarning, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateFailed:
 		machineScope.SetNotReady()
-		machineScope.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", *machineScope.GetVMID())
+		machineScope.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "FailedVMState", "Azure VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
-		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", vm.State))
+		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machineScope.GetVMState()))
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityWarning, "")
+		// If VM failed provisioning, delete it so it can be recreated
+		err := ams.DeleteVM(ctx)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "failed to delete VM in a failed state")
+		}
+		return reconcile.Result{}, errors.Wrapf(err, "VM deleted, retry creating in next reconcile")
 	default:
 		machineScope.SetNotReady()
-		machineScope.Info("VM state is undefined", "state", vm.State, "instance-id", *machineScope.GetVMID())
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnhandledVMState", "Azure VM state is undefined")
-		machineScope.SetFailureReason(capierrors.UpdateMachineError)
-		machineScope.SetFailureMessage(errors.Errorf("Azure VM state %q is undefined", vm.State))
 		conditions.MarkUnknown(machineScope.AzureMachine, infrav1.VMRunningCondition, "", "")
+		return reconcile.Result{}, nil
 	}
 
+	// TODO: move this out of the controller and use tags CreateOrUpdateAtScope instead.
 	// Ensure that the tags are correct.
-	err = r.reconcileTags(ctx, machineScope, clusterScope, ams.skuCache, machineScope.AdditionalTags())
+	err = r.reconcileTags(ctx, machineScope, ams.skuCache)
 	if err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Tags are incorrect", errors.Errorf("failed to ensure tags: %+v", err).Error())
 		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func (r *AzureMachineReconciler) getOrCreate(ctx context.Context, scope *scope.MachineScope, ams *azureMachineService) (*infrav1.VM, error) {
-	vm, err := r.findVM(ctx, scope, ams)
-	if err != nil {
-		r.Recorder.Eventf(scope.AzureMachine, corev1.EventTypeWarning, "Error while searching for AzureMachine VM", err.Error())
-		conditions.MarkFalse(scope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNotFoundReason, clusterv1.ConditionSeverityError, err.Error())
-		return nil, err
-	}
-
-	if vm == nil {
-		// Create a new VM if we couldn't find a running VM.
-		vm, err = ams.Reconcile(ctx)
-		if err != nil {
-			r.Recorder.Eventf(scope.AzureMachine, corev1.EventTypeWarning, "Error creating new AzureMachine", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
-			conditions.MarkFalse(scope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
-			return nil, errors.Wrapf(err, "failed to reconcile AzureMachine")
-		}
-	}
-
-	return vm, nil
 }
 
 func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {

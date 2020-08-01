@@ -37,19 +37,16 @@ const (
 )
 
 // Ensure that the tags of the machine are correct
-func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, skuCache *resourceskus.Cache, additionalTags map[string]string) error {
-	annotation, err := r.machineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation)
+func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, scope *scope.MachineScope, skuCache *resourceskus.Cache) error {
+	annotation, err := r.machineAnnotationJSON(scope.AzureMachine, TagsLastAppliedAnnotation)
 	if err != nil {
 		return err
 	}
-	changed, created, deleted, newAnnotation := TagsChanged(annotation, additionalTags)
+	changed, created, deleted, newAnnotation := TagsChanged(annotation, scope.AdditionalTags())
 	if changed {
-		machineScope.Info("Updating tags on AzureMachine")
-		vmSpec := &virtualmachines.Spec{
-			Name: machineScope.Name(),
-		}
-		svc := virtualmachines.NewService(clusterScope, machineScope, skuCache)
-		vm, err := svc.Client.Get(ctx, clusterScope.ResourceGroup(), machineScope.Name())
+		scope.Info("Updating tags on AzureMachine")
+		svc := virtualmachines.NewService(scope, skuCache)
+		vm, err := svc.Client.Get(ctx, scope.ResourceGroup(), scope.Name())
 		if err != nil {
 			return errors.Wrapf(err, "failed to query AzureMachine VM")
 		}
@@ -63,12 +60,12 @@ func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, machineScope
 		}
 
 		vm.Tags = tags
-		if err := svc.Client.CreateOrUpdate(ctx, clusterScope.ResourceGroup(), vmSpec.Name, vm); err != nil {
+		if err := svc.Client.CreateOrUpdate(ctx, scope.ResourceGroup(), scope.Name(), vm); err != nil {
 			return errors.Wrapf(err, "cannot update VM tags")
 		}
 
 		// We also need to update the annotation if anything changed.
-		if err = r.updateMachineAnnotationJSON(machineScope.AzureMachine, TagsLastAppliedAnnotation, newAnnotation); err != nil {
+		if err = r.updateMachineAnnotationJSON(scope.AzureMachine, TagsLastAppliedAnnotation, newAnnotation); err != nil {
 			return err
 		}
 	}

@@ -18,7 +18,12 @@ package virtualmachines
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/klogr"
 	"net/http"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -32,88 +37,40 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const (
-	expectedInvalidSpec = "invalid VM specification"
-	subscriptionID      = "123"
-)
-
-func init() {
-	clusterv1.AddToScheme(scheme.Scheme)
-}
-
-func TestInvalidVM(t *testing.T) {
-	g := NewWithT(t)
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
-
-	cluster := &clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-	}
-
-	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		AzureClients: scope.AzureClients{
-			Authorizer: autorest.NullAuthorizer{},
-		},
-		Client:  client,
-		Cluster: cluster,
-		AzureCluster: &infrav1.AzureCluster{
-			Spec: infrav1.AzureClusterSpec{
-				Location: "test-location",
-				ResourceGroup:  "my-rg",
-				SubscriptionID: subscriptionID,
-				NetworkSpec: infrav1.NetworkSpec{
-					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-				},
-			},
-		},
-	})
-	g.Expect(err).NotTo(HaveOccurred())
-
-	s := &Service{
-		Scope:  clusterScope,
-		Client: vmMock,
-	}
-
-	// Wrong Spec
-	wrongSpec := &network.PublicIPAddress{}
-
-	err = s.Reconcile(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-
-	err = s.Delete(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-}
-
-func TestGetVM(t *testing.T) {
+func TestGetExistingVM(t *testing.T) {
 	testcases := []struct {
 		name          string
-		vmSpec        Spec
+		vmName        string
+		result        *infrav1.VM
 		expectedError string
-		expect        func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
 	}{
 		{
-			name: "get existing vm",
-			vmSpec: Spec{
-				Name: "my-vm",
+			name:   "get existing vm",
+			vmName: "my-vm",
+			result: &infrav1.VM{
+				ID:       "my-id",
+				Name:     "my-vm",
+				State:    "Succeeded",
+				Identity: "",
+				Tags:     nil,
+				Addresses: []corev1.NodeAddress{
+					{
+						Type:    "InternalIP",
+						Address: "1.2.3.4",
+					},
+					{
+						Type:    "ExternalIP",
+						Address: "4.3.2.1",
+					},
+				},
 			},
 			expectedError: "",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{
 					PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 						PublicIPAddressVersion:   network.IPv4,
@@ -162,32 +119,35 @@ func TestGetVM(t *testing.T) {
 			},
 		},
 		{
-			name: "vm not found",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "vm not found",
+			vmName:        "my-vm",
+			result:        &infrav1.VM{},
 			expectedError: "VM my-vm not found: #: Not found: StatusCode=404",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name: "vm retrieval fails",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "vm retrieval fails",
+			vmName:        "my-vm",
+			result:        &infrav1.VM{},
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
-			name: "get existing vm: error getting public IP",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "get existing vm: error getting public IP",
+			vmName:        "my-vm",
+			result:        &infrav1.VM{},
 			expectedError: "#: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -230,12 +190,13 @@ func TestGetVM(t *testing.T) {
 			},
 		},
 		{
-			name: "get existing vm: public IP not found",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "get existing vm: public IP not found",
+			vmName:        "my-vm",
+			result:        &infrav1.VM{},
 			expectedError: "#: Not Found: StatusCode=404",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
@@ -287,265 +248,294 @@ func TestGetVM(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
+			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
+			clientMock := mock_virtualmachines.NewMockClient(mockCtrl)
 			interfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
 
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-							Subnets: infrav1.Subnets{
-								&infrav1.SubnetSpec{
-									Name: "subnet-1",
-								},
-								&infrav1.SubnetSpec{},
-							},
-						},
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
 
 			s := &Service{
-				Scope:            clusterScope,
-				Client:           vmMock,
+				Scope:            scopeMock,
+				Client:           clientMock,
 				InterfacesClient: interfaceMock,
 				PublicIPsClient:  publicIPMock,
 			}
 
-			_, err = s.Get(context.TODO(), &tc.vmSpec)
+			result, err := s.getExisting(context.TODO(), tc.vmName)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(result).To(BeEquivalentTo(tc.result))
 			}
 		})
 	}
 }
 
 func TestReconcileVM(t *testing.T) {
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "bootstrap-data",
-		},
-		Data: map[string][]byte{
-			"value": []byte("data"),
-		},
-	}
-
-	image := &infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: "test-publisher",
-			Offer:     "test-offer",
-			SKU:       "test-sku",
-			Version:   "1.0.0.",
-		},
-	}
-
 	testcases := []struct {
 		name          string
-		machine       clusterv1.Machine
-		machineConfig *infrav1.AzureMachineSpec
-		azureCluster  *infrav1.AzureCluster
-		expect        func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
+		expect        func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder)
 		expectedError string
 	}{
 		{
 			name: "can create a vm",
-			machine: clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"set": "node"},
-				},
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
-						Data: to.StringPtr("bootstrap-data"),
-					},
-					Version: to.StringPtr("1.15.7"),
-				},
-			},
-			machineConfig: &infrav1.AzureMachineSpec{
-				VMSize:   "Standard_B2ms",
-				Location: "eastus",
-				Image:    image,
-			},
-			azureCluster: &infrav1.AzureCluster{
-				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: subscriptionID,
-					NetworkSpec: infrav1.NetworkSpec{
-						Subnets: infrav1.Subnets{
-							&infrav1.SubnetSpec{
-								Name: "subnet-1",
+			expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:       "my-vm",
+						Role:       infrav1.ControlPlane,
+						NICNames:   []string{"my-nic", "second-nic"},
+						SSHKeyData: "ZmFrZXNzaGtleQo=",
+						Size:       "Standard_D2v3",
+						Zone:       "1",
+						Identity:   infrav1.VMIdentityNone,
+						OSDisk: infrav1.OSDisk{
+							OSType:     "Linux",
+							DiskSizeGB: 128,
+							ManagedDisk: infrav1.ManagedDisk{
+								StorageAccountType: "Premium_LRS",
 							},
-							&infrav1.SubnetSpec{},
+						},
+						DataDisks: []infrav1.DataDisk{
+							{
+								NameSuffix: "mydisk",
+								DiskSizeGB: 64,
+								Lun:        to.Int32Ptr(0),
+							},
+						},
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          nil,
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
+					ID:   to.StringPtr("fake/nic/id"),
+					Name: to.StringPtr("my-nic"),
+				}, nil)
+				mnic.Get(context.TODO(), "my-rg", "second-nic").Return(network.Interface{
+					ID:   to.StringPtr("second/fake/nic/id"),
+					Name: to.StringPtr("second-nic"),
+				}, nil)
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", matchers.DiffEq(compute.VirtualMachine{
+					VirtualMachineProperties: &compute.VirtualMachineProperties{
+						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
+						StorageProfile: &compute.StorageProfile{
+							ImageReference: &compute.ImageReference{
+								Publisher: to.StringPtr("fake-publisher"),
+								Offer:     to.StringPtr("my-offer"),
+								Sku:       to.StringPtr("sku-id"),
+								Version:   to.StringPtr("1.0"),
+							},
+							OsDisk: &compute.OSDisk{
+								OsType:       "Linux",
+								Name:         to.StringPtr("my-vm_OSDisk"),
+								CreateOption: "FromImage",
+								DiskSizeGB:   to.Int32Ptr(128),
+								ManagedDisk: &compute.ManagedDiskParameters{
+									StorageAccountType: "Premium_LRS",
+								},
+							},
+							DataDisks: &[]compute.DataDisk{
+								{
+									Lun:          to.Int32Ptr(0),
+									Name:         to.StringPtr("my-vm_mydisk"),
+									CreateOption: "Empty",
+									DiskSizeGB:   to.Int32Ptr(64),
+								},
+							},
+						},
+						OsProfile: &compute.OSProfile{
+							ComputerName:  to.StringPtr("my-vm"),
+							AdminUsername: to.StringPtr("capi"),
+							CustomData:    to.StringPtr("fake-bootstrap-data"),
+							LinuxConfiguration: &compute.LinuxConfiguration{
+								DisablePasswordAuthentication: to.BoolPtr(true),
+								SSH: &compute.SSHConfiguration{
+									PublicKeys: &[]compute.SSHPublicKey{
+										{
+											Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+											KeyData: to.StringPtr("fakesshkey\n"),
+										},
+									},
+								},
+							},
+						},
+						NetworkProfile: &compute.NetworkProfile{
+							NetworkInterfaces: &[]compute.NetworkInterfaceReference{
+								{
+									NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{Primary: to.BoolPtr(true)},
+									ID:                                  to.StringPtr("fake/nic/id"),
+								},
+								{
+									NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{Primary: to.BoolPtr(false)},
+									ID:                                  to.StringPtr("second/fake/nic/id"),
+								},
+							},
 						},
 					},
-				},
-				Status: infrav1.AzureClusterStatus{
-					Network: infrav1.Network{
-						APIServerIP: infrav1.PublicIP{
-							DNSName: "azure-test-dns",
-						},
+					Resources: nil,
+					Identity:  nil,
+					Zones:     &[]string{"1"},
+					ID:        nil,
+					Name:      nil,
+					Type:      nil,
+					Location:  to.StringPtr("test-location"),
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-vm"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("control-plane"),
 					},
-				},
-			},
-			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
-				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				}))
 			},
 			expectedError: "",
 		},
 		{
 			name: "can create a vm with system assigned identity",
-			machine: clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"set": "node"},
-				},
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
-						Data: to.StringPtr("bootstrap-data"),
+			expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-vm",
+						Role:                   infrav1.Node,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               infrav1.VMIdentitySystemAssigned,
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          nil,
 					},
-					Version: to.StringPtr("1.15.7"),
-				},
-			},
-			machineConfig: &infrav1.AzureMachineSpec{
-				VMSize:   "Standard_B2ms",
-				Location: "eastus",
-				Image:    image,
-				Identity: "SystemAssigned",
-			},
-			azureCluster: &infrav1.AzureCluster{
-				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: subscriptionID,
-					NetworkSpec: infrav1.NetworkSpec{
-						Subnets: infrav1.Subnets{
-							&infrav1.SubnetSpec{
-								Name: "subnet-1",
-							},
-							&infrav1.SubnetSpec{},
-						},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
+					ID:   to.StringPtr("fake/nic/id"),
+					Name: to.StringPtr("my-nic"),
+				}, nil)
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
 					},
-				},
-				Status: infrav1.AzureClusterStatus{
-					Network: infrav1.Network{
-						APIServerIP: infrav1.PublicIP{
-							DNSName: "azure-test-dns",
-						},
-					},
-				},
-			},
-			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
-				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+					g.Expect(vm.Identity.Type).To(Equal(compute.ResourceIdentityTypeSystemAssigned))
+					g.Expect(vm.Identity.UserAssignedIdentities).To(HaveLen(0))
+				})
 			},
 			expectedError: "",
 		},
 		{
 			name: "can create a vm with user assigned identity",
-			machine: clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"set": "node"},
-				},
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
-						Data: to.StringPtr("bootstrap-data"),
+			expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-vm",
+						Role:                   infrav1.Node,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               infrav1.VMIdentityUserAssigned,
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "my-user-id"}},
+						SpotVMOptions:          nil,
 					},
-					Version: to.StringPtr("1.15.7"),
-				},
-			},
-			machineConfig: &infrav1.AzureMachineSpec{
-				VMSize:                 "Standard_B2ms",
-				Location:               "eastus",
-				Image:                  image,
-				Identity:               "UserAssigned",
-				UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "azure:///subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1"}},
-			},
-			azureCluster: &infrav1.AzureCluster{
-				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: subscriptionID,
-					NetworkSpec: infrav1.NetworkSpec{
-						Subnets: infrav1.Subnets{
-							&infrav1.SubnetSpec{
-								Name: "subnet-1",
-							},
-							&infrav1.SubnetSpec{},
-						},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
+					ID:   to.StringPtr("fake/nic/id"),
+					Name: to.StringPtr("my-nic"),
+				}, nil)
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
 					},
-				},
-				Status: infrav1.AzureClusterStatus{
-					Network: infrav1.Network{
-						APIServerIP: infrav1.PublicIP{
-							DNSName: "azure-test-dns",
-						},
-					},
-				},
-			},
-			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
-				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+					g.Expect(vm.Identity.Type).To(Equal(compute.ResourceIdentityTypeUserAssigned))
+					g.Expect(vm.Identity.UserAssignedIdentities).To(Equal(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{"my-user-id": {}}))
+				})
 			},
 			expectedError: "",
 		},
 		{
-			name: "can create a vm on spot",
-			machine: clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"set": "node"},
-				},
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
-						Data: to.StringPtr("bootstrap-data"),
+			name: "can create a spot vm",
+			expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-vm",
+						Role:                   infrav1.Node,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               "",
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          &infrav1.SpotVMOptions{},
 					},
-					Version: to.StringPtr("1.15.7"),
-				},
-			},
-			machineConfig: &infrav1.AzureMachineSpec{
-				VMSize:        "Standard_B2ms",
-				Location:      "eastus",
-				Image:         image,
-				SpotVMOptions: &infrav1.SpotVMOptions{},
-			},
-			azureCluster: &infrav1.AzureCluster{
-				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: subscriptionID,
-					NetworkSpec: infrav1.NetworkSpec{
-						Subnets: infrav1.Subnets{
-							&infrav1.SubnetSpec{
-								Name: "subnet-1",
-							},
-							&infrav1.SubnetSpec{},
-						},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
+					ID:   to.StringPtr("fake/nic/id"),
+					Name: to.StringPtr("my-nic"),
+				}, nil)
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
 					},
-				},
-				Status: infrav1.AzureClusterStatus{
-					Network: infrav1.Network{
-						APIServerIP: infrav1.PublicIP{
-							DNSName: "azure-test-dns",
-						},
-					},
-				},
-			},
-			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
-				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Priority).To(Equal(compute.Spot))
 					g.Expect(vm.EvictionPolicy).To(Equal(compute.Deallocate))
 					g.Expect(vm.BillingProfile).To(BeNil())
@@ -555,47 +545,45 @@ func TestReconcileVM(t *testing.T) {
 		},
 		{
 			name: "vm creation fails",
-			machine: clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"set": "node"},
-				},
-				Spec: clusterv1.MachineSpec{
-					Bootstrap: clusterv1.Bootstrap{
-						Data: to.StringPtr("bootstrap-data"),
+			expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-vm",
+						Role:                   infrav1.ControlPlane,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               "",
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          nil,
 					},
-					Version: to.StringPtr("1.15.7"),
-				},
-			},
-			machineConfig: &infrav1.AzureMachineSpec{
-				VMSize:   "Standard_B2ms",
-				Location: "eastus",
-				Image:    image,
-			},
-			azureCluster: &infrav1.AzureCluster{
-				Spec: infrav1.AzureClusterSpec{
-					SubscriptionID: subscriptionID,
-					NetworkSpec: infrav1.NetworkSpec{
-						Subnets: infrav1.Subnets{
-							&infrav1.SubnetSpec{
-								Name: "subnet-1",
-							},
-							&infrav1.SubnetSpec{},
-						},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
+					ID:   to.StringPtr("fake/nic/id"),
+					Name: to.StringPtr("my-nic"),
+				}, nil)
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
 					},
-				},
-				Status: infrav1.AzureClusterStatus{
-					Network: infrav1.Network{
-						APIServerIP: infrav1.PublicIP{
-							DNSName: "azure-test-dns",
-						},
-					},
-				},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
-			expect: func(g *WithT, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				mnic.Get(gomock.Any(), gomock.Any(), gomock.Any())
-				m.CreateOrUpdate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-			},
-			expectedError: "cannot create VM: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to create VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
 		},
 	}
 
@@ -607,83 +595,21 @@ func TestReconcileVM(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
+			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
+			clientMock := mock_virtualmachines.NewMockClient(mockCtrl)
 			interfaceMock := mock_networkinterfaces.NewMockClient(mockCtrl)
 			publicIPMock := mock_publicips.NewMockClient(mockCtrl)
 
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test1",
-				},
-				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						ServiceDomain: "cluster.local",
-						Services: &clusterv1.NetworkRanges{
-							CIDRBlocks: []string{"192.168.0.0/16"},
-						},
-						Pods: &clusterv1.NetworkRanges{
-							CIDRBlocks: []string{"192.168.0.0/16"},
-						},
-					},
-				},
-			}
-
-			azureMachine := &infrav1.AzureMachine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "azure-test1",
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: clusterv1.GroupVersion.String(),
-							Kind:       "Machine",
-							Name:       "test1",
-						},
-					},
-				},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, secret, cluster, &tc.machine)
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:       client,
-				Cluster:      cluster,
-				AzureCluster: tc.azureCluster,
-			})
-			g.Expect(err).NotTo(HaveOccurred())
-
-			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-				Client:           client,
-				Machine:          &tc.machine,
-				AzureMachine:     azureMachine,
-				ClusterDescriber: clusterScope,
-			})
-			g.Expect(err).NotTo(HaveOccurred())
-
-			machineScope.AzureMachine.Spec = *tc.machineConfig
-			tc.expect(g, vmMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
+			tc.expect(g, scopeMock.EXPECT(), clientMock.EXPECT(), interfaceMock.EXPECT(), publicIPMock.EXPECT())
 
 			s := &Service{
-				Scope:            clusterScope,
-				MachineScope:     machineScope,
-				Client:           vmMock,
+				Scope:            scopeMock,
+				Client:           clientMock,
 				InterfacesClient: interfaceMock,
 				PublicIPsClient:  publicIPMock,
 			}
 
-			vmSpec := &Spec{
-				Name:          machineScope.Name(),
-				NICNames:      []string{"test-nic"},
-				SSHKeyData:    "fake-key",
-				Size:          machineScope.AzureMachine.Spec.VMSize,
-				OSDisk:        machineScope.AzureMachine.Spec.OSDisk,
-				Image:         machineScope.AzureMachine.Spec.Image,
-				CustomData:    *machineScope.Machine.Spec.Bootstrap.Data,
-				SpotVMOptions: machineScope.AzureMachine.Spec.SpotVMOptions,
-			}
-
-			err = s.Reconcile(context.TODO(), vmSpec)
+			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -697,38 +623,79 @@ func TestReconcileVM(t *testing.T) {
 func TestDeleteVM(t *testing.T) {
 	testcases := []struct {
 		name          string
-		vmSpec        Spec
 		expectedError string
-		expect        func(m *mock_virtualmachines.MockClientMockRecorder)
+		expect        func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder)
 	}{
 		{
-			name: "successfully delete an existing vm",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "successfully delete an existing vm",
 			expectedError: "",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-vm")
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-existing-vm",
+						Role:                   infrav1.ControlPlane,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               "",
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          nil,
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Delete(context.TODO(), "my-existing-rg", "my-existing-vm")
 			},
 		},
 		{
-			name: "vm already deleted",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "vm already deleted",
 			expectedError: "",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-vm",
+						Role:                   infrav1.ControlPlane,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               "",
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          nil,
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Delete(context.TODO(), "my-rg", "my-vm").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			name: "vm deletion fails",
-			vmSpec: Spec{
-				Name: "my-vm",
-			},
+			name:          "vm deletion fails",
 			expectedError: "failed to delete VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(m *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:                   "my-vm",
+						Role:                   infrav1.ControlPlane,
+						NICNames:               []string{"my-nic"},
+						SSHKeyData:             "fakesshpublickey",
+						Size:                   "Standard_D2v3",
+						Zone:                   "",
+						Identity:               "",
+						OSDisk:                 infrav1.OSDisk{},
+						DataDisks:              nil,
+						UserAssignedIdentities: nil,
+						SpotVMOptions:          nil,
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Delete(context.TODO(), "my-rg", "my-vm").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
@@ -742,41 +709,17 @@ func TestDeleteVM(t *testing.T) {
 			t.Parallel()
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
-			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
+			scopeMock := mock_virtualmachines.NewMockVMScope(mockCtrl)
+			clientMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
-
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-
-			tc.expect(vmMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					Authorizer: autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup:  "my-rg",
-						SubscriptionID: subscriptionID,
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-						},
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: vmMock,
+				Scope:  scopeMock,
+				Client: clientMock,
 			}
 
-			err = s.Delete(context.TODO(), &tc.vmSpec)
+			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))

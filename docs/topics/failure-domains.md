@@ -6,7 +6,7 @@ The Azure provider includes the support for [failure domains](https://cluster-ap
 
 A failure domain in the Azure provider maps to an **availability zone** within an Azure region. In Azure an availability zone is a separate data center within a region that offers redundancy and separation from the other availability zones within a region.
 
-To ensure a cluster (or any application) is resilient to failure its best to spread instances across all the availability zones within a region. If a zone is lost your cluster will continue to run as the other 2 zones are physically separated and can continue to run.
+To ensure a cluster (or any application) is resilient to failure it is best to spread instances across all the availability zones within a region. If a zone goes down, your cluster will continue to run as the other 2 zones are physically separated and can continue to run.
 
 Full details of availability zones, regions can be found in the [Azure docs](https://docs.microsoft.com/en-us/azure/availability-zones/az-overview).
 

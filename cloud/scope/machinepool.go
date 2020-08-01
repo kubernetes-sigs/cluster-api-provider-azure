@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -176,4 +177,14 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 		return "", errors.New("error retrieving bootstrap data: secret value key is missing")
 	}
 	return base64.StdEncoding.EncodeToString(value), nil
+}
+
+// Pick image from the machine configuration, or use a default one.
+func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
+	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
+	if m.AzureMachinePool.Spec.Template.Image != nil {
+		return m.AzureMachinePool.Spec.Template.Image, nil
+	}
+	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
+	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 }

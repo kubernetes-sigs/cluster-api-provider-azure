@@ -18,7 +18,6 @@ package azure
 
 import (
 	"fmt"
-
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -40,27 +39,6 @@ const (
 	// LatestVersion is the image version latest
 	LatestVersion = "latest"
 )
-
-// SupportedAvailabilityZoneLocations is a slice of the locations where Availability Zones are supported.
-// This is used to validate whether a virtual machine should leverage an Availability Zone.
-// Based on the Availability Zones listed in https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
-var SupportedAvailabilityZoneLocations = []string{
-	// Americas
-	"centralus",
-	"eastus",
-	"eastus2",
-	"westus2",
-
-	// Europe
-	"francecentral",
-	"northeurope",
-	"uksouth",
-	"westeurope",
-
-	// Asia Pacific
-	"japaneast",
-	"southeastasia",
-}
 
 // GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
 func GenerateInternalLBName(clusterName string) string {

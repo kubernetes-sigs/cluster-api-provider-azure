@@ -17,16 +17,32 @@ limitations under the License.
 package virtualmachines
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"context"
+	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
+// VMScope defines the scope interface for a virtual machines service.
+type VMScope interface {
+	azure.ClusterDescriber
+	logr.Logger
+	VMSpecs() []azure.VMSpec
+	GetBootstrapData(ctx context.Context) (string, error)
+	GetVMImage() (*infrav1.Image, error)
+	SetAnnotation(string, string)
+	SetProviderID(string)
+	SetAddresses([]corev1.NodeAddress)
+	SetVMState(infrav1.VMState)
+}
+
 // Service provides operations on azure resources
 type Service struct {
-	Scope        *scope.ClusterScope
-	MachineScope *scope.MachineScope
+	Scope VMScope
 	Client
 	InterfacesClient networkinterfaces.Client
 	PublicIPsClient  publicips.Client
@@ -34,10 +50,9 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(scope *scope.ClusterScope, machineScope *scope.MachineScope, skuCache *resourceskus.Cache) *Service {
+func NewService(scope VMScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:            scope,
-		MachineScope:     machineScope,
 		Client:           NewClient(scope),
 		InterfacesClient: networkinterfaces.NewClient(scope),
 		PublicIPsClient:  publicips.NewClient(scope),
