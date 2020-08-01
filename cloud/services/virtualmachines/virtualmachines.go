@@ -330,6 +330,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec Spec) (*com
 			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
 			Lun:          disk.Lun,
 			Name:         to.StringPtr(azure.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
+			Caching:      compute.CachingTypes(disk.CachingType),
 		})
 	}
 	storageProfile.DataDisks = &dataDisks

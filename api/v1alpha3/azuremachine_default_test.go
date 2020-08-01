@@ -18,10 +18,10 @@ package v1alpha3
 
 import (
 	"encoding/json"
-	"github.com/Azure/go-autorest/autorest/to"
 	"reflect"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 )
 
@@ -60,24 +60,28 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 			name: "no LUNs specified",
 			disks: []DataDisk{
 				{
-					NameSuffix: "testdisk1",
-					DiskSizeGB: 30,
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk2",
-					DiskSizeGB: 30,
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					CachingType: "ReadWrite",
 				},
 			},
 			output: []DataDisk{
 				{
-					NameSuffix: "testdisk1",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(0),
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk2",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(1),
+					CachingType: "ReadWrite",
 				},
 			},
 		},
@@ -85,26 +89,30 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 			name: "All LUNs specified",
 			disks: []DataDisk{
 				{
-					NameSuffix: "testdisk1",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(5),
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(5),
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk2",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(3),
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(3),
+					CachingType: "ReadWrite",
 				},
 			},
 			output: []DataDisk{
 				{
-					NameSuffix: "testdisk1",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(5),
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(5),
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk2",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(3),
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(3),
+					CachingType: "ReadWrite",
 				},
 			},
 		},
@@ -112,25 +120,58 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 			name: "Some LUNs missing",
 			disks: []DataDisk{
 				{
-					NameSuffix: "testdisk1",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(0),
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk2",
-					DiskSizeGB: 30,
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk3",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "testdisk3",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(1),
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk4",
-					DiskSizeGB: 30,
+					NameSuffix:  "testdisk4",
+					DiskSizeGB:  30,
+					CachingType: "ReadWrite",
 				},
 			},
 			output: []DataDisk{
+				{
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(0),
+					CachingType: "ReadWrite",
+				},
+				{
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(2),
+					CachingType: "ReadWrite",
+				},
+				{
+					NameSuffix:  "testdisk3",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(1),
+					CachingType: "ReadWrite",
+				},
+				{
+					NameSuffix:  "testdisk4",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(3),
+					CachingType: "ReadWrite",
+				},
+			},
+		},
+		{
+			name: "CachingType unspecified",
+			disks: []DataDisk{
 				{
 					NameSuffix: "testdisk1",
 					DiskSizeGB: 30,
@@ -141,15 +182,19 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 					DiskSizeGB: 30,
 					Lun:        to.Int32Ptr(2),
 				},
+			},
+			output: []DataDisk{
 				{
-					NameSuffix: "testdisk3",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "testdisk1",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(0),
+					CachingType: "ReadWrite",
 				},
 				{
-					NameSuffix: "testdisk4",
-					DiskSizeGB: 30,
-					Lun:        to.Int32Ptr(3),
+					NameSuffix:  "testdisk2",
+					DiskSizeGB:  30,
+					Lun:         to.Int32Ptr(2),
+					CachingType: "ReadWrite",
 				},
 			},
 		},

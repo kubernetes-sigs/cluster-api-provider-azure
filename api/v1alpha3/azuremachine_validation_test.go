@@ -222,14 +222,16 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "valid disks",
 			disks: []DataDisk{
 				{
-					NameSuffix: "my_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
-					NameSuffix: "my_other_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "my_other_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(1),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: false,
@@ -238,14 +240,16 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "duplicate names",
 			disks: []DataDisk{
 				{
-					NameSuffix: "disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
-					NameSuffix: "disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(1),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -254,14 +258,16 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "duplicate LUNs",
 			disks: []DataDisk{
 				{
-					NameSuffix: "my_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
-					NameSuffix: "my_other_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_other_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -270,9 +276,10 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "invalid disk size",
 			disks: []DataDisk{
 				{
-					NameSuffix: "my_disk",
-					DiskSizeGB: 0,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  0,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -281,12 +288,37 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "empty name",
 			disks: []DataDisk{
 				{
-					NameSuffix: "",
-					DiskSizeGB: 0,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "",
+					DiskSizeGB:  0,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "invalid disk cachingType",
+			disks: []DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: "invalidCacheType",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid disk cachingType",
+			disks: []DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: false,
 		},
 	}
 

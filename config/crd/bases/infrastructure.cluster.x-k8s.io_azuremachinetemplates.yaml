@@ -205,6 +205,8 @@ spec:
                           description: DataDisk specifies the parameters that are
                             used to add one or more data disks to the machine.
                           properties:
+                            cachingType:
+                              type: string
                             diskSizeGB:
                               description: DiskSizeGB is the size in GB to assign
                                 to the data disk.

@@ -52,7 +52,7 @@ func (m *AzureMachine) SetDefaultCachingType() error {
 	return nil
 }
 
-// SetDefaultsDataDisks sets the data disk defaults for an AzureMachine
+// SetDataDisksDefaults sets the data disk defaults for an AzureMachine
 func (m *AzureMachine) SetDataDisksDefaults() {
 	set := make(map[int32]struct{})
 	// populate all the existing values in the set
@@ -72,6 +72,9 @@ func (m *AzureMachine) SetDataDisksDefaults() {
 					break
 				}
 			}
+		}
+		if disk.CachingType == "" {
+			m.Spec.DataDisks[i].CachingType = "ReadWrite"
 		}
 	}
 }

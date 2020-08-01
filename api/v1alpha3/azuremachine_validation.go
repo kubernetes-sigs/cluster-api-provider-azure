@@ -84,6 +84,9 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 		} else {
 			lunSet[*disk.Lun] = struct{}{}
 		}
+
+		// validate cachingType
+		allErrs = append(allErrs, validateCachingType(disk.CachingType, fieldPath)...)
 	}
 	return allErrs
 }
