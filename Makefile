@@ -135,14 +135,21 @@ help:  ## Display this help
 .PHONY: test
 test: generate lint go-test ## Run generate lint and tests
 
-go-test: export TEST_ASSET_KUBECTL = $(KUBECTL)
-go-test: export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
-go-test: export TEST_ASSET_ETCD = $(ETCD)
+envs-test:
+export TEST_ASSET_KUBECTL = $(KUBECTL)
+export TEST_ASSET_KUBE_APISERVER = $(KUBE_APISERVER)
+export TEST_ASSET_ETCD = $(ETCD)
 
 .PHONY: go-test
-go-test: $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run go tests
+go-test: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run go tests
+	echo $(TEST_ASSET_KUBECTL)
 	go test ./...
 
+.PHONY: test-cover
+test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with code coverage and code generate reports
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out -o coverage.txt
+	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-integration
 test-integration: ## Run integration tests
