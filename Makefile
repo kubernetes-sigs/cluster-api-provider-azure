@@ -391,7 +391,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kubectl wait --for=condition=Available --timeout=5m apiservice v1beta1.webhook.cert-manager.io
 
 	# Deploy CAPI
-	curl -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.7/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.8/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
