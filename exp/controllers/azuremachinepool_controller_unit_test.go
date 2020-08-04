@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 )
 
@@ -134,7 +134,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
 				kClient := fake.NewFakeClientWithScheme(newScheme(g))
-				log.EXPECT().Error(matchers.ErrStrEq("expected a AzureCluster but got a *v1alpha3.MachinePool"), "failed to get AzureCluster")
+				log.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1alpha3.MachinePool"), "failed to get AzureCluster")
 
 				return log, mockCtrl, kClient
 			},

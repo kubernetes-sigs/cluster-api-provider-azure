@@ -81,8 +81,9 @@ type (
 )
 
 func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	log := r.Log.WithValues("controller", "AzureMachinePool")
 	// create mapper to transform incoming AzureClusters into AzureMachinePool requests
-	azureClusterMapper, err := AzureClusterToAzureMachinePoolsMapper(r.Client, mgr.GetScheme(), r.Log)
+	azureClusterMapper, err := AzureClusterToAzureMachinePoolsMapper(r.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachinePools mapper")
 	}
@@ -90,12 +91,12 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1exp.AzureMachinePool{}).
-		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &capiv1exp.MachinePool{}},
 			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: machinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), r.Log),
+				ToRequests: machinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log),
 			},
 		).
 		// watch for changes in AzureCluster resources
@@ -120,7 +121,7 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		&handler.EnqueueRequestsFromMapFunc{
 			ToRequests: azureMachinePoolMapper,
 		},
-		predicates.ClusterUnpausedAndInfrastructureReady(r.Log),
+		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
 	}

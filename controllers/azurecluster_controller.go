@@ -51,10 +51,11 @@ type AzureClusterReconciler struct {
 }
 
 func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	log := r.Log.WithValues("controller", "AzureCluster")
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
 		Build(r)
 	if err != nil {
 		return errors.Wrapf(err, "error creating controller")
@@ -66,7 +67,7 @@ func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 		&handler.EnqueueRequestsFromMapFunc{
 			ToRequests: util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster")),
 		},
-		predicates.ClusterUnpaused(r.Log),
+		predicates.ClusterUnpaused(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
 	}

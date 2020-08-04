@@ -53,8 +53,9 @@ type AzureMachineReconciler struct {
 }
 
 func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	log := r.Log.WithValues("controller", "AzureMachine")
 	// create mapper to transform incoming AzureClusters into AzureMachine requests
-	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(r.Client, mgr.GetScheme(), r.Log)
+	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(r.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachines mapper")
 	}
@@ -62,7 +63,7 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureMachine{}).
-		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
 		// watch for changes in CAPI Machine resources
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
@@ -93,7 +94,7 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 		&handler.EnqueueRequestsFromMapFunc{
 			ToRequests: azureMachineMapper,
 		},
-		predicates.ClusterUnpausedAndInfrastructureReady(r.Log),
+		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
 	}

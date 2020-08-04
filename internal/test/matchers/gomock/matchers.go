@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package matchers
+package gomock
 
 import (
 	"fmt"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/onsi/gomega/types"
 )
 
 type (
@@ -32,6 +33,19 @@ type (
 	errStrEq struct {
 		expected string
 		actual   string
+	}
+
+	logEntryMactcher struct {
+		level   int
+		logFunc string
+		values  []interface{}
+		errors  []error
+	}
+
+	LogMatcher interface {
+		types.GomegaMatcher
+		WithLevel(int) LogMatcher
+		WithLogFunc(string) LogMatcher
 	}
 )
 

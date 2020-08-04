@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func init() {
@@ -394,7 +394,7 @@ func TestService_Reconcile(t *testing.T) {
 
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
+				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, gomockinternal.DiffEq(vmss)).Return(nil)
 
 				return mockCtrl
 			},
@@ -529,7 +529,7 @@ func TestService_Reconcile(t *testing.T) {
 
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(vmss)).Return(nil)
+				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, gomockinternal.DiffEq(vmss)).Return(nil)
 
 				return mockCtrl
 			},
@@ -715,7 +715,7 @@ func TestService_Reconcile(t *testing.T) {
 
 				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
 				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(vmss, nil)
-				vmssMock.EXPECT().Update(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, matchers.DiffEq(update)).Return(nil)
+				vmssMock.EXPECT().Update(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, gomockinternal.DiffEq(update)).Return(nil)
 
 				return mockCtrl
 			},

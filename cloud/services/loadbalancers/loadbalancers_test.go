@@ -22,20 +22,24 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest/to"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	"k8s.io/klog/klogr"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
@@ -125,7 +129,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				gomock.InOrder(
 					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{Name: to.StringPtr("my-publicip")}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", matchers.DiffEq(network.LoadBalancer{
+					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomockinternal.DiffEq(network.LoadBalancer{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
 							"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.APIServerRole),
@@ -221,7 +225,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				gomock.InOrder(
 					mPublicIP.Get(context.TODO(), "my-rg", "outbound-publicip").Return(network.PublicIPAddress{Name: to.StringPtr("outbound-publicip")}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "cluster-name", matchers.DiffEq(network.LoadBalancer{
+					m.CreateOrUpdate(context.TODO(), "my-rg", "cluster-name", gomockinternal.DiffEq(network.LoadBalancer{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster-name": to.StringPtr("owned"),
 							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr(infrav1.NodeOutboundRole),
@@ -355,7 +359,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 							},
 						}}}, nil)
 				mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", matchers.DiffEq(network.LoadBalancer{
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomockinternal.DiffEq(network.LoadBalancer{
 					Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
 					Location: to.StringPtr("testlocation"),
 					Tags: map[string]*string{

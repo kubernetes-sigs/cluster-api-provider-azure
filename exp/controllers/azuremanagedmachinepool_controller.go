@@ -53,9 +53,10 @@ type AzureManagedMachinePoolReconciler struct {
 }
 
 func (r *AzureManagedMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedMachinePool requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(r.Client, mgr.GetScheme(), r.Log)
+	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(r.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureManagedMachinePools mapper")
 	}
@@ -63,7 +64,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, o
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(azManagedMachinePool).
-		WithEventFilter(predicates.ResourceNotPaused(r.Log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
@@ -87,9 +88,9 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, o
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		&handler.EnqueueRequestsFromMapFunc{
-			ToRequests: util.ClusterToInfrastructureMapFunc(azManagedMachinePool.GroupVersionKind()),
+			ToRequests: util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool")),
 		},
-		predicates.ClusterUnpausedAndInfrastructureReady(r.Log),
+		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
 	}
