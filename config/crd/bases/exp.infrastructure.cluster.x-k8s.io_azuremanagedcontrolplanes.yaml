@@ -65,32 +65,41 @@ spec:
                 - port
                 type: object
               defaultPoolRef:
-                description: 'DefaultPoolRef is the specification for the default
-                  pool, without which an AKS cluster cannot be created. TODO(ace):
-                  consider defaulting and making optional pointer?'
+                description: DefaultPoolRef is the specification for the default pool,
+                  without which an AKS cluster cannot be created.
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
+              dnsServiceIP:
+                description: DNSServiceIP is an IP address assigned to the Kubernetes
+                  DNS service. It must be within the Kubernetes service address range
+                  specified in serviceCidr.
+                type: string
+              loadBalancerSKU:
+                description: LoadBalancerSKU is the SKU of the loadBalancer to be
+                  provisioned.
+                enum:
+                - basic
+                - standard
+                type: string
               location:
                 description: 'Location is a string matching one of the canonical Azure
                   region names. Examples: "westus2", "eastus".'
                 type: string
               networkPlugin:
-                description: 'NetworkPlugin used for building Kubernetes network.
-                  Possible values include: ''Azure'', ''Kubenet''. Defaults to Azure.'
+                description: NetworkPlugin used for building Kubernetes network.
                 enum:
-                - Azure
-                - Kubenet
+                - azure
+                - kubenet
                 type: string
               networkPolicy:
-                description: 'NetworkPolicy used for building Kubernetes network.
-                  Possible values include: ''Calico'', ''Azure'''
+                description: NetworkPolicy used for building Kubernetes network.
                 enum:
-                - Calico
-                - Azure
+                - azure
+                - calico
                 type: string
               resourceGroup:
                 description: ResourceGroup is the name of the Azure resource group

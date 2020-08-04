@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/pkg/errors"
@@ -50,14 +49,14 @@ type Spec struct {
 	// Version defines the desired Kubernetes version.
 	Version string
 
-	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to standard.
-	LoadBalancerSKU *string
+	// LoadBalancerSKU for the managed cluster. Possible values include: 'standard', 'basic'. Defaults to standard.
+	LoadBalancerSKU string
 
-	// NetworkPlugin used for building Kubernetes network. Possible values include: 'Azure', 'Kubenet'. Defaults to Azure.
-	NetworkPlugin *string
+	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
+	NetworkPlugin string
 
-	// NetworkPolicy used for building Kubernetes network. Possible values include: 'Calico', 'Azure'. Defaults to Azure.
-	NetworkPolicy *string
+	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'. Defaults to azure.
+	NetworkPolicy string
 
 	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
 	SSHPublicKey string
@@ -70,6 +69,9 @@ type Spec struct {
 
 	// ServiceCIDR is the CIDR block for IP addresses distributed to services
 	ServiceCIDR string
+
+	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service
+	DNSServiceIP *string
 }
 
 type PoolSpec struct {
@@ -123,14 +125,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			},
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{},
 			NetworkProfile: &containerservice.NetworkProfileType{
-				NetworkPlugin:   containerservice.Azure,
-				LoadBalancerSku: containerservice.Standard,
+				NetworkPlugin:   containerservice.NetworkPlugin(managedClusterSpec.NetworkPlugin),
+				LoadBalancerSku: containerservice.LoadBalancerSku(managedClusterSpec.LoadBalancerSKU),
+				NetworkPolicy:   containerservice.NetworkPolicy(managedClusterSpec.NetworkPolicy),
 			},
 		},
-	}
-
-	if managedClusterSpec.NetworkPlugin != nil {
-		properties.NetworkProfile.NetworkPlugin = containerservice.NetworkPlugin(*managedClusterSpec.NetworkPlugin)
 	}
 
 	if managedClusterSpec.PodCIDR != "" {
@@ -138,33 +137,22 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	if managedClusterSpec.ServiceCIDR != "" {
-		properties.NetworkProfile.ServiceCidr = &managedClusterSpec.ServiceCIDR
-		ip, _, err := net.ParseCIDR(managedClusterSpec.ServiceCIDR)
-		if err != nil {
-			return fmt.Errorf("failed to parse service cidr: %w", err)
-		}
-		// HACK: set the last octet of the IP to .10
-		// This ensures the dns IP is valid in the service cidr without forcing the user
-		// to specify it in both the Capi cluster and the Azure control plane.
-		// https://golang.org/src/net/ip.go#L48
-		ip[15] = byte(10)
-		dnsIP := ip.String()
-		properties.NetworkProfile.DNSServiceIP = &dnsIP
-
-	}
-
-	if managedClusterSpec.NetworkPolicy != nil {
-		if strings.EqualFold(*managedClusterSpec.NetworkPolicy, "Azure") {
-			properties.NetworkProfile.NetworkPolicy = containerservice.NetworkPolicyAzure
-		} else if strings.EqualFold(*managedClusterSpec.NetworkPolicy, "Calico") {
-			properties.NetworkProfile.NetworkPolicy = containerservice.NetworkPolicyCalico
+		if managedClusterSpec.DNSServiceIP == nil {
+			properties.NetworkProfile.ServiceCidr = &managedClusterSpec.ServiceCIDR
+			ip, _, err := net.ParseCIDR(managedClusterSpec.ServiceCIDR)
+			if err != nil {
+				return fmt.Errorf("failed to parse service cidr: %w", err)
+			}
+			// HACK: set the last octet of the IP to .10
+			// This ensures the dns IP is valid in the service cidr without forcing the user
+			// to specify it in both the Capi cluster and the Azure control plane.
+			// https://golang.org/src/net/ip.go#L48
+			ip[15] = byte(10)
+			dnsIP := ip.String()
+			properties.NetworkProfile.DNSServiceIP = &dnsIP
 		} else {
-			return fmt.Errorf("invalid network policy: '%s'. Allowed options are 'calico' and 'azure'", *managedClusterSpec.NetworkPolicy)
+			properties.NetworkProfile.DNSServiceIP = managedClusterSpec.DNSServiceIP
 		}
-	}
-
-	if managedClusterSpec.LoadBalancerSKU != nil {
-		properties.NetworkProfile.LoadBalancerSku = containerservice.LoadBalancerSku(*managedClusterSpec.LoadBalancerSKU)
 	}
 
 	for _, pool := range managedClusterSpec.AgentPools {
