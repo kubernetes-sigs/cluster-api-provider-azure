@@ -158,6 +158,7 @@ test-integration: ## Run integration tests
 .PHONY: test-e2e
 test-e2e: $(ENVSUBST) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
+	$(MAKE) docker-push
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
 	$(GINKGO) -v -trace -tags=e2e -focus=$(GINKGO_FOCUS) -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \

@@ -48,7 +48,11 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-export REGISTRY="e2e"
+export REGISTRY=gcr.io/k8s-staging-cluster-api-azure
+export TAG=e2e
+export ARCH=amd64
+export PULL_POLICY=IfNotPresent
+
 export AZURE_ENVIRONMENT="AzurePublicCloud"
 export GINKGO_NODES=3
 export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"

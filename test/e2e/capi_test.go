@@ -55,18 +55,17 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	// TODO: fix and enable
-	//Context("Running the KCP upgrade spec", func() {
-	//	capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
-	//		return capi_e2e.KCPUpgradeSpecInput{
-	//			E2EConfig:             e2eConfig,
-	//			ClusterctlConfigPath:  clusterctlConfigPath,
-	//			BootstrapClusterProxy: bootstrapClusterProxy,
-	//			ArtifactFolder:        artifactFolder,
-	//			SkipCleanup:           skipCleanup,
-	//		}
-	//	})
-	//})
+	Context("Running the KCP upgrade spec", func() {
+		capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
+			return capi_e2e.KCPUpgradeSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 
 	Context("Running the MachineDeployment upgrade spec", func() {
 		capi_e2e.MachineDeploymentUpgradesSpec(context.TODO(), func() capi_e2e.MachineDeploymentUpgradesSpecInput {
@@ -80,16 +79,15 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	// TODO: fix and enable
-	// Context("Running the self-hosted spec", func() {
-	// 	capi_e2e.SelfHostedSpec(context.TODO(), func() capi_e2e.SelfHostedSpecInput {
-	// 		return capi_e2e.SelfHostedSpecInput{
-	// 			E2EConfig:             e2eConfig,
-	// 			ClusterctlConfigPath:  clusterctlConfigPath,
-	// 			BootstrapClusterProxy: bootstrapClusterProxy,
-	// 			ArtifactFolder:        artifactFolder,
-	// 			SkipCleanup:           skipCleanup,
-	// 		}
-	// 	})
-	// })
+	Context("Running the self-hosted spec", func() {
+		capi_e2e.SelfHostedSpec(context.TODO(), func() capi_e2e.SelfHostedSpecInput {
+			return capi_e2e.SelfHostedSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 })
