@@ -30,45 +30,60 @@ import (
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	"sigs.k8s.io/cluster-api/util"
 )
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx           = context.TODO()
-		specName      = "create-workload-cluster"
-		namespace     *corev1.Namespace
-		cancelWatches context.CancelFunc
-		cluster       *clusterv1.Cluster
-		clusterName   string
+		testName = "Workload cluster creation"
 	)
 
 	BeforeEach(func() {
-		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
-		Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
-		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
-		Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
-		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
+		Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", testName)
+		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", testName)
+		Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", testName)
 
 		Expect(e2eConfig.Variables).To(HaveKey(KubernetesVersion))
 		Expect(e2eConfig.Variables).To(HaveKey(CNIPath))
-
-		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
-
-		clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
-		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
-
 	})
 
 	AfterEach(func() {
-		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
-		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
 	})
 
-	Describe("Creating a single control-plane cluster", func() {
+	Describe("creates a single control-plane cluster", func() {
+		var (
+			ctx           = context.TODO()
+			specName      = "capz-e2e-single-cp"
+			namespace     *corev1.Namespace
+			cancelWatches context.CancelFunc
+			cluster       *clusterv1.Cluster
+			clusterName   string
+		)
+
+		BeforeEach(func() {
+			Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
+			Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
+			Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
+			Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
+			Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
+
+			Expect(e2eConfig.Variables).To(HaveKey(KubernetesVersion))
+			Expect(e2eConfig.Variables).To(HaveKey(CNIPath))
+
+			// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
+			namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
+
+			clusterName = fmt.Sprintf("%s", specName)
+			Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
+			Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+
+		})
+
+		AfterEach(func() {
+			dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
+			Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
+			Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
+		})
+
 		Context("With 1 worker node", func() {
 			It("Deploys a workload cluster", func() {
 				cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
@@ -91,23 +106,45 @@ var _ = Describe("Workload cluster creation", func() {
 					WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 				})
 			})
-
-			It("has basic load balancer functionality", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
 		})
 	})
 
-	Describe("Creating highly available control-plane cluster", func() {
+	Describe("creates a highly available control-plane cluster", func() {
+		var (
+			ctx           = context.TODO()
+			specName      = "capz-e2e-ha-cp"
+			namespace     *corev1.Namespace
+			cancelWatches context.CancelFunc
+			cluster       *clusterv1.Cluster
+			clusterName   string
+		)
+
+		BeforeEach(func() {
+			Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
+			Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
+			Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
+			Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
+			Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
+
+			Expect(e2eConfig.Variables).To(HaveKey(KubernetesVersion))
+			Expect(e2eConfig.Variables).To(HaveKey(CNIPath))
+
+			// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
+			namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
+
+			clusterName = fmt.Sprintf("%s", specName)
+			Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
+			Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
+			Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
+			Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
+		})
+
 		Context("With 3 control-plane nodes and 2 worker nodes", func() {
+
 			It("deploys the cluster", func() {
 				cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 					ClusterProxy: bootstrapClusterProxy,
@@ -130,7 +167,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			It("Creating a accessible load balancer", func() {
+			It("creates an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -141,7 +178,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			It("Validating network policies", func() {
+			It("validates the network policies", func() {
 				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
 					return AzureNetPolSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
