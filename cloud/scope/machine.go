@@ -134,7 +134,6 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	spec := azure.NICSpec{
 		Name:                  azure.GenerateNICName(m.Name()),
 		MachineName:           m.Name(),
-		MachineRole:           m.Role(),
 		VNetName:              m.Vnet().Name,
 		VNetResourceGroup:     m.Vnet().ResourceGroup,
 		SubnetName:            m.Subnet().Name,
@@ -142,17 +141,23 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 	}
 	if m.Role() == infrav1.ControlPlane {
-		spec.PublicLoadBalancerName = azure.GeneratePublicLBName(m.ClusterName())
-		spec.InternalLoadBalancerName = azure.GenerateInternalLBName(m.ClusterName())
+		publicLBName := azure.GeneratePublicLBName(m.ClusterName())
+		spec.PublicLBName = publicLBName
+		spec.PublicLBAddressPoolName = azure.GenerateBackendAddressPoolName(publicLBName)
+		spec.PublicLBNATRuleName = m.Name()
+		internalLBName := azure.GenerateInternalLBName(m.ClusterName())
+		spec.InternalLBName = internalLBName
+		spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
 	} else if m.Role() == infrav1.Node {
-		spec.PublicLoadBalancerName = m.ClusterName()
+		publicLBName := m.ClusterName()
+		spec.PublicLBName = publicLBName
+		spec.PublicLBAddressPoolName = azure.GenerateOutboundBackendddressPoolName(publicLBName)
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
 		specs = append(specs, azure.NICSpec{
 			Name:                  azure.GeneratePublicNICName(m.Name()),
 			MachineName:           m.Name(),
-			MachineRole:           m.Role(),
 			VNetName:              m.Vnet().Name,
 			VNetResourceGroup:     m.Vnet().ResourceGroup,
 			SubnetName:            m.Subnet().Name,

@@ -19,8 +19,6 @@ package loadbalancers
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 )
 
@@ -35,8 +33,6 @@ type LBScope interface {
 type Service struct {
 	Scope LBScope
 	Client
-	PublicIPsClient       publicips.Client
-	SubnetsClient         subnets.Client
 	VirtualNetworksClient virtualnetworks.Client
 }
 
@@ -45,8 +41,6 @@ func NewService(scope LBScope) *Service {
 	return &Service{
 		Scope:                 scope,
 		Client:                NewClient(scope),
-		PublicIPsClient:       publicips.NewClient(scope),
-		SubnetsClient:         subnets.NewClient(scope),
 		VirtualNetworksClient: virtualnetworks.NewClient(scope),
 	}
 }

@@ -50,6 +50,21 @@ func GeneratePublicLBName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
 }
 
+// GenerateBackendAddressPoolName generates a load balancer backend address pool name.
+func GenerateBackendAddressPoolName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "backendPool")
+}
+
+// GenerateOutboundBackendddressPoolName generates a load balancer outbound backend address pool name.
+func GenerateOutboundBackendddressPoolName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
+}
+
+// GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
+func GenerateFrontendIPConfigName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
+}
+
 // GeneratePublicIPName generates a public IP name, based on the cluster name and a hash.
 func GeneratePublicIPName(clusterName, hash string) string {
 	return fmt.Sprintf("%s-%s", clusterName, hash)
@@ -83,6 +98,51 @@ func GenerateOSDiskName(machineName string) string {
 // GenerateDataDiskName generates the name of a data disk based on the name of a VM.
 func GenerateDataDiskName(machineName, nameSuffix string) string {
 	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
+}
+
+// SubnetID returns the azure resource ID for a given subnet.
+func SubnetID(subscriptionID, resoourceGroup, vnetName, subnetName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s", subscriptionID, resoourceGroup, vnetName, subnetName)
+}
+
+// PublicIPID returns the azure resource ID for a given public IP.
+func PublicIPID(subscriptionID, resoourceGroup, ipName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/publicIPAddresses/%s", subscriptionID, resoourceGroup, ipName)
+}
+
+// RouteTableID returns the azure resource ID for a given route table.
+func RouteTableID(subscriptionID, resoourceGroup, routeTableName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, resoourceGroup, routeTableName)
+}
+
+// SecurityGroupID returns the azure resource ID for a given security group.
+func SecurityGroupID(subscriptionID, resoourceGroup, routeTableName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resoourceGroup, routeTableName)
+}
+
+// NetworkInterfaceID returns the azure resource ID for a given network interface.
+func NetworkInterfaceID(subscriptionID, resoourceGroup, nicName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkInterfaces/%s", subscriptionID, resoourceGroup, nicName)
+}
+
+// FrontendIPConfigID returns the azure resource ID for a given frontend IP config.
+func FrontendIPConfigID(subscriptionID, resoourceGroup, loadBalancerName, configName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s", subscriptionID, resoourceGroup, loadBalancerName, configName)
+}
+
+// AddressPoolID returns the azure resource ID for a given backend address pool.
+func AddressPoolID(subscriptionID, resoourceGroup, loadBalancerName, backendPoolName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/backendAddressPools/%s", subscriptionID, resoourceGroup, loadBalancerName, backendPoolName)
+}
+
+// ProbeID returns the azure resource ID for a given probe.
+func ProbeID(subscriptionID, resoourceGroup, loadBalancerName, probeName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/probes/%s", subscriptionID, resoourceGroup, loadBalancerName, probeName)
+}
+
+// NATRuleID returns the azure resource ID for a inbound NAT rule.
+func NATRuleID(subscriptionID, resoourceGroup, loadBalancerName, natRuleName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/inboundNatRules/%s", subscriptionID, resoourceGroup, loadBalancerName, natRuleName)
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.

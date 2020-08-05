@@ -125,7 +125,7 @@ func TestGetExistingVM(t *testing.T) {
 			name:          "vm not found",
 			vmName:        "my-vm",
 			result:        &infrav1.VM{},
-			expectedError: "VM my-vm not found: #: Not found: StatusCode=404",
+			expectedError: "#: Not found: StatusCode=404",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -313,6 +313,7 @@ func TestReconcileVM(t *testing.T) {
 						SpotVMOptions:          nil,
 					},
 				})
+				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.AdditionalTags()
@@ -320,14 +321,6 @@ func TestReconcileVM(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
-					ID:   to.StringPtr("fake/nic/id"),
-					Name: to.StringPtr("my-nic"),
-				}, nil)
-				mnic.Get(context.TODO(), "my-rg", "second-nic").Return(network.Interface{
-					ID:   to.StringPtr("second/fake/nic/id"),
-					Name: to.StringPtr("second-nic"),
-				}, nil)
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -385,11 +378,11 @@ func TestReconcileVM(t *testing.T) {
 							NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 								{
 									NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{Primary: to.BoolPtr(true)},
-									ID:                                  to.StringPtr("fake/nic/id"),
+									ID:                                  to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkInterfaces/my-nic"),
 								},
 								{
 									NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{Primary: to.BoolPtr(false)},
-									ID:                                  to.StringPtr("second/fake/nic/id"),
+									ID:                                  to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkInterfaces/second-nic"),
 								},
 							},
 						},
@@ -428,6 +421,7 @@ func TestReconcileVM(t *testing.T) {
 						SpotVMOptions:          nil,
 					},
 				})
+				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.AdditionalTags()
@@ -435,10 +429,6 @@ func TestReconcileVM(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
-					ID:   to.StringPtr("fake/nic/id"),
-					Name: to.StringPtr("my-nic"),
-				}, nil)
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -473,6 +463,7 @@ func TestReconcileVM(t *testing.T) {
 						SpotVMOptions:          nil,
 					},
 				})
+				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.AdditionalTags()
@@ -480,10 +471,6 @@ func TestReconcileVM(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
-					ID:   to.StringPtr("fake/nic/id"),
-					Name: to.StringPtr("my-nic"),
-				}, nil)
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -518,6 +505,7 @@ func TestReconcileVM(t *testing.T) {
 						SpotVMOptions:          &infrav1.SpotVMOptions{},
 					},
 				})
+				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.AdditionalTags()
@@ -525,10 +513,6 @@ func TestReconcileVM(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
-					ID:   to.StringPtr("fake/nic/id"),
-					Name: to.StringPtr("my-nic"),
-				}, nil)
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -564,6 +548,7 @@ func TestReconcileVM(t *testing.T) {
 						SpotVMOptions:          nil,
 					},
 				})
+				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.AdditionalTags()
@@ -571,10 +556,6 @@ func TestReconcileVM(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mnic.Get(context.TODO(), "my-rg", "my-nic").Return(network.Interface{
-					ID:   to.StringPtr("fake/nic/id"),
-					Name: to.StringPtr("my-nic"),
-				}, nil)
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",

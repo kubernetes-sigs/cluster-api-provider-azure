@@ -19,8 +19,6 @@ package subnets
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 )
 
 // SubnetScope defines the scope interface for a network interfaces service.
@@ -34,16 +32,12 @@ type SubnetScope interface {
 type Service struct {
 	Scope SubnetScope
 	Client
-	SecurityGroupsClient securitygroups.Client
-	RouteTablesClient    routetables.Client
 }
 
 // NewService creates a new service.
 func NewService(scope SubnetScope) *Service {
 	return &Service{
-		Scope:                scope,
-		Client:               NewClient(scope),
-		SecurityGroupsClient: securitygroups.NewClient(scope),
-		RouteTablesClient:    routetables.NewClient(scope),
+		Scope:  scope,
+		Client: NewClient(scope),
 	}
 }

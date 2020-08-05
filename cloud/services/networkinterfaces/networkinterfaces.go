@@ -18,12 +18,9 @@ package networkinterfaces
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
@@ -34,12 +31,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
-		subnet, err := s.SubnetsClient.Get(ctx, nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName)
-
-		if err != nil {
-			return errors.Wrap(err, "failed to get subnets")
-		}
-		nicConfig.Subnet = &network.Subnet{ID: subnet.ID}
+		nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
 
 		nicConfig.PrivateIPAllocationMethod = network.Dynamic
 		if nicSpec.StaticIPAddress != "" {
@@ -48,44 +40,34 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		backendAddressPools := []network.BackendAddressPool{}
-		if nicSpec.PublicLoadBalancerName != "" {
-			lb, lberr := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicLoadBalancerName)
-			if lberr != nil {
-				return errors.Wrap(lberr, "failed to get public LB")
+		if nicSpec.PublicLBName != "" {
+			if nicSpec.PublicLBAddressPoolName != "" {
+				backendAddressPools = append(backendAddressPools,
+					network.BackendAddressPool{
+						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
+					})
 			}
-			backendAddressPools = append(backendAddressPools,
-				network.BackendAddressPool{
-					ID: (*lb.BackendAddressPools)[0].ID,
-				})
-
-			if nicSpec.MachineRole == infrav1.ControlPlane {
+			if nicSpec.PublicLBNATRuleName != "" {
 				nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 					{
-						ID: to.StringPtr(fmt.Sprintf("%s/inboundNatRules/%s", to.String(lb.ID), nicSpec.MachineName)),
+						ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
 					},
 				}
 			}
 		}
-		if nicSpec.InternalLoadBalancerName != "" {
+		if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
 			// only control planes have an attached internal LB
-			internalLB, ilberr := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.InternalLoadBalancerName)
-			if ilberr != nil {
-				return errors.Wrap(ilberr, "failed to get internalLB")
-			}
-
 			backendAddressPools = append(backendAddressPools,
 				network.BackendAddressPool{
-					ID: (*internalLB.BackendAddressPools)[0].ID,
+					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
 				})
 		}
 		nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 		if nicSpec.PublicIPName != "" {
-			publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), nicSpec.PublicIPName)
-			if err != nil {
-				return errors.Wrap(err, "failed to get publicIP")
+			nicConfig.PublicIPAddress = &network.PublicIPAddress{
+				ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
 			}
-			nicConfig.PublicIPAddress = &publicIP
 		}
 
 		if nicSpec.AcceleratedNetworking == nil {
@@ -99,7 +81,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			nicSpec.AcceleratedNetworking = &accelNet
 		}
 
-		err = s.Client.CreateOrUpdate(ctx,
+		err := s.Client.CreateOrUpdate(ctx,
 			s.Scope.ResourceGroup(),
 			nicSpec.Name,
 			network.Interface{
