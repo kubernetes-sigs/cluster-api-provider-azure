@@ -53,10 +53,6 @@ var _ = Describe("Workload cluster creation", func() {
 
 		Expect(e2eConfig.Variables).To(HaveKey(KubernetesVersion))
 
-		// Read CNI file and set CNI_RESOURCES environmental variable
-		Expect(e2eConfig.Variables).To(HaveKey(CNIPath))
-		setCNIResources(e2eConfig.GetVariable(CNIPath))
-
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
 
