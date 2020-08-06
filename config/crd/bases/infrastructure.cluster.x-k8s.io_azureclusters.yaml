@@ -733,6 +733,8 @@ spec:
                   osDisk:
                     description: OSDisk defines the operating system disk for a VM.
                     properties:
+                      cachingType:
+                        type: string
                       diffDiskSettings:
                         description: DiffDiskSettings describe ephemeral disk settings
                           for the os disk.

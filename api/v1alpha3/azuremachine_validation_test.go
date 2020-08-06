@@ -85,11 +85,17 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			osDisk:  generateValidOSDisk(),
 		},
 		{
+			name:    "invalid os disk cache type",
+			wantErr: true,
+			osDisk:  createOSDiskWithCacheType("invalid_cache_type"),
+		},
+		{
 			name:    "valid ephemeral os disk spec",
 			wantErr: false,
 			osDisk: OSDisk{
-				DiskSizeGB: 30,
-				OSType:     "blah",
+				DiskSizeGB:  30,
+				CachingType: "None",
+				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
 					Option: string(compute.Local),
 				},
@@ -184,8 +190,16 @@ func generateValidOSDisk() OSDisk {
 		ManagedDisk: ManagedDisk{
 			StorageAccountType: "Premium_LRS",
 		},
+		CachingType: string(compute.PossibleCachingTypesValues()[0]),
 	}
 }
+
+func createOSDiskWithCacheType(cacheType string) OSDisk {
+	osDisk := generateValidOSDisk()
+	osDisk.CachingType = cacheType
+	return osDisk
+}
+
 func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 	g := NewWithT(t)
 
@@ -208,14 +222,16 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "valid disks",
 			disks: []DataDisk{
 				{
-					NameSuffix: "my_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
-					NameSuffix: "my_other_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "my_other_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(1),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: false,
@@ -224,14 +240,16 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "duplicate names",
 			disks: []DataDisk{
 				{
-					NameSuffix: "disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
-					NameSuffix: "disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(1),
+					NameSuffix:  "disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(1),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -240,14 +258,16 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "duplicate LUNs",
 			disks: []DataDisk{
 				{
-					NameSuffix: "my_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 				{
-					NameSuffix: "my_other_disk",
-					DiskSizeGB: 64,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_other_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -256,9 +276,10 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "invalid disk size",
 			disks: []DataDisk{
 				{
-					NameSuffix: "my_disk",
-					DiskSizeGB: 0,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  0,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
@@ -267,12 +288,37 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			name: "empty name",
 			disks: []DataDisk{
 				{
-					NameSuffix: "",
-					DiskSizeGB: 0,
-					Lun:        to.Int32Ptr(0),
+					NameSuffix:  "",
+					DiskSizeGB:  0,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "invalid disk cachingType",
+			disks: []DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: "invalidCacheType",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid disk cachingType",
+			disks: []DataDisk{
+				{
+					NameSuffix:  "my_disk",
+					DiskSizeGB:  64,
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: false,
 		},
 	}
 

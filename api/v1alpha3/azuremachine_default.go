@@ -20,6 +20,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
@@ -43,7 +44,15 @@ func (m *AzureMachine) SetDefaultSSHPublicKey() error {
 	return nil
 }
 
-// SetDefaultsDataDisks sets the data disk defaults for an AzureMachine
+// SetDefaultCachingType sets the default cache type for an AzureMachine
+func (m *AzureMachine) SetDefaultCachingType() error {
+	if m.Spec.OSDisk.CachingType == "" {
+		m.Spec.OSDisk.CachingType = "None"
+	}
+	return nil
+}
+
+// SetDataDisksDefaults sets the data disk defaults for an AzureMachine
 func (m *AzureMachine) SetDataDisksDefaults() {
 	set := make(map[int32]struct{})
 	// populate all the existing values in the set
@@ -63,6 +72,9 @@ func (m *AzureMachine) SetDataDisksDefaults() {
 					break
 				}
 			}
+		}
+		if disk.CachingType == "" {
+			m.Spec.DataDisks[i].CachingType = "ReadWrite"
 		}
 	}
 }

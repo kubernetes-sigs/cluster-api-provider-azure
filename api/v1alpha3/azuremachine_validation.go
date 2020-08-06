@@ -84,6 +84,9 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 		} else {
 			lunSet[*disk.Lun] = struct{}{}
 		}
+
+		// validate cachingType
+		allErrs = append(allErrs, validateCachingType(disk.CachingType, fieldPath)...)
 	}
 	return allErrs
 }
@@ -101,6 +104,8 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 	}
 
 	allErrs = append(allErrs, validateStorageAccountType(osDisk.ManagedDisk.StorageAccountType, fieldPath)...)
+
+	allErrs = append(allErrs, validateCachingType(osDisk.CachingType, fieldPath)...)
 
 	if errs := ValidateManagedDisk(osDisk.ManagedDisk, osDisk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
@@ -190,5 +195,19 @@ func validateStorageAccountType(storageAccountType string, fieldPath *field.Path
 		}
 	}
 	allErrs = append(allErrs, field.Invalid(storageAccTypeChildPath, "", fmt.Sprintf("allowed values are %v", compute.PossibleDiskStorageAccountTypesValues())))
+	return allErrs
+}
+
+func validateCachingType(cachingType string, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	cachingTypeChildPath := fieldPath.Child("CachingType")
+
+	for _, possibleCachingType := range compute.PossibleCachingTypesValues() {
+		if string(possibleCachingType) == cachingType {
+			return allErrs
+		}
+	}
+
+	allErrs = append(allErrs, field.Invalid(cachingTypeChildPath, cachingType, fmt.Sprintf("allowed values are %v", compute.PossibleCachingTypesValues())))
 	return allErrs
 }

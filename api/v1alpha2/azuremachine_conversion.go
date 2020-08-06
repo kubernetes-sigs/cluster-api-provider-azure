@@ -64,6 +64,7 @@ func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
 		dst.DataDisks = restored.DataDisks
 	}
 	dst.OSDisk.DiffDiskSettings = restored.OSDisk.DiffDiskSettings
+	dst.OSDisk.CachingType = restored.OSDisk.CachingType
 }
 
 // ConvertFrom converts from the Hub version (v1alpha3) to this version.

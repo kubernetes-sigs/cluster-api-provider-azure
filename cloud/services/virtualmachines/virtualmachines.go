@@ -287,6 +287,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 			ManagedDisk: &compute.ManagedDiskParameters{
 				StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
 			},
+			Caching: compute.CachingTypes(vmSpec.OSDisk.CachingType),
 		},
 	}
 
@@ -313,6 +314,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
 			Lun:          disk.Lun,
 			Name:         to.StringPtr(azure.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
+			Caching:      compute.CachingTypes(disk.CachingType),
 		})
 	}
 	storageProfile.DataDisks = &dataDisks

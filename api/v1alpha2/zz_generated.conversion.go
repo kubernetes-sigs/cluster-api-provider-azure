@@ -982,6 +982,7 @@ func autoConvert_v1alpha3_OSDisk_To_v1alpha2_OSDisk(in *v1alpha3.OSDisk, out *OS
 		return err
 	}
 	// WARNING: in.DiffDiskSettings requires manual conversion: does not exist in peer-type
+	// WARNING: in.CachingType requires manual conversion: does not exist in peer-type
 	return nil
 }
 

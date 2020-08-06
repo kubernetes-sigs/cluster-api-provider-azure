@@ -311,6 +311,8 @@ type OSDisk struct {
 	DiskSizeGB       int32             `json:"diskSizeGB"`
 	ManagedDisk      ManagedDisk       `json:"managedDisk"`
 	DiffDiskSettings *DiffDiskSettings `json:"diffDiskSettings,omitempty"`
+	// +optional
+	CachingType string `json:"cachingType,omitempty"`
 }
 
 // DataDisk specifies the parameters that are used to add one or more data disks to the machine.
@@ -323,6 +325,8 @@ type DataDisk struct {
 	// Lun Specifies the logical unit number of the data disk. This value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
 	// The value must be between 0 and 63.
 	Lun *int32 `json:"lun,omitempty"`
+	// +optional
+	CachingType string `json:"cachingType,omitempty"`
 }
 
 // ManagedDisk defines the managed disk options for a VM.
