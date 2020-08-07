@@ -146,20 +146,6 @@ func (mr *MockDiskScopeMockRecorder) WithName(name interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockDiskScope)(nil).WithName), name)
 }
 
-// SubscriptionID mocks base method.
-func (m *MockDiskScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockDiskScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockDiskScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockDiskScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -242,6 +228,20 @@ func (m *MockDiskScope) Authorizer() autorest.Authorizer {
 func (mr *MockDiskScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockDiskScope)(nil).Authorizer))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockDiskScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockDiskScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockDiskScope)(nil).SubscriptionID))
 }
 
 // ResourceGroup mocks base method.

@@ -32,6 +32,7 @@ type Service struct {
 type GroupScope interface {
 	logr.Logger
 	azure.Authorizer
+	SubscriptionID() string
 	ResourceGroup() string
 	ClusterName() string
 	Location() string
@@ -42,6 +43,6 @@ type GroupScope interface {
 func NewService(scope GroupScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope),
+		Client: NewClient(scope.SubscriptionID(), scope),
 	}
 }

@@ -52,20 +52,6 @@ func (m *MockNSGScope) EXPECT() *MockNSGScopeMockRecorder {
 	return m.recorder
 }
 
-// SubscriptionID mocks base method.
-func (m *MockNSGScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockNSGScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockNSGScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockNSGScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -148,6 +134,20 @@ func (m *MockNSGScope) Authorizer() autorest.Authorizer {
 func (mr *MockNSGScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockNSGScope)(nil).Authorizer))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockNSGScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockNSGScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockNSGScope)(nil).SubscriptionID))
 }
 
 // ResourceGroup mocks base method.

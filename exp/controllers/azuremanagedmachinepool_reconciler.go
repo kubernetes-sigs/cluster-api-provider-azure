@@ -77,8 +77,8 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
 	return &azureManagedMachinePoolReconciler{
 		kubeclient:    scope.Client,
-		agentPoolsSvc: agentpools.NewService(scope),
-		scaleSetsSvc:  scalesets.NewService(scope, nil), // ManagedMachinePoolReconciler does not use sku cache at the moment
+		agentPoolsSvc: agentpools.NewService(scope.SubscriptionID(), scope),
+		scaleSetsSvc:  scalesets.NewService(scope.SubscriptionID(), scope, nil), // ManagedMachinePoolReconciler does not use sku cache at the moment
 	}
 }
 

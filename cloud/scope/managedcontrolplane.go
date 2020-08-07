@@ -126,7 +126,7 @@ func (s *ManagedControlPlaneScope) AdditionalTags() infrav1.Tags {
 
 // SubscriptionID returns the Azure client Subscription ID.
 func (s *ManagedControlPlaneScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID()
+	return s.ControlPlane.Spec.SubscriptionID
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.

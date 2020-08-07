@@ -40,7 +40,7 @@ type Service struct {
 func NewService(scope RoleAssignmentScope) *Service {
 	return &Service{
 		Scope:                 scope,
-		Client:                NewClient(scope),
-		VirtualMachinesClient: virtualmachines.NewClient(scope),
+		Client:                NewClient(scope.SubscriptionID(), scope),
+		VirtualMachinesClient: virtualmachines.NewClient(scope.SubscriptionID(), scope),
 	}
 }

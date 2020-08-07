@@ -53,9 +53,9 @@ type Service struct {
 func NewService(scope VMScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:            scope,
-		Client:           NewClient(scope),
-		InterfacesClient: networkinterfaces.NewClient(scope),
-		PublicIPsClient:  publicips.NewClient(scope),
+		Client:           NewClient(scope.SubscriptionID(), scope),
+		InterfacesClient: networkinterfaces.NewClient(scope.SubscriptionID(), scope),
+		PublicIPsClient:  publicips.NewClient(scope.SubscriptionID(), scope),
 		ResourceSKUCache: skuCache,
 	}
 }

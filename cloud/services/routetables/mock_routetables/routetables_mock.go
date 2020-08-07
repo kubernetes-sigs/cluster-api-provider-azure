@@ -52,20 +52,6 @@ func (m *MockRouteTableScope) EXPECT() *MockRouteTableScopeMockRecorder {
 	return m.recorder
 }
 
-// SubscriptionID mocks base method.
-func (m *MockRouteTableScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockRouteTableScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockRouteTableScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockRouteTableScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -148,6 +134,20 @@ func (m *MockRouteTableScope) Authorizer() autorest.Authorizer {
 func (mr *MockRouteTableScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockRouteTableScope)(nil).Authorizer))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockRouteTableScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockRouteTableScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockRouteTableScope)(nil).SubscriptionID))
 }
 
 // ResourceGroup mocks base method.

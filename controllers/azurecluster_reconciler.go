@@ -19,8 +19,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"hash/fnv"
+
+	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -59,7 +60,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		subnetsSvc:       subnets.NewService(scope),
 		publicIPSvc:      publicips.NewService(scope),
 		loadBalancerSvc:  loadbalancers.NewService(scope),
-		skuCache:         resourceskus.NewCache(scope, scope.Location()),
+		skuCache:         resourceskus.NewCache(scope.SubscriptionID(), scope, scope.Location()),
 	}
 }
 

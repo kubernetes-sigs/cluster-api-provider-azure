@@ -39,8 +39,8 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new inbound NAT rules client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
-	c := newInboundNatRulesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+func NewClient(subscriptionID string, auth azure.Authorizer) *AzureClient {
+	c := newInboundNatRulesClient(subscriptionID, auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 

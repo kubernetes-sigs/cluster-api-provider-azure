@@ -40,7 +40,7 @@ type Service struct {
 func NewService(scope NICScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
 		Scope:            scope,
-		Client:           NewClient(scope),
+		Client:           NewClient(scope.SubscriptionID(), scope),
 		ResourceSKUCache: skuCache,
 	}
 }

@@ -19,8 +19,11 @@ package scope
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/go-autorest/autorest/to"
+	"os"
 	"strconv"
+
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
@@ -56,7 +59,18 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.Logger = klogr.New()
 	}
 
-	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
+	var subID string
+	if params.AzureCluster.Spec.SubscriptionID != "" {
+		subID = params.AzureCluster.Spec.SubscriptionID
+	} else {
+		subID = os.Getenv(auth.SubscriptionID)
+	}
+
+	if subID == "" {
+		return nil, fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
+	}
+
+	err := params.AzureClients.setCredentials(subID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create Azure session")
 	}
@@ -67,12 +81,13 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	}
 
 	return &ClusterScope{
-		Logger:       params.Logger,
-		Client:       params.Client,
-		AzureClients: params.AzureClients,
-		Cluster:      params.Cluster,
-		AzureCluster: params.AzureCluster,
-		patchHelper:  helper,
+		Logger:         params.Logger,
+		Client:         params.Client,
+		AzureClients:   params.AzureClients,
+		Cluster:        params.Cluster,
+		AzureCluster:   params.AzureCluster,
+		patchHelper:    helper,
+		subscriptionID: subID,
 	}, nil
 }
 
@@ -83,13 +98,14 @@ type ClusterScope struct {
 	patchHelper *patch.Helper
 
 	AzureClients
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
+	Cluster        *clusterv1.Cluster
+	AzureCluster   *infrav1.AzureCluster
+	subscriptionID string
 }
 
 // SubscriptionID returns the Azure client Subscription ID.
 func (s *ClusterScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID()
+	return s.subscriptionID
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.

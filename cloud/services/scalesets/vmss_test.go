@@ -83,7 +83,7 @@ func TestNewService(t *testing.T) {
 		ClusterDescriber: s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
-	actual := NewService(mps, resourceskus.NewStaticCache(nil))
+	actual := NewService("123", mps, resourceskus.NewStaticCache(nil))
 	g.Expect(actual).ToNot(gomega.BeNil())
 }
 
@@ -236,7 +236,7 @@ func TestService_Get(t *testing.T) {
 				},
 			})
 
-			svc := NewService(s, resourceSkusCache)
+			svc := NewService("123", s, resourceSkusCache)
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -731,7 +731,7 @@ func TestService_Reconcile(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s, resourceskus.NewStaticCache(nil))
+			svc := NewService("sub", s, resourceskus.NewStaticCache(nil))
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -822,7 +822,7 @@ func TestService_Delete(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			s, mps := getScopes(g)
-			svc := NewService(s, resourceskus.NewStaticCache(nil))
+			svc := NewService("sub", s, resourceskus.NewStaticCache(nil))
 			spec := c.SpecFactory(g, s, mps)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

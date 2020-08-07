@@ -54,7 +54,6 @@ type CredentialGetter interface {
 
 // Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
 type Authorizer interface {
-	SubscriptionID() string
 	ClientID() string
 	ClientSecret() string
 	CloudEnvironment() string
@@ -66,6 +65,7 @@ type Authorizer interface {
 // ClusterDescriber is an interface which can get common Azure Cluster information
 type ClusterDescriber interface {
 	Authorizer
+	SubscriptionID() string
 	ResourceGroup() string
 	ClusterName() string
 	Location() string

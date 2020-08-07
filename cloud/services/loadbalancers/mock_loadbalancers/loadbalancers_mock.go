@@ -52,20 +52,6 @@ func (m *MockLBScope) EXPECT() *MockLBScopeMockRecorder {
 	return m.recorder
 }
 
-// SubscriptionID mocks base method.
-func (m *MockLBScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockLBScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockLBScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockLBScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -148,6 +134,20 @@ func (m *MockLBScope) Authorizer() autorest.Authorizer {
 func (mr *MockLBScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockLBScope)(nil).Authorizer))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockLBScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockLBScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockLBScope)(nil).SubscriptionID))
 }
 
 // ResourceGroup mocks base method.
