@@ -20,8 +20,9 @@ SHELL:=/usr/bin/env bash
 
 .DEFAULT_GOAL:=help
 
-GOPATH := $(shell go env GOPATH)
-# Use GOPROXY environment variable if set
+GOPATH  := $(shell go env GOPATH)
+GOARCH  := $(shell go env GOARCH)
+GOOS    := $(shell go env GOOS)
 GOPROXY := $(shell go env GOPROXY)
 ifeq ($(GOPROXY),)
 GOPROXY := https://proxy.golang.org
@@ -82,8 +83,11 @@ GINKGO_VER := v1.13.0
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
+KUBECTL_VER := v1.16.13
+KUBECTL_BIN := kubectl
+KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
+
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
-KUBECTL=$(TOOLS_BIN_DIR)/kubectl
 ETCD=$(TOOLS_BIN_DIR)/etcd
 
 # Define Docker related variables. Releases should modify and double check these vars.
@@ -156,7 +160,7 @@ test-integration: ## Run integration tests
 	go test -v -tags=integration ./test/integration/...
 
 .PHONY: test-e2e
-test-e2e: $(ENVSUBST) $(GINKGO) ## Run e2e tests
+test-e2e: docker-build docker-push $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
@@ -165,7 +169,7 @@ test-e2e: $(ENVSUBST) $(GINKGO) ## Run e2e tests
 	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
 
-$(KUBECTL) $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
+$(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
 
 ## --------------------------------------
@@ -214,6 +218,13 @@ $(GO_APIDIFF): ## Build go-apidiff.
 
 $(GINKGO): ## Build ginkgo.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
+
+$(KUBECTL): ## Build kubectl
+	mkdir -p $(TOOLS_BIN_DIR)
+	rm -f "$(KUBECTL)*"
+	curl -fsL https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VER)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
+	ln -sf "$(KUBECTL)" "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)"
+	chmod +x "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)" "$(KUBECTL)"
 
 ## --------------------------------------
 ## Linting

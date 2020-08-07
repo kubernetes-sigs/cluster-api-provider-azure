@@ -48,7 +48,26 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-export REGISTRY="e2e"
+if [ -z "${LOCAL_ONLY:-}" ]; then
+  # TODO: remove this when we figure out how to change the prow env var
+  if [[ "${REGISTRY}" == "k8sprow.azurecr.io" ]]; then
+    export REGISTRY="capzci.azurecr.io/ci-e2e"
+  fi
+
+  export REGISTRY=${REGISTRY:-"capzci.azurecr.io/ci-e2e"}
+
+  if [[ "${REGISTRY}" =~ azurecr\.io ]]; then
+    # if we are using Azure Container Registry, login
+    ./hack/ensure-azcli.sh
+    az account set -s "${AZURE_SUBSCRIPTION_ID}"
+    az acr login --name capzci
+  fi
+else
+  export REGISTRY="localhost:5000/ci-e2e"
+fi
+
+defaultTag=$(date -u '+%Y%m%d%H%M%S')
+export TAG="${defaultTag:-dev}"
 export AZURE_ENVIRONMENT="AzurePublicCloud"
 export GINKGO_NODES=3
 export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
@@ -61,7 +80,7 @@ export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 
 # Generate SSH key.
 AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
-if ! [ -n "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
+if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
     SSH_KEY_FILE=.sshkey
     rm -f "${SSH_KEY_FILE}" 2>/dev/null
     ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
