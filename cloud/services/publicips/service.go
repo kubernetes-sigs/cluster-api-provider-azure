@@ -39,6 +39,6 @@ type Service struct {
 func NewService(scope PublicIPScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope.SubscriptionID(), scope),
+		Client: NewClient(scope),
 	}
 }

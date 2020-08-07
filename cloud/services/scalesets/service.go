@@ -29,10 +29,10 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(subscriptionID string, auth azure.Authorizer, skuCache *resourceskus.Cache) *Service {
+func NewService(auth azure.SubscriptionAuthorizer, skuCache *resourceskus.Cache) *Service {
 	return &Service{
-		Client:              NewClient(subscriptionID, auth),
+		Client:              NewClient(auth),
 		ResourceSKUCache:    skuCache,
-		LoadBalancersClient: loadbalancers.NewClient(subscriptionID, auth),
+		LoadBalancersClient: loadbalancers.NewClient(auth),
 	}
 }

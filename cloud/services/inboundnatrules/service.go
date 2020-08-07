@@ -40,7 +40,7 @@ type Service struct {
 func NewService(scope InboundNatScope) *Service {
 	return &Service{
 		Scope:               scope,
-		Client:              NewClient(scope.SubscriptionID(), scope),
-		LoadBalancersClient: loadbalancers.NewClient(scope.SubscriptionID(), scope),
+		Client:              NewClient(scope),
+		LoadBalancersClient: loadbalancers.NewClient(scope),
 	}
 }

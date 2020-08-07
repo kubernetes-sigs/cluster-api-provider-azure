@@ -62,10 +62,15 @@ type Authorizer interface {
 	Authorizer() autorest.Authorizer
 }
 
-// ClusterDescriber is an interface which can get common Azure Cluster information
-type ClusterDescriber interface {
+// SubscriptionAuthorizer provides an Authorizer as well as a specific subscription for use.
+type SubscriptionAuthorizer interface {
 	Authorizer
 	SubscriptionID() string
+}
+
+// ClusterDescriber is an interface which can get common Azure Cluster information.
+type ClusterDescriber interface {
+	SubscriptionAuthorizer
 	ResourceGroup() string
 	ClusterName() string
 	Location() string

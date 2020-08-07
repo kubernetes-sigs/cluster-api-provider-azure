@@ -45,7 +45,7 @@ type azureMachineService struct {
 
 // newAzureMachineService populates all the services based on input scope
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
-	cache := resourceskus.NewCache(clusterScope.SubscriptionID(), clusterScope, clusterScope.Location())
+	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 
 	return &azureMachineService{
 		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),

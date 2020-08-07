@@ -39,6 +39,6 @@ type Service struct {
 func NewService(scope *scope.ClusterScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope.SubscriptionID(), scope),
+		Client: NewClient(scope),
 	}
 }

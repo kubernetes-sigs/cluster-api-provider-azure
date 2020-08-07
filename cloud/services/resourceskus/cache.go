@@ -44,19 +44,19 @@ type Cache struct {
 }
 
 // NewCacheFunc allows for mocking out the underlying client
-type NewCacheFunc func(azure.Authorizer, string) *Cache
+type NewCacheFunc func(azure.SubscriptionAuthorizer, string) *Cache
 
 // NewCache instantiates a cache and initializes its contents.
-func NewCache(subscriptionID string, auth azure.Authorizer, location string) *Cache {
+func NewCache(auth azure.SubscriptionAuthorizer, location string) *Cache {
 	return &Cache{
-		client:   NewClient(subscriptionID, auth),
+		client:   NewClient(auth),
 		location: location,
 	}
 }
 
 // NewStaticCacheFn returns a function that initializes a cache with data and no ability to refresh. Used for testing.
 func NewStaticCacheFn(data []compute.ResourceSku) NewCacheFunc {
-	return func(azure.Authorizer, string) *Cache {
+	return func(azure.SubscriptionAuthorizer, string) *Cache {
 		return NewStaticCache(data)
 	}
 }

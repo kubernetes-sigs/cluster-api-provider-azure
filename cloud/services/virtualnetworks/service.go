@@ -38,6 +38,6 @@ type Service struct {
 func NewService(scope VNetScope) *Service {
 	return &Service{
 		Scope:  scope,
-		Client: NewClient(scope.SubscriptionID(), scope),
+		Client: NewClient(scope),
 	}
 }

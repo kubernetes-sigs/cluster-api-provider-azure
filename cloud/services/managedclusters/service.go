@@ -26,8 +26,8 @@ type Service struct {
 }
 
 // NewService creates a new service.
-func NewService(subscriptionID string, auth azure.Authorizer) *Service {
+func NewService(auth azure.SubscriptionAuthorizer) *Service {
 	return &Service{
-		Client: NewClient(subscriptionID, auth),
+		Client: NewClient(auth),
 	}
 }

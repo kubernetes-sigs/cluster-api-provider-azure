@@ -49,7 +49,7 @@ type azureManagedControlPlaneReconciler struct {
 func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedControlPlaneReconciler {
 	return &azureManagedControlPlaneReconciler{
 		kubeclient:         scope.Client,
-		managedClustersSvc: managedclusters.NewService(scope.SubscriptionID(), scope),
+		managedClustersSvc: managedclusters.NewService(scope),
 		groupsSvc:          groups.NewService(scope),
 	}
 }

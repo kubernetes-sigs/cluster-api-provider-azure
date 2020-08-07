@@ -39,8 +39,8 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new subnets client from subscription ID.
-func NewClient(subscriptionID string, auth azure.Authorizer) *AzureClient {
-	c := newSubnetsClient(subscriptionID, auth.BaseURI(), auth.Authorizer())
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
+	c := newSubnetsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 

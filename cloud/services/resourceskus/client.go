@@ -39,9 +39,9 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new Resource SKUs client from subscription ID.
-func NewClient(subscriptionID string, auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	return &AzureClient{
-		skus: newResourceSkusClient(subscriptionID, auth.BaseURI(), auth.Authorizer()),
+		skus: newResourceSkusClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
 	}
 }
 

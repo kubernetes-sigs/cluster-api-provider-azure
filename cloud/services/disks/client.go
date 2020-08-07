@@ -37,8 +37,8 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, auth azure.Authorizer) *AzureClient {
-	c := newDisksClient(subscriptionID, auth.BaseURI(), auth.Authorizer())
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
+	c := newDisksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
 

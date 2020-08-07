@@ -40,7 +40,7 @@ type Service struct {
 func NewService(scope LBScope) *Service {
 	return &Service{
 		Scope:                 scope,
-		Client:                NewClient(scope.SubscriptionID(), scope),
-		VirtualNetworksClient: virtualnetworks.NewClient(scope.SubscriptionID(), scope),
+		Client:                NewClient(scope),
+		VirtualNetworksClient: virtualnetworks.NewClient(scope),
 	}
 }
