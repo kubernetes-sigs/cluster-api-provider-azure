@@ -43,8 +43,8 @@ type Supported string
 const (
 	// CapabilitySupported is the value returned by this API from Azure when the capability is supported
 	CapabilitySupported Supported = "True"
-	// CapabilityUnupported is the value returned by this API from Azure when the capability is unsupported
-	CapabilityUnupported Supported = "False"
+	// CapabilityUnsupported is the value returned by this API from Azure when the capability is unsupported
+	CapabilityUnsupported Supported = "False"
 )
 
 const (

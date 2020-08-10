@@ -18,6 +18,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -60,7 +62,7 @@ func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Sche
 
 		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
-		// Don't handle deleted AWSClusters
+		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 			log.V(4).Info("AzureCluster has a deletion timestamp, skipping mapping.")
 			return nil
@@ -78,7 +80,7 @@ func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Sche
 			return nil
 		}
 
-		mapFunc := MachinePoolToInfrastructureMapFunc(gvk)
+		mapFunc := MachinePoolToInfrastructureMapFunc(gvk, log)
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
@@ -114,7 +116,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme
 
 		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
-		// Don't handle deleted AWSClusters
+		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 			log.V(4).Info("AzureManagedCluster has a deletion timestamp, skipping mapping.")
 			return nil
@@ -132,7 +134,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme
 			return nil
 		}
 
-		mapFunc := MachinePoolToInfrastructureMapFunc(gvk)
+		mapFunc := MachinePoolToInfrastructureMapFunc(gvk, log)
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
@@ -162,7 +164,7 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 
 		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
-		// Don't handle deleted AWSClusters
+		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 			log.V(4).Info("AzureManagedCluster has a deletion timestamp, skipping mapping.")
 			return nil
@@ -197,10 +199,11 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 
 // MachinePoolToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
-func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind) handler.ToRequestsFunc {
+func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.ToRequestsFunc {
 	return func(o handler.MapObject) []reconcile.Request {
 		m, ok := o.Object.(*clusterv1exp.MachinePool)
 		if !ok {
+			log.Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
 			return nil
 		}
 
@@ -209,6 +212,7 @@ func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind) handler.ToR
 		// Return early if the GroupKind doesn't match what we expect.
 		infraGK := ref.GroupVersionKind().GroupKind()
 		if gk != infraGK {
+			log.Info("gk does not match", "gk", gk, "infraGK", infraGK)
 			return nil
 		}
 
@@ -220,5 +224,50 @@ func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind) handler.ToR
 				},
 			},
 		}
+	}
+}
+
+// AzureClusterToAzureMachinePoolsFunc is a handler.ToRequestsFunc to be used to enqueue
+// requests for reconciliation of AzureMachinePools.
+func AzureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger) handler.ToRequestsFunc {
+	return func(o handler.MapObject) []reconcile.Request {
+		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		defer cancel()
+
+		c, ok := o.Object.(*infrav1.AzureCluster)
+		if !ok {
+			log.Error(errors.Errorf("expected a AzureCluster but got a %T", o.Object), "failed to get AzureCluster")
+			return nil
+		}
+		logWithValues := log.WithValues("AzureCluster", c.Name, "Namespace", c.Namespace)
+
+		cluster, err := util.GetOwnerCluster(ctx, kClient, c.ObjectMeta)
+		switch {
+		case apierrors.IsNotFound(err) || cluster == nil:
+			logWithValues.Info("owning cluster not found")
+			return nil
+		case err != nil:
+			logWithValues.Error(err, "failed to get owning cluster")
+			return nil
+		}
+
+		labels := map[string]string{clusterv1.ClusterLabelName: cluster.Name}
+		ampl := &infrav1exp.AzureMachinePoolList{}
+		if err := kClient.List(ctx, ampl, client.InNamespace(c.Namespace), client.MatchingLabels(labels)); err != nil {
+			logWithValues.Error(err, "failed to list AzureMachinePools")
+			return nil
+		}
+
+		var result []reconcile.Request
+		for _, m := range ampl.Items {
+			result = append(result, reconcile.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: m.Namespace,
+					Name:      m.Name,
+				},
+			})
+		}
+
+		return result
 	}
 }

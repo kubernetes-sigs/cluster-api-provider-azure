@@ -266,19 +266,20 @@ func (m *MachineScope) Role() string {
 
 // GetVMID returns the AzureMachine instance id by parsing Spec.ProviderID.
 func (m *MachineScope) GetVMID() string {
-	parsed, err := noderefutil.NewProviderID(m.GetProviderID())
+	parsed, err := noderefutil.NewProviderID(m.ProviderID())
 	if err != nil {
 		return ""
 	}
 	return parsed.ID()
 }
 
-// GetProviderID returns the AzureMachine providerID from the spec.
-func (m *MachineScope) GetProviderID() string {
-	if m.AzureMachine.Spec.ProviderID != nil {
-		return *m.AzureMachine.Spec.ProviderID
+// ProviderID returns the AzureMachine providerID from the spec.
+func (m *MachineScope) ProviderID() string {
+	parsed, err := noderefutil.NewProviderID(to.String(m.AzureMachine.Spec.ProviderID))
+	if err != nil {
+		return ""
 	}
-	return ""
+	return parsed.ID()
 }
 
 // SetProviderID sets the AzureMachine providerID in spec.
@@ -286,8 +287,8 @@ func (m *MachineScope) SetProviderID(v string) {
 	m.AzureMachine.Spec.ProviderID = to.StringPtr(v)
 }
 
-// GetVMState returns the AzureMachine VM state.
-func (m *MachineScope) GetVMState() infrav1.VMState {
+// VMState returns the AzureMachine VM state.
+func (m *MachineScope) VMState() infrav1.VMState {
 	if m.AzureMachine.Status.VMState != nil {
 		return *m.AzureMachine.Status.VMState
 	}

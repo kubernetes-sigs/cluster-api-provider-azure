@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
-// azureMachineService is the group of services called by the AzureMachine controller
+// azureMachineService is the group of services called by the AzureMachine controller.
 type azureMachineService struct {
 	networkInterfacesSvc azure.Service
 	inboundNatRulesSvc   azure.Service
@@ -43,7 +43,7 @@ type azureMachineService struct {
 	skuCache             *resourceskus.Cache
 }
 
-// newAzureMachineService populates all the services based on input scope
+// newAzureMachineService populates all the services based on input scope.
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
 	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 

@@ -323,8 +323,8 @@ spec:
                   output."
                 type: string
               provisioningState:
-                description: VMState is the provisioning state of the Azure virtual
-                  machine.
+                description: ProvisioningState is the provisioning state of the Azure
+                  virtual machine.
                 type: string
               ready:
                 description: Ready is true when the provider resource is ready.
