@@ -46,6 +46,10 @@ providers:
     files:
       - sourcePath: "${PWD}/templates/test/cluster-template-prow.yaml"
         targetName: "cluster-template.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-clusterresourceset.yaml"
+        targetName: "cluster-template-clusterresourceset.yaml"
+      - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-adoption.yaml"
+        targetName: "cluster-template-kcp-adoption.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.6}"
@@ -65,8 +69,8 @@ intervals:
   default/wait-control-plane: ["10m", "10s"]
   default/wait-worker-nodes: ["10m", "10s"]
   default/wait-delete-cluster: ["30m", "10s"]
-  default/wait-machine-upgrade: ["20m", "10s"]
-  default/wait-machine-remediation: ["20m", "10s"]
+  default/wait-machine-upgrade: ["30m", "10s"]
+  default/wait-machine-remediation: ["30m", "10s"]
   default/wait-deployment: ["5m", "10s"]
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["3m", "10s"]

@@ -3,7 +3,6 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../flavors/default
-  - mhc.yaml
+  - resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
-  - patches/mhc.yaml
