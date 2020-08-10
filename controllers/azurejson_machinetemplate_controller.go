@@ -91,10 +91,8 @@ func (r *AzureJSONTemplateReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result
 		return ctrl.Result{}, nil
 	}
 
-	_, kind := infrav1.GroupVersion.WithKind("AzureCluster").ToAPIVersionAndKind()
-
 	// only look at azure clusters
-	if cluster.Spec.InfrastructureRef.Kind != kind {
+	if cluster.Spec.InfrastructureRef.Kind != "AzureCluster" {
 		log.WithValues("kind", cluster.Spec.InfrastructureRef.Kind).Info("infra ref was not an AzureCluster")
 		return ctrl.Result{}, nil
 	}
@@ -106,12 +104,8 @@ func (r *AzureJSONTemplateReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
 
-	err = r.Get(ctx, azureClusterName, azureCluster)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("object was not found")
-			return reconcile.Result{}, nil
-		}
+	if err := r.Get(ctx, azureClusterName, azureCluster); err != nil {
+		log.Error(err, "failed to fetch AzureCluster")
 		return reconcile.Result{}, err
 	}
 

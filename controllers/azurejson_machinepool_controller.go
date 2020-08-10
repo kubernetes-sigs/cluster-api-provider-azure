@@ -59,7 +59,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, opti
 func (r *AzureJSONMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "AzureJSONMachinePool", req.Name)
+	log := r.Log.WithValues("namespace", req.Namespace, "AzureMachinePool", req.Name)
 
 	// Fetch the AzureMachine instance
 	azureMachinePool := &expv1.AzureMachinePool{}
@@ -108,12 +108,8 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Res
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
 
-	err = r.Get(ctx, azureClusterName, azureCluster)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("object was not found")
-			return reconcile.Result{}, nil
-		}
+	if err := r.Get(ctx, azureClusterName, azureCluster); err != nil {
+		log.Error(err, "failed to fetch AzureCluster")
 		return reconcile.Result{}, err
 	}
 
