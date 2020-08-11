@@ -115,3 +115,11 @@ type VMSpec struct {
 	UserAssignedIdentities []infrav1.UserAssignedIdentity
 	SpotVMOptions          *infrav1.SpotVMOptions
 }
+
+// BastionSpec specification for bastion host
+type BastionSpec struct {
+	Name         string
+	SubnetName   string
+	PublicIPName string
+	VNetName     string
+}
