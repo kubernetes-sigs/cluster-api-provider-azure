@@ -48,12 +48,9 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-if [ -z "${LOCAL_ONLY:-}" ]; then
-  # TODO: remove this when we figure out how to change the prow env var
-  if [[ "${REGISTRY}" == "k8sprow.azurecr.io" ]]; then
-    export REGISTRY="capzci.azurecr.io/ci-e2e"
-  fi
+export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 
+if [[ "${LOCAL_ONLY}" == "false" ]]; then
   export REGISTRY=${REGISTRY:-"capzci.azurecr.io/ci-e2e"}
 
   if [[ "${REGISTRY}" =~ azurecr\.io ]]; then
@@ -63,7 +60,9 @@ if [ -z "${LOCAL_ONLY:-}" ]; then
     az acr login --name capzci
   fi
 else
+  # push images to the local kind registry
   export REGISTRY="localhost:5000/ci-e2e"
+  make kind-create
 fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
