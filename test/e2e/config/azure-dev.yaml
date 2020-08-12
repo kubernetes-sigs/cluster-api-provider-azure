@@ -57,8 +57,7 @@ variables:
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
   EXP_MACHINE_POOL: "true"
-  # TODO: Fix the typo when updating CAPI urls above to a v0.3.8 release.
-  EXP_CLUSTER_RESOURSE_SET: "true"
+  EXP_CLUSTER_RESOURCE_SET: "true"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
