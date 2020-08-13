@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
@@ -67,9 +68,18 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		Location:      scope.ControlPlane.Spec.Location,
 		Tags:          scope.ControlPlane.Spec.AdditionalTags,
 		Version:       strings.TrimPrefix(scope.ControlPlane.Spec.Version, "v"),
-		NetworkPlugin: scope.ControlPlane.Spec.NetworkPlugin,
-		NetworkPolicy: scope.ControlPlane.Spec.NetworkPolicy,
 		SSHPublicKey:  string(decodedSSHPublicKey),
+		DNSServiceIP:  scope.ControlPlane.Spec.DNSServiceIP,
+	}
+
+	if scope.ControlPlane.Spec.NetworkPlugin != nil {
+		managedClusterSpec.NetworkPlugin = *scope.ControlPlane.Spec.NetworkPlugin
+	}
+	if scope.ControlPlane.Spec.NetworkPolicy != nil {
+		managedClusterSpec.NetworkPolicy = *scope.ControlPlane.Spec.NetworkPolicy
+	}
+	if scope.ControlPlane.Spec.LoadBalancerSKU != nil {
+		managedClusterSpec.LoadBalancerSKU = *scope.ControlPlane.Spec.LoadBalancerSKU
 	}
 
 	scope.V(2).Info("Reconciling managed cluster resource group")
@@ -103,9 +113,18 @@ func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *
 		Location:      scope.ControlPlane.Spec.Location,
 		Tags:          scope.ControlPlane.Spec.AdditionalTags,
 		Version:       strings.TrimPrefix(scope.ControlPlane.Spec.Version, "v"),
-		NetworkPlugin: scope.ControlPlane.Spec.NetworkPlugin,
-		NetworkPolicy: scope.ControlPlane.Spec.NetworkPolicy,
 		SSHPublicKey:  scope.ControlPlane.Spec.SSHPublicKey,
+		DNSServiceIP:  scope.ControlPlane.Spec.DNSServiceIP,
+	}
+
+	if scope.ControlPlane.Spec.NetworkPlugin != nil {
+		managedClusterSpec.NetworkPlugin = *scope.ControlPlane.Spec.NetworkPlugin
+	}
+	if scope.ControlPlane.Spec.NetworkPolicy != nil {
+		managedClusterSpec.NetworkPolicy = *scope.ControlPlane.Spec.NetworkPolicy
+	}
+	if scope.ControlPlane.Spec.LoadBalancerSKU != nil {
+		managedClusterSpec.LoadBalancerSKU = *scope.ControlPlane.Spec.LoadBalancerSKU
 	}
 
 	scope.V(2).Info("Deleting managed cluster")
@@ -142,6 +161,21 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 			if len(net.Pods.CIDRBlocks) == 1 {
 				managedClusterSpec.PodCIDR = net.Pods.CIDRBlocks[0]
 			}
+		}
+	}
+
+	// if DNSServiceIP is specified, ensure it is within the ServiceCIDR address range
+	if scope.ControlPlane.Spec.DNSServiceIP != nil {
+		if managedClusterSpec.ServiceCIDR == "" {
+			return fmt.Errorf(scope.Cluster.Name + " cluster serviceCIDR must be specified if specifying DNSServiceIP")
+		}
+		_, cidr, err := net.ParseCIDR(managedClusterSpec.ServiceCIDR)
+		if err != nil {
+			return fmt.Errorf("failed to parse cluster service cidr: %w", err)
+		}
+		ip := net.ParseIP(*scope.ControlPlane.Spec.DNSServiceIP)
+		if !cidr.Contains(ip) {
+			return fmt.Errorf(scope.ControlPlane.Name + " DNSServiceIP must reside within the associated cluster serviceCIDR")
 		}
 	}
 

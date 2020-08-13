@@ -48,20 +48,31 @@ type AzureManagedControlPlaneSpec struct {
 	// +optional
 	AdditionalTags infrav1.Tags `json:"additionalTags,omitempty"`
 
-	// NetworkPlugin used for building Kubernetes network. Possible values include: 'Azure', 'Kubenet'. Defaults to Azure.
-	// +kubebuilder:validation:Enum=Azure;Kubenet
+	// NetworkPlugin used for building Kubernetes network.
+	// +kubebuilder:validation:Enum=azure;kubenet
+	// +optional
 	NetworkPlugin *string `json:"networkPlugin,omitempty"`
 
-	// NetworkPolicy used for building Kubernetes network. Possible values include: 'Calico', 'Azure'
-	// +kubebuilder:validation:Enum=Calico;Azure
+	// NetworkPolicy used for building Kubernetes network.
+	// +kubebuilder:validation:Enum=azure;calico
+	// +optional
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
 	SSHPublicKey string `json:"sshPublicKey"`
 
 	// DefaultPoolRef is the specification for the default pool, without which an AKS cluster cannot be created.
-	// TODO(ace): consider defaulting and making optional pointer?
 	DefaultPoolRef corev1.LocalObjectReference `json:"defaultPoolRef"`
+
+	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
+	// It must be within the Kubernetes service address range specified in serviceCidr.
+	// +optional
+	DNSServiceIP *string `json:"dnsServiceIP,omitempty"`
+
+	// LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
+	// +kubebuilder:validation:Enum=basic;standard
+	// +optional
+	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane

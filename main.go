@@ -308,6 +308,12 @@ func main() {
 				os.Exit(1)
 			}
 		}
+		if feature.Gates.Enabled(feature.AKS) {
+			if err = (&infrav1alpha3exp.AzureManagedControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
+				os.Exit(1)
+			}
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
