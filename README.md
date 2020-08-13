@@ -83,8 +83,8 @@ This repository uses the Kubernetes bots.  See a full list of the commands [here
 Maintainers hold office hours every two weeks, with sessions open to all
 developers working on this project.
 
-Office hours are hosted on a zoom video chat every other Friday
-at 09:00 (PT) / 12:00 (ET) / 17:00 (UTC),
+Office hours are hosted on a zoom video chat every other Thursday
+at 08:00 (PT) / 11:00 (ET) / 16:00 (UTC),
 and are published on the [Kubernetes community meetings calendar][gcal].
 
 ### Other ways to communicate with the contributors
