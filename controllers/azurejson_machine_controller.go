@@ -94,11 +94,10 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	// outside of machinedeployments/machinesets. if a machine is part of a machineset
 	// or machinedeployment, we already created a secret for the template. All machines
 	// in the machinedeployment will share that one secret.
-	_, isControlPlaneNode := e.Meta.GetLabels()[clusterv1.MachineControlPlaneLabelName]
 	_, isMachineSetNode := e.Meta.GetLabels()[clusterv1.MachineSetLabelName]
 	_, isMachineDeploymentNode := e.Meta.GetLabels()[clusterv1.MachineDeploymentLabelName]
 
-	return !isControlPlaneNode && !isMachineSetNode && !isMachineDeploymentNode
+	return !isMachineSetNode && !isMachineDeploymentNode
 }
 
 // Reconcile reconciles the azure json for a specific machine not in a machine deployment
@@ -119,7 +118,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	}
 
 	// Fetch the Cluster.
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, azureMachine.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, azureMachine.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
