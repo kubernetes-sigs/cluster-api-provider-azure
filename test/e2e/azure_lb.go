@@ -105,11 +105,12 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	_, err := deploymentsClient.Create(deployment)
 	Expect(err).NotTo(HaveOccurred())
-	deployInput := framework.WaitForDeploymentsAvailableInput{
+	deployInput := WaitForDeploymentsAvailableInput{
 		Getter:     deploymentsClientAdapter{client: deploymentsClient},
 		Deployment: deployment,
+		Clientset:  clientset,
 	}
-	framework.WaitForDeploymentsAvailable(context.TODO(), deployInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+	WaitForDeploymentsAvailable(context.TODO(), deployInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 
 	By("creating an internal Load Balancer service")
 	servicesClient := clientset.CoreV1().Services(corev1.NamespaceDefault)
@@ -143,8 +144,9 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	_, err = servicesClient.Create(ilbService)
 	Expect(err).NotTo(HaveOccurred())
 	ilbSvcInput := WaitForServiceAvailableInput{
-		Getter:  servicesClientAdapter{client: servicesClient},
-		Service: ilbService,
+		Getter:    servicesClientAdapter{client: servicesClient},
+		Service:   ilbService,
+		Clientset: clientset,
 	}
 	WaitForServiceAvailable(context.TODO(), ilbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
@@ -185,8 +187,9 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	_, err = jobsClient.Create(ilbJob)
 	Expect(err).NotTo(HaveOccurred())
 	ilbJobInput := WaitForJobCompleteInput{
-		Getter: jobsClientAdapter{client: jobsClient},
-		Job:    ilbJob,
+		Getter:    jobsClientAdapter{client: jobsClient},
+		Job:       ilbJob,
+		Clientset: clientset,
 	}
 	WaitForJobComplete(context.TODO(), ilbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
@@ -218,8 +221,9 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	_, err = servicesClient.Create(elbService)
 	Expect(err).NotTo(HaveOccurred())
 	elbSvcInput := WaitForServiceAvailableInput{
-		Getter:  servicesClientAdapter{client: servicesClient},
-		Service: elbService,
+		Getter:    servicesClientAdapter{client: servicesClient},
+		Service:   elbService,
+		Clientset: clientset,
 	}
 	WaitForServiceAvailable(context.TODO(), elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
@@ -259,8 +263,9 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	_, err = jobsClient.Create(elbJob)
 	Expect(err).NotTo(HaveOccurred())
 	elbJobInput := WaitForJobCompleteInput{
-		Getter: jobsClientAdapter{client: jobsClient},
-		Job:    elbJob,
+		Getter:    jobsClientAdapter{client: jobsClient},
+		Job:       elbJob,
+		Clientset: clientset,
 	}
 	WaitForJobComplete(context.TODO(), elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
