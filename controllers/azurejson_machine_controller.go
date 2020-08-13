@@ -90,15 +90,19 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 		return false
 	}
 
-	// when watching machines, we only care about machines users created one-off
-	// outside of machinedeployments/machinesets. if a machine is part of a machineset
-	// or machinedeployment, we already created a secret for the template. All machines
-	// in the machinedeployment will share that one secret.
-	_, isControlPlaneNode := e.Meta.GetLabels()[clusterv1.MachineControlPlaneLabelName]
+	// when watching machines, we only care about machines users created
+	// one-off outside of machinedeployments/machinesets. if a machine
+	// is part of a machineset or machinedeployment, we already created
+	// a secret for the template. All machines in the machinedeployment
+	// will share that one secret.
+	//
+	// We create individual secrets for control plane machines even if
+	// they were created from a template, to allow for one-off control
+	// plane machines and control plane adoption.
 	_, isMachineSetNode := e.Meta.GetLabels()[clusterv1.MachineSetLabelName]
 	_, isMachineDeploymentNode := e.Meta.GetLabels()[clusterv1.MachineDeploymentLabelName]
 
-	return !isControlPlaneNode && !isMachineSetNode && !isMachineDeploymentNode
+	return !isMachineSetNode && !isMachineDeploymentNode
 }
 
 // Reconcile reconciles the azure json for a specific machine not in a machine deployment
