@@ -188,6 +188,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 		clusterScope,
 		azureMachine.Namespace,
 		azureMachine.Name,
+		owner,
 		azureMachine.Spec.Identity,
 		userAssignedIdentityIfExists,
 	)
