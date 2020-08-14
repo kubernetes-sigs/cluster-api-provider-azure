@@ -27,66 +27,15 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
 
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
-func TestUnclonedMachinesPredicate(t *testing.T) {
-	cases := map[string]struct {
-		expected bool
-		labels   map[string]string
-	}{
-		"uncloned worker node should return true": {
-			expected: true,
-			labels:   nil,
-		},
-		"control plane node should return true": {
-			expected: true,
-			labels: map[string]string{
-				clusterv1.MachineControlPlaneLabelName: "",
-			},
-		},
-		"machineset node should return false": {
-			expected: false,
-			labels: map[string]string{
-				clusterv1.MachineSetLabelName: "",
-			},
-		},
-		"machinedeployment node should return false": {
-			expected: false,
-			labels: map[string]string{
-				clusterv1.MachineDeploymentLabelName: "",
-			},
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			machine := &infrav1.AzureMachine{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: tc.labels,
-				},
-			}
-			e := event.GenericEvent{
-				Meta:   machine,
-				Object: machine,
-			}
-			filter := filterUnclonedMachinesPredicate{}
-			if filter.Generic(e) != tc.expected {
-				t.Errorf("expected: %t, got %t", tc.expected, filter.Generic(e))
-			}
-		})
-	}
-}
-
-func TestAzureJSONMachineReconciler(t *testing.T) {
+func TestAzureJSONPoolReconciler(t *testing.T) {
 	scheme, err := newScheme()
 	if err != nil {
 		t.Error(err)
@@ -129,9 +78,9 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		},
 	}
 
-	azureMachine := &infrav1.AzureMachine{
+	machinePool := &clusterexpv1.MachinePool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-machine",
+			Name: "my-machine-pool",
 			Labels: map[string]string{
 				clusterv1.ClusterLabelName: "my-cluster",
 			},
@@ -140,6 +89,24 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 					APIVersion: "cluster.x-k8s.io/v1alpha3",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
+				},
+			},
+		},
+	}
+
+	azureMachinePool := &infraexpv1.AzureMachinePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-azure-machine-pool",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "cluster.x-k8s.io/v1alpha3",
+					Kind:       "Cluster",
+					Name:       "my-cluster",
+				},
+				{
+					APIVersion: "exp.cluster.x-k8s.io/v1alpha3",
+					Kind:       "MachinePool",
+					Name:       "my-machine-pool",
 				},
 			},
 		},
@@ -154,13 +121,15 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			objects: []runtime.Object{
 				cluster,
 				azureCluster,
-				azureMachine,
+				machinePool,
+				azureMachinePool,
 			},
 		},
 		"missing azure cluster should return error": {
 			objects: []runtime.Object{
 				cluster,
-				azureMachine,
+				machinePool,
+				azureMachinePool,
 			},
 			fail: true,
 			err:  "azureclusters.infrastructure.cluster.x-k8s.io \"my-azure-cluster\" not found",
@@ -171,7 +140,7 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(scheme, tc.objects...)
 
-			reconciler := &AzureJSONMachineReconciler{
+			reconciler := &AzureJSONMachinePoolReconciler{
 				Client:   client,
 				Log:      klogr.New(),
 				Recorder: record.NewFakeRecorder(128),
@@ -180,9 +149,10 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			_, err := reconciler.Reconcile(ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: "",
-					Name:      "my-machine",
+					Name:      "my-azure-machine-pool",
 				},
 			})
+
 			if tc.fail {
 				if diff := cmp.Diff(tc.err, err.Error()); diff != "" {
 					t.Error(diff)
@@ -194,22 +164,4 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			}
 		})
 	}
-}
-
-func newScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	schemeFn := []func(*runtime.Scheme) error{
-		clientgoscheme.AddToScheme,
-		infrav1.AddToScheme,
-		clusterv1.AddToScheme,
-		infraexpv1.AddToScheme,
-		clusterexpv1.AddToScheme,
-	}
-	for _, fn := range schemeFn {
-		fn := fn
-		if err := fn(scheme); err != nil {
-			return nil, err
-		}
-	}
-	return scheme, nil
 }

@@ -104,7 +104,7 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 func (r *AzureJSONMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "AzureJSONMachine", req.Name)
+	log := r.Log.WithValues("namespace", req.Namespace, "AzureMachine", req.Name)
 
 	// Fetch the AzureMachine instance
 	azureMachine := &infrav1.AzureMachine{}
@@ -150,12 +150,8 @@ func (r *AzureJSONMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
 
-	err = r.Get(ctx, azureClusterName, azureCluster)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("object was not found")
-			return reconcile.Result{}, nil
-		}
+	if err := r.Get(ctx, azureClusterName, azureCluster); err != nil {
+		log.Error(err, "failed to fetch AzureCluster")
 		return reconcile.Result{}, err
 	}
 
