@@ -196,6 +196,9 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 			conditions.WithConditions(
 				infrav1.VMRunningCondition,
 			),
+			conditions.WithStepCounterIfOnly(
+				infrav1.VMRunningCondition,
+			),
 		)
 
 		if err := machineScope.Close(ctx); err != nil && reterr == nil {
@@ -280,12 +283,12 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDDeletingReason, clusterv1.ConditionSeverityWarning, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateFailed:
-		machineScope.SetNotReady()
 		machineScope.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "FailedVMState", "Azure VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machineScope.GetVMState()))
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityWarning, "")
+		machineScope.SetNotReady()
 		// If VM failed provisioning, delete it so it can be recreated
 		err := ams.DeleteVM(ctx)
 		if err != nil {
@@ -293,9 +296,9 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 		return reconcile.Result{}, errors.Wrapf(err, "VM deleted, retry creating in next reconcile")
 	default:
-		machineScope.SetNotReady()
+		machineScope.V(2).Info("VM state is undefined", "id", machineScope.GetVMID())
 		conditions.MarkUnknown(machineScope.AzureMachine, infrav1.VMRunningCondition, "", "")
-		return reconcile.Result{}, nil
+		machineScope.SetNotReady()
 	}
 
 	// TODO: move this out of the controller and use tags CreateOrUpdateAtScope instead.
