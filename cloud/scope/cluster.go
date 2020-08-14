@@ -19,8 +19,9 @@ package scope
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/go-autorest/autorest/to"
 	"strconv"
+
+	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
@@ -267,7 +268,13 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
-	return s.patchHelper.Patch(ctx, s.AzureCluster)
+	return s.patchHelper.Patch(
+		ctx,
+		s.AzureCluster,
+		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+			infrav1.NetworkInfrastructureReadyCondition,
+		}})
 }
 
 // Close closes the current scope persisting the cluster configuration and status.

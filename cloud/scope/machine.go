@@ -334,7 +334,13 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachineScope) PatchObject(ctx context.Context) error {
-	return m.patchHelper.Patch(ctx, m.AzureMachine)
+	return m.patchHelper.Patch(
+		ctx,
+		m.AzureMachine,
+		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+			infrav1.VMRunningCondition,
+		}})
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
