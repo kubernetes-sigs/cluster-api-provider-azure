@@ -136,6 +136,7 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Res
 		clusterScope,
 		azureMachinePool.Namespace,
 		azureMachinePool.Name,
+		owner,
 		infrav1.VMIdentityNone,
 		"",
 	)

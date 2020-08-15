@@ -138,6 +138,7 @@ func (r *AzureJSONTemplateReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result
 		clusterScope,
 		azureMachineTemplate.Namespace,
 		azureMachineTemplate.Name,
+		owner,
 		azureMachineTemplate.Spec.Template.Spec.Identity,
 		userAssignedIdentityIfExists,
 	)

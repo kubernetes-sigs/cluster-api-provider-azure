@@ -146,7 +146,7 @@ func referSameObject(a, b metav1.OwnerReference) bool {
 }
 
 // GetCloudProviderSecret returns the required azure json secret for the provided parameters.
-func GetCloudProviderSecret(d azure.ClusterDescriber, namespace, name string, identityType infrav1.VMIdentity, userIdentityID string) (*corev1.Secret, error) {
+func GetCloudProviderSecret(d azure.ClusterDescriber, namespace, name string, owner metav1.OwnerReference, identityType infrav1.VMIdentity, userIdentityID string) (*corev1.Secret, error) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -154,6 +154,7 @@ func GetCloudProviderSecret(d azure.ClusterDescriber, namespace, name string, id
 			Labels: map[string]string{
 				d.ClusterName(): string(infrav1.ResourceLifecycleOwned),
 			},
+			OwnerReferences: []metav1.OwnerReference{owner},
 		},
 	}
 
@@ -285,7 +286,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 	// Otherwise, check ownership and data freshness. Update as necessary
 	hasOwner := false
 	for _, ownerRef := range old.OwnerReferences {
-		if referSameObject(ownerRef, new.OwnerReferences[0]) {
+		if referSameObject(ownerRef, owner) {
 			hasOwner = true
 			break
 		}
@@ -299,7 +300,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 	}
 
 	if !hasOwner {
-		old.OwnerReferences = append(old.OwnerReferences)
+		old.OwnerReferences = append(old.OwnerReferences, owner)
 	}
 
 	if !hasData {
