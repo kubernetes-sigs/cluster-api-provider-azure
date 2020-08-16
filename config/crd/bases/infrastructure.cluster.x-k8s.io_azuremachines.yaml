@@ -407,7 +407,7 @@ spec:
                     properties:
                       option:
                         description: Option enables ephemeral OS when set to "Local"
-                          See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks
+                          See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks
                           for full details
                         enum:
                         - Local
