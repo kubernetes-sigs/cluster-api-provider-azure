@@ -20,8 +20,10 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -47,7 +49,7 @@ type deploymentsClientAdapter struct {
 func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 	deployment, err := c.client.Get(key.Name, metav1.GetOptions{})
 	if deployObj, ok := obj.(*appsv1.Deployment); ok {
-		deployObj.Status = deployment.Status
+		deployment.DeepCopyInto(deployObj)
 	}
 	return err
 }
@@ -61,7 +63,7 @@ type servicesClientAdapter struct {
 func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 	service, err := c.client.Get(key.Name, metav1.GetOptions{})
 	if serviceObj, ok := obj.(*corev1.Service); ok {
-		serviceObj.Status = service.Status
+		service.DeepCopyInto(serviceObj)
 	}
 	return err
 }
@@ -75,8 +77,8 @@ type WaitForServiceAvailableInput struct {
 // WaitForServiceAvailable waits until the Service has an IP address available on each Ingress.
 func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableInput, intervals ...interface{}) {
 	By(fmt.Sprintf("waiting for service %s/%s to be available", input.Service.GetNamespace(), input.Service.GetName()))
+	service := &corev1.Service{}
 	Eventually(func() bool {
-		service := &corev1.Service{}
 		key := client.ObjectKey{
 			Namespace: input.Service.GetNamespace(),
 			Name:      input.Service.GetName(),
@@ -94,7 +96,20 @@ func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableI
 		}
 		return false
 
-	}, intervals...).Should(BeTrue(), "Service %s/%s failed to get an IP for LoadBalancer.Ingress", input.Service.GetNamespace(), input.Service.GetName())
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedService(input, service) })
+}
+
+// DescribeFailedService returns a string with information to help debug a failed service.
+func DescribeFailedService(input WaitForServiceAvailableInput, service *corev1.Service) string {
+	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Service %s/%s failed to get an IP for LoadBalancer.Ingress",
+		input.Service.GetNamespace(), input.Service.GetName()))
+	if service == nil {
+		b.WriteString("\nService: nil\n")
+	} else {
+		b.WriteString(fmt.Sprintf("\nService:\n%s\n", prettyPrint(service)))
+	}
+	return b.String()
 }
 
 // jobsClientAdapter adapts a Job to work with WaitForJobAvailable.
@@ -106,7 +121,7 @@ type jobsClientAdapter struct {
 func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 	job, err := c.client.Get(key.Name, metav1.GetOptions{})
 	if jobObj, ok := obj.(*batchv1.Job); ok {
-		jobObj.Status = job.Status
+		job.DeepCopyInto(jobObj)
 	}
 	return err
 }
@@ -120,8 +135,8 @@ type WaitForJobCompleteInput struct {
 // WaitForJobComplete waits until the Job completes with at least one success.
 func WaitForJobComplete(ctx context.Context, input WaitForJobCompleteInput, intervals ...interface{}) {
 	By(fmt.Sprintf("waiting for job %s/%s to be complete", input.Job.GetNamespace(), input.Job.GetName()))
+	job := &batchv1.Job{}
 	Eventually(func() bool {
-		job := &batchv1.Job{}
 		key := client.ObjectKey{
 			Namespace: input.Job.GetNamespace(),
 			Name:      input.Job.GetName(),
@@ -135,5 +150,27 @@ func WaitForJobComplete(ctx context.Context, input WaitForJobCompleteInput, inte
 			}
 		}
 		return false
-	}, intervals...).Should(BeTrue(), "Job %s/%s failed to get status.Complete = True condition with a successful job", input.Job.GetNamespace(), input.Job.GetName())
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedJob(input, job) })
+}
+
+// DescribeFailedJob returns a string with information to help debug a failed job.
+func DescribeFailedJob(input WaitForJobCompleteInput, job *batchv1.Job) string {
+	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Job %s/%s failed to get status.Complete = True condition with a successful job",
+		input.Job.GetNamespace(), input.Job.GetName()))
+	if job == nil {
+		b.WriteString("\nJob: nil\n")
+	} else {
+		b.WriteString(fmt.Sprintf("\nJob:\n%s\n", prettyPrint(job)))
+	}
+	return b.String()
+}
+
+// prettyPrint returns a formatted JSON version of the object given.
+func prettyPrint(v interface{}) string {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(b)
 }
