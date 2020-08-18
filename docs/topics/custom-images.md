@@ -117,7 +117,7 @@ spec:
       image:
         publisher: "example-publisher"
         offer: "example-offer"
-        sku: "k8s-1dot18dot6-ubuntu-1804"
+        sku: "k8s-1dot18dot8-ubuntu-1804"
         version: "2020-07-25"
 ```
 

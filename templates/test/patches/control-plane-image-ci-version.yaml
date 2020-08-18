@@ -6,10 +6,10 @@ spec:
   template:
     spec:
       image:
-        # we use the 1.18.2 image as a workaround there is no published marketplace image for k8s CI versions.
-        # 1.18.2 binaries and images will get replaced to the desired version by the script above.
+        # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.18.8 binaries and images will get replaced to the desired version by the script above.
         marketplace:
           publisher: cncf-upstream
           offer: capi
-          sku: k8s-1dot18dot2-ubuntu-1804
+          sku: k8s-1dot18dot8-ubuntu-1804
           version: "2020.04.17"

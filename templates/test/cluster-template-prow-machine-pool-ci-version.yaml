@@ -206,7 +206,7 @@ spec:
         marketplace:
           offer: capi
           publisher: cncf-upstream
-          sku: k8s-1dot18dot2-ubuntu-1804
+          sku: k8s-1dot18dot8-ubuntu-1804
           version: 2020.04.17
       location: ${AZURE_LOCATION}
       osDisk:
@@ -251,7 +251,7 @@ spec:
       marketplace:
         offer: capi
         publisher: cncf-upstream
-        sku: k8s-1dot18dot2-ubuntu-1804
+        sku: k8s-1dot18dot8-ubuntu-1804
         version: 2020.04.17
     osDisk:
       diskSizeGB: 30
