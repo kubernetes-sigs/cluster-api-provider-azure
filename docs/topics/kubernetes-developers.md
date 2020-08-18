@@ -11,7 +11,7 @@ The details for building kubernetes is outside the scope of this article.  Pleas
 Kubernetes has removed `make WHAT=cmd/hyperkube` command you will have to build individual Kubernetes components and deploy them separately. That includes:
 
 - [kube-apiserver](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/)
-- [kube-controller-manager](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/), 
+- [kube-controller-manager](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/),
 - [kube-scheduler](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-scheduler/)
 - [kube-proxy](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/)
 - [kubelet](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)
@@ -46,7 +46,7 @@ docker tag k8s.gcr.io/etcd:3.4.3-0 $KUBE_DOCKER_REGISTRY/etcd:3.4.3-0
 docker push $KUBE_DOCKER_REGISTRY/etcd:3.4.3-0
 
 docker pull k8s.gcr.io/coredns:1.6.7
-docker tag k8s.gcr.io/coredns:1.6.7 $KUBE_DOCKER_REGISTRY/coredns:1.6.7 
+docker tag k8s.gcr.io/coredns:1.6.7 $KUBE_DOCKER_REGISTRY/coredns:1.6.7
 docker push $KUBE_DOCKER_REGISTRY/coredns:1.6.7
 ```
 
@@ -61,7 +61,7 @@ spec:
   kubeadmConfigSpec:
     clusterConfiguration:
       imageRepository: "<your-registry>"
-      kubernetesVersion: "v1.18.6-dirty"
+      kubernetesVersion: "v1.18.8-dirty"
 ```
 
 # Using a custom kubelet

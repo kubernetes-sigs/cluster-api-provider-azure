@@ -3,7 +3,7 @@
 In `clusterctl` the infrastructure provider authors can provide different type of cluster templates,
 or flavors; use the --flavor flag to specify which flavor to use; e.g
 ```shell
-clusterctl config cluster my-cluster --kubernetes-version v1.18.2 \
+clusterctl config cluster my-cluster --kubernetes-version v1.18.8 \
     --flavor external-cloud-provider > my-cluster.yaml
 ```
 See [`clusterctl` flavors docs](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors).
@@ -76,7 +76,7 @@ If you wish to override the default variables for flavor workers, you can specif
             "AZURE_LOCATION": "eastus",
             "AZURE_RESOURCE_GROUP": "test-resource-group-name",
             "CONTROL_PLANE_MACHINE_COUNT": "1",
-            "KUBERNETES_VERSION": "v1.18.6",
+            "KUBERNETES_VERSION": "v1.18.8",
             "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
             "WORKER_MACHINE_COUNT": "2",
             "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3"
