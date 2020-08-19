@@ -228,6 +228,9 @@ spec:
   selector:
     matchLabels: null
   template:
+    metadata:
+      labels:
+        nodepool: pool1
     spec:
       bootstrap:
         configRef:
@@ -363,3 +366,19 @@ spec:
       preKubeadmCommands:
       - bash -c /tmp/kubeadm-bootstrap.sh
       useExperimentalRetryJoin: true
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${ CLUSTER_NAME }
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy

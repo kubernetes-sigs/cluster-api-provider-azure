@@ -145,9 +145,6 @@ spec:
   selector:
     matchLabels: null
   template:
-    metadata:
-      labels:
-        nodepool: pool1
     spec:
       bootstrap:
         configRef:
@@ -202,18 +199,40 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       useExperimentalRetryJoin: true
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineHealthCheck
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
 metadata:
-  name: ${CLUSTER_NAME}-mhc-0
+  name: ${CLUSTER_NAME}-crs-0
   namespace: default
 spec:
-  clusterName: ${ CLUSTER_NAME }
-  maxUnhealthy: 100%
-  selector:
+  clusterSelector:
     matchLabels:
-      nodepool: pool1
-  unhealthyConditions:
-  - status: "True"
-    timeout: 30s
-    type: E2ENodeUnhealthy
+      label: e2e
+  resources:
+  - kind: Secret
+    name: test-secret1
+  - kind: ConfigMap
+    name: test-configmap1
+  - kind: Secret
+    name: test-notexist
+  strategy: ApplyOnce
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-secret1
+  namespace: default
+stringData:
+  addon.yaml: |-
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "test-e2e-cm",
+        "namespace": "default"
+      },
+      "data": {
+        "service_name": "none"
+      }
+    }
+type: addons.cluster.x-k8s.io/resource-set
