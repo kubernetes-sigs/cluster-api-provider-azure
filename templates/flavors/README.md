@@ -25,7 +25,7 @@ run ```tilt up ${flavors}``` to spin up worker clusters in Azure represented by 
 Add your desired flavors to tilt_config.json:
 ```json
 {
-    "worker-flavors": ["default", "aks", "external-cloud-provider", "machinepool", "system-assigned-identity", "user-assigned-identity"]
+    "worker-flavors": ["default", "aks", "ephemeral", "external-cloud-provider", "machinepool", "system-assigned-identity", "user-assigned-identity"]
 }
 ```
 
@@ -38,7 +38,6 @@ Please note your tilt-settings.json must contain at minimum the following fields
         "AZURE_TENANT_ID_B64": "******",
         "AZURE_CLIENT_SECRET_B64": "******",
         "AZURE_CLIENT_ID_B64": "******",
-        "AZURE_ENVIRONMENT": "AzurePublicCloud"
     }
 }
 ```
@@ -58,7 +57,7 @@ If you wish to override the default variables for flavor workers, you can specif
         "AZURE_TENANT_ID_B64": "****",
         "AZURE_CLIENT_SECRET_B64": "****",
         "AZURE_CLIENT_ID_B64": "****",
-        "AZURE_ENVIRONMENT": "AzurePublicCloud"
+        "AZURE_ENVIRONMENT": "AzureChinaCloud"
     },
     "worker-templates": {
         "flavors": {
