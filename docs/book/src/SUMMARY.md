@@ -1,6 +1,7 @@
 # Summary
 
 [Introduction](./introduction.md)
+[Roadmap](./roadmap.md)
 - [Topics](./topics/topics.md)
     - [Cloud Provider Config](./topics/cloud-provider-config.md)
     - [Custom Images](./topics/custom-images.md)
