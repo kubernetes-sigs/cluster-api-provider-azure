@@ -38,22 +38,23 @@ import (
 // Spec input specification for Get/CreateOrUpdate/Delete calls
 type (
 	Spec struct {
-		Name                   string
-		ResourceGroup          string
-		Location               string
-		ClusterName            string
-		MachinePoolName        string
-		Sku                    string
-		Capacity               int64
-		SSHKeyData             string
-		Image                  *infrav1.Image
-		OSDisk                 infrav1.OSDisk
-		DataDisks              []infrav1.DataDisk
-		CustomData             string
-		SubnetID               string
-		PublicLoadBalancerName string
-		AdditionalTags         infrav1.Tags
-		AcceleratedNetworking  *bool
+		Name                         string
+		ResourceGroup                string
+		Location                     string
+		ClusterName                  string
+		MachinePoolName              string
+		Sku                          string
+		Capacity                     int64
+		SSHKeyData                   string
+		Image                        *infrav1.Image
+		OSDisk                       infrav1.OSDisk
+		DataDisks                    []infrav1.DataDisk
+		CustomData                   string
+		SubnetID                     string
+		PublicLoadBalancerName       string
+		AdditionalTags               infrav1.Tags
+		AcceleratedNetworking        *bool
+		TerminateNotificationTimeout *int
 	}
 )
 
@@ -193,6 +194,23 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				},
 			},
 		},
+	}
+
+	if vmssSpec.TerminateNotificationTimeout != nil {
+		vmss.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
+			TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+				Enable:           to.BoolPtr(true),
+				NotBeforeTimeout: to.StringPtr(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
+			},
+		}
+		// Once we have scheduled events termination notification we can switch upgrade policy to be rolling
+		vmss.VirtualMachineScaleSetProperties.UpgradePolicy = &compute.UpgradePolicy{
+			// Prefer rolling upgrade compared to Automatic (which updates all instances at same time)
+			Mode: compute.UpgradeModeRolling,
+			// We need to set the rolling upgrade policy based on user defined values
+			// for now lets stick to defaults, future PR will inlcude the configurability
+			// RollingUpgradePolicy: &compute.RollingUpgradePolicy{},
+		}
 	}
 
 	_, err = s.Client.Get(ctx, vmssSpec.ResourceGroup, vmssSpec.Name)

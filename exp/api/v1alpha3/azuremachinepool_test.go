@@ -19,6 +19,7 @@ package v1alpha3_test
 import (
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/onsi/gomega"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -77,6 +78,53 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Expect: func(g *gomega.GomegaWithT, actual error) {
 				g.Expect(actual).To(gomega.HaveOccurred())
 				g.Expect(actual.Error()).To(gomega.ContainSubstring("You must supply a ID, Marketplace or SharedGallery image details"))
+			},
+		},
+		{
+			Name: "HasValidTerminateNotificationTimeout",
+			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
+				return &exp.AzureMachinePool{
+					Spec: exp.AzureMachinePoolSpec{
+						Template: exp.AzureMachineTemplate{
+							TerminateNotificationTimeout: to.IntPtr(7),
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).ToNot(gomega.HaveOccurred())
+			},
+		},
+		{
+			Name: "HasInvalidMaximumTerminateNotificationTimeout",
+			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
+				return &exp.AzureMachinePool{
+					Spec: exp.AzureMachinePoolSpec{
+						Template: exp.AzureMachineTemplate{
+							TerminateNotificationTimeout: to.IntPtr(20),
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).To(gomega.HaveOccurred())
+				g.Expect(actual.Error()).To(gomega.ContainSubstring("Maximum timeout 15 is allowed for TerminateNotificationTimeout"))
+			},
+		},
+		{
+			Name: "HasInvalidMinimumTerminateNotificationTimeout",
+			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
+				return &exp.AzureMachinePool{
+					Spec: exp.AzureMachinePoolSpec{
+						Template: exp.AzureMachineTemplate{
+							TerminateNotificationTimeout: to.IntPtr(3),
+						},
+					},
+				}
+			},
+			Expect: func(g *gomega.GomegaWithT, actual error) {
+				g.Expect(actual).To(gomega.HaveOccurred())
+				g.Expect(actual.Error()).To(gomega.ContainSubstring("Minimum timeout 5 is allowed for TerminateNotificationTimeout"))
 			},
 		},
 	}
