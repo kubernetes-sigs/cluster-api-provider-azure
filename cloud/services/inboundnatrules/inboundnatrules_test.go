@@ -172,6 +172,10 @@ func TestReconcileInboundNATRule(t *testing.T) {
 						Name:             "my-machine-nat-rule",
 						LoadBalancerName: "my-public-lb",
 					},
+					{
+						Name:             "my-other-nat-rule",
+						LoadBalancerName: "my-other-public-lb",
+					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -202,7 +206,19 @@ func TestReconcileInboundNATRule(t *testing.T) {
 									},
 								},
 							},
-						}}, nil))
+						}}, nil),
+					mLoadBalancer.Get(context.TODO(), "my-rg", "my-other-public-lb").Return(network.LoadBalancer{
+						Name: to.StringPtr("my-other-public-lb"),
+						ID:   pointer.StringPtr("my-public-lb-id"),
+						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+							FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+								{
+									ID: to.StringPtr("frontend-ip-config-id"),
+								},
+							},
+							InboundNatRules: &[]network.InboundNatRule{},
+						}}, nil),
+					m.CreateOrUpdate(context.TODO(), "my-rg", "my-other-public-lb", "my-other-nat-rule", gomock.AssignableToTypeOf(network.InboundNatRule{})))
 			},
 		},
 	}
@@ -324,4 +340,202 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNatRuleExists(t *testing.T) {
+	testcases := []struct {
+		name           string
+		ruleName       string
+		existingRules  []network.InboundNatRule
+		expectedResult bool
+		expectedPorts  map[int32]struct{}
+		expect         func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+			m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
+	}{
+		{
+			name:     "Rule exists",
+			ruleName: "my-rule",
+			existingRules: []network.InboundNatRule{
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendPort: to.Int32Ptr(2201),
+					},
+					Name: to.StringPtr("some-rule"),
+				},
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendPort: to.Int32Ptr(22),
+					},
+					Name: to.StringPtr("my-rule"),
+				},
+			},
+			expectedResult: true,
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
+			},
+		},
+		{
+			name:     "Rule doesn't exist",
+			ruleName: "my-rule",
+			existingRules: []network.InboundNatRule{
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendPort: to.Int32Ptr(22),
+					},
+					Name: to.StringPtr("other-rule"),
+				},
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendPort: to.Int32Ptr(2205),
+					},
+					Name: to.StringPtr("other-rule-2"),
+				},
+			},
+			expectedResult: false,
+			expectedPorts: map[int32]struct{}{
+				22:   {},
+				2205: {},
+			},
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+			},
+		},
+		{
+			name:           "No rules exist",
+			ruleName:       "my-rule",
+			existingRules:  []network.InboundNatRule{},
+			expectedResult: false,
+			expectedPorts:  map[int32]struct{}{},
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
+			clientMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), loadBalancerMock.EXPECT())
+
+			s := &Service{
+				Scope:               scopeMock,
+				Client:              clientMock,
+				LoadBalancersClient: loadBalancerMock,
+			}
+
+			ports := make(map[int32]struct{})
+			exists := s.natRuleExists(ports)(tc.existingRules, tc.ruleName)
+			g.Expect(exists).To(Equal(tc.expectedResult))
+			if !exists {
+				g.Expect(ports).To(Equal(tc.expectedPorts))
+			}
+		})
+	}
+}
+
+func TestGetAvailablePort(t *testing.T) {
+	testcases := []struct {
+		name               string
+		portsInput         map[int32]struct{}
+		expectedError      string
+		expectedPortResult int32
+		expect             func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+			m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
+	}{
+		{
+			name:               "Empty ports",
+			portsInput:         map[int32]struct{}{},
+			expectedError:      "",
+			expectedPortResult: 22,
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
+			},
+		},
+		{
+			name: "22 taken",
+			portsInput: map[int32]struct{}{
+				22: {},
+			},
+			expectedError:      "",
+			expectedPortResult: 2201,
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
+			},
+		},
+		{
+			name: "Existing ports",
+			portsInput: map[int32]struct{}{
+				22:   {},
+				2201: {},
+				2202: {},
+				2204: {},
+			},
+			expectedError:      "",
+			expectedPortResult: 2203,
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
+			},
+		},
+		{
+			name:               "No ports available",
+			portsInput:         getFullPortsMap(),
+			expectedError:      "No available SSH Frontend ports",
+			expectedPortResult: 0,
+			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
+				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
+			clientMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), loadBalancerMock.EXPECT())
+
+			s := &Service{
+				Scope:               scopeMock,
+				Client:              clientMock,
+				LoadBalancersClient: loadBalancerMock,
+			}
+
+			res, err := s.getAvailablePort(tc.portsInput)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).To(Equal(tc.expectedPortResult))
+			}
+		})
+	}
+}
+
+func getFullPortsMap() map[int32]struct{} {
+	res := map[int32]struct{}{
+		22: {},
+	}
+	for i := 2201; i < 2220; i++ {
+		res[int32(i)] = struct{}{}
+	}
+	return res
 }
