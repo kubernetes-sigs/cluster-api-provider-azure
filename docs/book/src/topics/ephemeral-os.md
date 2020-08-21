@@ -37,7 +37,7 @@ corresponding error on the AzureMachine object.
 
 ## Example
 
-The below example shows how to enable ephemeral OS for a machine template. For control plane nodes, we strongly recommend using [etcd data disks](./data-disks.md)to avoid data loss.
+The below example shows how to enable ephemeral OS for a machine template. For control plane nodes, we strongly recommend using [etcd data disks](data-disks.md)to avoid data loss.
 
 ````yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
