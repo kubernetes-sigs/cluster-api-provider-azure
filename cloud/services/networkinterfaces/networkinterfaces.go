@@ -18,7 +18,6 @@ package networkinterfaces
 
 import (
 	"context"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -30,78 +29,87 @@ import (
 func (s *Service) Reconcile(ctx context.Context) error {
 	for _, nicSpec := range s.Scope.NICSpecs() {
 
-		nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
+		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
+		switch {
+		case err != nil && !azure.ResourceNotFound(err):
+			return errors.Wrapf(err, "failed to fetch network interface %s", nicSpec.Name)
+		case err == nil:
+			// network interface already exists, do nothing
+			continue
+		default:
+			nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
-		nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
+			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
 
-		nicConfig.PrivateIPAllocationMethod = network.Dynamic
-		if nicSpec.StaticIPAddress != "" {
-			nicConfig.PrivateIPAllocationMethod = network.Static
-			nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
-		}
-
-		backendAddressPools := []network.BackendAddressPool{}
-		if nicSpec.PublicLBName != "" {
-			if nicSpec.PublicLBAddressPoolName != "" {
-				backendAddressPools = append(backendAddressPools,
-					network.BackendAddressPool{
-						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
-					})
+			nicConfig.PrivateIPAllocationMethod = network.Dynamic
+			if nicSpec.StaticIPAddress != "" {
+				nicConfig.PrivateIPAllocationMethod = network.Static
+				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
-			if nicSpec.PublicLBNATRuleName != "" {
-				nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
-					{
-						ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
-					},
+
+			backendAddressPools := []network.BackendAddressPool{}
+			if nicSpec.PublicLBName != "" {
+				if nicSpec.PublicLBAddressPoolName != "" {
+					backendAddressPools = append(backendAddressPools,
+						network.BackendAddressPool{
+							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
+						})
+				}
+				if nicSpec.PublicLBNATRuleName != "" {
+					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+						{
+							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
+						},
+					}
 				}
 			}
-		}
-		if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
-			// only control planes have an attached internal LB
-			backendAddressPools = append(backendAddressPools,
-				network.BackendAddressPool{
-					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
-				})
-		}
-		nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
-
-		if nicSpec.PublicIPName != "" {
-			nicConfig.PublicIPAddress = &network.PublicIPAddress{
-				ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
+			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
+				// only control planes have an attached internal LB
+				backendAddressPools = append(backendAddressPools,
+					network.BackendAddressPool{
+						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
+					})
 			}
-		}
+			nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
-		if nicSpec.AcceleratedNetworking == nil {
-			// set accelerated networking to the capability of the VMSize
-			sku, err := s.ResourceSKUCache.Get(ctx, nicSpec.VMSize, resourceskus.VirtualMachines)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get find vm sku %s in compute api", nicSpec.VMSize)
+			if nicSpec.PublicIPName != "" {
+				nicConfig.PublicIPAddress = &network.PublicIPAddress{
+					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
+				}
 			}
 
-			accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
-			nicSpec.AcceleratedNetworking = &accelNet
-		}
+			if nicSpec.AcceleratedNetworking == nil {
+				// set accelerated networking to the capability of the VMSize
+				sku, err := s.ResourceSKUCache.Get(ctx, nicSpec.VMSize, resourceskus.VirtualMachines)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get find vm sku %s in compute api", nicSpec.VMSize)
+				}
 
-		err := s.Client.CreateOrUpdate(ctx,
-			s.Scope.ResourceGroup(),
-			nicSpec.Name,
-			network.Interface{
-				Location: to.StringPtr(s.Scope.Location()),
-				InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-					IPConfigurations: &[]network.InterfaceIPConfiguration{
-						{
-							Name:                                     to.StringPtr("pipConfig"),
-							InterfaceIPConfigurationPropertiesFormat: nicConfig,
+				accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
+				nicSpec.AcceleratedNetworking = &accelNet
+			}
+
+			err = s.Client.CreateOrUpdate(ctx,
+				s.Scope.ResourceGroup(),
+				nicSpec.Name,
+				network.Interface{
+					Location: to.StringPtr(s.Scope.Location()),
+					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+						IPConfigurations: &[]network.InterfaceIPConfiguration{
+							{
+								Name:                                     to.StringPtr("pipConfig"),
+								InterfaceIPConfigurationPropertiesFormat: nicConfig,
+							},
 						},
+						EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
 					},
-					EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
-				},
-			})
+				})
 
-		if err != nil {
-			return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create network interface %s in resource group %s", nicSpec.Name, s.Scope.ResourceGroup())
+			}
+			s.Scope.V(2).Info("successfully created network interface", "network interface", nicSpec.Name)
 		}
-		s.Scope.V(2).Info("successfully created network interface", "network interface", nicSpec.Name)
 	}
 	return nil
 }
