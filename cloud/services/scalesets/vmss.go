@@ -89,6 +89,24 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmssSpec.Sku)
 	}
 
+	// Checking if the requested VM size has at least 2 vCPUS
+	vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate the vCPU cabability")
+	}
+	if !vCPUCapability {
+		return errors.New("vm size should be bigger or equal to at least 2 vCPUs")
+	}
+
+	// Checking if the requested VM size has at least 2 Gi of memory
+	MemoryCapability, err := sku.HasCapabilityWithCapacity(resourceskus.MemoryGB, resourceskus.MinimumMemory)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate the memory cabability")
+	}
+	if !MemoryCapability {
+		return errors.New("vm memory should be bigger or equal to at least 2Gi")
+	}
+
 	if vmssSpec.AcceleratedNetworking == nil {
 		// set accelerated networking to the capability of the VMSize
 		accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)

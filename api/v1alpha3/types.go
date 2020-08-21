@@ -337,7 +337,7 @@ type ManagedDisk struct {
 // DiffDiskSettings describe ephemeral disk settings for the os disk.
 type DiffDiskSettings struct {
 	// Option enables ephemeral OS when set to "Local"
-	// See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks for full details
+	// See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks for full details
 	// +kubebuilder:validation:Enum=Local
 	Option string `json:"option"`
 }

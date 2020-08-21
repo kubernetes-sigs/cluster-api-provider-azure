@@ -317,6 +317,16 @@ func TestService_Reconcile(t *testing.T) {
 								Zones:    &[]string{"1"},
 							},
 						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+						},
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
@@ -450,6 +460,14 @@ func TestService_Reconcile(t *testing.T) {
 							{
 								Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
 								Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
 							},
 						},
 					},
@@ -588,6 +606,16 @@ func TestService_Reconcile(t *testing.T) {
 								Zones:    &[]string{"1"},
 							},
 						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+						},
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
@@ -721,6 +749,150 @@ func TestService_Reconcile(t *testing.T) {
 			},
 			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
 				g.Expect(err).ToNot(gomega.HaveOccurred())
+			},
+		},
+		{
+			Name: "WithValidSpec but vCPU is less than 2",
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
+				return &Spec{
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
+					Sku:                    "skuName",
+					Capacity:               2,
+					SSHKeyData:             "sshKeyData",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "accountType",
+						},
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					Image: &infrav1.Image{
+						ID: to.StringPtr("image"),
+					},
+					CustomData: "customData",
+				}
+			},
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) *gomock.Controller {
+				mockCtrl := gomock.NewController(t)
+				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
+				svc.Client = vmssMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("1"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
+				svc.ResourceSKUCache = resourceSkusCache
+
+				return mockCtrl
+			},
+			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
+				g.Expect(err).To(gomega.MatchError("vm size should be bigger or equal to at least 2 vCPUs"))
+			},
+		},
+		{
+			Name: "WithValidSpec but Memory is less than 2Gi",
+			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
+				return &Spec{
+					Name:                   mpScope.Name(),
+					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
+					Location:               scope.AzureCluster.Spec.Location,
+					ClusterName:            scope.Cluster.Name,
+					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
+					PublicLoadBalancerName: scope.Cluster.Name,
+					MachinePoolName:        mpScope.Name(),
+					Sku:                    "skuName",
+					Capacity:               2,
+					SSHKeyData:             "sshKeyData",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "accountType",
+						},
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					Image: &infrav1.Image{
+						ID: to.StringPtr("image"),
+					},
+					CustomData: "customData",
+				}
+			},
+			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) *gomock.Controller {
+				mockCtrl := gomock.NewController(t)
+				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
+				svc.Client = vmssMock
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("skuName"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"fake-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("fake-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("4"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("1"),
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
+				svc.ResourceSKUCache = resourceSkusCache
+
+				return mockCtrl
+			},
+			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
+				g.Expect(err).To(gomega.MatchError("vm memory should be bigger or equal to at least 2Gi"))
 			},
 		},
 	}
