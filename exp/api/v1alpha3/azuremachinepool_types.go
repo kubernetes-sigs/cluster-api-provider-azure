@@ -51,6 +51,11 @@ type (
 		// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
 		// +optional
 		AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
+
+		// TerminateNotificationTimeout enables or disables VMSS scheduled events termination notification with specified timeout
+		// allowed values are between 5 and 15 (mins)
+		// +optional
+		TerminateNotificationTimeout *int `json:"terminateNotificationTimeout,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
