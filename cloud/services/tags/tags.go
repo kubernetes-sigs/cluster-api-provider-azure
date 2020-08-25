@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,67 +14,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package tags
 
 import (
 	"context"
-
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
-const (
-	// TagsLastAppliedAnnotation is the key for the machine object annotation
-	// which tracks the SecurityGroups that the machine actuator is responsible
-	// for. These are the SecurityGroups that have been handled by the
-	// AdditionalTags in the Machine Provider Config.
-	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-	// for annotation formatting rules.
-	TagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags"
-)
-
-// Ensure that the tags of the machine are correct
-func (r *AzureMachineReconciler) reconcileTags(ctx context.Context, scope *scope.MachineScope, skuCache *resourceskus.Cache) error {
-	annotation, err := r.machineAnnotationJSON(scope.AzureMachine, TagsLastAppliedAnnotation)
-	if err != nil {
-		return err
-	}
-	changed, created, deleted, newAnnotation := TagsChanged(annotation, scope.AdditionalTags())
-	if changed {
-		scope.Info("Updating tags on AzureMachine")
-		svc := virtualmachines.NewService(scope, skuCache)
-		vm, err := svc.Client.Get(ctx, scope.ResourceGroup(), scope.Name())
+// Reconcile ensures tags are correct.
+func (s *Service) Reconcile(ctx context.Context) error {
+	for _, tagsSpec := range s.Scope.TagsSpecs() {
+		annotation, err := s.Scope.AnnotationJSON(tagsSpec.Annotation)
 		if err != nil {
-			return errors.Wrapf(err, "failed to query AzureMachine VM")
-		}
-		tags := vm.Tags
-		for k, v := range created {
-			tags[k] = to.StringPtr(v)
-		}
-
-		for k := range deleted {
-			delete(tags, k)
-		}
-
-		vm.Tags = tags
-		if err := svc.Client.CreateOrUpdate(ctx, scope.ResourceGroup(), scope.Name(), vm); err != nil {
-			return errors.Wrapf(err, "cannot update VM tags")
-		}
-
-		// We also need to update the annotation if anything changed.
-		if err = r.updateMachineAnnotationJSON(scope.AzureMachine, TagsLastAppliedAnnotation, newAnnotation); err != nil {
 			return err
 		}
-	}
+		changed, created, deleted, newAnnotation := tagsChanged(annotation, tagsSpec.Tags)
+		if changed {
+			s.Scope.V(2).Info("Updating tags")
+			result, err := s.Client.GetAtScope(ctx, tagsSpec.Scope)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get existing tags")
+			}
+			tags := make(map[string]*string, 0)
+			if result.Properties != nil && result.Properties.Tags != nil {
+				tags = result.Properties.Tags
+			}
+			for k, v := range created {
+				tags[k] = to.StringPtr(v)
+			}
 
+			for k := range deleted {
+				delete(tags, k)
+			}
+
+			if _, err := s.Client.CreateOrUpdateAtScope(ctx, tagsSpec.Scope, resources.TagsResource{Properties: &resources.Tags{Tags: tags}}); err != nil {
+				return errors.Wrapf(err, "cannot update tags")
+			}
+
+			// We also need to update the annotation if anything changed.
+			if err = s.Scope.UpdateAnnotationJSON(tagsSpec.Annotation, newAnnotation); err != nil {
+				return err
+			}
+			s.Scope.V(2).Info("successfully updated tags")
+		}
+	}
 	return nil
 }
 
-// TagsChanged determines which tags to delete and which to add.
-func TagsChanged(annotation map[string]interface{}, src map[string]string) (bool, map[string]string, map[string]string, map[string]interface{}) {
+// Delete is a no-op as the tags get deleted as part of VM deletion.
+func (s *Service) Delete(ctx context.Context) error {
+	return nil
+}
+
+// tagsChanged determines which tags to delete and which to add.
+func tagsChanged(annotation map[string]interface{}, src map[string]string) (bool, map[string]string, map[string]string, map[string]interface{}) {
 	// Bool tracking if we found any changed state.
 	changed := false
 

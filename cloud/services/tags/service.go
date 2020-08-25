@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,28 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package subnets
+package tags
 
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
-// SubnetScope defines the scope interface for a subnet service.
-type SubnetScope interface {
+// TagScope defines the scope interface for a tags service.
+type TagScope interface {
 	azure.ClusterDescriber
 	logr.Logger
-	SubnetSpecs() []azure.SubnetSpec
+	TagsSpecs() []azure.TagsSpec
+	AnnotationJSON(string) (map[string]interface{}, error)
+	UpdateAnnotationJSON(string, map[string]interface{}) error
 }
 
 // Service provides operations on azure resources
 type Service struct {
-	Scope SubnetScope
+	Scope TagScope
 	Client
 }
 
 // NewService creates a new service.
-func NewService(scope SubnetScope) *Service {
+func NewService(scope TagScope) *Service {
 	return &Service{
 		Scope:  scope,
 		Client: NewClient(scope),
