@@ -99,6 +99,13 @@ type RouteTable struct {
 	Name string `json:"name,omitempty"`
 }
 
+// NatGateway defines an Azure Nat Gateway.
+// NAT gateway resources are part of Vnet NAT and provide outbound Internet connectivity for subnets of a virtual network.
+type NatGateway struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 // SecurityGroupProtocol defines the protocol type for a security group rule.
 type SecurityGroupProtocol string
 
@@ -381,6 +388,10 @@ type SubnetSpec struct {
 	// RouteTable defines the route table that should be attached to this subnet.
 	// +optional
 	RouteTable RouteTable `json:"routeTable,omitempty"`
+
+	// NatGateway associated with this subnet.
+	// +optional
+	NatGateway NatGateway `json:"natGateway,omitempty"`
 }
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.

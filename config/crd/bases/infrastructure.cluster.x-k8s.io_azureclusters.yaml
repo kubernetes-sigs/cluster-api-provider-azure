@@ -487,6 +487,14 @@ spec:
                         name:
                           description: Name defines a name for the subnet resource.
                           type: string
+                        natGateway:
+                          description: NatGateway associated with this subnet.
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          type: object
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
                           type: string
