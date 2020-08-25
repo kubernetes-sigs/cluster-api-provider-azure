@@ -370,6 +370,20 @@ func (mr *MockInboundNatScopeMockRecorder) RouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockInboundNatScope)(nil).RouteTable))
 }
 
+// NatGateway mocks base method.
+func (m *MockInboundNatScope) NatGateway() *v1alpha3.NatGateway {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NatGateway")
+	ret0, _ := ret[0].(*v1alpha3.NatGateway)
+	return ret0
+}
+
+// NatGateway indicates an expected call of NatGateway.
+func (mr *MockInboundNatScopeMockRecorder) NatGateway() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NatGateway", reflect.TypeOf((*MockInboundNatScope)(nil).NatGateway))
+}
+
 // InboundNatSpecs mocks base method.
 func (m *MockInboundNatScope) InboundNatSpecs() []azure.InboundNatSpec {
 	m.ctrl.T.Helper()

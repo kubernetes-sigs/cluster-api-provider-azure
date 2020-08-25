@@ -370,6 +370,20 @@ func (mr *MockDiskScopeMockRecorder) RouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockDiskScope)(nil).RouteTable))
 }
 
+// NatGateway mocks base method.
+func (m *MockDiskScope) NatGateway() *v1alpha3.NatGateway {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NatGateway")
+	ret0, _ := ret[0].(*v1alpha3.NatGateway)
+	return ret0
+}
+
+// NatGateway indicates an expected call of NatGateway.
+func (mr *MockDiskScopeMockRecorder) NatGateway() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NatGateway", reflect.TypeOf((*MockDiskScope)(nil).NatGateway))
+}
+
 // DiskSpecs mocks base method.
 func (m *MockDiskScope) DiskSpecs() []azure.DiskSpec {
 	m.ctrl.T.Helper()

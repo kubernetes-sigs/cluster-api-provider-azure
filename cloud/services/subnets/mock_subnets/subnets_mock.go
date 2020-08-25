@@ -276,6 +276,20 @@ func (mr *MockSubnetScopeMockRecorder) RouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockSubnetScope)(nil).RouteTable))
 }
 
+// NatGateway mocks base method.
+func (m *MockSubnetScope) NatGateway() *v1alpha3.NatGateway {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NatGateway")
+	ret0, _ := ret[0].(*v1alpha3.NatGateway)
+	return ret0
+}
+
+// NatGateway indicates an expected call of NatGateway.
+func (mr *MockSubnetScopeMockRecorder) NatGateway() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NatGateway", reflect.TypeOf((*MockSubnetScope)(nil).NatGateway))
+}
+
 // Info mocks base method.
 func (m *MockSubnetScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()

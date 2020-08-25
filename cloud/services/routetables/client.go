@@ -38,7 +38,7 @@ type AzureClient struct {
 
 var _ Client = &AzureClient{}
 
-// NewClient creates a new VM client from subscription ID.
+// NewClient creates a new Route Tables client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {
 	c := newRouteTablesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}

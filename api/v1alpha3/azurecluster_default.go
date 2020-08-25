@@ -95,6 +95,9 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if nodeSubnet.RouteTable.Name == "" {
 		nodeSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
 	}
+	if nodeSubnet.NatGateway.Name == "" {
+		nodeSubnet.NatGateway.Name = generateNatGatewayName(c.ObjectMeta.Name)
+	}
 }
 
 // generateVnetName generates a virtual network name, based on the cluster name.
@@ -125,4 +128,9 @@ func generateNodeSecurityGroupName(clusterName string) string {
 // generateRouteTableName generates a route table name, based on the cluster name.
 func generateRouteTableName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
+}
+
+// generateNatGatewayName generates a nat gateway name, based on the cluster name.
+func generateNatGatewayName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "node-natgateway")
 }

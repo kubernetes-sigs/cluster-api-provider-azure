@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
@@ -75,4 +76,5 @@ type ClusterDescriber interface {
 	NodeSubnet() *infrav1.SubnetSpec
 	ControlPlaneSubnet() *infrav1.SubnetSpec
 	RouteTable() *infrav1.RouteTable
+	NatGateway() *infrav1.NatGateway
 }

@@ -27,11 +27,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -156,6 +157,13 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	}}
 }
 
+// NatGatewaySpecs returns the node nat gateway
+func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
+	return []azure.NatGatewaySpec{{
+		Name: s.NatGateway().Name,
+	}}
+}
+
 // NSGSpecs returns the security group specs.
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 	return []azure.NSGSpec{
@@ -189,6 +197,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
 			RouteTableName:    s.NodeSubnet().RouteTable.Name,
 			Role:              s.NodeSubnet().Role,
+			NatGateway:        s.NodeSubnet().NatGateway.Name,
 		},
 	}
 }
@@ -232,6 +241,11 @@ func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
 // RouteTable returns the cluster node routetable.
 func (s *ClusterScope) RouteTable() *infrav1.RouteTable {
 	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
+}
+
+// NatGateway returns the cluster node nat gateway.
+func (s *ClusterScope) NatGateway() *infrav1.NatGateway {
+	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().NatGateway
 }
 
 // ResourceGroup returns the cluster resource group.
