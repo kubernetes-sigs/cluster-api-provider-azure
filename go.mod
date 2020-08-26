@@ -14,6 +14,7 @@ require (
 	github.com/google/go-cmp v0.5.1
 	github.com/google/gofuzz v1.1.0
 	github.com/google/uuid v1.1.1
+	github.com/hashicorp/go-retryablehttp v0.6.6
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
