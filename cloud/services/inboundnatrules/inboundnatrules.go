@@ -30,9 +30,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for _, inboundNatSpec := range s.Scope.InboundNatSpecs() {
 		s.Scope.V(2).Info("creating inbound NAT rule", "NAT rule", inboundNatSpec.Name)
 
-		var sshFrontendPort int32 = 22
-		ports := make(map[int32]struct{})
-
 		lb, err := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), inboundNatSpec.LoadBalancerName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get Load Balancer %s", inboundNatSpec.LoadBalancerName)
@@ -41,28 +38,18 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if lb.LoadBalancerPropertiesFormat == nil || lb.FrontendIPConfigurations == nil || lb.InboundNatRules == nil {
 			return errors.Errorf("Could not get existing inbound NAT rules from load balancer %s properties", to.String(lb.Name))
 		}
-		for _, v := range *lb.InboundNatRules {
-			if to.String(v.Name) == inboundNatSpec.Name {
-				// Inbound NAT Rule already exists, nothing to do here.
-				s.Scope.V(2).Info("NAT rule already exists", "NAT rule", inboundNatSpec.Name)
-				return nil
-			}
-			ports[*v.InboundNatRulePropertiesFormat.FrontendPort] = struct{}{}
+
+		ports := make(map[int32]struct{})
+		if s.natRuleExists(ports)(*lb.InboundNatRules, inboundNatSpec.Name) {
+			// Inbound NAT Rule already exists, nothing to do here.
+			continue
 		}
-		if _, ok := ports[22]; ok {
-			var i int32
-			found := false
-			for i = 2201; i < 2220; i++ {
-				if _, ok := ports[i]; !ok {
-					sshFrontendPort = i
-					found = true
-					break
-				}
-			}
-			if !found {
-				return errors.Errorf("Failed to find available SSH Frontend port for NAT Rule %s in load balancer %s", inboundNatSpec.Name, to.String(lb.Name))
-			}
+
+		sshFrontendPort, err := s.getAvailablePort(ports)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find available SSH Frontend port for NAT Rule %s in load balancer %s", inboundNatSpec.Name, to.String(lb.Name))
 		}
+
 		rule := network.InboundNatRule{
 			Name: to.StringPtr(inboundNatSpec.Name),
 			InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
@@ -100,4 +87,32 @@ func (s *Service) Delete(ctx context.Context) error {
 		s.Scope.V(2).Info("successfully deleted inbound NAT rule", "NAT rule", inboundNatSpec.Name)
 	}
 	return nil
+}
+
+func (s *Service) natRuleExists(ports map[int32]struct{}) func([]network.InboundNatRule, string) bool {
+	return func(rules []network.InboundNatRule, name string) bool {
+		for _, v := range rules {
+			if to.String(v.Name) == name {
+				s.Scope.V(2).Info("NAT rule already exists", "NAT rule", name)
+				return true
+			}
+			ports[*v.InboundNatRulePropertiesFormat.FrontendPort] = struct{}{}
+		}
+		return false
+	}
+}
+
+func (s *Service) getAvailablePort(ports map[int32]struct{}) (int32, error) {
+	var i int32 = 22
+	if _, ok := ports[22]; ok {
+		for i = 2201; i < 2220; i++ {
+			if _, ok := ports[i]; !ok {
+				s.Scope.V(2).Info("Found available port", "port", i)
+				return i, nil
+			}
+		}
+		return i, errors.Errorf("No available SSH Frontend ports")
+	}
+	s.Scope.V(2).Info("Found available port", "port", i)
+	return i, nil
 }

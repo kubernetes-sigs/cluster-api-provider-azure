@@ -110,7 +110,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), bastionSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
-			return nil
+			continue
 		}
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete Bastion Host %s in resource group %s", bastionSpec.Name, s.Scope.ResourceGroup())

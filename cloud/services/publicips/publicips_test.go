@@ -150,10 +150,14 @@ func TestDeletePublicIP(t *testing.T) {
 					{
 						Name: "my-publicip",
 					},
+					{
+						Name: "my-publicip-2",
+					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(context.TODO(), "my-rg", "my-publicip").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Delete(context.TODO(), "my-rg", "my-publicip-2")
 			},
 		},
 		{
