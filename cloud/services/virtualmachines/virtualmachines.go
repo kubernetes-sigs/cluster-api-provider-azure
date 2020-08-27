@@ -137,6 +137,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					Priority:       priority,
 					EvictionPolicy: evictionPolicy,
 					BillingProfile: billingProfile,
+					DiagnosticsProfile: &compute.DiagnosticsProfile{
+						BootDiagnostics: &compute.BootDiagnostics{
+							Enabled: to.BoolPtr(true),
+						},
+					},
 				},
 			}
 

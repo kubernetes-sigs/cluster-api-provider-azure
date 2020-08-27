@@ -141,6 +141,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					},
 				},
 				StorageProfile: storageProfile,
+				DiagnosticsProfile: &compute.DiagnosticsProfile{
+					BootDiagnostics: &compute.BootDiagnostics{
+						Enabled: to.BoolPtr(true),
+					},
+				},
 				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 						{
