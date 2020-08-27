@@ -125,7 +125,7 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			Context("Creating a accessible load balancer", func() {
+			Context("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -143,6 +143,14 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			Context("Validating accelerated networking", func() {
+				AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
+					return AzureAcceleratedNetworkingSpecInput{
+						ClusterName: clusterName,
 					}
 				})
 			})
