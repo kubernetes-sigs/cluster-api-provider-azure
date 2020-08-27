@@ -123,3 +123,20 @@ type BastionSpec struct {
 	PublicIPName string
 	VNetName     string
 }
+
+// ScaleSetSpec defines the specification for a Scale Set.
+type ScaleSetSpec struct {
+	Name                         string
+	Size                         string
+	Capacity                     int64
+	SSHKeyData                   string
+	OSDisk                       infrav1.OSDisk
+	DataDisks                    []infrav1.DataDisk
+	SubnetName                   string
+	VNetName                     string
+	VNetResourceGroup            string
+	PublicLBName                 string
+	PublicLBAddressPoolName      string
+	AcceleratedNetworking        *bool
+	TerminateNotificationTimeout *int
+}

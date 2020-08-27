@@ -15,6 +15,8 @@ limitations under the License.
 */
 
 // Run go generate to regenerate this mock.
-//go:generate ../../../../hack/tools/bin/mockgen -destination scalesets_mock.go -package mock_scalesets -source ../client.go Client
+//go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_scalesets -source ../client.go Client
+//go:generate ../../../../hack/tools/bin/mockgen -destination scalesets_mock.go -package mock_scalesets -source ../service.go ScaleSetScope
+//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt scalesets_mock.go > _scalesets_mock.go && mv _scalesets_mock.go scalesets_mock.go"
 package mock_scalesets //nolint

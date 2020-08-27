@@ -45,7 +45,7 @@ type (
 		Logger           logr.Logger
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		azure.ClusterDescriber
+		ClusterDescriber azure.ClusterDescriber
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -90,23 +90,64 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 	}, nil
 }
 
+// ScaleSetSpec returns the scale set spec.
+func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
+	return azure.ScaleSetSpec{
+		Name:                    m.Name(),
+		Size:                    m.AzureMachinePool.Spec.Template.VMSize,
+		Capacity:                int64(to.Int32(m.MachinePool.Spec.Replicas)),
+		SSHKeyData:              m.AzureMachinePool.Spec.Template.SSHPublicKey,
+		OSDisk:                  m.AzureMachinePool.Spec.Template.OSDisk,
+		DataDisks:               m.AzureMachinePool.Spec.Template.DataDisks,
+		SubnetName:              m.NodeSubnet().Name,
+		VNetName:                m.Vnet().Name,
+		VNetResourceGroup:       m.Vnet().ResourceGroup,
+		PublicLBName:            m.ClusterName(),
+		PublicLBAddressPoolName: azure.GenerateOutboundBackendddressPoolName(m.ClusterName()),
+		AcceleratedNetworking:   m.AzureMachinePool.Spec.Template.AcceleratedNetworking,
+	}
+}
+
 // Name returns the Azure Machine Pool Name.
 func (m *MachinePoolScope) Name() string {
 	return m.AzureMachinePool.Name
 }
 
-// GetID returns the AzureMachinePool ID by parsing Spec.ProviderID.
-func (m *MachinePoolScope) GetID() *string {
+// ProviderID returns the AzureMachinePool ID by parsing Spec.ProviderID.
+func (m *MachinePoolScope) ProviderID() string {
 	parsed, err := noderefutil.NewProviderID(m.AzureMachinePool.Spec.ProviderID)
 	if err != nil {
-		return nil
+		return ""
 	}
-	return pointer.StringPtr(parsed.ID())
+	return parsed.ID()
 }
 
-// SetReady sets the AzureMachinePool Ready Status
+// SetProviderID sets the AzureMachine providerID in spec.
+func (m *MachinePoolScope) SetProviderID(v string) {
+	m.AzureMachinePool.Spec.ProviderID = v
+}
+
+// ProvisioningState returns the AzureMachinePool provisioning state.
+func (m *MachinePoolScope) ProvisioningState() infrav1.VMState {
+	if m.AzureMachinePool.Status.ProvisioningState != nil {
+		return *m.AzureMachinePool.Status.ProvisioningState
+	}
+	return ""
+}
+
+// SetProvisioningState sets the AzureMachinePool provisioning state.
+func (m *MachinePoolScope) SetProvisioningState(v infrav1.VMState) {
+	m.AzureMachinePool.Status.ProvisioningState = &v
+}
+
+// SetReady sets the AzureMachinePool Ready Status to true.
 func (m *MachinePoolScope) SetReady() {
 	m.AzureMachinePool.Status.Ready = true
+}
+
+// SetNotReady sets the AzureMachinePool Ready Status to false.
+func (m *MachinePoolScope) SetNotReady() {
+	m.AzureMachinePool.Status.Ready = false
 }
 
 // SetFailureMessage sets the AzureMachinePool status failure message.
@@ -123,8 +164,13 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 // the value from AzureMachinePool takes precedence.
 func (m *MachinePoolScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
+	// Start with the cluster-wide tags...
 	tags.Merge(m.ClusterDescriber.AdditionalTags())
+	// ... and merge in the Machine Pool's
 	tags.Merge(m.AzureMachinePool.Spec.AdditionalTags)
+	// Set the cloud provider tag
+	tags[infrav1.ClusterAzureCloudProviderTagKey(m.ClusterName())] = string(infrav1.ResourceLifecycleOwned)
+
 	return tags
 }
 

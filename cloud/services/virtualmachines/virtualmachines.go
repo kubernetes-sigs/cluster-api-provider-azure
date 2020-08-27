@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
-// Get provides information about a virtual machine.
+// getExisting provides information about a virtual machine.
 func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
 	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
 	if err != nil {
@@ -87,8 +87,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 
-			additionalTags := s.Scope.AdditionalTags()
-
 			priority, evictionPolicy, billingProfile, err := getSpotVMOptions(vmSpec.SpotVMOptions)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get Spot VM options")
@@ -110,7 +108,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					Lifecycle:   infrav1.ResourceLifecycleOwned,
 					Name:        to.StringPtr(vmSpec.Name),
 					Role:        to.StringPtr(vmSpec.Role),
-					Additional:  additionalTags,
+					Additional:  s.Scope.AdditionalTags(),
 				})),
 				VirtualMachineProperties: &compute.VirtualMachineProperties{
 					HardwareProfile: &compute.HardwareProfile{

@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
@@ -175,7 +174,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 // Delete deletes the public load balancer with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
 	for _, lbSpec := range s.Scope.LBSpecs() {
-		klog.V(2).Infof("deleting load balancer %s", lbSpec.Name)
+		s.Scope.V(2).Info("deleting load balancer", "load balancer", lbSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
@@ -185,7 +184,7 @@ func (s *Service) Delete(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to delete load balancer %s in resource group %s", lbSpec.Name, s.Scope.ResourceGroup())
 		}
 
-		klog.V(2).Infof("deleted public load balancer %s", lbSpec.Name)
+		s.Scope.V(2).Info("deleted public load balancer", "load balancer", lbSpec.Name)
 	}
 	return nil
 }

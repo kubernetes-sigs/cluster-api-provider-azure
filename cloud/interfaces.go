@@ -38,13 +38,6 @@ type OldService interface {
 	Delete(ctx context.Context, spec interface{}) error
 }
 
-// GetterService is a temporary interface used by components which still require Get methods.
-// Once all components move to storing provider information within the relevant
-// Cluster/Machine specs, this interface should be removed.
-type GetterService interface {
-	Get(ctx context.Context, spec interface{}) (interface{}, error)
-}
-
 // CredentialGetter is a Service which knows how to retrieve credentials for an Azure
 // resource in a resource group.
 type CredentialGetter interface {

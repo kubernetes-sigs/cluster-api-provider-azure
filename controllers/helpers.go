@@ -65,7 +65,7 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 
 		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
-		// Don't handle deleted AWSClusters
+		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 			log.V(4).Info("AzureCluster has a deletion timestamp, skipping mapping.")
 			return nil
