@@ -129,7 +129,7 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       userAssignedIdentities:
       - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
@@ -173,7 +173,7 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       userAssignedIdentities:
       - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
