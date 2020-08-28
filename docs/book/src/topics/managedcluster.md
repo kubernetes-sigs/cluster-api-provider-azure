@@ -92,7 +92,7 @@ spec:
     name: agentpool0
   location: southcentralus
   resourceGroup: foo-bar
-  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
   subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
   version: v1.17.4
   networkPolicy: azure # or calico

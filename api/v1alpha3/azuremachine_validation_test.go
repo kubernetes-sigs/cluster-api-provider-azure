@@ -41,12 +41,17 @@ func TestAzureMachine_ValidateSSHKey(t *testing.T) {
 	}{
 		{
 			name:    "valid ssh key",
-			sshKey:  generateSSHPublicKey(),
+			sshKey:  generateSSHPublicKey(true),
 			wantErr: false,
 		},
 		{
 			name:    "invalid ssh key",
 			sshKey:  "invalid ssh key",
+			wantErr: true,
+		},
+		{
+			name:    "ssh key not base64 encoded",
+			sshKey:  generateSSHPublicKey(false),
 			wantErr: true,
 		},
 	}
@@ -63,10 +68,13 @@ func TestAzureMachine_ValidateSSHKey(t *testing.T) {
 	}
 }
 
-func generateSSHPublicKey() string {
+func generateSSHPublicKey(b64Enconded bool) string {
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicRsaKey, _ := ssh.NewPublicKey(&privateKey.PublicKey)
-	return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
+	if b64Enconded {
+		return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
+	}
+	return string(ssh.MarshalAuthorizedKey(publicRsaKey))
 }
 
 type osDiskTestInput struct {

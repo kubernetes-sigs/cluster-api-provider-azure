@@ -204,7 +204,7 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey())
+			machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey(true))
 			machine.Spec.DataDisks = tc.disks
 			machine.SetDataDisksDefaults()
 			if !reflect.DeepEqual(machine.Spec.DataDisks, tc.output) {
@@ -223,7 +223,7 @@ func createMachineWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMach
 }
 
 func createMachineWithUserAssignedIdentities(t *testing.T, identitiesList []UserAssignedIdentity) *AzureMachine {
-	machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey())
+	machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey(true))
 	machine.Spec.Identity = VMIdentityUserAssigned
 	machine.Spec.UserAssignedIdentities = identitiesList
 	return machine

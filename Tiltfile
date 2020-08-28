@@ -215,7 +215,7 @@ def flavors():
         if key[-4:] == "_B64":
             substitutions[key[:-4]] = base64_decode(substitutions[key])
 
-    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
+    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY_B64"
     ssh_pub_key_path = "~/.ssh/id_rsa.pub"
     if not substitutions.get(ssh_pub_key):
         print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))
