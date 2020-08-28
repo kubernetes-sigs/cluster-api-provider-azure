@@ -338,6 +338,8 @@ spec:
                             type: object
                         type: object
                       location:
+                        description: 'DEPRECATED: to support old clients, will be
+                          removed in v1alpha4'
                         type: string
                       osDisk:
                         description: OSDisk specifies the parameters for the operating
