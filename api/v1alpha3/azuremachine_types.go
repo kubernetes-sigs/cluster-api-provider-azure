@@ -72,6 +72,7 @@ type AzureMachineSpec struct {
 	// DataDisk specifies the parameters that are used to add one or more data disks to the machine
 	DataDisks []DataDisk `json:"dataDisks,omitempty"`
 
+	// DEPRECATED: to support old clients, will be removed in v1alpha4
 	Location string `json:"location"`
 
 	SSHPublicKey string `json:"sshPublicKey"`
