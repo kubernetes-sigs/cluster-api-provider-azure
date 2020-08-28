@@ -56,6 +56,6 @@ spec:
         managedDisk:
           storageAccountType: Standard_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ````

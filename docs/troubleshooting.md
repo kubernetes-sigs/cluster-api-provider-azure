@@ -23,7 +23,7 @@ E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "
 ### Remoting to workload clusters
 After the workload cluster is finished deploying you will have a kubeconfig in `./kubeconfig`.
 
-Using the ssh information provided during cluster creation (environment variable `AZURE_SSH_PUBLIC_KEY`), you can debug most issues by SSHing into the VMs that have been created:
+Using the ssh information provided during cluster creation (environment variable `AZURE_SSH_PUBLIC_KEY_B64`), you can debug most issues by SSHing into the VMs that have been created:
 
 ```
 # connect to first control node - capi is default linux user created by deployment
@@ -40,8 +40,8 @@ capz-cluster-md-0-s52wb            true    Succeeded
 capz-cluster-md-0-w8xxw            true    Succeeded
 
 # pick node name from output above:
-node=$(kubectl get azuremachine capz-cluster-md-0-s52wb -o jsonpath='{.status.addresses[0].address}') 
-ssh -J capi@${apiserver} capi@${node} 
+node=$(kubectl get azuremachine capz-cluster-md-0-s52wb -o jsonpath='{.status.addresses[0].address}')
+ssh -J capi@${apiserver} capi@${node}
 ```
 
 > There are some [provided scripts](/hack/debugging/Readme.md) that can help automate a few common tasks.

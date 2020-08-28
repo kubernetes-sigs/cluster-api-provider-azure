@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	validSSHPublicKey = generateSSHPublicKey()
+	validSSHPublicKey = generateSSHPublicKey(true)
 	validOSDisk       = generateValidOSDisk()
 )
 

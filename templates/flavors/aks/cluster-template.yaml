@@ -33,7 +33,7 @@ spec:
   location: "${AZURE_LOCATION}"
   defaultPoolRef:
     name: "agentpool0"
-  sshPublicKey: "${AZURE_SSH_PUBLIC_KEY}"
+  sshPublicKey: "${AZURE_SSH_PUBLIC_KEY_B64}"
   version: "${KUBERNETES_VERSION}"
 ---
 # Due to the nature of managed Kubernetes and the control plane implementation,

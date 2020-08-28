@@ -57,7 +57,7 @@ spec:
     managedDisk:
       storageAccountType: Premium_LRS
     osType: Linux
-  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
   vmSize: Standard_D2s_v3
 ---      
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -263,7 +263,7 @@ kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
   labels:
-    kcp: ''  
+    kcp: ''
 spec:
   template:
     spec:
@@ -277,5 +277,5 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
       vmSize: Standard_D2s_v3

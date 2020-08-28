@@ -275,12 +275,12 @@ export WORKER_MACHINE_COUNT=2
 export KUBERNETES_VERSION="v1.18.8"
 
 # Generate SSH key.
-# If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY to your existing file.
+# If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY_B64 to your existing file.
 SSH_KEY_FILE=.sshkey
 rm -f "${SSH_KEY_FILE}" 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
-export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 ```
 
 ⚠️ Please note the generated templates include default values and therefore require the use of `clusterctl` to create the cluster

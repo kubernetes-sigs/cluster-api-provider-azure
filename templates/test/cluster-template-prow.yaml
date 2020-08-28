@@ -131,7 +131,7 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -175,7 +175,7 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3

@@ -125,4 +125,4 @@ spec:
         - nameSuffix: etcddisk
           diskSizeGB: 256
           lun: 0
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
