@@ -73,6 +73,7 @@ func init() {
 var (
 	metricsAddr                 string
 	enableLeaderElection        bool
+	leaderElectionNamespace     string
 	watchNamespace              string
 	profilerAddress             string
 	azureClusterConcurrency     int
@@ -97,6 +98,13 @@ func InitFlags(fs *pflag.FlagSet) {
 		"enable-leader-election",
 		false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.",
+	)
+
+	flag.StringVar(
+		&leaderElectionNamespace,
+		"leader-election-namespace",
+		"",
+		"Namespace that the controller performs leader election in. If unspecified, the controller will discover which namespace it is running in.",
 	)
 
 	fs.StringVar(
@@ -182,15 +190,16 @@ func main() {
 	})
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "controller-leader-election-capz",
-		SyncPeriod:             &syncPeriod,
-		Namespace:              watchNamespace,
-		HealthProbeBindAddress: healthAddr,
-		Port:                   webhookPort,
-		EventBroadcaster:       broadcaster,
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        "controller-leader-election-capz",
+		LeaderElectionNamespace: leaderElectionNamespace,
+		SyncPeriod:              &syncPeriod,
+		Namespace:               watchNamespace,
+		HealthProbeBindAddress:  healthAddr,
+		Port:                    webhookPort,
+		EventBroadcaster:        broadcaster,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
