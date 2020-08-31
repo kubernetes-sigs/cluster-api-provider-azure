@@ -30,12 +30,12 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp := &AzureManagedControlPlane{}
 	amcp.Default()
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal("azure"))
-	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("standard"))
+	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal("Standard"))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal("calico"))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
-	lbSKU := "basic"
+	lbSKU := "Basic"
 	netPol := "azure"
 	amcp.Spec.NetworkPlugin = &netPlug
 	amcp.Spec.LoadBalancerSKU = &lbSKU

@@ -82,8 +82,8 @@ spec:
                 description: LoadBalancerSKU is the SKU of the loadBalancer to be
                   provisioned.
                 enum:
-                - basic
-                - standard
+                - Basic
+                - Standard
                 type: string
               location:
                 description: 'Location is a string matching one of the canonical Azure

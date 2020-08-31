@@ -157,6 +157,6 @@ Current limitations
     https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/612
 - Only supports system managed identities.
   - We would like to support user managed identities where appropriate.
-- Only supports standard load balancer (SLB).
-  - We will not support basic load balancer in CAPZ. SLB is generally
+- Only supports Standard load balancer (SLB).
+  - We will not support Basic load balancer in CAPZ. SLB is generally
     the path forward in Azure.
