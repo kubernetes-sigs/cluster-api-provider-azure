@@ -105,17 +105,17 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	Context("Should successfully apply resources in ClusterResourceSet object to all matching clusters", func() {
-		capi_e2e.ExperimentalFeaturesSpec(context.TODO(), func() capi_e2e.ExperimentalFeaturesSpecInput {
-			return capi_e2e.ExperimentalFeaturesSpecInput{
-				E2EConfig:             e2eConfig,
-				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				ArtifactFolder:        artifactFolder,
-				SkipCleanup:           skipCleanup,
-			}
-		})
-	})
+	// Context("Should successfully apply resources in ClusterResourceSet object to all matching clusters", func() {
+	// 	capi_e2e.ExperimentalFeaturesSpec(context.TODO(), func() capi_e2e.ExperimentalFeaturesSpecInput {
+	// 		return capi_e2e.ExperimentalFeaturesSpecInput{
+	// 			E2EConfig:             e2eConfig,
+	// 			ClusterctlConfigPath:  clusterctlConfigPath,
+	// 			BootstrapClusterProxy: bootstrapClusterProxy,
+	// 			ArtifactFolder:        artifactFolder,
+	// 			SkipCleanup:           skipCleanup,
+	// 		}
+	// 	})
+	// })
 
 	Context("Should adopt up-to-date control plane Machines without modification", func() {
 		capi_e2e.KCPAdoptionSpec(context.TODO(), func() capi_e2e.KCPAdoptionSpecInput {
