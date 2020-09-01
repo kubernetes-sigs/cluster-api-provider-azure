@@ -225,7 +225,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -254,7 +254,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -280,7 +280,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -376,7 +376,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -404,7 +404,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						APIServerPort:    6443,
@@ -563,23 +563,23 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 	g := NewWithT(t)
 
 	testcases := []struct {
-		name       string
-		subnetCidr string
-		expectedIP string
-		expect     func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder)
+		name        string
+		subnetCidrs []string
+		expectedIP  string
+		expect      func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder)
 	}{
 		{
-			name:       "internal load balancer with a valid subnet cidr",
-			subnetCidr: "10.0.8.0/16",
-			expectedIP: "10.0.8.0",
+			name:        "internal load balancer with a valid subnet cidr",
+			subnetCidrs: []string{"10.0.8.0/16"},
+			expectedIP:  "10.0.8.0",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 			},
 		},
 		{
-			name:       "internal load balancer subnet cidr not 8 characters in length",
-			subnetCidr: "10.64.8.0",
-			expectedIP: "10.64.8.0",
+			name:        "internal load balancer subnet cidr not 8 characters in length",
+			subnetCidrs: []string{"10.64.8.0"},
+			expectedIP:  "10.64.8.0",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.64.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 			},
@@ -598,7 +598,7 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 				VirtualNetworksClient: vnetMock,
 			}
 
-			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", tc.subnetCidr, "", false)
+			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", "", tc.subnetCidrs)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(resultIP).To(Equal(tc.expectedIP))
 		})

@@ -61,12 +61,8 @@ func (c *AzureCluster) setVnetDefaults() {
 	if c.Spec.NetworkSpec.Vnet.Name == "" {
 		c.Spec.NetworkSpec.Vnet.Name = generateVnetName(c.ObjectMeta.Name)
 	}
-	if c.Spec.NetworkSpec.Vnet.CidrBlock == "" {
-		c.Spec.NetworkSpec.Vnet.CidrBlock = DefaultVnetCIDR
-	}
-
-	if c.Spec.NetworkSpec.Vnet.IPv6CidrBlock == "" && c.Spec.NetworkSpec.Vnet.IPv6Enabled {
-		c.Spec.NetworkSpec.Vnet.IPv6CidrBlock = DefaultVnetIPv6CIDR
+	if len(c.Spec.NetworkSpec.Vnet.CIDRBlocks) == 0 {
+		c.Spec.NetworkSpec.Vnet.CIDRBlocks = []string{DefaultVnetCIDR}
 	}
 }
 
@@ -86,8 +82,8 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.Name == "" {
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
 	}
-	if cpSubnet.CidrBlock == "" {
-		cpSubnet.CidrBlock = DefaultControlPlaneSubnetCIDR
+	if len(cpSubnet.CIDRBlocks) == 0 {
+		cpSubnet.CIDRBlocks = []string{DefaultControlPlaneSubnetCIDR}
 	}
 	if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
@@ -95,24 +91,18 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.RouteTable.Name == "" {
 		cpSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
 	}
-	if cpSubnet.IPv6CidrBlock == "" && c.Spec.NetworkSpec.Vnet.IPv6Enabled {
-		cpSubnet.IPv6CidrBlock = DefaultControlPlaneSubnetIPv6CIDR
-	}
 
 	if nodeSubnet.Name == "" {
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
 	}
-	if nodeSubnet.CidrBlock == "" {
-		nodeSubnet.CidrBlock = DefaultNodeSubnetCIDR
+	if len(nodeSubnet.CIDRBlocks) == 0 {
+		nodeSubnet.CIDRBlocks = []string{DefaultNodeSubnetCIDR}
 	}
 	if nodeSubnet.SecurityGroup.Name == "" {
 		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
 	}
 	if nodeSubnet.RouteTable.Name == "" {
 		nodeSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
-	}
-	if nodeSubnet.IPv6CidrBlock == "" && c.Spec.NetworkSpec.Vnet.IPv6Enabled {
-		nodeSubnet.IPv6CidrBlock = DefaultNodeSubnetIPv6CIDR
 	}
 }
 

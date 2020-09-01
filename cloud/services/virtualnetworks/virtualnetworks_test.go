@@ -51,7 +51,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "vnet-exists",
-						CIDR:          "10.0.0.0/8",
+						CIDRs:         []string{"10.0.0.0/8"},
 					},
 				})
 				m.Get(context.TODO(), "my-rg", "vnet-exists").
@@ -82,8 +82,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "ipv6-vnet-exists",
-						CIDR:          "10.0.0.0/8",
-						IPv6CIDR:      "2001:1234:5678:9a00::/56",
+						CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
 					},
 				})
 				m.Get(context.TODO(), "my-rg", "ipv6-vnet-exists").
@@ -120,7 +119,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "vnet-new",
-						CIDR:          "10.0.0.0/8",
+						CIDRs:         []string{"10.0.0.0/8"},
 					},
 				})
 				m.Get(context.TODO(), "my-rg", "vnet-new").
@@ -143,8 +142,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "vnet-ipv6-new",
-						CIDR:          "10.0.0.0/8",
-						IPv6CIDR:      "2001:1234:5678:9a00::/56",
+						CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
 					},
 				})
 				m.Get(context.TODO(), "my-rg", "vnet-ipv6-new").
@@ -180,7 +178,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "custom-vnet-rg",
 						Name:          "custom-vnet",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Get(context.TODO(), "custom-vnet-rg", "custom-vnet").
@@ -212,7 +210,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "custom-vnet-rg",
 						Name:          "custom-vnet",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Get(context.TODO(), "custom-vnet-rg", "custom-vnet").
@@ -231,7 +229,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "custom-vnet-rg",
 						Name:          "custom-vnet",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Get(context.TODO(), "custom-vnet-rg", "custom-vnet").
@@ -252,7 +250,7 @@ func TestReconcileVnet(t *testing.T) {
 					{
 						ResourceGroup: "custom-vnet-rg",
 						Name:          "custom-vnet",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Get(context.TODO(), "custom-vnet-rg", "custom-vnet").
@@ -315,7 +313,7 @@ func TestDeleteVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "vnet-exists",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Delete(context.TODO(), "my-rg", "vnet-exists")
@@ -338,7 +336,7 @@ func TestDeleteVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "vnet-exists",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Delete(context.TODO(), "my-rg", "vnet-exists").
@@ -358,7 +356,7 @@ func TestDeleteVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "my-vnet",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 			},
@@ -380,7 +378,7 @@ func TestDeleteVnet(t *testing.T) {
 					{
 						ResourceGroup: "my-rg",
 						Name:          "vnet-exists",
-						CIDR:          "10.0.0.0/16",
+						CIDRs:         []string{"10.0.0.0/16"},
 					},
 				})
 				m.Delete(context.TODO(), "my-rg", "vnet-exists").

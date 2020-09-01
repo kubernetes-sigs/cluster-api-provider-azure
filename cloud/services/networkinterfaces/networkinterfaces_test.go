@@ -368,6 +368,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.IsIPv6Enabled().AnyTimes().Return(true)
 				gomock.InOrder(
+					m.Get(context.TODO(), "my-rg", "my-net-interface").
+						Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
 						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{

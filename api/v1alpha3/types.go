@@ -60,16 +60,16 @@ type VnetSpec struct {
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed virtual network.
-	// TODO (#618) should just make this a list as is done in https://docs.microsoft.com/en-us/cli/azure/network/vnet?view=azure-cli-latest#az-network-vnet-create
+	// DEPRECATED: Use CIDRBlocks instead
+	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
-	// IPv6CidrBlock is the cidr block if IPv6 is enabled
-	IPv6CidrBlock string `json:"iPv6CidrBlock,omitempty"`
-
-	// IPv6Enabled turns IPv6 on
-	IPv6Enabled bool `json:"iPv6Enabled,omitempty"`
+	// CIDRBlocks defines the virtual network's address space, specified as one or more address prefixes in CIDR notation.
+	// +optional
+	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
 
 	// Tags is a collection of tags describing the resource.
+	// +optional
 	Tags Tags `json:"tags,omitempty"`
 }
 
@@ -289,7 +289,7 @@ type AzureSharedGalleryImage struct {
 
 // AvailabilityZone specifies an Azure Availability Zone
 //
-// Deprecated: Use FailureDomain instead
+// DEPRECATED: Use FailureDomain instead
 type AvailabilityZone struct {
 	ID      *string `json:"id,omitempty"`
 	Enabled *bool   `json:"enabled,omitempty"`
@@ -377,12 +377,13 @@ type SubnetSpec struct {
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
+	// DEPRECATED: Use CIDRBlocks instead
 	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
-	// IPv6CidrBlock is the cidr block if IPv6 is enabled
+	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
 	// +optional
-	IPv6CidrBlock string `json:"IPv6CidrBlock,omitempty"`
+	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
 
 	// InternalLBIPAddress is the IP address that will be used as the internal LB private IP.
 	// For the control plane subnet only.

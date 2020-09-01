@@ -35,20 +35,11 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 		return nil, errors.Wrapf(err, "failed to fetch subnet named %s in vnet %s", spec.VNetName, spec.Name)
 	}
 
-	IPV4Cidr := to.String(subnet.SubnetPropertiesFormat.AddressPrefix)
-	var IPv6Cidr string
-	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
-		addresses := to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
-
-		// assumption that the second address is the ipv6 address.
-		// This would be unnessary if subnet spec was array
-		if len(addresses) > 0 {
-			IPV4Cidr = addresses[0]
-		}
-
-		if len(addresses) > 1 {
-			IPv6Cidr = addresses[1]
-		}
+	var addresses []string
+	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
+		addresses = []string{to.String(subnet.SubnetPropertiesFormat.AddressPrefix)}
+	} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
+		addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
 	}
 
 	subnetSpec := &infrav1.SubnetSpec{
@@ -56,8 +47,7 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 		InternalLBIPAddress: spec.InternalLBIPAddress,
 		Name:                to.String(subnet.Name),
 		ID:                  to.String(subnet.ID),
-		CidrBlock:           IPV4Cidr,
-		IPv6CidrBlock:       IPv6Cidr,
+		CIDRBlocks:          addresses,
 	}
 
 	return subnetSpec, nil
@@ -83,24 +73,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 			subnet.Role = subnetSpec.Role
 			subnet.Name = existingSubnet.Name
-			subnet.CidrBlock = existingSubnet.CidrBlock
-			subnet.IPv6CidrBlock = existingSubnet.IPv6CidrBlock
+			subnet.CIDRBlocks = existingSubnet.CIDRBlocks
 			subnet.ID = existingSubnet.ID
 
 		case !s.Scope.IsVnetManaged():
 			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
 
 		default:
+
 			subnetProperties := network.SubnetPropertiesFormat{
-				AddressPrefix: &subnetSpec.CIDR,
+				AddressPrefixes: &subnetSpec.CIDRs,
 			}
 
-			if s.Scope.IsIPv6Enabled() {
-				subnetCidrs := []string{subnetSpec.CIDR}
-				subnetCidrs = append(subnetCidrs, subnetSpec.IPv6CIDR)
-
+			// workaround needed to avoid SubscriptionNotRegisteredForFeature for feature Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
+			if len(subnetSpec.CIDRs) == 1 {
 				subnetProperties = network.SubnetPropertiesFormat{
-					AddressPrefixes: &subnetCidrs,
+					AddressPrefix: &subnetSpec.CIDRs[0],
 				}
 			}
 

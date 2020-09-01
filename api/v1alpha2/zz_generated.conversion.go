@@ -1063,7 +1063,7 @@ func autoConvert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in *v1alpha3.SubnetS
 	out.ID = in.ID
 	out.Name = in.Name
 	out.CidrBlock = in.CidrBlock
-	// WARNING: in.IPv6CidrBlock requires manual conversion: does not exist in peer-type
+	// WARNING: in.CIDRBlocks requires manual conversion: does not exist in peer-type
 	out.InternalLBIPAddress = in.InternalLBIPAddress
 	if err := Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err
@@ -1139,8 +1139,7 @@ func autoConvert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(in *v1alpha3.VnetSpec, o
 	out.ID = in.ID
 	out.Name = in.Name
 	out.CidrBlock = in.CidrBlock
-	// WARNING: in.IPv6CidrBlock requires manual conversion: does not exist in peer-type
-	// WARNING: in.IPv6Enabled requires manual conversion: does not exist in peer-type
+	// WARNING: in.CIDRBlocks requires manual conversion: does not exist in peer-type
 	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
 	return nil
 }

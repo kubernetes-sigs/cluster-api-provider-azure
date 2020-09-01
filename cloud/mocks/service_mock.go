@@ -563,3 +563,17 @@ func (mr *MockClusterDescriberMockRecorder) RouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockClusterDescriber)(nil).RouteTable))
 }
+
+// IsIPv6Enabled mocks base method.
+func (m *MockClusterDescriber) IsIPv6Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsIPv6Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
+func (mr *MockClusterDescriberMockRecorder) IsIPv6Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockClusterDescriber)(nil).IsIPv6Enabled))
+}

@@ -59,16 +59,14 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	}
 
 	dst.Status.FailureDomains = restored.Status.FailureDomains
-	dst.Spec.NetworkSpec.Vnet.IPv6Enabled = restored.Spec.NetworkSpec.Vnet.IPv6Enabled
-	dst.Spec.NetworkSpec.Vnet.IPv6CidrBlock = restored.Spec.NetworkSpec.Vnet.IPv6CidrBlock
+	dst.Spec.NetworkSpec.Vnet.CIDRBlocks = restored.Spec.NetworkSpec.Vnet.CIDRBlocks
 
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		if restoredSubnet != nil {
 			for _, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
 				if dstSubnet != nil && dstSubnet.Name == restoredSubnet.Name {
 					dstSubnet.RouteTable = restoredSubnet.RouteTable
-					dstSubnet.IPv6CidrBlock = restoredSubnet.IPv6CidrBlock
-
+					dstSubnet.CIDRBlocks = restoredSubnet.CIDRBlocks
 					dstSubnet.SecurityGroup.IngressRules = restoredSubnet.SecurityGroup.IngressRules
 				}
 			}

@@ -36,27 +36,15 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 		}
 		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
 	}
-	cidr := ""
-	cidrIPv6 := ""
-	isIPv6Enabled := false
+	var prefixes []string
 	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
-		prefixes := to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
-		if prefixes != nil && len(prefixes) > 0 {
-			cidr = prefixes[0]
-		}
-
-		if prefixes != nil && len(prefixes) > 1 {
-			cidrIPv6 = prefixes[1]
-			isIPv6Enabled = true
-		}
+		prefixes = to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
 	}
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
 		Name:          to.String(vnet.Name),
-		CidrBlock:     cidr,
-		IPv6CidrBlock: cidrIPv6,
-		IPv6Enabled:   isIPv6Enabled,
+		CIDRBlocks:    prefixes,
 		Tags:          converters.MapToTags(vnet.Tags),
 	}, nil
 }
@@ -88,11 +76,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		default:
 			s.Scope.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
 
-			vnetCidrs := []string{vnetSpec.CIDR}
-			if s.Scope.IsIPv6Enabled() {
-				vnetCidrs = append(vnetCidrs, vnetSpec.IPv6CIDR)
-			}
-
 			vnetProperties := network.VirtualNetwork{
 				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 					ClusterName: s.Scope.ClusterName(),
@@ -104,7 +87,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Location: to.StringPtr(s.Scope.Location()),
 				VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 					AddressSpace: &network.AddressSpace{
-						AddressPrefixes: &vnetCidrs,
+						AddressPrefixes: &vnetSpec.CIDRs,
 					},
 				},
 			}

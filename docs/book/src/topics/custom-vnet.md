@@ -68,14 +68,17 @@ spec:
   networkSpec:
     vnet:
       name: my-vnet
-      cidrBlock: 10.0.0.0/16
+      cidrBlocks: 
+        - 10.0.0.0/16
     subnets:
       - name: my-subnet-cp
         role: control-plane
-        cidrBlock: 10.0.1.0/24
+        cidrBlocks: 
+          - 10.0.1.0/24
       - name: my-subnet-node
         role: node
-        cidrBlock: 10.0.2.0/24
+        cidrBlocks: 
+          - 10.0.2.0/24
   resourceGroup: cluster-example
   ```
 
@@ -102,17 +105,19 @@ spec:
   networkSpec:
     vnet:
       name: my-vnet
-      cidrBlock: 10.0.0.0/16
+      cidrBlocks: 
+        - 10.0.0.0/16
     subnets:
       - name: my-subnet-cp
         role: control-plane
-        cidrBlock: 10.0.1.0/24
+        cidrBlocks: 
+          - 10.0.1.0/24
         securityGroup:
           name: my-subnet-cp-nsg
           ingressRule:
             - name: "allow_ssh"
               description: "allow SSH"
-              priority: 100
+              priority: 2200
               protocol: "*"
               destination: "*"
               destinationPorts: "22"
@@ -120,7 +125,7 @@ spec:
               sourcePorts: "*"
             - name: "allow_apiserver"
               description: "Allow K8s API Server"
-              priority: 101
+              priority: 2201
               protocol: "*"
               destination: "*"
               destinationPorts: "6443"
@@ -128,7 +133,7 @@ spec:
               sourcePorts: "*"
             - name: "allow_port_50000"
               description: "allow port 50000"
-              priority: 102
+              priority: 2202
               protocol: "*"
               destination: "*"
               destinationPorts: "50000"
@@ -136,6 +141,7 @@ spec:
               sourcePorts: "*"
       - name: my-subnet-node
         role: node
-        cidrBlock: 10.0.2.0/24
+        cidrBlocks: 
+          - 10.0.2.0/24
   resourceGroup: cluster-example
 ```

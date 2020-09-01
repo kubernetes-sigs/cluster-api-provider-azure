@@ -50,7 +50,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -83,8 +83,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-ipv6-subnet",
-						CIDR:                "10.0.0.0/16",
-						IPv6CIDR:            "2001:1234:5678:9abd::/64",
+						CIDRs:               []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -96,7 +95,6 @@ func TestReconcileSubnets(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.SubscriptionID().AnyTimes().Return("123")
-				s.IsIPv6Enabled().AnyTimes().Return(true)
 				s.IsVnetManaged().Return(true)
 				m.Get(context.TODO(), "my-rg", "my-vnet", "my-ipv6-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -120,7 +118,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -147,7 +145,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -171,7 +169,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "custom-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -200,7 +198,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -209,7 +207,7 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 					{
 						Name:                "my-subnet-1",
-						CIDR:                "10.2.0.0/16",
+						CIDRs:               []string{"10.2.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg-1",
@@ -271,8 +269,7 @@ func TestReconcileSubnets(t *testing.T) {
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-ipv6-subnet",
-						CIDR:                "10.0.0.0/16",
-						IPv6CIDR:            "2001:1234:5678:9abd::/64",
+						CIDRs:               []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -281,8 +278,7 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 					{
 						Name:                "my-ipv6-subnet-cp",
-						CIDR:                "10.2.0.0/16",
-						IPv6CIDR:            "2001:1234:5678:9abc::/64",
+						CIDRs:               []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg-1",
@@ -388,7 +384,7 @@ func TestDeleteSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -397,7 +393,7 @@ func TestDeleteSubnets(t *testing.T) {
 					},
 					{
 						Name:                "my-subnet-1",
-						CIDR:                "10.1.0.0/16",
+						CIDRs:               []string{"10.1.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -420,7 +416,7 @@ func TestDeleteSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -443,7 +439,7 @@ func TestDeleteSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -452,7 +448,7 @@ func TestDeleteSubnets(t *testing.T) {
 					},
 					{
 						Name:                "my-subnet-1",
-						CIDR:                "10.1.0.0/16",
+						CIDRs:               []string{"10.1.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -476,7 +472,7 @@ func TestDeleteSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "custom-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
@@ -497,7 +493,7 @@ func TestDeleteSubnets(t *testing.T) {
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
 						Name:                "my-subnet",
-						CIDR:                "10.0.0.0/16",
+						CIDRs:               []string{"10.0.0.0/16"},
 						VNetName:            "my-vnet",
 						RouteTableName:      "my-subnet_route_table",
 						SecurityGroupName:   "my-sg",
