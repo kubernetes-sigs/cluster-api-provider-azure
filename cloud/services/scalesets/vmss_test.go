@@ -313,6 +313,11 @@ func TestReconcileVMSS(t *testing.T) {
 									},
 								},
 							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
+								},
+							},
 							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 									{
@@ -453,6 +458,11 @@ func TestReconcileVMSS(t *testing.T) {
 									},
 								},
 							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
+								},
+							},
 							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 									{
@@ -580,6 +590,11 @@ func TestReconcileVMSS(t *testing.T) {
 										},
 									},
 								},
+								DiagnosticsProfile: &compute.DiagnosticsProfile{
+									BootDiagnostics: &compute.BootDiagnostics{
+										Enabled: to.BoolPtr(true),
+									},
+								},
 								NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 									NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 										{
@@ -658,6 +673,11 @@ func TestReconcileVMSS(t *testing.T) {
 										},
 									},
 									DisablePasswordAuthentication: to.BoolPtr(true),
+								},
+							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
 								},
 							},
 							StorageProfile: &compute.VirtualMachineScaleSetUpdateStorageProfile{

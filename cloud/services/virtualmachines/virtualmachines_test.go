@@ -376,6 +376,11 @@ func TestReconcileVM(t *testing.T) {
 								},
 							},
 						},
+						DiagnosticsProfile: &compute.DiagnosticsProfile{
+							BootDiagnostics: &compute.BootDiagnostics{
+								Enabled: to.BoolPtr(true),
+							},
+						},
 						NetworkProfile: &compute.NetworkProfile{
 							NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 								{
@@ -1011,6 +1016,11 @@ func TestReconcileVM(t *testing.T) {
 									CreateOption: "Empty",
 									DiskSizeGB:   to.Int32Ptr(64),
 								},
+							},
+						},
+						DiagnosticsProfile: &compute.DiagnosticsProfile{
+							BootDiagnostics: &compute.BootDiagnostics{
+								Enabled: to.BoolPtr(true),
 							},
 						},
 						OsProfile: &compute.OSProfile{
