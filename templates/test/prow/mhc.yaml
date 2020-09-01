@@ -4,7 +4,7 @@ kind: MachineHealthCheck
 metadata:
   name: "${CLUSTER_NAME}-mhc-0"
 spec:
-  clusterName: "${ CLUSTER_NAME }"
+  clusterName: "${CLUSTER_NAME}"
   maxUnhealthy: 100%
   selector:
     matchLabels:
