@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 )
@@ -51,7 +52,7 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
 
 		Expect(e2eConfig.Variables).To(HaveKey(KubernetesVersion))
-		Expect(e2eConfig.Variables).To(HaveKey(CNIPath))
+		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
@@ -84,7 +85,6 @@ var _ = Describe("Workload cluster creation", func() {
 					ControlPlaneMachineCount: pointer.Int64Ptr(1),
 					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
-				CNIManifestPath:              e2eConfig.GetVariable(CNIPath),
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
@@ -108,7 +108,6 @@ var _ = Describe("Workload cluster creation", func() {
 					ControlPlaneMachineCount: pointer.Int64Ptr(3),
 					WorkerMachineCount:       pointer.Int64Ptr(2),
 				},
-				CNIManifestPath:              e2eConfig.GetVariable(CNIPath),
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
