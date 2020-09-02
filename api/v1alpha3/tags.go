@@ -118,6 +118,12 @@ const (
 
 	// CommonRole describes the value for the common role
 	CommonRole = "common"
+
+	// VMTagsLastAppliedAnnotation is the key for the machine object annotation
+	// which tracks the AdditionalTags in the Machine Provider Config.
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+	// for annotation formatting rules.
+	VMTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-vm"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.

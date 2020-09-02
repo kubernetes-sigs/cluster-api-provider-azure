@@ -116,7 +116,7 @@ type VMSpec struct {
 	SpotVMOptions          *infrav1.SpotVMOptions
 }
 
-// BastionSpec specification for bastion host
+// BastionSpec defines the specification for bastion host.
 type BastionSpec struct {
 	Name         string
 	SubnetName   string
@@ -139,4 +139,11 @@ type ScaleSetSpec struct {
 	PublicLBAddressPoolName      string
 	AcceleratedNetworking        *bool
 	TerminateNotificationTimeout *int
+}
+
+// TagsSpec defines the specification for a set of tags.
+type TagsSpec struct {
+	Scope      string
+	Tags       infrav1.Tags
+	Annotation string
 }

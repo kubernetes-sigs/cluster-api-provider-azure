@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
 )
 
-func TestReconcileVM(t *testing.T) {
+func TestReconcileRoleAssignments(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder)

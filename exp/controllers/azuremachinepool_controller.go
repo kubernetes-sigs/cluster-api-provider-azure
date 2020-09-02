@@ -18,8 +18,9 @@ package controllers
 
 import (
 	"context"
-	corev1 "k8s.io/api/core/v1"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"

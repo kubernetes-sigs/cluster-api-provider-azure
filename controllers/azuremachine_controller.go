@@ -301,14 +301,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		machineScope.SetNotReady()
 	}
 
-	// TODO: move this out of the controller and use tags CreateOrUpdateAtScope instead.
-	// Ensure that the tags are correct.
-	err = r.reconcileTags(ctx, machineScope, ams.skuCache)
-	if err != nil {
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Tags are incorrect", errors.Errorf("failed to ensure tags: %+v", err).Error())
-		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
-	}
-
 	return reconcile.Result{}, nil
 }
 
