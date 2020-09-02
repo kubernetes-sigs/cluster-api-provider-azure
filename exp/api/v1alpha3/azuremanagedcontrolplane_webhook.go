@@ -48,7 +48,7 @@ func (r *AzureManagedControlPlane) Default() {
 		r.Spec.NetworkPlugin = &networkPlugin
 	}
 	if r.Spec.LoadBalancerSKU == nil {
-		loadBalancerSKU := "standard"
+		loadBalancerSKU := "Standard"
 		r.Spec.LoadBalancerSKU = &loadBalancerSKU
 	}
 	if r.Spec.NetworkPolicy == nil {

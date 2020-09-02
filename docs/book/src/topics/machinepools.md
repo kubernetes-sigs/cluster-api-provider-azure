@@ -113,7 +113,7 @@ spec:
         "vnetResourceGroup": "capz",
         "subnetName": "capz-node-subnet",
         "routeTableName": "capz-node-routetable",
-        "loadBalancerSku": "standard",
+        "loadBalancerSku": "Standard",
         "maximumLoadBalancerRuleCount": 250,
         "useManagedIdentityExtension": false,
         "useInstanceMetadata": true

@@ -226,7 +226,7 @@ func newCloudProviderConfig(d azure.ClusterDescriber) *CloudProviderConfig {
 		VnetResourceGroup:            d.Vnet().ResourceGroup,
 		SubnetName:                   d.NodeSubnet().Name,
 		RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
-		LoadBalancerSku:              "standard",
+		LoadBalancerSku:              "Standard",
 		MaximumLoadBalancerRuleCount: 250,
 		UseManagedIdentityExtension:  false,
 		UseInstanceMetadata:          true,

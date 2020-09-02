@@ -70,7 +70,7 @@ type AzureManagedControlPlaneSpec struct {
 	DNSServiceIP *string `json:"dnsServiceIP,omitempty"`
 
 	// LoadBalancerSKU is the SKU of the loadBalancer to be provisioned.
-	// +kubebuilder:validation:Enum=basic;standard
+	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
 }
