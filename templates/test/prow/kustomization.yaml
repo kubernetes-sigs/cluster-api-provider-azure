@@ -4,6 +4,8 @@ namespace: default
 resources:
   - ../../flavors/default
   - mhc.yaml
+  - cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - patches/mhc.yaml
+  - patches/cni-resource-set.yaml
