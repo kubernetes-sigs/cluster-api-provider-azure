@@ -90,6 +90,7 @@ create_cluster() {
     export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-conformance"}"
     # timestamp is in RFC-3339 format to match kubetest
     export TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    export EXP_CLUSTER_RESOURCE_SET=true
     ${REPO_ROOT}/hack/create-dev-cluster.sh
 }
 
