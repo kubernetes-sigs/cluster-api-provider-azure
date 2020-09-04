@@ -174,6 +174,21 @@ def capz():
         deps = ["api", "cloud", "config", "controllers", "exp", "feature", "pkg", "go.mod", "go.sum", "main.go"]
     )
 
+    k8s_resource('capz-controller-manager:deployment:capz-system', objects=[
+        'azureclusters.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremachinepools.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremachines.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremachinetemplates.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremanagedclusters.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremanagedcontrolplanes.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremanagedmachinepools.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+    ])
+
+    k8s_resource('capz-controller-manager:deployment:capi-webhook-system', objects=[
+        'capz-validating-webhook-configuration:validatingwebhookconfiguration',
+        'capz-mutating-webhook-configuration:mutatingwebhookconfiguration',
+    ])
+
     dockerfile_contents = "\n".join([
         tilt_helper_dockerfile_header,
         tilt_dockerfile_header,
