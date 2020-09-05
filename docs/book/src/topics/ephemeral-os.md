@@ -7,7 +7,7 @@ disk SKU limits. Instead they will always be capable of saturating the
 VM level limits. This can significantly improve performance on the OS
 disk. Ephemeral storage used for the OS will not persist between
 maintenance events and VM redeployments. This is ideal for stateless
-base OS disks, where any stateful data is kept elsewhere. 
+base OS disks, where any stateful data is kept elsewhere.
 
 There are a few kinds of local storage devices available on Azure VMs.
 Each VM size will have a different combination. For example, some sizes
@@ -56,6 +56,6 @@ spec:
         managedDisk:
           storageAccountType: Standard_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ````
