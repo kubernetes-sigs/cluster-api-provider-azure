@@ -45,6 +45,11 @@ var _ webhook.Defaulter = &AzureMachinePool{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (amp *AzureMachinePool) Default() {
 	azuremachinepoollog.Info("default", "name", amp.Name)
+
+	err := amp.SetDefaultSSHPublicKey()
+	if err != nil {
+		azuremachinepoollog.Error(err, "SetDefaultSshPublicKey failed")
+	}
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=exp.cluster.x-k8s.io.x-k8s.io,resources=azuremachinepools,versions=v1alpha3,name=vazuremachinepool.kb.io,sideEffects=None
@@ -74,6 +79,7 @@ func (amp *AzureMachinePool) Validate() error {
 	validators := []func() error{
 		amp.ValidateImage,
 		amp.ValidateTerminateNotificationTimeout,
+		amp.ValidateSSHKey,
 	}
 
 	var errs []error
@@ -100,6 +106,7 @@ func (amp *AzureMachinePool) ValidateImage() error {
 			return agg
 		}
 	}
+
 	return nil
 }
 
@@ -114,6 +121,20 @@ func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
 
 	if *amp.Spec.Template.TerminateNotificationTimeout > 15 {
 		return errors.New("Maximum timeout 15 is allowed for TerminateNotificationTimeout")
+	}
+
+	return nil
+}
+
+// ValidateSSHKey validates an SSHKey
+func (amp *AzureMachinePool) ValidateSSHKey() error {
+	if amp.Spec.Template.SSHPublicKey != "" {
+		sshKey := amp.Spec.Template.SSHPublicKey
+		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
+			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
+			azuremachinepoollog.Info("Invalid sshKey: %s", agg.Error())
+			return agg
+		}
 	}
 
 	return nil
