@@ -49,7 +49,7 @@ clusterctl config cluster my-cluster --kubernetes-version v1.18.8 --flavor machi
 ```
 
 The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors)
-is located [here](../../templates/cluster-template-machinepool.yaml).
+is located [here](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-machinepool.yaml).
 
 ### Example MachinePool, AzureMachinePool and KubeadmConfig Resources
 Below is an example of the resources needed to create a pool of Virtual Machines orchestrated with
