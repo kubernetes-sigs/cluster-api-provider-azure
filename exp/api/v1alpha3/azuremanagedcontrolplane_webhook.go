@@ -17,10 +17,13 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"errors"
 	"net"
+	"regexp"
+	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -28,6 +31,8 @@ import (
 
 // log is for logging in this package.
 var azuremanagedcontrolplanelog = logf.Log.WithName("azuremanagedcontrolplane-resource")
+
+var kubeSemver = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 
 func (r *AzureManagedControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
@@ -55,6 +60,11 @@ func (r *AzureManagedControlPlane) Default() {
 		NetworkPolicy := "calico"
 		r.Spec.NetworkPolicy = &NetworkPolicy
 	}
+
+	if r.Spec.Version != "" && !strings.HasPrefix(r.Spec.Version, "v") {
+		normalizedVersion := "v" + r.Spec.Version
+		r.Spec.Version = normalizedVersion
+	}
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-exp-infrastructure-cluster-x-k8s-io-v1alpha3-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1alpha3,name=azuremanagedcontrolplane.kb.io
@@ -64,23 +74,14 @@ var _ webhook.Validator = &AzureManagedControlPlane{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *AzureManagedControlPlane) ValidateCreate() error {
 	azuremanagedcontrolplanelog.Info("validate create", "name", r.Name)
-
-	err := r.validateDNSServiceIP()
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.Validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *AzureManagedControlPlane) ValidateUpdate(old runtime.Object) error {
 	azuremanagedcontrolplanelog.Info("validate update", "name", r.Name)
 
-	err := r.validateDNSServiceIP()
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.Validate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -90,11 +91,30 @@ func (r *AzureManagedControlPlane) ValidateDelete() error {
 	return nil
 }
 
+// Validate the Azure Managed ControlPlane and return an aggregate error
+func (r *AzureManagedControlPlane) Validate() error {
+	var allErrs field.ErrorList
+	err := r.validateDNSServiceIP()
+	if err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if !kubeSemver.MatchString(r.Spec.Version) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "version"), r.Spec.Version, "must be a valid semantic version"))
+	}
+
+	if len(allErrs) > 0 {
+		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), r.Name, allErrs)
+	}
+
+	return nil
+}
+
 // validate DNSServiceIP
-func (r *AzureManagedControlPlane) validateDNSServiceIP() error {
+func (r *AzureManagedControlPlane) validateDNSServiceIP() *field.Error {
 	if r.Spec.DNSServiceIP != nil {
 		if net.ParseIP(*r.Spec.DNSServiceIP) == nil {
-			return errors.New("DNSServiceIP must be a valid IP")
+			return field.Invalid(field.NewPath("spec", "DNSServiceIO"), *r.Spec.DNSServiceIP, "DNSServiceIP must be a valid IP")
 		}
 	}
 	return nil
