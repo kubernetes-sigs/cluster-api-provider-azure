@@ -35,6 +35,9 @@ kubeconfig
 # Example and binary output directory
 /out
 
+# vs
+.vs/
+
 # vscode
 .vscode
 
