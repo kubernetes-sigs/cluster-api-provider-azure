@@ -104,7 +104,7 @@ Managed images support only 20 simultaneous deployments, so for most use cases S
 
 ### Using Azure Marketplace
 
-To use an image from [Azure Marketplace][azure-marketplace], populate the `publisher`, `offer`, `sku`, and `version` fields:
+To use an image from [Azure Marketplace][azure-marketplace], populate the `publisher`, `offer`, `sku`, and `version` fields and, if this image is published by a third party publisher, set the `thirdPartyImage` flag to `true` so an image Plan can be generated for it. In the case of a third party image, you must accept the license terms with the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/vm/image/terms?view=azure-cli-latest) before consuming it.
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
@@ -119,6 +119,7 @@ spec:
         offer: "example-offer"
         sku: "k8s-1dot18dot8-ubuntu-1804"
         version: "2020-07-25"
+        thirdPartyImage: true
 ```
 
 [azure-marketplace]: https://docs.microsoft.com/azure/marketplace/marketplace-publishers-guide
