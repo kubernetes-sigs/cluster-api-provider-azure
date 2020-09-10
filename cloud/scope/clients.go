@@ -17,10 +17,14 @@ limitations under the License.
 package scope
 
 import (
+	"context"
 	"fmt"
-	"strings"
 	"os"
+	"strings"
+
+	azurestack "github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/resources/mgmt/resources"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"k8s.io/klog/klogr"
@@ -100,17 +104,19 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 	log := klogr.New()
 	log.Info("Adding a log line to clients.go")
 	log.Info("Checking if we can read the environment from armEndpoint")
-        armEndpoint := os.Getenv("armEndpoint")
-        log.Info(armEndpoint)
-        armEndpoint = "https://management.dbe-1dkphq2.microsoftdatabox.com"
-        env1, err1 := azure.EnvironmentFromURL(armEndpoint)
-        if err1 != nil{
-	log.Info(err1.Error())
+	armEndpoint := os.Getenv("ARM_ENDPOINT")
+	log.Info(armEndpoint)
+	subsID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	log.Info(subsID)
+	armEndpoint = "https://management.dbe-1dkphq2.microsoftdatabox.com"
+	env1, err1 := azure.EnvironmentFromURL(armEndpoint)
+	if err1 != nil {
+		log.Info(err1.Error())
 	}
-        log.Info(env1.Name)
-        log.Info(env1.ResourceManagerEndpoint)
-        log.Info(env1.ActiveDirectoryEndpoint)
-        log.Info("Done extracting endpoint from environment")
+	log.Info(env1.Name)
+	log.Info(env1.ResourceManagerEndpoint)
+	log.Info(env1.ActiveDirectoryEndpoint)
+	log.Info("Done extracting endpoint from environment")
 
 	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
 	c.ResourceManagerVMDNSSuffix = GetAzureDNSZoneForEnvironment(settings.Environment.Name)
@@ -119,6 +125,74 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 
 	c.Authorizer, err = settings.GetAuthorizer()
 	return err
+}
+
+func (c *AzureClients) setDBECredentials(subscriptionID string) error {
+	log := klogr.New()
+	c.subscriptionID = os.Getenv("AZURE_SUBSCRIPTION_ID")
+	c.tenantID = os.Getenv("AZURE_TENANT_ID")
+	c.clientID = os.Getenv("AZURE_CLIENT_ID")
+	c.clientSecret = os.Getenv("AZURE_CLIENT_SECRET")
+	armEndpoint := os.Getenv("ARM_ENDPOINT")
+	env, err := azure.EnvironmentFromURL(armEndpoint)
+	if err != nil {
+		log.Info(err.Error())
+		return err
+	}
+	c.environment = env.Name
+	c.ResourceManagerEndpoint = env.ResourceManagerEndpoint
+	c.ResourceManagerVMDNSSuffix = ""
+
+	log.Info(c.subscriptionID)
+	log.Info(c.tenantID)
+	log.Info(c.clientID)
+	log.Info(c.clientSecret)
+	log.Info(armEndpoint)
+	log.Info(c.ResourceManagerEndpoint)
+	log.Info("Printing Resource Manager VMDNS Suffix")
+	log.Info(c.ResourceManagerVMDNSSuffix)
+
+	token, err := GetResourceManagementTokenHybrid(armEndpoint, c.tenantID, c.clientID, c.clientSecret)
+	if err != nil {
+		log.Info(err.Error())
+		return err
+	}
+	c.Authorizer = autorest.NewBearerAuthorizer(token)
+	groupsClient := azurestack.NewGroupsClientWithBaseURI(armEndpoint, c.subscriptionID)
+	groupsClient.Authorizer = autorest.NewBearerAuthorizer(token)
+	cntx := context.Background()
+	location := "dbelocal"
+	rg, errRg := groupsClient.CreateOrUpdate(cntx, "msk8srg", azurestack.Group{Location: &location})
+	if errRg != nil {
+		log.Info(errRg.Error())
+	}
+	log.Info("Printing rg name")
+	log.Info(*rg.Name)
+	return err
+}
+
+// Gets the token for authorizer on DBE
+func GetResourceManagementTokenHybrid(armEndpoint, tenantID, clientID, clientSecret string) (adal.OAuthTokenProvider, error) {
+	var token adal.OAuthTokenProvider
+	log := klogr.New()
+	environment, err := azure.EnvironmentFromURL(armEndpoint)
+	if err != nil {
+		log.Info(err.Error())
+		return nil, err
+	}
+	tokenAudience := environment.TokenAudience
+	log.Info(tokenAudience)
+	activeDirectoryEndpoint := environment.ActiveDirectoryEndpoint
+	activeDirectoryEndpoint = strings.TrimRight(activeDirectoryEndpoint, "/adfs") + "/"
+	log.Info(activeDirectoryEndpoint)
+	oauthConfig, err := adal.NewOAuthConfig(activeDirectoryEndpoint, tenantID)
+	token, err = adal.NewServicePrincipalToken(
+		*oauthConfig,
+		clientID,
+		clientSecret,
+		tokenAudience)
+
+	return token, err
 }
 
 // GetAzureDNSZoneForEnvironment returnes the DNSZone to be used with the
