@@ -18,31 +18,30 @@ package scalesets
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 
+	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func init() {
@@ -87,204 +86,142 @@ func TestNewService(t *testing.T) {
 	g.Expect(actual).ToNot(gomega.BeNil())
 }
 
-func TestService_Get(t *testing.T) {
-	cases := []struct {
-		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec
-		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller
-		Expect      func(ctx context.Context, g *gomega.GomegaWithT, result interface{}, err error)
+func TestGetExistingVMSS(t *testing.T) {
+	testcases := []struct {
+		name          string
+		vmssName      string
+		result        *infrav1exp.VMSS
+		expectedError string
+		expect        func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder)
 	}{
 		{
-			Name: "WithValidSpecBut404FromAzureOnVMSS",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-				}
-			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(compute.VirtualMachineScaleSet{}, autorest.DetailedError{
-					StatusCode: 404,
-				})
-
-				return mockCtrl
-			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, result interface{}, err error) {
-				g.Expect(err).To(gomega.Equal(autorest.DetailedError{
-					StatusCode: 404,
-				}))
+			name:          "scale set not found",
+			vmssName:      "my-vmss",
+			result:        &infrav1exp.VMSS{},
+			expectedError: "#: Not found: StatusCode=404",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Get(context.TODO(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
-			Name: "WithValidSpecBut404FromAzureOnInstances",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-				}
+			name:     "get existing vmss",
+			vmssName: "my-vmss",
+			result: &infrav1exp.VMSS{
+				ID:       "my-id",
+				Name:     "my-vmss",
+				State:    "Succeeded",
+				Sku:      "Standard_D2",
+				Identity: "",
+				Tags:     nil,
+				Capacity: int64(1),
+				Instances: []infrav1exp.VMSSVM{
+					{
+						ID:         "id-1",
+						InstanceID: "id-2",
+						Name:       "instance-0",
+						State:      "Succeeded",
+					},
+				},
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(compute.VirtualMachineScaleSet{}, nil)
-				vmssMock.EXPECT().ListInstances(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return([]compute.VirtualMachineScaleSetVM{}, autorest.DetailedError{
-					StatusCode: 404,
-				})
-
-				return mockCtrl
-			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, result interface{}, err error) {
-				g.Expect(err).To(gomega.Equal(autorest.DetailedError{
-					StatusCode: 404,
-				}))
-			},
-		},
-		{
-			Name: "WithValidSpecWithVMSSAndInstancesReturned",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *Spec {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-				}
-			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(compute.VirtualMachineScaleSet{
-					Name: to.StringPtr(mpScope.Name()),
+			expectedError: "",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Get(context.TODO(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
+					ID:   to.StringPtr("my-id"),
+					Name: to.StringPtr("my-vmss"),
 					Sku: &compute.Sku{
 						Capacity: to.Int64Ptr(1),
-						Name:     to.StringPtr("Standard"),
+						Name:     to.StringPtr("Standard_D2"),
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						ProvisioningState: to.StringPtr("Succeeded"),
 					},
 				}, nil)
-				vmssMock.EXPECT().ListInstances(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return([]compute.VirtualMachineScaleSetVM{
+				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
-						Name:       to.StringPtr("vm0"),
-						InstanceID: to.StringPtr("0"),
+						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
 						},
+						ID:   to.StringPtr("id-1"),
+						Name: to.StringPtr("instance-0"),
 					},
 				}, nil)
-
-				return mockCtrl
 			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, result interface{}, err error) {
-				g.Expect(result).To(gomega.Equal(&infrav1exp.VMSS{
-					Name:     "capz-mp-0",
-					Sku:      "Standard",
-					Capacity: 1,
-					Image:    infrav1.Image{},
-					State:    "Succeeded",
-					Instances: []infrav1exp.VMSSVM{
-						{
-							InstanceID: "0",
-							Name:       "vm0",
-							State:      "Succeeded",
-						},
+		},
+		{
+			name:          "list instances fails",
+			vmssName:      "my-vmss",
+			result:        &infrav1exp.VMSS{},
+			expectedError: "#: Not found: StatusCode=404",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Get(context.TODO(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
+					ID:   to.StringPtr("my-id"),
+					Name: to.StringPtr("my-vmss"),
+					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+						ProvisioningState: to.StringPtr("Succeeded"),
 					},
-				}))
+				}, nil)
+				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.Name, func(t *testing.T) {
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			t.Parallel()
-			g := gomega.NewGomegaWithT(t)
-			s, mps := getScopes(g)
-			resourceSkusCache := resourceskus.NewStaticCache([]compute.ResourceSku{
-				{
-					Name: to.StringPtr("Standard"),
-					Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
-					Locations: &[]string{
-						"fake-location",
-					},
-					LocationInfo: &[]compute.ResourceSkuLocationInfo{
-						{
-							Location: to.StringPtr("fake-location"),
-							Zones:    &[]string{"1"},
-						},
-					},
-				},
-			})
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 
-			svc := NewService(s, resourceSkusCache)
-			spec := c.SpecFactory(g, s, mps)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			if c.Setup != nil {
-				mockctrl := c.Setup(ctx, g, svc, s, mps)
-				defer mockctrl.Finish()
+			scopeMock := mock_scalesets.NewMockScaleSetScope(mockCtrl)
+			clientMock := mock_scalesets.NewMockClient(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+
+			s := &Service{
+				Scope:  scopeMock,
+				Client: clientMock,
 			}
-			res, err := svc.Get(context.Background(), spec)
-			c.Expect(ctx, g, res, err)
+
+			result, err := s.getExisting(context.TODO(), tc.vmssName)
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(result).To(BeEquivalentTo(tc.result))
+			}
 		})
 	}
 }
 
-func TestService_Reconcile(t *testing.T) {
-	cases := []struct {
-		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{}
-		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) *gomock.Controller
-		Expect      func(ctx context.Context, g *gomega.GomegaWithT, err error)
+func TestReconcileVMSS(t *testing.T) {
+	testcases := []struct {
+		name          string
+		expect        func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder)
+		expectedError string
 	}{
 		{
-			Name: "WithInvalidSepcType",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return "bazz"
-			},
-			Expect: func(_ context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).To(gomega.MatchError("invalid VMSS specification"))
-			},
-		},
-		{
-			Name: "WithValidSpec",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-					Sku:                    "skuName",
-					Capacity:               2,
-					SSHKeyData:             "sshKeyData",
+			name:          "can create a vmss",
+			expectedError: "",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 120,
 						ManagedDisk: infrav1.ManagedDisk{
-							StorageAccountType: "accountType",
+							StorageAccountType: "Premium_LRS",
 						},
 					},
 					DataDisks: []infrav1.DataDisk{
@@ -294,93 +231,111 @@ func TestService_Reconcile(t *testing.T) {
 							Lun:        to.Int32Ptr(0),
 						},
 					},
-					Image: &infrav1.Image{
-						ID: to.StringPtr("image"),
+					SubnetName:                   "my-subnet",
+					VNetName:                     "my-vnet",
+					VNetResourceGroup:            "my-rg",
+					PublicLBName:                 "capz-lb",
+					PublicLBAddressPoolName:      "backendPool",
+					AcceleratedNetworking:        nil,
+					TerminateNotificationTimeout: to.IntPtr(7),
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
 					},
-					CustomData: "customData",
-				}
-			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				skus := []compute.ResourceSku{
-					{
-						Name: to.StringPtr("skuName"),
-						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
-						Locations: &[]string{
-							"fake-location",
-						},
-						LocationInfo: &[]compute.ResourceSkuLocationInfo{
-							{
-								Location: to.StringPtr("fake-location"),
-								Zones:    &[]string{"1"},
-							},
-						},
-					},
-				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus)
-
-				svc.ResourceSKUCache = resourceSkusCache
-				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
-				svc.LoadBalancersClient = lbMock
-
-				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
-				g.Expect(err).ToNot(gomega.HaveOccurred())
-
-				vmss := compute.VirtualMachineScaleSet{
-					Location: to.StringPtr(scope.Location()),
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+					Location: to.StringPtr("test-location"),
 					Tags: map[string]*string{
-						"Name":                            to.StringPtr("capz-mp-0"),
-						"kubernetes.io_cluster_capz-mp-0": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("node"),
+						"Name": to.StringPtr("my-vmss"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("node"),
 					},
 					Sku: &compute.Sku{
-						Name:     to.StringPtr(spec.Sku),
+						Name:     to.StringPtr("VM_SIZE"),
 						Tier:     to.StringPtr("Standard"),
-						Capacity: to.Int64Ptr(spec.Capacity),
+						Capacity: to.Int64Ptr(2),
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.UpgradeModeManual,
+							Mode: compute.UpgradeModeRolling,
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
-								ComputerNamePrefix: to.StringPtr(spec.Name),
+								ComputerNamePrefix: to.StringPtr("my-vmss"),
 								AdminUsername:      to.StringPtr(azure.DefaultUserName),
-								CustomData:         to.StringPtr(spec.CustomData),
+								CustomData:         to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
 										PublicKeys: &[]compute.SSHPublicKey{
 											{
-												Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-												KeyData: to.StringPtr(spec.SSHKeyData),
+												Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+												KeyData: to.StringPtr("fakesshkey\n"),
 											},
 										},
 									},
 									DisablePasswordAuthentication: to.BoolPtr(true),
 								},
 							},
-							StorageProfile: storageProfile,
+							StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
+								ImageReference: &compute.ImageReference{
+									Publisher: to.StringPtr("fake-publisher"),
+									Offer:     to.StringPtr("my-offer"),
+									Sku:       to.StringPtr("sku-id"),
+									Version:   to.StringPtr("1.0"),
+								},
+								OsDisk: &compute.VirtualMachineScaleSetOSDisk{
+									OsType:       "Linux",
+									CreateOption: "FromImage",
+									DiskSizeGB:   to.Int32Ptr(120),
+									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+										StorageAccountType: "Premium_LRS",
+									},
+								},
+								DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
+									{
+										Lun:          to.Int32Ptr(0),
+										Name:         to.StringPtr("my-vmss_my_disk"),
+										CreateOption: "Empty",
+										DiskSizeGB:   to.Int32Ptr(128),
+									},
+								},
+							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
+								},
+							},
 							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 									{
-										Name: to.StringPtr(spec.Name + "-netconfig"),
+										Name: to.StringPtr("my-vmss-netconfig"),
 										VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 											Primary:                     to.BoolPtr(true),
 											EnableAcceleratedNetworking: to.BoolPtr(false),
 											EnableIPForwarding:          to.BoolPtr(true),
 											IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 												{
-													Name: to.StringPtr(spec.Name + "-ipconfig"),
+													Name: to.StringPtr("my-vmss-ipconfig"),
 													VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 														Subnet: &compute.APIEntityReference{
-															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
+															ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
 														},
 														Primary:                         to.BoolPtr(true),
 														PrivateIPAddressVersion:         compute.IPv4,
-														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
+														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 													},
 												},
 											},
@@ -388,93 +343,75 @@ func TestService_Reconcile(t *testing.T) {
 									},
 								},
 							},
+							ScheduledEventsProfile: &compute.ScheduledEventsProfile{
+								TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+									Enable:           to.BoolPtr(true),
+									NotBeforeTimeout: to.StringPtr("PT7M"),
+								},
+							},
 						},
 					},
-				}
-
-				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
-				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, gomockinternal.DiffEq(vmss)).Return(nil)
-
-				return mockCtrl
-			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).ToNot(gomega.HaveOccurred())
+				}))
 			},
 		},
 		{
-			Name: "WithAcceleratedNetworking",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-					Sku:                    "skuName",
-					Capacity:               2,
-					SSHKeyData:             "sshKeyData",
+			name:          "with accelerated networking enabled",
+			expectedError: "",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_AN",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 120,
 						ManagedDisk: infrav1.ManagedDisk{
-							StorageAccountType: "accountType",
+							StorageAccountType: "Premium_LRS",
 						},
 					},
-					Image: &infrav1.Image{
-						ID: to.StringPtr("image"),
-					},
-					CustomData: "customData",
-				}
-			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				skus := []compute.ResourceSku{
-					{
-						Name: to.StringPtr("skuName"),
-						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
-						Locations: &[]string{
-							"fake-location",
-						},
-						LocationInfo: &[]compute.ResourceSkuLocationInfo{
-							{
-								Location: to.StringPtr("fake-location"),
-								Zones:    &[]string{"1"},
-							},
-						},
-						Capabilities: &[]compute.ResourceSkuCapabilities{
-							{
-								Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
-								Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
-							},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
 						},
 					},
-				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus)
-
-				svc.ResourceSKUCache = resourceSkusCache
-				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
-				svc.LoadBalancersClient = lbMock
-
-				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
-				g.Expect(err).ToNot(gomega.HaveOccurred())
-
-				vmss := compute.VirtualMachineScaleSet{
-					Location: to.StringPtr(scope.Location()),
+					SubnetName:              "my-subnet",
+					VNetName:                "my-vnet",
+					VNetResourceGroup:       "my-rg",
+					PublicLBName:            "capz-lb",
+					PublicLBAddressPoolName: "backendPool",
+					AcceleratedNetworking:   nil,
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+					Location: to.StringPtr("test-location"),
 					Tags: map[string]*string{
-						"Name":                            to.StringPtr("capz-mp-0"),
-						"kubernetes.io_cluster_capz-mp-0": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("node"),
+						"Name": to.StringPtr("my-vmss"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("node"),
 					},
 					Sku: &compute.Sku{
-						Name:     to.StringPtr(spec.Sku),
+						Name:     to.StringPtr("VM_SIZE_AN"),
 						Tier:     to.StringPtr("Standard"),
-						Capacity: to.Int64Ptr(spec.Capacity),
+						Capacity: to.Int64Ptr(2),
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
@@ -482,40 +419,68 @@ func TestService_Reconcile(t *testing.T) {
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
-								ComputerNamePrefix: to.StringPtr(spec.Name),
+								ComputerNamePrefix: to.StringPtr("my-vmss"),
 								AdminUsername:      to.StringPtr(azure.DefaultUserName),
-								CustomData:         to.StringPtr(spec.CustomData),
+								CustomData:         to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
 										PublicKeys: &[]compute.SSHPublicKey{
 											{
-												Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-												KeyData: to.StringPtr(spec.SSHKeyData),
+												Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+												KeyData: to.StringPtr("fakesshkey\n"),
 											},
 										},
 									},
 									DisablePasswordAuthentication: to.BoolPtr(true),
 								},
 							},
-							StorageProfile: storageProfile,
+							StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
+								ImageReference: &compute.ImageReference{
+									Publisher: to.StringPtr("fake-publisher"),
+									Offer:     to.StringPtr("my-offer"),
+									Sku:       to.StringPtr("sku-id"),
+									Version:   to.StringPtr("1.0"),
+								},
+								OsDisk: &compute.VirtualMachineScaleSetOSDisk{
+									OsType:       "Linux",
+									CreateOption: "FromImage",
+									DiskSizeGB:   to.Int32Ptr(120),
+									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+										StorageAccountType: "Premium_LRS",
+									},
+								},
+								DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
+									{
+										Lun:          to.Int32Ptr(0),
+										Name:         to.StringPtr("my-vmss_my_disk"),
+										CreateOption: "Empty",
+										DiskSizeGB:   to.Int32Ptr(128),
+									},
+								},
+							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
+								},
+							},
 							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
 								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
 									{
-										Name: to.StringPtr(spec.Name + "-netconfig"),
+										Name: to.StringPtr("my-vmss-netconfig"),
 										VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
 											Primary:                     to.BoolPtr(true),
 											EnableAcceleratedNetworking: to.BoolPtr(true),
 											EnableIPForwarding:          to.BoolPtr(true),
 											IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 												{
-													Name: to.StringPtr(spec.Name + "-ipconfig"),
+													Name: to.StringPtr("my-vmss-ipconfig"),
 													VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 														Subnet: &compute.APIEntityReference{
-															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
+															ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
 														},
 														Primary:                         to.BoolPtr(true),
 														PrivateIPAddressVersion:         compute.IPv4,
-														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
+														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 													},
 												},
 											},
@@ -525,37 +490,23 @@ func TestService_Reconcile(t *testing.T) {
 							},
 						},
 					},
-				}
-
-				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
-				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				vmssMock.EXPECT().CreateOrUpdate(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, gomockinternal.DiffEq(vmss)).Return(nil)
-
-				return mockCtrl
-			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).ToNot(gomega.HaveOccurred())
+				}))
 			},
 		},
 		{
-			Name: "Scale Set already exists",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-					Sku:                    "skuName",
-					Capacity:               2,
-					SSHKeyData:             "sshKeyData",
+			name:          "scale set already exists",
+			expectedError: "",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_AN",
+					Capacity:   1,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 120,
 						ManagedDisk: infrav1.ManagedDisk{
-							StorageAccountType: "accountType",
+							StorageAccountType: "Premium_LRS",
 						},
 					},
 					DataDisks: []infrav1.DataDisk{
@@ -565,93 +516,104 @@ func TestService_Reconcile(t *testing.T) {
 							Lun:        to.Int32Ptr(0),
 						},
 					},
-					Image: &infrav1.Image{
-						ID: to.StringPtr("image"),
-					},
-					CustomData: "customData",
-				}
-			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope, spec *Spec) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				skus := []compute.ResourceSku{
-					{
-						Name: to.StringPtr("skuName"),
-						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
-						Locations: &[]string{
-							"fake-location",
+					SubnetName:              "my-subnet",
+					VNetName:                "my-vnet",
+					VNetResourceGroup:       "my-rg",
+					PublicLBName:            "capz-lb",
+					PublicLBAddressPoolName: "backendPool",
+					AcceleratedNetworking:   to.BoolPtr(true),
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						Name:     to.StringPtr("my-vmss"),
+						ID:       to.StringPtr("vmss-id"),
+						Location: to.StringPtr("test-location"),
+						Tags: map[string]*string{
+							"Name": to.StringPtr("my-vmss"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+							"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("node"),
 						},
-						LocationInfo: &[]compute.ResourceSkuLocationInfo{
-							{
-								Location: to.StringPtr("fake-location"),
-								Zones:    &[]string{"1"},
+						Sku: &compute.Sku{
+							Name:     to.StringPtr("VM_SIZE_AN"),
+							Tier:     to.StringPtr("Standard"),
+							Capacity: to.Int64Ptr(1),
+						},
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+							UpgradePolicy: &compute.UpgradePolicy{
+								Mode: compute.UpgradeModeManual,
 							},
-						},
-					},
-				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus)
-
-				svc.ResourceSKUCache = resourceSkusCache
-				lbMock := mock_loadbalancers.NewMockClient(mockCtrl)
-				svc.LoadBalancersClient = lbMock
-
-				storageProfile, err := svc.generateStorageProfile(ctx, *spec, resourceskus.SKU(skus[0]))
-				g.Expect(err).ToNot(gomega.HaveOccurred())
-
-				vmss := compute.VirtualMachineScaleSet{
-					Location: to.StringPtr(scope.Location()),
-					Tags: map[string]*string{
-						"Name":                            to.StringPtr("capz-mp-0"),
-						"kubernetes.io_cluster_capz-mp-0": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("node"),
-					},
-					Sku: &compute.Sku{
-						Name:     to.StringPtr(spec.Sku),
-						Tier:     to.StringPtr("Standard"),
-						Capacity: to.Int64Ptr(spec.Capacity),
-					},
-					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-						UpgradePolicy: &compute.UpgradePolicy{
-							Mode: compute.UpgradeModeManual,
-						},
-						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
-							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
-								ComputerNamePrefix: to.StringPtr(spec.Name),
-								AdminUsername:      to.StringPtr(azure.DefaultUserName),
-								CustomData:         to.StringPtr(spec.CustomData),
-								LinuxConfiguration: &compute.LinuxConfiguration{
-									SSH: &compute.SSHConfiguration{
-										PublicKeys: &[]compute.SSHPublicKey{
-											{
-												Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-												KeyData: to.StringPtr(spec.SSHKeyData),
+							VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
+								OsProfile: &compute.VirtualMachineScaleSetOSProfile{
+									ComputerNamePrefix: to.StringPtr("my-vmss"),
+									AdminUsername:      to.StringPtr(azure.DefaultUserName),
+									CustomData:         to.StringPtr("fake-bootstrap-data"),
+									LinuxConfiguration: &compute.LinuxConfiguration{
+										SSH: &compute.SSHConfiguration{
+											PublicKeys: &[]compute.SSHPublicKey{
+												{
+													Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+													KeyData: to.StringPtr("fakesshkey\n"),
+												},
 											},
 										},
+										DisablePasswordAuthentication: to.BoolPtr(true),
 									},
-									DisablePasswordAuthentication: to.BoolPtr(true),
 								},
-							},
-							StorageProfile: storageProfile,
-							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
-								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
-									{
-										Name: to.StringPtr(spec.Name + "-netconfig"),
-										VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-											Primary:                     to.BoolPtr(true),
-											EnableAcceleratedNetworking: to.BoolPtr(false),
-											EnableIPForwarding:          to.BoolPtr(true),
-											IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
-												{
-													Name: to.StringPtr(spec.Name + "-ipconfig"),
-													VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
-														Subnet: &compute.APIEntityReference{
-															ID: to.StringPtr(scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID),
+								StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
+									ImageReference: &compute.ImageReference{
+										Publisher: to.StringPtr("fake-publisher"),
+										Offer:     to.StringPtr("my-offer"),
+										Sku:       to.StringPtr("sku-id"),
+										Version:   to.StringPtr("1.0"),
+									},
+									OsDisk: &compute.VirtualMachineScaleSetOSDisk{
+										OsType:       "Linux",
+										CreateOption: "FromImage",
+										DiskSizeGB:   to.Int32Ptr(120),
+										ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+											StorageAccountType: "Premium_LRS",
+										},
+									},
+									DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
+										{
+											Lun:          to.Int32Ptr(0),
+											Name:         to.StringPtr("my-vmss_my_disk"),
+											CreateOption: "Empty",
+											DiskSizeGB:   to.Int32Ptr(128),
+										},
+									},
+								},
+								DiagnosticsProfile: &compute.DiagnosticsProfile{
+									BootDiagnostics: &compute.BootDiagnostics{
+										Enabled: to.BoolPtr(true),
+									},
+								},
+								NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
+									NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
+										{
+											Name: to.StringPtr("my-vmss-netconfig"),
+											VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+												Primary:                     to.BoolPtr(true),
+												EnableAcceleratedNetworking: to.BoolPtr(true),
+												EnableIPForwarding:          to.BoolPtr(true),
+												IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
+													{
+														Name: to.StringPtr("my-vmss-ipconfig"),
+														VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+															Subnet: &compute.APIEntityReference{
+																ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
+															},
+															Primary:                         to.BoolPtr(true),
+															PrivateIPAddressVersion:         compute.IPv4,
+															LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 														},
-														Primary:                         to.BoolPtr(true),
-														PrivateIPAddressVersion:         compute.IPv4,
-														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("cluster-name-outboundBackendPool")}},
 													},
 												},
 											},
@@ -660,20 +622,39 @@ func TestService_Reconcile(t *testing.T) {
 								},
 							},
 						},
+					}, nil)
+				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						InstanceID: to.StringPtr("id-2"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+						ID:   to.StringPtr("id-1"),
+						Name: to.StringPtr("instance-0"),
 					},
-				}
-
-				update := compute.VirtualMachineScaleSetUpdate{
+				}, nil)
+				s.SetProviderID("azure:///vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMState("Succeeded"))
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.Update(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSetUpdate{
 					Tags: map[string]*string{
-						"Name":                            to.StringPtr("capz-mp-0"),
-						"kubernetes.io_cluster_capz-mp-0": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
-						"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("node"),
+						"Name": to.StringPtr("my-vmss"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("node"),
 					},
 					Sku: &compute.Sku{
-						Name:     to.StringPtr(spec.Sku),
+						Name:     to.StringPtr("VM_SIZE_AN"),
 						Tier:     to.StringPtr("Standard"),
-						Capacity: to.Int64Ptr(spec.Capacity),
+						Capacity: to.Int64Ptr(1),
 					},
 					VirtualMachineScaleSetUpdateProperties: &compute.VirtualMachineScaleSetUpdateProperties{
 						UpgradePolicy: &compute.UpgradePolicy{
@@ -681,29 +662,41 @@ func TestService_Reconcile(t *testing.T) {
 						},
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetUpdateVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetUpdateOSProfile{
-								CustomData: to.StringPtr(spec.CustomData),
+								CustomData: to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
 										PublicKeys: &[]compute.SSHPublicKey{
 											{
-												Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-												KeyData: to.StringPtr(spec.SSHKeyData),
+												Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+												KeyData: to.StringPtr("fakesshkey\n"),
 											},
 										},
 									},
 									DisablePasswordAuthentication: to.BoolPtr(true),
 								},
 							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
+								},
+							},
 							StorageProfile: &compute.VirtualMachineScaleSetUpdateStorageProfile{
-								ImageReference: &compute.ImageReference{ID: to.StringPtr("image")},
+								ImageReference: &compute.ImageReference{
+									Publisher: to.StringPtr("fake-publisher"),
+									Offer:     to.StringPtr("my-offer"),
+									Sku:       to.StringPtr("sku-id"),
+									Version:   to.StringPtr("1.0"),
+								},
 								OsDisk: &compute.VirtualMachineScaleSetUpdateOSDisk{
-									DiskSizeGB:  to.Int32Ptr(120),
-									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{StorageAccountType: "accountType"},
+									DiskSizeGB: to.Int32Ptr(120),
+									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+										StorageAccountType: "Premium_LRS",
+									},
 								},
 								DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
 									{
-										Name:         to.StringPtr("capz-mp-0_my_disk"),
 										Lun:          to.Int32Ptr(0),
+										Name:         to.StringPtr("my-vmss_my_disk"),
 										CreateOption: "Empty",
 										DiskSizeGB:   to.Int32Ptr(128),
 									},
@@ -711,258 +704,317 @@ func TestService_Reconcile(t *testing.T) {
 							},
 						},
 					},
-				}
-
-				lbMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.ClusterName).Return(getFakeNodeOutboundLoadBalancer(), nil)
-				vmssMock.EXPECT().Get(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name).Return(vmss, nil)
-				vmssMock.EXPECT().Update(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, spec.Name, gomockinternal.DiffEq(update)).Return(nil)
-
-				return mockCtrl
+				}))
 			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).ToNot(gomega.HaveOccurred())
+		},
+		{
+			name:          "less than 2 vCPUs",
+			expectedError: "vm size should be bigger or equal to at least 2 vCPUs",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_1_CPU",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+				})
+			},
+		},
+		{
+			name:          "Memory is less than 2Gi",
+			expectedError: "vm memory should be bigger or equal to at least 2Gi",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_1_MEM",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+				})
+			},
+		},
+		{
+			name:          "failed to get SKU",
+			expectedError: "failed to get find SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "INVALID_VM_SIZE",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+				})
+			},
+		},
+		{
+			name:          "fails with internal error",
+			expectedError: "cannot create VMSS: #: Internal error: StatusCode=500",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					SubnetName:              "my-subnet",
+					VNetName:                "my-vnet",
+					VNetResourceGroup:       "my-rg",
+					PublicLBName:            "capz-lb",
+					PublicLBAddressPoolName: "backendPool",
+					AcceleratedNetworking:   nil,
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
 			},
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.Name, func(t *testing.T) {
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			t.Parallel()
-			g := gomega.NewGomegaWithT(t)
-			s, mps := getScopes(g)
-			svc := NewService(s, resourceskus.NewStaticCache(nil))
-			spec := c.SpecFactory(g, s, mps)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			if c.Setup != nil {
-				mockCtrl := c.Setup(ctx, g, svc, s, mps, spec.(*Spec))
-				defer mockCtrl.Finish()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			scopeMock := mock_scalesets.NewMockScaleSetScope(mockCtrl)
+			clientMock := mock_scalesets.NewMockClient(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+
+			s := &Service{
+				Scope:            scopeMock,
+				Client:           clientMock,
+				ResourceSKUCache: resourceskus.NewStaticCache(getFakeSkus()),
 			}
-			err := svc.Reconcile(context.Background(), spec)
-			c.Expect(ctx, g, err)
+
+			err := s.Reconcile(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
 
-func TestService_Delete(t *testing.T) {
-	cases := []struct {
-		Name        string
-		SpecFactory func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{}
-		Setup       func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller
-		Expect      func(ctx context.Context, g *gomega.GomegaWithT, err error)
+func TestDeleteVMSS(t *testing.T) {
+	testcases := []struct {
+		name          string
+		expectedError string
+		expect        func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder)
 	}{
 		{
-			Name: "WithInvalidSepcType",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return "foo"
-			},
-			Expect: func(_ context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).To(gomega.MatchError("invalid VMSS specification"))
-			},
-		},
-		{
-			Name: "WithValidSpecBut404FromAzureOnVMSSAssumeAlreadyDeleted",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-				}
-			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-
-				vmssMock.EXPECT().Delete(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(autorest.DetailedError{
-					StatusCode: 404,
+			name:          "successfully delete an existing vmss",
+			expectedError: "",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:     "my-existing-vmss",
+					Size:     "VM_SIZE",
+					Capacity: 3,
 				})
-
-				return mockCtrl
-			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).ToNot(gomega.HaveOccurred())
+				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Delete(context.TODO(), "my-existing-rg", "my-existing-vmss")
 			},
 		},
 		{
-			Name: "WithValidSpecAndSuccessfulDelete",
-			SpecFactory: func(g *gomega.GomegaWithT, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) interface{} {
-				return &Spec{
-					Name:                   mpScope.Name(),
-					ResourceGroup:          scope.AzureCluster.Spec.ResourceGroup,
-					Location:               scope.AzureCluster.Spec.Location,
-					ClusterName:            scope.Cluster.Name,
-					SubnetID:               scope.AzureCluster.Spec.NetworkSpec.Subnets[0].ID,
-					PublicLoadBalancerName: scope.Cluster.Name,
-					MachinePoolName:        mpScope.Name(),
-				}
+			name:          "vmss already deleted",
+			expectedError: "",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:     "my-vmss",
+					Size:     "VM_SIZE",
+					Capacity: 3,
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Delete(context.TODO(), "my-rg", "my-vmss").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			Setup: func(ctx context.Context, g *gomega.GomegaWithT, svc *Service, scope *scope.ClusterScope, mpScope *scope.MachinePoolScope) *gomock.Controller {
-				mockCtrl := gomock.NewController(t)
-				vmssMock := mock_scalesets.NewMockClient(mockCtrl)
-				svc.Client = vmssMock
-				vmssMock.EXPECT().Delete(gomock.Any(), scope.AzureCluster.Spec.ResourceGroup, mpScope.Name()).Return(nil)
-
-				return mockCtrl
-			},
-			Expect: func(ctx context.Context, g *gomega.GomegaWithT, err error) {
-				g.Expect(err).ToNot(gomega.HaveOccurred())
+		},
+		{
+			name:          "vmss deletion fails",
+			expectedError: "failed to delete VMSS my-vmss in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:     "my-vmss",
+					Size:     "VM_SIZE",
+					Capacity: 3,
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Delete(context.TODO(), "my-rg", "my-vmss").
+					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.Name, func(t *testing.T) {
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
 			t.Parallel()
-			g := gomega.NewGomegaWithT(t)
-			s, mps := getScopes(g)
-			svc := NewService(s, resourceskus.NewStaticCache(nil))
-			spec := c.SpecFactory(g, s, mps)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			if c.Setup != nil {
-				mockCtrl := c.Setup(ctx, g, svc, s, mps)
-				defer mockCtrl.Finish()
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			scopeMock := mock_scalesets.NewMockScaleSetScope(mockCtrl)
+			clientMock := mock_scalesets.NewMockClient(mockCtrl)
+
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+
+			s := &Service{
+				Scope:  scopeMock,
+				Client: clientMock,
 			}
-			err := svc.Delete(context.Background(), spec)
-			c.Expect(ctx, g, err)
+
+			err := s.Delete(context.TODO())
+			if tc.expectedError != "" {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(err).To(MatchError(tc.expectedError))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	}
 }
 
-func TestGetVMSSUpdateFromVMSS(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
-
-	vmss := compute.VirtualMachineScaleSet{
-		Location: to.StringPtr("eastus"),
-		Tags: map[string]*string{
-			"Name": to.StringPtr("capz-mp-0"),
-		},
-		Sku: &compute.Sku{
-			Name: to.StringPtr("sku"),
-		},
-		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.UpgradeModeManual,
+func getFakeSkus() []compute.ResourceSku {
+	return []compute.ResourceSku{
+		{
+			Name: to.StringPtr("VM_SIZE"),
+			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
 			},
-			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
-				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
-					ComputerNamePrefix: to.StringPtr("vmss"),
-					CustomData:         to.StringPtr("data"),
-				},
-				StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
-					ImageReference: &compute.ImageReference{
-						ID: to.StringPtr("image-id"),
-					},
-				},
-				NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
-					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
-						{
-							Name: to.StringPtr("netconfig"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	expectedUpdate := compute.VirtualMachineScaleSetUpdate{
-		Tags: map[string]*string{
-			"Name": to.StringPtr("capz-mp-0"),
-		},
-		Sku: &compute.Sku{
-			Name: to.StringPtr("sku"),
-		},
-		VirtualMachineScaleSetUpdateProperties: &compute.VirtualMachineScaleSetUpdateProperties{
-			UpgradePolicy: &compute.UpgradePolicy{
-				Mode: compute.UpgradeModeManual,
-			},
-			VirtualMachineProfile: &compute.VirtualMachineScaleSetUpdateVMProfile{
-				OsProfile: &compute.VirtualMachineScaleSetUpdateOSProfile{
-					CustomData: to.StringPtr("data"),
-				},
-				StorageProfile: &compute.VirtualMachineScaleSetUpdateStorageProfile{
-					ImageReference: &compute.ImageReference{
-						ID: to.StringPtr("image-id"),
-					},
-				},
-				NetworkProfile: &compute.VirtualMachineScaleSetUpdateNetworkProfile{
-					NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetUpdateNetworkConfiguration{
-						{
-							Name: to.StringPtr("netconfig"),
-						},
-					},
-				},
-			},
-		},
-	}
-	result, err := getVMSSUpdateFromVMSS(vmss)
-	g.Expect(err).ToNot(gomega.HaveOccurred())
-	g.Expect(result).To(gomega.Equal(expectedUpdate))
-}
-
-func getScopes(g *gomega.GomegaWithT) (*scope.ClusterScope, *scope.MachinePoolScope) {
-	cluster := &clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-	}
-	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-	s, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		AzureClients: scope.AzureClients{
-			Authorizer: autorest.NullAuthorizer{},
-		},
-		Client:  client,
-		Cluster: cluster,
-		AzureCluster: &infrav1.AzureCluster{
-			Spec: infrav1.AzureClusterSpec{
-				Location: "test-location",
-				ResourceGroup:  "my-rg",
-				SubscriptionID: "123",
-				NetworkSpec: infrav1.NetworkSpec{
-					Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
-					Subnets: infrav1.Subnets{
-						{
-							ID: "subnet0.id",
-						},
-					},
-				},
-			},
-		},
-	})
-	g.Expect(err).ToNot(gomega.HaveOccurred())
-	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
-		Client:      client,
-		Logger:      s.Logger,
-		MachinePool: new(clusterv1exp.MachinePool),
-		AzureMachinePool: &infrav1exp.AzureMachinePool{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "capz-mp-0",
-			},
-		},
-		ClusterDescriber: s,
-	})
-	g.Expect(err).ToNot(gomega.HaveOccurred())
-
-	return s, mps
-}
-
-func getFakeNodeOutboundLoadBalancer() network.LoadBalancer {
-	return network.LoadBalancer{
-		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
-					ID: to.StringPtr("frontend-ip-config-id"),
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1"},
 				},
 			},
-			BackendAddressPools: &[]network.BackendAddressPool{
+			Capabilities: &[]compute.ResourceSkuCapabilities{
 				{
-					ID: pointer.StringPtr("cluster-name-outboundBackendPool"),
+					Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+					Value: to.StringPtr(string(resourceskus.CapabilityUnsupported)),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("4"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("4"),
 				},
 			},
-		}}
+		},
+		{
+			Name: to.StringPtr("VM_SIZE_AN"),
+			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
+			},
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+				{
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1"},
+				},
+			},
+			Capabilities: &[]compute.ResourceSkuCapabilities{
+				{
+					Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+					Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("4"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("6"),
+				},
+			},
+		},
+		{
+			Name: to.StringPtr("VM_SIZE_1_CPU"),
+			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
+			},
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+				{
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1"},
+				},
+			},
+			Capabilities: &[]compute.ResourceSkuCapabilities{
+				{
+					Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+					Value: to.StringPtr(string(resourceskus.CapabilityUnsupported)),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("1"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("4"),
+				},
+			},
+		},
+		{
+			Name: to.StringPtr("VM_SIZE_1_MEM"),
+			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
+			},
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+				{
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1"},
+				},
+			},
+			Capabilities: &[]compute.ResourceSkuCapabilities{
+				{
+					Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+					Value: to.StringPtr(string(resourceskus.CapabilityUnsupported)),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("2"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("1"),
+				},
+			},
+		},
+	}
 }

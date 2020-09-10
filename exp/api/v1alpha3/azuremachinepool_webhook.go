@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"errors"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -71,6 +73,7 @@ func (amp *AzureMachinePool) ValidateDelete() error {
 func (amp *AzureMachinePool) Validate() error {
 	validators := []func() error{
 		amp.ValidateImage,
+		amp.ValidateTerminateNotificationTimeout,
 	}
 
 	var errs []error
@@ -97,5 +100,21 @@ func (amp *AzureMachinePool) ValidateImage() error {
 			return agg
 		}
 	}
+	return nil
+}
+
+// ValidateTerminateNotificationTimeout termination notification timeout to be between 5 and 15
+func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
+	if amp.Spec.Template.TerminateNotificationTimeout == nil {
+		return nil
+	}
+	if *amp.Spec.Template.TerminateNotificationTimeout < 5 {
+		return errors.New("Minimum timeout 5 is allowed for TerminateNotificationTimeout")
+	}
+
+	if *amp.Spec.Template.TerminateNotificationTimeout > 15 {
+		return errors.New("Maximum timeout 15 is allowed for TerminateNotificationTimeout")
+	}
+
 	return nil
 }

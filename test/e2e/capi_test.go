@@ -55,18 +55,17 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	// TODO: fix and enable
-	//Context("Running the KCP upgrade spec", func() {
-	//	capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
-	//		return capi_e2e.KCPUpgradeSpecInput{
-	//			E2EConfig:             e2eConfig,
-	//			ClusterctlConfigPath:  clusterctlConfigPath,
-	//			BootstrapClusterProxy: bootstrapClusterProxy,
-	//			ArtifactFolder:        artifactFolder,
-	//			SkipCleanup:           skipCleanup,
-	//		}
-	//	})
-	//})
+	Context("Running the KCP upgrade spec", func() {
+		capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
+			return capi_e2e.KCPUpgradeSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 
 	Context("Running the MachineDeployment upgrade spec", func() {
 		capi_e2e.MachineDeploymentUpgradesSpec(context.TODO(), func() capi_e2e.MachineDeploymentUpgradesSpecInput {
@@ -93,4 +92,28 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			})
 		})
 	}
+
+	Context("Should successfully remediate unhealthy machines with MachineHealthCheck", func() {
+		capi_e2e.MachineRemediationSpec(context.TODO(), func() capi_e2e.MachineRemediationSpecInput {
+			return capi_e2e.MachineRemediationSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
+
+	Context("Should adopt up-to-date control plane Machines without modification", func() {
+		capi_e2e.KCPAdoptionSpec(context.TODO(), func() capi_e2e.KCPAdoptionSpecInput {
+			return capi_e2e.KCPAdoptionSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy.(capi_e2e.ClusterProxy),
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 })

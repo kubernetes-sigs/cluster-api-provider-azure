@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
@@ -102,6 +103,17 @@ func (m *MachineScope) VMSpecs() []azure.VMSpec {
 			Identity:               m.AzureMachine.Spec.Identity,
 			UserAssignedIdentities: m.AzureMachine.Spec.UserAssignedIdentities,
 			SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
+		},
+	}
+}
+
+// TagsSpecs returns the tags for the AzureMachine.
+func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
+	return []azure.TagsSpec{
+		{
+			Scope:      azure.VMID(m.SubscriptionID(), m.ResourceGroup(), m.Name()),
+			Tags:       m.AdditionalTags(),
+			Annotation: infrav1.VMTagsLastAppliedAnnotation,
 		},
 	}
 }
@@ -266,19 +278,20 @@ func (m *MachineScope) Role() string {
 
 // GetVMID returns the AzureMachine instance id by parsing Spec.ProviderID.
 func (m *MachineScope) GetVMID() string {
-	parsed, err := noderefutil.NewProviderID(m.GetProviderID())
+	parsed, err := noderefutil.NewProviderID(m.ProviderID())
 	if err != nil {
 		return ""
 	}
 	return parsed.ID()
 }
 
-// GetProviderID returns the AzureMachine providerID from the spec.
-func (m *MachineScope) GetProviderID() string {
-	if m.AzureMachine.Spec.ProviderID != nil {
-		return *m.AzureMachine.Spec.ProviderID
+// ProviderID returns the AzureMachine providerID from the spec.
+func (m *MachineScope) ProviderID() string {
+	parsed, err := noderefutil.NewProviderID(to.String(m.AzureMachine.Spec.ProviderID))
+	if err != nil {
+		return ""
 	}
-	return ""
+	return parsed.ID()
 }
 
 // SetProviderID sets the AzureMachine providerID in spec.
@@ -286,8 +299,8 @@ func (m *MachineScope) SetProviderID(v string) {
 	m.AzureMachine.Spec.ProviderID = to.StringPtr(v)
 }
 
-// GetVMState returns the AzureMachine VM state.
-func (m *MachineScope) GetVMState() infrav1.VMState {
+// VMState returns the AzureMachine VM state.
+func (m *MachineScope) VMState() infrav1.VMState {
 	if m.AzureMachine.Status.VMState != nil {
 		return *m.AzureMachine.Status.VMState
 	}
@@ -325,6 +338,33 @@ func (m *MachineScope) SetAnnotation(key, value string) {
 		m.AzureMachine.Annotations = map[string]string{}
 	}
 	m.AzureMachine.Annotations[key] = value
+}
+
+// AnnotationJSON returns a map[string]interface from a JSON annotation.
+func (m *MachineScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
+	out := map[string]interface{}{}
+	jsonAnnotation := m.AzureMachine.GetAnnotations()[annotation]
+	if len(jsonAnnotation) == 0 {
+		return out, nil
+	}
+	err := json.Unmarshal([]byte(jsonAnnotation), &out)
+	if err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// UpdateAnnotationJSON updates the `annotation` with
+// `content`. `content` in this case should be a `map[string]interface{}`
+// suitable for turning into JSON. This `content` map will be marshalled into a
+// JSON string before being set as the given `annotation`.
+func (m *MachineScope) UpdateAnnotationJSON(annotation string, content map[string]interface{}) error {
+	b, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+	m.SetAnnotation(annotation, string(b))
+	return nil
 }
 
 // SetAddresses sets the Azure address status.

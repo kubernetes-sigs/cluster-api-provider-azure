@@ -43,8 +43,8 @@ type Supported string
 const (
 	// CapabilitySupported is the value returned by this API from Azure when the capability is supported
 	CapabilitySupported Supported = "True"
-	// CapabilityUnupported is the value returned by this API from Azure when the capability is unsupported
-	CapabilityUnupported Supported = "False"
+	// CapabilityUnsupported is the value returned by this API from Azure when the capability is unsupported
+	CapabilityUnsupported Supported = "False"
 )
 
 const (
@@ -52,6 +52,14 @@ const (
 	EphemeralOSDisk = "EphemeralOSDiskSupported"
 	// AcceleratedNetworking identifies the capability for accelerated networking support.
 	AcceleratedNetworking = "AcceleratedNetworkingEnabled"
+	//VCPUs identifies the capability for the number of vCPUS.
+	VCPUs = "vCPUs"
+	// MemoryGB identifies the capability for memory Size.
+	MemoryGB = "MemoryGB"
+	// MinimumVCPUS is the minimum vCPUS allowed.
+	MinimumVCPUS = 2
+	// MinimumMemory is the minimum memory allowed.
+	MinimumMemory = 2
 )
 
 // HasCapability return true for a capability which can be either

@@ -238,7 +238,7 @@ spec:
                         properties:
                           option:
                             description: Option enables ephemeral OS when set to "Local"
-                              See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/ephemeral-os-disks
+                              See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks
                               for full details
                             enum:
                             - Local
@@ -269,6 +269,11 @@ spec:
                     description: SSHPublicKey is the SSH public key string base64
                       encoded to add to a Virtual Machine
                     type: string
+                  terminateNotificationTimeout:
+                    description: TerminateNotificationTimeout enables or disables
+                      VMSS scheduled events termination notification with specified
+                      timeout allowed values are between 5 and 15 (mins)
+                    type: integer
                   vmSize:
                     description: VMSize is the size of the Virtual Machine to build.
                       See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
@@ -318,8 +323,8 @@ spec:
                   output."
                 type: string
               provisioningState:
-                description: VMState is the provisioning state of the Azure virtual
-                  machine.
+                description: ProvisioningState is the provisioning state of the Azure
+                  virtual machine.
                 type: string
               ready:
                 description: Ready is true when the provider resource is ready.

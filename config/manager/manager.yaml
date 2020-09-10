@@ -15,6 +15,12 @@ spec:
       labels:
         control-plane: capz-controller-manager
     spec:
+      hostAliases:
+      - ip: "10.126.70.37"
+        hostnames:
+        - "dbe-1dkphq2.microsoftdatabox.com"
+        - "login.dbe-1dkphq2.microsoftdatabox.com"
+        - "management.dbe-1dkphq2.microsoftdatabox.com"
       containers:
         - args:
             - --enable-leader-election
@@ -22,6 +28,9 @@ spec:
           image: controller:latest
           imagePullPolicy: Always
           name: manager
+          volumeMounts:
+            - mountPath: /etc/ssl/certs/
+              name: ca-bundle
           ports:
             - containerPort: 9440
               name: healthz
@@ -35,3 +44,7 @@ spec:
               path: /healthz
               port: healthz
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: ca-bundle
+          configMap:
+            name: ca-bundle

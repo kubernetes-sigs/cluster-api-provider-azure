@@ -21,7 +21,7 @@ import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
-// SubnetScope defines the scope interface for a network interfaces service.
+// SubnetScope defines the scope interface for a subnet service.
 type SubnetScope interface {
 	azure.ClusterDescriber
 	logr.Logger

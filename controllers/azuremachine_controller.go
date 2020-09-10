@@ -264,7 +264,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachine")
 	}
 
-	switch machineScope.GetVMState() {
+	switch machineScope.VMState() {
 	case infrav1.VMStateSucceeded:
 		machineScope.V(2).Info("VM is running", "id", machineScope.GetVMID())
 		conditions.MarkTrue(machineScope.AzureMachine, infrav1.VMRunningCondition)
@@ -278,7 +278,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNUpdatingReason, clusterv1.ConditionSeverityInfo, "")
 		machineScope.SetNotReady()
 	case infrav1.VMStateDeleting:
-		machineScope.Info("Unexpected VM deletion", "state", machineScope.GetVMState(), "instance-id", machineScope.GetVMID())
+		machineScope.Info("Unexpected VM deletion", "id", machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure VM deletion")
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDDeletingReason, clusterv1.ConditionSeverityWarning, "")
 		machineScope.SetNotReady()
@@ -286,7 +286,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		machineScope.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", machineScope.GetVMID())
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "FailedVMState", "Azure VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
-		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machineScope.GetVMState()))
+		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machineScope.VMState()))
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityWarning, "")
 		machineScope.SetNotReady()
 		// If VM failed provisioning, delete it so it can be recreated
@@ -299,14 +299,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		machineScope.V(2).Info("VM state is undefined", "id", machineScope.GetVMID())
 		conditions.MarkUnknown(machineScope.AzureMachine, infrav1.VMRunningCondition, "", "")
 		machineScope.SetNotReady()
-	}
-
-	// TODO: move this out of the controller and use tags CreateOrUpdateAtScope instead.
-	// Ensure that the tags are correct.
-	err = r.reconcileTags(ctx, machineScope, ams.skuCache)
-	if err != nil {
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Tags are incorrect", errors.Errorf("failed to ensure tags: %+v", err).Error())
-		return reconcile.Result{}, errors.Errorf("failed to ensure tags: %+v", err)
 	}
 
 	return reconcile.Result{}, nil

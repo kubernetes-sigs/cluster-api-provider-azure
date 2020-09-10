@@ -20,11 +20,15 @@ package e2e
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"net"
+	"regexp"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -260,19 +264,18 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	WaitForJobComplete(context.TODO(), elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
-	By("SKIPPED: connecting directly to the external LB service")
-	// Temporarily disabled while we investigate some frequent failures.
-	// url := fmt.Sprintf("http://%s", elbIP)
-	// resp, err := retryablehttp.Get(url)
-	// if resp != nil {
-	// 	defer resp.Body.Close()
-	// }
-	// Expect(err).NotTo(HaveOccurred())
-	// body, err := ioutil.ReadAll(resp.Body)
-	// Expect(err).NotTo(HaveOccurred())
-	// matched, err := regexp.MatchString("(Welcome to nginx)", string(body))
-	// Expect(err).NotTo(HaveOccurred())
-	// Expect(matched).To(BeTrue())
+	By("connecting directly to the external LB service")
+	url := fmt.Sprintf("http://%s", elbIP)
+	resp, err := retryablehttp.Get(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	Expect(err).NotTo(HaveOccurred())
+	body, err := ioutil.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	matched, err := regexp.MatchString("(Welcome to nginx)", string(body))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(matched).To(BeTrue())
 
 	if input.SkipCleanup {
 		return

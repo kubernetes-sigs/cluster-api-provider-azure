@@ -65,7 +65,7 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 
 		log = log.WithValues("AzureCluster", azCluster.Name, "Namespace", azCluster.Namespace)
 
-		// Don't handle deleted AWSClusters
+		// Don't handle deleted AzureClusters
 		if !azCluster.ObjectMeta.DeletionTimestamp.IsZero() {
 			log.V(4).Info("AzureCluster has a deletion timestamp, skipping mapping.")
 			return nil
@@ -226,7 +226,7 @@ func newCloudProviderConfig(d azure.ClusterDescriber) *CloudProviderConfig {
 		VnetResourceGroup:            d.Vnet().ResourceGroup,
 		SubnetName:                   d.NodeSubnet().Name,
 		RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
-		LoadBalancerSku:              "standard",
+		LoadBalancerSku:              "Standard",
 		MaximumLoadBalancerRuleCount: 250,
 		UseManagedIdentityExtension:  false,
 		UseInstanceMetadata:          true,

@@ -36,7 +36,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
-			return nil
+			continue
 		}
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete disk %s in resource group %s", diskSpec.Name, s.Scope.ResourceGroup())

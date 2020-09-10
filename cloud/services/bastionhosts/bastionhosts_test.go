@@ -309,10 +309,17 @@ func TestDeleteBastionHost(t *testing.T) {
 						SubnetName:   "my-subnet",
 						PublicIPName: "my-publicip",
 					},
+					{
+						Name:         "my-bastionhost1",
+						VNetName:     "my-vnet",
+						SubnetName:   "my-subnet",
+						PublicIPName: "my-publicip",
+					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(context.TODO(), "my-rg", "my-bastionhost").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Delete(context.TODO(), "my-rg", "my-bastionhost1")
 			},
 		},
 		{

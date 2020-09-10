@@ -19,10 +19,11 @@ package scope
 import (
 	"fmt"
 	"strings"
-
+	"os"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"k8s.io/klog/klogr"
 )
 
 const (
@@ -95,6 +96,21 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 	if c.environment == "" {
 		c.environment = azure.PublicCloud.Name
 	}
+
+	log := klogr.New()
+	log.Info("Adding a log line to clients.go")
+	log.Info("Checking if we can read the environment from armEndpoint")
+        armEndpoint := os.Getenv("armEndpoint")
+        log.Info(armEndpoint)
+        armEndpoint = "https://management.dbe-1dkphq2.microsoftdatabox.com"
+        env1, err1 := azure.EnvironmentFromURL(armEndpoint)
+        if err1 != nil{
+	log.Info(err1.Error())
+	}
+        log.Info(env1.Name)
+        log.Info(env1.ResourceManagerEndpoint)
+        log.Info(env1.ActiveDirectoryEndpoint)
+        log.Info("Done extracting endpoint from environment")
 
 	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
 	c.ResourceManagerVMDNSSuffix = GetAzureDNSZoneForEnvironment(settings.Environment.Name)

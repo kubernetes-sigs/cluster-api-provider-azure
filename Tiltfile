@@ -12,13 +12,13 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v0.3.8",
-    "cert_manager_version": "v0.11.0",
+    "capi_version": "v0.3.9",
+    "cert_manager_version": "v0.16.1",
     "kubernetes_version": "v1.18.8",
     "aks_kubernetes_version": "v1.17.7"
 }
 
-keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64", "AZURE_ENVIRONMENT"]
+keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
 
 # global settings
 settings.update(read_json(
@@ -40,19 +40,34 @@ if "default_registry" in settings:
 # setup if you're repeatedly destroying and recreating your kind cluster, as it doesn't have to pull the images over
 # the network each time.
 def deploy_cert_manager():
-    registry = "quay.io/jetstack"
+    registry = settings.get("cert_manager_registry", "quay.io/jetstack")
     version = settings.get("cert_manager_version")
-    images = ["cert-manager-controller", "cert-manager-cainjector", "cert-manager-webhook"]
 
-    if settings.get("preload_images_for_kind"):
-        for image in images:
-            local("docker pull {}/{}:{}".format(registry, image, version))
-            local("kind load docker-image --name {} {}/{}:{}".format(settings.get("kind_cluster_name"), registry, image, version))
+    # check if cert-mamager is already installed, otherwise pre-load images & apply the manifest
+    # NB. this is required until https://github.com/jetstack/cert-manager/issues/3121 is addressed otherwise
+    # when applying the manifest twice to same cluster kubectl get stuck
+    existsCheck = str(local("kubectl get namespaces"))
+    if existsCheck.find("cert-manager") == -1:
+        # pre-load cert-manager images in kind
+        images = ["cert-manager-controller", "cert-manager-cainjector", "cert-manager-webhook"]
+        if settings.get("preload_images_for_kind"):
+            for image in images:
+                local("docker pull {}/{}:{}".format(registry, image, version))
+                local("kind load docker-image --name {} {}/{}:{}".format(settings.get("kind_cluster_name"), registry, image, version))
 
-    local("kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/{}/cert-manager.yaml".format(version))
+        # apply the cert-manager manifest
+        local("kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/{}/cert-manager.yaml".format(version))
 
-    # wait for the service to become available
-    local("kubectl wait --for=condition=Available --timeout=300s apiservice v1beta1.webhook.cert-manager.io")
+    # verifies cert-manager is properly working (https://cert-manager.io/docs/installation/kubernetes/#verifying-the-installation)
+    # 1. wait for the cert-manager to be running
+    local("kubectl wait --for=condition=Available --timeout=300s -n cert-manager deployment/cert-manager")
+    local("kubectl wait --for=condition=Available --timeout=300s -n cert-manager deployment/cert-manager-cainjector")
+    local("kubectl wait --for=condition=Available --timeout=300s -n cert-manager deployment/cert-manager-webhook")
+
+    # 2. create a test certificate
+    local("cat << EOF | kubectl apply -f - " + cert_manager_test_resources + "EOF")
+    local("kubectl wait --for=condition=Ready --timeout=300s -n cert-manager-test certificate/selfsigned-cert ")
+    local("cat << EOF | kubectl delete -f - " + cert_manager_test_resources + "EOF")
 
 
 # deploy CAPI
@@ -134,7 +149,7 @@ def validate_auth():
 
 tilt_helper_dockerfile_header = """
 # Tilt image
-FROM golang:1.13.8 as tilt-helper
+FROM golang:1.13.15 as tilt-helper
 # Support live reloading with Tilt
 RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/restart.sh  && \
     wget --output-document /start.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/start.sh && \
@@ -149,6 +164,32 @@ COPY --from=tilt-helper /restart.sh .
 COPY manager .
 """
 
+cert_manager_test_resources = """
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager-test
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: test-selfsigned
+  namespace: cert-manager-test
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: selfsigned-cert
+  namespace: cert-manager-test
+spec:
+  dnsNames:
+    - example.com
+  secretName: selfsigned-cert-tls
+  issuerRef:
+    name: test-selfsigned
+"""
 
 # Build CAPZ and add feature gates
 def capz():
@@ -173,6 +214,21 @@ def capz():
         cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
         deps = ["api", "cloud", "config", "controllers", "exp", "feature", "pkg", "go.mod", "go.sum", "main.go"]
     )
+
+    k8s_resource('capz-controller-manager:deployment:capz-system', objects=[
+        'azureclusters.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremachinepools.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremachines.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremachinetemplates.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremanagedclusters.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremanagedcontrolplanes.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+        'azuremanagedmachinepools.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
+    ])
+
+    k8s_resource('capz-controller-manager:deployment:capi-webhook-system', objects=[
+        'capz-validating-webhook-configuration:validatingwebhookconfiguration',
+        'capz-mutating-webhook-configuration:mutatingwebhookconfiguration',
+    ])
 
     dockerfile_contents = "\n".join([
         tilt_helper_dockerfile_header,
@@ -215,7 +271,7 @@ def flavors():
         if key[-4:] == "_B64":
             substitutions[key[:-4]] = base64_decode(substitutions[key])
 
-    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
+    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY_B64"
     ssh_pub_key_path = "~/.ssh/id_rsa.pub"
     if not substitutions.get(ssh_pub_key):
         print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))

@@ -352,6 +352,7 @@ release: clean-release  ## Builds and push container images using the latest git
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=IfNotPresent
 	$(MAKE) release-manifests
 	$(MAKE) release-templates
+	$(MAKE) release-metadata
 
 .PHONY: release-manifests
 release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publish with a release
@@ -360,6 +361,10 @@ release-manifests: $(KUSTOMIZE) $(RELEASE_DIR) ## Builds the manifests to publis
 .PHONY: release-templates
 release-templates: $(RELEASE_DIR)
 	cp templates/cluster-template* $(RELEASE_DIR)/
+
+.PHONY: release-metadata
+release-metadata: $(RELEASE_DIR)
+	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
 
 .PHONY: release-binary
 release-binary: $(RELEASE_DIR)
@@ -370,7 +375,7 @@ release-binary: $(RELEASE_DIR)
 		-e GOARCH=$(GOARCH) \
 		-v "$$(pwd):/workspace" \
 		-w /workspace \
-		golang:1.13.8 \
+		golang:1.13.15 \
 		go build -a -ldflags '$(LDFLAGS) -extldflags "-static"' \
 		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH) $(RELEASE_BINARY)
 
@@ -398,11 +403,13 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	$(MAKE) kind-create
 
 	# Install cert manager and wait for availability
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.1/cert-manager.yaml
-	kubectl wait --for=condition=Available --timeout=5m apiservice v1beta1.webhook.cert-manager.io
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.16.1/cert-manager.yaml
+	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager
+	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
+	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
 
 	# Deploy CAPI
-	curl -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.8/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.9/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz

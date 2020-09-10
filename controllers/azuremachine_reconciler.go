@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
@@ -32,7 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
-// azureMachineService is the group of services called by the AzureMachine controller
+// azureMachineService is the group of services called by the AzureMachine controller.
 type azureMachineService struct {
 	networkInterfacesSvc azure.Service
 	inboundNatRulesSvc   azure.Service
@@ -40,10 +41,11 @@ type azureMachineService struct {
 	roleAssignmentsSvc   azure.Service
 	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
+	tagsSvc              azure.Service
 	skuCache             *resourceskus.Cache
 }
 
-// newAzureMachineService populates all the services based on input scope
+// newAzureMachineService populates all the services based on input scope.
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
 	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 
@@ -54,6 +56,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		roleAssignmentsSvc:   roleassignments.NewService(machineScope),
 		disksSvc:             disks.NewService(machineScope),
 		publicIPsSvc:         publicips.NewService(machineScope),
+		tagsSvc:              tags.NewService(machineScope),
 		skuCache:             cache,
 	}
 }
@@ -78,6 +81,10 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 
 	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "unable to create role assignment")
+	}
+
+	if err := s.tagsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "unable to update tags")
 	}
 
 	return nil

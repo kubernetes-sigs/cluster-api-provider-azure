@@ -81,7 +81,7 @@ func EnsureOutboundInternetAccess(clientset *kubernetes.Clientset, config *restc
 func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config *restclient.Config, fromPods []v1.Pod, toPods []v1.Pod, shouldHaveConnection bool) {
 	for _, fromPod := range fromPods {
 		for _, toPod := range toPods {
-			command := []string{"curl", toPod.Status.PodIP}
+			command := []string{"curl", "-S", "-s", "-o", "/dev/null", toPod.Status.PodIP}
 			err := e2e_pod.Exec(clientset, config, fromPod, command)
 			if shouldHaveConnection {
 				Expect(err).NotTo(HaveOccurred())
@@ -93,7 +93,7 @@ func EnsureConnectivityResultBetweenPods(clientset *kubernetes.Clientset, config
 }
 
 func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod) error {
-	command := []string{"curl", "www.bing.com"}
+	command := []string{"curl", "-S", "-s", "-o", "/dev/null", "www.bing.com"}
 	return e2e_pod.Exec(clientset, config, pod, command)
 }
 

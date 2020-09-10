@@ -85,7 +85,7 @@ if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
     ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
     AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
 fi
-export AZURE_SSH_PUBLIC_KEY=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
 
 # timestamp is in RFC-3339 format to match kubetest
 export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"

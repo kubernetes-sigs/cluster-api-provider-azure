@@ -64,9 +64,13 @@ func TestDeleteDisk(t *testing.T) {
 					{
 						Name: "my-disk-1",
 					},
+					{
+						Name: "my-disk-2",
+					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(context.TODO(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.Delete(context.TODO(), "my-rg", "my-disk-2").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{
@@ -77,6 +81,9 @@ func TestDeleteDisk(t *testing.T) {
 				s.DiskSpecs().Return([]azure.DiskSpec{
 					{
 						Name: "my-disk-1",
+					},
+					{
+						Name: "my-disk-2",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
