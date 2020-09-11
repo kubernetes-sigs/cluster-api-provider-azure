@@ -61,14 +61,13 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create Azure session")
 	}*/
-	
+
 	log := klogr.New()
 	err := params.AzureClients.setDBECredentials(params.AzureCluster.Spec.SubscriptionID)
 	if err != nil {
 		log.Info(err.Error())
 		return nil, errors.Wrap(err, "failed to create Azure session")
 	}
-
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {
@@ -189,8 +188,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 			Role:                s.ControlPlaneSubnet().Role,
 			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
 			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
-		},
-		{
+		}} /*{
 			Name:              s.NodeSubnet().Name,
 			CIDR:              s.NodeSubnet().CidrBlock,
 			VNetName:          s.Vnet().Name,
@@ -198,7 +196,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 			RouteTableName:    s.NodeSubnet().RouteTable.Name,
 			Role:              s.NodeSubnet().Role,
 		},
-	}
+	}*/
 }
 
 /// VNetSpecs returns the virtual network specs.
