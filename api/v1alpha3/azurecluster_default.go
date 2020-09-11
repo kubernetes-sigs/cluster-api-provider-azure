@@ -22,11 +22,11 @@ import (
 
 const (
 	// DefaultVnetCIDR is the default Vnet CIDR
-	DefaultVnetCIDR = "10.126.68.0/22"
+	DefaultVnetCIDR = "5.5.0.0/16"
 	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
-	DefaultControlPlaneSubnetCIDR = "10.126.68.0/22"
+	DefaultControlPlaneSubnetCIDR = "5.5.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
-	DefaultNodeSubnetCIDR = "10.126.68.0/22"
+	DefaultNodeSubnetCIDR = "5.5.0.0/16"
 )
 
 func (c *AzureCluster) setDefaults() {
@@ -104,14 +104,12 @@ func generateVnetName(clusterName string) string {
 
 // generateControlPlaneSubnetName generates a node subnet name, based on the cluster name.
 func generateControlPlaneSubnetName(clusterName string) string {
-	//return fmt.Sprintf("%s-%s", clusterName, "controlplane-subnet")
-	return fmt.Sprintf("%s-%s", clusterName, "subnet1")
+	return fmt.Sprintf("%s-%s", clusterName, "controlplane-subnet")
 }
 
 // generateNodeSubnetName generates a node subnet name, based on the cluster name.
 func generateNodeSubnetName(clusterName string) string {
-	//return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
-	return fmt.Sprintf("%s-%s", clusterName, "subnet1")
+	return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
 }
 
 // generateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
