@@ -66,6 +66,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//    * Control Plane NSG
 	//    * Node NSG
 	//    * Node Route Table
+	log := klogr.New()
+	log.Info("In reconcile vnet")
 	for _, vnetSpec := range s.Scope.VNetSpecs() {
 		existingVnet, err := s.getExisting(ctx, vnetSpec)
 

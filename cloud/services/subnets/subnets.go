@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/klog/klogr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -48,6 +49,7 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
+	log := klogr.New()
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
 		existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
 		switch {
@@ -77,12 +79,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				AddressPrefix: to.StringPtr(subnetSpec.CIDR),
 			}
 			if subnetSpec.RouteTableName != "" {
+				log.Info("Inside routetable name")
 				subnetProperties.RouteTable = &network.RouteTable{
 					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),
 				}
 			}
 
 			if subnetSpec.SecurityGroupName != "" {
+				log.Info("Inside security group name")
 				subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
 					ID: to.StringPtr(azure.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
 				}

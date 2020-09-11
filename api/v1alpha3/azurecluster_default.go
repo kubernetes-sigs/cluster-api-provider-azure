@@ -76,12 +76,13 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.CidrBlock == "" {
 		cpSubnet.CidrBlock = DefaultControlPlaneSubnetCIDR
 	}
-	if cpSubnet.SecurityGroup.Name == "" {
+
+	/*if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
 	}
 	if cpSubnet.RouteTable.Name == "" {
 		cpSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
-	}
+	}*/
 
 	if nodeSubnet.Name == "" {
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
@@ -89,12 +90,13 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if nodeSubnet.CidrBlock == "" {
 		nodeSubnet.CidrBlock = DefaultNodeSubnetCIDR
 	}
-	if nodeSubnet.SecurityGroup.Name == "" {
+
+	/*if nodeSubnet.SecurityGroup.Name == "" {
 		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
 	}
 	if nodeSubnet.RouteTable.Name == "" {
 		nodeSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
-	}
+	}*/
 }
 
 // generateVnetName generates a virtual network name, based on the cluster name.
