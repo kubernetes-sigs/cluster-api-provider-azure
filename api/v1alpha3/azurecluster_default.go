@@ -104,12 +104,14 @@ func generateVnetName(clusterName string) string {
 
 // generateControlPlaneSubnetName generates a node subnet name, based on the cluster name.
 func generateControlPlaneSubnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "controlplane-subnet")
+	//return fmt.Sprintf("%s-%s", clusterName, "controlplane-subnet")
+	return fmt.Sprintf("%s-%s", clusterName, "subnet1")
 }
 
 // generateNodeSubnetName generates a node subnet name, based on the cluster name.
 func generateNodeSubnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
+	//return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
+	return fmt.Sprintf("%s-%s", clusterName, "subnet1")
 }
 
 // generateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
