@@ -26,7 +26,7 @@ const (
 	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
 	DefaultControlPlaneSubnetCIDR = "5.5.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
-	//DefaultNodeSubnetCIDR = "5.5.0.0/16"
+	DefaultNodeSubnetCIDR = "5.5.0.0/16"
 )
 
 func (c *AzureCluster) setDefaults() {
@@ -64,11 +64,11 @@ func (c *AzureCluster) setSubnetDefaults() {
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
 	}
 
-	/*nodeSubnet := c.Spec.NetworkSpec.GetNodeSubnet()
+	nodeSubnet := c.Spec.NetworkSpec.GetNodeSubnet()
 	if nodeSubnet == nil {
 		nodeSubnet = &SubnetSpec{Role: SubnetNode}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
-	}*/
+	}
 
 	if cpSubnet.Name == "" {
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
@@ -84,12 +84,12 @@ func (c *AzureCluster) setSubnetDefaults() {
 		cpSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
 	}*/
 
-	/*if nodeSubnet.Name == "" {
+	if nodeSubnet.Name == "" {
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
 	}
 	if nodeSubnet.CidrBlock == "" {
 		nodeSubnet.CidrBlock = DefaultNodeSubnetCIDR
-	}*/
+	}
 
 	/*if nodeSubnet.SecurityGroup.Name == "" {
 		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)

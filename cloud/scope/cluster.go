@@ -188,15 +188,15 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 			Role:                s.ControlPlaneSubnet().Role,
 			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
 			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
-		}} /*{
+		},
+		{
 			Name:              s.NodeSubnet().Name,
 			CIDR:              s.NodeSubnet().CidrBlock,
 			VNetName:          s.Vnet().Name,
 			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
 			RouteTableName:    s.NodeSubnet().RouteTable.Name,
 			Role:              s.NodeSubnet().Role,
-		},
-	}*/
+		}}
 }
 
 /// VNetSpecs returns the virtual network specs.

@@ -109,7 +109,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.V(2).Info("successfully created subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 
 		}
-
+		break
 	}
 	return nil
 }
