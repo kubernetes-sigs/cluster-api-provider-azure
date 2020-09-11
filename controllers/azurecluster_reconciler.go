@@ -98,13 +98,13 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile subnet")
 	}
 
-	if err := r.publicIPSvc.Reconcile(ctx); err != nil {
+	/*if err := r.publicIPSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile public IP")
-	}
+	}*/
 
-	if err := r.loadBalancerSvc.Reconcile(ctx); err != nil {
+	/*if err := r.loadBalancerSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile load balancer")
-	}
+	}*/
 
 	return nil
 }
