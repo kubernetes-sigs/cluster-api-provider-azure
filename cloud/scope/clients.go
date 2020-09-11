@@ -17,12 +17,9 @@ limitations under the License.
 package scope
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
-
-	azurestack "github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/resources/mgmt/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -158,7 +155,7 @@ func (c *AzureClients) setDBECredentials(subscriptionID string) error {
 		return err
 	}
 	c.Authorizer = autorest.NewBearerAuthorizer(token)
-	groupsClient := azurestack.NewGroupsClientWithBaseURI(armEndpoint, c.subscriptionID)
+	/*groupsClient := azurestack.NewGroupsClientWithBaseURI(armEndpoint, c.subscriptionID)
 	groupsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 	cntx := context.Background()
 	location := "dbelocal"
@@ -167,7 +164,7 @@ func (c *AzureClients) setDBECredentials(subscriptionID string) error {
 		log.Info(errRg.Error())
 	}
 	log.Info("Printing rg name")
-	log.Info(*rg.Name)
+	log.Info(*rg.Name)*/
 	return err
 }
 

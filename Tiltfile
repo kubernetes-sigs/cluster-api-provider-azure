@@ -18,7 +18,7 @@ settings = {
     "aks_kubernetes_version": "v1.17.7"
 }
 
-keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
+keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64","ARM_ENDPOINT_B64"]
 
 # global settings
 settings.update(read_json(

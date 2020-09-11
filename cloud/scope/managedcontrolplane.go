@@ -61,9 +61,10 @@ func NewManagedControlPlaneScope(params ManagedControlPlaneScopeParams) (*Manage
 		params.Logger = klogr.New()
 	}
 
-	if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID); err != nil {
+	if err := params.AzureClients.setDBECredentials(params.ControlPlane.Spec.SubscriptionID); err != nil {
 		return nil, errors.Wrap(err, "failed to create Azure session")
 	}
+	
 
 	helper, err := patch.NewHelper(params.PatchTarget, params.Client)
 	if err != nil {
