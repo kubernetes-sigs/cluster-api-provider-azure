@@ -19,8 +19,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"hash/fnv"
+
+	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -83,13 +84,15 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile virtual network")
 	}
 
-	if err := r.securityGroupSvc.Reconcile(ctx); err != nil {
+	//Not supported in ASE
+	/*if err := r.securityGroupSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile network security group")
-	}
+	}*/
 
-	if err := r.routeTableSvc.Reconcile(ctx); err != nil {
+	//Not supported in ASE
+	/*if err := r.routeTableSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile route table")
-	}
+	}*/
 
 	if err := r.subnetsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile subnet")
