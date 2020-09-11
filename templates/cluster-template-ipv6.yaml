@@ -141,6 +141,12 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    postKubeadmCommands:
+    - sed -i '\#--listen-client-urls#s#$#,https://127.0.0.1:2379#' /etc/kubernetes/manifests/etcd.yaml
+    - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+      /etc/resolv.conf
+    - systemctl restart systemd-resolved
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
@@ -243,4 +249,9 @@ spec:
             cluster-dns: '[fd00::10]'
             node-ip: '::'
           name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+        /etc/resolv.conf
+      - systemctl restart systemd-resolved
       useExperimentalRetryJoin: true

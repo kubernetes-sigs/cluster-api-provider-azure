@@ -4,7 +4,6 @@ resources:
   - machine-deployment.yaml
 patchesStrategicMerge:
   - patches/ipv6.yaml
-  - patches/azure-cluster.yaml
-  - patches/control-plane-adm-config.yaml
-  - patches/control-plane-azure-template.yaml
+  - patches/kubeadm-controlplane.yaml
+  - patches/controlplane-azuremachinetemplate.yaml
 

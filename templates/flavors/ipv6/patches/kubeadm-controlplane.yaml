@@ -5,6 +5,12 @@ metadata:
 spec:
   kubeadmConfigSpec:
     useExperimentalRetryJoin: true
+    postKubeadmCommands:
+      - sed -i '\#--listen-client-urls#s#$#,https://127.0.0.1:2379#' /etc/kubernetes/manifests/etcd.yaml
+      # This frees up :53 on the host for the coredns pods
+      - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+      - systemctl restart systemd-resolved
     initConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
@@ -47,4 +53,3 @@ spec:
       scheduler:
         extraArgs:
           bind-address: "::"
-    
