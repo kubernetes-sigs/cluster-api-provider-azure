@@ -100,9 +100,9 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete inbound NAT rule")
 	}*/
 
-	if err := s.publicIPsSvc.Delete(ctx); err != nil {
+	/*if err := s.publicIPsSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete public IPs")
-	}
+	}*/
 
 	if err := s.disksSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete OS disk")
