@@ -18,31 +18,30 @@ package controllers
 
 import (
 	"context"
+
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 
 	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
 // azureMachineService is the group of services called by the AzureMachine controller.
 type azureMachineService struct {
 	networkInterfacesSvc azure.Service
-	inboundNatRulesSvc   azure.Service
-	virtualMachinesSvc   azure.Service
-	roleAssignmentsSvc   azure.Service
-	disksSvc             azure.Service
-	publicIPsSvc         azure.Service
-	tagsSvc              azure.Service
-	skuCache             *resourceskus.Cache
+	//inboundNatRulesSvc   azure.Service
+	virtualMachinesSvc azure.Service
+	//roleAssignmentsSvc   azure.Service
+	disksSvc     azure.Service
+	publicIPsSvc azure.Service
+	tagsSvc      azure.Service
+	skuCache     *resourceskus.Cache
 }
 
 // newAzureMachineService populates all the services based on input scope.
@@ -50,14 +49,14 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 
 	return &azureMachineService{
-		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
+		//inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
 		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
 		virtualMachinesSvc:   virtualmachines.NewService(machineScope, cache),
-		roleAssignmentsSvc:   roleassignments.NewService(machineScope),
-		disksSvc:             disks.NewService(machineScope),
-		publicIPsSvc:         publicips.NewService(machineScope),
-		tagsSvc:              tags.NewService(machineScope),
-		skuCache:             cache,
+		//roleAssignmentsSvc:   roleassignments.NewService(machineScope),
+		disksSvc:     disks.NewService(machineScope),
+		publicIPsSvc: publicips.NewService(machineScope),
+		tagsSvc:      tags.NewService(machineScope),
+		skuCache:     cache,
 	}
 }
 
@@ -67,9 +66,9 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create public IP")
 	}
 
-	if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
+	/*if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create inbound NAT rule")
-	}
+	}*/
 
 	if err := s.networkInterfacesSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create network interface")
@@ -100,9 +99,9 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete network interface")
 	}
 
-	if err := s.inboundNatRulesSvc.Delete(ctx); err != nil {
+	/*if err := s.inboundNatRulesSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete inbound NAT rule")
-	}
+	}*/
 
 	if err := s.publicIPsSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete public IPs")
