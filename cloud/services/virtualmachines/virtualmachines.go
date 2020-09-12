@@ -30,7 +30,6 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // getExisting provides information about a virtual machine.
@@ -87,10 +86,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 
-			priority, evictionPolicy, billingProfile, err := getSpotVMOptions(vmSpec.SpotVMOptions)
+			/*priority, evictionPolicy, billingProfile, err := getSpotVMOptions(vmSpec.SpotVMOptions)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get Spot VM options")
-			}
+			}*/
 
 			sshKey, err := base64.StdEncoding.DecodeString(vmSpec.SSHKeyData)
 			if err != nil {
@@ -134,23 +133,23 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					NetworkProfile: &compute.NetworkProfile{
 						NetworkInterfaces: &nicRefs,
 					},
-					Priority:       priority,
-					EvictionPolicy: evictionPolicy,
-					BillingProfile: billingProfile,
-					DiagnosticsProfile: &compute.DiagnosticsProfile{
+					//Priority:       priority,
+					//EvictionPolicy: evictionPolicy,
+					//BillingProfile: billingProfile,
+					/*DiagnosticsProfile: &compute.DiagnosticsProfile{
 						BootDiagnostics: &compute.BootDiagnostics{
 							Enabled: to.BoolPtr(true),
 						},
-					},
+					},*/
 				},
 			}
 
-			if vmSpec.Zone != "" {
+			/*if vmSpec.Zone != "" {
 				zones := []string{vmSpec.Zone}
 				virtualMachine.Zones = &zones
-			}
+			}*/
 
-			if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
+			/*if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
 				virtualMachine.Identity = &compute.VirtualMachineIdentity{
 					Type: compute.ResourceIdentityTypeSystemAssigned,
 				}
@@ -173,7 +172,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					Type:                   compute.ResourceIdentityTypeUserAssigned,
 					UserAssignedIdentities: userIdentitiesMap,
 				}
-			}
+			}*/
 
 			if err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), vmSpec.Name, virtualMachine); err != nil {
 				return errors.Wrapf(err, "failed to create VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
@@ -294,13 +293,14 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 		},
 	}
 
-	sku, err := s.ResourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
+	//commenting out resource sku cache as it not required by CAP-H
+	/*sku, err := s.ResourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
-	}
+	}*/
 
 	// Checking if the requested VM size has at least 2 vCPUS
-	vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
+	/*vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to validate the vCPU cabability")
 	}
@@ -326,7 +326,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
 			Option: compute.DiffDiskOptions(vmSpec.OSDisk.DiffDiskSettings.Option),
 		}
-	}
+	}*/
 
 	dataDisks := []compute.DataDisk{}
 	for _, disk := range vmSpec.DataDisks {

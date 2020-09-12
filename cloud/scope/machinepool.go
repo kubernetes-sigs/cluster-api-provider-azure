@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -228,7 +229,10 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 // Pick image from the machine configuration, or use a default one.
 func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
+	log := klogr.New()
 	if m.AzureMachinePool.Spec.Template.Image != nil {
+		log.Info("m.AzureMachine.Spec.Image")
+		//log.Info(m.AzureMachine.Spec.Image)
 		return m.AzureMachinePool.Spec.Template.Image, nil
 	}
 	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
