@@ -46,22 +46,24 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 			nicConfig.PrivateIPAllocationMethod = network.Dynamic
 			if nicSpec.StaticIPAddress != "" {
-				log.Info("inside static ip address not equal to null")
+				log.Info(nicSpec.StaticIPAddress)
 				nicConfig.PrivateIPAllocationMethod = network.Static
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
 
 			backendAddressPools := []network.BackendAddressPool{}
 			if nicSpec.PublicLBName != "" {
-				log.Info("inside public lb name not equal to null")
+				log.Info(nicSpec.PublicLBName)
 				if nicSpec.PublicLBAddressPoolName != "" {
 					backendAddressPools = append(backendAddressPools,
 						network.BackendAddressPool{
 							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
 						})
 				}
+				log.Info("AddressPoolID using publicLBName and publicLBAddress")
+				log.Info(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName))
 				if nicSpec.PublicLBNATRuleName != "" {
-					log.Info("inside PublicLBNATRuleName not equal to null")
+					log.Info(nicSpec.PublicLBNATRuleName)
 					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 						{
 							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
@@ -69,18 +71,23 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					}
 				}
 			}
+			log.Info("NATRuleID")
+			log.Info(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName))
 			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
-				log.Info("inside nicSpec.InternalLBName and nicSpec.InternalLBAddressPoolName not equal to null")
+				log.Info(nicSpec.InternalLBName)
+				log.Info(nicSpec.InternalLBAddressPoolName)
 				// only control planes have an attached internal LB
 				backendAddressPools = append(backendAddressPools,
 					network.BackendAddressPool{
 						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
 					})
 			}
-			nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
+			log.Info("AddressPoolID using InternalLBName and InternalLBAddress")
+			//nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 			if nicSpec.PublicIPName != "" {
 				log.Info("Inside publicIPName not equal to null")
+				log.Info(nicSpec.PublicIPName)
 				nicConfig.PublicIPAddress = &network.PublicIPAddress{
 					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
 				}
