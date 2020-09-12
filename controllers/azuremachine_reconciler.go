@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 
 	"github.com/pkg/errors"
@@ -37,8 +35,8 @@ type azureMachineService struct {
 	//inboundNatRulesSvc   azure.Service
 	virtualMachinesSvc azure.Service
 	//roleAssignmentsSvc   azure.Service
-	disksSvc     azure.Service
-	publicIPsSvc azure.Service
+	disksSvc azure.Service
+	//publicIPsSvc azure.Service
 	//tagsSvc      azure.Service
 	skuCache *resourceskus.Cache
 }
@@ -52,8 +50,8 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
 		virtualMachinesSvc:   virtualmachines.NewService(machineScope, cache),
 		//roleAssignmentsSvc:   roleassignments.NewService(machineScope),
-		disksSvc:     disks.NewService(machineScope),
-		publicIPsSvc: publicips.NewService(machineScope),
+		disksSvc: disks.NewService(machineScope),
+		//publicIPsSvc: publicips.NewService(machineScope),
 		//tagsSvc:      tags.NewService(machineScope),
 		skuCache: cache,
 	}
@@ -61,9 +59,9 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
-	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
+	/*if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create public IP")
-	}
+	}*/
 
 	/*if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create inbound NAT rule")

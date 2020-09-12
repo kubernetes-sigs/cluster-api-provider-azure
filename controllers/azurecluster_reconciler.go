@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
@@ -44,9 +43,9 @@ type azureClusterReconciler struct {
 	securityGroupSvc azure.Service
 	routeTableSvc    azure.Service
 	subnetsSvc       azure.Service
-	publicIPSvc      azure.Service
-	loadBalancerSvc  azure.Service
-	skuCache         *resourceskus.Cache
+	//publicIPSvc      azure.Service
+	loadBalancerSvc azure.Service
+	skuCache        *resourceskus.Cache
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
@@ -58,9 +57,9 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		securityGroupSvc: securitygroups.NewService(scope),
 		routeTableSvc:    routetables.NewService(scope),
 		subnetsSvc:       subnets.NewService(scope),
-		publicIPSvc:      publicips.NewService(scope),
-		loadBalancerSvc:  loadbalancers.NewService(scope),
-		skuCache:         resourceskus.NewCache(scope, scope.Location()),
+		//publicIPSvc:      publicips.NewService(scope),
+		loadBalancerSvc: loadbalancers.NewService(scope),
+		skuCache:        resourceskus.NewCache(scope, scope.Location()),
 	}
 }
 
@@ -100,9 +99,9 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile subnet")
 	}
 
-	if err := r.publicIPSvc.Reconcile(ctx); err != nil {
+	/*if err := r.publicIPSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile public IP")
-	}
+	}*/
 
 	/*if err := r.loadBalancerSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to reconcile load balancer")
