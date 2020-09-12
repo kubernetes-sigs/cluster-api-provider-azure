@@ -23,12 +23,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+	"k8s.io/klog/klogr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
+	log := klogr.New()
 	for _, nicSpec := range s.Scope.NICSpecs() {
 
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
@@ -45,12 +46,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 			nicConfig.PrivateIPAllocationMethod = network.Dynamic
 			if nicSpec.StaticIPAddress != "" {
+				log.Info("inside static ip address not equal to null")
 				nicConfig.PrivateIPAllocationMethod = network.Static
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
 
 			backendAddressPools := []network.BackendAddressPool{}
 			if nicSpec.PublicLBName != "" {
+				log.Info("inside public lb name not equal to null")
 				if nicSpec.PublicLBAddressPoolName != "" {
 					backendAddressPools = append(backendAddressPools,
 						network.BackendAddressPool{
@@ -58,6 +61,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 						})
 				}
 				if nicSpec.PublicLBNATRuleName != "" {
+					log.Info("inside PublicLBNATRuleName not equal to null")
 					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 						{
 							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
@@ -66,6 +70,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
+				log.Info("inside nicSpec.InternalLBName and nicSpec.InternalLBAddressPoolName not equal to null")
 				// only control planes have an attached internal LB
 				backendAddressPools = append(backendAddressPools,
 					network.BackendAddressPool{
@@ -75,12 +80,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 			if nicSpec.PublicIPName != "" {
+				log.Info("Inside publicIPName not equal to null")
 				nicConfig.PublicIPAddress = &network.PublicIPAddress{
 					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
 				}
 			}
 
-			if nicSpec.AcceleratedNetworking == nil {
+			/*if nicSpec.AcceleratedNetworking == nil {
 				// set accelerated networking to the capability of the VMSize
 				sku, err := s.ResourceSKUCache.Get(ctx, nicSpec.VMSize, resourceskus.VirtualMachines)
 				if err != nil {
@@ -89,7 +95,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 				accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
 				nicSpec.AcceleratedNetworking = &accelNet
-			}
+			}*/
 
 			err = s.Client.CreateOrUpdate(ctx,
 				s.Scope.ResourceGroup(),
@@ -103,7 +109,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 								InterfaceIPConfigurationPropertiesFormat: nicConfig,
 							},
 						},
-						EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
+						//EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
 					},
 				})
 
