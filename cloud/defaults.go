@@ -46,6 +46,13 @@ const (
 	LatestVersion = "latest"
 )
 
+const (
+	// AKSSubnetName is the name of the default aks managed subnet for worker nodes.
+	AKSSubnetName = "aks-subnet"
+	// UniqueNameSuffixSize is the length of the hash AKS uses as a cluster id.
+	UniqueNameSuffixSize = 8
+)
+
 // GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
 func GenerateInternalLBName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")

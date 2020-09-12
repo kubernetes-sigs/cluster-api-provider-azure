@@ -21,12 +21,14 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // Client wraps go-sdk
 type Client interface {
 	Get(context.Context, string, string) (network.VirtualNetwork, error)
+	List(context.Context, string) ([]network.VirtualNetwork, error)
 	CreateOrUpdate(context.Context, string, string, network.VirtualNetwork) error
 	Delete(context.Context, string, string) error
 	CheckIPAddressAvailability(context.Context, string, string, string) (network.IPAddressAvailabilityResult, error)
@@ -56,6 +58,24 @@ func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer 
 // Get gets the specified virtual network by resource group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vnetName string) (network.VirtualNetwork, error) {
 	return ac.virtualnetworks.Get(ctx, resourceGroupName, vnetName, "")
+}
+
+// List lists virtual networks in a given resource group.
+func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]network.VirtualNetwork, error) {
+	iter, err := ac.virtualnetworks.ListComplete(ctx, resourceGroupName)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list resource skus")
+	}
+
+	var vnets []network.VirtualNetwork
+	for iter.NotDone() {
+		vnets = append(vnets, iter.Value())
+		if err := iter.NextWithContext(ctx); err != nil {
+			return vnets, errors.Wrap(err, "could not iterate resource vnets")
+		}
+	}
+
+	return vnets, nil
 }
 
 // CreateOrUpdate creates or updates a virtual network in the specified resource group.

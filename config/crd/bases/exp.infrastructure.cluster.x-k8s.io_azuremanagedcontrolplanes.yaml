@@ -134,9 +134,18 @@ spec:
                   fully ready. In the AzureManagedControlPlane implementation, these
                   are identical.
                 type: boolean
+              nodeResourceGroupName:
+                description: NodeResourceGroupName is the name of the resource group
+                  containining cluster IaaS resources.
+                type: string
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean
+              virtualNetworkName:
+                description: VirtualNetworkName is the name of the AKS-generated VNET.
+                  We either use the AKS pre-created one or find one from an agent
+                  pool.
+                type: string
             type: object
         type: object
     served: true

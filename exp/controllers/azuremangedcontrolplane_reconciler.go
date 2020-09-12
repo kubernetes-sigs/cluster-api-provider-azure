@@ -92,8 +92,8 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		return errors.Wrapf(err, "failed to reconcile managed cluster")
 	}
 
-	scope.V(2).Info("Reconciling endpoint")
-	if err := r.reconcileEndpoint(ctx, scope, managedClusterSpec); err != nil {
+	scope.V(2).Info("Reconciling status")
+	if err := r.reconcileStatus(ctx, scope, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile control plane endpoint")
 	}
 
@@ -216,7 +216,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 	return nil
 }
 
-func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
+func (r *azureManagedControlPlaneReconciler) reconcileStatus(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
 	// Fetch newly updated cluster
 	managedClusterResult, err := r.managedClustersSvc.Get(ctx, managedClusterSpec)
 	if err != nil {
@@ -228,6 +228,25 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 		return fmt.Errorf("expected containerservice ManagedCluster object")
 	}
 
+	if managedCluster.NodeResourceGroup == nil || *managedCluster.NodeResourceGroup == "" {
+		return errors.New("expected nodeResourceGroup to be populated on managedCluster")
+	}
+
+	if managedCluster.AgentPoolProfiles == nil || len(*managedCluster.AgentPoolProfiles) < 1 {
+		return errors.New("expected at least one agent pool on cluster")
+	}
+
+	vnetSubnetID := (*managedCluster.AgentPoolProfiles)[0].VnetSubnetID
+
+	if vnetSubnetID == nil || *vnetSubnetID == "" {
+		return errors.New("expected first agent pool to have populated vnetSubnetID")
+	}
+
+	vnetName, err := extractVnetFromSubnetID(*vnetSubnetID)
+	if err != nil {
+		return err
+	}
+
 	old := scope.ControlPlane.DeepCopyObject()
 
 	scope.ControlPlane.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
@@ -235,8 +254,11 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 		Port: 443,
 	}
 
+	scope.ControlPlane.Status.VirtualNetworkName = vnetName
+	scope.ControlPlane.Status.NodeResourceGroupName = *managedCluster.NodeResourceGroup
+
 	if err := r.kubeclient.Patch(ctx, scope.ControlPlane, client.MergeFrom(old)); err != nil {
-		return errors.Wrapf(err, "failed to set control plane endpoint")
+		return errors.Wrapf(err, "failed to patch control plane status")
 	}
 
 	return nil
@@ -272,4 +294,12 @@ func makeKubeconfig(cluster *clusterv1.Cluster, controlPlane *infrav1exp.AzureMa
 			},
 		},
 	}
+}
+
+func extractVnetFromSubnetID(vnetSubnetID string) (string, error) {
+	tokens := strings.Split(vnetSubnetID, "/")
+	if len(tokens) != 11 {
+		return "", fmt.Errorf("expected 11 tokens but found %d", len(tokens))
+	}
+	return tokens[8], nil
 }

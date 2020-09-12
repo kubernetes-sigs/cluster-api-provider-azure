@@ -86,6 +86,13 @@ type AzureManagedControlPlaneStatus struct {
 	// In the AzureManagedControlPlane implementation, these are identical.
 	// +optional
 	Initialized bool `json:"initialized,omitempty"`
+
+	// VirtualNetworkName is the name of the AKS-generated VNET. We either
+	// use the AKS pre-created one or find one from an agent pool.
+	VirtualNetworkName string `json:"virtualNetworkName,omitempty"`
+
+	// NodeResourceGroupName is the name of the resource group containining cluster IaaS resources.
+	NodeResourceGroupName string `json:"nodeResourceGroupName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

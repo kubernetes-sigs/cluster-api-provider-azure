@@ -196,7 +196,7 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
-/// VNetSpecs returns the virtual network specs.
+// VNetSpecs returns the virtual network specs.
 func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
 	return []azure.VNetSpec{
 		{

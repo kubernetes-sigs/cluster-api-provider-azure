@@ -28,6 +28,7 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -142,4 +143,45 @@ func (s *ManagedControlPlaneScope) Authorizer() autorest.Authorizer {
 // PatchObject persists the cluster configuration and status.
 func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 	return s.patchHelper.Patch(ctx, s.PatchTarget)
+}
+
+// ControlPlaneSubnet is empty for managed clusters.
+func (s *ManagedControlPlaneScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
+	return nil
+}
+
+// NodeSubnet is the name of the subnet nodes should join, defaults to aks-subnet.
+func (s *ManagedControlPlaneScope) NodeSubnet() *infrav1.SubnetSpec {
+	return &infrav1.SubnetSpec{
+		Role: infrav1.SubnetNode,
+		Name: azure.AKSSubnetName,
+	}
+}
+
+// IsVnetManaged returns true if the vnet is managed.
+func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
+	return true
+}
+
+// RouteTable returns the cluster node routetable.
+func (s *ManagedControlPlaneScope) RouteTable() *infrav1.RouteTable {
+	return nil
+}
+
+// Vnet returns the cluster Vnet.
+func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
+	return &infrav1.VnetSpec{
+		ResourceGroup: s.ControlPlane.Status.NodeResourceGroupName,
+		Name:          s.ControlPlane.Status.VirtualNetworkName,
+	}
+}
+
+// VNetSpecs returns the virtual network specs.
+func (s *ManagedControlPlaneScope) VNetSpecs() []azure.VNetSpec {
+	return []azure.VNetSpec{
+		{
+			ResourceGroup: s.Vnet().ResourceGroup,
+			Name:          s.Vnet().Name,
+		},
+	}
 }
