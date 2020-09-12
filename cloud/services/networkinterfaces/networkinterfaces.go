@@ -64,11 +64,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				log.Info(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName))
 				if nicSpec.PublicLBNATRuleName != "" {
 					log.Info(nicSpec.PublicLBNATRuleName)
-					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+					/*nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 						{
 							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
 						},
-					}
+					}*/
 				}
 			}
 			log.Info("NATRuleID")
