@@ -25,7 +25,8 @@ import (
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -120,9 +121,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Capacity: to.Int64Ptr(vmssSpec.Capacity),
 		},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-			UpgradePolicy: &compute.UpgradePolicy{
+			/*UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
-			},
+			},*/
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: to.StringPtr(vmssSpec.Name),
@@ -151,8 +152,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 						{
 							Name: to.StringPtr(vmssSpec.Name + "-netconfig"),
 							VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-								Primary:            to.BoolPtr(true),
-								EnableIPForwarding: to.BoolPtr(true),
+								Primary: to.BoolPtr(true),
+								//EnableIPForwarding: to.BoolPtr(true),
 								IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
 									{
 										Name: to.StringPtr(vmssSpec.Name + "-ipconfig"),
@@ -176,16 +177,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	if vmssSpec.TerminateNotificationTimeout != nil {
-		vmss.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
+		/*vmss.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
 			TerminateNotificationProfile: &compute.TerminateNotificationProfile{
 				Enable:           to.BoolPtr(true),
 				NotBeforeTimeout: to.StringPtr(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
 			},
-		}
+		}*/
 		// Once we have scheduled events termination notification we can switch upgrade policy to be rolling
 		vmss.VirtualMachineScaleSetProperties.UpgradePolicy = &compute.UpgradePolicy{
 			// Prefer rolling upgrade compared to Automatic (which updates all instances at same time)
-			Mode: compute.UpgradeModeRolling,
+			//Mode: compute.UpgradeModeRolling,
 			// We need to set the rolling upgrade policy based on user defined values
 			// for now lets stick to defaults, future PR will include the configurability
 			// RollingUpgradePolicy: &compute.RollingUpgradePolicy{},
@@ -248,7 +249,7 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 		OsDisk: &compute.VirtualMachineScaleSetOSDisk{
 			OsType:       compute.OperatingSystemTypes(vmssSpec.OSDisk.OSType),
 			CreateOption: compute.DiskCreateOptionTypesFromImage,
-			DiskSizeGB:   to.Int32Ptr(vmssSpec.OSDisk.DiskSizeGB),
+			//DiskSizeGB:   to.Int32Ptr(vmssSpec.OSDisk.DiskSizeGB),
 			ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
 				StorageAccountType: compute.StorageAccountTypes(vmssSpec.OSDisk.ManagedDisk.StorageAccountType),
 			},
@@ -261,9 +262,9 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmssSpec.Size)
 		}
 
-		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
+		/*storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
 			Option: compute.DiffDiskOptions(vmssSpec.OSDisk.DiffDiskSettings.Option),
-		}
+		}*/
 	}
 
 	dataDisks := []compute.VirtualMachineScaleSetDataDisk{}

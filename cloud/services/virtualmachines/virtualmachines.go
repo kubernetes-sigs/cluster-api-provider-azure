@@ -20,10 +20,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
+	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -355,7 +355,8 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 	return storageProfile, nil
 }
 
-func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
+//commenting out this function as not neede dby CAP-H and not supported by 2018 API profile
+/*func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
 	// Spot VM not requested, return zero values to apply defaults
 	if spotVMOptions == nil {
 		return "", "", nil, nil
@@ -371,4 +372,4 @@ func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMach
 		}
 	}
 	return compute.Spot, compute.Deallocate, billingProfile, nil
-}
+}*/

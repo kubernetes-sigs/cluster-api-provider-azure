@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	//"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
