@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 
@@ -40,8 +39,8 @@ type azureMachineService struct {
 	//roleAssignmentsSvc   azure.Service
 	disksSvc     azure.Service
 	publicIPsSvc azure.Service
-	tagsSvc      azure.Service
-	skuCache     *resourceskus.Cache
+	//tagsSvc      azure.Service
+	skuCache *resourceskus.Cache
 }
 
 // newAzureMachineService populates all the services based on input scope.
@@ -55,8 +54,8 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		//roleAssignmentsSvc:   roleassignments.NewService(machineScope),
 		disksSvc:     disks.NewService(machineScope),
 		publicIPsSvc: publicips.NewService(machineScope),
-		tagsSvc:      tags.NewService(machineScope),
-		skuCache:     cache,
+		//tagsSvc:      tags.NewService(machineScope),
+		skuCache: cache,
 	}
 }
 
@@ -78,13 +77,13 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create virtual machine")
 	}
 
-	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
+	/*if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "unable to create role assignment")
-	}
+	}*/
 
-	if err := s.tagsSvc.Reconcile(ctx); err != nil {
+	/*if err := s.tagsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "unable to update tags")
-	}
+	}*/
 
 	return nil
 }
