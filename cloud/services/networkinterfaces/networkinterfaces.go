@@ -42,7 +42,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		default:
 			nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
-			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
+			//nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
+			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, "subnet1"))}
 
 			nicConfig.PrivateIPAllocationMethod = network.Dynamic
 			if nicSpec.StaticIPAddress != "" {
