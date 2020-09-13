@@ -22,11 +22,11 @@ import (
 
 const (
 	// DefaultVnetCIDR is the default Vnet CIDR
-	DefaultVnetCIDR = "5.5.0.0/16"
+	DefaultVnetCIDR = "10.126.68.0/22"
 	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
-	DefaultControlPlaneSubnetCIDR = "5.5.0.0/16"
+	DefaultControlPlaneSubnetCIDR = "10.126.68.0/22"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
-	DefaultNodeSubnetCIDR = "5.5.0.0/16"
+	DefaultNodeSubnetCIDR = "10.126.68.0/22"
 )
 
 func (c *AzureCluster) setDefaults() {
