@@ -21,6 +21,7 @@ spec:
         - "dbe-1dkphq2.microsoftdatabox.com"
         - "login.dbe-1dkphq2.microsoftdatabox.com"
         - "management.dbe-1dkphq2.microsoftdatabox.com"
+        - "capz-cluster-e1da2561.dbelocal."
       containers:
         - args:
             - --enable-leader-election
