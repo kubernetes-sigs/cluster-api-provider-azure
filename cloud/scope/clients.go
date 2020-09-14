@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -136,7 +137,9 @@ func (c *AzureClients) setDBECredentials(subscriptionID string) error {
 		log.Info(err.Error())
 		return err
 	}
-	c.environment = env.Name
+	//c.environment = env.Name
+	//env Name gives HybridEnvironment
+	c.environment = "AzureStackCloud"
 	c.ResourceManagerEndpoint = env.ResourceManagerEndpoint
 	c.ResourceManagerVMDNSSuffix = ""
 
