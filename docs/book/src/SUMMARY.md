@@ -10,6 +10,7 @@
     - [External Cloud Provider](./topics/external-cloud-provider.md)
     - [Failure Domains](./topics/failure-domains.md)
     - [Identity](./topics/identity.md)
+    - [IPv6](./topics/ipv6.md)
     - [Machine Pools (VMSS)](./topics/machinepools.md)
     - [Managed Clusters (AKS)](./topics/managedcluster.md)
     - [Spot Virtual Machines](./topics/spot-vms.md)

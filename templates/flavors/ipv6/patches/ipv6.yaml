@@ -6,6 +6,8 @@ metadata:
 spec:
   clusterNetwork:
     pods:
+      # this is a part of the virtual network IP range.
+      # See https://docs.projectcalico.org/reference/public-cloud/azure
       cidrBlocks: ["2001:1234:5678:9a40::/58"]
     services:
       cidrBlocks: ["fd00::/108"]

@@ -74,4 +74,4 @@ intervals:
   default/wait-machine-remediation: ["30m", "10s"]
   default/wait-deployment: ["5m", "10s"]
   default/wait-job: ["5m", "10s"]
-  default/wait-service: ["5m", "10s"]
+  default/wait-service: ["3m", "10s"]
