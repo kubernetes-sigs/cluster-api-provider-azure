@@ -102,6 +102,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 
 			virtualMachine := compute.VirtualMachine{
+				Plan:     s.generateImagePlan(),
 				Location: to.StringPtr(s.Scope.Location()),
 				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 					ClusterName: s.Scope.ClusterName(),
@@ -184,6 +185,25 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *Service) generateImagePlan() *compute.Plan {
+	image, err := s.Scope.GetVMImage()
+	if err != nil {
+		return nil
+	}
+	if image.Marketplace == nil || image.Marketplace.ThirdPartyImage == false {
+		return nil
+	}
+	if image.Marketplace.Publisher == "" || image.Marketplace.SKU == "" || image.Marketplace.Offer == "" {
+		return nil
+	}
+
+	return &compute.Plan{
+		Publisher: to.StringPtr(image.Marketplace.Publisher),
+		Name:      to.StringPtr(image.Marketplace.SKU),
+		Product:   to.StringPtr(image.Marketplace.Offer),
+	}
 }
 
 // Delete deletes the virtual machine with the provided name.

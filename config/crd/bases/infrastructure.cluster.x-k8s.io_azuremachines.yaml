@@ -338,6 +338,12 @@ spec:
                           2019-Datacenter
                         minLength: 1
                         type: string
+                      thirdPartyImage:
+                        default: false
+                        description: ThirdPartyImage indicates the image is published
+                          by a third party publisher and a Plan will be generated
+                          for it.
+                        type: boolean
                       version:
                         description: Version specifies the version of an image sku.
                           The allowed formats are Major.Minor.Build or 'latest'. Major,
@@ -351,6 +357,7 @@ spec:
                     - offer
                     - publisher
                     - sku
+                    - thirdPartyImage
                     - version
                     type: object
                   sharedGallery:

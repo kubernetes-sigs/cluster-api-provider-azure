@@ -251,6 +251,10 @@ type AzureMarketplaceImage struct {
 	// time even if a new version becomes available.
 	// +kubebuilder:validation:MinLength=1
 	Version string `json:"version"`
+	// ThirdPartyImage indicates the image is published by a third party publisher and a Plan
+	// will be generated for it.
+	// +kubebuilder:default=false
+	ThirdPartyImage bool `json:"thirdPartyImage"`
 }
 
 // AzureSharedGalleryImage defines an image in a Shared Image Gallery to use for VM creation

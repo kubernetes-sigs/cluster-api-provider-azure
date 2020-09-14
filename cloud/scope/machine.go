@@ -420,7 +420,7 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-// Pick image from the machine configuration, or use a default one.
+// GetVMImage returns the image from the machine configuration, or a default one.
 func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if m.AzureMachine.Spec.Image != nil {
