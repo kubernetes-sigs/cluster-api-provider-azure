@@ -54,11 +54,12 @@ spec:
   template:
     spec:
       image:
-        resourceGroup: "cluster-api-images"
-        name: "capi-1234567890"
-        subscriptionID: "01234567-89ab-cdef-0123-4567890abcde"
-        gallery: "ClusterAPI"
-        version: "0.3.1234567890"
+        sharedGallery:
+          resourceGroup: "cluster-api-images"
+          name: "capi-1234567890"
+          subscriptionID: "01234567-89ab-cdef-0123-4567890abcde"
+          gallery: "ClusterAPI"
+          version: "0.3.1234567890"
 ```
 
 If you build Azure CAPI images with the `make` targets in Image Builder, these required values are printed after a successful build. For example:
@@ -115,11 +116,12 @@ spec:
   template:
     spec:
       image:
-        publisher: "example-publisher"
-        offer: "example-offer"
-        sku: "k8s-1dot18dot8-ubuntu-1804"
-        version: "2020-07-25"
-        thirdPartyImage: true
+        marketplace:
+          publisher: "example-publisher"
+          offer: "example-offer"
+          sku: "k8s-1dot18dot8-ubuntu-1804"
+          version: "2020-07-25"
+          thirdPartyImage: true
 ```
 
 [azure-marketplace]: https://docs.microsoft.com/azure/marketplace/marketplace-publishers-guide

@@ -76,11 +76,13 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
 	var allErrs field.ErrorList
 
-	if errs := ValidateOSDisk(m.Spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+	if errs := ValidateImage(m.Spec.Image, field.NewPath("image")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 
-	old := oldRaw.(*AzureMachine)
+	if errs := ValidateOSDisk(m.Spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
 
 	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
@@ -93,6 +95,8 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
+
+	old := oldRaw.(*AzureMachine)
 
 	if errs := ValidateManagedDisk(old.Spec.OSDisk.ManagedDisk, m.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
