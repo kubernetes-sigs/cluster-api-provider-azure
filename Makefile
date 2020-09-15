@@ -450,7 +450,6 @@ create-workload-cluster: $(ENVSUBST)
 
 	# Deploy calico
 	@if [[ "${CLUSTER_TEMPLATE}" == *ipv6* ]]; then \
-		echo 'deploying ivp6 configuration'; \
 		kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico-ipv6.yaml; \
 	else \
 		kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml; \

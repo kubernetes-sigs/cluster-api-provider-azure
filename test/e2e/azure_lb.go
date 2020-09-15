@@ -21,12 +21,12 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net"
-	"regexp"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"io/ioutil"
+	k8snet "k8s.io/utils/net"
+	"net"
+	"regexp"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	appsv1 "k8s.io/api/apps/v1"
@@ -65,32 +65,32 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	clientset = clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
 
-	By("creating an nginx deployment")
+	By("creating an Apache HTTP deployment")
 	deploymentsClient := clientset.AppsV1().Deployments(corev1.NamespaceDefault)
 	var replicas int32 = 1
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress-nginx",
+			Name:      "httpd",
 			Namespace: corev1.NamespaceDefault,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": "ingress-nginx",
+					"app": "httpd",
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": "ingress-nginx",
+						"app": "httpd",
 					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
 							Name:  "web",
-							Image: "nginx:1.18",
+							Image: "httpd",
 							Ports: []corev1.ContainerPort{
 								{
 									Name:          "http",
@@ -115,11 +115,13 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	servicesClient := clientset.CoreV1().Services(corev1.NamespaceDefault)
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
-	ilbName := "ingress-nginx-ilb"
 	jobName := "curl-to-ilb-job"
+	ilbName := "httpd-ilb"
+
+	// TODO: fix and enable this. Internal LBs + IPv6 is currently in preview.
+	// https://docs.microsoft.com/en-us/azure/virtual-network/ipv6-dual-stack-standard-internal-load-balancer-powershell
 	if !input.IPv6 {
 		By("creating an internal Load Balancer service")
-
 		ilbService := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ilbName,
@@ -143,7 +145,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 					},
 				},
 				Selector: map[string]string{
-					"app": "ingress-nginx",
+					"app": "httpd",
 				},
 			},
 		}
@@ -158,11 +160,15 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 		By("connecting to the internal LB service from a curl pod")
 
-		svc, err := servicesClient.Get("ingress-nginx-ilb", metav1.GetOptions{})
+		svc, err := servicesClient.Get(ilbName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		var ilbIP string
 		for _, i := range svc.Status.LoadBalancer.Ingress {
 			if net.ParseIP(i.IP) != nil {
+				if k8snet.IsIPv6String(i.IP) {
+					ilbIP = fmt.Sprintf("[%s]", i.IP)
+					break
+				}
 				ilbIP = i.IP
 				break
 			}
@@ -203,7 +209,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	By("creating an external Load Balancer service")
 	elbService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress-nginx-elb",
+			Name:      "httpd-elb",
 			Namespace: corev1.NamespaceDefault,
 		},
 		Spec: corev1.ServiceSpec{
@@ -221,7 +227,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 				},
 			},
 			Selector: map[string]string{
-				"app": "ingress-nginx",
+				"app": "httpd",
 			},
 		},
 	}
@@ -235,11 +241,15 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	WaitForServiceAvailable(context.TODO(), elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
 	By("connecting to the external LB service from a curl pod")
-	svc, err := servicesClient.Get("ingress-nginx-elb", metav1.GetOptions{})
+	svc, err := servicesClient.Get("httpd-elb", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	var elbIP string
 	for _, i := range svc.Status.LoadBalancer.Ingress {
 		if net.ParseIP(i.IP) != nil {
+			if k8snet.IsIPv6String(i.IP) {
+				elbIP = fmt.Sprintf("[%s]", i.IP)
+				break
+			}
 			elbIP = i.IP
 			break
 		}
@@ -276,30 +286,34 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	WaitForJobComplete(context.TODO(), elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
-	By("connecting directly to the external LB service")
-	url := fmt.Sprintf("http://%s", elbIP)
-	resp, err := retryablehttp.Get(url)
-	if resp != nil {
-		defer resp.Body.Close()
+	if !input.IPv6 {
+		By("connecting directly to the external LB service")
+		url := fmt.Sprintf("http://%s", elbIP)
+		resp, err := retryablehttp.Get(url)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		Expect(err).NotTo(HaveOccurred())
+		body, err := ioutil.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		matched, err := regexp.MatchString("It works!", string(body))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(matched).To(BeTrue())
 	}
-	Expect(err).NotTo(HaveOccurred())
-	body, err := ioutil.ReadAll(resp.Body)
-	Expect(err).NotTo(HaveOccurred())
-	matched, err := regexp.MatchString("(Welcome to nginx)", string(body))
-	Expect(err).NotTo(HaveOccurred())
-	Expect(matched).To(BeTrue())
 
 	if input.SkipCleanup {
 		return
 	}
 	By("deleting the test resources")
-	err = servicesClient.Delete(ilbName, &metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	if !input.IPv6 {
+		err = servicesClient.Delete(ilbName, &metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = jobsClient.Delete(jobName, &metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+	}
 	err = servicesClient.Delete(elbService.Name, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	err = deploymentsClient.Delete(deployment.Name, &metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
-	err = jobsClient.Delete(jobName, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	err = jobsClient.Delete(elbJob.Name, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
