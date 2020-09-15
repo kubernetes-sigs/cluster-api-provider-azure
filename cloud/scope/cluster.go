@@ -19,10 +19,8 @@ package scope
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -59,20 +57,9 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.Logger = klogr.New()
 	}
 
-	var subID string
-	if params.AzureCluster.Spec.SubscriptionID != "" {
-		subID = params.AzureCluster.Spec.SubscriptionID
-	} else {
-		subID = os.Getenv(auth.SubscriptionID)
-	}
-
-	if subID == "" {
-		return nil, fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
-	}
-
-	err := params.AzureClients.setCredentials(subID)
+	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Azure session")
+		return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
 	}
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)

@@ -17,6 +17,7 @@ limitations under the License.
 package scope
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -61,6 +62,13 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
 		return err
+	}
+
+	if subscriptionID == "" {
+		subscriptionID = settings.GetSubscriptionID()
+		if subscriptionID == "" {
+			return fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
+		}
 	}
 
 	c.EnvironmentSettings = settings
