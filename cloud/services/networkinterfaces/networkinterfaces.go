@@ -46,16 +46,17 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, "subnet1"))}
 
 			//commenting out to test api server IP, uncomment this later on. LoadBalancer should return IP address
-			//nicConfig.PrivateIPAllocationMethod = network.Dynamic
-			/*if nicSpec.StaticIPAddress != "" {
+			nicConfig.PrivateIPAllocationMethod = network.Dynamic
+			if nicSpec.StaticIPAddress != "" {
+				log.Info("I am using the IP address from nicSpec")
 				log.Info(nicSpec.StaticIPAddress)
 				nicConfig.PrivateIPAllocationMethod = network.Static
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
-			}*/
+			}
 
-			nicSpec.StaticIPAddress = "10.126.68.186"
+			/*nicSpec.StaticIPAddress = "10.126.68.186"
 			nicConfig.PrivateIPAllocationMethod = network.Static
-			nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
+			nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)*/
 
 			backendAddressPools := []network.BackendAddressPool{}
 			if nicSpec.PublicLBName != "" {

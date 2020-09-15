@@ -161,10 +161,12 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		internalLBName := azure.GenerateInternalLBName(m.ClusterName())
 		spec.InternalLBName = internalLBName
 		spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
+		spec.StaticIPAddress = "10.126.68.186"
 	} else if m.Role() == infrav1.Node {
 		publicLBName := m.ClusterName()
 		spec.PublicLBName = publicLBName
 		spec.PublicLBAddressPoolName = azure.GenerateOutboundBackendddressPoolName(publicLBName)
+		spec.StaticIPAddress = "10.126.68.187"
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
