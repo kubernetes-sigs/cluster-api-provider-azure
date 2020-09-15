@@ -88,11 +88,6 @@ type ClusterScope struct {
 	AzureCluster *infrav1.AzureCluster
 }
 
-// SubscriptionID returns the Azure client Subscription ID.
-func (s *ClusterScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID()
-}
-
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ClusterScope) BaseURI() string {
 	return s.ResourceManagerEndpoint
