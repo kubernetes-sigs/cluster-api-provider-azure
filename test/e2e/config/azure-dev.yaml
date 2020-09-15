@@ -1,4 +1,4 @@
-managementClusterName: kind-capz
+managementClusterName: capz-e2e
 
 images:
   - name: ${MANAGER_IMAGE}
