@@ -43,48 +43,20 @@ spec:
     initConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
-        kubeletExtraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
     joinConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
-        kubeletExtraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
-        extraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
-        extraVolumes:
-          - hostPath: /etc/kubernetes/azure.json
-            mountPath: /etc/kubernetes/azure.json
-            name: cloud-config
-            readOnly: true
       controllerManager:
         extraArgs:
-          cloud-provider: azure
-          cloud-config: /etc/kubernetes/azure.json
           allocate-node-cidrs: "false"
           cluster-name: ${CLUSTER_NAME}
-        extraVolumes:
-          - hostPath: /etc/kubernetes/azure.json
-            mountPath: /etc/kubernetes/azure.json
-            name: cloud-config
-            readOnly: true
       etcd:
         local:
           dataDir: "/var/lib/etcddisk/etcd"
     files:
-    - contentFrom:
-        secret:
-          name: ${CLUSTER_NAME}-control-plane-azure-json
-          key: azure.json
-      owner: root:root
-      path: /etc/kubernetes/azure.json
-      permissions: "0644"
     diskSetup:
       partitions:
         - device: /dev/disk/azure/scsi1/lun0
