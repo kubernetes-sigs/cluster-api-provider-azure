@@ -41,6 +41,8 @@ spec:
     kind: AzureMachineTemplate
     name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:
+    preKubeadmCommands:    
+    - sudo iptables -A INPUT -p tcp -m tcp --dport 6443 -j ACCEPT
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
