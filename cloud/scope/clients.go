@@ -21,56 +21,41 @@ import (
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-)
-
-const (
-	// ChinaCloud is the cloud environment operated in China
-	ChinaCloud = "AzureChinaCloud"
-	// GermanCloud is the cloud environment operated in Germany
-	GermanCloud = "AzureGermanCloud"
-	// PublicCloud is the default public Azure cloud environment
-	PublicCloud = "AzurePublicCloud"
-	// USGovernmentCloud is the cloud environment for the US Government
-	USGovernmentCloud = "AzureUSGovernmentCloud"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	Authorizer                 autorest.Authorizer
-	environment                string
+	Authorizer autorest.Authorizer
+	auth.EnvironmentSettings
 	ResourceManagerEndpoint    string
 	ResourceManagerVMDNSSuffix string
-	subscriptionID             string
-	tenantID                   string
-	clientID                   string
-	clientSecret               string
 }
 
 // CloudEnvironment returns the Azure environment the controller runs in.
 func (c *AzureClients) CloudEnvironment() string {
-	return c.environment
-}
-
-// SubscriptionID returns the Azure subscription id from the controller environment
-func (c *AzureClients) SubscriptionID() string {
-	return c.subscriptionID
+	return c.Environment.Name
 }
 
 // TenantID returns the Azure tenant id the controller runs in.
 func (c *AzureClients) TenantID() string {
-	return c.tenantID
+	return c.Values[auth.TenantID]
 }
 
 // ClientID returns the Azure client id from the controller environment
 func (c *AzureClients) ClientID() string {
-	return c.clientID
+	return c.Values[auth.ClientID]
 }
 
 // ClientSecret returns the Azure client secret from the controller environment
 func (c *AzureClients) ClientSecret() string {
-	return c.clientSecret
+	return c.Values[auth.ClientSecret]
+}
+
+// SubscriptionID returns the Azure subscription id of the cluster,
+// either specified or from the environment
+func (c *AzureClients) SubscriptionID() string {
+	return c.Values[auth.SubscriptionID]
 }
 
 func (c *AzureClients) setCredentials(subscriptionID string) error {
@@ -86,39 +71,14 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 		}
 	}
 
-	c.subscriptionID = subscriptionID
-	c.tenantID = strings.TrimSuffix(settings.Values[auth.TenantID], "\n")
-	c.clientID = strings.TrimSuffix(settings.Values[auth.ClientID], "\n")
-	c.clientSecret = strings.TrimSuffix(settings.Values[auth.ClientSecret], "\n")
-
-	c.environment = settings.Values[auth.EnvironmentName]
-	if c.environment == "" {
-		c.environment = azure.PublicCloud.Name
-	}
-
+	c.EnvironmentSettings = settings
 	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
-	c.ResourceManagerVMDNSSuffix = GetAzureDNSZoneForEnvironment(settings.Environment.Name)
-	settings.Values[auth.SubscriptionID] = subscriptionID
-	settings.Values[auth.TenantID] = c.tenantID
+	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
+	c.Values[auth.ClientID] = strings.TrimSuffix(c.Values[auth.ClientID], "\n")
+	c.Values[auth.ClientSecret] = strings.TrimSuffix(c.Values[auth.ClientSecret], "\n")
+	c.Values[auth.SubscriptionID] = strings.TrimSuffix(subscriptionID, "\n")
+	c.Values[auth.TenantID] = strings.TrimSuffix(c.Values[auth.TenantID], "\n")
 
-	c.Authorizer, err = settings.GetAuthorizer()
+	c.Authorizer, err = c.GetAuthorizer()
 	return err
-}
-
-// GetAzureDNSZoneForEnvironment returnes the DNSZone to be used with the
-// cloud environment, the default is the public cloud
-func GetAzureDNSZoneForEnvironment(environmentName string) string {
-	// default is public cloud
-	switch environmentName {
-	case ChinaCloud:
-		return "cloudapp.chinacloudapi.cn"
-	case GermanCloud:
-		return "cloudapp.microsoftazure.de"
-	case PublicCloud:
-		return "cloudapp.azure.com"
-	case USGovernmentCloud:
-		return "cloudapp.usgovcloudapi.net"
-	default:
-		return "cloudapp.azure.com"
-	}
 }

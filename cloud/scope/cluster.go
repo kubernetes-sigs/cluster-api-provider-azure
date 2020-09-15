@@ -59,7 +59,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 
 	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Azure session")
+		return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
 	}
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
@@ -86,11 +86,6 @@ type ClusterScope struct {
 	AzureClients
 	Cluster      *clusterv1.Cluster
 	AzureCluster *infrav1.AzureCluster
-}
-
-// SubscriptionID returns the Azure client Subscription ID.
-func (s *ClusterScope) SubscriptionID() string {
-	return s.AzureClients.SubscriptionID()
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
