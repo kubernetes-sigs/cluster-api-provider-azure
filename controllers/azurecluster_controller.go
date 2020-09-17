@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -90,6 +91,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	err := r.Get(ctx, req.NamespacedName, azureCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
+			r.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "AzureClusterObjectNotFound", err.Error())
 			log.Info("object was not found")
 			return reconcile.Result{}, nil
 		}
@@ -102,6 +104,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, err
 	}
 	if cluster == nil {
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "OwnerRefNotSet", "Cluster Controller has not yet set OwnerRef")
 		log.Info("Cluster Controller has not yet set OwnerRef")
 		return reconcile.Result{}, nil
 	}
@@ -110,6 +113,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Return early if the object or Cluster is paused.
 	if annotations.IsPaused(cluster, azureCluster) {
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeNormal, "ClusterPaused", "AzureCluster or linked Cluster is marked as paused. Won't reconcile")
 		log.Info("AzureCluster or linked Cluster is marked as paused. Won't reconcile")
 		return ctrl.Result{}, nil
 	}
@@ -122,7 +126,9 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		AzureCluster: azureCluster,
 	})
 	if err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		err = errors.Errorf("failed to create scope: %+v", err)
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "CreateClusterScopeFailed", err.Error())
+		return reconcile.Result{}, err
 	}
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
@@ -163,7 +169,9 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 
 	err := newAzureClusterReconciler(clusterScope).Reconcile(ctx)
 	if err != nil {
-		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
+		wrappedErr := errors.Wrap(err, "failed to reconcile cluster services")
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerNormalFailed", wrappedErr.Error())
+		return reconcile.Result{}, wrappedErr
 	}
 
 	if azureCluster.Status.Network.APIServerIP.DNSName == "" {
@@ -191,7 +199,9 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 	azureCluster := clusterScope.AzureCluster
 
 	if err := newAzureClusterReconciler(clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
+		wrappedErr := errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", wrappedErr.Error())
+		return reconcile.Result{}, wrappedErr
 	}
 
 	// Cluster is deleted so remove the finalizer.
