@@ -110,8 +110,8 @@ RBAC_ROOT ?= $(MANIFEST_ROOT)/rbac
 PULL_POLICY ?= Always
 
 # Allow overriding the e2e configurations
-GINKGO_FOCUS  ?=
-GINKGO_NODES  ?= 1
+GINKGO_FOCUS ?=
+GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
 ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml

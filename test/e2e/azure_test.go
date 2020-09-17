@@ -69,89 +69,85 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
 	})
 
-	Context("Creating a single control-plane cluster", func() {
-		It("With 1 worker node", func() {
-			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-				ClusterProxy: bootstrapClusterProxy,
-				ConfigCluster: clusterctl.ConfigClusterInput{
-					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-					ClusterctlConfigPath:     clusterctlConfigPath,
-					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   clusterctl.DefaultFlavor,
-					Namespace:                namespace.Name,
-					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-					ControlPlaneMachineCount: pointer.Int64Ptr(1),
-					WorkerMachineCount:       pointer.Int64Ptr(1),
-				},
-				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-			})
+	It("With 1 worker node", func() {
+		cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+			ClusterProxy: bootstrapClusterProxy,
+			ConfigCluster: clusterctl.ConfigClusterInput{
+				LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+				Flavor:                   clusterctl.DefaultFlavor,
+				Namespace:                namespace.Name,
+				ClusterName:              clusterName,
+				KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+				ControlPlaneMachineCount: pointer.Int64Ptr(1),
+				WorkerMachineCount:       pointer.Int64Ptr(1),
+			},
+			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 		})
 	})
 
-	Context("Creating highly available control-plane cluster", func() {
-		It("With 3 control-plane nodes and 2 worker nodes", func() {
-			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-				ClusterProxy: bootstrapClusterProxy,
-				ConfigCluster: clusterctl.ConfigClusterInput{
-					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-					ClusterctlConfigPath:     clusterctlConfigPath,
-					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   clusterctl.DefaultFlavor,
-					Namespace:                namespace.Name,
-					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-					ControlPlaneMachineCount: pointer.Int64Ptr(3),
-					WorkerMachineCount:       pointer.Int64Ptr(2),
-				},
-				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-			})
+	It("With 3 control-plane nodes and 2 worker nodes", func() {
+		cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+			ClusterProxy: bootstrapClusterProxy,
+			ConfigCluster: clusterctl.ConfigClusterInput{
+				LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+				Flavor:                   clusterctl.DefaultFlavor,
+				Namespace:                namespace.Name,
+				ClusterName:              clusterName,
+				KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+				ControlPlaneMachineCount: pointer.Int64Ptr(3),
+				WorkerMachineCount:       pointer.Int64Ptr(2),
+			},
+			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+		})
 
-			Context("Validating failure domains", func() {
-				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
-					return AzureFailureDomainsSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Cluster:               cluster,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
+		Context("Validating failure domains", func() {
+			AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
+				return AzureFailureDomainsSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Cluster:               cluster,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+				}
 			})
+		})
 
-			Context("Creating an accessible load balancer", func() {
-				AzureLBSpec(ctx, func() AzureLBSpecInput {
-					return AzureLBSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
+		Context("Creating an accessible load balancer", func() {
+			AzureLBSpec(ctx, func() AzureLBSpecInput {
+				return AzureLBSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+					SkipCleanup:           skipCleanup,
+				}
 			})
+		})
 
-			Context("Validating network policies", func() {
-				AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
-					return AzureNetPolSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-						SkipCleanup:           skipCleanup,
-					}
-				})
+		Context("Validating network policies", func() {
+			AzureNetPolSpec(ctx, func() AzureNetPolSpecInput {
+				return AzureNetPolSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+					SkipCleanup:           skipCleanup,
+				}
 			})
+		})
 
-			Context("Validating accelerated networking", func() {
-				AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
-					return AzureAcceleratedNetworkingSpecInput{
-						ClusterName: clusterName,
-					}
-				})
+		Context("Validating accelerated networking", func() {
+			AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
+				return AzureAcceleratedNetworkingSpecInput{
+					ClusterName: clusterName,
+				}
 			})
 		})
 	})
