@@ -7,5 +7,5 @@ resources:
   - cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
-  - patches/mhc.yaml
-  - patches/cni-resource-set.yaml
+  - ../patches/mhc.yaml
+  - ../patches/cni-resource-set.yaml

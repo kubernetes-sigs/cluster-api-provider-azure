@@ -60,9 +60,7 @@ if [[ "${LOCAL_ONLY}" == "false" ]]; then
     az acr login --name capzci
   fi
 else
-  # push images to the local kind registry
   export REGISTRY="localhost:5000/ci-e2e"
-  make kind-create
 fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
@@ -97,4 +95,8 @@ cleanup() {
 
 trap cleanup EXIT
 
-make test-e2e
+if [[ "${LOCAL_ONLY}" == "true" ]]; then
+  make test-e2e-local
+else
+  make test-e2e
+fi
