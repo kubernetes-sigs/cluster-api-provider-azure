@@ -140,7 +140,7 @@ type SecurityGroupRole string
 
 var (
 	// SecurityGroupBastion defines an SSH bastion role
-	SecurityGroupBastion = SecurityGroupRole("bastion")
+	//SecurityGroupBastion = SecurityGroupRole("bastion")
 
 	// SecurityGroupNode defines a Kubernetes workload node role
 	SecurityGroupNode = SecurityGroupRole(Node)

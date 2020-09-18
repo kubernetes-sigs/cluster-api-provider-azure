@@ -117,12 +117,12 @@ type VMSpec struct {
 }
 
 // BastionSpec defines the specification for bastion host.
-type BastionSpec struct {
+/*type BastionSpec struct {
 	Name         string
 	SubnetName   string
 	PublicIPName string
 	VNetName     string
-}
+}*/
 
 // ScaleSetSpec defines the specification for a Scale Set.
 type ScaleSetSpec struct {

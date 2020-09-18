@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/errors"
 )
@@ -152,7 +152,7 @@ func (in *AzureClusterSpec) DeepCopy() *AzureClusterSpec {
 func (in *AzureClusterStatus) DeepCopyInto(out *AzureClusterStatus) {
 	*out = *in
 	in.Network.DeepCopyInto(&out.Network)
-	in.Bastion.DeepCopyInto(&out.Bastion)
+	//in.Bastion.DeepCopyInto(&out.Bastion)
 	if in.APIEndpoints != nil {
 		in, out := &in.APIEndpoints, &out.APIEndpoints
 		*out = make([]APIEndpoint, len(*in))

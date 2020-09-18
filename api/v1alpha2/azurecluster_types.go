@@ -45,7 +45,7 @@ type AzureClusterSpec struct {
 type AzureClusterStatus struct {
 	Network Network `json:"network,omitempty"`
 
-	Bastion VM `json:"bastion,omitempty"`
+	//Bastion VM `json:"bastion,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional

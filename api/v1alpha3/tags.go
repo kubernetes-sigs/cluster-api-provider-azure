@@ -114,7 +114,7 @@ const (
 	NodeOutboundRole = "nodeOutbound"
 
 	// BastionRole describes the value for the bastion role
-	BastionRole = "bastion"
+	//BastionRole = "bastion"
 
 	// CommonRole describes the value for the common role
 	CommonRole = "common"

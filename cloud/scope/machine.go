@@ -203,7 +203,7 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 }
 
 // BastionSpecs returns the bastion specs.
-func (m *MachineScope) BastionSpecs() []azure.BastionSpec {
+/*func (m *MachineScope) BastionSpecs() []azure.BastionSpec {
 	spec := azure.BastionSpec{
 		Name:         azure.GenerateOSDiskName(m.Name()),
 		SubnetName:   m.Subnet().Name,
@@ -211,7 +211,7 @@ func (m *MachineScope) BastionSpecs() []azure.BastionSpec {
 		VNetName:     m.Vnet().Name,
 	}
 	return []azure.BastionSpec{spec}
-}
+}*/
 
 // RoleAssignmentSpecs returns the role assignment specs.
 func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
