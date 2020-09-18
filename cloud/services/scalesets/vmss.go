@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
@@ -32,6 +32,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // getExisting provides information about a scale set.
@@ -52,36 +53,36 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1exp.VMS
 func (s *Service) Reconcile(ctx context.Context) error {
 	vmssSpec := s.Scope.ScaleSetSpec()
 
-	sku, err := s.ResourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
+	/*sku, err := s.ResourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get find SKU %s in compute api", vmssSpec.Size)
-	}
+	}*/
 
 	// Checking if the requested VM size has at least 2 vCPUS
-	vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
+	/*vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate the vCPU cabability")
 	}
 	if !vCPUCapability {
 		return errors.New("vm size should be bigger or equal to at least 2 vCPUs")
-	}
+	}*/
 
 	// Checking if the requested VM size has at least 2 Gi of memory
-	MemoryCapability, err := sku.HasCapabilityWithCapacity(resourceskus.MemoryGB, resourceskus.MinimumMemory)
+	/*MemoryCapability, err := sku.HasCapabilityWithCapacity(resourceskus.MemoryGB, resourceskus.MinimumMemory)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate the memory cabability")
 	}
 	if !MemoryCapability {
 		return errors.New("vm memory should be bigger or equal to at least 2Gi")
-	}
+	}*/
 
-	if vmssSpec.AcceleratedNetworking == nil {
+	/*if vmssSpec.AcceleratedNetworking == nil {
 		// set accelerated networking to the capability of the VMSize
 		accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
 		vmssSpec.AcceleratedNetworking = &accelNet
-	}
+	}*/
 
-	storageProfile, err := s.generateStorageProfile(vmssSpec, sku)
+	storageProfile, err := s.generateStorageProfile(vmssSpec)
 	if err != nil {
 		return err
 	}
@@ -244,7 +245,7 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 // generateStorageProfile generates a pointer to a compute.VirtualMachineScaleSetStorageProfile which can utilized for VM creation.
-func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*compute.VirtualMachineScaleSetStorageProfile, error) {
+func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec) (*compute.VirtualMachineScaleSetStorageProfile, error) {
 	storageProfile := &compute.VirtualMachineScaleSetStorageProfile{
 		OsDisk: &compute.VirtualMachineScaleSetOSDisk{
 			OsType:       compute.OperatingSystemTypes(vmssSpec.OSDisk.OSType),
@@ -257,15 +258,15 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 	}
 
 	// enable ephemeral OS
-	if vmssSpec.OSDisk.DiffDiskSettings != nil {
+	/*if vmssSpec.OSDisk.DiffDiskSettings != nil {
 		if !sku.HasCapability(resourceskus.EphemeralOSDisk) {
 			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmssSpec.Size)
 		}
 
-		/*storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
+		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
 			Option: compute.DiffDiskOptions(vmssSpec.OSDisk.DiffDiskSettings.Option),
-		}*/
-	}
+		}
+	}*/
 
 	dataDisks := []compute.VirtualMachineScaleSetDataDisk{}
 	for _, disk := range vmssSpec.DataDisks {

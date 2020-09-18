@@ -18,25 +18,25 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 )
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
 type azureMachinePoolService struct {
 	virtualMachinesScaleSetSvc azure.Service
-	skuCache                   *resourceskus.Cache
+	//skuCache                   *resourceskus.Cache
 }
 
 // newAzureMachinePoolService populates all the services based on input scope.
 func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) *azureMachinePoolService {
-	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+	//cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 	return &azureMachinePoolService{
-		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
-		skuCache:                   cache,
+		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope),
+		//skuCache:                   cache,
 	}
 }
 

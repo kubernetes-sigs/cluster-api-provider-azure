@@ -22,13 +22,11 @@ import (
 	"hash/fnv"
 
 	"github.com/pkg/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 
 	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
@@ -46,7 +44,7 @@ type azureClusterReconciler struct {
 	subnetsSvc azure.Service
 	//publicIPSvc      azure.Service
 	loadBalancerSvc azure.Service
-	skuCache        *resourceskus.Cache
+	//skuCache        *resourceskus.Cache
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
@@ -60,7 +58,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		subnetsSvc: subnets.NewService(scope),
 		//publicIPSvc:      publicips.NewService(scope),
 		loadBalancerSvc: loadbalancers.NewService(scope),
-		skuCache:        resourceskus.NewCache(scope, scope.Location()),
+		//skuCache:        resourceskus.NewCache(scope, scope.Location()),
 	}
 }
 
@@ -72,9 +70,9 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 	}
 
 	//check
-	if err := r.setFailureDomainsForLocation(ctx); err != nil {
+	/*if err := r.setFailureDomainsForLocation(ctx); err != nil {
 		return errors.Wrapf(err, "failed to get availability zones")
-	}
+	}*/
 
 	r.scope.SetControlPlaneIngressRules()
 
@@ -154,7 +152,7 @@ func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 	return nil
 }
 
-func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Context) error {
+/*func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Context) error {
 	zones, err := r.skuCache.GetZones(ctx, r.scope.Location())
 	if err != nil {
 		return errors.Wrapf(err, "failed to get zones for location %s", r.scope.Location())
@@ -167,4 +165,4 @@ func (r *azureClusterReconciler) setFailureDomainsForLocation(ctx context.Contex
 	}
 
 	return nil
-}
+}*/

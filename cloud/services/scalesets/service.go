@@ -17,10 +17,11 @@ package scalesets
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // ScaleSetScope defines the scope interface for a scale sets service.
@@ -39,14 +40,14 @@ type ScaleSetScope interface {
 type Service struct {
 	Scope ScaleSetScope
 	Client
-	ResourceSKUCache *resourceskus.Cache
+	//ResourceSKUCache *resourceskus.Cache
 }
 
 // NewService creates a new service.
-func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
+func NewService(scope ScaleSetScope) *Service {
 	return &Service{
-		Client:           NewClient(scope),
-		Scope:            scope,
-		ResourceSKUCache: skuCache,
+		Client: NewClient(scope),
+		Scope:  scope,
+		//ResourceSKUCache: skuCache,
 	}
 }

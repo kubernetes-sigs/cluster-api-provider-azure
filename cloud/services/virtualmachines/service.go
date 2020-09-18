@@ -18,13 +18,14 @@ package virtualmachines
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // VMScope defines the scope interface for a virtual machines service.
@@ -46,16 +47,16 @@ type Service struct {
 	Client
 	InterfacesClient networkinterfaces.Client
 	PublicIPsClient  publicips.Client
-	ResourceSKUCache *resourceskus.Cache
+	//ResourceSKUCache *resourceskus.Cache
 }
 
 // NewService creates a new service.
-func NewService(scope VMScope, skuCache *resourceskus.Cache) *Service {
+func NewService(scope VMScope) *Service {
 	return &Service{
 		Scope:            scope,
 		Client:           NewClient(scope),
 		InterfacesClient: networkinterfaces.NewClient(scope),
 		PublicIPsClient:  publicips.NewClient(scope),
-		ResourceSKUCache: skuCache,
+		//ResourceSKUCache: skuCache,
 	}
 }

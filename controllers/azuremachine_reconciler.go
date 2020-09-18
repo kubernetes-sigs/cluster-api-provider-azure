@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-
 	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
@@ -38,23 +36,22 @@ type azureMachineService struct {
 	disksSvc azure.Service
 	//publicIPsSvc azure.Service
 	//tagsSvc      azure.Service
-	skuCache *resourceskus.Cache
+	//skuCache *resourceskus.Cache
 }
 
 // newAzureMachineService populates all the services based on input scope.
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
-	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+	//cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 
 	return &azureMachineService{
 		//inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
-		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
-		virtualMachinesSvc:   virtualmachines.NewService(machineScope, cache),
+		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
+		virtualMachinesSvc:   virtualmachines.NewService(machineScope),
 		//roleAssignmentsSvc:   roleassignments.NewService(machineScope),
-		disksSvc: disks.NewService(machineScope),
-		//publicIPsSvc: publicips.NewService(machineScope),
-		//tagsSvc:      tags.NewService(machineScope),
-		skuCache: cache,
-	}
+		disksSvc: disks.NewService(machineScope)}
+	//publicIPsSvc: publicips.NewService(machineScope),
+	//tagsSvc:      tags.NewService(machineScope),
+	//skuCache: cache,
 }
 
 // Reconcile reconciles all the services in pre determined order

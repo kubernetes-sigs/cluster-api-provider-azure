@@ -19,7 +19,7 @@ package networkinterfaces
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // NICScope defines the scope interface for a network interfaces service.
@@ -33,14 +33,14 @@ type NICScope interface {
 type Service struct {
 	Scope NICScope
 	Client
-	ResourceSKUCache *resourceskus.Cache
+	//ResourceSKUCache *resourceskus.Cache
 }
 
 // NewService creates a new service.
-func NewService(scope NICScope, skuCache *resourceskus.Cache) *Service {
+func NewService(scope NICScope) *Service {
 	return &Service{
-		Scope:            scope,
-		Client:           NewClient(scope),
-		ResourceSKUCache: skuCache,
+		Scope:  scope,
+		Client: NewClient(scope),
+		//ResourceSKUCache: skuCache,
 	}
 }
