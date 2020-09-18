@@ -157,11 +157,11 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 }
 
 // RouteTableSpecs returns the node route table(s)
-func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
+/*func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	return []azure.RouteTableSpec{{
 		Name: s.RouteTable().Name,
 	}}
-}
+}*/
 
 // NSGSpecs returns the security group specs.
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {

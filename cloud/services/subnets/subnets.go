@@ -79,12 +79,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			subnetProperties := network.SubnetPropertiesFormat{
 				AddressPrefix: to.StringPtr(subnetSpec.CIDR),
 			}
-			if subnetSpec.RouteTableName != "" {
+			/*if subnetSpec.RouteTableName != "" {
 				log.Info("Inside routetable name")
 				subnetProperties.RouteTable = &network.RouteTable{
 					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),
 				}
-			}
+			}*/
 
 			if subnetSpec.SecurityGroupName != "" {
 				log.Info("Inside security group name")

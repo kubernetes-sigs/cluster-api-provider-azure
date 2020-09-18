@@ -118,9 +118,9 @@ func PublicIPID(subscriptionID, resourceGroup, ipName string) string {
 }
 
 // RouteTableID returns the azure resource ID for a given route table.
-func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
+/*func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, resourceGroup, routeTableName)
-}
+}*/
 
 // SecurityGroupID returns the azure resource ID for a given security group.
 func SecurityGroupID(subscriptionID, resourceGroup, routeTableName string) string {

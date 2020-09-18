@@ -61,9 +61,9 @@ type LBSpec struct {
 }
 
 // RouteTableSpec defines the specification for a Route Table.
-type RouteTableSpec struct {
+/*type RouteTableSpec struct {
 	Name string
-}
+}*/
 
 // InboundNatSpec defines the specification for an inbound NAT rule.
 type InboundNatSpec struct {

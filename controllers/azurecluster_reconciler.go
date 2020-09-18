@@ -29,7 +29,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
+
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
@@ -41,8 +42,8 @@ type azureClusterReconciler struct {
 	groupsSvc        azure.Service
 	vnetSvc          azure.Service
 	securityGroupSvc azure.Service
-	routeTableSvc    azure.Service
-	subnetsSvc       azure.Service
+	//routeTableSvc    azure.Service
+	subnetsSvc azure.Service
 	//publicIPSvc      azure.Service
 	loadBalancerSvc azure.Service
 	skuCache        *resourceskus.Cache
@@ -55,8 +56,8 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		groupsSvc:        groups.NewService(scope),
 		vnetSvc:          virtualnetworks.NewService(scope),
 		securityGroupSvc: securitygroups.NewService(scope),
-		routeTableSvc:    routetables.NewService(scope),
-		subnetsSvc:       subnets.NewService(scope),
+		//routeTableSvc:    routetables.NewService(scope),
+		subnetsSvc: subnets.NewService(scope),
 		//publicIPSvc:      publicips.NewService(scope),
 		loadBalancerSvc: loadbalancers.NewService(scope),
 		skuCache:        resourceskus.NewCache(scope, scope.Location()),
@@ -120,9 +121,9 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete subnet")
 	}
 
-	if err := r.routeTableSvc.Delete(ctx); err != nil {
+	/*if err := r.routeTableSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete route table")
-	}
+	}*/
 
 	if err := r.securityGroupSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete network security group")

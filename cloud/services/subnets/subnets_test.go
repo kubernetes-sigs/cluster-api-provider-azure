@@ -19,8 +19,9 @@ package subnets
 import (
 	"context"
 	"net/http"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"testing"
+
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
@@ -68,7 +69,7 @@ func TestReconcileSubnets(t *testing.T) {
 					SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 						AddressPrefix:        to.StringPtr("10.0.0.0/16"),
 						NetworkSecurityGroup: &network.SecurityGroup{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkSecurityGroups/my-sg")},
-						RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
+						//RouteTable:           &network.RouteTable{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/routeTables/my-subnet_route_table")},
 					},
 				}))
 			},
