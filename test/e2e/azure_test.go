@@ -92,7 +92,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating highly available control-plane cluster", func() {
+	Context("Creating a highly available control-plane cluster", func() {
 		It("With 3 control-plane nodes and 2 worker nodes", func() {
 			cluster, _, _ = clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
