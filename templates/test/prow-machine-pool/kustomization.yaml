@@ -3,5 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../flavors/machinepool
+  - cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
+  - ../patches/cni-resource-set.yaml

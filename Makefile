@@ -430,6 +430,11 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
 	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
 
+	# apply CNI ClusterResourceSets
+	kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml
+	kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml
+	kubectl apply -f templates/addons/calico-resource-set.yaml
+
 	# Wait for CAPZ deployments
 	kubectl wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
 
@@ -473,7 +478,12 @@ create-aks-cluster: $(KUSTOMIZE) $(ENVSUBST)
 
 
 .PHONY: create-cluster
-create-cluster: create-management-cluster create-workload-cluster ## Create a workload development Kubernetes cluster on Azure in a kind management cluster.
+create-cluster: ## Create a workload development Kubernetes cluster on Azure in a kind management cluster.
+	EXP_CLUSTER_RESOURCE_SET=true \
+	EXP_AKS=true \
+	EXP_MACHINE_POOL=true \
+	$(MAKE) create-management-cluster \
+	$(MAKE) create-workload-cluster
 
 .PHONY: delete-workload-cluster
 delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
@@ -490,7 +500,7 @@ kind-create: ## create capz kind cluster if needed
 
 .PHONY: tilt-up
 tilt-up: $(ENVSUBST) $(KUSTOMIZE) kind-create ## start tilt and build kind cluster if needed
-	tilt up
+	EXP_CLUSTER_RESOURCE_SET=true EXP_AKS=true EXP_MACHINE_POOL=true tilt up
 
 .PHONY: delete-cluster
 delete-cluster: delete-workload-cluster  ## Deletes the example kind cluster "capz"
