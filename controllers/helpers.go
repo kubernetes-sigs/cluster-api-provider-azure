@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -343,4 +345,17 @@ func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name 
 		return nil, err
 	}
 	return m, nil
+}
+
+// ShouldDeleteIndividualResources returns false if the resource group is managed and the whole cluster is being deleted
+// meaning that we can rely on a single resource group delete operation as opposed to deleting every individual VM resource.
+func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.ClusterScope) bool {
+	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
+		return true
+	}
+	grpSvc := groups.NewService(clusterScope)
+	managed, err := grpSvc.IsGroupManaged(ctx)
+	// Since this is a best effort attempt to speed up delete, we don't fail the delete if we can't get the RG status.
+	// Instead, take the long way and delete all resources one by one.
+	return err != nil || !managed
 }

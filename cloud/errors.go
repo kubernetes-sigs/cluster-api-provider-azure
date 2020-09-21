@@ -18,11 +18,12 @@ package azure
 
 import (
 	"errors"
-
 	"github.com/Azure/go-autorest/autorest"
 )
 
-// ResourceNotFound parses the error to check if it's a resource not found
+var ErrNotOwned = errors.New("resource is not managed and cannot be deleted")
+
+// ResourceNotFound parses the error to check if it's a resource not found error.
 func ResourceNotFound(err error) bool {
 	derr := autorest.DetailedError{}
 	return errors.As(err, &derr) && derr.StatusCode == 404

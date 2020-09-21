@@ -307,11 +307,13 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
 
-	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+	if ShouldDeleteIndividualResources(ctx, clusterScope) {
+		machineScope.Info("Deleting AzureMachine")
+		if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
+			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
+			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+		}
 	}
-
 	defer func() {
 		if reterr == nil {
 			// VM is deleted so remove the finalizer.

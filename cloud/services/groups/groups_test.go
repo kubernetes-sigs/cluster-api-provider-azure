@@ -19,6 +19,7 @@ package groups
 import (
 	"context"
 	"net/http"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -122,7 +123,7 @@ func TestDeleteGroups(t *testing.T) {
 		},
 		{
 			name:          "skip deletion in unmanaged mode",
-			expectedError: "",
+			expectedError: azure.ErrNotOwned.Error(),
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")

@@ -282,8 +282,10 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 func (r *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machinePoolScope.Info("Handling deleted AzureMachinePool")
 
-	if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(ctx); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+	if infracontroller.ShouldDeleteIndividualResources(ctx, clusterScope) {
+		if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(ctx); err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+		}
 	}
 
 	defer func() {
