@@ -146,7 +146,6 @@ func (in *AzureClusterStatus) DeepCopyInto(out *AzureClusterStatus) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	in.Bastion.DeepCopyInto(&out.Bastion)
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make(apiv1alpha3.Conditions, len(*in))
