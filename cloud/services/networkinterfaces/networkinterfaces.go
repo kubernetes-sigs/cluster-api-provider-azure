@@ -54,10 +54,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
 
-			/*nicSpec.StaticIPAddress = "10.126.68.186"
-			nicConfig.PrivateIPAllocationMethod = network.Static
-			nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)*/
-
 			backendAddressPools := []network.BackendAddressPool{}
 			if nicSpec.PublicLBName != "" {
 				log.Info(nicSpec.PublicLBName)

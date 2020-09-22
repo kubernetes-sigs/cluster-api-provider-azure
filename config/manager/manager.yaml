@@ -21,9 +21,6 @@ spec:
         - "dbe-1dkphq2.microsoftdatabox.com"
         - "login.dbe-1dkphq2.microsoftdatabox.com"
         - "management.dbe-1dkphq2.microsoftdatabox.com"
-      - ip: "10.126.68.186"
-        hostnames:
-        - "capz-cluster-e1da2561.dbelocal"
       containers:
         - args:
             - --enable-leader-election
