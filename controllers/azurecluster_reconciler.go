@@ -18,8 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"hash/fnv"
 
 	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -70,14 +68,11 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterReconciler.Reconcile")
 	defer span.End()
 
-	if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
-		return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
-	}
-
 	if err := r.setFailureDomainsForLocation(ctx); err != nil {
 		return errors.Wrapf(err, "failed to get availability zones")
 	}
 
+	r.scope.SetDNSName()
 	r.scope.SetControlPlaneIngressRules()
 
 	if err := r.groupsSvc.Reconcile(ctx); err != nil {
@@ -146,20 +141,6 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-// CreateOrUpdateNetworkAPIServerIP creates or updates public ip name and dns name
-func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
-	if r.scope.Network().APIServerIP.Name == "" {
-		h := fnv.New32a()
-		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID(), r.scope.ResourceGroup(), r.scope.ClusterName()))); err != nil {
-			return errors.Wrapf(err, "failed to write hash sum for api server ip")
-		}
-		r.scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(r.scope.ClusterName(), fmt.Sprintf("%x", h.Sum32()))
-	}
-
-	r.scope.Network().APIServerIP.DNSName = r.scope.GenerateFQDN()
 	return nil
 }
 

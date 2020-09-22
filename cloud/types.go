@@ -29,22 +29,20 @@ type PublicIPSpec struct {
 
 // NICSpec defines the specification for a Network Interface.
 type NICSpec struct {
-	Name                      string
-	MachineName               string
-	SubnetName                string
-	VNetName                  string
-	VNetResourceGroup         string
-	StaticIPAddress           string
-	PublicLBName              string
-	PublicLBAddressPoolName   string
-	PublicLBNATRuleName       string
-	InternalLBName            string
-	InternalLBAddressPoolName string
-	PublicIPName              string
-	VMSize                    string
-	AcceleratedNetworking     *bool
-	IPv6Enabled               bool
-	EnableIPForwarding        bool
+	Name                     string
+	MachineName              string
+	SubnetName               string
+	VNetName                 string
+	VNetResourceGroup        string
+	StaticIPAddress          string
+	LBName                   string
+	LBBackendAddressPoolName string
+	LBNATRuleName            string
+	PublicIPName             string
+	VMSize                   string
+	AcceleratedNetworking    *bool
+	IPv6Enabled              bool
+	EnableIPForwarding       bool
 }
 
 // DiskSpec defines the specification for a Disk.
@@ -54,13 +52,14 @@ type DiskSpec struct {
 
 // LBSpec defines the specification for a Load Balancer.
 type LBSpec struct {
-	Name             string
-	PublicIPName     string
-	Role             string
-	SubnetName       string
-	SubnetCidrs      []string
-	PrivateIPAddress string
-	APIServerPort    int32
+	Name              string
+	Role              string
+	Type              infrav1.LBType
+	SubnetName        string
+	SubnetCidrs       []string
+	BackendPoolName   string
+	FrontendIPConfigs []infrav1.FrontendIP
+	APIServerPort     int32
 }
 
 // RouteTableRole defines the unique role of a route table.
@@ -80,13 +79,12 @@ type InboundNatSpec struct {
 
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
-	Name                string
-	CIDRs               []string
-	VNetName            string
-	RouteTableName      string
-	SecurityGroupName   string
-	Role                infrav1.SubnetRole
-	InternalLBIPAddress string
+	Name              string
+	CIDRs             []string
+	VNetName          string
+	RouteTableName    string
+	SecurityGroupName string
+	Role              infrav1.SubnetRole
 }
 
 // VNetSpec defines the specification for a Virtual Network.

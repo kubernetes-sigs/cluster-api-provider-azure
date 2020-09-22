@@ -398,6 +398,34 @@ func (mr *MockBastionScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockBastionScope)(nil).ControlPlaneRouteTable))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockBastionScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockBastionScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockBastionScope)(nil).APIServerLBName))
+}
+
+// NodeOutboundLBName mocks base method.
+func (m *MockBastionScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockBastionScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockBastionScope)(nil).NodeOutboundLBName))
+}
+
 // BastionSpecs mocks base method.
 func (m *MockBastionScope) BastionSpecs() []azure.BastionSpec {
 	m.ctrl.T.Helper()

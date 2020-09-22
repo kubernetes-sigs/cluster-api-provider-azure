@@ -42,10 +42,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			addressVersion = network.IPv6
 		}
 
+		// only set DNS properties if there is a DNS name specified
 		var dnsSettings *network.PublicIPAddressDNSSettings
 		if ip.DNSName != "" {
 			dnsSettings = &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: to.StringPtr(strings.ToLower(ip.Name)),
+				DomainNameLabel: to.StringPtr(strings.Split(ip.DNSName, ".")[0]),
 				Fqdn:            to.StringPtr(ip.DNSName),
 			}
 		}
@@ -82,6 +83,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer span.End()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {
+		// TODO: if supporting BYO IP make sure unmanaged IPs aren't deleted
 		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
 		if err != nil && azure.ResourceNotFound(err) {

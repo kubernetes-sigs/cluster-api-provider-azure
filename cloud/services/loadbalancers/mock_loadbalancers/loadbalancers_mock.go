@@ -398,6 +398,34 @@ func (mr *MockLBScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockLBScope)(nil).ControlPlaneRouteTable))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockLBScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockLBScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockLBScope)(nil).APIServerLBName))
+}
+
+// NodeOutboundLBName mocks base method.
+func (m *MockLBScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockLBScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockLBScope)(nil).NodeOutboundLBName))
+}
+
 // LBSpecs mocks base method.
 func (m *MockLBScope) LBSpecs() []azure.LBSpec {
 	m.ctrl.T.Helper()

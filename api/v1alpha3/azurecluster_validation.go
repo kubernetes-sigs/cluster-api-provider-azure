@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	"fmt"
+	"net"
 	"regexp"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,15 +36,15 @@ const (
 	// obtained from https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups/createorupdate#uri-parameters
 	resourceGroupRegex = `^[-\w\._\(\)]+$`
 	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
-	subnetRegex = `^[-\w\._]+$`
-	ipv4Regex   = `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`
+	subnetRegex       = `^[-\w\._]+$`
+	loadBalancerRegex = `^[-\w\._]+$`
 )
 
 // validateCluster validates a cluster
-func (c *AzureCluster) validateCluster() error {
+func (c *AzureCluster) validateCluster(old *AzureCluster) error {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, c.validateClusterName()...)
-	allErrs = append(allErrs, c.validateClusterSpec()...)
+	allErrs = append(allErrs, c.validateClusterSpec(old)...)
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -54,9 +55,14 @@ func (c *AzureCluster) validateCluster() error {
 }
 
 // validateClusterSpec validates a ClusterSpec
-func (c *AzureCluster) validateClusterSpec() field.ErrorList {
+func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
+	var oldNetworkSpec NetworkSpec
+	if old != nil {
+		oldNetworkSpec = old.Spec.NetworkSpec
+	}
 	return validateNetworkSpec(
 		c.Spec.NetworkSpec,
+		oldNetworkSpec,
 		field.NewPath("spec").Child("networkSpec"))
 }
 
@@ -79,7 +85,7 @@ func (c *AzureCluster) validateClusterName() field.ErrorList {
 }
 
 // validateNetworkSpec validates a NetworkSpec
-func validateNetworkSpec(networkSpec NetworkSpec, fldPath *field.Path) field.ErrorList {
+func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	// If the user specifies a resourceGroup for vnet, it means
 	// that she intends to use a pre-existing vnet. In this case,
@@ -91,6 +97,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, fldPath *field.Path) field.Err
 		}
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
+	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, networkSpec.GetControlPlaneSubnet().CIDRBlocks, fldPath.Child("apiServerLB"))...)
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -123,12 +130,6 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 			allErrs = append(allErrs, field.Duplicate(fldPath, subnet.Name))
 		}
 		subnetNames[subnet.Name] = true
-		if subnet.InternalLBIPAddress != "" {
-			if err := validateInternalLBIPAddress(subnet.InternalLBIPAddress,
-				fldPath.Index(i).Child("internalLBIPAddress")); err != nil {
-				allErrs = append(allErrs, err)
-			}
-		}
 		for role := range requiredSubnetRoles {
 			if role == string(subnet.Role) {
 				requiredSubnetRoles[role] = true
@@ -151,13 +152,10 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				fmt.Sprintf("required role %s not included in provided subnets", k)))
 		}
 	}
-	if len(allErrs) == 0 {
-		return nil
-	}
 	return allErrs
 }
 
-// validateSubnetName validates the Name of a Subnet
+// validateSubnetName validates the Name of a Subnet.
 func validateSubnetName(name string, fldPath *field.Path) *field.Error {
 	if success, _ := regexp.Match(subnetRegex, []byte(name)); !success {
 		return field.Invalid(fldPath, name,
@@ -166,13 +164,30 @@ func validateSubnetName(name string, fldPath *field.Path) *field.Error {
 	return nil
 }
 
-// validateInternalLBIPAddress validates a InternalLBIPAddress
-func validateInternalLBIPAddress(address string, fldPath *field.Path) *field.Error {
-	if success, _ := regexp.Match(ipv4Regex, []byte(address)); !success {
-		return field.Invalid(fldPath, address,
-			fmt.Sprintf("internalLBIPAddress doesn't match regex %s", ipv4Regex))
+// validateLoadBalancerName validates the Name of a Load Balancer.
+func validateLoadBalancerName(name string, fldPath *field.Path) *field.Error {
+	if success, _ := regexp.Match(loadBalancerRegex, []byte(name)); !success {
+		return field.Invalid(fldPath, name,
+			fmt.Sprintf("name of load balancer doesn't match regex %s", loadBalancerRegex))
 	}
 	return nil
+}
+
+// validateInternalLBIPAddress validates a InternalLBIPAddress.
+func validateInternalLBIPAddress(address string, cidrs []string, fldPath *field.Path) *field.Error {
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return field.Invalid(fldPath, address,
+			"Internal LB IP address isn't a valid IPv4 or IPv6 address")
+	}
+	for _, cidr := range cidrs {
+		_, subnet, _ := net.ParseCIDR(cidr)
+		if subnet.Contains(ip) {
+			return nil
+		}
+	}
+	return field.Invalid(fldPath, address,
+		fmt.Sprintf("Internal LB IP address needs to be in control plane subnet range (%s)", cidrs))
 }
 
 // validateIngressRule validates an IngressRule
@@ -183,4 +198,65 @@ func validateIngressRule(ingressRule *IngressRule, fldPath *field.Path) *field.E
 	}
 
 	return nil
+}
+
+func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	// SKU should be Standard and is immutable.
+	if lb.SKU != SKUStandard {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
+	}
+	if old.SKU != "" && old.SKU != lb.SKU {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("sku"), lb.SKU, "API Server load balancer SKU should not be modified after AzureCluster creation."))
+	}
+
+	// Type should be Public or Internal.
+	if lb.Type != Internal && lb.Type != Public {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("type"), lb.Type,
+			[]string{string(Public), string(Internal)}))
+	}
+	if old.Type != "" && old.Type != lb.Type {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), lb.Type, "API Server load balancer type should not be modified after AzureCluster creation."))
+	}
+
+	// Name should be valid.
+	if err := validateLoadBalancerName(lb.Name, fldPath.Child("name")); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if old.Name != "" && old.Name != lb.Name {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Type, "API Server load balancer name should not be modified after AzureCluster creation."))
+	}
+
+	// There should only be one IP config.
+	if len(lb.FrontendIPs) != 1 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
+			fmt.Sprintf("API Server Load balancer should have 1 Frontend IP configuration")))
+	} else {
+		// if Internal, IP config should not have a public IP.
+		if lb.Type == Internal {
+			if lb.FrontendIPs[0].PublicIP != nil {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
+					fmt.Sprintf("Internal Load Balancers cannot have a Public IP")))
+			}
+			if lb.FrontendIPs[0].PrivateIPAddress != "" {
+				if err := validateInternalLBIPAddress(lb.FrontendIPs[0].PrivateIPAddress, cidrs,
+					fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
+					allErrs = append(allErrs, err)
+				}
+				if len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
+					allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Type, "API Server load balancer private IP should not be modified after AzureCluster creation."))
+				}
+			}
+		}
+
+		// if Public, IP config should not have a private IP.
+		if lb.Type == Public {
+			if lb.FrontendIPs[0].PrivateIPAddress != "" {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+					fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
+			}
+		}
+	}
+
+	return allErrs
 }

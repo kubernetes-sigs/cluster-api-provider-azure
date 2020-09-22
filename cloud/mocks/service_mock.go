@@ -438,6 +438,34 @@ func (mr *MockNetworkDescriberMockRecorder) ControlPlaneRouteTable() *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockNetworkDescriber)(nil).ControlPlaneRouteTable))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockNetworkDescriber) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockNetworkDescriberMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBName))
+}
+
+// NodeOutboundLBName mocks base method.
+func (m *MockNetworkDescriber) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockNetworkDescriberMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeOutboundLBName))
+}
+
 // MockClusterDescriber is a mock of ClusterDescriber interface.
 type MockClusterDescriber struct {
 	ctrl     *gomock.Controller
@@ -888,4 +916,32 @@ func (m *MockClusterScoper) ControlPlaneRouteTable() *v1alpha3.RouteTable {
 func (mr *MockClusterScoperMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneRouteTable))
+}
+
+// APIServerLBName mocks base method.
+func (m *MockClusterScoper) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockClusterScoperMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBName))
+}
+
+// NodeOutboundLBName mocks base method.
+func (m *MockClusterScoper) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockClusterScoperMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockClusterScoper)(nil).NodeOutboundLBName))
 }

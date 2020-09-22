@@ -398,6 +398,34 @@ func (mr *MockSubnetScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockSubnetScope)(nil).ControlPlaneRouteTable))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockSubnetScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockSubnetScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockSubnetScope)(nil).APIServerLBName))
+}
+
+// NodeOutboundLBName mocks base method.
+func (m *MockSubnetScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockSubnetScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockSubnetScope)(nil).NodeOutboundLBName))
+}
+
 // SubnetSpecs mocks base method.
 func (m *MockSubnetScope) SubnetSpecs() []azure.SubnetSpec {
 	m.ctrl.T.Helper()

@@ -126,16 +126,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*BackendPool)(nil), (*v1alpha3.BackendPool)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_BackendPool_To_v1alpha3_BackendPool(a.(*BackendPool), b.(*v1alpha3.BackendPool), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha3.BackendPool)(nil), (*BackendPool)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_BackendPool_To_v1alpha2_BackendPool(a.(*v1alpha3.BackendPool), b.(*BackendPool), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*BuildParams)(nil), (*v1alpha3.BuildParams)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_BuildParams_To_v1alpha3_BuildParams(a.(*BuildParams), b.(*v1alpha3.BuildParams), scope)
 	}); err != nil {
@@ -146,48 +136,13 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*FrontendIPConfig)(nil), (*v1alpha3.FrontendIPConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_FrontendIPConfig_To_v1alpha3_FrontendIPConfig(a.(*FrontendIPConfig), b.(*v1alpha3.FrontendIPConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha3.FrontendIPConfig)(nil), (*FrontendIPConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_FrontendIPConfig_To_v1alpha2_FrontendIPConfig(a.(*v1alpha3.FrontendIPConfig), b.(*FrontendIPConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*LoadBalancer)(nil), (*v1alpha3.LoadBalancer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_LoadBalancer_To_v1alpha3_LoadBalancer(a.(*LoadBalancer), b.(*v1alpha3.LoadBalancer), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha3.LoadBalancer)(nil), (*LoadBalancer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_LoadBalancer_To_v1alpha2_LoadBalancer(a.(*v1alpha3.LoadBalancer), b.(*LoadBalancer), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*ManagedDisk)(nil), (*v1alpha3.ManagedDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_ManagedDisk_To_v1alpha3_ManagedDisk(a.(*ManagedDisk), b.(*v1alpha3.ManagedDisk), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha3.Network)(nil), (*Network)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_Network_To_v1alpha2_Network(a.(*v1alpha3.Network), b.(*Network), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*OSDisk)(nil), (*v1alpha3.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_OSDisk_To_v1alpha3_OSDisk(a.(*OSDisk), b.(*v1alpha3.OSDisk), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*PublicIP)(nil), (*v1alpha3.PublicIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_PublicIP_To_v1alpha3_PublicIP(a.(*PublicIP), b.(*v1alpha3.PublicIP), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha3.PublicIP)(nil), (*PublicIP)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(a.(*v1alpha3.PublicIP), b.(*PublicIP), scope)
 	}); err != nil {
 		return err
 	}
@@ -238,11 +193,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*NetworkSpec)(nil), (*v1alpha3.NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec(a.(*NetworkSpec), b.(*v1alpha3.NetworkSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*Network)(nil), (*v1alpha3.Network)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_Network_To_v1alpha3_Network(a.(*Network), b.(*v1alpha3.Network), scope)
 	}); err != nil {
 		return err
 	}
@@ -438,9 +388,7 @@ func autoConvert_v1alpha3_AzureClusterSpec_To_v1alpha2_AzureClusterSpec(in *v1al
 }
 
 func autoConvert_v1alpha2_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *AzureClusterStatus, out *v1alpha3.AzureClusterStatus, s conversion.Scope) error {
-	if err := Convert_v1alpha2_Network_To_v1alpha3_Network(&in.Network, &out.Network, s); err != nil {
-		return err
-	}
+	// WARNING: in.Network requires manual conversion: does not exist in peer-type
 	// WARNING: in.Bastion requires manual conversion: does not exist in peer-type
 	out.Ready = in.Ready
 	// WARNING: in.APIEndpoints requires manual conversion: does not exist in peer-type
@@ -448,9 +396,6 @@ func autoConvert_v1alpha2_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *
 }
 
 func autoConvert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *v1alpha3.AzureClusterStatus, out *AzureClusterStatus, s conversion.Scope) error {
-	if err := Convert_v1alpha3_Network_To_v1alpha2_Network(&in.Network, &out.Network, s); err != nil {
-		return err
-	}
 	// WARNING: in.FailureDomains requires manual conversion: does not exist in peer-type
 	out.Ready = in.Ready
 	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
@@ -725,28 +670,6 @@ func Convert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha2_AzureMachineTemplateS
 	return autoConvert_v1alpha3_AzureMachineTemplateSpec_To_v1alpha2_AzureMachineTemplateSpec(in, out, s)
 }
 
-func autoConvert_v1alpha2_BackendPool_To_v1alpha3_BackendPool(in *BackendPool, out *v1alpha3.BackendPool, s conversion.Scope) error {
-	out.Name = in.Name
-	out.ID = in.ID
-	return nil
-}
-
-// Convert_v1alpha2_BackendPool_To_v1alpha3_BackendPool is an autogenerated conversion function.
-func Convert_v1alpha2_BackendPool_To_v1alpha3_BackendPool(in *BackendPool, out *v1alpha3.BackendPool, s conversion.Scope) error {
-	return autoConvert_v1alpha2_BackendPool_To_v1alpha3_BackendPool(in, out, s)
-}
-
-func autoConvert_v1alpha3_BackendPool_To_v1alpha2_BackendPool(in *v1alpha3.BackendPool, out *BackendPool, s conversion.Scope) error {
-	out.Name = in.Name
-	out.ID = in.ID
-	return nil
-}
-
-// Convert_v1alpha3_BackendPool_To_v1alpha2_BackendPool is an autogenerated conversion function.
-func Convert_v1alpha3_BackendPool_To_v1alpha2_BackendPool(in *v1alpha3.BackendPool, out *BackendPool, s conversion.Scope) error {
-	return autoConvert_v1alpha3_BackendPool_To_v1alpha2_BackendPool(in, out, s)
-}
-
 func autoConvert_v1alpha2_BuildParams_To_v1alpha3_BuildParams(in *BuildParams, out *v1alpha3.BuildParams, s conversion.Scope) error {
 	out.Lifecycle = v1alpha3.ResourceLifecycle(in.Lifecycle)
 	out.ClusterName = in.ClusterName
@@ -775,24 +698,6 @@ func autoConvert_v1alpha3_BuildParams_To_v1alpha2_BuildParams(in *v1alpha3.Build
 // Convert_v1alpha3_BuildParams_To_v1alpha2_BuildParams is an autogenerated conversion function.
 func Convert_v1alpha3_BuildParams_To_v1alpha2_BuildParams(in *v1alpha3.BuildParams, out *BuildParams, s conversion.Scope) error {
 	return autoConvert_v1alpha3_BuildParams_To_v1alpha2_BuildParams(in, out, s)
-}
-
-func autoConvert_v1alpha2_FrontendIPConfig_To_v1alpha3_FrontendIPConfig(in *FrontendIPConfig, out *v1alpha3.FrontendIPConfig, s conversion.Scope) error {
-	return nil
-}
-
-// Convert_v1alpha2_FrontendIPConfig_To_v1alpha3_FrontendIPConfig is an autogenerated conversion function.
-func Convert_v1alpha2_FrontendIPConfig_To_v1alpha3_FrontendIPConfig(in *FrontendIPConfig, out *v1alpha3.FrontendIPConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha2_FrontendIPConfig_To_v1alpha3_FrontendIPConfig(in, out, s)
-}
-
-func autoConvert_v1alpha3_FrontendIPConfig_To_v1alpha2_FrontendIPConfig(in *v1alpha3.FrontendIPConfig, out *FrontendIPConfig, s conversion.Scope) error {
-	return nil
-}
-
-// Convert_v1alpha3_FrontendIPConfig_To_v1alpha2_FrontendIPConfig is an autogenerated conversion function.
-func Convert_v1alpha3_FrontendIPConfig_To_v1alpha2_FrontendIPConfig(in *v1alpha3.FrontendIPConfig, out *FrontendIPConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha3_FrontendIPConfig_To_v1alpha2_FrontendIPConfig(in, out, s)
 }
 
 func autoConvert_v1alpha2_Image_To_v1alpha3_Image(in *Image, out *v1alpha3.Image, s conversion.Scope) error {
@@ -837,44 +742,6 @@ func autoConvert_v1alpha3_IngressRule_To_v1alpha2_IngressRule(in *v1alpha3.Ingre
 	return nil
 }
 
-func autoConvert_v1alpha2_LoadBalancer_To_v1alpha3_LoadBalancer(in *LoadBalancer, out *v1alpha3.LoadBalancer, s conversion.Scope) error {
-	out.ID = in.ID
-	out.Name = in.Name
-	out.SKU = v1alpha3.SKU(in.SKU)
-	if err := Convert_v1alpha2_FrontendIPConfig_To_v1alpha3_FrontendIPConfig(&in.FrontendIPConfig, &out.FrontendIPConfig, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha2_BackendPool_To_v1alpha3_BackendPool(&in.BackendPool, &out.BackendPool, s); err != nil {
-		return err
-	}
-	out.Tags = *(*v1alpha3.Tags)(unsafe.Pointer(&in.Tags))
-	return nil
-}
-
-// Convert_v1alpha2_LoadBalancer_To_v1alpha3_LoadBalancer is an autogenerated conversion function.
-func Convert_v1alpha2_LoadBalancer_To_v1alpha3_LoadBalancer(in *LoadBalancer, out *v1alpha3.LoadBalancer, s conversion.Scope) error {
-	return autoConvert_v1alpha2_LoadBalancer_To_v1alpha3_LoadBalancer(in, out, s)
-}
-
-func autoConvert_v1alpha3_LoadBalancer_To_v1alpha2_LoadBalancer(in *v1alpha3.LoadBalancer, out *LoadBalancer, s conversion.Scope) error {
-	out.ID = in.ID
-	out.Name = in.Name
-	out.SKU = SKU(in.SKU)
-	if err := Convert_v1alpha3_FrontendIPConfig_To_v1alpha2_FrontendIPConfig(&in.FrontendIPConfig, &out.FrontendIPConfig, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha3_BackendPool_To_v1alpha2_BackendPool(&in.BackendPool, &out.BackendPool, s); err != nil {
-		return err
-	}
-	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
-	return nil
-}
-
-// Convert_v1alpha3_LoadBalancer_To_v1alpha2_LoadBalancer is an autogenerated conversion function.
-func Convert_v1alpha3_LoadBalancer_To_v1alpha2_LoadBalancer(in *v1alpha3.LoadBalancer, out *LoadBalancer, s conversion.Scope) error {
-	return autoConvert_v1alpha3_LoadBalancer_To_v1alpha2_LoadBalancer(in, out, s)
-}
-
 func autoConvert_v1alpha2_ManagedDisk_To_v1alpha3_ManagedDisk(in *ManagedDisk, out *v1alpha3.ManagedDisk, s conversion.Scope) error {
 	out.StorageAccountType = in.StorageAccountType
 	return nil
@@ -889,32 +756,6 @@ func autoConvert_v1alpha3_ManagedDisk_To_v1alpha2_ManagedDisk(in *v1alpha3.Manag
 	out.StorageAccountType = in.StorageAccountType
 	// WARNING: in.DiskEncryptionSet requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-func autoConvert_v1alpha2_Network_To_v1alpha3_Network(in *Network, out *v1alpha3.Network, s conversion.Scope) error {
-	// WARNING: in.SecurityGroups requires manual conversion: does not exist in peer-type
-	if err := Convert_v1alpha2_LoadBalancer_To_v1alpha3_LoadBalancer(&in.APIServerLB, &out.APIServerLB, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha2_PublicIP_To_v1alpha3_PublicIP(&in.APIServerIP, &out.APIServerIP, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-func autoConvert_v1alpha3_Network_To_v1alpha2_Network(in *v1alpha3.Network, out *Network, s conversion.Scope) error {
-	if err := Convert_v1alpha3_LoadBalancer_To_v1alpha2_LoadBalancer(&in.APIServerLB, &out.APIServerLB, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(&in.APIServerIP, &out.APIServerIP, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha3_Network_To_v1alpha2_Network is an autogenerated conversion function.
-func Convert_v1alpha3_Network_To_v1alpha2_Network(in *v1alpha3.Network, out *Network, s conversion.Scope) error {
-	return autoConvert_v1alpha3_Network_To_v1alpha2_Network(in, out, s)
 }
 
 func autoConvert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec(in *NetworkSpec, out *v1alpha3.NetworkSpec, s conversion.Scope) error {
@@ -952,6 +793,7 @@ func autoConvert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec(in *v1alpha3.Netwo
 	} else {
 		out.Subnets = nil
 	}
+	// WARNING: in.APIServerLB requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -978,32 +820,6 @@ func autoConvert_v1alpha3_OSDisk_To_v1alpha2_OSDisk(in *v1alpha3.OSDisk, out *OS
 	// WARNING: in.DiffDiskSettings requires manual conversion: does not exist in peer-type
 	// WARNING: in.CachingType requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-func autoConvert_v1alpha2_PublicIP_To_v1alpha3_PublicIP(in *PublicIP, out *v1alpha3.PublicIP, s conversion.Scope) error {
-	out.ID = in.ID
-	out.Name = in.Name
-	out.IPAddress = in.IPAddress
-	out.DNSName = in.DNSName
-	return nil
-}
-
-// Convert_v1alpha2_PublicIP_To_v1alpha3_PublicIP is an autogenerated conversion function.
-func Convert_v1alpha2_PublicIP_To_v1alpha3_PublicIP(in *PublicIP, out *v1alpha3.PublicIP, s conversion.Scope) error {
-	return autoConvert_v1alpha2_PublicIP_To_v1alpha3_PublicIP(in, out, s)
-}
-
-func autoConvert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(in *v1alpha3.PublicIP, out *PublicIP, s conversion.Scope) error {
-	out.ID = in.ID
-	out.Name = in.Name
-	out.IPAddress = in.IPAddress
-	out.DNSName = in.DNSName
-	return nil
-}
-
-// Convert_v1alpha3_PublicIP_To_v1alpha2_PublicIP is an autogenerated conversion function.
-func Convert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(in *v1alpha3.PublicIP, out *PublicIP, s conversion.Scope) error {
-	return autoConvert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(in, out, s)
 }
 
 func autoConvert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup, out *v1alpha3.SecurityGroup, s conversion.Scope) error {

@@ -28,13 +28,6 @@ import (
 const (
 	// DefaultUserName is the default username for created vm
 	DefaultUserName = "capi"
-	// DefaultInternalLBIPAddress is the default internal load balancer ip address
-	DefaultInternalLBIPAddress = "10.0.0.100"
-)
-
-const (
-	// DefaultInternalLBIPv6Address is the default internal load balancer ip address
-	DefaultInternalLBIPv6Address = "2001:1234:5678:9abc::100"
 )
 
 const (
@@ -46,34 +39,19 @@ const (
 	LatestVersion = "latest"
 )
 
-// GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
-func GenerateInternalLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")
-}
-
-// GeneratePublicLBName generates a public load balancer name, based on the cluster name.
-func GeneratePublicLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
-}
-
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
 }
 
-// GenerateOutboundBackendddressPoolName generates a load balancer outbound backend address pool name.
-func GenerateOutboundBackendddressPoolName(lbName string) string {
+// GenerateOutboundBackendAddressPoolName generates a load balancer outbound backend address pool name.
+func GenerateOutboundBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
 }
 
 // GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
 func GenerateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
-}
-
-// GeneratePublicIPName generates a public IP name, based on the cluster name and a hash.
-func GeneratePublicIPName(clusterName, hash string) string {
-	return fmt.Sprintf("%s-%s", clusterName, hash)
 }
 
 // GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.

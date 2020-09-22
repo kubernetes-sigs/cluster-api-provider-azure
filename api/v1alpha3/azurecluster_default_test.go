@@ -523,3 +523,59 @@ func TestSubnetDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIServerLBDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name: "no lb",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Name: "cluster-test-public-lb",
+							SKU: SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-public-lb-frontEnd",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-apiserver-cluster-test",
+										DNSName: "",
+									},
+								},
+							},
+							Type: Public,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setAPIServerLBDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}

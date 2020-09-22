@@ -50,14 +50,14 @@ func (c *AzureCluster) Default() {
 func (c *AzureCluster) ValidateCreate() error {
 	clusterlog.Info("validate create", "name", c.Name)
 
-	return c.validateCluster()
+	return c.validateCluster(nil)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (c *AzureCluster) ValidateUpdate(old runtime.Object) error {
+func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	clusterlog.Info("validate update", "name", c.Name)
-
-	return c.validateCluster()
+	old := oldRaw.(*AzureCluster)
+	return c.validateCluster(old)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
