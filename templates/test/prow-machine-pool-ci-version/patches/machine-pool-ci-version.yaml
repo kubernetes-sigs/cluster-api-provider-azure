@@ -89,8 +89,8 @@ spec:
       permissions: "0644"
       contentFrom:
         secret:
-          key: azure.json
-          name: azure-secret
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfig
@@ -179,8 +179,8 @@ spec:
       permissions: "0644"
       contentFrom:
         secret:
-          key: azure.json
-          name: azure-secret
+          key: worker-node-azure.json
+          name: ${CLUSTER_NAME}-mp-0-azure-json
 ---
 apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachinePool

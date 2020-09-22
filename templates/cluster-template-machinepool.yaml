@@ -86,7 +86,7 @@ spec:
     files:
     - contentFrom:
         secret:
-          key: azure.json
+          key: control-plane-azure.json
           name: ${CLUSTER_NAME}-control-plane-azure-json
       owner: root:root
       path: /etc/kubernetes/azure.json
@@ -178,7 +178,7 @@ spec:
   files:
   - contentFrom:
       secret:
-        key: azure.json
+        key: worker-node-azure.json
         name: ${CLUSTER_NAME}-mp-0-azure-json
     owner: root:root
     path: /etc/kubernetes/azure.json
