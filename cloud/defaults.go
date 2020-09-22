@@ -123,9 +123,9 @@ func PublicIPID(subscriptionID, resourceGroup, ipName string) string {
 }*/
 
 // SecurityGroupID returns the azure resource ID for a given security group.
-func SecurityGroupID(subscriptionID, resourceGroup, routeTableName string) string {
+/*func SecurityGroupID(subscriptionID, resourceGroup, routeTableName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, routeTableName)
-}
+}*/
 
 // NetworkInterfaceID returns the azure resource ID for a given network interface.
 func NetworkInterfaceID(subscriptionID, resourceGroup, nicName string) string {
@@ -178,7 +178,7 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	}*/
 
 	defaultImage := &infrav1.Image{
-		ID: to.StringPtr("/subscriptions/78654441-a8e7-43a2-b375-659324697651/resourceGroups/capz-cluster/providers/Microsoft.Compute/images/aksLinux1")}
+		ID: to.StringPtr("/subscriptions/47753c87-4156-4d03-9414-3652d2f56a68/resourceGroups/RG1/providers/Microsoft.Compute/images/aksLinux1")}
 	return defaultImage, nil
 }
 

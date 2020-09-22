@@ -73,11 +73,11 @@ type InboundNatSpec struct {
 
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
-	Name                string
-	CIDR                string
-	VNetName            string
-	RouteTableName      string
-	SecurityGroupName   string
+	Name     string
+	CIDR     string
+	VNetName string
+	//RouteTableName      string
+	//SecurityGroupName   string
 	Role                infrav1.SubnetRole
 	InternalLBIPAddress string
 }

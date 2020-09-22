@@ -75,23 +75,23 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 type Subnets []*SubnetSpec
 
 // SecurityGroupRole defines the unique role of a security group.
-type SecurityGroupRole string
+//type SecurityGroupRole string
 
 const (
-	// SecurityGroupNode defines a Kubernetes workload node role
-	SecurityGroupNode = SecurityGroupRole(Node)
+// SecurityGroupNode defines a Kubernetes workload node role
+//SecurityGroupNode = SecurityGroupRole(Node)
 
-	// SecurityGroupControlPlane defines a Kubernetes control plane node role
-	SecurityGroupControlPlane = SecurityGroupRole(ControlPlane)
+// SecurityGroupControlPlane defines a Kubernetes control plane node role
+//SecurityGroupControlPlane = SecurityGroupRole(ControlPlane)
 )
 
 // SecurityGroup defines an Azure security group.
-type SecurityGroup struct {
+/*type SecurityGroup struct {
 	ID           string       `json:"id,omitempty"`
 	Name         string       `json:"name,omitempty"`
 	IngressRules IngressRules `json:"ingressRule,omitempty"`
 	Tags         Tags         `json:"tags,omitempty"`
-}
+}*/
 
 // RouteTable defines an Azure route table.
 type RouteTable struct {
@@ -100,9 +100,9 @@ type RouteTable struct {
 }
 
 // SecurityGroupProtocol defines the protocol type for a security group rule.
-type SecurityGroupProtocol string
+//type SecurityGroupProtocol string
 
-const (
+/*const (
 	// SecurityGroupProtocolAll is a wildcard for all IP protocols
 	SecurityGroupProtocolAll = SecurityGroupProtocol("*")
 
@@ -111,13 +111,13 @@ const (
 
 	// SecurityGroupProtocolUDP represents the UDP protocol in ingress rules
 	SecurityGroupProtocolUDP = SecurityGroupProtocol("Udp")
-)
+)*/
 
 // IngressRule defines an Azure ingress rule for security groups.
 type IngressRule struct {
-	Name        string                `json:"name"`
-	Description string                `json:"description"`
-	Protocol    SecurityGroupProtocol `json:"protocol"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	//Protocol    SecurityGroupProtocol `json:"protocol"`
 
 	// Priority - A number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
 	Priority int32 `json:"priority,omitempty"`
@@ -376,7 +376,7 @@ type SubnetSpec struct {
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
 	// +optional
-	SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
+	//SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
 
 	// RouteTable defines the route table that should be attached to this subnet.
 	// +optional

@@ -107,33 +107,6 @@ spec:
       - name: my-subnet-cp
         role: control-plane
         cidrBlock: 10.0.1.0/24
-        securityGroup:
-          name: my-subnet-cp-nsg
-          ingressRule:
-            - name: "allow_ssh"
-              description: "allow SSH"
-              priority: 100
-              protocol: "*"
-              destination: "*"
-              destinationPorts: "22"
-              source: "*"
-              sourcePorts: "*"
-            - name: "allow_apiserver"
-              description: "Allow K8s API Server"
-              priority: 101
-              protocol: "*"
-              destination: "*"
-              destinationPorts: "6443"
-              source: "*"
-              sourcePorts: "*"
-            - name: "allow_port_50000"
-              description: "allow port 50000"
-              priority: 102
-              protocol: "*"
-              destination: "*"
-              destinationPorts: "50000"
-              source: "*"
-              sourcePorts: "*"
       - name: my-subnet-node
         role: node
         cidrBlock: 10.0.2.0/24

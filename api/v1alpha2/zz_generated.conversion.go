@@ -256,11 +256,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*SecurityGroup)(nil), (*v1alpha3.SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
+	/*if err := s.AddConversionFunc((*SecurityGroup)(nil), (*v1alpha3.SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(a.(*SecurityGroup), b.(*v1alpha3.SecurityGroup), scope)
 	}); err != nil {
 		return err
-	}
+	}*/
 	if err := s.AddConversionFunc((*SubnetSpec)(nil), (*v1alpha3.SubnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(a.(*SubnetSpec), b.(*v1alpha3.SubnetSpec), scope)
 	}); err != nil {
@@ -306,11 +306,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha3.SecurityGroup)(nil), (*SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
+	/*if err := s.AddConversionFunc((*v1alpha3.SecurityGroup)(nil), (*SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(a.(*v1alpha3.SecurityGroup), b.(*SecurityGroup), scope)
 	}); err != nil {
 		return err
-	}
+	}*/
 	if err := s.AddConversionFunc((*v1alpha3.SubnetSpec)(nil), (*SubnetSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(a.(*v1alpha3.SubnetSpec), b.(*SubnetSpec), scope)
 	}); err != nil {
@@ -819,7 +819,7 @@ func autoConvert_v1alpha3_Image_To_v1alpha2_Image(in *v1alpha3.Image, out *Image
 
 func autoConvert_v1alpha2_IngressRule_To_v1alpha3_IngressRule(in *IngressRule, out *v1alpha3.IngressRule, s conversion.Scope) error {
 	out.Description = in.Description
-	out.Protocol = v1alpha3.SecurityGroupProtocol(in.Protocol)
+	//out.Protocol = v1alpha3.SecurityGroupProtocol(in.Protocol)
 	out.SourcePorts = (*string)(unsafe.Pointer(in.SourcePorts))
 	out.DestinationPorts = (*string)(unsafe.Pointer(in.DestinationPorts))
 	out.Source = (*string)(unsafe.Pointer(in.Source))
@@ -830,7 +830,7 @@ func autoConvert_v1alpha2_IngressRule_To_v1alpha3_IngressRule(in *IngressRule, o
 func autoConvert_v1alpha3_IngressRule_To_v1alpha2_IngressRule(in *v1alpha3.IngressRule, out *IngressRule, s conversion.Scope) error {
 	// WARNING: in.Name requires manual conversion: does not exist in peer-type
 	out.Description = in.Description
-	out.Protocol = SecurityGroupProtocol(in.Protocol)
+	//out.Protocol = SecurityGroupProtocol(in.Protocol)
 	// WARNING: in.Priority requires manual conversion: does not exist in peer-type
 	out.SourcePorts = (*string)(unsafe.Pointer(in.SourcePorts))
 	out.DestinationPorts = (*string)(unsafe.Pointer(in.DestinationPorts))
@@ -1012,7 +1012,7 @@ func Convert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(in *v1alpha3.PublicIP, out *
 	return autoConvert_v1alpha3_PublicIP_To_v1alpha2_PublicIP(in, out, s)
 }
 
-func autoConvert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup, out *v1alpha3.SecurityGroup, s conversion.Scope) error {
+/*func autoConvert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup, out *v1alpha3.SecurityGroup, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	if in.IngressRules != nil {
@@ -1029,9 +1029,9 @@ func autoConvert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGr
 	}
 	out.Tags = *(*v1alpha3.Tags)(unsafe.Pointer(&in.Tags))
 	return nil
-}
+}*/
 
-func autoConvert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *v1alpha3.SecurityGroup, out *SecurityGroup, s conversion.Scope) error {
+/*func autoConvert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *v1alpha3.SecurityGroup, out *SecurityGroup, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 	if in.IngressRules != nil {
@@ -1048,7 +1048,7 @@ func autoConvert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *v1alpha3.S
 	}
 	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
 	return nil
-}
+}*/
 
 func autoConvert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in *SubnetSpec, out *v1alpha3.SubnetSpec, s conversion.Scope) error {
 	out.Role = v1alpha3.SubnetRole(in.Role)
@@ -1056,9 +1056,9 @@ func autoConvert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in *SubnetSpec, out 
 	out.Name = in.Name
 	out.CidrBlock = in.CidrBlock
 	out.InternalLBIPAddress = in.InternalLBIPAddress
-	if err := Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
+	/*if err := Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err
-	}
+	}*/
 	return nil
 }
 
@@ -1068,9 +1068,9 @@ func autoConvert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in *v1alpha3.SubnetS
 	out.Name = in.Name
 	out.CidrBlock = in.CidrBlock
 	out.InternalLBIPAddress = in.InternalLBIPAddress
-	if err := Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
+	/*if err := Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err
-	}
+	}*/
 	// WARNING: in.RouteTable requires manual conversion: does not exist in peer-type
 	return nil
 }

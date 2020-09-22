@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha2
 
 import (
-	unsafe "unsafe"
-
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
@@ -66,9 +64,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		if restoredSubnet != nil {
 			for _, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
 				if dstSubnet != nil && dstSubnet.Name == restoredSubnet.Name {
-					dstSubnet.RouteTable = restoredSubnet.RouteTable
+					//dstSubnet.RouteTable = restoredSubnet.RouteTable
 
-					dstSubnet.SecurityGroup.IngressRules = restoredSubnet.SecurityGroup.IngressRules
+					//dstSubnet.SecurityGroup.IngressRules = restoredSubnet.SecurityGroup.IngressRules
 				}
 			}
 		}
@@ -215,7 +213,7 @@ func Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in *infrav1alpha3.Subnet
 	return autoConvert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in, out, s)
 }
 
-func Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *infrav1alpha3.SecurityGroup, out *SecurityGroup, s apiconversion.Scope) error {
+/*func Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *infrav1alpha3.SecurityGroup, out *SecurityGroup, s apiconversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 
@@ -231,9 +229,9 @@ func Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *infrav1alpha3.
 
 	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
 	return nil
-}
+}*/
 
-func Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup, out *infrav1alpha3.SecurityGroup, s apiconversion.Scope) error {
+/*func Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup, out *infrav1alpha3.SecurityGroup, s apiconversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
 
@@ -249,7 +247,7 @@ func Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup,
 
 	out.Tags = *(*infrav1alpha3.Tags)(unsafe.Pointer(&in.Tags))
 	return nil
-}
+}*/
 
 // Convert_v1alpha2_IngressRule_To_v1alpha3_IngressRule
 func Convert_v1alpha2_IngressRule_To_v1alpha3_IngressRule(in *IngressRule, out *infrav1alpha3.IngressRule, s apiconversion.Scope) error {

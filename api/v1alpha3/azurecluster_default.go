@@ -115,14 +115,14 @@ func generateNodeSubnetName(clusterName string) string {
 }
 
 // generateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
-func generateControlPlaneSecurityGroupName(clusterName string) string {
+/*func generateControlPlaneSecurityGroupName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "controlplane-nsg")
-}
+}*/
 
 // generateNodeSecurityGroupName generates a node security group name, based on the cluster name.
-func generateNodeSecurityGroupName(clusterName string) string {
+/*func generateNodeSecurityGroupName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-nsg")
-}
+}*/
 
 // generateRouteTableName generates a route table name, based on the cluster name.
 func generateRouteTableName(clusterName string) string {

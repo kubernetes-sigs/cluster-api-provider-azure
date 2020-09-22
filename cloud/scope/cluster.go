@@ -19,9 +19,6 @@ package scope
 import (
 	"context"
 	"fmt"
-	"strconv"
-
-	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
@@ -164,7 +161,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 }*/
 
 // NSGSpecs returns the security group specs.
-func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
+/*func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 	return []azure.NSGSpec{
 		{
 			Name:         s.ControlPlaneSubnet().SecurityGroup.Name,
@@ -175,27 +172,27 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 			IngressRules: s.NodeSubnet().SecurityGroup.IngressRules,
 		},
 	}
-}
+}*/
 
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	return []azure.SubnetSpec{
 		{
-			Name:                s.ControlPlaneSubnet().Name,
-			CIDR:                s.ControlPlaneSubnet().CidrBlock,
-			VNetName:            s.Vnet().Name,
-			SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
-			Role:                s.ControlPlaneSubnet().Role,
-			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
+			Name:     s.ControlPlaneSubnet().Name,
+			CIDR:     s.ControlPlaneSubnet().CidrBlock,
+			VNetName: s.Vnet().Name,
+			//SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
+			Role: s.ControlPlaneSubnet().Role,
+			//RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
 			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
 		},
 		{
-			Name:              s.NodeSubnet().Name,
-			CIDR:              s.NodeSubnet().CidrBlock,
-			VNetName:          s.Vnet().Name,
-			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
-			RouteTableName:    s.NodeSubnet().RouteTable.Name,
-			Role:              s.NodeSubnet().Role,
+			Name:     s.NodeSubnet().Name,
+			CIDR:     s.NodeSubnet().CidrBlock,
+			VNetName: s.Vnet().Name,
+			//SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
+			//RouteTableName:    s.NodeSubnet().RouteTable.Name,
+			Role: s.NodeSubnet().Role,
 		}}
 }
 
@@ -313,7 +310,7 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 
-func (s *ClusterScope) SetControlPlaneIngressRules() {
+/*func (s *ClusterScope) SetControlPlaneIngressRules() {
 	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
 		s.ControlPlaneSubnet().SecurityGroup.IngressRules = infrav1.IngressRules{
 			&infrav1.IngressRule{
@@ -338,4 +335,4 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 			},
 		}
 	}
-}
+}*/

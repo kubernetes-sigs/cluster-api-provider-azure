@@ -212,20 +212,20 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterDescriber, identityI
 
 func newCloudProviderConfig(d azure.ClusterDescriber) *CloudProviderConfig {
 	return &CloudProviderConfig{
-		Cloud:                        d.CloudEnvironment(),
-		AadClientID:                  d.ClientID(),
-		AadClientSecret:              d.ClientSecret(),
-		TenantID:                     d.TenantID(),
-		SubscriptionID:               d.SubscriptionID(),
-		ResourceGroup:                d.ResourceGroup(),
-		SecurityGroupName:            d.NodeSubnet().SecurityGroup.Name,
-		SecurityGroupResourceGroup:   d.ResourceGroup(),
-		Location:                     d.Location(),
-		VMType:                       "vmss",
-		VnetName:                     d.Vnet().Name,
-		VnetResourceGroup:            d.Vnet().ResourceGroup,
-		SubnetName:                   d.NodeSubnet().Name,
-		RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
+		Cloud:           d.CloudEnvironment(),
+		AadClientID:     d.ClientID(),
+		AadClientSecret: d.ClientSecret(),
+		TenantID:        d.TenantID(),
+		SubscriptionID:  d.SubscriptionID(),
+		ResourceGroup:   d.ResourceGroup(),
+		//SecurityGroupName:            d.NodeSubnet().SecurityGroup.Name,
+		//SecurityGroupResourceGroup:   d.ResourceGroup(),
+		Location:          d.Location(),
+		VMType:            "vmss",
+		VnetName:          d.Vnet().Name,
+		VnetResourceGroup: d.Vnet().ResourceGroup,
+		SubnetName:        d.NodeSubnet().Name,
+		//RouteTableName:               fmt.Sprintf("%s-node-routetable", d.ClusterName()),
 		LoadBalancerSku:              "Standard",
 		MaximumLoadBalancerRuleCount: 250,
 		UseManagedIdentityExtension:  false,
@@ -235,20 +235,20 @@ func newCloudProviderConfig(d azure.ClusterDescriber) *CloudProviderConfig {
 
 // CloudProviderConfig is an abbreviated version of the same struct in k/k
 type CloudProviderConfig struct {
-	Cloud                        string `json:"cloud"`
-	TenantID                     string `json:"tenantId"`
-	SubscriptionID               string `json:"subscriptionId"`
-	AadClientID                  string `json:"aadClientId"`
-	AadClientSecret              string `json:"aadClientSecret"`
-	ResourceGroup                string `json:"resourceGroup"`
-	SecurityGroupName            string `json:"securityGroupName"`
-	SecurityGroupResourceGroup   string `json:"securityGroupResourceGroup"`
-	Location                     string `json:"location"`
-	VMType                       string `json:"vmType"`
-	VnetName                     string `json:"vnetName"`
-	VnetResourceGroup            string `json:"vnetResourceGroup"`
-	SubnetName                   string `json:"subnetName"`
-	RouteTableName               string `json:"routeTableName"`
+	Cloud           string `json:"cloud"`
+	TenantID        string `json:"tenantId"`
+	SubscriptionID  string `json:"subscriptionId"`
+	AadClientID     string `json:"aadClientId"`
+	AadClientSecret string `json:"aadClientSecret"`
+	ResourceGroup   string `json:"resourceGroup"`
+	//SecurityGroupName            string `json:"securityGroupName"`
+	//SecurityGroupResourceGroup   string `json:"securityGroupResourceGroup"`
+	Location          string `json:"location"`
+	VMType            string `json:"vmType"`
+	VnetName          string `json:"vnetName"`
+	VnetResourceGroup string `json:"vnetResourceGroup"`
+	SubnetName        string `json:"subnetName"`
+	//RouteTableName               string `json:"routeTableName"`
 	LoadBalancerSku              string `json:"loadBalancerSku"`
 	MaximumLoadBalancerRuleCount int    `json:"maximumLoadBalancerRuleCount"`
 	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`

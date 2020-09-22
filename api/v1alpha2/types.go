@@ -79,7 +79,7 @@ const (
 // Network encapsulates Azure networking resources.
 type Network struct {
 	// SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
-	SecurityGroups map[SecurityGroupRole]SecurityGroup `json:"securityGroups,omitempty"`
+	//SecurityGroups map[SecurityGroupRole]SecurityGroup `json:"securityGroups,omitempty"`
 
 	// APIServerLB is the Kubernetes API server load balancer.
 	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
@@ -136,9 +136,9 @@ func (s Subnets) ToMap() map[string]*SubnetSpec {
 }
 
 // SecurityGroupRole defines the unique role of a security group.
-type SecurityGroupRole string
+//type SecurityGroupRole string
 
-var (
+/*var (
 	// SecurityGroupBastion defines an SSH bastion role
 	//SecurityGroupBastion = SecurityGroupRole("bastion")
 
@@ -147,15 +147,15 @@ var (
 
 	// SecurityGroupControlPlane defines a Kubernetes control plane node role
 	SecurityGroupControlPlane = SecurityGroupRole(ControlPlane)
-)
+)*/
 
 // SecurityGroup defines an Azure security group.
-type SecurityGroup struct {
+/*type SecurityGroup struct {
 	ID           string       `json:"id,omitempty"`
 	Name         string       `json:"name,omitempty"`
 	IngressRules IngressRules `json:"ingressRule,omitempty"`
 	Tags         Tags         `json:"tags,omitempty"`
-}
+}*/
 
 /*
 // TODO
@@ -166,9 +166,9 @@ func (s *SecurityGroup) String() string {
 */
 
 // SecurityGroupProtocol defines the protocol type for a security group rule.
-type SecurityGroupProtocol string
+//type SecurityGroupProtocol string
 
-var (
+/*var (
 	// SecurityGroupProtocolAll is a wildcard for all IP protocols
 	SecurityGroupProtocolAll = SecurityGroupProtocol("*")
 
@@ -177,12 +177,12 @@ var (
 
 	// SecurityGroupProtocolUDP represents the UDP protocol in ingress rules
 	SecurityGroupProtocolUDP = SecurityGroupProtocol("Udp")
-)
+)*/
 
 // IngressRule defines an Azure ingress rule for security groups.
 type IngressRule struct {
-	Description string                `json:"description"`
-	Protocol    SecurityGroupProtocol `json:"protocol"`
+	Description string `json:"description"`
+	//Protocol    SecurityGroupProtocol `json:"protocol"`
 
 	// SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
 	SourcePorts *string `json:"sourcePorts,omitempty"`
@@ -467,7 +467,7 @@ type SubnetSpec struct {
 	InternalLBIPAddress string `json:"internalLBIPAddress,omitempty"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
-	SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
+	//SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
 }
 
 const (

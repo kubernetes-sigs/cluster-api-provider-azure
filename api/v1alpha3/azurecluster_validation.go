@@ -134,7 +134,7 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				requiredSubnetRoles[role] = true
 			}
 		}
-		if subnet.SecurityGroup.IngressRules != nil {
+		/*if subnet.SecurityGroup.IngressRules != nil {
 			for _, ingressRule := range subnet.SecurityGroup.IngressRules {
 				if err := validateIngressRule(
 					ingressRule,
@@ -143,7 +143,7 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 					allErrs = append(allErrs, err)
 				}
 			}
-		}
+		}*/
 	}
 	for k, v := range requiredSubnetRoles {
 		if v == false {

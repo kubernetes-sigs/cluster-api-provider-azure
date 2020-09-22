@@ -37,14 +37,14 @@ func IngresstoSecurityRule(ingress infrav1.IngressRule) network.SecurityRule {
 		},
 	}
 
-	switch ingress.Protocol {
+	/*switch ingress.Protocol {
 	case infrav1.SecurityGroupProtocolAll:
 		secRule.Protocol = network.SecurityRuleProtocolAsterisk
 	case infrav1.SecurityGroupProtocolTCP:
 		secRule.Protocol = network.SecurityRuleProtocolTCP
 	case infrav1.SecurityGroupProtocolUDP:
 		secRule.Protocol = network.SecurityRuleProtocolUDP
-	}
+	}*/
 
 	return secRule
 }
@@ -60,14 +60,14 @@ func SecuritytoIngressRule(rule network.SecurityRule) infrav1.IngressRule {
 		Destination:      rule.DestinationAddressPrefix,
 	}
 
-	switch rule.Protocol {
+	/*switch rule.Protocol {
 	case network.SecurityRuleProtocolAsterisk:
 		ingRule.Protocol = infrav1.SecurityGroupProtocolAll
 	case network.SecurityRuleProtocolTCP:
 		ingRule.Protocol = infrav1.SecurityGroupProtocolTCP
 	case network.SecurityRuleProtocolUDP:
 		ingRule.Protocol = infrav1.SecurityGroupProtocolUDP
-	}
+	}*/
 
 	return ingRule
 }

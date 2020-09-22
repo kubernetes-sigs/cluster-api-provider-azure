@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
-	"k8s.io/klog/klogr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -49,7 +48,7 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
-	log := klogr.New()
+	//log := klogr.New()
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
 		subnetSpec.Name = "subnet1"
 		existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
@@ -86,12 +85,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}*/
 
-			if subnetSpec.SecurityGroupName != "" {
+			/*if subnetSpec.SecurityGroupName != "" {
 				log.Info("Inside security group name")
 				subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
 					ID: to.StringPtr(azure.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
 				}
-			}
+			}*/
 
 			s.Scope.V(2).Info("creating subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
 			err = s.Client.CreateOrUpdate(
