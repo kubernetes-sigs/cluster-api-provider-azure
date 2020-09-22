@@ -46,10 +46,10 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	profile := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-			VMSize:              containerservice.VMSizeTypes(agentPoolSpec.SKU),
-			OsDiskSizeGB:        &agentPoolSpec.OSDiskSizeGB,
-			Count:               &agentPoolSpec.Replicas,
-			Type:                containerservice.VirtualMachineScaleSets,
+			VMSize:       containerservice.VMSizeTypes(agentPoolSpec.SKU),
+			OsDiskSizeGB: &agentPoolSpec.OSDiskSizeGB,
+			Count:        &agentPoolSpec.Replicas,
+			//Type:                containerservice.VirtualMachineScaleSets,
 			OrchestratorVersion: agentPoolSpec.Version,
 		},
 	}
@@ -79,10 +79,10 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// Normalize individual agent pools to diff in case we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-				VMSize:              existingPool.ManagedClusterAgentPoolProfileProperties.VMSize,
-				OsDiskSizeGB:        existingPool.ManagedClusterAgentPoolProfileProperties.OsDiskSizeGB,
-				Count:               existingPool.ManagedClusterAgentPoolProfileProperties.Count,
-				Type:                containerservice.VirtualMachineScaleSets,
+				VMSize:       existingPool.ManagedClusterAgentPoolProfileProperties.VMSize,
+				OsDiskSizeGB: existingPool.ManagedClusterAgentPoolProfileProperties.OsDiskSizeGB,
+				Count:        existingPool.ManagedClusterAgentPoolProfileProperties.Count,
+				//Type:                containerservice.VirtualMachineScaleSets,
 				OrchestratorVersion: existingPool.ManagedClusterAgentPoolProfileProperties.OrchestratorVersion,
 			},
 		}

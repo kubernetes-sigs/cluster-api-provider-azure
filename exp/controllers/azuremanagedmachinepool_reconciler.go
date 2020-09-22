@@ -18,16 +18,14 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
-	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
+
 	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -36,50 +34,50 @@ type (
 	azureManagedMachinePoolReconciler struct {
 		kubeclient    client.Client
 		agentPoolsSvc azure.OldService
-		scaleSetsSvc  NodeLister
+		//scaleSetsSvc  NodeLister
 	}
 
 	// AgentPoolVMSSNotFoundError represents a reconcile error when the VMSS for an agent pool can't be found
-	AgentPoolVMSSNotFoundError struct {
+	/*AgentPoolVMSSNotFoundError struct {
 		NodeResourceGroup string
 		PoolName          string
-	}
+	}*/
 
 	// NodeLister is a service interface for returning generic lists.
 	NodeLister interface {
-		ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
-		List(context.Context, string) ([]compute.VirtualMachineScaleSet, error)
+		//ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
+		//List(context.Context, string) ([]compute.VirtualMachineScaleSet, error)
 	}
 )
 
-var (
+/*var (
 	notFoundErr = new(AgentPoolVMSSNotFoundError)
-)
+)*/
 
 // NewAgentPoolVMSSNotFoundError creates a new AgentPoolVMSSNotFoundError
-func NewAgentPoolVMSSNotFoundError(nodeResourceGroup, poolName string) *AgentPoolVMSSNotFoundError {
+/*func NewAgentPoolVMSSNotFoundError(nodeResourceGroup, poolName string) *AgentPoolVMSSNotFoundError {
 	return &AgentPoolVMSSNotFoundError{
 		NodeResourceGroup: nodeResourceGroup,
 		PoolName:          poolName,
 	}
-}
+}*/
 
-func (a *AgentPoolVMSSNotFoundError) Error() string {
+/*func (a *AgentPoolVMSSNotFoundError) Error() string {
 	msgFmt := "failed to find vm scale set in resource group %s matching pool named %s"
 	return fmt.Sprintf(msgFmt, a.NodeResourceGroup, a.PoolName)
-}
+}*/
 
-func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
+/*func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 	_, ok := target.(*AgentPoolVMSSNotFoundError)
 	return ok
-}
+}*/
 
 // newAzureManagedMachinePoolReconciler populates all the services based on input scope
 func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
 	return &azureManagedMachinePoolReconciler{
 		kubeclient:    scope.Client,
 		agentPoolsSvc: agentpools.NewService(scope),
-		scaleSetsSvc:  scalesets.NewClient(scope),
+		//scaleSetsSvc:  scalesets.NewClient(scope),
 	}
 }
 
@@ -115,13 +113,13 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
 
-	nodeResourceGroup := fmt.Sprintf("MC_%s_%s_%s", scope.ControlPlane.Spec.ResourceGroup, scope.ControlPlane.Name, scope.ControlPlane.Spec.Location)
-	vmss, err := r.scaleSetsSvc.List(ctx, nodeResourceGroup)
+	//nodeResourceGroup := fmt.Sprintf("MC_%s_%s_%s", scope.ControlPlane.Spec.ResourceGroup, scope.ControlPlane.Name, scope.ControlPlane.Spec.Location)
+	/*vmss, err := r.scaleSetsSvc.List(ctx, nodeResourceGroup)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
-	}
+	}*/
 
-	var match *compute.VirtualMachineScaleSet
+	/*var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
 		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == scope.InfraMachinePool.Name {
@@ -137,15 +135,15 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 	instances, err := r.scaleSetsSvc.ListInstances(ctx, nodeResourceGroup, *match.Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
-	}
+	}*/
 
-	var providerIDs = make([]string, len(instances))
+	/*var providerIDs = make([]string, len(instances))
 	for i := 0; i < len(instances); i++ {
 		providerIDs[i] = fmt.Sprintf("azure://%s", *instances[i].ID)
 	}
 
 	scope.InfraMachinePool.Spec.ProviderIDList = providerIDs
-	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))
+	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))*/
 	scope.InfraMachinePool.Status.Ready = true
 
 	scope.Logger.Info("reconciled machine pool successfully")
@@ -169,6 +167,6 @@ func (r *azureManagedMachinePoolReconciler) Delete(ctx context.Context, scope *s
 }
 
 // IsAgentPoolVMSSNotFoundError returns true if the error is a AgentPoolVMSSNotFoundError
-func IsAgentPoolVMSSNotFoundError(err error) bool {
+/*func IsAgentPoolVMSSNotFoundError(err error) bool {
 	return errors.Is(err, notFoundErr)
-}
+}*/

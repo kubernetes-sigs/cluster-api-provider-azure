@@ -19,15 +19,12 @@ package controllers
 import (
 	"context"
 
-	"github.com/pkg/errors"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 )
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
 type azureMachinePoolService struct {
-	virtualMachinesScaleSetSvc azure.Service
+	//virtualMachinesScaleSetSvc azure.Service
 	//skuCache                   *resourceskus.Cache
 }
 
@@ -35,23 +32,23 @@ type azureMachinePoolService struct {
 func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) *azureMachinePoolService {
 	//cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 	return &azureMachinePoolService{
-		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope),
+		//virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope),
 		//skuCache:                   cache,
 	}
 }
 
 // Reconcile reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
-	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
+	/*if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to create scale set")
-	}
+	}*/
 	return nil
 }
 
 // Delete reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Delete(ctx context.Context) error {
-	if err := s.virtualMachinesScaleSetSvc.Delete(ctx); err != nil {
+	/*if err := s.virtualMachinesScaleSetSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete scale set")
-	}
+	}*/
 	return nil
 }

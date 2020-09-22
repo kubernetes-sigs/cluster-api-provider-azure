@@ -125,7 +125,7 @@ type VMSpec struct {
 }*/
 
 // ScaleSetSpec defines the specification for a Scale Set.
-type ScaleSetSpec struct {
+/*type ScaleSetSpec struct {
 	Name                         string
 	Size                         string
 	Capacity                     int64
@@ -139,7 +139,7 @@ type ScaleSetSpec struct {
 	PublicLBAddressPoolName      string
 	AcceleratedNetworking        *bool
 	TerminateNotificationTimeout *int
-}
+}*/
 
 // TagsSpec defines the specification for a set of tags.
 type TagsSpec struct {

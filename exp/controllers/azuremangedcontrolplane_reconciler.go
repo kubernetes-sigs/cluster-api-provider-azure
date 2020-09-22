@@ -206,7 +206,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 		}
 
 		// Add to cluster spec
-		managedClusterSpec.AgentPools = []managedclusters.PoolSpec{defaultPoolSpec}
+		//managedClusterSpec.AgentPools = []managedclusters.PoolSpec{defaultPoolSpec}
 	}
 
 	// Send to Azure for create/update.

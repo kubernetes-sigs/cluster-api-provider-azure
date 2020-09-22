@@ -197,12 +197,12 @@ func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context,
 	}
 
 	if err := newAzureManagedMachinePoolReconciler(scope).Reconcile(ctx, scope); err != nil {
-		if IsAgentPoolVMSSNotFoundError(err) {
+		/*if IsAgentPoolVMSSNotFoundError(err) {
 			// if the underlying VMSS is not yet created, requeue for 30s in the future
 			return reconcile.Result{
 				RequeueAfter: 30 * time.Second,
 			}, nil
-		}
+		}*/
 		return reconcile.Result{}, errors.Wrapf(err, "error creating AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 	}
 

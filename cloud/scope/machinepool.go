@@ -92,7 +92,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 }
 
 // ScaleSetSpec returns the scale set spec.
-func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
+/*func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 	return azure.ScaleSetSpec{
 		Name:                    m.Name(),
 		Size:                    m.AzureMachinePool.Spec.Template.VMSize,
@@ -107,7 +107,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		PublicLBAddressPoolName: azure.GenerateOutboundBackendddressPoolName(m.ClusterName()),
 		AcceleratedNetworking:   m.AzureMachinePool.Spec.Template.AcceleratedNetworking,
 	}
-}
+}*/
 
 // Name returns the Azure Machine Pool Name.
 func (m *MachinePoolScope) Name() string {

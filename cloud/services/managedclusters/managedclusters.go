@@ -62,7 +62,7 @@ type Spec struct {
 	SSHPublicKey string
 
 	// AgentPools is the list of agent pool specifications in this cluster.
-	AgentPools []PoolSpec
+	//AgentPools []PoolSpec
 
 	// PodCIDR is the CIDR block for IP addresses distributed to pods
 	PodCIDR string
@@ -155,7 +155,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 	}
 
-	for _, pool := range managedClusterSpec.AgentPools {
+	/*for _, pool := range managedClusterSpec.AgentPools {
 		profile := containerservice.ManagedClusterAgentPoolProfile{
 			Name:         &pool.Name,
 			VMSize:       containerservice.VMSizeTypes(pool.SKU),
@@ -164,7 +164,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Type:         containerservice.VirtualMachineScaleSets,
 		}
 		*properties.AgentPoolProfiles = append(*properties.AgentPoolProfiles, profile)
-	}
+	}*/
 
 	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
