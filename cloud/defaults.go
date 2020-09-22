@@ -148,9 +148,9 @@ func ProbeID(subscriptionID, resourceGroup, loadBalancerName, probeName string) 
 }
 
 // NATRuleID returns the azure resource ID for a inbound NAT rule.
-func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName string) string {
+/*func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/inboundNatRules/%s", subscriptionID, resourceGroup, loadBalancerName, natRuleName)
-}
+}*/
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
 func getDefaultImageSKUID(k8sVersion string) (string, error) {

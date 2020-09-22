@@ -74,8 +74,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					}*/
 				}
 			}
-			log.Info("NATRuleID")
-			log.Info(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName))
 			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
 				log.Info(nicSpec.InternalLBName)
 				log.Info(nicSpec.InternalLBAddressPoolName)
