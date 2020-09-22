@@ -90,10 +90,10 @@ type VNetSpec struct {
 }
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.
-type RoleAssignmentSpec struct {
+/*type RoleAssignmentSpec struct {
 	MachineName string
 	UUID        string
-}
+}*/
 
 // NSGSpec defines the specification for a Security Group.
 type NSGSpec struct {

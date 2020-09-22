@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -214,7 +213,7 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 }*/
 
 // RoleAssignmentSpecs returns the role assignment specs.
-func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
+/*func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 	if m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned {
 		return []azure.RoleAssignmentSpec{
 			{
@@ -224,7 +223,7 @@ func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 		}
 	}
 	return []azure.RoleAssignmentSpec{}
-}
+}*/
 
 // Subnet returns the machine's subnet based on its role
 func (m *MachineScope) Subnet() *infrav1.SubnetSpec {
