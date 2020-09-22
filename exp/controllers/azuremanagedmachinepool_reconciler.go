@@ -18,22 +18,19 @@ package controllers
 
 import (
 	"context"
-	"strings"
 
 	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 
-	"github.com/pkg/errors"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools"
+	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type (
 	// azureManagedMachinePoolReconciler are list of services required by cluster controller
 	azureManagedMachinePoolReconciler struct {
-		kubeclient    client.Client
-		agentPoolsSvc azure.OldService
+		kubeclient client.Client
+		//agentPoolsSvc azure.OldService
 		//scaleSetsSvc  NodeLister
 	}
 
@@ -75,8 +72,8 @@ type (
 // newAzureManagedMachinePoolReconciler populates all the services based on input scope
 func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
 	return &azureManagedMachinePoolReconciler{
-		kubeclient:    scope.Client,
-		agentPoolsSvc: agentpools.NewService(scope),
+		kubeclient: scope.Client,
+		//agentPoolsSvc: agentpools.NewService(scope),
 		//scaleSetsSvc:  scalesets.NewClient(scope),
 	}
 }
@@ -85,33 +82,33 @@ func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope)
 func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	scope.Logger.Info("reconciling machine pool")
 
-	var normalizedVersion *string
-	if scope.MachinePool.Spec.Template.Spec.Version != nil {
+	//var normalizedVersion *string
+	/*if scope.MachinePool.Spec.Template.Spec.Version != nil {
 		v := strings.TrimPrefix(*scope.MachinePool.Spec.Template.Spec.Version, "v")
 		normalizedVersion = &v
-	}
+	}*/
 
-	replicas := int32(1)
-	if scope.MachinePool.Spec.Replicas != nil {
+	//replicas := int32(1)
+	/*if scope.MachinePool.Spec.Replicas != nil {
 		replicas = *scope.MachinePool.Spec.Replicas
-	}
+	}*/
 
-	agentPoolSpec := &agentpools.Spec{
+	/*agentPoolSpec := &agentpools.Spec{
 		Name:          scope.InfraMachinePool.Name,
 		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
 		Cluster:       scope.ControlPlane.Name,
 		SKU:           scope.InfraMachinePool.Spec.SKU,
 		Replicas:      replicas,
 		Version:       normalizedVersion,
-	}
+	}*/
 
-	if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {
+	/*if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {
 		agentPoolSpec.OSDiskSizeGB = *scope.InfraMachinePool.Spec.OSDiskSizeGB
-	}
+	}*/
 
-	if err := r.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
+	/*if err := r.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
-	}
+	}*/
 
 	//nodeResourceGroup := fmt.Sprintf("MC_%s_%s_%s", scope.ControlPlane.Spec.ResourceGroup, scope.ControlPlane.Name, scope.ControlPlane.Spec.Location)
 	/*vmss, err := r.scaleSetsSvc.List(ctx, nodeResourceGroup)
@@ -152,16 +149,16 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 
 // Delete reconciles all the services in pre determined order
 func (r *azureManagedMachinePoolReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	agentPoolSpec := &agentpools.Spec{
+	/*agentPoolSpec := &agentpools.Spec{
 		Name:          scope.InfraMachinePool.Name,
 		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
 		Cluster:       scope.ControlPlane.Name,
 		SKU:           scope.InfraMachinePool.Spec.SKU,
-	}
+	}*/
 
-	if err := r.agentPoolsSvc.Delete(ctx, agentPoolSpec); err != nil {
+	/*if err := r.agentPoolsSvc.Delete(ctx, agentPoolSpec); err != nil {
 		return errors.Wrapf(err, "failed to delete machine pool %s", scope.InfraMachinePool.Name)
-	}
+	}*/
 
 	return nil
 }

@@ -123,7 +123,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{
 				ClientID: &managedIdentity,
 			},
-			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{},
+			//AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{},
 			NetworkProfile: &containerservice.NetworkProfileType{
 				NetworkPlugin:   containerservice.NetworkPlugin(managedClusterSpec.NetworkPlugin),
 				LoadBalancerSku: containerservice.LoadBalancerSku(managedClusterSpec.LoadBalancerSKU),
