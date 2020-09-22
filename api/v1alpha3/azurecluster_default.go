@@ -39,13 +39,14 @@ const (
 )
 
 func (c *AzureCluster) setDefaults() {
+	c.setResourceGroupDefault()
 	c.setNetworkSpecDefaults()
 }
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
-	c.setResourceGroupDefault()
 	c.setVnetDefaults()
 	c.setSubnetDefaults()
+	c.setLoadBalancerDefaults()
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -106,6 +107,46 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}
 }
 
+func (c *AzureCluster) setLoadBalancerDefaults() {
+	lb := &c.Spec.NetworkSpec.APIServerLB
+	if lb.Type == "" {
+		lb.Type = Public
+	}
+	if lb.SKU == "" {
+		lb.SKU = SKUStandard
+	}
+
+	if lb.Type == Public {
+		if lb.Name == "" {
+			lb.Name = generatePublicLBName(c.ObjectMeta.Name)
+		}
+		if len(lb.FrontendIPConfigs) == 0 {
+			lb.FrontendIPConfigs = []FrontendIPConfig{
+				{
+					Name: generateFrontendIPConfigName(lb.Name),
+					PublicIP: &PublicIPSpec{
+						Name: generatePublicIPName(c.ObjectMeta.Name),
+					},
+				},
+			}
+		}
+
+	} else if lb.Type == Internal {
+		if lb.Name == "" {
+			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
+		}
+		if len(lb.FrontendIPConfigs) == 0 {
+			lb.FrontendIPConfigs = []FrontendIPConfig{
+				{
+					Name: generateFrontendIPConfigName(lb.Name),
+					// for back compat, set the private IP to the subnet InternalLBIPAddress value.
+					PrivateIPAddress: c.Spec.NetworkSpec.GetControlPlaneSubnet().InternalLBIPAddress,
+				},
+			}
+		}
+	}
+}
+
 // generateVnetName generates a virtual network name, based on the cluster name.
 func generateVnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "vnet")
@@ -134,4 +175,24 @@ func generateNodeSecurityGroupName(clusterName string) string {
 // generateRouteTableName generates a route table name, based on the cluster name.
 func generateRouteTableName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
+}
+
+// generateInternalLBName generates a internal load balancer name, based on the cluster name.
+func generateInternalLBName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")
+}
+
+// generatePublicLBName generates a public load balancer name, based on the cluster name.
+func generatePublicLBName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
+}
+
+// generatePublicIPName generates a public IP name, based on the cluster name and a hash.
+func generatePublicIPName(clusterName string) string {
+	return fmt.Sprintf("pip-apiserver-%s", clusterName)
+}
+
+// generateFrontendIPConfigName generates a load balancer frontend IP config name.
+func generateFrontendIPConfigName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }

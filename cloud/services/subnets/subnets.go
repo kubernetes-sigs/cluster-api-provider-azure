@@ -44,7 +44,6 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 
 	subnetSpec := &infrav1.SubnetSpec{
 		Role:                spec.Role,
-		InternalLBIPAddress: spec.InternalLBIPAddress,
 		Name:                to.String(subnet.Name),
 		ID:                  to.String(subnet.ID),
 		CIDRBlocks:          addresses,

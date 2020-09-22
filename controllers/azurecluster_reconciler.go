@@ -18,9 +18,7 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/pkg/errors"
-	"hash/fnv"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -144,11 +142,8 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 // CreateOrUpdateNetworkAPIServerIP creates or updates public ip name and dns name
 func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 	if r.scope.Network().APIServerIP.Name == "" {
-		h := fnv.New32a()
-		if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", r.scope.SubscriptionID(), r.scope.ResourceGroup(), r.scope.ClusterName()))); err != nil {
-			return errors.Wrapf(err, "failed to write hash sum for api server ip")
-		}
-		r.scope.Network().APIServerIP.Name = azure.GeneratePublicIPName(r.scope.ClusterName(), fmt.Sprintf("%x", h.Sum32()))
+		// TODO: fix this for internal
+		r.scope.Network().APIServerIP.Name = r.scope.APIServerLB().FrontendIPConfigs[0].PublicIP.Name
 	}
 
 	r.scope.Network().APIServerIP.DNSName = r.scope.GenerateFQDN()

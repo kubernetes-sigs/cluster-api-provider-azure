@@ -407,31 +407,6 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 	})
 }
 
-func TestSubnetsInvalidInternalLBIPAddress(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name    string
-		subnets Subnets
-	}
-
-	testCase := test{
-		name:    "subnets - invalid internal load balancer ip address",
-		subnets: createValidSubnets(),
-	}
-
-	testCase.subnets[0].InternalLBIPAddress = "2550.1.1.1"
-
-	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
-			field.NewPath("spec").Child("networkSpec").Child("subnets"))
-		g.Expect(errs).To(HaveLen(1))
-		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
-		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets[0].internalLBIPAddress"))
-		g.Expect(errs[0].BadValue).To(BeEquivalentTo("2550.1.1.1"))
-	})
-}
-
 func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 	g := NewWithT(t)
 
@@ -605,6 +580,56 @@ func TestIngressRules(t *testing.T) {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidateAPIServerLB(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		lb          LoadBalancerSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name: "invalid SKU",
+			lb: LoadBalancerSpec{
+				SKU: "Basic",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type: "FieldValueNotSupported",
+				Field: "apiServerLB.sku",
+				BadValue: "Basic",
+				Detail: "supported values: \"Standard\"",
+			},
+		},
+		{
+			name: "invalid Type",
+			lb: LoadBalancerSpec{
+				Type: "Foo",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type: "FieldValueNotSupported",
+				Field: "apiServerLB.type",
+				BadValue: "Foo",
+				Detail: "supported values: \"Public\", \"Internal\"",
+			},
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateAPIServerLB(test.lb, field.NewPath("apiServerLB"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				g.Expect(err).To(ContainElement(test.expectedErr))
+			} else {
+				g.Expect(err).To(HaveLen(0))
 			}
 		})
 	}

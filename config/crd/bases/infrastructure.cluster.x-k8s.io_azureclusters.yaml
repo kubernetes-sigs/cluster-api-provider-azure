@@ -465,6 +465,49 @@ spec:
                 description: NetworkSpec encapsulates all things related to Azure
                   network.
                 properties:
+                  apiServerLB:
+                    description: APIServerLB is the configuration for the control-plane
+                      load balancer.
+                    properties:
+                      frontendIPConfigs:
+                        items:
+                          description: FrontendIPConfig defines a load balancer frontend
+                            IP configuration.
+                          properties:
+                            name:
+                              minLength: 1
+                              type: string
+                            privateIP:
+                              type: string
+                            publicIP:
+                              description: PublicIPSpec defines the inputs to create
+                                an Azure public IP address.
+                              properties:
+                                dnsName:
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - dnsName
+                              - name
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      sku:
+                        description: SKU defines an Azure load balancer SKU.
+                        type: string
+                      type:
+                        description: Type defines an Azure load balancer Type.
+                        type: string
+                    type: object
                   subnets:
                     description: Subnets is the configuration for the control-plane
                       subnet and the node subnet.
@@ -487,9 +530,10 @@ spec:
                             this resource.
                           type: string
                         internalLBIPAddress:
-                          description: InternalLBIPAddress is the IP address that
+                          description: 'InternalLBIPAddress is the IP address that
                             will be used as the internal LB private IP. For the control
-                            plane subnet only.
+                            plane subnet only. Deprecated: Use LoadBalancer private
+                            IP instead'
                           type: string
                         name:
                           description: Name defines a name for the subnet resource.
@@ -710,35 +754,6 @@ spec:
                         type: string
                       name:
                         type: string
-                    type: object
-                  apiServerLb:
-                    description: APIServerLB is the Kubernetes API server load balancer.
-                    properties:
-                      backendPool:
-                        description: BackendPool defines a load balancer backend pool
-                        properties:
-                          id:
-                            type: string
-                          name:
-                            type: string
-                        type: object
-                      frontendIpConfig:
-                        description: FrontendIPConfig - DO NOT USE this empty struct
-                          is here to preserve backwards compatibility and should be
-                          removed in v1alpha4
-                        type: object
-                      id:
-                        type: string
-                      name:
-                        type: string
-                      sku:
-                        description: SKU defines an Azure load balancer SKU.
-                        type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: Tags defines a map of tags.
-                        type: object
                     type: object
                 type: object
               ready:

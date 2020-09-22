@@ -19,8 +19,9 @@ package scope
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/net"
 	"strconv"
+
+	"k8s.io/utils/net"
 
 	"github.com/Azure/go-autorest/autorest/to"
 
@@ -122,17 +123,29 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	specs := []azure.LBSpec{
 		{
-			// Public API Server LB
-			Name:          azure.GeneratePublicLBName(s.ClusterName()),
-			PublicIPName:  s.Network().APIServerIP.Name,
-			APIServerPort: s.APIServerPort(),
-			Role:          infrav1.APIServerRole,
+			// Control Plane LB
+			Name:              s.APIServerLB().Name,
+			SubnetName:        s.ControlPlaneSubnet().Name,
+			SubnetCidrs:       s.ControlPlaneSubnet().CIDRBlocks,
+			FrontendIPConfigs: s.APIServerLB().FrontendIPConfigs,
+			APIServerPort:     s.APIServerPort(),
+			Type:              s.APIServerLB().Type,
+			Role:              infrav1.APIServerRole,
+			BackendPoolName:   azure.GenerateBackendAddressPoolName(s.APIServerLB().Name),
 		},
 		{
 			// Public Node outbound LB
-			Name:         s.ClusterName(),
-			PublicIPName: azure.GenerateNodeOutboundIPName(s.ClusterName()),
-			Role:         infrav1.NodeOutboundRole,
+			Name: s.ClusterName(),
+			FrontendIPConfigs: []infrav1.FrontendIPConfig{
+				{
+					PublicIP: &infrav1.PublicIPSpec{
+						Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+					},
+				},
+			},
+			Type:            infrav1.Public,
+			BackendPoolName: azure.GenerateOutboundBackendddressPoolName(s.APIServerLB().Name),
+			Role:            infrav1.NodeOutboundRole,
 		},
 	}
 	if !s.IsIPv6Enabled() {
@@ -177,13 +190,12 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	return []azure.SubnetSpec{
 		{
-			Name:                s.ControlPlaneSubnet().Name,
-			CIDRs:               s.ControlPlaneSubnet().CIDRBlocks,
-			VNetName:            s.Vnet().Name,
-			SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
-			Role:                s.ControlPlaneSubnet().Role,
-			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
-			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
+			Name:              s.ControlPlaneSubnet().Name,
+			CIDRs:             s.ControlPlaneSubnet().CIDRBlocks,
+			VNetName:          s.Vnet().Name,
+			SecurityGroupName: s.ControlPlaneSubnet().SecurityGroup.Name,
+			Role:              s.ControlPlaneSubnet().Role,
+			RouteTableName:    s.ControlPlaneSubnet().RouteTable.Name,
 		},
 		{
 			Name:              s.NodeSubnet().Name,
@@ -240,6 +252,11 @@ func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
 // NodeSubnet returns the cluster node subnet.
 func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
 	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+}
+
+// APIServerLB returns the cluster API Server load balancer.
+func (s *ClusterScope) APIServerLB() *infrav1.LoadBalancerSpec {
+	return &s.AzureCluster.Spec.NetworkSpec.APIServerLB
 }
 
 // RouteTable returns the cluster node routetable.

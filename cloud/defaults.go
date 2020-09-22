@@ -46,16 +46,6 @@ const (
 	LatestVersion = "latest"
 )
 
-// GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
-func GenerateInternalLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")
-}
-
-// GeneratePublicLBName generates a public load balancer name, based on the cluster name.
-func GeneratePublicLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
-}
-
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
@@ -64,16 +54,6 @@ func GenerateBackendAddressPoolName(lbName string) string {
 // GenerateOutboundBackendddressPoolName generates a load balancer outbound backend address pool name.
 func GenerateOutboundBackendddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
-}
-
-// GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
-func GenerateFrontendIPConfigName(lbName string) string {
-	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
-}
-
-// GeneratePublicIPName generates a public IP name, based on the cluster name and a hash.
-func GeneratePublicIPName(clusterName, hash string) string {
-	return fmt.Sprintf("%s-%s", clusterName, hash)
 }
 
 // GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.

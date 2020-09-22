@@ -35,8 +35,9 @@ const (
 	// obtained from https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups/createorupdate#uri-parameters
 	resourceGroupRegex = `^[-\w\._\(\)]+$`
 	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
-	subnetRegex = `^[-\w\._]+$`
-	ipv4Regex   = `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`
+	subnetRegex       = `^[-\w\._]+$`
+	loadBalancerRegex = `^[-\w\._]+$`
+	ipv4Regex         = `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`
 )
 
 // validateCluster validates a cluster
@@ -91,6 +92,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, fldPath *field.Path) field.Err
 		}
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
+	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, fldPath.Child("apiServerLB"))...)
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -151,13 +153,10 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				fmt.Sprintf("required role %s not included in provided subnets", k)))
 		}
 	}
-	if len(allErrs) == 0 {
-		return nil
-	}
 	return allErrs
 }
 
-// validateSubnetName validates the Name of a Subnet
+// validateSubnetName validates the Name of a Subnet.
 func validateSubnetName(name string, fldPath *field.Path) *field.Error {
 	if success, _ := regexp.Match(subnetRegex, []byte(name)); !success {
 		return field.Invalid(fldPath, name,
@@ -166,7 +165,16 @@ func validateSubnetName(name string, fldPath *field.Path) *field.Error {
 	return nil
 }
 
-// validateInternalLBIPAddress validates a InternalLBIPAddress
+// validateLoadBalancerName validates the Name of a Load Balancer.
+func validateLoadBalancerName(name string, fldPath *field.Path) *field.Error {
+	if success, _ := regexp.Match(loadBalancerRegex, []byte(name)); !success {
+		return field.Invalid(fldPath, name,
+			fmt.Sprintf("name of load balancer doesn't match regex %s", loadBalancerRegex))
+	}
+	return nil
+}
+
+// validateInternalLBIPAddress validates a InternalLBIPAddress.
 func validateInternalLBIPAddress(address string, fldPath *field.Path) *field.Error {
 	if success, _ := regexp.Match(ipv4Regex, []byte(address)); !success {
 		return field.Invalid(fldPath, address,
@@ -183,4 +191,48 @@ func validateIngressRule(ingressRule *IngressRule, fldPath *field.Path) *field.E
 	}
 
 	return nil
+}
+
+func validateAPIServerLB(lb LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	// SKU should be Standard.
+	if lb.SKU != SKUStandard {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
+	}
+	// Type should be Public or Internal.
+	if lb.Type != Internal && lb.Type != Public {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("type"), lb.Type,
+			[]string{string(Public), string(Internal)}))
+	}
+	// Name should be valid.
+	if err := validateLoadBalancerName(lb.Name, fldPath.Child("name")); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	// There should only be one IP config.
+	if len(lb.FrontendIPConfigs) != 1 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.Type,
+			fmt.Sprintf("API Server Load balancer should have 1 Frontend IP configuration")))
+	}
+	// if Internal, IP config should not have a public IP.
+	if lb.Type == Internal {
+		if lb.FrontendIPConfigs[0].PublicIP != nil {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
+				fmt.Sprintf("Internal Load Balancers cannot have a Public IP")))
+		}
+		if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
+			if err := validateInternalLBIPAddress(lb.FrontendIPConfigs[0].PrivateIPAddress,
+				fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
+				allErrs = append(allErrs, err)
+			}
+		}
+	}
+
+	// if Public, IP config should not have a private IP.
+	if lb.Type == Public {
+		if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+				fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
+		}
+	}
+	return allErrs
 }
