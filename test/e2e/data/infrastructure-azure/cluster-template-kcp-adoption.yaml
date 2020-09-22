@@ -1,10 +1,10 @@
 ##
 # these resources are sequenced by label:
-# 1. initial: just the resources to bootstrap an initial controlplane
+# 1. kcp-adoption.step1: just the resources to bootstrap an kcp-adoption.step1 controlplane
 # 2. kcp: the KCP resources (note the duplicated Cluster to associate the control plane)
 ##
 ###
-# 1. initial
+# 1. kcp-adoption.step1
 ###
 
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -12,7 +12,7 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    initial: ''
+    kcp-adoption.step1: ''
     cni: "${CLUSTER_NAME}-crs-0"
 spec:
   clusterNetwork:
@@ -29,7 +29,7 @@ kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    initial: ''
+    kcp-adoption.step1: ''  
 spec:
   additionalTags:
     creationTimestamp: ${TIMESTAMP}
@@ -46,7 +46,7 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
   labels:
-    initial: ''
+    kcp-adoption.step1: ''  
 spec:
   dataDisks:
   - diskSizeGB: 256
@@ -66,7 +66,7 @@ kind: Machine
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
   labels:
-    initial: ''
+    kcp-adoption.step1: ''      
     cluster.x-k8s.io/control-plane: "true"
 spec:
   version: ${KUBERNETES_VERSION}
@@ -86,7 +86,7 @@ kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
   labels:
-    initial: ''
+    kcp-adoption.step1: ''    
 spec:
   useExperimentalRetryJoin: true
   initConfiguration:
@@ -162,7 +162,7 @@ kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    kcp: ''
+    kcp-adoption.step2: ""
     cni: "${CLUSTER_NAME}-crs-0"
 spec:
   clusterNetwork:
@@ -184,7 +184,7 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
   labels:
     cluster.x-k8s.io/cluster-name: "${ CLUSTER_NAME }"
-    kcp: ''
+    kcp-adoption.step2: ""  
 spec:
   infrastructureTemplate:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
@@ -265,7 +265,7 @@ kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
   labels:
-    kcp: ''
+    kcp-adoption.step2: ""
 spec:
   template:
     spec:
@@ -287,8 +287,7 @@ kind: ConfigMap
 metadata:
   name: "cni-${CLUSTER_NAME}-crs-0"
   labels:
-    initial: ''
-    kcp: ''
+    kcp-adoption.step1: ''
 data: ${CNI_RESOURCES}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha3
@@ -296,8 +295,7 @@ kind: ClusterResourceSet
 metadata:
   name:  "${CLUSTER_NAME}-crs-0"
   labels:
-    initial: ''
-    kcp: ''
+    kcp-adoption.step1: ''
 spec:
   strategy: ApplyOnce
   clusterSelector:

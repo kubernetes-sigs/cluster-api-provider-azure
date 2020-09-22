@@ -8,8 +8,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v0.3.9
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.9/core-components.yaml
+      - name: v0.3.10
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.10/core-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -19,8 +19,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-      - name: v0.3.9
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.9/bootstrap-components.yaml
+      - name: v0.3.10
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.10/bootstrap-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -30,8 +30,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: v0.3.9
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.9/control-plane-components.yaml
+      - name: v0.3.10
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.10/control-plane-components.yaml
         type: url
         replacements:
           - old: "imagePullPolicy: Always"
@@ -50,6 +50,8 @@ providers:
         targetName: "cluster-template-kcp-adoption.yaml"
       - sourcePath: "${PWD}/templates/test/cluster-template-prow-ipv6.yaml"
         targetName: "cluster-template-ipv6.yaml"
+      - sourcePath: "../data/infrastructure-azure/cluster-template-mhc.yaml"
+        targetName: "cluster-template-mhc.yaml"        
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.8}"
@@ -70,7 +72,7 @@ intervals:
   default/wait-control-plane: ["20m", "10s"]
   default/wait-worker-nodes: ["20m", "10s"]
   default/wait-delete-cluster: ["30m", "10s"]
-  default/wait-machine-upgrade: ["50m", "10s"]
+  default/wait-machine-upgrade: ["60m", "10s"]
   default/wait-machine-remediation: ["30m", "10s"]
   default/wait-deployment: ["5m", "10s"]
   default/wait-job: ["5m", "10s"]
