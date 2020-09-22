@@ -441,9 +441,7 @@ func autoConvert_v1alpha2_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *
 	if err := Convert_v1alpha2_Network_To_v1alpha3_Network(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
-	if err := Convert_v1alpha2_VM_To_v1alpha3_VM(&in.Bastion, &out.Bastion, s); err != nil {
-		return err
-	}
+	// WARNING: in.Bastion requires manual conversion: does not exist in peer-type
 	out.Ready = in.Ready
 	// WARNING: in.APIEndpoints requires manual conversion: does not exist in peer-type
 	return nil
@@ -454,9 +452,6 @@ func autoConvert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *
 		return err
 	}
 	// WARNING: in.FailureDomains requires manual conversion: does not exist in peer-type
-	if err := Convert_v1alpha3_VM_To_v1alpha2_VM(&in.Bastion, &out.Bastion, s); err != nil {
-		return err
-	}
 	out.Ready = in.Ready
 	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
 	return nil

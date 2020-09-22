@@ -62,8 +62,6 @@ type AzureClusterStatus struct {
 	// This list will be used by Cluster API to try and spread the machines across the failure domains.
 	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
 
-	Bastion VM `json:"bastion,omitempty"`
-
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
