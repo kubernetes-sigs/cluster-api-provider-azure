@@ -308,7 +308,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 			&infrav1.IngressRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
-				Priority:         100,
+				Priority:         2200,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
 				Source:           to.StringPtr("*"),
 				SourcePorts:      to.StringPtr("*"),
@@ -318,7 +318,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 			&infrav1.IngressRule{
 				Name:             "allow_apiserver",
 				Description:      "Allow K8s API Server",
-				Priority:         101,
+				Priority:         2201,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
 				Source:           to.StringPtr("*"),
 				SourcePorts:      to.StringPtr("*"),
