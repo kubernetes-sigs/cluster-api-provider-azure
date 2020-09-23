@@ -118,7 +118,7 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 	}
 }
 
-// PublicIPSpec returns the public IP specs.
+// PublicIPSpecs returns the public IP specs.
 func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	var spec []azure.PublicIPSpec
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
@@ -183,6 +183,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	return specs
 }
 
+// NICNames returns the NIC names
 func (m *MachineScope) NICNames() []string {
 	nicNames := make([]string, len(m.NICSpecs()))
 	for i, nic := range m.NICSpecs() {
@@ -196,8 +197,12 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 	spec := azure.DiskSpec{
 		Name: azure.GenerateOSDiskName(m.Name()),
 	}
+	disks := []azure.DiskSpec{spec}
 
-	return []azure.DiskSpec{spec}
+	for _, dd := range m.AzureMachine.Spec.DataDisks {
+		disks = append(disks, azure.DiskSpec{Name: azure.GenerateDataDiskName(m.Name(), dd.NameSuffix)})
+	}
+	return disks
 }
 
 // BastionSpecs returns the bastion specs.
