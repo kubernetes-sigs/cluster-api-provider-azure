@@ -16,40 +16,15 @@ limitations under the License.
 
 package controllers
 
-import (
-	"context"
-	"time"
-
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/cluster-api/util/predicates"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-)
-
 // AzureManagedClusterReconciler reconciles a AzureManagedCluster object
-type AzureManagedClusterReconciler struct {
+/*type AzureManagedClusterReconciler struct {
 	client.Client
 	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
-}
+}*/
 
-func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+/*func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedCluster")
 	azManagedCluster := &infrav1exp.AzureManagedCluster{}
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -72,14 +47,14 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, optio
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
 	}
 	return nil
-}
+}*/
 
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
-func (r *AzureManagedClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
+/*func (r *AzureManagedClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "aksCluster", req.Name)
@@ -141,4 +116,4 @@ func (r *AzureManagedClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Resu
 	log.Info("Successfully reconciled")
 
 	return reconcile.Result{}, nil
-}
+}*/

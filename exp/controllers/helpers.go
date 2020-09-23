@@ -19,13 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
@@ -98,7 +98,7 @@ func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Sche
 // AzureManagedMachinePools. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the MachinePools belonging to the cluster, then finally projecting the infrastructure reference
 // to the AzureManagedMachinePools.
-func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.Mapper, error) {
+/*func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.Mapper, error) {
 	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureManagedMachinePool), scheme)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GVK for AzureManagedMachinePool")
@@ -146,12 +146,12 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme
 
 		return results
 	}), nil
-}
+}*/
 
 // AzureManagedClusterToAzureManagedControlPlaneMapper creates a mapping handler to transform AzureManagedClusters into
 // AzureManagedControlPlane. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the control plane infrastructure reference.
-func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log logr.Logger) (handler.Mapper, error) {
+/*func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log logr.Logger) (handler.Mapper, error) {
 	return handler.ToRequestsFunc(func(o handler.MapObject) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
 		defer cancel()
@@ -195,7 +195,7 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 			},
 		}
 	}), nil
-}
+}*/
 
 // MachinePoolToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.

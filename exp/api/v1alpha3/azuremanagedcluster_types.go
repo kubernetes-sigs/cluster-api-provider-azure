@@ -16,24 +16,19 @@ limitations under the License.
 
 package v1alpha3
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-)
-
 // AzureManagedClusterSpec defines the desired state of AzureManagedCluster
-type AzureManagedClusterSpec struct {
+/*type AzureManagedClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
-}
+}*/
 
 // AzureManagedClusterStatus defines the observed state of AzureManagedCluster
-type AzureManagedClusterStatus struct {
+/*type AzureManagedClusterStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready,omitempty"`
-}
+}*/
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedclusters,scope=Namespaced,categories=cluster-api,shortName=amc
@@ -41,23 +36,23 @@ type AzureManagedClusterStatus struct {
 // +kubebuilder:subresource:status
 
 // AzureManagedCluster is the Schema for the azuremanagedclusters API
-type AzureManagedCluster struct {
+/*type AzureManagedCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   AzureManagedClusterSpec   `json:"spec,omitempty"`
 	Status AzureManagedClusterStatus `json:"status,omitempty"`
-}
+}*/
 
 // +kubebuilder:object:root=true
 
 // AzureManagedClusterList contains a list of AzureManagedCluster
-type AzureManagedClusterList struct {
+/*type AzureManagedClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AzureManagedCluster `json:"items"`
-}
+}*/
 
-func init() {
+/*func init() {
 	SchemeBuilder.Register(&AzureManagedCluster{}, &AzureManagedClusterList{})
-}
+}*/

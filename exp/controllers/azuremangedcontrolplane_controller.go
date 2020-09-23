@@ -24,17 +24,13 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
@@ -51,7 +47,7 @@ type AzureManagedControlPlaneReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
-func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+/*func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
 	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
@@ -88,7 +84,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, 
 	}
 
 	return nil
-}
+}*/
 
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes/status,verbs=get;update;patch
@@ -182,6 +178,7 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(req ctrl.Request) (_ ctrl
 }
 
 func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+	log := klogr.New()
 	scope.Logger.Info("Reconciling AzureManagedControlPlane")
 
 	// If the AzureManagedControlPlane doesn't have our finalizer, add it.
@@ -191,9 +188,10 @@ func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context
 		return reconcile.Result{}, err
 	}
 
-	if err := newAzureManagedControlPlaneReconciler(scope).Reconcile(ctx, scope); err != nil {
+	log.Info("Calling new Azure Managed Control Plane Reconciler")
+	/*if err := newAzureManagedControlPlaneReconciler(scope).Reconcile(ctx, scope); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error creating AzureManagedControlPlane %s/%s", scope.ControlPlane.Namespace, scope.ControlPlane.Name)
-	}
+	}*/
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	scope.ControlPlane.Status.Ready = true
@@ -205,9 +203,9 @@ func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context
 func (r *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
 	scope.Logger.Info("Reconciling AzureManagedControlPlane delete")
 
-	if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx, scope); err != nil {
+	/*if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx, scope); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedControlPlane %s/%s", scope.ControlPlane.Namespace, scope.ControlPlane.Name)
-	}
+	}*/
 
 	// Cluster is deleted so remove the finalizer.
 	controllerutil.RemoveFinalizer(scope.ControlPlane, infrav1.ClusterFinalizer)

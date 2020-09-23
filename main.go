@@ -166,6 +166,7 @@ func InitFlags(fs *pflag.FlagSet) {
 }
 
 func main() {
+	log := klogr.New()
 	InitFlags(pflag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
@@ -210,6 +211,7 @@ func main() {
 	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
 	if webhookPort == 0 {
+		log.Info("In main method")
 		if err = (&controllers.AzureMachineReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureMachine"),
@@ -218,6 +220,8 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
 			os.Exit(1)
+		} else {
+			log.Info("In AzureMachineReconciler")
 		}
 		if err = (&controllers.AzureClusterReconciler{
 			Client:           mgr.GetClient(),
@@ -227,7 +231,10 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
+		} else {
+			log.Info("In AzureClusterReconciler")
 		}
+
 		if err = (&controllers.AzureJSONTemplateReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
@@ -236,7 +243,10 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONTemplate")
 			os.Exit(1)
+		} else {
+			log.Info("In AzureJSONTemplateReconciler")
 		}
+
 		if err = (&controllers.AzureJSONMachineReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachine"),
@@ -245,6 +255,8 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
 			os.Exit(1)
+		} else {
+			log.Info("In AzureJSONMachineReconciler")
 		}
 		// just use CAPI MachinePool feature flag rather than create a new one
 		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
@@ -257,7 +269,10 @@ func main() {
 			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
 				os.Exit(1)
+			} else {
+				log.Info("In feature.Gates.Enabled")
 			}
+
 			if err = (&controllers.AzureJSONMachinePoolReconciler{
 				Client:           mgr.GetClient(),
 				Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachinePool"),
@@ -266,9 +281,13 @@ func main() {
 			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachinePool")
 				os.Exit(1)
+			} else {
+				log.Info("In &controllers.AzureJSONMachinePoolReconciler")
 			}
+
 			if feature.Gates.Enabled(feature.AKS) {
-				if err = (&infrav1controllersexp.AzureManagedMachinePoolReconciler{
+				log.Info("Inside feature.AKS")
+				/*if err = (&infrav1controllersexp.AzureManagedMachinePoolReconciler{
 					Client:           mgr.GetClient(),
 					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
 					Recorder:         mgr.GetEventRecorderFor("azuremachine-reconciler"),
@@ -276,7 +295,10 @@ func main() {
 				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedMachinePool")
 					os.Exit(1)
+				} else {
+					log.Info("In feature.Gates.Enabled(feature.AKS)")
 				}
+
 				if err = (&infrav1controllersexp.AzureManagedClusterReconciler{
 					Client:           mgr.GetClient(),
 					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedCluster"),
@@ -285,7 +307,10 @@ func main() {
 				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedCluster")
 					os.Exit(1)
+				} else {
+					log.Info("In &infrav1controllersexp.AzureManagedClusterReconciler")
 				}
+
 				if err = (&infrav1controllersexp.AzureManagedControlPlaneReconciler{
 					Client:           mgr.GetClient(),
 					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedControlPlane"),
@@ -294,7 +319,9 @@ func main() {
 				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedControlPlane")
 					os.Exit(1)
-				}
+				} else {
+					log.Info("In &infrav1controllersexp.AzureManagedControlPlaneReconciler")
+				}*/
 			}
 		}
 	} else {
