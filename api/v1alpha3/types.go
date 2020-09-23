@@ -156,11 +156,11 @@ type PublicIP struct {
 
 // LoadBalancer defines an Azure load balancer.
 type LoadBalancerSpec struct {
-	ID                string             `json:"id,omitempty"`
-	Name              string             `json:"name,omitempty"`
-	SKU               SKU                `json:"sku,omitempty"`
-	FrontendIPConfigs []FrontendIPConfig `json:"frontendIPConfigs,omitempty"`
-	Type              LBType             `json:"type,omitempty"`
+	ID          string       `json:"id,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	SKU         SKU          `json:"sku,omitempty"`
+	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
+	Type        LBType       `json:"type,omitempty"`
 }
 
 // SKU defines an Azure load balancer SKU.
@@ -181,8 +181,8 @@ const (
 	Public = LBType("Public")
 )
 
-// FrontendIPConfig defines a load balancer frontend IP configuration.
-type FrontendIPConfig struct {
+// FrontendIP defines a load balancer frontend IP configuration.
+type FrontendIP struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 	// +optional

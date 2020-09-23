@@ -599,7 +599,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			lb: LoadBalancerSpec{
 				Name: "my-awesome-lb",
 				SKU:  "Awesome",
-				FrontendIPConfigs: []FrontendIPConfig{
+				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-config",
 					},
@@ -643,7 +643,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "too many IP configs",
 			lb: LoadBalancerSpec{
-				FrontendIPConfigs: []FrontendIPConfig{
+				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
 					},
@@ -656,7 +656,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			expectedErr: field.Error{
 				Type:  "FieldValueInvalid",
 				Field: "apiServerLB.frontendIPConfigs",
-				BadValue: []FrontendIPConfig{
+				BadValue: []FrontendIP{
 					{
 						Name: "ip-1",
 					},
@@ -671,7 +671,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			name: "public LB with private IP",
 			lb: LoadBalancerSpec{
 				Type: Public,
-				FrontendIPConfigs: []FrontendIPConfig{
+				FrontendIPs: []FrontendIP{
 					{
 						Name:             "ip-1",
 						PrivateIPAddress: "10.0.0.4",
@@ -689,7 +689,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			name: "internal LB with public IP",
 			lb: LoadBalancerSpec{
 				Type: Internal,
-				FrontendIPConfigs: []FrontendIPConfig{
+				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
 						PublicIP: &PublicIPSpec{
@@ -709,7 +709,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			name: "internal LB with invalid private IP",
 			lb: LoadBalancerSpec{
 				Type: Internal,
-				FrontendIPConfigs: []FrontendIPConfig{
+				FrontendIPs: []FrontendIP{
 					{
 						Name: "ip-1",
 						PrivateIPAddress: "NAIP",

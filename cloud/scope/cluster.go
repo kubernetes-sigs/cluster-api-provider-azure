@@ -127,7 +127,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Name:              s.APIServerLB().Name,
 			SubnetName:        s.ControlPlaneSubnet().Name,
 			SubnetCidrs:       s.ControlPlaneSubnet().CIDRBlocks,
-			FrontendIPConfigs: s.APIServerLB().FrontendIPConfigs,
+			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
 			APIServerPort:     s.APIServerPort(),
 			Type:              s.APIServerLB().Type,
 			Role:              infrav1.APIServerRole,
@@ -136,7 +136,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 		{
 			// Public Node outbound LB
 			Name: s.ClusterName(),
-			FrontendIPConfigs: []infrav1.FrontendIPConfig{
+			FrontendIPConfigs: []infrav1.FrontendIP{
 				{
 					PublicIP: &infrav1.PublicIPSpec{
 						Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
@@ -262,6 +262,11 @@ func (s *ClusterScope) APIServerLB() *infrav1.LoadBalancerSpec {
 // RouteTable returns the cluster node routetable.
 func (s *ClusterScope) RouteTable() *infrav1.RouteTable {
 	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
+}
+
+// APIServerLBName returns the API Server LB name.
+func (s *ClusterScope) APIServerLBName() string {
+	return s.APIServerLB().Name
 }
 
 // ResourceGroup returns the cluster resource group.

@@ -209,18 +209,18 @@ func validateAPIServerLB(lb LoadBalancerSpec, fldPath *field.Path) field.ErrorLi
 		allErrs = append(allErrs, err)
 	}
 	// There should only be one IP config.
-	if len(lb.FrontendIPConfigs) != 1 {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPConfigs,
+	if len(lb.FrontendIPs) != 1 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
 			fmt.Sprintf("API Server Load balancer should have 1 Frontend IP configuration")))
 	} else {
 		// if Internal, IP config should not have a public IP.
 		if lb.Type == Internal {
-			if lb.FrontendIPConfigs[0].PublicIP != nil {
+			if lb.FrontendIPs[0].PublicIP != nil {
 				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
 					fmt.Sprintf("Internal Load Balancers cannot have a Public IP")))
 			}
-			if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
-				if err := validateInternalLBIPAddress(lb.FrontendIPConfigs[0].PrivateIPAddress,
+			if lb.FrontendIPs[0].PrivateIPAddress != "" {
+				if err := validateInternalLBIPAddress(lb.FrontendIPs[0].PrivateIPAddress,
 					fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
 					allErrs = append(allErrs, err)
 				}
@@ -229,7 +229,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, fldPath *field.Path) field.ErrorLi
 
 		// if Public, IP config should not have a private IP.
 		if lb.Type == Public {
-			if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
+			if lb.FrontendIPs[0].PrivateIPAddress != "" {
 				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
 					fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
 			}

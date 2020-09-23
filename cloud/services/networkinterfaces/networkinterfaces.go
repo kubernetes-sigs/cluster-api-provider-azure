@@ -51,30 +51,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
 
-			backendAddressPools := []network.BackendAddressPool{}
-			if nicSpec.PublicLBName != "" {
-				if nicSpec.PublicLBAddressPoolName != "" {
-					backendAddressPools = append(backendAddressPools,
-						network.BackendAddressPool{
-							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
-						})
+			if nicSpec.LBName != "" {
+				if nicSpec.LBBackendAddressPoolName != "" {
+					nicConfig.LoadBalancerBackendAddressPools = &[]network.BackendAddressPool{
+						{
+							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.LBName, nicSpec.LBBackendAddressPoolName)),
+						},
+					}
 				}
-				if nicSpec.PublicLBNATRuleName != "" {
+				if nicSpec.LBNATRuleName != "" {
 					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 						{
-							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
+							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.LBName, nicSpec.LBBackendAddressPoolName)),
 						},
 					}
 				}
 			}
-			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
-				// only control planes have an attached internal LB
-				backendAddressPools = append(backendAddressPools,
-					network.BackendAddressPool{
-						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
-					})
-			}
-			nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 			if nicSpec.PublicIPName != "" {
 				nicConfig.PublicIPAddress = &network.PublicIPAddress{

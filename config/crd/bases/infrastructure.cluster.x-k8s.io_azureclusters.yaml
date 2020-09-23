@@ -469,9 +469,9 @@ spec:
                     description: APIServerLB is the configuration for the control-plane
                       load balancer.
                     properties:
-                      frontendIPConfigs:
+                      frontendIPs:
                         items:
-                          description: FrontendIPConfig defines a load balancer frontend
+                          description: FrontendIP defines a load balancer frontend
                             IP configuration.
                           properties:
                             name:

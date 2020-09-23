@@ -384,6 +384,20 @@ func (mr *MockVNetScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockVNetScope)(nil).IsIPv6Enabled))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockVNetScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockVNetScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockVNetScope)(nil).APIServerLBName))
+}
+
 // VNetSpecs mocks base method.
 func (m *MockVNetScope) VNetSpecs() []azure.VNetSpec {
 	m.ctrl.T.Helper()

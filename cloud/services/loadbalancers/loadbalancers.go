@@ -30,10 +30,12 @@ import (
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
+	// TODO: cleanup
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		s.Scope.V(2).Info("creating load balancer", "load balancer", lbSpec.Name)
 
-		var frontIPConfigs []network.FrontendIPConfiguration
+		var frontendIPConfigurations []network.FrontendIPConfiguration
+		frontendIDs := make([]network.SubResource, 0)
 
 		for _, ipConfig := range lbSpec.FrontendIPConfigs {
 			var properties network.FrontendIPConfigurationPropertiesFormat
@@ -71,9 +73,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					},
 				}
 			}
-			frontIPConfigs = append(frontIPConfigs, network.FrontendIPConfiguration{
+			frontendIPConfigurations = append(frontendIPConfigurations, network.FrontendIPConfiguration{
 				FrontendIPConfigurationPropertiesFormat: &properties,
 				Name:                                    to.StringPtr(ipConfig.Name),
+			})
+			frontendIDs = append(frontendIDs, network.SubResource{
+				ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, ipConfig.Name)),
 			})
 		}
 
@@ -87,7 +92,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Additional:  s.Scope.AdditionalTags(),
 			})),
 			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-				FrontendIPConfigurations: &frontIPConfigs,
+				FrontendIPConfigurations: &frontendIPConfigurations,
 				BackendAddressPools: &[]network.BackendAddressPool{
 					{
 						Name: to.StringPtr(lbSpec.BackendPoolName),
@@ -97,15 +102,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					{
 						Name: to.StringPtr("OutboundNATAllProtocols"),
 						OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
-							Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-							IdleTimeoutInMinutes: to.Int32Ptr(4),
-							FrontendIPConfigurations: &[]network.SubResource{
-								{
-									ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, frontEndIPConfigName)),
-								},
-							},
+							Protocol:                 network.LoadBalancerOutboundRuleProtocolAll,
+							IdleTimeoutInMinutes:     to.Int32Ptr(4),
+							FrontendIPConfigurations: &frontendIDs,
 							BackendAddressPool: &network.SubResource{
-								ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, backEndAddressPoolName)),
+								ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
 							},
 						},
 					},
@@ -130,15 +131,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			lbRule := network.LoadBalancingRule{
 				Name: to.StringPtr("LBRuleHTTPS"),
 				LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-					Protocol:             network.TransportProtocolTCP,
-					FrontendPort:         to.Int32Ptr(lbSpec.APIServerPort),
-					BackendPort:          to.Int32Ptr(lbSpec.APIServerPort),
-					IdleTimeoutInMinutes: to.Int32Ptr(4),
-					EnableFloatingIP:     to.BoolPtr(false),
-					LoadDistribution:     network.LoadDistributionDefault,
-					FrontendIPConfiguration: &network.SubResource{
-						ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, frontEndIPConfigName)),
-					},
+					Protocol:                network.TransportProtocolTCP,
+					FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
+					BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
+					IdleTimeoutInMinutes:    to.Int32Ptr(4),
+					EnableFloatingIP:        to.BoolPtr(false),
+					LoadDistribution:        network.LoadDistributionDefault,
+					FrontendIPConfiguration: &frontendIDs[0],
 					BackendAddressPool: &network.SubResource{
 						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
 					},

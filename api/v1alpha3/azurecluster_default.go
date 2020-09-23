@@ -120,8 +120,8 @@ func (c *AzureCluster) setLoadBalancerDefaults() {
 		if lb.Name == "" {
 			lb.Name = generatePublicLBName(c.ObjectMeta.Name)
 		}
-		if len(lb.FrontendIPConfigs) == 0 {
-			lb.FrontendIPConfigs = []FrontendIPConfig{
+		if len(lb.FrontendIPs) == 0 {
+			lb.FrontendIPs = []FrontendIP{
 				{
 					Name: generateFrontendIPConfigName(lb.Name),
 					PublicIP: &PublicIPSpec{
@@ -135,8 +135,8 @@ func (c *AzureCluster) setLoadBalancerDefaults() {
 		if lb.Name == "" {
 			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
 		}
-		if len(lb.FrontendIPConfigs) == 0 {
-			lb.FrontendIPConfigs = []FrontendIPConfig{
+		if len(lb.FrontendIPs) == 0 {
+			lb.FrontendIPs = []FrontendIP{
 				{
 					Name: generateFrontendIPConfigName(lb.Name),
 					// for back compat, set the private IP to the subnet InternalLBIPAddress value.

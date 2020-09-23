@@ -143,7 +143,7 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
 	if r.scope.Network().APIServerIP.Name == "" {
 		// TODO: fix this for internal
-		r.scope.Network().APIServerIP.Name = r.scope.APIServerLB().FrontendIPConfigs[0].PublicIP.Name
+		r.scope.Network().APIServerIP.Name = r.scope.APIServerLB().FrontendIPs[0].PublicIP.Name
 	}
 
 	r.scope.Network().APIServerIP.DNSName = r.scope.GenerateFQDN()

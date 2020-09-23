@@ -384,6 +384,20 @@ func (mr *MockRoleAssignmentScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockRoleAssignmentScope)(nil).IsIPv6Enabled))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockRoleAssignmentScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockRoleAssignmentScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockRoleAssignmentScope)(nil).APIServerLBName))
+}
+
 // RoleAssignmentSpecs mocks base method.
 func (m *MockRoleAssignmentScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 	m.ctrl.T.Helper()

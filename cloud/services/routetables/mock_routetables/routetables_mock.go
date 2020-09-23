@@ -290,6 +290,20 @@ func (mr *MockRouteTableScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockRouteTableScope)(nil).IsIPv6Enabled))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockRouteTableScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockRouteTableScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockRouteTableScope)(nil).APIServerLBName))
+}
+
 // Info mocks base method.
 func (m *MockRouteTableScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()

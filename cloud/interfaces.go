@@ -69,4 +69,5 @@ type ClusterDescriber interface {
 	ControlPlaneSubnet() *infrav1.SubnetSpec
 	RouteTable() *infrav1.RouteTable
 	IsIPv6Enabled() bool
+	APIServerLBName() string
 }

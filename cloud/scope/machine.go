@@ -133,7 +133,7 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 		return []azure.InboundNatSpec{
 			{
 				Name:             m.Name(),
-				LoadBalancerName: azure.GeneratePublicLBName(m.ClusterName()),
+				LoadBalancerName: m.APIServerLBName(),
 			},
 		}
 	}
@@ -154,19 +154,12 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
 	}
 	if m.Role() == infrav1.ControlPlane {
-		publicLBName := azure.GeneratePublicLBName(m.ClusterName())
-		spec.PublicLBName = publicLBName
-		spec.PublicLBAddressPoolName = azure.GenerateBackendAddressPoolName(publicLBName)
-		spec.PublicLBNATRuleName = m.Name()
-		if !m.IsIPv6Enabled() {
-			internalLBName := azure.GenerateInternalLBName(m.ClusterName())
-			spec.InternalLBName = internalLBName
-			spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
-		}
+		spec.LBName = m.APIServerLBName()
+		spec.LBBackendAddressPoolName = azure.GenerateBackendAddressPoolName(m.APIServerLBName())
+		spec.LBNATRuleName = m.Name()
 	} else if m.Role() == infrav1.Node {
-		publicLBName := m.ClusterName()
-		spec.PublicLBName = publicLBName
-		spec.PublicLBAddressPoolName = azure.GenerateOutboundBackendddressPoolName(publicLBName)
+		spec.LBName = m.ClusterName()
+		spec.LBBackendAddressPoolName = azure.GenerateOutboundBackendddressPoolName(m.ClusterName())
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {

@@ -290,6 +290,20 @@ func (mr *MockTagScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockTagScope)(nil).IsIPv6Enabled))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockTagScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockTagScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockTagScope)(nil).APIServerLBName))
+}
+
 // Info mocks base method.
 func (m *MockTagScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
