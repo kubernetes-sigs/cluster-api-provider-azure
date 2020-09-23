@@ -23,8 +23,14 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks/mock_disks"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/golang/mock/gomock"
 
@@ -117,6 +123,140 @@ func TestDeleteDisk(t *testing.T) {
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
+		})
+	}
+}
+
+func TestDiskSpecs(t *testing.T) {
+	testcases := []struct {
+		name          string
+		azureMachine  *infrav1.AzureMachine
+		expectedDisks []azure.DiskSpec
+	}{
+		{
+			name: "only os disk",
+			azureMachine: &infrav1.AzureMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-azure-machine",
+				},
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
+						DiskSizeGB: 30,
+						OSType:     "Linux",
+					},
+				},
+			},
+			expectedDisks: []azure.DiskSpec{
+				{
+					Name: "my-azure-machine_OSDisk",
+				},
+			},
+		}, {
+			name: "os and data disks",
+			azureMachine: &infrav1.AzureMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-azure-machine",
+				},
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
+						DiskSizeGB: 30,
+						OSType:     "Linux",
+					},
+					DataDisks: []infrav1.DataDisk{{
+						NameSuffix: "etcddisk",
+					}},
+				},
+			},
+			expectedDisks: []azure.DiskSpec{
+				{
+					Name: "my-azure-machine_OSDisk",
+				},
+				{
+					Name: "my-azure-machine_etcddisk",
+				},
+			},
+		}, {
+			name: "os and multiple data disks",
+			azureMachine: &infrav1.AzureMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-azure-machine",
+				},
+				Spec: infrav1.AzureMachineSpec{
+					OSDisk: infrav1.OSDisk{
+						DiskSizeGB: 30,
+						OSType:     "Linux",
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "etcddisk",
+						},
+						{
+							NameSuffix: "otherdisk",
+						}},
+				},
+			},
+			expectedDisks: []azure.DiskSpec{
+				{
+					Name: "my-azure-machine_OSDisk",
+				},
+				{
+					Name: "my-azure-machine_etcddisk",
+				},
+				{
+					Name: "my-azure-machine_otherdisk",
+				},
+			},
+		}}
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			g.Expect(infrav1.AddToScheme(scheme)).ToNot(HaveOccurred())
+			g.Expect(clusterv1.AddToScheme(scheme)).ToNot(HaveOccurred())
+
+			t.Parallel()
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+			}
+			azureCluster := &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: "1234",
+				},
+			}
+			machine := &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-machine",
+				},
+			}
+			initObjects := []runtime.Object{
+				cluster,
+				machine,
+				azureCluster,
+				tc.azureMachine,
+			}
+			client := fake.NewFakeClientWithScheme(scheme, initObjects...)
+			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+				AzureClients: scope.AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Client:       client,
+				Cluster:      cluster,
+				AzureCluster: azureCluster,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+				Client:           client,
+				ClusterDescriber: clusterScope,
+				Machine:          machine,
+				AzureMachine:     tc.azureMachine,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			output := machineScope.DiskSpecs()
+			g.Expect(output).To(Equal(tc.expectedDisks))
 		})
 	}
 }
