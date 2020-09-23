@@ -29,14 +29,18 @@ import (
 	"strings"
 	"time"
 
+	"text/tabwriter"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
+
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -44,13 +48,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable in the
-// CAPI e2e test framework.
+// deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable.
 type deploymentsClientAdapter struct {
 	client typedappsv1.DeploymentInterface
 }
 
-// Get fetches the deployment named by the key and updates the status of the provided object.
+// Get fetches the deployment named by the key and updates the provided object.
 func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 	deployment, err := c.client.Get(key.Name, metav1.GetOptions{})
 	if deployObj, ok := obj.(*appsv1.Deployment); ok {
@@ -59,61 +62,40 @@ func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey,
 	return err
 }
 
-// servicesClientAdapter adapts a Service to work with WaitForServicesAvailable.
-type servicesClientAdapter struct {
-	client typedcorev1.ServiceInterface
+// WaitForDeploymentsAvailableInput is the input for WaitForDeploymentsAvailable.
+type WaitForDeploymentsAvailableInput struct {
+	Getter     framework.Getter
+	Deployment *appsv1.Deployment
+	Clientset  *kubernetes.Clientset
 }
 
-// Get fetches the service named by the key and updates the status of the provided object.
-func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	service, err := c.client.Get(key.Name, metav1.GetOptions{})
-	if serviceObj, ok := obj.(*corev1.Service); ok {
-		service.DeepCopyInto(serviceObj)
-	}
-	return err
-}
-
-// WaitForServiceAvailableInput is the input for WaitForServiceAvailable.
-type WaitForServiceAvailableInput struct {
-	Getter  framework.Getter
-	Service *corev1.Service
-}
-
-// WaitForServiceAvailable waits until the Service has an IP address available on each Ingress.
-func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableInput, intervals ...interface{}) {
-	By(fmt.Sprintf("waiting for service %s/%s to be available", input.Service.GetNamespace(), input.Service.GetName()))
-	service := &corev1.Service{}
+// WaitForDeploymentsAvailable waits until the Deployment has status.Available = True, that signals that
+// all the desired replicas are in place.
+// This can be used to check if Cluster API controllers installed in the management cluster are working.
+func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAvailableInput, intervals ...interface{}) {
+	namespace, name := input.Deployment.GetNamespace(), input.Deployment.GetName()
+	Byf("waiting for deployment %s/%s to be available", namespace, name)
 	Eventually(func() bool {
-		key := client.ObjectKey{
-			Namespace: input.Service.GetNamespace(),
-			Name:      input.Service.GetName(),
-		}
-		if err := input.Getter.Get(ctx, key, service); err != nil {
-			return false
-		}
-		if service.Status.LoadBalancer.Ingress != nil {
-			for _, i := range service.Status.LoadBalancer.Ingress {
-				if net.ParseIP(i.IP) == nil {
-					return false
+		key := client.ObjectKey{Namespace: namespace, Name: name}
+		if err := input.Getter.Get(ctx, key, input.Deployment); err == nil {
+			for _, c := range input.Deployment.Status.Conditions {
+				if c.Type == appsv1.DeploymentAvailable && c.Status == corev1.ConditionTrue {
+					return true
 				}
 			}
-			return true
 		}
 		return false
-
-	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedService(input, service) })
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDeployment(input) })
 }
 
-// DescribeFailedService returns a string with information to help debug a failed service.
-func DescribeFailedService(input WaitForServiceAvailableInput, service *corev1.Service) string {
+// DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
+func DescribeFailedDeployment(input WaitForDeploymentsAvailableInput) string {
+	namespace, name := input.Deployment.GetNamespace(), input.Deployment.GetName()
 	b := strings.Builder{}
-	b.WriteString(fmt.Sprintf("Service %s/%s failed to get an IP for LoadBalancer.Ingress",
-		input.Service.GetNamespace(), input.Service.GetName()))
-	if service == nil {
-		b.WriteString("\nService: nil\n")
-	} else {
-		b.WriteString(fmt.Sprintf("\nService:\n%s\n", prettyPrint(service)))
-	}
+	b.WriteString(fmt.Sprintf("Deployment %s/%s failed",
+		namespace, name))
+	b.WriteString(fmt.Sprintf("\nDeployment:\n%s\n", prettyPrint(input.Deployment)))
+	b.WriteString(describeEvents(input.Clientset, namespace, name))
 	return b.String()
 }
 
@@ -122,7 +104,7 @@ type jobsClientAdapter struct {
 	client typedbatchv1.JobInterface
 }
 
-// Get fetches the job named by the key and updates the status of the provided object.
+// Get fetches the job named by the key and updates the provided object.
 func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 	job, err := c.client.Get(key.Name, metav1.GetOptions{})
 	if jobObj, ok := obj.(*batchv1.Job); ok {
@@ -133,40 +115,114 @@ func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj ru
 
 // WaitForJobCompleteInput is the input for WaitForJobComplete.
 type WaitForJobCompleteInput struct {
-	Getter framework.Getter
-	Job    *batchv1.Job
+	Getter    framework.Getter
+	Job       *batchv1.Job
+	Clientset *kubernetes.Clientset
 }
 
 // WaitForJobComplete waits until the Job completes with at least one success.
 func WaitForJobComplete(ctx context.Context, input WaitForJobCompleteInput, intervals ...interface{}) {
-	By(fmt.Sprintf("waiting for job %s/%s to be complete", input.Job.GetNamespace(), input.Job.GetName()))
-	job := &batchv1.Job{}
+	namespace, name := input.Job.GetNamespace(), input.Job.GetName()
+	Byf("waiting for job %s/%s to be complete", namespace, name)
 	Eventually(func() bool {
-		key := client.ObjectKey{
-			Namespace: input.Job.GetNamespace(),
-			Name:      input.Job.GetName(),
-		}
-		if err := input.Getter.Get(ctx, key, job); err != nil {
-			return false
-		}
-		for _, c := range job.Status.Conditions {
-			if c.Type == batchv1.JobComplete && c.Status == corev1.ConditionTrue {
-				return job.Status.Succeeded > 0
+		key := client.ObjectKey{Namespace: namespace, Name: name}
+		if err := input.Getter.Get(ctx, key, input.Job); err == nil {
+			for _, c := range input.Job.Status.Conditions {
+				if c.Type == batchv1.JobComplete && c.Status == corev1.ConditionTrue {
+					return input.Job.Status.Succeeded > 0
+				}
 			}
 		}
 		return false
-	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedJob(input, job) })
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedJob(input) })
 }
 
 // DescribeFailedJob returns a string with information to help debug a failed job.
-func DescribeFailedJob(input WaitForJobCompleteInput, job *batchv1.Job) string {
+func DescribeFailedJob(input WaitForJobCompleteInput) string {
+	namespace, name := input.Job.GetNamespace(), input.Job.GetName()
 	b := strings.Builder{}
-	b.WriteString(fmt.Sprintf("Job %s/%s failed to get status.Complete = True condition with a successful job",
-		input.Job.GetNamespace(), input.Job.GetName()))
-	if job == nil {
-		b.WriteString("\nJob: nil\n")
+	b.WriteString(fmt.Sprintf("Job %s/%s failed",
+		namespace, name))
+	b.WriteString(fmt.Sprintf("\nJob:\n%s\n", prettyPrint(input.Job)))
+	b.WriteString(describeEvents(input.Clientset, namespace, name))
+	return b.String()
+}
+
+// servicesClientAdapter adapts a Service to work with WaitForServicesAvailable.
+type servicesClientAdapter struct {
+	client typedcorev1.ServiceInterface
+}
+
+// Get fetches the service named by the key and updates the provided object.
+func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+	service, err := c.client.Get(key.Name, metav1.GetOptions{})
+	if serviceObj, ok := obj.(*corev1.Service); ok {
+		service.DeepCopyInto(serviceObj)
+	}
+	return err
+}
+
+// WaitForServiceAvailableInput is the input for WaitForServiceAvailable.
+type WaitForServiceAvailableInput struct {
+	Getter    framework.Getter
+	Service   *corev1.Service
+	Clientset *kubernetes.Clientset
+}
+
+// WaitForServiceAvailable waits until the Service has an IP address available on each Ingress.
+func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableInput, intervals ...interface{}) {
+	namespace, name := input.Service.GetNamespace(), input.Service.GetName()
+	Byf("waiting for service %s/%s to be available", namespace, name)
+	Eventually(func() bool {
+		key := client.ObjectKey{Namespace: namespace, Name: name}
+		if err := input.Getter.Get(ctx, key, input.Service); err == nil {
+			ingress := input.Service.Status.LoadBalancer.Ingress
+			if ingress != nil && len(ingress) > 0 {
+				for _, i := range ingress {
+					if net.ParseIP(i.IP) == nil {
+						return false
+					}
+				}
+				return true
+			}
+		}
+		return false
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedService(input) })
+}
+
+// DescribeFailedService returns a string with information to help debug a failed service.
+func DescribeFailedService(input WaitForServiceAvailableInput) string {
+	namespace, name := input.Service.GetNamespace(), input.Service.GetName()
+	b := strings.Builder{}
+	b.WriteString(fmt.Sprintf("Service %s/%s failed",
+		namespace, name))
+	b.WriteString(fmt.Sprintf("\nService:\n%s\n", prettyPrint(input.Service)))
+	b.WriteString(describeEvents(input.Clientset, namespace, name))
+	return b.String()
+}
+
+// describeEvents returns a string summarizing recent events involving the named object(s).
+func describeEvents(clientset *kubernetes.Clientset, namespace, name string) string {
+	b := strings.Builder{}
+	if clientset == nil {
+		b.WriteString("clientset is nil, so skipping output of relevant events")
 	} else {
-		b.WriteString(fmt.Sprintf("\nJob:\n%s\n", prettyPrint(job)))
+		opts := metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("involvedObject.name=%s", name),
+			Limit:         20,
+		}
+		evts, err := clientset.CoreV1().Events(namespace).List(opts)
+		if err != nil {
+			b.WriteString(err.Error())
+		} else {
+			w := tabwriter.NewWriter(&b, 0, 4, 2, ' ', tabwriter.FilterHTML)
+			fmt.Fprintln(w, "LAST SEEN\tTYPE\tREASON\tOBJECT\tMESSAGE")
+			for _, e := range evts.Items {
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s/%s\t%s\n", e.LastTimestamp, e.Type, e.Reason,
+					strings.ToLower(e.InvolvedObject.Kind), e.InvolvedObject.Name, e.Message)
+			}
+			w.Flush()
+		}
 	}
 	return b.String()
 }
