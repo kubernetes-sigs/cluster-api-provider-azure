@@ -20,13 +20,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -226,7 +224,7 @@ func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 		return []azure.RoleAssignmentSpec{
 			{
 				MachineName: m.Name(),
-				UUID:        string(uuid.NewUUID()),
+				Name:        m.AzureMachine.Spec.RoleAssignmentName,
 			},
 		}
 	}

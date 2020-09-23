@@ -21,6 +21,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	"github.com/google/uuid"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
@@ -335,6 +336,61 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			err := ValidateDataDisks(test.disks, field.NewPath("dataDisks"))
 			if test.wantErr {
 				g.Expect(err).NotTo(HaveLen(0))
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
+func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name               string
+		roleAssignmentName string
+		old                string
+		Identity           VMIdentity
+		wantErr            bool
+	}{
+		{
+			name:               "valid UUID",
+			roleAssignmentName: uuid.New().String(),
+			Identity:           VMIdentitySystemAssigned,
+			wantErr:            false,
+		},
+		{
+			name:               "wrong Identity type",
+			roleAssignmentName: uuid.New().String(),
+			Identity:           VMIdentityNone,
+			wantErr:            true,
+		},
+		{
+			name:               "not a valid UUID",
+			roleAssignmentName: "notaguid",
+			Identity:           VMIdentitySystemAssigned,
+			wantErr:            true,
+		},
+		{
+			name:               "empty",
+			roleAssignmentName: "",
+			Identity:           VMIdentitySystemAssigned,
+			wantErr:            true,
+		},
+		{
+			name:               "changed",
+			roleAssignmentName: uuid.New().String(),
+			old:                uuid.New().String(),
+			Identity:           VMIdentitySystemAssigned,
+			wantErr:            true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateSystemAssignedIdentity(tc.Identity, tc.old, tc.roleAssignmentName, field.NewPath("sshPublicKey"))
+			if tc.wantErr {
+				g.Expect(err).ToNot(HaveLen(0))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}

@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	"encoding/base64"
+	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"golang.org/x/crypto/ssh"
 
@@ -70,6 +71,15 @@ func (m *AzureMachine) SetDataDisksDefaults() {
 		}
 		if disk.CachingType == "" {
 			m.Spec.DataDisks[i].CachingType = "ReadWrite"
+		}
+	}
+}
+
+// SetIdentityDefaults sets the defaults for VM Identity.
+func (m *AzureMachine) SetIdentityDefaults() {
+	if m.Spec.Identity == VMIdentitySystemAssigned {
+		if m.Spec.RoleAssignmentName == "" {
+			m.Spec.RoleAssignmentName = string(uuid.NewUUID())
 		}
 	}
 }

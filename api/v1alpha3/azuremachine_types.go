@@ -66,6 +66,11 @@ type AzureMachineSpec struct {
 	// +optional
 	UserAssignedIdentities []UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
 
+	// RoleAssignmentName is the name of the role assignment to create for a system assigned identity. It can be any valid GUID.
+	// If not specified, a random GUID will be generated.
+	// +optional
+	RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
+
 	// OSDisk specifies the parameters for the operating system disk of the machine
 	OSDisk OSDisk `json:"osDisk"`
 
