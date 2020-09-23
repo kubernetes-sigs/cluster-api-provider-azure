@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -42,9 +43,12 @@ var _ = Describe("Workload cluster creation", func() {
 		cancelWatches context.CancelFunc
 		cluster       *clusterv1.Cluster
 		clusterName   string
+		specTimes     = map[string]time.Time{}
 	)
 
 	BeforeEach(func() {
+		logCheckpoint(specTimes)
+
 		Expect(ctx).NotTo(BeNil(), "ctx is required for %s spec", specName)
 		Expect(e2eConfig).ToNot(BeNil(), "Invalid argument. e2eConfig can't be nil when calling %s spec", specName)
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
@@ -67,6 +71,8 @@ var _ = Describe("Workload cluster creation", func() {
 		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
+
+		logCheckpoint(specTimes)
 	})
 
 	Context("Creating a single control-plane cluster", func() {

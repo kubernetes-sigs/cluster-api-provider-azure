@@ -24,11 +24,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"strings"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -200,4 +202,25 @@ func getAvailabilityZonesForRegion(location string, size string) ([]string, erro
 	key := fmt.Sprintf("%s_%s", location, size)
 
 	return data[key], nil
+}
+
+// logCheckpoint prints a message indicating the start or end of the current test spec,
+// including which Ginkgo node it's running on.
+//
+// Example output:
+//   INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
+//   INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
+func logCheckpoint(specTimes map[string]time.Time) {
+	text := CurrentGinkgoTestDescription().TestText
+	start, started := specTimes[text]
+	if !started {
+		start = time.Now()
+		specTimes[text] = start
+		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" started at %s on Ginkgo node %d of %d\n", text,
+			start.Format(time.RFC1123), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
+	} else {
+		elapsed := time.Since(start)
+		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d\n", text,
+			elapsed.Round(time.Second), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
+	}
 }
