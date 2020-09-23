@@ -56,14 +56,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the resource group with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	managed, err := s.isGroupManaged(ctx)
+	managed, err := s.IsGroupManaged(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get resource group management state")
 	}
 
 	if !managed {
-		s.Scope.V(4).Info("Skipping resource group deletion in unmanaged mode")
-		return nil
+		s.Scope.V(2).Info("Should not delete resource group in unmanaged mode")
+		return azure.ErrNotOwned
 	}
 
 	s.Scope.V(2).Info("deleting resource group", "resource group", s.Scope.ResourceGroup())
@@ -80,7 +80,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) isGroupManaged(ctx context.Context) (bool, error) {
+// IsGroupManaged returns true if the resource group has an owned tag with the cluster name as value,
+// meaning that the resource group's lifecycle is managed.
+func (s *Service) IsGroupManaged(ctx context.Context) (bool, error) {
 	group, err := s.Client.Get(ctx, s.Scope.ResourceGroup())
 	if err != nil {
 		return false, err

@@ -108,28 +108,34 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Delete(ctx context.Context) error {
-	if err := r.loadBalancerSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete load balancer")
-	}
-
-	if err := r.subnetsSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete subnet")
-	}
-
-	if err := r.routeTableSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete route table")
-	}
-
-	if err := r.securityGroupSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete network security group")
-	}
-
-	if err := r.vnetSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete virtual network")
-	}
-
 	if err := r.groupsSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete resource group")
+		if errors.Is(err, azure.ErrNotOwned) {
+			if err := r.loadBalancerSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete load balancer")
+			}
+
+			if err := r.publicIPSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete public IP")
+			}
+
+			if err := r.subnetsSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete subnet")
+			}
+
+			if err := r.routeTableSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete route table")
+			}
+
+			if err := r.securityGroupSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete network security group")
+			}
+
+			if err := r.vnetSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete virtual network")
+			}
+		} else {
+			return errors.Wrapf(err, "failed to delete resource group")
+		}
 	}
 
 	return nil
