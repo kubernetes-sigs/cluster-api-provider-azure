@@ -178,7 +178,7 @@ func validateLoadBalancerName(name string, fldPath *field.Path) *field.Error {
 func validateInternalLBIPAddress(address string, fldPath *field.Path) *field.Error {
 	if success, _ := regexp.Match(ipv4Regex, []byte(address)); !success {
 		return field.Invalid(fldPath, address,
-			fmt.Sprintf("internalLBIPAddress doesn't match regex %s", ipv4Regex))
+			fmt.Sprintf("Internal LB IP address doesn't match regex %s", ipv4Regex))
 	}
 	return nil
 }
@@ -210,29 +210,31 @@ func validateAPIServerLB(lb LoadBalancerSpec, fldPath *field.Path) field.ErrorLi
 	}
 	// There should only be one IP config.
 	if len(lb.FrontendIPConfigs) != 1 {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.Type,
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPConfigs,
 			fmt.Sprintf("API Server Load balancer should have 1 Frontend IP configuration")))
-	}
-	// if Internal, IP config should not have a public IP.
-	if lb.Type == Internal {
-		if lb.FrontendIPConfigs[0].PublicIP != nil {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
-				fmt.Sprintf("Internal Load Balancers cannot have a Public IP")))
+	} else {
+		// if Internal, IP config should not have a public IP.
+		if lb.Type == Internal {
+			if lb.FrontendIPConfigs[0].PublicIP != nil {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
+					fmt.Sprintf("Internal Load Balancers cannot have a Public IP")))
+			}
+			if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
+				if err := validateInternalLBIPAddress(lb.FrontendIPConfigs[0].PrivateIPAddress,
+					fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
+					allErrs = append(allErrs, err)
+				}
+			}
 		}
-		if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
-			if err := validateInternalLBIPAddress(lb.FrontendIPConfigs[0].PrivateIPAddress,
-				fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP")); err != nil {
-				allErrs = append(allErrs, err)
+
+		// if Public, IP config should not have a private IP.
+		if lb.Type == Public {
+			if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
+					fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
 			}
 		}
 	}
 
-	// if Public, IP config should not have a private IP.
-	if lb.Type == Public {
-		if lb.FrontendIPConfigs[0].PrivateIPAddress != "" {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-				fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
-		}
-	}
 	return allErrs
 }

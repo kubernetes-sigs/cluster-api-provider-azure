@@ -597,14 +597,21 @@ func TestValidateAPIServerLB(t *testing.T) {
 		{
 			name: "invalid SKU",
 			lb: LoadBalancerSpec{
-				SKU: "Basic",
+				Name: "my-awesome-lb",
+				SKU:  "Awesome",
+				FrontendIPConfigs: []FrontendIPConfig{
+					{
+						Name: "ip-config",
+					},
+				},
+				Type: Public,
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type: "FieldValueNotSupported",
-				Field: "apiServerLB.sku",
-				BadValue: "Basic",
-				Detail: "supported values: \"Standard\"",
+				Type:     "FieldValueNotSupported",
+				Field:    "apiServerLB.sku",
+				BadValue: "Awesome",
+				Detail:   "supported values: \"Standard\"",
 			},
 		},
 		{
@@ -614,10 +621,107 @@ func TestValidateAPIServerLB(t *testing.T) {
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type: "FieldValueNotSupported",
-				Field: "apiServerLB.type",
+				Type:     "FieldValueNotSupported",
+				Field:    "apiServerLB.type",
 				BadValue: "Foo",
-				Detail: "supported values: \"Public\", \"Internal\"",
+				Detail:   "supported values: \"Public\", \"Internal\"",
+			},
+		},
+		{
+			name: "invalid Name",
+			lb: LoadBalancerSpec{
+				Name: "***",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.name",
+				BadValue: "***",
+				Detail:   "name of load balancer doesn't match regex ^[-\\w\\._]+$",
+			},
+		},
+		{
+			name: "too many IP configs",
+			lb: LoadBalancerSpec{
+				FrontendIPConfigs: []FrontendIPConfig{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.frontendIPConfigs",
+				BadValue: []FrontendIPConfig{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
+					},
+				},
+				Detail: "API Server Load balancer should have 1 Frontend IP configuration",
+			},
+		},
+		{
+			name: "public LB with private IP",
+			lb: LoadBalancerSpec{
+				Type: Public,
+				FrontendIPConfigs: []FrontendIPConfig{
+					{
+						Name:             "ip-1",
+						PrivateIPAddress: "10.0.0.4",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Detail: "Public Load Balancers cannot have a Private IP",
+			},
+		},
+		{
+			name: "internal LB with public IP",
+			lb: LoadBalancerSpec{
+				Type: Internal,
+				FrontendIPConfigs: []FrontendIPConfig{
+					{
+						Name: "ip-1",
+						PublicIP: &PublicIPSpec{
+							Name: "my-invalid-ip",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].publicIP",
+				Detail: "Internal Load Balancers cannot have a Public IP",
+			},
+		},
+		{
+			name: "internal LB with invalid private IP",
+			lb: LoadBalancerSpec{
+				Type: Internal,
+				FrontendIPConfigs: []FrontendIPConfig{
+					{
+						Name: "ip-1",
+						PrivateIPAddress: "NAIP",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueInvalid",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				BadValue: "NAIP",
+				Detail: "Internal LB IP address doesn't match regex ^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$",
 			},
 		},
 	}
@@ -627,7 +731,13 @@ func TestValidateAPIServerLB(t *testing.T) {
 			err := validateAPIServerLB(test.lb, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).NotTo(HaveLen(0))
-				g.Expect(err).To(ContainElement(test.expectedErr))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == test.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
