@@ -1,7 +1,21 @@
  <!-- If this is your first PR, welcome! Please make sure you read the [contributing guidelines](../CONTRIBUTING.md). -->
 
- <!-- please add an icon to the title of this PR (see ../CONTRIBUTING.md) -->
- <!-- the icon will be either ⚠️ (:warning:, major or breaking changes), ✨ (:sparkles:, feature additions), 🐛 (:bug:, patch and bugfixes), 📖 (:book:, documentation or proposals), 💚 (`:green_heart:`, testing), 💎 (`:gem:`, refactor), 🔧 (`:wrench:`, dev tooling and chores) or 🌱 (:seedling:, minor or other) -->
+ <!-- Please label this pull request according to what type of issue you are addressing (see ../CONTRIBUTING.md) -->
+**What type of PR is this?**
+
+<!--
+Add one of the following kinds:
+/kind feature
+/kind bug
+/kind api-change
+/kind cleanup
+/kind deprecation
+/kind design
+/kind documentation
+/kind failing-test
+/kind flake
+/kind other
+-->
 
 **What this PR does / why we need it**:
 
