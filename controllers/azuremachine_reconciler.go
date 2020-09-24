@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
@@ -33,8 +34,8 @@ type azureMachineService struct {
 	//inboundNatRulesSvc   azure.Service
 	virtualMachinesSvc azure.Service
 	//roleAssignmentsSvc   azure.Service
-	disksSvc azure.Service
-	//publicIPsSvc azure.Service
+	disksSvc     azure.Service
+	publicIPsSvc azure.Service
 	//tagsSvc      azure.Service
 	//skuCache *resourceskus.Cache
 }
@@ -48,17 +49,19 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		networkInterfacesSvc: networkinterfaces.NewService(machineScope),
 		virtualMachinesSvc:   virtualmachines.NewService(machineScope),
 		//roleAssignmentsSvc:   roleassignments.NewService(machineScope),
-		disksSvc: disks.NewService(machineScope)}
-	//publicIPsSvc: publicips.NewService(machineScope),
-	//tagsSvc:      tags.NewService(machineScope),
-	//skuCache: cache,
+		disksSvc:     disks.NewService(machineScope),
+		publicIPsSvc: publicips.NewService(machineScope),
+		//tagsSvc:      tags.NewService(machineScope),
+		//skuCache: cache,
+	}
 }
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
-	/*if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
+
+	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create public IP")
-	}*/
+	}
 
 	/*if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create inbound NAT rule")
@@ -97,9 +100,9 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete inbound NAT rule")
 	}*/
 
-	/*if err := s.publicIPsSvc.Delete(ctx); err != nil {
+	if err := s.publicIPsSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete public IPs")
-	}*/
+	}
 
 	if err := s.disksSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete OS disk")

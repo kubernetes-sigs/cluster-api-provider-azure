@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
@@ -56,6 +57,8 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, er
 
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
+	log := klogr.New()
+	log.Info("In reconcile virtual machine")
 	for _, vmSpec := range s.Scope.VMSpecs() {
 		existingVM, err := s.getExisting(ctx, vmSpec.Name)
 		switch {
