@@ -166,8 +166,8 @@ spec:
       permissions: "0744"
     - contentFrom:
         secret:
-          key: azure.json
-          name: azure-secret
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-md-0-azure-json
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
@@ -354,8 +354,8 @@ spec:
         permissions: "0744"
       - contentFrom:
           secret:
-            key: azure.json
-            name: azure-secret
+            key: control-plane-azure.json
+            name: ${CLUSTER_NAME}-control-plane-azure-json
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"

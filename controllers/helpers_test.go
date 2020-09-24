@@ -87,22 +87,26 @@ func TestGetCloudProviderConfig(t *testing.T) {
 	g := NewWithT(t)
 
 	cases := map[string]struct {
-		identityType infrav1.VMIdentity
-		identityID   string
-		expect       string
+		identityType               infrav1.VMIdentity
+		identityID                 string
+		expectedControlPlaneConfig string
+		expectedWorkerNodeConfig   string
 	}{
 		"serviceprincipal": {
-			identityType: infrav1.VMIdentityNone,
-			expect:       spCloudConfig,
+			identityType:               infrav1.VMIdentityNone,
+			expectedControlPlaneConfig: spControlPlaneCloudConfig,
+			expectedWorkerNodeConfig:   spWorkerNodeCloudConfig,
 		},
 		"system-assigned-identity": {
-			identityType: infrav1.VMIdentitySystemAssigned,
-			expect:       systemAssignedCloudConfig,
+			identityType:               infrav1.VMIdentitySystemAssigned,
+			expectedControlPlaneConfig: systemAssignedControlPlaneCloudConfig,
+			expectedWorkerNodeConfig:   systemAssignedWorkerNodeCloudConfig,
 		},
 		"user-assigned-identity": {
-			identityType: infrav1.VMIdentityUserAssigned,
-			identityID:   "foobar",
-			expect:       userAssignedCloudConfig,
+			identityType:               infrav1.VMIdentityUserAssigned,
+			identityID:                 "foobar",
+			expectedControlPlaneConfig: userAssignedControlPlaneCloudConfig,
+			expectedWorkerNodeConfig:   userAssignedWorkerNodeCloudConfig,
 		},
 	}
 
@@ -130,7 +134,10 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
 
-			if diff := cmp.Diff(tc.expect, string(cloudConfig.Data["azure.json"])); diff != "" {
+			if diff := cmp.Diff(tc.expectedControlPlaneConfig, string(cloudConfig.Data["control-plane-azure.json"])); diff != "" {
+				t.Errorf(diff)
+			}
+			if diff := cmp.Diff(tc.expectedWorkerNodeConfig, string(cloudConfig.Data["worker-node-azure.json"])); diff != "" {
 				t.Errorf(diff)
 			}
 		})
@@ -275,7 +282,7 @@ func newAzureCluster(name, location string) *infrav1.AzureCluster {
 }
 
 const (
-	spCloudConfig = `{
+	spControlPlaneCloudConfig = `{
     "cloud": "AzurePublicCloud",
     "tenantId": "fooTenant",
     "subscriptionId": "baz",
@@ -293,16 +300,31 @@ const (
     "loadBalancerSku": "Standard",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true,
-    "userAssignedIdentityId": ""
+    "useInstanceMetadata": true
 }`
-
-	systemAssignedCloudConfig = `{
+	spWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
     "tenantId": "fooTenant",
     "subscriptionId": "baz",
-    "aadClientId": "",
-    "aadClientSecret": "",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true
+}`
+
+	systemAssignedControlPlaneCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
     "resourceGroup": "bar",
     "securityGroupName": "foo-node-nsg",
     "securityGroupResourceGroup": "bar",
@@ -315,16 +337,31 @@ const (
     "loadBalancerSku": "Standard",
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": true,
-    "useInstanceMetadata": true,
-    "userAssignedIdentityId": ""
+    "useInstanceMetadata": true
 }`
-
-	userAssignedCloudConfig = `{
+	systemAssignedWorkerNodeCloudConfig = `{
     "cloud": "AzurePublicCloud",
     "tenantId": "fooTenant",
     "subscriptionId": "baz",
-    "aadClientId": "",
-    "aadClientSecret": "",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true
+}`
+
+	userAssignedControlPlaneCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
     "resourceGroup": "bar",
     "securityGroupName": "foo-node-nsg",
     "securityGroupResourceGroup": "bar",
@@ -339,5 +376,23 @@ const (
     "useManagedIdentityExtension": true,
     "useInstanceMetadata": true,
     "userAssignedIdentityId": "foobar"
+}`
+	userAssignedWorkerNodeCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true
 }`
 )

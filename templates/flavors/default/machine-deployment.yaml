@@ -56,7 +56,7 @@ spec:
       - contentFrom:
           secret:
             name: ${CLUSTER_NAME}-md-0-azure-json
-            key: azure.json
+            key: worker-node-azure.json
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"
