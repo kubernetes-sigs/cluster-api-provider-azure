@@ -46,7 +46,7 @@ func (c *AzureCluster) setDefaults() {
 func (c *AzureCluster) setNetworkSpecDefaults() {
 	c.setVnetDefaults()
 	c.setSubnetDefaults()
-	c.setLoadBalancerDefaults()
+	c.setAPIServerLBDefaults()
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -107,7 +107,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}
 }
 
-func (c *AzureCluster) setLoadBalancerDefaults() {
+func (c *AzureCluster) setAPIServerLBDefaults() {
 	lb := &c.Spec.NetworkSpec.APIServerLB
 	if lb.Type == "" {
 		lb.Type = Public

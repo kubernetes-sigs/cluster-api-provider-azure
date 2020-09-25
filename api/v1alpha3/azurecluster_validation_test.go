@@ -570,8 +570,9 @@ func TestIngressRules(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-
+		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateIngressRule(
 				testCase.validRule,
 				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("ingressRules").Index(0),
@@ -727,7 +728,9 @@ func TestValidateAPIServerLB(t *testing.T) {
 	}
 
 	for _, test := range testcases {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateAPIServerLB(test.lb, field.NewPath("apiServerLB"))
 			if test.wantErr {
 				g.Expect(err).NotTo(HaveLen(0))
