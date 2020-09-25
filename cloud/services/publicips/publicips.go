@@ -30,6 +30,12 @@ import (
 func (s *Service) Reconcile(ctx context.Context) error {
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
+
+		addressVersion := network.IPv4
+		if ip.IsIPv6 {
+			addressVersion = network.IPv6
+		}
+
 		err := s.Client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -39,7 +45,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Name:     to.StringPtr(ip.Name),
 				Location: to.StringPtr(s.Scope.Location()),
 				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-					PublicIPAddressVersion:   network.IPv4,
+					PublicIPAddressVersion:   addressVersion,
 					PublicIPAllocationMethod: network.Static,
 					DNSSettings: &network.PublicIPAddressDNSSettings{
 						DomainNameLabel: to.StringPtr(strings.ToLower(ip.Name)),

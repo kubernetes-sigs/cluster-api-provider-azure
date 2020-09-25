@@ -276,6 +276,20 @@ func (mr *MockSubnetScopeMockRecorder) RouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockSubnetScope)(nil).RouteTable))
 }
 
+// IsIPv6Enabled mocks base method.
+func (m *MockSubnetScope) IsIPv6Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsIPv6Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
+func (mr *MockSubnetScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockSubnetScope)(nil).IsIPv6Enabled))
+}
+
 // Info mocks base method.
 func (m *MockSubnetScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()

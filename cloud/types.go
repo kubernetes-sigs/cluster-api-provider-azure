@@ -24,6 +24,7 @@ import (
 type PublicIPSpec struct {
 	Name    string
 	DNSName string
+	IsIPv6  bool
 }
 
 // NICSpec defines the specification for a Network Interface.
@@ -42,6 +43,8 @@ type NICSpec struct {
 	PublicIPName              string
 	VMSize                    string
 	AcceleratedNetworking     *bool
+	IPv6Enabled               bool
+	EnableIPForwarding        bool
 }
 
 // DiskSpec defines the specification for a Disk.
@@ -55,7 +58,7 @@ type LBSpec struct {
 	PublicIPName     string
 	Role             string
 	SubnetName       string
-	SubnetCidr       string
+	SubnetCidrs      []string
 	PrivateIPAddress string
 	APIServerPort    int32
 }
@@ -74,7 +77,7 @@ type InboundNatSpec struct {
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
 	Name                string
-	CIDR                string
+	CIDRs               []string
 	VNetName            string
 	RouteTableName      string
 	SecurityGroupName   string
@@ -86,7 +89,7 @@ type SubnetSpec struct {
 type VNetSpec struct {
 	ResourceGroup string
 	Name          string
-	CIDR          string
+	CIDRs         []string
 }
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.

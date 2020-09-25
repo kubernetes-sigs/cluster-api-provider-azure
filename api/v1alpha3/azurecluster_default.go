@@ -29,6 +29,15 @@ const (
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
 )
 
+const (
+	// DefaultVnetIPv6CIDR is the ipv6 Vnet CIDR
+	DefaultVnetIPv6CIDR = "2001:1234:5678:9a00::/56"
+	// DefaultControlPlaneSubnetIPv6CIDR is the default Control Plane Subnet CIDR
+	DefaultControlPlaneSubnetIPv6CIDR = "2001:1234:5678:9abc::/64"
+	// DefaultNodeSubnetIPv6CIDR is the default Node Subnet CIDR
+	DefaultNodeSubnetIPv6CIDR = "2001:1234:5678:9abd::/64"
+)
+
 func (c *AzureCluster) setDefaults() {
 	c.setNetworkSpecDefaults()
 }
@@ -52,8 +61,8 @@ func (c *AzureCluster) setVnetDefaults() {
 	if c.Spec.NetworkSpec.Vnet.Name == "" {
 		c.Spec.NetworkSpec.Vnet.Name = generateVnetName(c.ObjectMeta.Name)
 	}
-	if c.Spec.NetworkSpec.Vnet.CidrBlock == "" {
-		c.Spec.NetworkSpec.Vnet.CidrBlock = DefaultVnetCIDR
+	if len(c.Spec.NetworkSpec.Vnet.CIDRBlocks) == 0 {
+		c.Spec.NetworkSpec.Vnet.CIDRBlocks = []string{DefaultVnetCIDR}
 	}
 }
 
@@ -73,8 +82,8 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.Name == "" {
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
 	}
-	if cpSubnet.CidrBlock == "" {
-		cpSubnet.CidrBlock = DefaultControlPlaneSubnetCIDR
+	if len(cpSubnet.CIDRBlocks) == 0 {
+		cpSubnet.CIDRBlocks = []string{DefaultControlPlaneSubnetCIDR}
 	}
 	if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
@@ -86,8 +95,8 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if nodeSubnet.Name == "" {
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
 	}
-	if nodeSubnet.CidrBlock == "" {
-		nodeSubnet.CidrBlock = DefaultNodeSubnetCIDR
+	if len(nodeSubnet.CIDRBlocks) == 0 {
+		nodeSubnet.CIDRBlocks = []string{DefaultNodeSubnetCIDR}
 	}
 	if nodeSubnet.SecurityGroup.Name == "" {
 		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)

@@ -1,0 +1,283 @@
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Cluster
+metadata:
+  labels:
+    cni: ${CLUSTER_NAME}-crs-0
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 2001:1234:5678:9a40::/58
+    services:
+      cidrBlocks:
+      - fd00::/108
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  additionalTags:
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    subnets:
+    - cidrBlocks:
+      - 10.0.0.0/16
+      - 2001:1234:5678:9abc::/64
+      name: control-plane-subnet
+      role: control-plane
+    - cidrBlocks:
+      - 10.1.0.0/16
+      - 2001:1234:5678:9abd::/64
+      name: node-subnet
+      role: node
+    vnet:
+      cidrBlocks:
+      - 10.0.0.0/8
+      - 2001:1234:5678:9a00::/56
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  infrastructureTemplate:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: AzureMachineTemplate
+    name: ${CLUSTER_NAME}-control-plane
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          bind-address: '::'
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "true"
+          bind-address: '::'
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+          cluster-cidr: 2001:1234:5678:9a40::/58
+          cluster-name: ${CLUSTER_NAME}
+          configure-cloud-routes: "true"
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+      scheduler:
+        extraArgs:
+          bind-address: '::'
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
+    files:
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    initConfiguration:
+      localAPIEndpoint:
+        advertiseAddress: '::'
+        bindPort: 6443
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+          cluster-dns: fd00::10
+          node-ip: '::'
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    joinConfiguration:
+      controlPlane:
+        localAPIEndpoint:
+          advertiseAddress: '::'
+          bindPort: 6443
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+          cluster-dns: fd00::10
+          node-ip: '::'
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands:
+    - sed -i '\#--listen-client-urls#s#$#,https://127.0.0.1:2379#' /etc/kubernetes/manifests/etcd.yaml
+    - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+      /etc/resolv.conf
+    - systemctl restart systemd-resolved
+    useExperimentalRetryJoin: true
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      enableIPForwarding: true
+      location: ${AZURE_LOCATION}
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      enableIPForwarding: true
+      location: ${AZURE_LOCATION}
+      osDisk:
+        diskSizeGB: 30
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      clusterConfiguration:
+        apiServer:
+          extraArgs:
+            bind-address: '::'
+        controllerManager:
+          extraArgs:
+            bind-address: '::'
+        scheduler:
+          extraArgs:
+            bind-address: '::'
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+            cluster-dns: '[fd00::10]'
+            node-ip: '::'
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+        /etc/resolv.conf
+      - systemctl restart systemd-resolved
+      useExperimentalRetryJoin: true
+---
+apiVersion: v1
+data: ${CNI_RESOURCES_IPV6}
+kind: ConfigMap
+metadata:
+  name: cni-${CLUSTER_NAME}-crs-0
+  namespace: default
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-crs-0
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      cni: ${CLUSTER_NAME}-crs-0
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-crs-0
+  strategy: ApplyOnce

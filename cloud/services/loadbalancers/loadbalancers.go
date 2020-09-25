@@ -50,7 +50,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			} else if azure.ResourceNotFound(err) {
 				s.Scope.V(2).Info("internalLB not found in RG", "internal lb", lbSpec.Name, "resource group", s.Scope.ResourceGroup())
-				privateIP, err = s.getAvailablePrivateIP(ctx, s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetCidr, lbSpec.PrivateIPAddress)
+				privateIP, err = s.getAvailablePrivateIP(ctx, s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.PrivateIPAddress, lbSpec.SubnetCidrs)
 				if err != nil {
 					return err
 				}
@@ -191,16 +191,22 @@ func (s *Service) Delete(ctx context.Context) error {
 
 // getAvailablePrivateIP checks if the desired private IP address is available in a virtual network.
 // If the IP address is taken or empty, it will make an attempt to find an available IP in the same subnet
-func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnetName, subnetCIDR, PreferredIPAddress string) (string, error) {
+// NOTE: this does not work for VNets with ipv6 CIDRs currently
+func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnetName, PreferredIPAddress string, subnetCIDRs []string) (string, error) {
+	if len(subnetCIDRs) == 0 {
+		return "", errors.Errorf("failed to find available IP: control plane subnet CIDRs should not be empty")
+	}
 	ip := PreferredIPAddress
 	if ip == "" {
 		ip = azure.DefaultInternalLBIPAddress
+		subnetCIDR := subnetCIDRs[0]
 		if subnetCIDR != infrav1.DefaultControlPlaneSubnetCIDR {
 			// If the user provided a custom subnet CIDR without providing a private IP, try finding an available IP in the subnet space
 			index := strings.LastIndex(subnetCIDR, ".")
 			ip = subnetCIDR[0:(index+1)] + "0"
 		}
 	}
+
 	result, err := s.VirtualNetworksClient.CheckIPAddressAvailability(ctx, resourceGroup, vnetName, ip)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to check IP availability")
@@ -209,6 +215,7 @@ func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnet
 		if len(to.StringSlice(result.AvailableIPAddresses)) == 0 {
 			return "", errors.Errorf("IP %s is not available in VNet %s and there were no other available IPs found", ip, vnetName)
 		}
+		// TODO: make sure that the returned IP is in the right subnet since this check is done at the VNet level
 		ip = to.StringSlice(result.AvailableIPAddresses)[0]
 	}
 	return ip, nil

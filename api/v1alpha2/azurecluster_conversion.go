@@ -59,13 +59,14 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	}
 
 	dst.Status.FailureDomains = restored.Status.FailureDomains
+	dst.Spec.NetworkSpec.Vnet.CIDRBlocks = restored.Spec.NetworkSpec.Vnet.CIDRBlocks
 
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		if restoredSubnet != nil {
 			for _, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
 				if dstSubnet != nil && dstSubnet.Name == restoredSubnet.Name {
 					dstSubnet.RouteTable = restoredSubnet.RouteTable
-
+					dstSubnet.CIDRBlocks = restoredSubnet.CIDRBlocks
 					dstSubnet.SecurityGroup.IngressRules = restoredSubnet.SecurityGroup.IngressRules
 				}
 			}
@@ -201,6 +202,11 @@ func Convert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec(in *infrav1alpha3.Netw
 	}
 
 	return nil
+}
+
+// Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec.
+func Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(in *infrav1alpha3.VnetSpec, out *VnetSpec, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(in, out, s)
 }
 
 // Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec.

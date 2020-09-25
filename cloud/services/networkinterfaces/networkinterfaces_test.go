@@ -128,6 +128,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
+						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -171,6 +172,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						Location: to.StringPtr("fake-location"),
 						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 							EnableAcceleratedNetworking: to.BoolPtr(true),
+							EnableIPForwarding:          to.BoolPtr(false),
 							IPConfigurations: &[]network.InterfaceIPConfiguration{
 								{
 									Name: to.StringPtr("pipConfig"),
@@ -215,6 +217,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
+						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -283,6 +286,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(true),
+						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -325,6 +329,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 					Location: to.StringPtr("fake-location"),
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						EnableAcceleratedNetworking: to.BoolPtr(false),
+						EnableIPForwarding:          to.BoolPtr(false),
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
 								Name: to.StringPtr("pipConfig"),
@@ -337,6 +342,60 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						},
 					},
 				}))
+			},
+		},
+		{
+			name:          "network interface with ipv6 created successfully",
+			expectedError: "",
+			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
+				s.NICSpecs().Return([]azure.NICSpec{
+					{
+						Name:                  "my-net-interface",
+						MachineName:           "azure-test1",
+						SubnetName:            "my-subnet",
+						VNetName:              "my-vnet",
+						IPv6Enabled:           true,
+						VNetResourceGroup:     "my-rg",
+						PublicLBName:          "my-public-lb",
+						VMSize:                "Standard_D2v2",
+						AcceleratedNetworking: nil,
+						EnableIPForwarding:    true,
+					},
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("fake-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.IsIPv6Enabled().AnyTimes().Return(true)
+				gomock.InOrder(
+					m.Get(context.TODO(), "my-rg", "my-net-interface").
+						Return(network.Interface{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
+					m.CreateOrUpdate(context.TODO(), "my-rg", "my-net-interface", gomockinternal.DiffEq(network.Interface{
+						Location: to.StringPtr("fake-location"),
+						InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+							EnableAcceleratedNetworking: to.BoolPtr(true),
+							EnableIPForwarding:          to.BoolPtr(true),
+							IPConfigurations: &[]network.InterfaceIPConfiguration{
+								{
+									Name: to.StringPtr("pipConfig"),
+									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+										Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+										PrivateIPAllocationMethod:       network.Dynamic,
+										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
+									},
+								},
+								{
+									Name: to.StringPtr("ipConfigv6"),
+									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+										Subnet:                  &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+										Primary:                 to.BoolPtr(false),
+										PrivateIPAddressVersion: "IPv6",
+									},
+								},
+							},
+						},
+					})),
+				)
 			},
 		},
 	}

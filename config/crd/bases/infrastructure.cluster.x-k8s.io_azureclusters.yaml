@@ -472,9 +472,16 @@ spec:
                       description: SubnetSpec configures an Azure subnet.
                       properties:
                         cidrBlock:
-                          description: CidrBlock is the CIDR block to be used when
-                            the provider creates a managed Vnet.
+                          description: 'CidrBlock is the CIDR block to be used when
+                            the provider creates a managed Vnet. DEPRECATED: Use CIDRBlocks
+                            instead'
                           type: string
+                        cidrBlocks:
+                          description: CIDRBlocks defines the subnet's address space,
+                            specified as one or more address prefixes in CIDR notation.
+                          items:
+                            type: string
+                          type: array
                         id:
                           description: ID defines a unique identifier to reference
                             this resource.
@@ -576,9 +583,17 @@ spec:
                     description: Vnet is the configuration for the Azure virtual network.
                     properties:
                       cidrBlock:
-                        description: CidrBlock is the CIDR block to be used when the
-                          provider creates a managed virtual network.
+                        description: 'CidrBlock is the CIDR block to be used when
+                          the provider creates a managed virtual network. DEPRECATED:
+                          Use CIDRBlocks instead'
                         type: string
+                      cidrBlocks:
+                        description: CIDRBlocks defines the virtual network's address
+                          space, specified as one or more address prefixes in CIDR
+                          notation.
+                        items:
+                          type: string
+                        type: array
                       id:
                         description: ID is the identifier of the virtual network this
                           provider should use to create resources.

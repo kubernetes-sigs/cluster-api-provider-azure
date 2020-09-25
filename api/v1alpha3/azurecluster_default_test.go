@@ -98,7 +98,7 @@ func TestVnetDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							ResourceGroup: "custom-vnet",
 							Name:          "my-vnet",
-							CidrBlock:     DefaultVnetCIDR,
+							CIDRBlocks:    []string{DefaultVnetCIDR},
 						},
 						Subnets: Subnets{
 							{
@@ -138,7 +138,7 @@ func TestVnetDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							CidrBlock:     DefaultVnetCIDR,
+							CIDRBlocks:    []string{DefaultVnetCIDR},
 						},
 					},
 				},
@@ -154,7 +154,7 @@ func TestVnetDefaults(t *testing.T) {
 					ResourceGroup: "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
-							CidrBlock: "10.0.0.0/16",
+							CIDRBlocks: []string{"10.0.0.0/16"},
 						},
 					},
 				},
@@ -169,7 +169,38 @@ func TestVnetDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							CidrBlock:     "10.0.0.0/16",
+							CIDRBlocks:    []string{"10.0.0.0/16"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "IPv6 enabled",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							CIDRBlocks: []string{DefaultVnetCIDR, DefaultVnetIPv6CIDR},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					ResourceGroup: "cluster-test",
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							ResourceGroup: "cluster-test",
+							Name:          "cluster-test-vnet",
+							CIDRBlocks:    []string{DefaultVnetCIDR, DefaultVnetIPv6CIDR},
 						},
 					},
 				},
@@ -217,14 +248,14 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								Role:          SubnetControlPlane,
 								Name:          "cluster-test-controlplane-subnet",
-								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								CIDRBlocks:    []string{DefaultControlPlaneSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								Role:          SubnetNode,
 								Name:          "cluster-test-node-subnet",
-								CidrBlock:     DefaultNodeSubnetCIDR,
+								CIDRBlocks:    []string{DefaultNodeSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -243,14 +274,14 @@ func TestSubnetDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						Subnets: Subnets{
 							{
-								Role:      SubnetControlPlane,
-								Name:      "my-controlplane-subnet",
-								CidrBlock: "10.0.0.16/24",
+								Role:       SubnetControlPlane,
+								Name:       "my-controlplane-subnet",
+								CIDRBlocks: []string{"10.0.0.16/24"},
 							},
 							{
-								Role:      SubnetNode,
-								Name:      "my-node-subnet",
-								CidrBlock: "10.1.0.16/24",
+								Role:       SubnetNode,
+								Name:       "my-node-subnet",
+								CIDRBlocks: []string{"10.1.0.16/24"},
 							},
 						},
 					},
@@ -266,14 +297,14 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								Role:          SubnetControlPlane,
 								Name:          "my-controlplane-subnet",
-								CidrBlock:     "10.0.0.16/24",
+								CIDRBlocks:    []string{"10.0.0.16/24"},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								Role:          SubnetNode,
 								Name:          "my-node-subnet",
-								CidrBlock:     "10.1.0.16/24",
+								CIDRBlocks:    []string{"10.1.0.16/24"},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -313,14 +344,14 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								Role:          SubnetControlPlane,
 								Name:          "cluster-test-controlplane-subnet",
-								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								CIDRBlocks:    []string{DefaultControlPlaneSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								Role:          SubnetNode,
 								Name:          "cluster-test-node-subnet",
-								CidrBlock:     DefaultNodeSubnetCIDR,
+								CIDRBlocks:    []string{DefaultNodeSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
@@ -356,15 +387,70 @@ func TestSubnetDefaults(t *testing.T) {
 							{
 								Role:          SubnetNode,
 								Name:          "my-node-subnet",
-								CidrBlock:     DefaultNodeSubnetCIDR,
+								CIDRBlocks:    []string{DefaultNodeSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
 							{
 								Role:          SubnetControlPlane,
 								Name:          "cluster-test-controlplane-subnet",
-								CidrBlock:     DefaultControlPlaneSubnetCIDR,
+								CIDRBlocks:    []string{DefaultControlPlaneSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets specified with IPv6 enabled",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							CIDRBlocks: []string{"2001:be00::1/56"},
+						},
+						Subnets: Subnets{
+							{
+								Name:       "cluster-test-controlplane-subnet",
+								Role:       "control-plane",
+								CIDRBlocks: []string{"2001:beef::1/64"},
+							},
+							{
+								Name:       "cluster-test-node-subnet",
+								Role:       "node",
+								CIDRBlocks: []string{"2001:beea::1/64"},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Vnet: VnetSpec{
+							CIDRBlocks: []string{"2001:be00::1/56"},
+						},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "cluster-test-controlplane-subnet",
+								CIDRBlocks:    []string{"2001:beef::1/64"},
+								SecurityGroup: SecurityGroup{Name: "cluster-test-controlplane-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "cluster-test-node-subnet",
+								CIDRBlocks:    []string{"2001:beea::1/64"},
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},
 						},

@@ -36,18 +36,15 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 		}
 		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
 	}
-	cidr := ""
+	var prefixes []string
 	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
-		prefixes := to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
-		if prefixes != nil && len(prefixes) > 0 {
-			cidr = prefixes[0]
-		}
+		prefixes = to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
 	}
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
 		Name:          to.String(vnet.Name),
-		CidrBlock:     cidr,
+		CIDRBlocks:    prefixes,
 		Tags:          converters.MapToTags(vnet.Tags),
 	}, nil
 }
@@ -78,6 +75,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		default:
 			s.Scope.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
+
 			vnetProperties := network.VirtualNetwork{
 				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 					ClusterName: s.Scope.ClusterName(),
@@ -89,7 +87,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Location: to.StringPtr(s.Scope.Location()),
 				VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 					AddressSpace: &network.AddressSpace{
-						AddressPrefixes: &[]string{vnetSpec.CIDR},
+						AddressPrefixes: &vnetSpec.CIDRs,
 					},
 				},
 			}

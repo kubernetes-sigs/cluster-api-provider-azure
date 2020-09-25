@@ -160,6 +160,10 @@ func loadE2EConfig(configPath string) *clusterctl.E2EConfig {
 	Expect(config.Variables).To(HaveKey(capi_e2e.CNIPath), "Missing %s variable in the config", capi_e2e.CNIPath)
 	clusterctl.SetCNIEnvVar(config.GetVariable(capi_e2e.CNIPath), capi_e2e.CNIResources)
 
+	// Read CNI_IPV6 file and set CNI_RESOURCES_IPV6 environmental variable
+	Expect(config.Variables).To(HaveKey(CNIPathIPv6), "Missing %s variable in the config", CNIPathIPv6)
+	clusterctl.SetCNIEnvVar(config.GetVariable(CNIPathIPv6), CNIResourcesIPv6)
+
 	return config
 }
 

@@ -225,7 +225,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -240,6 +240,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
@@ -253,7 +254,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -279,7 +280,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -294,6 +295,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				})
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("my-cluster")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{
 					LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -374,7 +376,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						Role:             infrav1.InternalRole,
@@ -388,6 +390,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				})
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(false)}, nil)
@@ -401,7 +404,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
 						Name:             "my-lb",
-						SubnetCidr:       "10.0.0.0/16",
+						SubnetCidrs:      []string{"10.0.0.0/16"},
 						SubnetName:       "my-subnet",
 						PrivateIPAddress: "10.0.0.10",
 						APIServerPort:    6443,
@@ -427,6 +430,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				})
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
+				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
@@ -559,23 +563,23 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 	g := NewWithT(t)
 
 	testcases := []struct {
-		name       string
-		subnetCidr string
-		expectedIP string
-		expect     func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder)
+		name        string
+		subnetCidrs []string
+		expectedIP  string
+		expect      func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder)
 	}{
 		{
-			name:       "internal load balancer with a valid subnet cidr",
-			subnetCidr: "10.0.8.0/16",
-			expectedIP: "10.0.8.0",
+			name:        "internal load balancer with a valid subnet cidr",
+			subnetCidrs: []string{"10.0.8.0/16"},
+			expectedIP:  "10.0.8.0",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 			},
 		},
 		{
-			name:       "internal load balancer subnet cidr not 8 characters in length",
-			subnetCidr: "10.64.8.0",
-			expectedIP: "10.64.8.0",
+			name:        "internal load balancer subnet cidr not 8 characters in length",
+			subnetCidrs: []string{"10.64.8.0"},
+			expectedIP:  "10.64.8.0",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.64.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 			},
@@ -594,7 +598,7 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 				VirtualNetworksClient: vnetMock,
 			}
 
-			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", tc.subnetCidr, "")
+			resultIP, err := s.getAvailablePrivateIP(context.TODO(), "my-rg", "my-vnet", "", tc.subnetCidrs)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(resultIP).To(Equal(tc.expectedIP))
 		})

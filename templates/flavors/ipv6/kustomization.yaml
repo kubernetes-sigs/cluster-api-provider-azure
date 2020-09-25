@@ -1,0 +1,9 @@
+namespace: default
+resources:
+  - ../base
+  - machine-deployment.yaml
+patchesStrategicMerge:
+  - patches/ipv6.yaml
+  - patches/kubeadm-controlplane.yaml
+  - patches/controlplane-azuremachinetemplate.yaml
+

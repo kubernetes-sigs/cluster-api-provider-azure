@@ -1,0 +1,80 @@
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-md-0"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-md-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      location: ${AZURE_LOCATION}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      osDisk:
+        osType: "Linux"
+        diskSizeGB: 30
+        managedDisk:
+          storageAccountType: "Premium_LRS"
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      enableIPForwarding: true
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      useExperimentalRetryJoin: true
+      postKubeadmCommands:
+        # This frees up :53 on the host for the coredns pods
+        - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+        - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+        - systemctl restart systemd-resolved
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          kubeletExtraArgs:
+            cloud-provider: azure
+            cloud-config: /etc/kubernetes/azure.json
+            node-ip: "::"
+            cluster-dns: "[fd00::10]"
+      clusterConfiguration:
+        apiServer:
+          extraArgs:
+            bind-address: "::"
+        controllerManager:
+          extraArgs:
+            bind-address: "::"
+        scheduler:
+          extraArgs:
+            bind-address: "::"
+      files:
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-md-0-azure-json
+            key: worker-node-azure.json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"

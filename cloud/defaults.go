@@ -18,6 +18,7 @@ package azure
 
 import (
 	"fmt"
+
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -29,6 +30,11 @@ const (
 	DefaultUserName = "capi"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
+)
+
+const (
+	// DefaultInternalLBIPv6Address is the default internal load balancer ip address
+	DefaultInternalLBIPv6Address = "2001:1234:5678:9abc::100"
 )
 
 const (

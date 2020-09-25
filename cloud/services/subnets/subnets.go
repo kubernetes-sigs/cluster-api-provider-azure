@@ -35,12 +35,19 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 		return nil, errors.Wrapf(err, "failed to fetch subnet named %s in vnet %s", spec.VNetName, spec.Name)
 	}
 
+	var addresses []string
+	if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefix != nil {
+		addresses = []string{to.String(subnet.SubnetPropertiesFormat.AddressPrefix)}
+	} else if subnet.SubnetPropertiesFormat != nil && subnet.SubnetPropertiesFormat.AddressPrefixes != nil {
+		addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
+	}
+
 	subnetSpec := &infrav1.SubnetSpec{
 		Role:                spec.Role,
 		InternalLBIPAddress: spec.InternalLBIPAddress,
 		Name:                to.String(subnet.Name),
 		ID:                  to.String(subnet.ID),
-		CidrBlock:           to.String(subnet.SubnetPropertiesFormat.AddressPrefix),
+		CIDRBlocks:          addresses,
 	}
 
 	return subnetSpec, nil
@@ -66,16 +73,25 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 			subnet.Role = subnetSpec.Role
 			subnet.Name = existingSubnet.Name
-			subnet.CidrBlock = existingSubnet.CidrBlock
+			subnet.CIDRBlocks = existingSubnet.CIDRBlocks
 			subnet.ID = existingSubnet.ID
 
 		case !s.Scope.IsVnetManaged():
 			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
 
 		default:
+
 			subnetProperties := network.SubnetPropertiesFormat{
-				AddressPrefix: to.StringPtr(subnetSpec.CIDR),
+				AddressPrefixes: &subnetSpec.CIDRs,
 			}
+
+			// workaround needed to avoid SubscriptionNotRegisteredForFeature for feature Microsoft.Network/AllowMultipleAddressPrefixesOnSubnet.
+			if len(subnetSpec.CIDRs) == 1 {
+				subnetProperties = network.SubnetPropertiesFormat{
+					AddressPrefix: &subnetSpec.CIDRs[0],
+				}
+			}
+
 			if subnetSpec.RouteTableName != "" {
 				subnetProperties.RouteTable = &network.RouteTable{
 					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),

@@ -152,15 +152,19 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		SubnetName:            m.Subnet().Name,
 		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		IPv6Enabled:           m.IsIPv6Enabled(),
+		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
 	}
 	if m.Role() == infrav1.ControlPlane {
 		publicLBName := azure.GeneratePublicLBName(m.ClusterName())
 		spec.PublicLBName = publicLBName
 		spec.PublicLBAddressPoolName = azure.GenerateBackendAddressPoolName(publicLBName)
 		spec.PublicLBNATRuleName = m.Name()
-		internalLBName := azure.GenerateInternalLBName(m.ClusterName())
-		spec.InternalLBName = internalLBName
-		spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
+		if !m.IsIPv6Enabled() {
+			internalLBName := azure.GenerateInternalLBName(m.ClusterName())
+			spec.InternalLBName = internalLBName
+			spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
+		}
 	} else if m.Role() == infrav1.Node {
 		publicLBName := m.ClusterName()
 		spec.PublicLBName = publicLBName
