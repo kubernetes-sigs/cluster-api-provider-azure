@@ -36,7 +36,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.ResourceGroup(),
 			ip.Name,
 			network.PublicIPAddress{
-				Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+				//Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 				Name:     to.StringPtr(ip.Name),
 				Location: to.StringPtr(s.Scope.Location()),
 				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
