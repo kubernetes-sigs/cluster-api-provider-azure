@@ -1,0 +1,8 @@
+namespace: default
+resources:
+  - ../base
+  - machine-deployment.yaml
+  - machine-deployment-windows.yaml
+patchesStrategicMerge:
+  - kubeadm-control-plane.yaml
+  - cluster.yaml

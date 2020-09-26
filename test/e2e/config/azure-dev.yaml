@@ -71,6 +71,8 @@ variables:
   KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.18.12}"
   CNI: "${PWD}/templates/addons/calico.yaml"
   CNI_IPV6: "${PWD}/templates/addons/calico-ipv6.yaml"
+  CNI_WINDOWS: "${PWD}/templates/addons/windows/flannel.yaml"
+  WINDOWS_KUBEPROXY: "${PWD}/templates/addons/windows/kube-proxy-windows.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
   EXP_MACHINE_POOL: "true"

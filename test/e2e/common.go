@@ -40,19 +40,23 @@ import (
 
 // Test suite constants for e2e config variables
 const (
-	RedactLogScriptPath      = "REDACT_LOG_SCRIPT"
-	AzureLocation            = "AZURE_LOCATION"
-	AzureResourceGroup       = "AZURE_RESOURCE_GROUP"
-	AzureVNetName            = "AZURE_VNET_NAME"
-	AzureInternalLBIP        = "AZURE_INTERNAL_LB_IP"
-	AzureCPSubnetCidr        = "AZURE_CP_SUBNET_CIDR"
-	AzureNodeSubnetCidr      = "AZURE_NODE_SUBNET_CIDR"
-	CNIPathIPv6              = "CNI_IPV6"
-	CNIResourcesIPv6         = "CNI_RESOURCES_IPV6"
-	VMSSHPort                = "VM_SSH_PORT"
-	MultiTenancyIdentityName = "MULTI_TENANCY_IDENTITY_NAME"
-	JobName                  = "JOB_NAME"
-	Timestamp                = "TIMESTAMP"
+	RedactLogScriptPath       = "REDACT_LOG_SCRIPT"
+	AzureLocation             = "AZURE_LOCATION"
+	AzureResourceGroup        = "AZURE_RESOURCE_GROUP"
+	AzureVNetName             = "AZURE_VNET_NAME"
+	AzureInternalLBIP         = "AZURE_INTERNAL_LB_IP"
+	AzureCPSubnetCidr         = "AZURE_CP_SUBNET_CIDR"
+	AzureNodeSubnetCidr       = "AZURE_NODE_SUBNET_CIDR"
+	CNIPathIPv6               = "CNI_IPV6"
+	CNIResourcesIPv6          = "CNI_RESOURCES_IPV6"
+	CNIPathWindows            = "CNI_WINDOWS"
+	CNIResourcesWindows       = "CNI_RESOURCES_WINDOWS"
+	WindowsKubeProxyPath      = "WINDOWS_KUBEPROXY"
+	WindowsKubeProxyResources = "WINDOWS_RESOURCES_KUBEPROXY"
+	VMSSHPort                 = "VM_SSH_PORT"
+	MultiTenancyIdentityName  = "MULTI_TENANCY_IDENTITY_NAME"
+	JobName                   = "JOB_NAME"
+	Timestamp                 = "TIMESTAMP"
 )
 
 func Byf(format string, a ...interface{}) {

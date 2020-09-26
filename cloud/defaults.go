@@ -40,6 +40,11 @@ const (
 )
 
 const (
+	// WindowsOS is Windows OS value for OSDisk
+	WindowsOS = "Windows"
+)
+
+const (
 	// Global is the Azure global location value.
 	Global = "global"
 )

@@ -455,8 +455,10 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	# apply CNI ClusterResourceSets
 	kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml
 	kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml
+	kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/
 	kubectl apply -f templates/addons/calico-resource-set.yaml
-
+	kubectl apply -f templates/addons/flannel-resource-set.yaml
+	
 	# Wait for CAPZ deployments
 	kubectl wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
 
@@ -478,6 +480,9 @@ create-workload-cluster: $(ENVSUBST)
 	@if [[ "${CLUSTER_TEMPLATE}" == *prow* ]]; then \
 		if [[ "${CLUSTER_TEMPLATE}" == *ipv6* ]]; then \
 			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico-ipv6.yaml; \
+		elif [[ "${CLUSTER_TEMPLATE}" == *windows* ]]; then \
+			echo "windows being applied" \
+			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/windows; \
 		else \
 			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml; \
 		fi \

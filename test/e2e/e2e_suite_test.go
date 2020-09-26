@@ -203,6 +203,18 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 	Expect(cniPathIPv6).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathIPv6)
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathIPv6, CNIResourcesIPv6)
 
+	// Kube-proxy for Windows is not configured via kube-adm and needs to be added after the fact.
+	Expect(config.Variables).To(HaveKey(WindowsKubeProxyPath), "Missing %s variable in the config", WindowsKubeProxyPath)
+	windowsKubeProxyPath := config.GetVariable(WindowsKubeProxyPath)
+	Expect(windowsKubeProxyPath).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", WindowsKubeProxyPath)
+	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(windowsKubeProxyPath, WindowsKubeProxyResources)
+
+	// Read CNI_WINDOWS file and set CNI_RESOURCES_WINDOWS environmental variable
+	Expect(config.Variables).To(HaveKey(CNIPathWindows), "Missing %s variable in the config", CNIPathWindows)
+	cniPathWindows := config.GetVariable(CNIPathWindows)
+	Expect(cniPathWindows).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathWindows)
+	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathWindows, CNIResourcesWindows)
+
 	clusterctlConfig := clusterctl.CreateRepository(context.TODO(), createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
 	return clusterctlConfig
