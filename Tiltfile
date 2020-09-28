@@ -258,6 +258,12 @@ def capz():
 
     k8s_yaml(blob(yaml))
 
+def calico_crs():
+    local("kubectl delete configmaps calico-addon --ignore-not-found=true")
+    local("kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml")
+    local("kubectl delete configmaps calico-ipv6-addon --ignore-not-found=true")
+    local("kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
+    local("kubectl apply -f templates/addons/calico-resource-set.yaml")
 
 # run worker clusters specified from 'tilt up' or in 'tilt_config.json'
 def flavors():
@@ -384,5 +390,7 @@ if settings.get("deploy_cert_manager"):
 deploy_capi()
 
 capz()
+
+calico_crs()
 
 flavors()
