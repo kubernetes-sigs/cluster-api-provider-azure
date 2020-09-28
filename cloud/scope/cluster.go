@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"strconv"
 
 	"k8s.io/utils/net"
@@ -274,9 +275,14 @@ func (s *ClusterScope) Location() string {
 	return s.AzureCluster.Spec.Location
 }
 
-// GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
+// GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
 func (s *ClusterScope) GenerateFQDN() string {
-	return fmt.Sprintf("%s.%s.%s", s.Network().APIServerIP.Name, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
+	h := fnv.New32a()
+	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(),  s.Network().APIServerIP.Name))); err != nil {
+		return ""
+	}
+	hash := fmt.Sprintf("%x", h.Sum32())
+	return fmt.Sprintf("%s-%s.%s.%s", s.ClusterName(), hash, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
 }
 
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.

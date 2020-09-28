@@ -484,13 +484,10 @@ spec:
                                 an Azure public IP address.
                               properties:
                                 dnsName:
-                                  minLength: 1
                                   type: string
                                 name:
-                                  minLength: 1
                                   type: string
                               required:
-                              - dnsName
                               - name
                               type: object
                           required:

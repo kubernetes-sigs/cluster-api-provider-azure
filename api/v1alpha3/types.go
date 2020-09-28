@@ -193,10 +193,9 @@ type FrontendIP struct {
 
 // PublicIPSpec defines the inputs to create an Azure public IP address.
 type PublicIPSpec struct {
-	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
-	// +kubebuilder:validation:MinLength=1
-	DNSName string `json:"dnsName"`
+	// +optional
+	DNSName string `json:"dnsName,omitempty"`
 }
 
 // VMState describes the state of an Azure virtual machine.

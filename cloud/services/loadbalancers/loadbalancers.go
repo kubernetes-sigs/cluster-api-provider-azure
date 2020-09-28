@@ -160,7 +160,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), lbSpec.Name, lb)
 
 		if err != nil {
-			return errors.Wrapf(err, "failed to create load balancer %s", lbSpec.Name)
+			return errors.Wrapf(err, "failed to create load balancer \"%s\"", lbSpec.Name)
 		}
 
 		s.Scope.V(2).Info("successfully created load balancer", "load balancer", lbSpec.Name)
