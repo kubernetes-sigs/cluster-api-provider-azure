@@ -121,7 +121,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 
 // LBSpecs returns the load balancer specs.
 func (s *ClusterScope) LBSpecs() []azure.LBSpec {
-	specs := []azure.LBSpec{
+	return[]azure.LBSpec{
 		{
 			// Control Plane LB
 			Name:              s.APIServerLB().Name,
@@ -148,21 +148,6 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Role:            infrav1.NodeOutboundRole,
 		},
 	}
-	if !s.IsIPv6Enabled() {
-		// for now no internal LB is created for ipv6 enabled clusters
-		// getAvailablePrivateIP() does not work with IPv6
-		specs = append(specs, azure.LBSpec{
-			// Internal control plane LB
-			Name:             azure.GenerateInternalLBName(s.ClusterName()),
-			SubnetName:       s.ControlPlaneSubnet().Name,
-			SubnetCidrs:      s.ControlPlaneSubnet().CIDRBlocks,
-			PrivateIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
-			APIServerPort:    s.APIServerPort(),
-			Role:             infrav1.InternalRole,
-		})
-	}
-
-	return specs
 }
 
 // RouteTableSpecs returns the node route table(s)
