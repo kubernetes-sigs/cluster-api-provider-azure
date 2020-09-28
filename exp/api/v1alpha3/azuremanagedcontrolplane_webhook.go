@@ -17,13 +17,15 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"errors"
 	"net"
 	"regexp"
 	"strings"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -65,6 +67,11 @@ func (r *AzureManagedControlPlane) Default() {
 		normalizedVersion := "v" + r.Spec.Version
 		r.Spec.Version = normalizedVersion
 	}
+
+	err := r.SetDefaultSSHPublicKey()
+	if err != nil {
+		azuremanagedcontrolplanelog.Error(err, "SetDefaultSshPublicKey failed")
+	}
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-exp-infrastructure-cluster-x-k8s-io-v1alpha3-azuremanagedcontrolplane,mutating=false,failurePolicy=fail,groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes,versions=v1alpha3,name=azuremanagedcontrolplane.kb.io
@@ -74,6 +81,7 @@ var _ webhook.Validator = &AzureManagedControlPlane{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *AzureManagedControlPlane) ValidateCreate() error {
 	azuremanagedcontrolplanelog.Info("validate create", "name", r.Name)
+
 	return r.Validate()
 }
 
@@ -91,31 +99,57 @@ func (r *AzureManagedControlPlane) ValidateDelete() error {
 	return nil
 }
 
-// Validate the Azure Managed ControlPlane and return an aggregate error
+// Validate the Azure Machine Pool and return an aggregate error
 func (r *AzureManagedControlPlane) Validate() error {
-	var allErrs field.ErrorList
-	err := r.validateDNSServiceIP()
-	if err != nil {
-		allErrs = append(allErrs, err)
+	validators := []func() error{
+		r.validateVersion,
+		r.validateDNSServiceIP,
+		r.ValidateSSHKey,
 	}
 
-	if !kubeSemver.MatchString(r.Spec.Version) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "version"), r.Spec.Version, "must be a valid semantic version"))
+	var errs []error
+	for _, validator := range validators {
+		if err := validator(); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
-	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), r.Name, allErrs)
+	if len(errs) > 0 {
+		return kerrors.NewAggregate(errs)
 	}
 
 	return nil
 }
 
 // validate DNSServiceIP
-func (r *AzureManagedControlPlane) validateDNSServiceIP() *field.Error {
+func (r *AzureManagedControlPlane) validateDNSServiceIP() error {
 	if r.Spec.DNSServiceIP != nil {
 		if net.ParseIP(*r.Spec.DNSServiceIP) == nil {
-			return field.Invalid(field.NewPath("spec", "DNSServiceIO"), *r.Spec.DNSServiceIP, "DNSServiceIP must be a valid IP")
+			return errors.New("DNSServiceIP must be a valid IP")
 		}
 	}
+
+	return nil
+}
+
+func (r *AzureManagedControlPlane) validateVersion() error {
+	if !kubeSemver.MatchString(r.Spec.Version) {
+		return errors.New("must be a valid semantic version")
+	}
+
+	return nil
+}
+
+// ValidateSSHKey validates an SSHKey
+func (r *AzureManagedControlPlane) ValidateSSHKey() error {
+	if r.Spec.SSHPublicKey != "" {
+		sshKey := r.Spec.SSHPublicKey
+		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
+			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
+			azuremachinepoollog.Info("Invalid sshKey: %s", agg.Error())
+			return agg
+		}
+	}
+
 	return nil
 }

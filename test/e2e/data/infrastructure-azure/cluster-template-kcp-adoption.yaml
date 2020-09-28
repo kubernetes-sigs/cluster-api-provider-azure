@@ -29,7 +29,7 @@ kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
   labels:
-    initial: ''  
+    initial: ''
 spec:
   additionalTags:
     creationTimestamp: ${TIMESTAMP}
@@ -46,7 +46,7 @@ kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
   labels:
-    initial: ''  
+    initial: ''
 spec:
   dataDisks:
   - diskSizeGB: 256
@@ -58,15 +58,15 @@ spec:
     managedDisk:
       storageAccountType: Premium_LRS
     osType: Linux
-  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   vmSize: Standard_D2s_v3
----      
+---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Machine
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
   labels:
-    initial: ''      
+    initial: ''
     cluster.x-k8s.io/control-plane: "true"
 spec:
   version: ${KUBERNETES_VERSION}
@@ -79,14 +79,14 @@ spec:
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureMachine
-    name: ${CLUSTER_NAME}-control-plane-0  
+    name: ${CLUSTER_NAME}-control-plane-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
   labels:
-    initial: ''    
+    initial: ''
 spec:
   useExperimentalRetryJoin: true
   initConfiguration:
@@ -144,7 +144,7 @@ spec:
       tableType: gpt
   mounts:
   - - LABEL=etcd_disk
-    - /var/lib/etcddisk    
+    - /var/lib/etcddisk
   files:
     - contentFrom:
         secret:
@@ -177,14 +177,14 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureCluster
     name: ${CLUSTER_NAME}
----    
+---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
   labels:
     cluster.x-k8s.io/cluster-name: "${ CLUSTER_NAME }"
-    kcp: ''  
+    kcp: ''
 spec:
   infrastructureTemplate:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
@@ -279,7 +279,7 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: Standard_D2s_v3
 ---
 apiVersion: v1

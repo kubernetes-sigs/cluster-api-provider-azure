@@ -33,7 +33,7 @@ export AZURE_LOCATION="southcentralus"
 export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
 # set AZURE_SUBSCRIPTION_ID to the GUID of your subscription
 # this example uses an sdk authentication file and parses the subscriptionId with jq
-# this file may be created using 
+# this file may be created using
 #
 # `az ad sp create-for-rbac --sdk-auth [roles] > sp.json`
 #
@@ -92,7 +92,7 @@ spec:
     name: agentpool0
   location: southcentralus
   resourceGroup: foo-bar
-  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64}
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
   version: v1.17.4
   networkPolicy: azure # or calico
