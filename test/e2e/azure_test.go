@@ -96,6 +96,16 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			})
 			cluster = result.Cluster
+
+			Context("Validating time synchronization", func() {
+				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
+					return AzureTimeSyncSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
 		})
 	})
 
@@ -120,6 +130,16 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			})
 			cluster = result.Cluster
+
+			Context("Validating time synchronization", func() {
+				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
+					return AzureTimeSyncSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
 
 			Context("Validating failure domains", func() {
 				AzureFailureDomainsSpec(ctx, func() AzureFailureDomainsSpecInput {
@@ -186,6 +206,16 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 			cluster = result.Cluster
 
+			Context("Validating time synchronization", func() {
+				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
+					return AzureTimeSyncSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+
 			Context("Creating an accessible ipv6 load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {
 					return AzureLBSpecInput{
@@ -221,6 +251,16 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
 			})
 			cluster = result.Cluster
+
+			Context("Validating time synchronization", func() {
+				AzureTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
+					return AzureTimeSyncSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
 
 			Context("Creating an accessible load balancer", func() {
 				AzureLBSpec(ctx, func() AzureLBSpecInput {

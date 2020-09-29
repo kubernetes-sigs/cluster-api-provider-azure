@@ -47,7 +47,10 @@ import (
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -284,15 +287,102 @@ func logCheckpoint(specTimes map[string]time.Time) {
 	}
 }
 
+// nodeSSHInfo provides information to establish an SSH connection to a VM or VMSS instance.
+type nodeSSHInfo struct {
+	Endpoint string // Endpoint is the control plane hostname or IP address for initial connection.
+	Hostname string // Hostname is the name or IP address of the destination VM or VMSS instance.
+	Port     string // Port is the TCP port used for the SSH connection.
+}
+
+// getClusterSSHInfo returns the information needed to establish a SSH connection through a
+// control plane endpoint to each node in the cluster.
+func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name string) ([]nodeSSHInfo, error) {
+	sshInfo := []nodeSSHInfo{}
+
+	// Collect the info for each VM / Machine.
+	machines, err := getMachinesInCluster(ctx, c, namespace, name)
+	if err != nil {
+		return nil, err
+	}
+	for i := range machines.Items {
+		m := &machines.Items[i]
+		cluster, err := util.GetClusterFromMetadata(ctx, c, m.ObjectMeta)
+		if err != nil {
+			return nil, err
+		}
+		sshInfo = append(sshInfo, nodeSSHInfo{
+			Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
+			Hostname: m.Spec.InfrastructureRef.Name,
+			Port:     e2eConfig.GetVariable(VMSSHPort),
+		})
+	}
+
+	// Collect the info for each instance in a VMSS / MachinePool.
+	machinePools, err := getMachinePoolsInCluster(ctx, c, namespace, name)
+	if err != nil {
+		return nil, err
+	}
+	for i := range machinePools.Items {
+		p := &machinePools.Items[i]
+		cluster, err := util.GetClusterFromMetadata(ctx, c, p.ObjectMeta)
+		if err != nil {
+			return nil, err
+		}
+		for j := range p.Status.NodeRefs {
+			n := p.Status.NodeRefs[j]
+			sshInfo = append(sshInfo, nodeSSHInfo{
+				Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
+				Hostname: n.Name,
+				Port:     e2eConfig.GetVariable(VMSSHPort),
+			})
+		}
+
+	}
+
+	return sshInfo, nil
+}
+
+// getMachinesInCluster returns a list of all machines in the given cluster.
+// This is adapted from CAPI's test/framework/cluster_proxy.go.
+func getMachinesInCluster(ctx context.Context, c framework.Lister, namespace, name string) (*clusterv1.MachineList, error) {
+	if name == "" {
+		return nil, nil
+	}
+
+	machineList := &clusterv1.MachineList{}
+	labels := map[string]string{clusterv1.ClusterLabelName: name}
+
+	if err := c.List(ctx, machineList, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+		return nil, err
+	}
+
+	return machineList, nil
+}
+
+// getMachinePoolsInCluster returns a list of all machine pools in the given cluster.
+func getMachinePoolsInCluster(ctx context.Context, c framework.Lister, namespace, name string) (*clusterv1exp.MachinePoolList, error) {
+	if name == "" {
+		return nil, nil
+	}
+
+	machinePoolList := &clusterv1exp.MachinePoolList{}
+	labels := map[string]string{clusterv1.ClusterLabelName: name}
+
+	if err := c.List(ctx, machinePoolList, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+		return nil, err
+	}
+
+	return machinePoolList, nil
+}
+
 // execOnHost runs the specified command directly on a node's host, using an SSH connection
 // proxied through a control plane host.
-func execOnHost(controlPlaneEndpoint, hostname string, f io.StringWriter, command string,
+func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, command string,
 	args ...string) error {
 	config, err := newSSHConfig()
 	if err != nil {
 		return err
 	}
-	port := "22" // Need to use port 50001 for VMSS when MachinePools are supported here.
 
 	// Init a client connection to a control plane node via the public load balancer
 	lbClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", controlPlaneEndpoint, port), config)
