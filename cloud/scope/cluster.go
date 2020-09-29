@@ -110,7 +110,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	}
 	if s.APIServerLB().Type == infrav1.Public {
 		specs = append(specs, azure.PublicIPSpec{
-		Name:    s.APIServerPublicIP().Name,
+			Name:    s.APIServerPublicIP().Name,
 			DNSName: s.APIServerPublicIP().DNSName,
 			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
 		})
@@ -120,7 +120,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 
 // LBSpecs returns the load balancer specs.
 func (s *ClusterScope) LBSpecs() []azure.LBSpec {
-	return[]azure.LBSpec{
+	return []azure.LBSpec{
 		{
 			// Control Plane LB
 			Name:              s.APIServerLB().Name,
@@ -384,4 +384,3 @@ func (s *ClusterScope) SetDNSName() {
 		}
 	}
 }
-
