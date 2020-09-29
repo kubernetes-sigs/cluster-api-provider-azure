@@ -91,13 +91,13 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	}
 
 	// when watching machines, we only care about machines users created one-off
-	// outside of machinedeployments/machinesets. if a machine is part of a machineset
+	// outside of machinedeployments/machinesets and using AzureMachineTemplates. if a machine is part of a machineset
 	// or machinedeployment, we already created a secret for the template. All machines
 	// in the machinedeployment will share that one secret.
-	_, isMachineSetNode := e.Meta.GetLabels()[clusterv1.MachineSetLabelName]
-	_, isMachineDeploymentNode := e.Meta.GetLabels()[clusterv1.MachineDeploymentLabelName]
+	gvk := infrav1.GroupVersion.WithKind("AzureMachineTemplate")
+	isClonedFromTemplate := e.Meta.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
 
-	return !isMachineSetNode && !isMachineDeploymentNode
+	return !isClonedFromTemplate
 }
 
 // Reconcile reconciles the azure json for a specific machine not in a machine deployment

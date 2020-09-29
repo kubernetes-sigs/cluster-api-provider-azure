@@ -39,29 +39,27 @@ import (
 
 func TestUnclonedMachinesPredicate(t *testing.T) {
 	cases := map[string]struct {
-		expected bool
-		labels   map[string]string
+		expected    bool
+		labels      map[string]string
+		annotations map[string]string
 	}{
 		"uncloned worker node should return true": {
-			expected: true,
-			labels:   nil,
+			expected:    true,
+			labels:      nil,
+			annotations: nil,
 		},
-		"control plane node should return true": {
+		"uncloned control plane node should return true": {
 			expected: true,
 			labels: map[string]string{
 				clusterv1.MachineControlPlaneLabelName: "",
 			},
+			annotations: nil,
 		},
-		"machineset node should return false": {
+		"cloned node should return false": {
 			expected: false,
-			labels: map[string]string{
-				clusterv1.MachineSetLabelName: "",
-			},
-		},
-		"machinedeployment node should return false": {
-			expected: false,
-			labels: map[string]string{
-				clusterv1.MachineDeploymentLabelName: "",
+			labels:   nil,
+			annotations: map[string]string{
+				clusterv1.TemplateClonedFromGroupKindAnnotation: infrav1.GroupVersion.WithKind("AzureMachineTemplate").GroupKind().String(),
 			},
 		},
 	}
@@ -71,7 +69,8 @@ func TestUnclonedMachinesPredicate(t *testing.T) {
 			t.Parallel()
 			machine := &infrav1.AzureMachine{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: tc.labels,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
 				},
 			}
 			e := event.GenericEvent{
