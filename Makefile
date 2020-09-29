@@ -483,7 +483,7 @@ create-cluster: ## Create a workload development Kubernetes cluster on Azure in 
 	EXP_AKS=true \
 	EXP_MACHINE_POOL=true \
 	$(MAKE) create-management-cluster \
-	$(MAKE) create-workload-cluster
+	create-workload-cluster
 
 .PHONY: delete-workload-cluster
 delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
