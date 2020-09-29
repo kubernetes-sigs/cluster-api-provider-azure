@@ -158,8 +158,8 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		spec.LBBackendAddressPoolName = azure.GenerateBackendAddressPoolName(m.APIServerLBName())
 		spec.LBNATRuleName = m.Name()
 	} else if m.Role() == infrav1.Node {
-		spec.LBName = m.ClusterName()
-		spec.LBBackendAddressPoolName = azure.GenerateOutboundBackendddressPoolName(m.ClusterName())
+		spec.LBName = m.NodeOutboundLBName()
+		spec.LBBackendAddressPoolName = azure.GenerateOutboundBackendddressPoolName(m.NodeOutboundLBName())
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {

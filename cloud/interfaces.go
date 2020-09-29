@@ -70,4 +70,5 @@ type ClusterDescriber interface {
 	RouteTable() *infrav1.RouteTable
 	IsIPv6Enabled() bool
 	APIServerLBName() string
+	NodeOutboundLBName() string
 }

@@ -105,7 +105,7 @@ func (s *ClusterScope) Authorizer() autorest.Authorizer {
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	specs := []azure.PublicIPSpec{
 		{
-			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+			Name: azure.GenerateNodeOutboundIPName(s.NodeOutboundLBName()),
 		},
 	}
 	if s.APIServerLB().Type == infrav1.Public {
@@ -134,16 +134,16 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 		},
 		{
 			// Public Node outbound LB
-			Name: s.ClusterName(),
+			Name: s.NodeOutboundLBName(),
 			FrontendIPConfigs: []infrav1.FrontendIP{
 				{
 					PublicIP: &infrav1.PublicIPSpec{
-						Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+						Name: azure.GenerateNodeOutboundIPName(s.NodeOutboundLBName()),
 					},
 				},
 			},
 			Type:            infrav1.Public,
-			BackendPoolName: azure.GenerateOutboundBackendddressPoolName(s.ClusterName()),
+			BackendPoolName: azure.GenerateOutboundBackendddressPoolName(s.NodeOutboundLBName()),
 			Role:            infrav1.NodeOutboundRole,
 		},
 	}
@@ -261,6 +261,11 @@ func (s *ClusterScope) APIServerPublicIP() *infrav1.PublicIPSpec {
 // APIServerPrivateIP returns the API Server private IP.
 func (s *ClusterScope) APIServerPrivateIP() string {
 	return s.APIServerLB().FrontendIPs[0].PrivateIPAddress
+}
+
+// NodeOutboundLBName returns the name of the node outbound LB.
+func (s *ClusterScope) NodeOutboundLBName() string {
+	return s.ClusterName()
 }
 
 // ResourceGroup returns the cluster resource group.
