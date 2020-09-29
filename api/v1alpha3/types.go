@@ -27,12 +27,6 @@ const (
 	Node string = "node"
 )
 
-// Network encapsulates the state of Azure networking resources.
-type Network struct {
-	// APIServerIP is the Kubernetes API server public IP address.
-	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
-}
-
 // NetworkSpec specifies what the Azure networking resources should look like.
 type NetworkSpec struct {
 	// Vnet is the configuration for the Azure virtual network.
@@ -145,14 +139,6 @@ type IngressRule struct {
 
 // IngressRules is a slice of Azure ingress rules for security groups.
 type IngressRules []*IngressRule
-
-// PublicIP defines an Azure public IP address.
-type PublicIP struct {
-	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	IPAddress string `json:"ipAddress,omitempty"`
-	DNSName   string `json:"dnsName,omitempty"`
-}
 
 // LoadBalancer defines an Azure load balancer.
 type LoadBalancerSpec struct {

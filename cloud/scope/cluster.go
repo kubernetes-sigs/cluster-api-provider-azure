@@ -101,23 +101,21 @@ func (s *ClusterScope) Authorizer() autorest.Authorizer {
 	return s.AzureClients.Authorizer
 }
 
-// Network returns the cluster network object.
-func (s *ClusterScope) Network() *infrav1.Network {
-	return &s.AzureCluster.Status.Network
-}
-
 // PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
-	return []azure.PublicIPSpec{
+	specs := []azure.PublicIPSpec{
 		{
 			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
 		},
-		{
-			Name:    s.Network().APIServerIP.Name,
-			DNSName: s.Network().APIServerIP.DNSName,
-			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
-		},
 	}
+	if s.APIServerLB().Type == infrav1.Public {
+		specs = append(specs, azure.PublicIPSpec{
+		Name:    s.APIServerPublicIP().Name,
+			DNSName: s.APIServerPublicIP().DNSName,
+			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
+		})
+	}
+	return specs
 }
 
 // LBSpecs returns the load balancer specs.
@@ -255,6 +253,16 @@ func (s *ClusterScope) APIServerLBName() string {
 	return s.APIServerLB().Name
 }
 
+// APIServerPublicIP returns the API Server public IP.
+func (s *ClusterScope) APIServerPublicIP() *infrav1.PublicIPSpec {
+	return s.APIServerLB().FrontendIPs[0].PublicIP
+}
+
+// APIServerPrivateIP returns the API Server private IP.
+func (s *ClusterScope) APIServerPrivateIP() string {
+	return s.APIServerLB().FrontendIPs[0].PrivateIPAddress
+}
+
 // ResourceGroup returns the cluster resource group.
 func (s *ClusterScope) ResourceGroup() string {
 	return s.AzureCluster.Spec.ResourceGroup
@@ -276,9 +284,9 @@ func (s *ClusterScope) Location() string {
 }
 
 // GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
-func (s *ClusterScope) GenerateFQDN() string {
+func (s *ClusterScope) GenerateFQDN(ipName string) string {
 	h := fnv.New32a()
-	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(),  s.Network().APIServerIP.Name))); err != nil {
+	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), ipName))); err != nil {
 		return ""
 	}
 	hash := fmt.Sprintf("%x", h.Sum32())
@@ -325,6 +333,14 @@ func (s *ClusterScope) APIServerPort() int32 {
 	return 6443
 }
 
+// APIServerPort returns the APIServerPort to use when creating the load balancer.
+func (s *ClusterScope) APIServerHost() string {
+	if s.APIServerLB().Type == infrav1.Internal {
+		return s.APIServerPrivateIP()
+	}
+	return s.APIServerPublicIP().DNSName
+}
+
 // SetFailureDomain will set the spec for a for a given key
 func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
@@ -359,3 +375,13 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 		}
 	}
 }
+
+// SetDNSName sets the API Server public IP DNS name.
+func (s *ClusterScope) SetDNSName() {
+	if s.APIServerLB().Type == infrav1.Public {
+		if s.APIServerPublicIP().DNSName == "" {
+			s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
+		}
+	}
+}
+

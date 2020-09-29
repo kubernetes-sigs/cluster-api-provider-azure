@@ -736,23 +736,6 @@ spec:
                   This list will be used by Cluster API to try and spread the machines
                   across the failure domains.'
                 type: object
-              network:
-                description: Network encapsulates the state of Azure networking resources.
-                properties:
-                  apiServerIp:
-                    description: APIServerIP is the Kubernetes API server public IP
-                      address.
-                    properties:
-                      dnsName:
-                        type: string
-                      id:
-                        type: string
-                      ipAddress:
-                        type: string
-                      name:
-                        type: string
-                    type: object
-                type: object
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean

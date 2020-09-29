@@ -63,14 +63,11 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
-	if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
-		return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
-	}
-
 	if err := r.setFailureDomainsForLocation(ctx); err != nil {
 		return errors.Wrapf(err, "failed to get availability zones")
 	}
 
+	r.scope.SetDNSName()
 	r.scope.SetControlPlaneIngressRules()
 
 	if err := r.groupsSvc.Reconcile(ctx); err != nil {
@@ -136,17 +133,6 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-// CreateOrUpdateNetworkAPIServerIP creates or updates public ip name and dns name
-func (r *azureClusterReconciler) createOrUpdateNetworkAPIServerIP() error {
-	if r.scope.Network().APIServerIP.Name == "" {
-		// TODO: fix this for internal
-		r.scope.Network().APIServerIP.Name = r.scope.APIServerLB().FrontendIPs[0].PublicIP.Name
-	}
-
-	r.scope.Network().APIServerIP.DNSName = r.scope.GenerateFQDN()
 	return nil
 }
 
