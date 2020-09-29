@@ -143,7 +143,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 				},
 			},
 			Type:            infrav1.Public,
-			BackendPoolName: azure.GenerateOutboundBackendddressPoolName(s.APIServerLB().Name),
+			BackendPoolName: azure.GenerateOutboundBackendddressPoolName(s.ClusterName()),
 			Role:            infrav1.NodeOutboundRole,
 		},
 	}

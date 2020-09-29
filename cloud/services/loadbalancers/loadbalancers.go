@@ -114,7 +114,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			},
 		}
 
-		if lbSpec.Role == infrav1.APIServerRole || lbSpec.Role == infrav1.InternalRole {
+		if lbSpec.Role == infrav1.APIServerRole {
 			probeName := "HTTPSProbe"
 			lb.LoadBalancerPropertiesFormat.Probes = &[]network.Probe{
 				{
@@ -151,8 +151,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
 				// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
 				lbRule.LoadBalancingRulePropertiesFormat.DisableOutboundSnat = to.BoolPtr(true)
-			} else if lbSpec.Role == infrav1.InternalRole {
-				lb.LoadBalancerPropertiesFormat.OutboundRules = nil
+				if lbSpec.Type == infrav1.Internal {
+					lb.LoadBalancerPropertiesFormat.OutboundRules = nil
+				}
 			}
 			lb.LoadBalancerPropertiesFormat.LoadBalancingRules = &[]network.LoadBalancingRule{lbRule}
 		}
