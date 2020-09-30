@@ -37,10 +37,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			addressVersion = network.IPv6
 		}
 
+		// only set DNS properties if there is a DNS name specified
 		var dnsSettings *network.PublicIPAddressDNSSettings
 		if ip.DNSName != "" {
 			dnsSettings = &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: to.StringPtr(strings.ToLower(ip.Name)),
+				DomainNameLabel: to.StringPtr(strings.Split(ip.DNSName, ".")[0]),
 				Fqdn:            to.StringPtr(ip.DNSName),
 			}
 		}

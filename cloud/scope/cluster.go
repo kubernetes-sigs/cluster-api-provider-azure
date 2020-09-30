@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"strconv"
+	"strings"
 
 	"k8s.io/utils/net"
 
@@ -295,7 +296,7 @@ func (s *ClusterScope) GenerateFQDN(ipName string) string {
 		return ""
 	}
 	hash := fmt.Sprintf("%x", h.Sum32())
-	return fmt.Sprintf("%s-%s.%s.%s", s.ClusterName(), hash, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
+	return strings.ToLower(fmt.Sprintf("%s-%s.%s.%s", s.ClusterName(), hash, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix))
 }
 
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
