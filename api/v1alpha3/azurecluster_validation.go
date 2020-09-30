@@ -234,6 +234,8 @@ func validateAPIServerLB(lb LoadBalancerSpec, fldPath *field.Path) field.ErrorLi
 					fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
 			}
 		}
+
+		// TODO: validate immutability
 	}
 
 	return allErrs

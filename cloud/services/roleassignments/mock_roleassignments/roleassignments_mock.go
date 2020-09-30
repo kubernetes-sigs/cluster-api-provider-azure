@@ -398,6 +398,20 @@ func (mr *MockRoleAssignmentScopeMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockRoleAssignmentScope)(nil).APIServerLBName))
 }
 
+// NodeOutboundLBName mocks base method.
+func (m *MockRoleAssignmentScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockRoleAssignmentScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockRoleAssignmentScope)(nil).NodeOutboundLBName))
+}
+
 // RoleAssignmentSpecs mocks base method.
 func (m *MockRoleAssignmentScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 	m.ctrl.T.Helper()

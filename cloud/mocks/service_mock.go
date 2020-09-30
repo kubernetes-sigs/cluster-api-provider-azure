@@ -591,3 +591,17 @@ func (mr *MockClusterDescriberMockRecorder) APIServerLBName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockClusterDescriber)(nil).APIServerLBName))
 }
+
+// NodeOutboundLBName mocks base method.
+func (m *MockClusterDescriber) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockClusterDescriberMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockClusterDescriber)(nil).NodeOutboundLBName))
+}

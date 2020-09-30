@@ -398,6 +398,20 @@ func (mr *MockVNetScopeMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockVNetScope)(nil).APIServerLBName))
 }
 
+// NodeOutboundLBName mocks base method.
+func (m *MockVNetScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockVNetScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockVNetScope)(nil).NodeOutboundLBName))
+}
+
 // VNetSpecs mocks base method.
 func (m *MockVNetScope) VNetSpecs() []azure.VNetSpec {
 	m.ctrl.T.Helper()

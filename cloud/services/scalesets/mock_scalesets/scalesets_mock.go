@@ -305,6 +305,20 @@ func (mr *MockScaleSetScopeMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockScaleSetScope)(nil).APIServerLBName))
 }
 
+// NodeOutboundLBName mocks base method.
+func (m *MockScaleSetScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockScaleSetScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockScaleSetScope)(nil).NodeOutboundLBName))
+}
+
 // Info mocks base method.
 func (m *MockScaleSetScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
