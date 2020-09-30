@@ -307,7 +307,6 @@ spec:
                             - offer
                             - publisher
                             - sku
-                            - thirdPartyImage
                             - version
                             type: object
                           sharedGallery:

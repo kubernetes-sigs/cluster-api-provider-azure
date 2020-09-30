@@ -261,6 +261,7 @@ type AzureMarketplaceImage struct {
 	// ThirdPartyImage indicates the image is published by a third party publisher and a Plan
 	// will be generated for it.
 	// +kubebuilder:default=false
+	// +optional
 	ThirdPartyImage bool `json:"thirdPartyImage"`
 }
 
