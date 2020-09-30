@@ -32,8 +32,8 @@ kubeconfig
 # ssh keys
 .ssh*
 
-# Example and binary output directory
-/out
+# Example and binary output directory commenting out to expose infrastructure-components.yaml
+#/out
 
 # vs
 .vs/
