@@ -53,6 +53,7 @@ func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
 	if len(restored.UserAssignedIdentities) > 0 {
 		dst.UserAssignedIdentities = restored.UserAssignedIdentities
 	}
+	dst.RoleAssignmentName = restored.RoleAssignmentName
 	if restored.AcceleratedNetworking != nil {
 		dst.AcceleratedNetworking = restored.AcceleratedNetworking
 	}

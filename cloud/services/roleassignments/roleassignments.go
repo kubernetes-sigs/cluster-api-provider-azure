@@ -43,7 +43,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				PrincipalID:      resultVM.Identity.PrincipalID,
 			},
 		}
-		_, err = s.Client.Create(ctx, scope, roleSpec.UUID, params)
+		_, err = s.Client.Create(ctx, scope, roleSpec.Name, params)
 		if err != nil {
 			return errors.Wrapf(err, "cannot assign role to VM system assigned identity")
 		}

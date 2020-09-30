@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/google/uuid"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"golang.org/x/crypto/ssh"
@@ -38,6 +39,24 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 	if _, _, _, _, err := ssh.ParseAuthorizedKey(decoded); err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath, sshKey, "the SSH public key is not valid"))
 		return allErrs
+	}
+
+	return allErrs
+}
+
+// ValidateUserAssignedIdentity validates the user-assigned identities list
+func ValidateSystemAssignedIdentity(identityType VMIdentity, old, new string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if identityType == VMIdentitySystemAssigned {
+		if _, err := uuid.Parse(new); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, new, "Role assignment name must be a valid GUID. It is optional and will be auto-generated when not specified."))
+		}
+		if old != "" && old != new {
+			allErrs = append(allErrs, field.Invalid(fldPath, new, "Role assignment name should not be modified after AzureMachine creation."))
+		}
+	} else if len(new) != 0 {
+		allErrs = append(allErrs, field.Forbidden(fldPath, "Role assignment name should only be set when using system assigned identity."))
 	}
 
 	return allErrs

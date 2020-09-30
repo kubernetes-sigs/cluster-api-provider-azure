@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"reflect"
 	"testing"
 
@@ -43,6 +44,38 @@ func TestAzureMachine_SetDefaultSSHPublicKey(t *testing.T) {
 	err = publicKeyNotExistTest.machine.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
+}
+
+func TestAzureMachine_SetIdentityDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		machine *AzureMachine
+	}
+
+	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
+	roleAssignmentExistTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity:           VMIdentitySystemAssigned,
+		RoleAssignmentName: existingRoleAssignmentName,
+	}}}
+	roleAssignmentEmptyTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity:           VMIdentitySystemAssigned,
+		RoleAssignmentName: "",
+	}}}
+	notSystemAssignedTest := test{machine: &AzureMachine{Spec: AzureMachineSpec{
+		Identity: VMIdentityUserAssigned,
+	}}}
+
+	roleAssignmentExistTest.machine.SetIdentityDefaults()
+	g.Expect(roleAssignmentExistTest.machine.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
+
+	roleAssignmentEmptyTest.machine.SetIdentityDefaults()
+	g.Expect(roleAssignmentEmptyTest.machine.Spec.RoleAssignmentName).To(Not(BeEmpty()))
+	_, err := uuid.Parse(roleAssignmentEmptyTest.machine.Spec.RoleAssignmentName)
+	g.Expect(err).To(Not(HaveOccurred()))
+
+	notSystemAssignedTest.machine.SetIdentityDefaults()
+	g.Expect(notSystemAssignedTest.machine.Spec.RoleAssignmentName).To(BeEmpty())
 }
 
 func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {

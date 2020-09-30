@@ -57,6 +57,10 @@ func (m *AzureMachine) ValidateCreate() error {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateSystemAssignedIdentity(m.Spec.Identity, "", m.Spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -75,6 +79,7 @@ func (m *AzureMachine) ValidateCreate() error {
 func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
 	var allErrs field.ErrorList
+	old := oldRaw.(*AzureMachine)
 
 	if errs := ValidateImage(m.Spec.Image, field.NewPath("image")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
@@ -88,6 +93,10 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		allErrs = append(allErrs, errs...)
 	}
 
+	if errs := ValidateSystemAssignedIdentity(m.Spec.Identity, old.Spec.RoleAssignmentName, m.Spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
 	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
@@ -95,8 +104,6 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
-
-	old := oldRaw.(*AzureMachine)
 
 	if errs := ValidateManagedDisk(old.Spec.OSDisk.ManagedDisk, m.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk")); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
@@ -134,4 +141,6 @@ func (m *AzureMachine) Default() {
 	}
 
 	m.SetDataDisksDefaults()
+
+	m.SetIdentityDefaults()
 }
