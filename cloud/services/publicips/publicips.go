@@ -31,9 +31,18 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
 
+		// only set DNS properties if there is a DNS name specified
 		addressVersion := network.IPv4
 		if ip.IsIPv6 {
 			addressVersion = network.IPv6
+		}
+
+		var dnsSettings *network.PublicIPAddressDNSSettings
+		if ip.DNSName != "" {
+			dnsSettings = &network.PublicIPAddressDNSSettings{
+				DomainNameLabel: to.StringPtr(strings.ToLower(ip.Name)),
+				Fqdn:            to.StringPtr(ip.DNSName),
+			}
 		}
 
 		err := s.Client.CreateOrUpdate(
@@ -47,10 +56,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 					PublicIPAddressVersion:   addressVersion,
 					PublicIPAllocationMethod: network.Static,
-					DNSSettings: &network.PublicIPAddressDNSSettings{
-						DomainNameLabel: to.StringPtr(strings.ToLower(ip.Name)),
-						Fqdn:            to.StringPtr(ip.DNSName),
-					},
+					DNSSettings:              dnsSettings,
 				},
 			},
 		)

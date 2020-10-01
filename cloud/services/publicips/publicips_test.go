@@ -19,8 +19,9 @@ package publicips
 import (
 	"context"
 	"net/http"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"testing"
+
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 
@@ -106,10 +107,6 @@ func TestReconcilePublicIP(t *testing.T) {
 						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 							PublicIPAddressVersion:   network.IPv4,
 							PublicIPAllocationMethod: network.Static,
-							DNSSettings: &network.PublicIPAddressDNSSettings{
-								DomainNameLabel: to.StringPtr("my-publicip-3"),
-								Fqdn:            to.StringPtr(""),
-							},
 						},
 					})).Times(1),
 					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip-ipv6", gomockinternal.DiffEq(network.PublicIPAddress{
