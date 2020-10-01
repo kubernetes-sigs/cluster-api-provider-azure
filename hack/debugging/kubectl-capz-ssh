@@ -24,7 +24,7 @@ if [[ "$1" == '--' ]]; then shift; fi
 echo "finding address for $azurecluster"
 capimachine=$(kubectl get azuremachine $azuremachine -o json | jq -r '.metadata.ownerReferences | .[]  |  select(.kind == "Machine").name')
 azurecluster=$(kubectl get machine $capimachine -o json | jq -r '.spec.clusterName')
-apiserver=$(kubectl get azurecluster $azurecluster -o json | jq -r '.status.network.apiServerIp.dnsName')
+apiserver=$(kubectl get azurecluster $azurecluster -o json | jq -r '.spec.controlPlaneEndpoint.host')
 echo "found address $apiserver"
 
 echo "finding address for $azuremachine"
