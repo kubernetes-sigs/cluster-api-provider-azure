@@ -30,59 +30,16 @@ import (
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
-	// TODO: cleanup
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		s.Scope.V(2).Info("creating load balancer", "load balancer", lbSpec.Name)
 
-		var frontendIPConfigurations []network.FrontendIPConfiguration
-		frontendIDs := make([]network.SubResource, 0)
-
-		for _, ipConfig := range lbSpec.FrontendIPConfigs {
-			var properties network.FrontendIPConfigurationPropertiesFormat
-			if lbSpec.Type == infrav1.Internal {
-				var privateIP string
-				// We check if there is an existing internal load balancer for back compat.
-				internalLB, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
-				if err == nil {
-					ipConfigs := internalLB.LoadBalancerPropertiesFormat.FrontendIPConfigurations
-					if ipConfigs != nil && len(*ipConfigs) > 0 {
-						privateIP = to.String((*ipConfigs)[0].FrontendIPConfigurationPropertiesFormat.PrivateIPAddress)
-					}
-				} else if azure.ResourceNotFound(err) {
-					s.Scope.V(2).Info("internalLB not found in RG", "internal lb", lbSpec.Name, "resource group", s.Scope.ResourceGroup())
-					privateIP, err = s.getAvailablePrivateIP(ctx, s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, ipConfig.PrivateIPAddress, lbSpec.SubnetCidrs)
-					if err != nil {
-						return err
-					}
-					s.Scope.V(2).Info("setting internal load balancer IP", "private ip", privateIP)
-					ipConfig.PrivateIPAddress = privateIP
-				} else {
-					return errors.Wrap(err, "failed to look for existing internal LB")
-				}
-				properties = network.FrontendIPConfigurationPropertiesFormat{
-					PrivateIPAllocationMethod: network.Static,
-					Subnet: &network.Subnet{
-						ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
-					},
-					PrivateIPAddress: to.StringPtr(privateIP),
-				}
-			} else {
-				properties = network.FrontendIPConfigurationPropertiesFormat{
-					PublicIPAddress: &network.PublicIPAddress{
-						ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), ipConfig.PublicIP.Name)),
-					},
-				}
-			}
-			frontendIPConfigurations = append(frontendIPConfigurations, network.FrontendIPConfiguration{
-				FrontendIPConfigurationPropertiesFormat: &properties,
-				Name:                                    to.StringPtr(ipConfig.Name),
-			})
-			frontendIDs = append(frontendIDs, network.SubResource{
-				ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, ipConfig.Name)),
-			})
+		frontendIPConfigs, frontendIDs, err := s.getFrontendIPConfigs(ctx, lbSpec)
+		if err != nil {
+			return err
 		}
 
 		lb := network.LoadBalancer{
+			Name: to.StringPtr(lbSpec.Name),
 			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
 			Location: to.StringPtr(s.Scope.Location()),
 			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -92,7 +49,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Additional:  s.Scope.AdditionalTags(),
 			})),
 			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-				FrontendIPConfigurations: &frontendIPConfigurations,
+				FrontendIPConfigurations: &frontendIPConfigs,
 				BackendAddressPools: &[]network.BackendAddressPool{
 					{
 						Name: to.StringPtr(lbSpec.BackendPoolName),
@@ -128,37 +85,35 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					},
 				},
 			}
-			lbRule := network.LoadBalancingRule{
-				Name: to.StringPtr("LBRuleHTTPS"),
-				LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-					Protocol:                network.TransportProtocolTCP,
-					FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
-					BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
-					IdleTimeoutInMinutes:    to.Int32Ptr(4),
-					EnableFloatingIP:        to.BoolPtr(false),
-					LoadDistribution:        network.LoadDistributionDefault,
-					FrontendIPConfiguration: &frontendIDs[0],
-					BackendAddressPool: &network.SubResource{
-						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
-					},
-					Probe: &network.SubResource{
-						ID: to.StringPtr(azure.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, probeName)),
+			// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
+			// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
+			lb.LoadBalancerPropertiesFormat.LoadBalancingRules = &[]network.LoadBalancingRule{
+				{
+					Name: to.StringPtr("LBRuleHTTPS"),
+					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
+						DisableOutboundSnat:     to.BoolPtr(true),
+						Protocol:                network.TransportProtocolTCP,
+						FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
+						BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
+						IdleTimeoutInMinutes:    to.Int32Ptr(4),
+						EnableFloatingIP:        to.BoolPtr(false),
+						LoadDistribution:        network.LoadDistributionDefault,
+						FrontendIPConfiguration: &frontendIDs[0],
+						BackendAddressPool: &network.SubResource{
+							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
+						},
+						Probe: &network.SubResource{
+							ID: to.StringPtr(azure.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, probeName)),
+						},
 					},
 				},
 			}
-
-			if lbSpec.Role == infrav1.APIServerRole {
-				// We disable outbound SNAT explicitly in the HTTPS LB rule and enable TCP and UDP outbound NAT with an outbound rule.
-				// For more information on Standard LB outbound connections see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections.
-				lbRule.LoadBalancingRulePropertiesFormat.DisableOutboundSnat = to.BoolPtr(true)
-				if lbSpec.Type == infrav1.Internal {
-					lb.LoadBalancerPropertiesFormat.OutboundRules = nil
-				}
+			if lbSpec.Type == infrav1.Internal {
+				lb.LoadBalancerPropertiesFormat.OutboundRules = nil
 			}
-			lb.LoadBalancerPropertiesFormat.LoadBalancingRules = &[]network.LoadBalancingRule{lbRule}
 		}
 
-		err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), lbSpec.Name, lb)
+		err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), lbSpec.Name, lb)
 
 		if err != nil {
 			return errors.Wrapf(err, "failed to create load balancer \"%s\"", lbSpec.Name)
@@ -217,4 +172,54 @@ func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnet
 		ip = to.StringSlice(result.AvailableIPAddresses)[0]
 	}
 	return ip, nil
+}
+
+func (s *Service) getFrontendIPConfigs(ctx context.Context, lbSpec azure.LBSpec) ([]network.FrontendIPConfiguration, []network.SubResource, error) {
+	var frontendIPConfigurations []network.FrontendIPConfiguration
+	frontendIDs := make([]network.SubResource, 0)
+	for _, ipConfig := range lbSpec.FrontendIPConfigs {
+		var properties network.FrontendIPConfigurationPropertiesFormat
+		if lbSpec.Type == infrav1.Internal {
+			var privateIP string
+			// We check if there is an existing internal load balancer for back compat.
+			internalLB, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
+			if err == nil {
+				ipConfigs := internalLB.LoadBalancerPropertiesFormat.FrontendIPConfigurations
+				if ipConfigs != nil && len(*ipConfigs) > 0 {
+					privateIP = to.String((*ipConfigs)[0].FrontendIPConfigurationPropertiesFormat.PrivateIPAddress)
+				}
+			} else if azure.ResourceNotFound(err) {
+				s.Scope.V(2).Info("internalLB not found in RG", "internal lb", lbSpec.Name, "resource group", s.Scope.ResourceGroup())
+				privateIP, err = s.getAvailablePrivateIP(ctx, s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, ipConfig.PrivateIPAddress, lbSpec.SubnetCidrs)
+				if err != nil {
+					return frontendIPConfigurations, frontendIDs, err
+				}
+				s.Scope.V(2).Info("setting internal load balancer IP", "private ip", privateIP)
+				ipConfig.PrivateIPAddress = privateIP
+			} else {
+				return frontendIPConfigurations, frontendIDs, errors.Wrap(err, "failed to look for existing internal LB")
+			}
+			properties = network.FrontendIPConfigurationPropertiesFormat{
+				PrivateIPAllocationMethod: network.Static,
+				Subnet: &network.Subnet{
+					ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
+				},
+				PrivateIPAddress: to.StringPtr(privateIP),
+			}
+		} else {
+			properties = network.FrontendIPConfigurationPropertiesFormat{
+				PublicIPAddress: &network.PublicIPAddress{
+					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), ipConfig.PublicIP.Name)),
+				},
+			}
+		}
+		frontendIPConfigurations = append(frontendIPConfigurations, network.FrontendIPConfiguration{
+			FrontendIPConfigurationPropertiesFormat: &properties,
+			Name:                                    to.StringPtr(ipConfig.Name),
+		})
+		frontendIDs = append(frontendIDs, network.SubResource{
+			ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, ipConfig.Name)),
+		})
+	}
+	return frontendIPConfigurations, frontendIDs, nil
 }
