@@ -62,7 +62,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				if nicSpec.LBNATRuleName != "" {
 					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 						{
-							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.LBName, nicSpec.LBBackendAddressPoolName)),
+							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.LBName, nicSpec.LBNATRuleName)),
 						},
 					}
 				}

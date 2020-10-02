@@ -51,9 +51,14 @@ func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
 }
 
-// GenerateOutboundBackendddressPoolName generates a load balancer outbound backend address pool name.
-func GenerateOutboundBackendddressPoolName(lbName string) string {
+// GenerateOutboundBackendAddressPoolName generates a load balancer outbound backend address pool name.
+func GenerateOutboundBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
+}
+
+// GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
+func GenerateFrontendIPConfigName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }
 
 // GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.

@@ -189,7 +189,7 @@ func generatePublicLBName(clusterName string) string {
 
 // generatePublicIPName generates a public IP name, based on the cluster name and a hash.
 func generatePublicIPName(clusterName string) string {
-	return fmt.Sprintf("pip-apiserver-%s", clusterName)
+	return fmt.Sprintf("pip-%s-apiserver", clusterName)
 }
 
 // generateFrontendIPConfigName generates a load balancer frontend IP config name.

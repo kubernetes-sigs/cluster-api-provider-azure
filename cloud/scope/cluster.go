@@ -138,13 +138,14 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Name: s.NodeOutboundLBName(),
 			FrontendIPConfigs: []infrav1.FrontendIP{
 				{
+					Name: azure.GenerateFrontendIPConfigName(s.NodeOutboundLBName()),
 					PublicIP: &infrav1.PublicIPSpec{
 						Name: azure.GenerateNodeOutboundIPName(s.NodeOutboundLBName()),
 					},
 				},
 			},
 			Type:            infrav1.Public,
-			BackendPoolName: azure.GenerateOutboundBackendddressPoolName(s.NodeOutboundLBName()),
+			BackendPoolName: azure.GenerateOutboundBackendAddressPoolName(s.NodeOutboundLBName()),
 			Role:            infrav1.NodeOutboundRole,
 		},
 	}

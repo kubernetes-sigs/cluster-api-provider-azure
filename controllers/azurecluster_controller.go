@@ -201,12 +201,6 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		return reconcile.Result{}, wrappedErr
 	}
 
-	if clusterScope.APIServerLB().ID == "" {
-		clusterScope.Info("Waiting for Load Balancer to exist")
-		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.LoadBalancerProvisioningReason, clusterv1.ConditionSeverityWarning, err.Error())
-		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
-	}
-
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		Host: clusterScope.APIServerHost(),
