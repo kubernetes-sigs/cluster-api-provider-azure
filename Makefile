@@ -40,6 +40,8 @@ TEMPLATES_DIR := $(ROOT_DIR)/templates
 BIN_DIR := $(abspath $(ROOT_DIR)/bin)
 EXP_DIR := exp
 GO_INSTALL = ./scripts/go_install.sh
+E2E_DATA_DIR ?= $(ROOT_DIR)/test/e2e/data
+KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
 
 # set --output-base used for conversion-gen which needs to be different for in GOPATH and outside GOPATH dev
 ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure)
@@ -174,6 +176,18 @@ test-e2e-local: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \
 	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
+
+.PHONY: test-conformance
+test-conformance: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
+	PULL_POLICY=IfNotPresent $(MAKE) docker-build docker-push
+	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
+	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
+	$(GINKGO) -v -trace -stream -progress -v -tags=e2e -focus="$(GINKGO_FOCUS)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
+	    -e2e.artifacts-folder="$(ARTIFACTS)" \
+	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \
+			-kubetest.config-file=$(KUBETEST_CONF_PATH) \
+			-e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
 
 $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
