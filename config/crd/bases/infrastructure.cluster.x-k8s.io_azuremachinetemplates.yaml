@@ -416,6 +416,8 @@ spec:
                         type: array
                       vmSize:
                         type: string
+                      privateIPAddress:
+                        type: string
                     required:
                     - location
                     - osDisk
