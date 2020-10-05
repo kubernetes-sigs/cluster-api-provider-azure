@@ -179,7 +179,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		//Host: azureCluster.Status.Network.APIServerIP.DNSName,
 		//Host: "capz-cluster-e1da2561.dbelocal",
-		Host: "10.126.68.126",
+		Host: "10.126.68.127",
 		Port: clusterScope.APIServerPort(),
 	}
 
