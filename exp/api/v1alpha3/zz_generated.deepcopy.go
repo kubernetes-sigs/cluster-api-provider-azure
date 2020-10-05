@@ -23,6 +23,7 @@ package v1alpha3
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apiv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	cluster_apiapiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
@@ -130,6 +131,13 @@ func (in *AzureMachinePoolStatus) DeepCopyInto(out *AzureMachinePoolStatus) {
 		in, out := &in.FailureMessage, &out.FailureMessage
 		*out = new(string)
 		**out = **in
+	}
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(cluster_apiapiv1alpha3.Conditions, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 

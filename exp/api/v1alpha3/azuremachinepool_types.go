@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -96,7 +97,7 @@ type (
 		// +optional
 		ProvisioningState *infrav1.VMState `json:"provisioningState,omitempty"`
 
-		// ErrorReason will be set in the event that there is a terminal problem
+		// FailureReason will be set in the event that there is a terminal problem
 		// reconciling the MachinePool and will contain a succinct value suitable
 		// for machine interpretation.
 		//
@@ -115,7 +116,7 @@ type (
 		// +optional
 		FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
 
-		// ErrorMessage will be set in the event that there is a terminal problem
+		// FailureMessage will be set in the event that there is a terminal problem
 		// reconciling the MachinePool and will contain a more verbose string suitable
 		// for logging and human consumption.
 		//
@@ -133,6 +134,10 @@ type (
 		// controller's output.
 		// +optional
 		FailureMessage *string `json:"failureMessage,omitempty"`
+
+		// Conditions defines current service state of the AzureMachine.
+		// +optional
+		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 	}
 
 	// +kubebuilder:object:root=true
@@ -164,6 +169,16 @@ type (
 		Items           []AzureMachinePool `json:"items"`
 	}
 )
+
+// GetConditions returns the list of conditions for an AzureCluster API object.
+func (amp *AzureMachinePool) GetConditions() clusterv1.Conditions {
+	return amp.Status.Conditions
+}
+
+// SetConditions will set the given conditions on an AzureCluster object
+func (amp *AzureMachinePool) SetConditions(conditions clusterv1.Conditions) {
+	amp.Status.Conditions = conditions
+}
 
 func init() {
 	SchemeBuilder.Register(&AzureMachinePool{}, &AzureMachinePoolList{})
