@@ -42,6 +42,7 @@ This provider's versions are able to install and manage the following versions o
 | Kubernetes 1.16 | ✓ | ✓ |
 | Kubernetes 1.17 |  | ✓ |
 | Kubernetes 1.18 |  | ✓ |
+| Kubernetes 1.19 |  | ✓ |
 
 Each version of Cluster API for Azure will attempt to support at least two Kubernetes versions e.g., Cluster API for Azure `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
 
