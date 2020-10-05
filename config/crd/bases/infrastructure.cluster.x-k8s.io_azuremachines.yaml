@@ -451,6 +451,8 @@ spec:
                 type: object
               sshPublicKey:
                 type: string
+              privateIPAddress:
+                type: string
               userAssignedIdentities:
                 description: UserAssignedIdentities is a list of standalone Azure
                   identities provided by the user The lifecycle of a user-assigned
