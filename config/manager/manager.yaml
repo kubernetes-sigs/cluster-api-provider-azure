@@ -16,11 +16,11 @@ spec:
         control-plane: capz-controller-manager
     spec:
       hostAliases:
-      - ip: "10.126.70.37"
+      - ip: ${DBE_IP}
         hostnames:
-        - "dbe-1dkphq2.microsoftdatabox.com"
-        - "login.dbe-1dkphq2.microsoftdatabox.com"
-        - "management.dbe-1dkphq2.microsoftdatabox.com"
+        - ${DBE_ENDPOINT}
+        - ${DBE_LOGIN_ENDPOINT}
+        - ${DBE_MANAGEMENT_ENDPOINT}
       containers:
         - args:
             - --enable-leader-election

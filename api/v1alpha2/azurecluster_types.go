@@ -35,6 +35,8 @@ type AzureClusterSpec struct {
 
 	Location string `json:"location"`
 
+	ControlPlaneEndpoint string `json:"controlplaneendpoint"`
+
 	// AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the
 	// ones added by default.
 	// +optional
