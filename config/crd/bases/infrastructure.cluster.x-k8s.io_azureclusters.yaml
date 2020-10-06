@@ -168,8 +168,6 @@ spec:
                 type: object
               resourceGroup:
                 type: string
-              controlPlaneEndpointIP:
-                type: string
             required:
             - location
             - resourceGroup
@@ -517,6 +515,8 @@ spec:
               resourceGroup:
                 type: string
               subscriptionID:
+                type: string
+              controlPlaneEndpointIP:
                 type: string
             required:
             - location
