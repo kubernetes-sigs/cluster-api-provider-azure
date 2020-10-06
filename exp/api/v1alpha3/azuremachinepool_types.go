@@ -135,7 +135,7 @@ type (
 		// +optional
 		FailureMessage *string `json:"failureMessage,omitempty"`
 
-		// Conditions defines current service state of the AzureMachine.
+		// Conditions defines current service state of the AzureMachinePool.
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 	}
@@ -170,12 +170,12 @@ type (
 	}
 )
 
-// GetConditions returns the list of conditions for an AzureCluster API object.
+// GetConditions returns the list of conditions for an AzureMachinePool API object.
 func (amp *AzureMachinePool) GetConditions() clusterv1.Conditions {
 	return amp.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureCluster object
+// SetConditions will set the given conditions on an AzureMachinePool object
 func (amp *AzureMachinePool) SetConditions(conditions clusterv1.Conditions) {
 	amp.Status.Conditions = conditions
 }

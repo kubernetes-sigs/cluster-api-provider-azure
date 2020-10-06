@@ -297,7 +297,7 @@ spec:
             description: AzureMachinePoolStatus defines the observed state of AzureMachinePool
             properties:
               conditions:
-                description: Conditions defines current service state of the AzureMachine.
+                description: Conditions defines current service state of the AzureMachinePool.
                 items:
                   description: Condition defines an observation of a Cluster API resource
                     operational state.
