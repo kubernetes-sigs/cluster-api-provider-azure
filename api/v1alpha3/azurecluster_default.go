@@ -18,6 +18,8 @@ package v1alpha3
 
 import (
 	"fmt"
+
+	"k8s.io/klog/klogr"
 )
 
 const (
@@ -58,8 +60,12 @@ func (c *AzureCluster) setVnetDefaults() {
 }
 
 func (c *AzureCluster) setSubnetDefaults() {
+	log := klogr.New()
+	log.Info("In set Subnet Defaults")
 	cpSubnet := c.Spec.NetworkSpec.GetControlPlaneSubnet()
+	log.Info(cpSubnet.Name)
 	if cpSubnet == nil {
+		log.Info("inside cpSubnet==nil")
 		cpSubnet = &SubnetSpec{Role: SubnetControlPlane}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
 	}
@@ -71,7 +77,10 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}
 
 	if cpSubnet.Name == "" {
+		log.Info("inside cp.Subnet.Name == null ")
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
+		log.Info("generated name is")
+		log.Info(cp.Subnet.Name)
 	}
 	if cpSubnet.CidrBlock == "" {
 		cpSubnet.CidrBlock = DefaultControlPlaneSubnetCIDR
