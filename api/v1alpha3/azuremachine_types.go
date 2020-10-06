@@ -99,6 +99,7 @@ type AzureMachineSpec struct {
 	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`
 
 	PrivateIPAddress string `json:"privateIPAddress"`
+	ImageID          string `json:"imageID"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs

@@ -29,7 +29,7 @@ spec:
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
-  controlPlaneEndpointIP: ${CONTROL_PLANE_ENDPOINT_IP}
+  controlPlaneEndpointIP: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -103,6 +103,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
       privateIPAddress: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
+      imageID: ${AZURE_IMAGE_ID}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
@@ -145,6 +146,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
       privateIPAddress: ${AZURE_NODE_MACHINE_PRIVATE_IP_ADDRESS}
+      imageID: ${AZURE_IMAGE_ID}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate

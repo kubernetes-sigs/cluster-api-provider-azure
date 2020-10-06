@@ -162,7 +162,7 @@ func getDefaultImageSKUID(k8sVersion string) (string, error) {
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
+func GetDefaultUbuntuImage(imageID string) (*infrav1.Image, error) {
 	/*skuID, err := getDefaultImageSKUID(k8sVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get default image")
@@ -178,7 +178,7 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	}*/
 
 	defaultImage := &infrav1.Image{
-		ID: to.StringPtr("/subscriptions/47753c87-4156-4d03-9414-3652d2f56a68/resourceGroups/RG1/providers/Microsoft.Compute/images/aksLinux1")}
+		ID: to.StringPtr(imageID)}
 	return defaultImage, nil
 }
 

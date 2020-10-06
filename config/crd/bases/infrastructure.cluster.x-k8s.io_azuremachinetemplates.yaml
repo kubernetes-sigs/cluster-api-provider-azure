@@ -418,6 +418,8 @@ spec:
                         type: string
                       privateIPAddress:
                         type: string
+                      imageID:
+                        type: string
                     required:
                     - location
                     - osDisk
