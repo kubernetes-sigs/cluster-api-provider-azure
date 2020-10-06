@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -176,7 +177,9 @@ func GetDefaultUbuntuImage(imageID string) (*infrav1.Image, error) {
 			Version:   LatestVersion,
 		},
 	}*/
-
+	log := klogr.New()
+	log.Info("Printing image ID in getDefaultUbuntuImage")
+	log.Info(imageID)
 	defaultImage := &infrav1.Image{
 		ID: to.StringPtr(imageID)}
 	return defaultImage, nil

@@ -433,7 +433,9 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	}
 
 	m.Info("No image specified for machine, using default", "machine", m.AzureMachine.GetName())
-	imageID := m.AzureMachine.Spec.ImageID
+	imageID := m.Machine.Spec.ImageID
+	log.Info("Printing image ID")
+	log.Info(imageID)
 	//return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 	return azure.GetDefaultUbuntuImage(imageID)
 }

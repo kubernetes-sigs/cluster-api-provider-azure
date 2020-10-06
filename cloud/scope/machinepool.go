@@ -235,6 +235,7 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 		//log.Info(m.AzureMachine.Spec.Image)
 		return m.AzureMachinePool.Spec.Template.Image, nil
 	}
+	log.Info("Getting imageID in machine pool scope")
 	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 }
