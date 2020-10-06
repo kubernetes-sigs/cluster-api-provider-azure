@@ -63,7 +63,6 @@ func (c *AzureCluster) setSubnetDefaults() {
 	log := klogr.New()
 	log.Info("In set Subnet Defaults")
 	cpSubnet := c.Spec.NetworkSpec.GetControlPlaneSubnet()
-	log.Info(cpSubnet.Name)
 	if cpSubnet == nil {
 		log.Info("inside cpSubnet==nil")
 		cpSubnet = &SubnetSpec{Role: SubnetControlPlane}
@@ -72,6 +71,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 
 	nodeSubnet := c.Spec.NetworkSpec.GetNodeSubnet()
 	if nodeSubnet == nil {
+		log.Info("inside nodeSubnet==nil")
 		nodeSubnet = &SubnetSpec{Role: SubnetNode}
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
 	}
@@ -94,7 +94,9 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}*/
 
 	if nodeSubnet.Name == "" {
+		log.Info("inside nodeSubnet.Name == null ")
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
+		log.Info(nodeSubnet.Name)
 	}
 	if nodeSubnet.CidrBlock == "" {
 		nodeSubnet.CidrBlock = DefaultNodeSubnetCIDR
