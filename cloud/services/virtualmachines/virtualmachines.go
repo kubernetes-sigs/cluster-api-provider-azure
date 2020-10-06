@@ -348,6 +348,10 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 		}
 	}
 
+	if vmSpec.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
+		storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(vmSpec.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
+	}
+
 	dataDisks := []compute.DataDisk{}
 	for _, disk := range vmSpec.DataDisks {
 		dataDisks = append(dataDisks, compute.DataDisk{

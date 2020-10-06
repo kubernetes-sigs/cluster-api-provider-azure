@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	"encoding/base64"
 	"fmt"
+
 	"github.com/google/uuid"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
@@ -139,6 +140,14 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 			fieldPath.Child("managedDisks").Child("storageAccountType"),
 			osDisk.ManagedDisk.StorageAccountType,
 			"storageAccountType must be Standard_LRS when diffDiskSettings.option is 'Local'",
+		))
+	}
+
+	if osDisk.DiffDiskSettings != nil && osDisk.DiffDiskSettings.Option == string(compute.Local) && osDisk.ManagedDisk.DiskEncryptionSet != nil {
+		allErrs = append(allErrs, field.Invalid(
+			fieldPath.Child("managedDisks").Child("diskEncryptionSet"),
+			osDisk.ManagedDisk.DiskEncryptionSet.ID,
+			"diskEncryptionSet is not supported when diffDiskSettings.option is 'Local'",
 		))
 	}
 

@@ -259,6 +259,15 @@ spec:
                         description: ManagedDisk defines the managed disk options
                           for a VM.
                         properties:
+                          diskEncryptionSet:
+                            description: DiskEncryptionSetParameters defines disk
+                              encryption options.
+                            properties:
+                              id:
+                                description: ID defines resourceID for diskEncryptionSet
+                                  resource. It must be in the same subscription
+                                type: string
+                            type: object
                           storageAccountType:
                             type: string
                         required:

@@ -266,6 +266,10 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 		}
 	}
 
+	if vmssSpec.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
+		storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(vmssSpec.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
+	}
+
 	dataDisks := []compute.VirtualMachineScaleSetDataDisk{}
 	for _, disk := range vmssSpec.DataDisks {
 		dataDisks = append(dataDisks, compute.VirtualMachineScaleSetDataDisk{

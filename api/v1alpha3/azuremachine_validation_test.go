@@ -21,8 +21,9 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -110,6 +111,24 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				},
 				ManagedDisk: ManagedDisk{
 					StorageAccountType: "Standard_LRS",
+				},
+			},
+		},
+		{
+			name:    "byoc encryption with ephemeral os disk spec",
+			wantErr: true,
+			osDisk: OSDisk{
+				DiskSizeGB:  30,
+				CachingType: "None",
+				OSType:      "blah",
+				DiffDiskSettings: &DiffDiskSettings{
+					Option: string(compute.Local),
+				},
+				ManagedDisk: ManagedDisk{
+					StorageAccountType: "Standard_LRS",
+					DiskEncryptionSet: &DiskEncryptionSetParameters{
+						ID: "disk-encryption-set",
+					},
 				},
 			},
 		},
