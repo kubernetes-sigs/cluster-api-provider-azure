@@ -28,8 +28,9 @@ spec:
     vnet:
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
     subnets:
-      - role: ${AZURE_CONTROL_PLANE_SUBNET_ROLE}
-          name: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
+      - 
+        role: ${AZURE_CONTROL_PLANE_SUBNET_ROLE}
+        name: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   controlPlaneEndpointIP: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
