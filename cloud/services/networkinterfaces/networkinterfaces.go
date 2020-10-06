@@ -43,7 +43,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
 			//nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
-			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, "subnet1"))}
+			nicConfig.Subnet = &network.Subnet{ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName))}
 
 			//commenting out to test api server IP, uncomment this later on. LoadBalancer should return IP address
 			nicConfig.PrivateIPAllocationMethod = network.Dynamic

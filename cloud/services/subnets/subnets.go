@@ -50,7 +50,7 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 func (s *Service) Reconcile(ctx context.Context) error {
 	//log := klogr.New()
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {
-		subnetSpec.Name = "subnet1"
+		//subnetSpec.Name = "subnet1"
 		existingSubnet, err := s.getExisting(ctx, s.Scope.Vnet().ResourceGroup, subnetSpec)
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):

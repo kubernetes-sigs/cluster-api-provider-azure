@@ -160,7 +160,6 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		internalLBName := azure.GenerateInternalLBName(m.ClusterName())
 		spec.InternalLBName = internalLBName
 		spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
-		//spec.StaticIPAddress = "10.126.68.126"
 		spec.StaticIPAddress = m.AzureMachine.Spec.PrivateIPAddress
 	} else if m.Role() == infrav1.Node {
 		publicLBName := m.ClusterName()
@@ -228,10 +227,12 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 
 // Subnet returns the machine's subnet based on its role
 func (m *MachineScope) Subnet() *infrav1.SubnetSpec {
-	if m.IsControlPlane() {
+	/*if m.IsControlPlane() {
 		return m.ControlPlaneSubnet()
 	}
-	return m.NodeSubnet()
+	return m.NodeSubnet()*/
+
+	return m.ControlPlaneSubnet()
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
