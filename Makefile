@@ -155,10 +155,6 @@ test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with cod
 	go tool cover -func=coverage.out -o coverage.txt
 	go tool cover -html=coverage.out -o coverage.html
 
-.PHONY: test-integration
-test-integration: ## Run integration tests
-	go test -v -tags=integration ./test/integration/...
-
 .PHONY: test-e2e
 test-e2e: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build docker-push
