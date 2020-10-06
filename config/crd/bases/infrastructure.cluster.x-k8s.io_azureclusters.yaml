@@ -168,7 +168,7 @@ spec:
                 type: object
               resourceGroup:
                 type: string
-              controlplaneendpointip:
+              controlPlaneEndpointIP:
                 type: string
             required:
             - location
