@@ -393,7 +393,7 @@ func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
 	log.Info(strconv.Itoa(len(n.Subnets)))
 	for _, sn := range n.Subnets {
 		log.Info(sn.Name)
-		log.Info(str(sn.Role))
+		log.Info(string(sn.Role))
 		if sn.Role == SubnetControlPlane {
 			return sn
 		}
