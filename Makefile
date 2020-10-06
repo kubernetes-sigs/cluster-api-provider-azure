@@ -449,13 +449,13 @@ create-workload-cluster: $(ENVSUBST)
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
 	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
 
-	# Deploy calico
-	@if [[ "${CLUSTER_TEMPLATE}" == *ipv6* ]]; then \
-		kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico-ipv6.yaml; \
-	else \
-		kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml; \
+	@if [[ "${CLUSTER_TEMPLATE}" == *prow* ]]; then \
+		if [[ "${CLUSTER_TEMPLATE}" == *ipv6* ]]; then \
+			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico-ipv6.yaml; \
+		else \
+			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml; \
+		fi \
 	fi
-
 
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
@@ -479,7 +479,7 @@ create-cluster: ## Create a workload development Kubernetes cluster on Azure in 
 	EXP_AKS=true \
 	EXP_MACHINE_POOL=true \
 	$(MAKE) create-management-cluster \
-	$(MAKE) create-workload-cluster
+	create-workload-cluster
 
 .PHONY: delete-workload-cluster
 delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
