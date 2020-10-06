@@ -80,7 +80,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 		log.Info("inside cp.Subnet.Name == null ")
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
 		log.Info("generated name is")
-		log.Info(cp.Subnet.Name)
+		log.Info(cpSubnet.Name)
 	}
 	if cpSubnet.CidrBlock == "" {
 		cpSubnet.CidrBlock = DefaultControlPlaneSubnetCIDR
