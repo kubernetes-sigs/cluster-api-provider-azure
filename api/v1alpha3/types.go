@@ -17,7 +17,10 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"strconv"
+
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/klogr"
 )
 
 const (
@@ -385,6 +388,9 @@ type SubnetSpec struct {
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.
 func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
+	log := klogr.New()
+	log.Info("printing len subnets")
+	log.Info(strconv.Itoa(len(n.Subnets)))
 	for _, sn := range n.Subnets {
 		if sn.Role == SubnetControlPlane {
 			return sn
