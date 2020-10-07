@@ -88,9 +88,6 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
 	}
-	if cpSubnet.RouteTable.Name == "" {
-		cpSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
-	}
 
 	if nodeSubnet.Name == "" {
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
@@ -102,7 +99,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
 	}
 	if nodeSubnet.RouteTable.Name == "" {
-		nodeSubnet.RouteTable.Name = generateRouteTableName(c.ObjectMeta.Name)
+		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 	}
 }
 
@@ -131,7 +128,7 @@ func generateNodeSecurityGroupName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-nsg")
 }
 
-// generateRouteTableName generates a route table name, based on the cluster name.
-func generateRouteTableName(clusterName string) string {
+// generateNodeRouteTableName generates a node route table name, based on the cluster name.
+func generateNodeRouteTableName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
 }

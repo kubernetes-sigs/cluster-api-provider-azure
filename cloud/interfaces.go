@@ -67,6 +67,7 @@ type ClusterDescriber interface {
 	IsVnetManaged() bool
 	NodeSubnet() *infrav1.SubnetSpec
 	ControlPlaneSubnet() *infrav1.SubnetSpec
-	RouteTable() *infrav1.RouteTable
 	IsIPv6Enabled() bool
+	NodeRouteTable() *infrav1.RouteTable
+	ControlPlaneRouteTable() *infrav1.RouteTable
 }

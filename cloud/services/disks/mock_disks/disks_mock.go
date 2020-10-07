@@ -356,20 +356,6 @@ func (mr *MockDiskScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockDiskScope)(nil).ControlPlaneSubnet))
 }
 
-// RouteTable mocks base method.
-func (m *MockDiskScope) RouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// RouteTable indicates an expected call of RouteTable.
-func (mr *MockDiskScopeMockRecorder) RouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockDiskScope)(nil).RouteTable))
-}
-
 // IsIPv6Enabled mocks base method.
 func (m *MockDiskScope) IsIPv6Enabled() bool {
 	m.ctrl.T.Helper()
@@ -382,6 +368,34 @@ func (m *MockDiskScope) IsIPv6Enabled() bool {
 func (mr *MockDiskScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockDiskScope)(nil).IsIPv6Enabled))
+}
+
+// NodeRouteTable mocks base method.
+func (m *MockDiskScope) NodeRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// NodeRouteTable indicates an expected call of NodeRouteTable.
+func (mr *MockDiskScopeMockRecorder) NodeRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockDiskScope)(nil).NodeRouteTable))
+}
+
+// ControlPlaneRouteTable mocks base method.
+func (m *MockDiskScope) ControlPlaneRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
+func (mr *MockDiskScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockDiskScope)(nil).ControlPlaneRouteTable))
 }
 
 // DiskSpecs mocks base method.
