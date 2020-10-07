@@ -133,7 +133,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	}
 
 	// Create the scope.
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       r.Client,
 		Logger:       log,
 		Cluster:      cluster,

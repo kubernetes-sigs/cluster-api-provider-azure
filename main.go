@@ -32,7 +32,9 @@ import (
 	otelProm "go.opentelemetry.io/otel/exporters/metric/prometheus"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	"go.opentelemetry.io/otel/sdk/trace"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog"
@@ -46,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -73,6 +76,18 @@ func init() {
 	_ = clusterv1.AddToScheme(scheme)
 	_ = clusterv1exp.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
+
+	// Add aadpodidentity v1 to the scheme.
+	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.CRDGroup, Version: aadpodv1.CRDVersion}
+	scheme.AddKnownTypes(aadPodIdentityGroupVersion,
+		&aadpodv1.AzureIdentity{},
+		&aadpodv1.AzureIdentityList{},
+		&aadpodv1.AzureIdentityBinding{},
+		&aadpodv1.AzureIdentityBindingList{},
+		&aadpodv1.AzurePodIdentityException{},
+		&aadpodv1.AzurePodIdentityExceptionList{},
+	)
+	metav1.AddToGroupVersion(scheme, aadPodIdentityGroupVersion)
 }
 
 var (
@@ -276,6 +291,15 @@ func main() {
 			ReconcileTimeout: reconcileTimeout,
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
+			os.Exit(1)
+		}
+		if err = (&controllers.AzureIdentityReconciler{
+			Client:           mgr.GetClient(),
+			Log:              ctrl.Log.WithName("controllers").WithName("AzureIdentity"),
+			Recorder:         mgr.GetEventRecorderFor("azureidentity-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureIdentity")
 			os.Exit(1)
 		}
 		// just use CAPI MachinePool feature flag rather than create a new one

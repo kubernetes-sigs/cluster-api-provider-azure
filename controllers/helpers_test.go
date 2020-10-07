@@ -199,7 +199,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 	cluster.Default()
 	azureCluster.Default()
 
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
 		},

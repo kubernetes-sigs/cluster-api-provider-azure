@@ -166,7 +166,7 @@ func TestConditions(t *testing.T) {
 				Log:    klogr.New(),
 			}
 
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
 				},

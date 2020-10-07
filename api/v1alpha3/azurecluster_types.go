@@ -25,6 +25,9 @@ const (
 	// ClusterFinalizer allows ReconcileAzureCluster to clean up Azure resources associated with AzureCluster before
 	// removing it from the apiserver.
 	ClusterFinalizer = "azurecluster.infrastructure.cluster.x-k8s.io"
+
+	// ClusterLabelNamespace indicates the namespace of the cluster
+	ClusterLabelNamespace = "azurecluster.infrastructure.cluster.x-k8s.io/cluster-namespace"
 )
 
 // AzureClusterSpec defines the desired state of AzureCluster
@@ -48,6 +51,10 @@ type AzureClusterSpec struct {
 	// ones added by default.
 	// +optional
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
+
+	// IdentityName is a reference to a AzureIdentity to be used when reconciling this cluster
+	// +optional
+	IdentityName *string `json:"identityName,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster

@@ -52,7 +52,7 @@ func TestNewService(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
 	client := fake.NewFakeClientWithScheme(scheme.Scheme, cluster)
-	s, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	s, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
 		},

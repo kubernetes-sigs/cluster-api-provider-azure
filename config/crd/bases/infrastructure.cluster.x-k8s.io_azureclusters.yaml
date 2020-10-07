@@ -459,6 +459,10 @@ spec:
                 - host
                 - port
                 type: object
+              identityName:
+                description: IdentityName is a reference to a AzureIdentity to be
+                  used when reconciling this cluster
+                type: string
               location:
                 type: string
               networkSpec:
