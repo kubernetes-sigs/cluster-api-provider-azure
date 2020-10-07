@@ -50,14 +50,14 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 		AzureCluster: cluster,
 	}
 
-	clusterMock := mocks.NewMockClusterDescriber(mockCtrl)
+	clusterMock := mocks.NewMockClusterScoper(mockCtrl)
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Authorizer().AnyTimes()
 
 	mps := &scope.MachinePoolScope{
-		ClusterDescriber: clusterMock,
-		MachinePool:      newMachinePool("foo", "poolName"),
+		ClusterScoper: clusterMock,
+		MachinePool:   newMachinePool("foo", "poolName"),
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "poolName",

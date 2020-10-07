@@ -248,10 +248,10 @@ func TestDiskSpecs(t *testing.T) {
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-				Client:           client,
-				ClusterDescriber: clusterScope,
-				Machine:          machine,
-				AzureMachine:     tc.azureMachine,
+				Client:       client,
+				ClusterScope: clusterScope,
+				Machine:      machine,
+				AzureMachine: tc.azureMachine,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

@@ -24,8 +24,9 @@ import (
 
 // LBScope defines the scope interface for a load balancer service.
 type LBScope interface {
-	azure.ClusterDescriber
 	logr.Logger
+	azure.ClusterDescriber
+	azure.NetworkDescriber
 	LBSpecs() []azure.LBSpec
 }
 

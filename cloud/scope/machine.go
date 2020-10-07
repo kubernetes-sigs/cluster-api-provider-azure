@@ -38,11 +38,11 @@ import (
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	Client           client.Client
-	Logger           logr.Logger
-	ClusterDescriber azure.ClusterDescriber
-	Machine          *clusterv1.Machine
-	AzureMachine     *infrav1.AzureMachine
+	Client       client.Client
+	Logger       logr.Logger
+	ClusterScope azure.ClusterScoper
+	Machine      *clusterv1.Machine
+	AzureMachine *infrav1.AzureMachine
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -66,12 +66,12 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &MachineScope{
-		client:           params.Client,
-		Machine:          params.Machine,
-		AzureMachine:     params.AzureMachine,
-		Logger:           params.Logger,
-		patchHelper:      helper,
-		ClusterDescriber: params.ClusterDescriber,
+		client:        params.Client,
+		Machine:       params.Machine,
+		AzureMachine:  params.AzureMachine,
+		Logger:        params.Logger,
+		patchHelper:   helper,
+		ClusterScoper: params.ClusterScope,
 	}, nil
 }
 
@@ -81,7 +81,7 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	azure.ClusterDescriber
+	azure.ClusterScoper
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 }
@@ -400,7 +400,7 @@ func (m *MachineScope) Close(ctx context.Context) error {
 func (m *MachineScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
 	// Start with the cluster-wide tags...
-	tags.Merge(m.ClusterDescriber.AdditionalTags())
+	tags.Merge(m.ClusterScoper.AdditionalTags())
 	// ... and merge in the Machine's
 	tags.Merge(m.AzureMachine.Spec.AdditionalTags)
 	// Set the cloud provider tag
