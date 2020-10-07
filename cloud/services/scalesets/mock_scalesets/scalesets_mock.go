@@ -28,6 +28,7 @@ import (
 	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	v1alpha30 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
 // MockScaleSetScope is a mock of ScaleSetScope interface.
@@ -367,6 +368,46 @@ func (m *MockScaleSetScope) SetProviderID(arg0 string) {
 func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderID", reflect.TypeOf((*MockScaleSetScope)(nil).SetProviderID), arg0)
+}
+
+// UpdateInstanceStatuses mocks base method.
+func (m *MockScaleSetScope) UpdateInstanceStatuses(arg0 context.Context, arg1 []v1alpha30.VMSSVM) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateInstanceStatuses", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateInstanceStatuses indicates an expected call of UpdateInstanceStatuses.
+func (mr *MockScaleSetScopeMockRecorder) UpdateInstanceStatuses(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstanceStatuses", reflect.TypeOf((*MockScaleSetScope)(nil).UpdateInstanceStatuses), arg0, arg1)
+}
+
+// NeedsK8sVersionUpdate mocks base method.
+func (m *MockScaleSetScope) NeedsK8sVersionUpdate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NeedsK8sVersionUpdate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// NeedsK8sVersionUpdate indicates an expected call of NeedsK8sVersionUpdate.
+func (mr *MockScaleSetScopeMockRecorder) NeedsK8sVersionUpdate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeedsK8sVersionUpdate", reflect.TypeOf((*MockScaleSetScope)(nil).NeedsK8sVersionUpdate))
+}
+
+// SaveK8sVersion mocks base method.
+func (m *MockScaleSetScope) SaveK8sVersion() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SaveK8sVersion")
+}
+
+// SaveK8sVersion indicates an expected call of SaveK8sVersion.
+func (mr *MockScaleSetScopeMockRecorder) SaveK8sVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveK8sVersion", reflect.TypeOf((*MockScaleSetScope)(nil).SaveK8sVersion))
 }
 
 // SetProvisioningState mocks base method.

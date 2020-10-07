@@ -51,7 +51,9 @@ providers:
       - sourcePath: "${PWD}/templates/test/cluster-template-prow-ipv6.yaml"
         targetName: "cluster-template-ipv6.yaml"
       - sourcePath: "../data/infrastructure-azure/cluster-template-mhc.yaml"
-        targetName: "cluster-template-mhc.yaml"        
+        targetName: "cluster-template-mhc.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool.yaml"
+        targetName: "cluster-template-machine-pool.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.8}"
@@ -77,3 +79,4 @@ intervals:
   default/wait-deployment: ["5m", "10s"]
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["3m", "10s"]
+  default/wait-machine-pool-nodes: ["20m", "10s"]

@@ -19,18 +19,21 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	utilkubeconfig "sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -57,6 +60,12 @@ type (
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
 		azure.ClusterScoper
+	}
+
+	// NodeStatus represents the status of a Kubernetes node
+	NodeStatus struct {
+		Ready   bool
+		Version string
 	}
 )
 
@@ -123,7 +132,7 @@ func (m *MachinePoolScope) ProviderID() string {
 	return parsed.ID()
 }
 
-// SetProviderID sets the AzureMachine providerID in spec.
+// SetProviderID sets the AzureMachinePool providerID in spec.
 func (m *MachinePoolScope) SetProviderID(v string) {
 	m.AzureMachinePool.Spec.ProviderID = v
 }
@@ -136,9 +145,72 @@ func (m *MachinePoolScope) ProvisioningState() infrav1.VMState {
 	return ""
 }
 
+// NeedsK8sVersionUpdate compares the MachinePool spec and the AzureMachinePool status to determine if the
+// VMSS model needs to be updated
+func (m *MachinePoolScope) NeedsK8sVersionUpdate() bool {
+	return m.AzureMachinePool.Status.Version != *m.MachinePool.Spec.Template.Spec.Version
+}
+
+// UpdateInstanceStatuses ties the Azure VMSS instance data and the Node status data together to build and update
+// the AzureMachinePool. This calculates the number of ready replicas, the current version the kubelet
+// is running on the node, the provider IDs for the instances and the providerIDList for the AzureMachinePool spec.
+func (m *MachinePoolScope) UpdateInstanceStatuses(ctx context.Context, instances []infrav1exp.VMSSVM) error {
+	providerIDs := make([]string, len(instances))
+	for i, instance := range instances {
+		providerIDs[i] = fmt.Sprintf("azure://%s", instance.ID)
+	}
+
+	nodeStatusByProviderID, err := m.getNodeStatusByProviderID(ctx, providerIDs)
+	if err != nil {
+		return errors.Wrap(err, "failed to get node status by provider id")
+	}
+
+	var readyReplicas int32
+	instanceStatuses := make([]*infrav1exp.AzureMachinePoolInstanceStatus, len(instances))
+	for i, instance := range instances {
+		instanceStatuses[i] = &infrav1exp.AzureMachinePoolInstanceStatus{
+			ProviderID:        fmt.Sprintf("azure://%s", instance.ID),
+			InstanceID:        instance.InstanceID,
+			ProvisioningState: &instance.State,
+		}
+
+		instanceStatus := instanceStatuses[i]
+		if nodeStatus, ok := nodeStatusByProviderID[instanceStatus.ProviderID]; ok {
+			instanceStatus.Version = nodeStatus.Version
+			if m.MachinePool.Spec.Template.Spec.Version != nil {
+				instanceStatus.LatestModelApplied = instanceStatus.Version == *m.MachinePool.Spec.Template.Spec.Version
+			}
+
+			if nodeStatus.Ready {
+				readyReplicas++
+			}
+		}
+	}
+
+	m.AzureMachinePool.Status.Replicas = readyReplicas
+	m.AzureMachinePool.Spec.ProviderIDList = providerIDs
+	m.AzureMachinePool.Status.Instances = instanceStatuses
+	return nil
+}
+
+// SaveK8sVersion stores the MachinePool spec K8s version to the AzureMachinePool status
+func (m *MachinePoolScope) SaveK8sVersion() {
+	m.AzureMachinePool.Status.Version = *m.MachinePool.Spec.Template.Spec.Version
+}
+
 // SetProvisioningState sets the AzureMachinePool provisioning state.
 func (m *MachinePoolScope) SetProvisioningState(v infrav1.VMState) {
-	m.AzureMachinePool.Status.ProvisioningState = &v
+	switch {
+	case v == infrav1.VMStateSucceeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
+		// vmss is provisioned with enough ready replicas
+		m.AzureMachinePool.Status.ProvisioningState = &v
+	case v == infrav1.VMStateSucceeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
+		// not enough ready or too many ready replicas we must still be scaling up or down
+		updatingState := infrav1.VMStateUpdating
+		m.AzureMachinePool.Status.ProvisioningState = &updatingState
+	default:
+		m.AzureMachinePool.Status.ProvisioningState = &v
+	}
 }
 
 // SetReady sets the AzureMachinePool Ready Status to true.
@@ -235,4 +307,68 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	}
 	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+}
+
+func (m *MachinePoolScope) getNodeStatusByProviderID(ctx context.Context, providerIDList []string) (map[string]*NodeStatus, error) {
+	nodeStatusMap := map[string]*NodeStatus{}
+	for _, id := range providerIDList {
+		nodeStatusMap[id] = &NodeStatus{}
+	}
+
+	workloadClient, err := m.getWorkloadClient(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create the workload cluster client")
+	}
+
+	nodeList := corev1.NodeList{}
+	for {
+		if err := workloadClient.List(ctx, &nodeList, client.Continue(nodeList.Continue)); err != nil {
+			return nil, errors.Wrapf(err, "failed to List nodes")
+		}
+
+		for _, node := range nodeList.Items {
+			if status, ok := nodeStatusMap[node.Spec.ProviderID]; ok {
+				status.Ready = nodeIsReady(node)
+				status.Version = node.Status.NodeInfo.KubeletVersion
+			}
+		}
+
+		if nodeList.Continue == "" {
+			break
+		}
+	}
+
+	return nodeStatusMap, nil
+}
+
+func (m *MachinePoolScope) getWorkloadClient(ctx context.Context) (client.Client, error) {
+	obj := client.ObjectKey{
+		Namespace: m.MachinePool.Namespace,
+		Name:      m.ClusterName(),
+	}
+	dataBytes, err := utilkubeconfig.FromSecret(ctx, m.client, obj)
+	if err != nil {
+		return nil, errors.Wrapf(err, "\"%s-kubeconfig\" not found in namespace %q", obj.Name, obj.Namespace)
+	}
+
+	config, err := clientcmd.Load(dataBytes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load \"%s-kubeconfig\" in namespace %q", obj.Name, obj.Namespace)
+	}
+
+	restConfig, err := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed transform config \"%s-kubeconfig\" in namespace %q", obj.Name, obj.Namespace)
+	}
+
+	return client.New(restConfig, client.Options{})
+}
+
+func nodeIsReady(node corev1.Node) bool {
+	for _, n := range node.Status.Conditions {
+		if n.Type == corev1.NodeReady {
+			return n.Status == corev1.ConditionTrue
+		}
+	}
+	return false
 }

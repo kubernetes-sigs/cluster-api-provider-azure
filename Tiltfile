@@ -218,9 +218,11 @@ def flavors():
 
     ssh_pub_key = "AZURE_SSH_PUBLIC_KEY_B64"
     ssh_pub_key_path = "~/.ssh/id_rsa.pub"
-    if not substitutions.get(ssh_pub_key):
+    if substitutions.get(ssh_pub_key):
+        os.environ.update({ssh_pub_key: substitutions.get(ssh_pub_key)})
+    else:
         print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))
-        substitutions[ssh_pub_key] = base64_encode_file(ssh_pub_key_path)
+        os.environ.update({ssh_pub_key: base64_encode_file(ssh_pub_key_path)})
 
     for flavor in cfg.get("worker-flavors", []):
         if flavor not in worker_templates:

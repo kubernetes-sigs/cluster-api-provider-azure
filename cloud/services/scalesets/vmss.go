@@ -193,16 +193,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
-	existingVMSS, err := s.getExisting(ctx, vmssSpec.Name)
+	// get the VMSS to check if it exists
+	_, err = s.getExisting(ctx, vmssSpec.Name)
 	switch {
 	case err != nil && !azure.ResourceNotFound(err):
 		return errors.Wrapf(err, "failed to get VMSS %s", vmssSpec.Name)
 	case err == nil:
 		// VMSS already exists
-		// update the status.
-		s.Scope.SetProviderID(fmt.Sprintf("azure:///%s", existingVMSS.ID))
-		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
-		s.Scope.SetProvisioningState(existingVMSS.State)
 		// update it
 		// we do this to avoid overwriting fields in networkProfile modified by cloud-provider
 		update, err := getVMSSUpdateFromVMSS(vmss)
@@ -210,10 +207,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to generate scale set update parameters for %s", vmssSpec.Name)
 		}
 		update.VirtualMachineProfile.NetworkProfile = nil
-		return s.Client.Update(ctx, s.Scope.ResourceGroup(), vmssSpec.Name, update)
+		if err := s.Client.Update(ctx, s.Scope.ResourceGroup(), vmssSpec.Name, update); err != nil {
+			return errors.Wrapf(err, "cannot update VMSS")
+		}
 	default:
 		s.Scope.V(2).Info("creating VMSS", "scale set", vmssSpec.Name)
-
 		err = s.Client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -223,7 +221,41 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "cannot create VMSS")
 		}
 		s.Scope.V(2).Info("successfully created VMSS", "scale set", vmssSpec.Name)
+		s.Scope.SaveK8sVersion()
 	}
+
+	// get the VMSS to update status
+	existingVMSS, err := s.getExisting(ctx, vmssSpec.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get VMSS %s after create or update", vmssSpec.Name)
+	}
+
+	// check to see if we are running the most K8s version specified in the MachinePool spec
+	// if not, then update the instances that are not running that model
+	if s.Scope.NeedsK8sVersionUpdate() {
+		instanceIDs := make([]string, len(existingVMSS.Instances))
+		for i, vm := range existingVMSS.Instances {
+			instanceIDs[i] = vm.InstanceID
+		}
+		if err := s.Client.UpdateInstances(ctx, s.Scope.ResourceGroup(), vmssSpec.Name, instanceIDs); err != nil {
+			return errors.Wrapf(err, "failed to update VMSS %s instances", vmssSpec.Name)
+		}
+		s.Scope.SaveK8sVersion()
+
+		// get the VMSS to update status
+		existingVMSS, err = s.getExisting(ctx, vmssSpec.Name)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get VMSS %s after create or update", vmssSpec.Name)
+		}
+	}
+
+	// update the status.
+	if err := s.Scope.UpdateInstanceStatuses(ctx, existingVMSS.Instances); err != nil {
+		return errors.Wrap(err, "unable to update instance status")
+	}
+	s.Scope.SetProviderID(fmt.Sprintf("azure://%s", existingVMSS.ID))
+	s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
+	s.Scope.SetProvisioningState(existingVMSS.State)
 	return nil
 }
 

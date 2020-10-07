@@ -337,6 +337,41 @@ spec:
                   events to the MachinePool object and/or logged in the controller's
                   output."
                 type: string
+              instances:
+                description: Instances is the VM instance status for each VM in the
+                  VMSS
+                items:
+                  description: AzureMachinePoolInstanceStatus provides status information
+                    for each instance in the VMSS
+                  properties:
+                    instanceName:
+                      description: InstanceID is the identification of the Machine
+                        Instance within the VMSS
+                      type: string
+                    latestModelApplied:
+                      description: LatestModelApplied indicates the instance is running
+                        the most up-to-date VMSS model. A VMSS model describes the
+                        image version the VM is running. If the instance is not running
+                        the latest model, it means the instance may not be running
+                        the version of Kubernetes the Machine Pool has specified and
+                        needs to be updated.
+                      type: boolean
+                    providerID:
+                      description: ProviderID is the provider identification of the
+                        VMSS Instance
+                      type: string
+                    provisioningState:
+                      description: ProvisioningState is the provisioning state of
+                        the Azure virtual machine instance.
+                      type: string
+                    version:
+                      description: Version defines the Kubernetes version for the
+                        VM Instance
+                      type: string
+                  required:
+                  - latestModelApplied
+                  type: object
+                type: array
               provisioningState:
                 description: ProvisioningState is the provisioning state of the Azure
                   virtual machine.
@@ -348,6 +383,10 @@ spec:
                 description: Replicas is the most recently observed number of replicas.
                 format: int32
                 type: integer
+              version:
+                description: Version is the Kubernetes version for the current VMSS
+                  model
+                type: string
             type: object
         type: object
     served: true

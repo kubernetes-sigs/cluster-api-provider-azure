@@ -116,4 +116,16 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			}
 		})
 	})
+
+	Context("Should successfully exercise machine pools", func() {
+		capi_e2e.MachinePoolSpec(context.TODO(), func() capi_e2e.MachinePoolInput {
+			return capi_e2e.MachinePoolInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy.(capi_e2e.ClusterProxy),
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 })

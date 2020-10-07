@@ -124,6 +124,20 @@ func (mr *MockClientMockRecorder) Update(arg0, arg1, arg2, arg3 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClient)(nil).Update), arg0, arg1, arg2, arg3)
 }
 
+// UpdateInstances mocks base method.
+func (m *MockClient) UpdateInstances(arg0 context.Context, arg1, arg2 string, arg3 []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateInstances", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateInstances indicates an expected call of UpdateInstances.
+func (mr *MockClientMockRecorder) UpdateInstances(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstances", reflect.TypeOf((*MockClient)(nil).UpdateInstances), arg0, arg1, arg2, arg3)
+}
+
 // Delete mocks base method.
 func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
