@@ -2334,10 +2334,10 @@ spec:
           name: https
       hostAliases:
       - hostnames:
-        - "dbe-1dkphq2.microsoftdatabox.com"
-        - "login.dbe-1dkphq2.microsoftdatabox.com"
-        - "management.dbe-1dkphq2.microsoftdatabox.com"
-        ip: "10.126.70.37"
+        - ${DBE_ENDPOINT}
+        - ${DBE_LOGIN_ENDPOINT}
+        - ${DBE_MANAGEMENT_ENDPOINT}
+        ip: ${DBE_IP}
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
@@ -2434,10 +2434,10 @@ spec:
           name: https
       hostAliases:
       - hostnames:
-        - "dbe-1dkphq2.microsoftdatabox.com"
-        - "login.dbe-1dkphq2.microsoftdatabox.com"
-        - "management.dbe-1dkphq2.microsoftdatabox.com"
-        ip: "10.126.70.37"
+        - ${DBE_ENDPOINT}
+        - ${DBE_LOGIN_ENDPOINT}
+        - ${DBE_MANAGEMENT_ENDPOINT}
+        ip: ${DBE_IP}
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
