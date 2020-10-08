@@ -18,8 +18,9 @@ package controllers
 
 import (
 	"context"
-	corev1 "k8s.io/api/core/v1"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -133,15 +134,6 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
-		conditions.SetSummary(azureCluster,
-			conditions.WithConditions(
-				infrav1.NetworkInfrastructureReadyCondition,
-			),
-			conditions.WithStepCounterIfOnly(
-				infrav1.NetworkInfrastructureReadyCondition,
-			),
-		)
-
 		if err := clusterScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
@@ -224,10 +216,15 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 	clusterScope.Info("Reconciling AzureCluster delete")
 
 	azureCluster := clusterScope.AzureCluster
+	conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletedReason, clusterv1.ConditionSeverityInfo, "")
+	if err := clusterScope.PatchObject(ctx); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	if err := newAzureClusterReconciler(clusterScope).Delete(ctx); err != nil {
 		wrappedErr := errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", wrappedErr.Error())
+		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 		return reconcile.Result{}, wrappedErr
 	}
 

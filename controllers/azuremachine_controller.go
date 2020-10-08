@@ -192,15 +192,6 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Always close the scope when exiting this function so we can persist any AzureMachine changes.
 	defer func() {
-		conditions.SetSummary(machineScope.AzureMachine,
-			conditions.WithConditions(
-				infrav1.VMRunningCondition,
-			),
-			conditions.WithStepCounterIfOnly(
-				infrav1.VMRunningCondition,
-			),
-		)
-
 		if err := machineScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
@@ -307,10 +298,16 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
 
+	conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
+	if err := machineScope.PatchObject(ctx); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if ShouldDeleteIndividualResources(ctx, clusterScope) {
 		machineScope.Info("Deleting AzureMachine")
 		if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
+			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 		}
 	}
