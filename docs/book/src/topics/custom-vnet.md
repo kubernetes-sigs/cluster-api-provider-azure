@@ -5,7 +5,7 @@
 To deploy a cluster using a pre-existing vnet, modify the `AzureCluster` spec to include the name and resource group of the existing vnet as follows, as well as the control plane and node subnets as follows:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureCluster
 metadata:
   name: cluster-byo-vnet
@@ -24,30 +24,7 @@ spec:
   resourceGroup: cluster-byo-vnet
   ```
 
-When providing a vnet, it is required to also provide the two subnets that should be used for control planes and nodes. The internal load balancer private IP can be optionally provided in the control plane subnet spec as follows:
-
-```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
-kind: AzureCluster
-metadata:
-  name: cluster-byo-vnet
-  namespace: default
-spec:
-  location: southcentralus
-  networkSpec:
-    vnet:
-      resourceGroup: custom-vnet
-      name: my-vnet
-    subnets:
-      - name: control-plane-subnet
-        role: control-plane
-        internalLBIPAddress: "10.0.1.6"
-      - name: node-subnet
-        role: node
-  resourceGroup: cluster-byo-vnet
-```
-
-If provided, the private IP should be a valid IP within the control plane subnet address space. If no IP is provided, the internal load balancer reconciler will select a free IP within the subnet range at creation.
+When providing a vnet, it is required to also provide the two subnets that should be used for control planes and nodes.
 
 If providing an existing vnet and subnets with existing network security groups, make sure that the control plane security group allows inbound to port 6443, as port 6443 is used by kubeadm to bootstrap the control planes. Alternatively, you can [provide a custom control plane endpoint](https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm#kubeadmconfig-objects) in the `KubeadmConfig` spec.
 
@@ -58,7 +35,7 @@ The pre-existing vnet can be in the same resource group or a different resource 
 It is also possible to customize the vnet to be created without providing an already existing vnet. To do so, simply modify the `AzureCluster` `NetworkSpec` as desired. Here is an illustrative example of a cluster with a customized vnet address space (CIDR) and customized subnets:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureCluster
 metadata:
   name: cluster-example
@@ -95,7 +72,7 @@ It is the responsibility of the user to supply those rules themselves if using c
 Here is an illustrative example of customizing ingresses that builds on the one above by adding an ingress rule to the control plane nodes:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureCluster
 metadata:
   name: cluster-example
