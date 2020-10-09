@@ -53,6 +53,100 @@ func (m *MockScaleSetScope) EXPECT() *MockScaleSetScopeMockRecorder {
 	return m.recorder
 }
 
+// Info mocks base method.
+func (m *MockScaleSetScope) Info(msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockScaleSetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockScaleSetScope)(nil).Info), varargs...)
+}
+
+// Enabled mocks base method.
+func (m *MockScaleSetScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockScaleSetScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockScaleSetScope)(nil).Enabled))
+}
+
+// Error mocks base method.
+func (m *MockScaleSetScope) Error(err error, msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockScaleSetScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{err, msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockScaleSetScope)(nil).Error), varargs...)
+}
+
+// V mocks base method.
+func (m *MockScaleSetScope) V(level int) logr.InfoLogger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.InfoLogger)
+	return ret0
+}
+
+// V indicates an expected call of V.
+func (mr *MockScaleSetScopeMockRecorder) V(level interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockScaleSetScope)(nil).V), level)
+}
+
+// WithValues mocks base method.
+func (m *MockScaleSetScope) WithValues(keysAndValues ...interface{}) logr.Logger {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WithValues", varargs...)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithValues indicates an expected call of WithValues.
+func (mr *MockScaleSetScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockScaleSetScope)(nil).WithValues), keysAndValues...)
+}
+
+// WithName mocks base method.
+func (m *MockScaleSetScope) WithName(name string) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithName", name)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithName indicates an expected call of WithName.
+func (mr *MockScaleSetScopeMockRecorder) WithName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockScaleSetScope)(nil).WithName), name)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockScaleSetScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
@@ -205,198 +299,6 @@ func (m *MockScaleSetScope) AdditionalTags() v1alpha3.Tags {
 func (mr *MockScaleSetScopeMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockScaleSetScope)(nil).AdditionalTags))
-}
-
-// Vnet mocks base method.
-func (m *MockScaleSetScope) Vnet() *v1alpha3.VnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
-	return ret0
-}
-
-// Vnet indicates an expected call of Vnet.
-func (mr *MockScaleSetScopeMockRecorder) Vnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockScaleSetScope)(nil).Vnet))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockScaleSetScope) IsVnetManaged() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockScaleSetScopeMockRecorder) IsVnetManaged() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockScaleSetScope)(nil).IsVnetManaged))
-}
-
-// NodeSubnet mocks base method.
-func (m *MockScaleSetScope) NodeSubnet() *v1alpha3.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
-	return ret0
-}
-
-// NodeSubnet indicates an expected call of NodeSubnet.
-func (mr *MockScaleSetScopeMockRecorder) NodeSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockScaleSetScope)(nil).NodeSubnet))
-}
-
-// ControlPlaneSubnet mocks base method.
-func (m *MockScaleSetScope) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
-	return ret0
-}
-
-// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
-func (mr *MockScaleSetScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockScaleSetScope)(nil).ControlPlaneSubnet))
-}
-
-// IsIPv6Enabled mocks base method.
-func (m *MockScaleSetScope) IsIPv6Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPv6Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
-func (mr *MockScaleSetScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockScaleSetScope)(nil).IsIPv6Enabled))
-}
-
-// NodeRouteTable mocks base method.
-func (m *MockScaleSetScope) NodeRouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// NodeRouteTable indicates an expected call of NodeRouteTable.
-func (mr *MockScaleSetScopeMockRecorder) NodeRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockScaleSetScope)(nil).NodeRouteTable))
-}
-
-// ControlPlaneRouteTable mocks base method.
-func (m *MockScaleSetScope) ControlPlaneRouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
-func (mr *MockScaleSetScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockScaleSetScope)(nil).ControlPlaneRouteTable))
-}
-
-// Info mocks base method.
-func (m *MockScaleSetScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockScaleSetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockScaleSetScope)(nil).Info), varargs...)
-}
-
-// Enabled mocks base method.
-func (m *MockScaleSetScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockScaleSetScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockScaleSetScope)(nil).Enabled))
-}
-
-// Error mocks base method.
-func (m *MockScaleSetScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockScaleSetScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockScaleSetScope)(nil).Error), varargs...)
-}
-
-// V mocks base method.
-func (m *MockScaleSetScope) V(level int) logr.InfoLogger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockScaleSetScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockScaleSetScope)(nil).V), level)
-}
-
-// WithValues mocks base method.
-func (m *MockScaleSetScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockScaleSetScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockScaleSetScope)(nil).WithValues), keysAndValues...)
-}
-
-// WithName mocks base method.
-func (m *MockScaleSetScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockScaleSetScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockScaleSetScope)(nil).WithName), name)
 }
 
 // ScaleSetSpec mocks base method.

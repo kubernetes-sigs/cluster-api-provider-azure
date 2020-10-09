@@ -56,13 +56,8 @@ type Authorizer interface {
 	Authorizer() autorest.Authorizer
 }
 
-// ClusterDescriber is an interface which can get common Azure Cluster information
-type ClusterDescriber interface {
-	Authorizer
-	ResourceGroup() string
-	ClusterName() string
-	Location() string
-	AdditionalTags() infrav1.Tags
+// NetworkDescriber is an interface which can get common Azure Cluster Networking information.
+type NetworkDescriber interface {
 	Vnet() *infrav1.VnetSpec
 	IsVnetManaged() bool
 	NodeSubnet() *infrav1.SubnetSpec
@@ -70,4 +65,18 @@ type ClusterDescriber interface {
 	IsIPv6Enabled() bool
 	NodeRouteTable() *infrav1.RouteTable
 	ControlPlaneRouteTable() *infrav1.RouteTable
+}
+
+// ClusterDescriber is an interface which can get common Azure Cluster information.
+type ClusterDescriber interface {
+	Authorizer
+	ResourceGroup() string
+	ClusterName() string
+	Location() string
+	AdditionalTags() infrav1.Tags
+}
+
+type ClusterScoper interface {
+	ClusterDescriber
+	NetworkDescriber
 }

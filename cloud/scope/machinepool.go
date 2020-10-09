@@ -45,7 +45,7 @@ type (
 		Logger           logr.Logger
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		ClusterDescriber azure.ClusterDescriber
+		ClusterScope     azure.ClusterScoper
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -55,7 +55,7 @@ type (
 		patchHelper      *patch.Helper
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		azure.ClusterDescriber
+		azure.ClusterScoper
 	}
 )
 
@@ -86,7 +86,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		AzureMachinePool: params.AzureMachinePool,
 		Logger:           params.Logger,
 		patchHelper:      helper,
-		ClusterDescriber: params.ClusterDescriber,
+		ClusterScoper:    params.ClusterScope,
 	}, nil
 }
 
@@ -165,7 +165,7 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 func (m *MachinePoolScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
 	// Start with the cluster-wide tags...
-	tags.Merge(m.ClusterDescriber.AdditionalTags())
+	tags.Merge(m.ClusterScoper.AdditionalTags())
 	// ... and merge in the Machine Pool's
 	tags.Merge(m.AzureMachinePool.Spec.AdditionalTags)
 	// Set the cloud provider tag

@@ -18,7 +18,6 @@ package groups
 
 import (
 	"github.com/go-logr/logr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -31,11 +30,7 @@ type Service struct {
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
 	logr.Logger
-	azure.Authorizer
-	ResourceGroup() string
-	ClusterName() string
-	Location() string
-	AdditionalTags() infrav1.Tags
+	azure.ClusterDescriber
 }
 
 // NewService creates a new service.

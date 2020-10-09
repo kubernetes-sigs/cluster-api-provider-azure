@@ -52,6 +52,100 @@ func (m *MockBastionScope) EXPECT() *MockBastionScopeMockRecorder {
 	return m.recorder
 }
 
+// Info mocks base method.
+func (m *MockBastionScope) Info(msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockBastionScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBastionScope)(nil).Info), varargs...)
+}
+
+// Enabled mocks base method.
+func (m *MockBastionScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockBastionScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockBastionScope)(nil).Enabled))
+}
+
+// Error mocks base method.
+func (m *MockBastionScope) Error(err error, msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockBastionScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{err, msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockBastionScope)(nil).Error), varargs...)
+}
+
+// V mocks base method.
+func (m *MockBastionScope) V(level int) logr.InfoLogger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.InfoLogger)
+	return ret0
+}
+
+// V indicates an expected call of V.
+func (mr *MockBastionScopeMockRecorder) V(level interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockBastionScope)(nil).V), level)
+}
+
+// WithValues mocks base method.
+func (m *MockBastionScope) WithValues(keysAndValues ...interface{}) logr.Logger {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WithValues", varargs...)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithValues indicates an expected call of WithValues.
+func (mr *MockBastionScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockBastionScope)(nil).WithValues), keysAndValues...)
+}
+
+// WithName mocks base method.
+func (m *MockBastionScope) WithName(name string) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithName", name)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithName indicates an expected call of WithName.
+func (mr *MockBastionScopeMockRecorder) WithName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockBastionScope)(nil).WithName), name)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockBastionScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
@@ -302,100 +396,6 @@ func (m *MockBastionScope) ControlPlaneRouteTable() *v1alpha3.RouteTable {
 func (mr *MockBastionScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockBastionScope)(nil).ControlPlaneRouteTable))
-}
-
-// Info mocks base method.
-func (m *MockBastionScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockBastionScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockBastionScope)(nil).Info), varargs...)
-}
-
-// Enabled mocks base method.
-func (m *MockBastionScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockBastionScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockBastionScope)(nil).Enabled))
-}
-
-// Error mocks base method.
-func (m *MockBastionScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockBastionScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockBastionScope)(nil).Error), varargs...)
-}
-
-// V mocks base method.
-func (m *MockBastionScope) V(level int) logr.InfoLogger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockBastionScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockBastionScope)(nil).V), level)
-}
-
-// WithValues mocks base method.
-func (m *MockBastionScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockBastionScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockBastionScope)(nil).WithValues), keysAndValues...)
-}
-
-// WithName mocks base method.
-func (m *MockBastionScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockBastionScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockBastionScope)(nil).WithName), name)
 }
 
 // BastionSpecs mocks base method.

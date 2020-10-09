@@ -79,7 +79,7 @@ func TestNewService(t *testing.T) {
 		Logger:           s.Logger,
 		MachinePool:      new(clusterv1exp.MachinePool),
 		AzureMachinePool: new(infrav1exp.AzureMachinePool),
-		ClusterDescriber: s,
+		ClusterScope:     s,
 	})
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	actual := NewService(mps, resourceskus.NewStaticCache(nil))

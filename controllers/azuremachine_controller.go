@@ -179,11 +179,11 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Create the machine scope
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-		Logger:           logger,
-		Client:           r.Client,
-		Machine:          machine,
-		AzureMachine:     azureMachine,
-		ClusterDescriber: clusterScope,
+		Logger:       logger,
+		Client:       r.Client,
+		Machine:      machine,
+		AzureMachine: azureMachine,
+		ClusterScope: clusterScope,
 	})
 	if err != nil {
 		r.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error creating the machine scope", err.Error())
