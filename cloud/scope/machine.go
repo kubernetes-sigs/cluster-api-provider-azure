@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -381,6 +383,15 @@ func (m *MachineScope) SetAddresses(addrs []corev1.NodeAddress) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachineScope) PatchObject(ctx context.Context) error {
+	conditions.SetSummary(m.AzureMachine,
+		conditions.WithConditions(
+			infrav1.VMRunningCondition,
+		),
+		conditions.WithStepCounterIfOnly(
+			infrav1.VMRunningCondition,
+		),
+	)
+
 	return m.patchHelper.Patch(
 		ctx,
 		m.AzureMachine,
@@ -392,7 +403,7 @@ func (m *MachineScope) PatchObject(ctx context.Context) error {
 
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachineScope) Close(ctx context.Context) error {
-	return m.patchHelper.Patch(ctx, m.AzureMachine)
+	return m.PatchObject(ctx)
 }
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachine. If the same key is present in both,

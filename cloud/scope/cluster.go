@@ -23,15 +23,15 @@ import (
 
 	"k8s.io/utils/net"
 
-	"github.com/Azure/go-autorest/autorest/to"
-
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -292,6 +292,15 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
+	conditions.SetSummary(s.AzureCluster,
+		conditions.WithConditions(
+			infrav1.NetworkInfrastructureReadyCondition,
+		),
+		conditions.WithStepCounterIfOnly(
+			infrav1.NetworkInfrastructureReadyCondition,
+		),
+	)
+
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
@@ -303,7 +312,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close(ctx context.Context) error {
-	return s.patchHelper.Patch(ctx, s.AzureCluster)
+	return s.PatchObject(ctx)
 }
 
 // AdditionalTags returns AdditionalTags from the scope's AzureCluster.
