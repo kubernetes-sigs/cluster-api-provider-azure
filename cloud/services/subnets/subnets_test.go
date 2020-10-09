@@ -49,13 +49,12 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -82,13 +81,12 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-ipv6-subnet",
-						CIDRs:               []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-ipv6-subnet",
+						CIDRs:             []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"})
@@ -117,13 +115,12 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -144,13 +141,12 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -168,13 +164,12 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "custom-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "custom-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1", Tags: infrav1.Tags{
@@ -197,22 +192,20 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 					{
-						Name:                "my-subnet-1",
-						CIDRs:               []string{"10.2.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg-1",
-						Role:                infrav1.SubnetControlPlane,
-						InternalLBIPAddress: "10.2.0.20",
+						Name:              "my-subnet-1",
+						CIDRs:             []string{"10.2.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg-1",
+						Role:              infrav1.SubnetControlPlane,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -268,22 +261,20 @@ func TestReconcileSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-ipv6-subnet",
-						CIDRs:               []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-ipv6-subnet",
+						CIDRs:             []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 					{
-						Name:                "my-ipv6-subnet-cp",
-						CIDRs:               []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg-1",
-						Role:                infrav1.SubnetControlPlane,
-						InternalLBIPAddress: "10.2.0.20",
+						Name:              "my-ipv6-subnet-cp",
+						CIDRs:             []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg-1",
+						Role:              infrav1.SubnetControlPlane,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -383,22 +374,20 @@ func TestDeleteSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 					{
-						Name:                "my-subnet-1",
-						CIDRs:               []string{"10.1.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetControlPlane,
-						InternalLBIPAddress: "10.1.0.20",
+						Name:              "my-subnet-1",
+						CIDRs:             []string{"10.1.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetControlPlane,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -415,13 +404,12 @@ func TestDeleteSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -438,22 +426,20 @@ func TestDeleteSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 					{
-						Name:                "my-subnet-1",
-						CIDRs:               []string{"10.1.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetControlPlane,
-						InternalLBIPAddress: "10.1.0.20",
+						Name:              "my-subnet-1",
+						CIDRs:             []string{"10.1.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetControlPlane,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
@@ -471,13 +457,12 @@ func TestDeleteSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "custom-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "custom-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"})
@@ -492,13 +477,12 @@ func TestDeleteSubnets(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubnetSpecs().Return([]azure.SubnetSpec{
 					{
-						Name:                "my-subnet",
-						CIDRs:               []string{"10.0.0.0/16"},
-						VNetName:            "my-vnet",
-						RouteTableName:      "my-subnet_route_table",
-						SecurityGroupName:   "my-sg",
-						Role:                infrav1.SubnetNode,
-						InternalLBIPAddress: "10.0.0.10",
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"})

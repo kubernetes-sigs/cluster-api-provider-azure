@@ -97,7 +97,11 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 		}
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
-	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, networkSpec.GetControlPlaneSubnet().CIDRBlocks, fldPath.Child("apiServerLB"))...)
+	var cidrBlocks []string
+	if subnet := networkSpec.GetControlPlaneSubnet(); subnet != nil {
+		cidrBlocks = subnet.CIDRBlocks
+	}
+	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 	if len(allErrs) == 0 {
 		return nil
 	}

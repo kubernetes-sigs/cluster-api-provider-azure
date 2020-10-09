@@ -56,7 +56,6 @@ type LBSpec struct {
 	Role              string
 	Type              infrav1.LBType
 	SubnetName        string
-	SubnetCidrs       []string
 	BackendPoolName   string
 	FrontendIPConfigs []infrav1.FrontendIP
 	APIServerPort     int32

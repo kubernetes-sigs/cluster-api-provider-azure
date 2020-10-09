@@ -83,15 +83,6 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			}(),
 			wantErr: true,
 		},
-		{
-			name: "azurecluster with pre-existing vnet - invalid internal load balancer ip address",
-			cluster: func() *AzureCluster {
-				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets[0].InternalLBIPAddress = "1000.1.1.1"
-				return cluster
-			}(),
-			wantErr: true,
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -162,15 +153,6 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 				cluster := createValidCluster()
 				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
 					&SubnetSpec{Name: "invalid-name###", Role: "random-role"})
-				return cluster
-			}(),
-			wantErr: true,
-		},
-		{
-			name: "azurecluster with pre-existing vnet - invalid internal load balancer ip address",
-			cluster: func() *AzureCluster {
-				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets[0].InternalLBIPAddress = "1000.1.1.1"
 				return cluster
 			}(),
 			wantErr: true,

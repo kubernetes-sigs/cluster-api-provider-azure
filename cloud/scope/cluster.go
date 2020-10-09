@@ -126,7 +126,6 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			// Control Plane LB
 			Name:              s.APIServerLB().Name,
 			SubnetName:        s.ControlPlaneSubnet().Name,
-			SubnetCidrs:       s.ControlPlaneSubnet().CIDRBlocks,
 			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
 			APIServerPort:     s.APIServerPort(),
 			Type:              s.APIServerLB().Type,
@@ -420,7 +419,7 @@ func (s *ClusterScope) SetDNSName() {
 	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
 	lb := s.APIServerLB()
 	if lb == nil || lb.Name == "" {
-		lbName :=  fmt.Sprintf("%s-%s", s.ClusterName(), "public-lb")
+		lbName := fmt.Sprintf("%s-%s", s.ClusterName(), "public-lb")
 		ip, dns := s.GenerateLegacyFQDN()
 		lb = &infrav1.LoadBalancerSpec{
 			Name: lbName,

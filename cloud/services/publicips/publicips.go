@@ -18,6 +18,8 @@ package publicips
 
 import (
 	"context"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
@@ -56,6 +58,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.ResourceGroup(),
 			ip.Name,
 			network.PublicIPAddress{
+				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+					ClusterName: s.Scope.ClusterName(),
+					Lifecycle:   infrav1.ResourceLifecycleOwned,
+					Name:        to.StringPtr(ip.Name),
+					Additional:  s.Scope.AdditionalTags(),
+				})),
 				Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 				Name:     to.StringPtr(ip.Name),
 				Location: to.StringPtr(s.Scope.Location()),
@@ -83,9 +91,18 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer span.End()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {
-		// TODO: if supporting BYO IP make sure unmanaged IPs aren't deleted
+		managed, err := s.isIPManaged(ctx, ip.Name)
+		if err != nil && !azure.ResourceNotFound(err) {
+			return errors.Wrap(err, "could not get public IP management state")
+		}
+
+		if !managed {
+			s.Scope.V(2).Info("Skipping IP deletion for unmanaged public IP", "public ip", ip.Name)
+			continue
+		}
+
 		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
+		err = s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
 			continue
@@ -97,4 +114,15 @@ func (s *Service) Delete(ctx context.Context) error {
 		s.Scope.V(2).Info("deleted public IP", "public ip", ip.Name)
 	}
 	return nil
+}
+
+// isIPManaged returns true if the IP has an owned tag with the cluster name as value,
+// meaning that the IP's lifecycle is managed.
+func (s *Service) isIPManaged(ctx context.Context, ipName string) (bool, error) {
+	ip, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), ipName)
+	if err != nil {
+		return false, err
+	}
+	tags := converters.MapToTags(ip.Tags)
+	return tags.HasOwned(s.Scope.ClusterName()), nil
 }

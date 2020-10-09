@@ -754,7 +754,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			name: "internal LB with in range private IP",
 			lb: LoadBalancerSpec{
 				Type: Internal,
-				SKU: SKUStandard,
+				SKU:  SKUStandard,
 				Name: "my-private-lb",
 				FrontendIPs: []FrontendIP{
 					{
@@ -806,7 +806,8 @@ func createValidNetworkSpec() NetworkSpec {
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
 		},
-		Subnets: createValidSubnets(),
+		Subnets:     createValidSubnets(),
+		APIServerLB: createValidAPIServerLB(),
 	}
 }
 
@@ -820,5 +821,22 @@ func createValidSubnets() Subnets {
 			Name: "node-subnet",
 			Role: "node",
 		},
+	}
+}
+
+func createValidAPIServerLB() LoadBalancerSpec {
+	return LoadBalancerSpec{
+		Name: "my-lb",
+		SKU:  SKUStandard,
+		FrontendIPs: []FrontendIP{
+			{
+				Name: "ip-config",
+				PublicIP: &PublicIPSpec{
+					Name:    "public-ip",
+					DNSName: "myfqdn.azure.com",
+				},
+			},
+		},
+		Type: Public,
 	}
 }

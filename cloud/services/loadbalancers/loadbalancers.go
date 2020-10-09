@@ -43,7 +43,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		lb := network.LoadBalancer{
-			Name:     to.StringPtr(lbSpec.Name),
 			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
 			Location: to.StringPtr(s.Scope.Location()),
 			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
@@ -116,6 +115,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					},
 				},
 			}
+			// TODO: check if this is needed for outbound access
 			if lbSpec.Type == infrav1.Internal {
 				lb.LoadBalancerPropertiesFormat.OutboundRules = nil
 			}
@@ -154,10 +154,7 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 func (s *Service) getFrontendIPConfigs(lbSpec azure.LBSpec) ([]network.FrontendIPConfiguration, []network.SubResource, error) {
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.getFrontendIPConfigs")
-	defer span.End()
-
-	var frontendIPConfigurations []network.FrontendIPConfiguration
+	frontendIPConfigurations := make([]network.FrontendIPConfiguration, 0)
 	frontendIDs := make([]network.SubResource, 0)
 	for _, ipConfig := range lbSpec.FrontendIPConfigs {
 		var properties network.FrontendIPConfigurationPropertiesFormat

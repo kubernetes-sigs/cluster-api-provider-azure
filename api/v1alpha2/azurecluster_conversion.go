@@ -74,6 +74,8 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	dst.Spec.NetworkSpec.APIServerLB = restored.Spec.NetworkSpec.APIServerLB
+
 	// Manually convert conditions
 	dst.SetConditions(restored.GetConditions())
 

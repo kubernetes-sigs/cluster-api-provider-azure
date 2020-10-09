@@ -114,6 +114,20 @@ func TestVnetDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
+						APIServerLB: LoadBalancerSpec{
+							Name: "my-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "ip-config",
+									PublicIP: &PublicIPSpec{
+										Name:    "public-ip",
+										DNSName: "myfqdn.azure.com",
+									},
+								},
+							},
+							Type: Public,
+						},
 					},
 				},
 			},
@@ -548,12 +562,12 @@ func TestAPIServerLBDefaults(t *testing.T) {
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{
 							Name: "cluster-test-public-lb",
-							SKU: SKUStandard,
+							SKU:  SKUStandard,
 							FrontendIPs: []FrontendIP{
 								{
 									Name: "cluster-test-public-lb-frontEnd",
 									PublicIP: &PublicIPSpec{
-										Name: "pip-apiserver-cluster-test",
+										Name:    "pip-cluster-test-apiserver",
 										DNSName: "",
 									},
 								},

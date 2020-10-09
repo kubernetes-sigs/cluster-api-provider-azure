@@ -19,7 +19,9 @@ package networkinterfaces
 import (
 	"context"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"net/http"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"testing"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -30,11 +32,9 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
-	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 func TestReconcileNetworkInterface(t *testing.T) {
@@ -84,7 +84,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						SubnetName:            "my-subnet",
 						VNetName:              "my-vnet",
 						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
+						LBName:                "my-public-lb",
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: nil,
 					},
@@ -105,16 +105,16 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:                    "my-net-interface",
-						MachineName:             "azure-test1",
-						SubnetName:              "my-subnet",
-						VNetName:                "my-vnet",
-						VNetResourceGroup:       "my-rg",
-						PublicLBName:            "my-public-lb",
-						PublicLBAddressPoolName: "cluster-name-outboundBackendPool",
-						StaticIPAddress:         "fake.static.ip",
-						VMSize:                  "Standard_D2v2",
-						AcceleratedNetworking:   nil,
+						Name:                     "my-net-interface",
+						MachineName:              "azure-test1",
+						SubnetName:               "my-subnet",
+						VNetName:                 "my-vnet",
+						VNetResourceGroup:        "my-rg",
+						LBName:                   "my-public-lb",
+						LBBackendAddressPoolName: "cluster-name-outboundBackendPool",
+						StaticIPAddress:          "fake.static.ip",
+						VMSize:                   "Standard_D2v2",
+						AcceleratedNetworking:    nil,
 					},
 				})
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -150,15 +150,15 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:                    "my-net-interface",
-						MachineName:             "azure-test1",
-						SubnetName:              "my-subnet",
-						VNetName:                "my-vnet",
-						VNetResourceGroup:       "my-rg",
-						PublicLBName:            "my-public-lb",
-						PublicLBAddressPoolName: "cluster-name-outboundBackendPool",
-						VMSize:                  "Standard_D2v2",
-						AcceleratedNetworking:   nil,
+						Name:                     "my-net-interface",
+						MachineName:              "azure-test1",
+						SubnetName:               "my-subnet",
+						VNetName:                 "my-vnet",
+						VNetResourceGroup:        "my-rg",
+						LBName:                   "my-public-lb",
+						LBBackendAddressPoolName: "cluster-name-outboundBackendPool",
+						VMSize:                   "Standard_D2v2",
+						AcceleratedNetworking:    nil,
 					},
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
@@ -193,18 +193,16 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:                      "my-net-interface",
-						MachineName:               "azure-test1",
-						SubnetName:                "my-subnet",
-						VNetName:                  "my-vnet",
-						VNetResourceGroup:         "my-rg",
-						PublicLBName:              "my-public-lb",
-						PublicLBAddressPoolName:   "my-public-lb-backendPool",
-						PublicLBNATRuleName:       "azure-test1",
-						InternalLBName:            "my-internal-lb",
-						InternalLBAddressPoolName: "my-internal-lb-backendPool",
-						VMSize:                    "Standard_D2v2",
-						AcceleratedNetworking:     nil,
+						Name:                     "my-net-interface",
+						MachineName:              "azure-test1",
+						SubnetName:               "my-subnet",
+						VNetName:                 "my-vnet",
+						VNetResourceGroup:        "my-rg",
+						LBName:                   "my-public-lb",
+						LBBackendAddressPoolName: "my-public-lb-backendPool",
+						LBNATRuleName:            "azure-test1",
+						VMSize:                   "Standard_D2v2",
+						AcceleratedNetworking:    nil,
 					},
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
@@ -227,7 +225,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 									LoadBalancerInboundNatRules: &[]network.InboundNatRule{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/inboundNatRules/azure-test1")}},
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{
 										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/my-public-lb-backendPool")},
-										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-internal-lb/backendAddressPools/my-internal-lb-backendPool")}},
+									},
 								},
 							},
 						},
@@ -271,7 +269,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						SubnetName:            "my-subnet",
 						VNetName:              "my-vnet",
 						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
+						LBName:                "my-public-lb",
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: nil,
 					},
@@ -291,9 +289,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:       network.Dynamic,
-									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
+									Subnet:                    &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+									PrivateIPAllocationMethod: network.Dynamic,
 								},
 							},
 						},
@@ -313,7 +310,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						SubnetName:            "my-subnet",
 						VNetName:              "my-vnet",
 						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
+						LBName:                "my-public-lb",
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: to.BoolPtr(false),
 					},
@@ -334,9 +331,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 							{
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:       network.Dynamic,
-									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
+									Subnet:                    &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+									PrivateIPAllocationMethod: network.Dynamic,
 								},
 							},
 						},
@@ -356,7 +352,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VNetName:              "my-vnet",
 						IPv6Enabled:           true,
 						VNetResourceGroup:     "my-rg",
-						PublicLBName:          "my-public-lb",
+						LBName:                "my-public-lb",
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: nil,
 						EnableIPForwarding:    true,
@@ -378,9 +374,8 @@ func TestReconcileNetworkInterface(t *testing.T) {
 								{
 									Name: to.StringPtr("pipConfig"),
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-										Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-										PrivateIPAllocationMethod:       network.Dynamic,
-										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
+										Subnet:                    &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
+										PrivateIPAllocationMethod: network.Dynamic,
 									},
 								},
 								{
@@ -462,9 +457,9 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:         "my-net-interface",
-						PublicLBName: "my-public-lb",
-						MachineName:  "azure-test1",
+						Name:        "my-net-interface",
+						LBName:      "my-public-lb",
+						MachineName: "azure-test1",
 					},
 				})
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -478,9 +473,9 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:         "my-net-interface",
-						PublicLBName: "my-public-lb",
-						MachineName:  "azure-test1",
+						Name:        "my-net-interface",
+						LBName:      "my-public-lb",
+						MachineName: "azure-test1",
 					},
 				})
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -495,9 +490,9 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			expect: func(s *mock_networkinterfaces.MockNICScopeMockRecorder, m *mock_networkinterfaces.MockClientMockRecorder) {
 				s.NICSpecs().Return([]azure.NICSpec{
 					{
-						Name:         "my-net-interface",
-						PublicLBName: "my-public-lb",
-						MachineName:  "azure-test1",
+						Name:        "my-net-interface",
+						LBName:      "my-public-lb",
+						MachineName: "azure-test1",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
