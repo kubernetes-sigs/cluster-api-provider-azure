@@ -64,6 +64,9 @@ func setupSpecNamespace(ctx context.Context, specName string, clusterProxy frame
 }
 
 func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy framework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv1.Cluster, intervalsGetter func(spec, key string) []interface{}, skipCleanup bool) {
+	Byf("Dumping logs from the %q workload cluster", cluster.Name)
+	clusterProxy.CollectWorkloadClusterLogs(ctx, cluster.Namespace, cluster.Name, filepath.Join(artifactFolder, "clusters", cluster.Name, "machines"))
+
 	Byf("Dumping all the Cluster API resources in the %q namespace", namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{

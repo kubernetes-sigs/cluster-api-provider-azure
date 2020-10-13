@@ -19,9 +19,11 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -33,6 +35,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/crypto/ssh"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -42,6 +46,7 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -277,4 +282,104 @@ func logCheckpoint(specTimes map[string]time.Time) {
 		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d\n", text,
 			elapsed.Round(time.Second), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
 	}
+}
+
+// execOnHost runs the specified command directly on a node's host, using an SSH connection
+// proxied through a control plane host.
+func execOnHost(controlPlaneEndpoint, hostname string, f io.StringWriter, command string,
+	args ...string) error {
+	config, err := newSSHConfig()
+	if err != nil {
+		return err
+	}
+	port := "22" // Need to use port 50001 for VMSS when MachinePools are supported here.
+
+	// Init a client connection to a control plane node via the public load balancer
+	lbClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", controlPlaneEndpoint, port), config)
+	if err != nil {
+		return errors.Wrapf(err, "dialing public load balancer at %s", controlPlaneEndpoint)
+	}
+
+	// Init a connection from the control plane to the target node
+	c, err := lbClient.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port))
+	if err != nil {
+		return errors.Wrapf(err, "dialing from control plane to target node at %s", hostname)
+	}
+
+	// Establish an authenticated SSH conn over the client -> control plane -> target transport
+	conn, chans, reqs, err := ssh.NewClientConn(c, hostname, config)
+	if err != nil {
+		return errors.Wrap(err, "getting a new SSH client connection")
+	}
+	client := ssh.NewClient(conn, chans, reqs)
+	session, err := client.NewSession()
+	if err != nil {
+		return errors.Wrap(err, "opening SSH session")
+	}
+	defer session.Close()
+
+	// Run the command and write the captured stdout to the file
+	var stdoutBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
+	if len(args) > 0 {
+		command += " " + strings.Join(args, " ")
+	}
+	if err = session.Run(command); err != nil {
+		return errors.Wrapf(err, "running command \"%s\"", command)
+	}
+	if _, err = f.WriteString(stdoutBuf.String()); err != nil {
+		return errors.Wrap(err, "writing output to file")
+	}
+
+	return nil
+}
+
+// fileOnHost creates the specified path, including parent directories if needed.
+func fileOnHost(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		return nil, err
+	}
+	return os.Create(path)
+}
+
+// newSSHConfig returns an SSH config for a workload cluster in the current e2e test run.
+func newSSHConfig() (*ssh.ClientConfig, error) {
+	// find private key file used for e2e workload cluster
+	keyfile := os.Getenv("AZURE_SSH_PUBLIC_KEY_FILE")
+	if len(keyfile) > 4 && strings.HasSuffix(keyfile, "pub") {
+		keyfile = keyfile[:(len(keyfile) - 4)]
+	}
+	if keyfile == "" {
+		keyfile = ".sshkey"
+	}
+	if _, err := os.Stat(keyfile); os.IsNotExist(err) {
+		if !filepath.IsAbs(keyfile) {
+			// current working directory may be test/e2e, so look in the project root
+			keyfile = filepath.Join("..", "..", keyfile)
+		}
+	}
+
+	pubkey, err := publicKeyFile(keyfile)
+	if err != nil {
+		return nil, err
+	}
+	sshConfig := ssh.ClientConfig{
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		User:            azure.DefaultUserName,
+		Auth:            []ssh.AuthMethod{pubkey},
+	}
+	return &sshConfig, nil
+}
+
+// publicKeyFile parses and returns the public key from the specified private key file.
+func publicKeyFile(file string) (ssh.AuthMethod, error) {
+	buffer, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	signer, err := ssh.ParsePrivateKey(buffer)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.PublicKeys(signer), nil
 }
