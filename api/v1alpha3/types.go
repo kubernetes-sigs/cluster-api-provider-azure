@@ -177,7 +177,7 @@ const (
 	SKUStandard = SKU("Standard")
 )
 
-// BackendPool defines a load balancer backend pool
+// BackendPool defines a load balancer backend pool.
 type BackendPool struct {
 	Name string `json:"name,omitempty"`
 	ID   string `json:"id,omitempty"`

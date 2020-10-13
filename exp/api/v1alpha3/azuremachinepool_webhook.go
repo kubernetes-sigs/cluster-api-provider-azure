@@ -32,6 +32,7 @@ import (
 // log is for logging in this package.
 var azuremachinepoollog = logf.Log.WithName("azuremachinepool-resource")
 
+// SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(amp).

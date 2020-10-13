@@ -28,6 +28,7 @@ const (
 	// // alpha: v1.X
 	// MyFeature featuregate.Feature = "MyFeature"
 
+	// AKS is the feature gate for AKS managed clusters.
 	// owner: @alexeldeib
 	// alpha: v0.4
 	AKS featuregate.Feature = "AKS"

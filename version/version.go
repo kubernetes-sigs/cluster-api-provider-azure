@@ -32,6 +32,7 @@ var (
 	buildDate    string // build date in ISO8601 format, output of $(date -u +'%Y-%m-%dT%H:%M:%SZ')
 )
 
+// Info contains all version-related information.
 type Info struct {
 	Major           string `json:"major,omitempty"`
 	Minor           string `json:"minor,omitempty"`
@@ -45,6 +46,7 @@ type Info struct {
 	AzureSdkVersion string `json:"azureSdkVersion,omitempty"`
 }
 
+// Get returns version info initialized from defaults and the runtime environment.
 func Get() Info {
 	return Info{
 		Major:           gitMajor,
@@ -60,7 +62,7 @@ func Get() Info {
 	}
 }
 
-// String returns info as a human-friendly version string.
+// String returns version info in a human-friendly format.
 func (info Info) String() string {
 	return info.GitVersion
 }

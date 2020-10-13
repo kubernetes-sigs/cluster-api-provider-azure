@@ -22,6 +22,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
+// IngresstoSecurityRule converts a CAPI ingress rule to an Azure network security rule.
 func IngresstoSecurityRule(ingress infrav1.IngressRule) network.SecurityRule {
 	secRule := network.SecurityRule{
 		Name: to.StringPtr(ingress.Name),
@@ -49,6 +50,7 @@ func IngresstoSecurityRule(ingress infrav1.IngressRule) network.SecurityRule {
 	return secRule
 }
 
+// SecuritytoIngressRule converts an Azure network security rule to a CAPI ingress rule.
 func SecuritytoIngressRule(rule network.SecurityRule) infrav1.IngressRule {
 	ingRule := infrav1.IngressRule{
 		Name:             to.String(rule.Name),

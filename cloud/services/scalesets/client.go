@@ -80,7 +80,7 @@ func newPublicIPsClient(subscriptionID string, baseURI string, authorizer autore
 	return c
 }
 
-// Get retrieves information about the model view of a virtual machine scale set.
+// ListInstances retrieves information about the model views of a virtual machine scale set.
 func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vmssName string) ([]compute.VirtualMachineScaleSetVM, error) {
 	itr, err := ac.scalesetvms.ListComplete(ctx, resourceGroupName, vmssName, "", "", "")
 	if err != nil {
@@ -98,7 +98,7 @@ func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vms
 	return instances, nil
 }
 
-// Lists all scale sets in a resource group.
+// List returns all scale sets in a resource group.
 func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]compute.VirtualMachineScaleSet, error) {
 	itr, err := ac.scalesets.ListComplete(ctx, resourceGroupName)
 	var instances []compute.VirtualMachineScaleSet
@@ -160,6 +160,7 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmssName s
 	return err
 }
 
+// GetPublicIPAddress gets the public IP address for the given public IP name.
 func (ac *AzureClient) GetPublicIPAddress(ctx context.Context, resourceGroupName, publicIPName string) (network.PublicIPAddress, error) {
 	return ac.publicIPs.Get(ctx, resourceGroupName, publicIPName, "true")
 }

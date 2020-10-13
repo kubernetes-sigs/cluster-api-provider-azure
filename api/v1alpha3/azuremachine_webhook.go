@@ -28,7 +28,7 @@ import (
 // log is for logging in this package.
 var machinelog = logf.Log.WithName("azuremachine-resource")
 
-// SetupWebhookWithManager will setup and register the webhook with the controller mnager
+// SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (m *AzureMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(m).

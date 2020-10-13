@@ -24,6 +24,7 @@ import (
 )
 
 type (
+	// AzureMachineTemplate defines the template for an AzureMachine.
 	AzureMachineTemplate struct {
 		// VMSize is the size of the Virtual Machine to build.
 		// See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes

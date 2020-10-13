@@ -52,6 +52,7 @@ type AzureManagedMachinePoolReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureManagedMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
@@ -103,6 +104,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, o
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 
+// Reconcile idempotently gets, creates, and updates a machine pool.
 func (r *AzureManagedMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()

@@ -48,6 +48,7 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1exp.VMS
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
 }
 
+// Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) error {
 	vmssSpec := s.Scope.ScaleSetSpec()
 
@@ -226,6 +227,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// Delete deletes a scale set.
 func (s *Service) Delete(ctx context.Context) error {
 	vmssSpec := s.Scope.ScaleSetSpec()
 	s.Scope.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)

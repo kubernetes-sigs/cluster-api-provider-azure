@@ -26,6 +26,7 @@ import (
 // log is for logging in this package.
 var clusterlog = logf.Log.WithName("azurecluster-resource")
 
+// SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (c *AzureCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).

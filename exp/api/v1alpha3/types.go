@@ -21,6 +21,7 @@ import (
 )
 
 type (
+	// VMSSVM defines a VM in a virtual machine scale set.
 	VMSSVM struct {
 		ID               string          `json:"id,omitempty"`
 		InstanceID       string          `json:"instanceID,omitempty"`
@@ -29,6 +30,7 @@ type (
 		State            infrav1.VMState `json:"vmState,omitempty"`
 	}
 
+	// VMSS defines a virtual machine scale set.
 	VMSS struct {
 		ID        string             `json:"id,omitempty"`
 		Name      string             `json:"name,omitempty"`

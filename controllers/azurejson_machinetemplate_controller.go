@@ -47,7 +47,7 @@ type AzureJSONTemplateReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
-// SetupWithManager initializes this controller with a manager
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureJSONTemplateReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).

@@ -36,6 +36,7 @@ var azuremanagedcontrolplanelog = logf.Log.WithName("azuremanagedcontrolplane-re
 
 var kubeSemver = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)([-0-9a-zA-Z_\.+]*)?$`)
 
+// SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureManagedControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).

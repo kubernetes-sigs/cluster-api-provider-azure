@@ -715,7 +715,7 @@ spec:
                     description: APIServerLB is the Kubernetes API server load balancer.
                     properties:
                       backendPool:
-                        description: BackendPool defines a load balancer backend pool
+                        description: BackendPool defines a load balancer backend pool.
                         properties:
                           id:
                             type: string
