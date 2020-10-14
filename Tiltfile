@@ -263,6 +263,7 @@ def calico_crs():
     local("kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml")
     local("kubectl delete configmaps calico-ipv6-addon --ignore-not-found=true")
     local("kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
+    local("kubectl wait --for=condition=Available --timeout=300s -n capi-webhook-system deployment/capi-controller-manager")
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")
 
 # run worker clusters specified from 'tilt up' or in 'tilt_config.json'
