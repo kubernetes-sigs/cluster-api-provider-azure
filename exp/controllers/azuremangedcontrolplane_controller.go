@@ -51,6 +51,7 @@ type AzureManagedControlPlaneReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
 	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
@@ -94,6 +95,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, 
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremanagedcontrolplanes/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 
+// Reconcile idempotently gets, creates, and updates a managed control plane.
 func (r *AzureManagedControlPlaneReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()

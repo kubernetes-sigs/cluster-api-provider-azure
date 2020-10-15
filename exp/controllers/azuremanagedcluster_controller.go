@@ -49,6 +49,7 @@ type AzureManagedClusterReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedCluster")
 	azManagedCluster := &infrav1exp.AzureManagedCluster{}
@@ -79,6 +80,7 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager, optio
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
+// Reconcile idempotently gets, creates, and updates a managed cluster.
 func (r *AzureManagedClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()

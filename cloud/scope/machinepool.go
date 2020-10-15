@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"encoding/base64"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -187,6 +188,7 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
+// AzureMachineTemplate gets the Azure machine template in this scope.
 func (m *MachinePoolScope) AzureMachineTemplate(ctx context.Context) (*infrav1.AzureMachineTemplate, error) {
 	ref := m.MachinePool.Spec.Template.Spec.InfrastructureRef
 	return getAzureMachineTemplate(ctx, m.client, ref.Name, ref.Namespace)
@@ -225,7 +227,7 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-// Pick image from the machine configuration, or use a default one.
+// GetVMImage picks an image from the machine configuration, or uses a default one.
 func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if m.AzureMachinePool.Spec.Template.Image != nil {

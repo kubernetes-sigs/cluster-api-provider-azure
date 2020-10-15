@@ -68,6 +68,7 @@ func (a *AgentPoolVMSSNotFoundError) Error() string {
 	return fmt.Sprintf(msgFmt, a.NodeResourceGroup, a.PoolName)
 }
 
+// Is returns true if the target error is an `AgentPoolVMSSNotFoundError`.
 func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 	_, ok := target.(*AgentPoolVMSSNotFoundError)
 	return ok

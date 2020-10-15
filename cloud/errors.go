@@ -18,9 +18,11 @@ package azure
 
 import (
 	"errors"
+
 	"github.com/Azure/go-autorest/autorest"
 )
 
+// ErrNotOwned is returned when a resource can't be deleted because it isn't owned.
 var ErrNotOwned = errors.New("resource is not managed and cannot be deleted")
 
 // ResourceNotFound parses the error to check if it's a resource not found error.

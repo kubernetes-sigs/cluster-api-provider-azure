@@ -97,6 +97,7 @@ type ManagedControlPlaneScope struct {
 	PatchTarget      runtime.Object
 }
 
+// ResourceGroup returns the managed control plane's resource group.
 func (s *ManagedControlPlaneScope) ResourceGroup() string {
 	if s.ControlPlane == nil {
 		return ""
@@ -104,10 +105,12 @@ func (s *ManagedControlPlaneScope) ResourceGroup() string {
 	return s.ControlPlane.Spec.ResourceGroup
 }
 
+// ClusterName returns the managed control plane's name.
 func (s *ManagedControlPlaneScope) ClusterName() string {
 	return s.Cluster.Name
 }
 
+// Location returns the managed control plane's Azure location, or an empty string.
 func (s *ManagedControlPlaneScope) Location() string {
 	if s.ControlPlane == nil {
 		return ""

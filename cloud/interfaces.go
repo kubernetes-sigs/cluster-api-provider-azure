@@ -76,6 +76,7 @@ type ClusterDescriber interface {
 	AdditionalTags() infrav1.Tags
 }
 
+// ClusterScoper combines the ClusterDescriber and NetworkDescriber interfaces.
 type ClusterScoper interface {
 	ClusterDescriber
 	NetworkDescriber

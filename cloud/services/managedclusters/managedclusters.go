@@ -74,6 +74,7 @@ type Spec struct {
 	DNSServiceIP *string
 }
 
+// PoolSpec contains agent pool specification details.
 type PoolSpec struct {
 	Name         string
 	SKU          string

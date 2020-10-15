@@ -6,26 +6,37 @@ run:
   - "zz_generated.*\\.go$"
   - ".*conversion.*\\.go$"
 linters:
+  disable-all: true
   enable:
-    - golint
-    - govet
-    - gofmt
-    - structcheck
-    - varcheck
-    - interfacer
-    - unconvert
-    - ineffassign
+    - deadcode
     - goconst
-    # - gocyclo
+    - gofmt
+    - golint
+    - gosec
+    - govet
+    - ineffassign
+    - interfacer
     - maligned
     - misspell
     - nakedret
     - prealloc
-    - gosec
-    - deadcode
-  disable-all: true
+    - structcheck
+    - unconvert
+    - varcheck
   # Run with --fast=false for more extensive checks
   fast: true
-issue:
+issues:
+  exclude-rules:
+    - path: internal/test/
+      linters:
+        - golint
+    - path: cloudtest\.go
+      linters:
+        - golint
+    - path: api/v1alpha2/types\.go
+      linters:
+        - golint
+  include:
+  - EXC0002 # include "missing comments" issues from golint
+  max-issues-per-linter: 0
   max-same-issues: 0
-  max-per-linter: 0

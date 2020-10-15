@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	"encoding/base64"
 	"fmt"
+
 	"github.com/google/uuid"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
@@ -44,7 +45,7 @@ func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 	return allErrs
 }
 
-// ValidateUserAssignedIdentity validates the user-assigned identities list
+// ValidateSystemAssignedIdentity validates the system-assigned identities list.
 func ValidateSystemAssignedIdentity(identityType VMIdentity, old, new string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 

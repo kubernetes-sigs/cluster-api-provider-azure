@@ -18,6 +18,7 @@ package tags
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -56,7 +57,7 @@ func (ac *AzureClient) GetAtScope(ctx context.Context, scope string) (resources.
 	return ac.tags.GetAtScope(ctx, scope)
 }
 
-// CreateOrUpdate allows adding or replacing the entire set of tags on the specified resource or subscription.
+// CreateOrUpdateAtScope allows adding or replacing the entire set of tags on the specified resource or subscription.
 func (ac *AzureClient) CreateOrUpdateAtScope(ctx context.Context, scope string, parameters resources.TagsResource) (resources.TagsResource, error) {
 	return ac.tags.CreateOrUpdateAtScope(ctx, scope, parameters)
 }

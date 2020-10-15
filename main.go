@@ -85,6 +85,7 @@ var (
 	reconcileTimeout            time.Duration
 )
 
+// InitFlags initializes all command-line flags.
 func InitFlags(fs *pflag.FlagSet) {
 	fs.StringVar(
 		&metricsAddr,
