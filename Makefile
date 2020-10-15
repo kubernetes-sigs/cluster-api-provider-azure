@@ -113,6 +113,7 @@ PULL_POLICY ?= Always
 
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
+GINKGO_SKIP ?= Creating a GPU-enabled cluster
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
 ARTIFACTS ?= $(ROOT_DIR)/_artifacts
@@ -162,7 +163,7 @@ test-e2e: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build docker-push
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	$(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
+	$(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="${GINKGO_SKIP}" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \
 	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
@@ -172,7 +173,7 @@ test-e2e-local: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	$(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
+	$(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="${GINKGO_SKIP}" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \
 	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
@@ -182,7 +183,7 @@ test-conformance: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	PULL_POLICY=IfNotPresent $(MAKE) docker-build docker-push
 	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	$(GINKGO) -v -trace -stream -progress -v -tags=e2e -focus="$(GINKGO_FOCUS)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
+	$(GINKGO) -v -trace -stream -progress -v -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="${GINKGO_SKIP}" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
 	    -e2e.artifacts-folder="$(ARTIFACTS)" \
 	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
 	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \

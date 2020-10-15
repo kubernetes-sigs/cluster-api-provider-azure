@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../flavors/nvidia-gpu
+  - cni-resource-set.yaml
+patchesStrategicMerge:
+  - ../patches/tags.yaml
+  - ../patches/cni-resource-set.yaml
+patchesJson6902:
+- path: patches/node-storage-type.yaml
+  target:
+    group: infrastructure.cluster.x-k8s.io
+    version: v1alpha3
+    kind: AzureMachineTemplate
+    name: "${CLUSTER_NAME}-md-0"

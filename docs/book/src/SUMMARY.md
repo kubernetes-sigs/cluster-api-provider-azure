@@ -9,6 +9,7 @@
     - [Ephemeral OS](./topics/ephemeral-os.md)
     - [External Cloud Provider](./topics/external-cloud-provider.md)
     - [Failure Domains](./topics/failure-domains.md)
+    - [GPU-enabled Clusters](../topics/gpu.md)
     - [Identity](./topics/identity.md)
     - [IPv6](./topics/ipv6.md)
     - [Machine Pools (VMSS)](./topics/machinepools.md)

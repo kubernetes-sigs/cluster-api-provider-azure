@@ -54,6 +54,8 @@ providers:
         targetName: "cluster-template-mhc.yaml"
       - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool.yaml"
         targetName: "cluster-template-machine-pool.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-nvidia-gpu.yaml"
+        targetName: "cluster-template-nvidia-gpu.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.18.8}"
