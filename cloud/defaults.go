@@ -105,8 +105,8 @@ func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
 }
 
 // SecurityGroupID returns the azure resource ID for a given security group.
-func SecurityGroupID(subscriptionID, resourceGroup, routeTableName string) string {
-	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, routeTableName)
+func SecurityGroupID(subscriptionID, resourceGroup, nsgName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, nsgName)
 }
 
 // NetworkInterfaceID returns the azure resource ID for a given network interface.
