@@ -343,7 +343,14 @@ type DataDisk struct {
 
 // ManagedDisk defines the managed disk options for a VM.
 type ManagedDisk struct {
-	StorageAccountType string `json:"storageAccountType"`
+	StorageAccountType string                       `json:"storageAccountType"`
+	DiskEncryptionSet  *DiskEncryptionSetParameters `json:"diskEncryptionSet,omitempty"`
+}
+
+// DiskEncryptionSetParameters defines disk encryption options.
+type DiskEncryptionSetParameters struct {
+	// ID defines resourceID for diskEncryptionSet resource. It must be in the same subscription
+	ID string `json:"id,omitempty"`
 }
 
 // DiffDiskSettings describe ephemeral disk settings for the os disk.

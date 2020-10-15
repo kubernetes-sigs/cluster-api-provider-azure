@@ -67,6 +67,9 @@ func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
 	}
 	dst.OSDisk.DiffDiskSettings = restored.OSDisk.DiffDiskSettings
 	dst.OSDisk.CachingType = restored.OSDisk.CachingType
+	if restored.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
+		dst.OSDisk.ManagedDisk.DiskEncryptionSet = restored.OSDisk.ManagedDisk.DiskEncryptionSet.DeepCopy()
+	}
 
 	if restored.Image != nil && restored.Image.Marketplace != nil {
 		dst.Image.Marketplace.ThirdPartyImage = restored.Image.Marketplace.ThirdPartyImage

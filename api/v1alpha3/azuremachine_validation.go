@@ -143,6 +143,14 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 		))
 	}
 
+	if osDisk.DiffDiskSettings != nil && osDisk.DiffDiskSettings.Option == string(compute.Local) && osDisk.ManagedDisk.DiskEncryptionSet != nil {
+		allErrs = append(allErrs, field.Invalid(
+			fieldPath.Child("managedDisks").Child("diskEncryptionSet"),
+			osDisk.ManagedDisk.DiskEncryptionSet.ID,
+			"diskEncryptionSet is not supported when diffDiskSettings.option is 'Local'",
+		))
+	}
+
 	return allErrs
 }
 
