@@ -23,11 +23,12 @@ import (
 type (
 	// VMSSVM defines a VM in a virtual machine scale set.
 	VMSSVM struct {
-		ID               string          `json:"id,omitempty"`
-		InstanceID       string          `json:"instanceID,omitempty"`
-		Name             string          `json:"name,omitempty"`
-		AvailabilityZone string          `json:"availabilityZone,omitempty"`
-		State            infrav1.VMState `json:"vmState,omitempty"`
+		ID                 string          `json:"id,omitempty"`
+		InstanceID         string          `json:"instanceID,omitempty"`
+		Name               string          `json:"name,omitempty"`
+		AvailabilityZone   string          `json:"availabilityZone,omitempty"`
+		State              infrav1.VMState `json:"vmState,omitempty"`
+		LatestModelApplied bool            `json:"latestModelApplied,omitempty"`
 	}
 
 	// VMSS defines a virtual machine scale set.

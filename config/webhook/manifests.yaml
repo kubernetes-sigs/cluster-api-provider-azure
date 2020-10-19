@@ -51,13 +51,12 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool
+      path: /mutate-exp-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachinepool
   failurePolicy: Fail
-  matchPolicy: Equivalent
-  name: mazuremachinepool.kb.io
+  name: azuremachinepool.kb.io
   rules:
   - apiGroups:
-    - exp.cluster.x-k8s.io.x-k8s.io
+    - exp.infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1alpha3
     operations:
@@ -137,13 +136,12 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool
+      path: /validate-exp-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachinepool
   failurePolicy: Fail
-  matchPolicy: Equivalent
-  name: vazuremachinepool.kb.io
+  name: azuremachinepool.kb.io
   rules:
   - apiGroups:
-    - exp.cluster.x-k8s.io.x-k8s.io
+    - exp.infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1alpha3
     operations:

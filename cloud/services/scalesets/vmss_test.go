@@ -247,6 +247,30 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(gomock.Any(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						ID:         to.StringPtr("my-vm-id"),
+						InstanceID: to.StringPtr("my-vm-1"),
+						Name:       to.StringPtr("my-vm"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					},
+				}, nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
+				s.NeedsK8sVersionUpdate()
+				s.SaveK8sVersion()
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -392,6 +416,30 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ClusterName().Return("my-cluster")
 				m.Get(context.TODO(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(gomock.Any(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						ID:         to.StringPtr("my-vm-id"),
+						InstanceID: to.StringPtr("my-vm-1"),
+						Name:       to.StringPtr("my-vm"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					},
+				}, nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
+				s.NeedsK8sVersionUpdate()
+				s.SaveK8sVersion()
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -643,6 +691,30 @@ func TestReconcileVMSS(t *testing.T) {
 						},
 					},
 				}))
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						InstanceID: to.StringPtr("id-2"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+						ID:   to.StringPtr("id-1"),
+						Name: to.StringPtr("instance-0"),
+					},
+				}, nil)
+				s.SaveK8sVersion()
+				s.NeedsK8sVersionUpdate()
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
 			},
 		},
 		{
@@ -785,9 +857,6 @@ func TestReconcileVMSS(t *testing.T) {
 						Name: to.StringPtr("instance-0"),
 					},
 				}, nil)
-				s.SetProviderID("azure:///vmss-id")
-				s.SetAnnotation("cluster-api-provider-azure", "true")
-				s.SetProvisioningState(infrav1.VMState("Succeeded"))
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
 						Publisher: "fake-publisher",
@@ -856,7 +925,30 @@ func TestReconcileVMSS(t *testing.T) {
 							},
 						},
 					},
-				}))
+				})).Return(nil)
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(gomock.Any(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						ID:         to.StringPtr("my-vm-id"),
+						InstanceID: to.StringPtr("my-vm-1"),
+						Name:       to.StringPtr("my-vm"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					},
+				}, nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.NeedsK8sVersionUpdate()
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
 			},
 		},
 		{

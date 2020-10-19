@@ -23,6 +23,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
 // ScaleSetScope defines the scope interface for a scale sets service.
@@ -34,6 +35,9 @@ type ScaleSetScope interface {
 	GetVMImage() (*infrav1.Image, error)
 	SetAnnotation(string, string)
 	SetProviderID(string)
+	UpdateInstanceStatuses(context.Context, []v1alpha3.VMSSVM) error
+	NeedsK8sVersionUpdate() bool
+	SaveK8sVersion()
 	SetProvisioningState(infrav1.VMState)
 }
 

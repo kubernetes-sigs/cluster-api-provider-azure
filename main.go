@@ -253,7 +253,7 @@ func main() {
 			if err = (&infrav1controllersexp.AzureMachinePoolReconciler{
 				Client:           mgr.GetClient(),
 				Log:              ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
-				Recorder:         mgr.GetEventRecorderFor("azurecluster-reconciler"),
+				Recorder:         mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
 				ReconcileTimeout: reconcileTimeout,
 			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")

@@ -39,7 +39,7 @@ func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/mutate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=exp.cluster.x-k8s.io.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1alpha3,name=mazuremachinepool.kb.io,sideEffects=None
+// +kubebuilder:webhook:path=/mutate-exp-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachinepool,mutating=true,failurePolicy=fail,groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=create;update,versions=v1alpha3,name=azuremachinepool.kb.io,sideEffects=None
 
 var _ webhook.Defaulter = &AzureMachinePool{}
 
@@ -53,7 +53,7 @@ func (amp *AzureMachinePool) Default() {
 	}
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-exp-cluster-x-k8s-io-x-k8s-io-v1alpha3-azuremachinepool,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=exp.cluster.x-k8s.io.x-k8s.io,resources=azuremachinepools,versions=v1alpha3,name=vazuremachinepool.kb.io,sideEffects=None
+// +kubebuilder:webhook:verbs=create;update,path=/validate-exp-infrastructure-cluster-x-k8s-io-v1alpha3-azuremachinepool,mutating=false,failurePolicy=fail,groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1alpha3,name=azuremachinepool.kb.io,sideEffects=None
 
 var _ webhook.Validator = &AzureMachinePool{}
 

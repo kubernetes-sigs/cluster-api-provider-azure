@@ -34,6 +34,7 @@ type Client interface {
 	Get(context.Context, string, string) (compute.VirtualMachineScaleSet, error)
 	CreateOrUpdate(context.Context, string, string, compute.VirtualMachineScaleSet) error
 	Update(context.Context, string, string, compute.VirtualMachineScaleSetUpdate) error
+	UpdateInstances(context.Context, string, string, []string) error
 	Delete(context.Context, string, string) error
 	GetPublicIPAddress(context.Context, string, string) (network.PublicIPAddress, error)
 }
@@ -135,6 +136,23 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 // Parameters: resourceGroupName - the name of the resource group. VMScaleSetName - the name of the VM scale set to create or update. parameters - the scale set object.
 func (ac *AzureClient) Update(ctx context.Context, resourceGroupName, vmssName string, parameters compute.VirtualMachineScaleSetUpdate) error {
 	future, err := ac.scalesets.Update(ctx, resourceGroupName, vmssName, parameters)
+	if err != nil {
+		return err
+	}
+	err = future.WaitForCompletionRef(ctx, ac.scalesets.Client)
+	if err != nil {
+		return err
+	}
+	_, err = future.Result(ac.scalesets)
+	return err
+}
+
+// UpdateInstances update instances of a VM scale set.
+func (ac *AzureClient) UpdateInstances(ctx context.Context, resourceGroupName, vmssName string, instanceIDs []string) error {
+	params := compute.VirtualMachineScaleSetVMInstanceRequiredIDs{
+		InstanceIds: &instanceIDs,
+	}
+	future, err := ac.scalesets.UpdateInstances(ctx, resourceGroupName, vmssName, params)
 	if err != nil {
 		return err
 	}

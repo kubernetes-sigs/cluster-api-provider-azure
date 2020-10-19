@@ -93,6 +93,14 @@ type (
 		// +optional
 		Replicas int32 `json:"replicas"`
 
+		// Instances is the VM instance status for each VM in the VMSS
+		// +optional
+		Instances []*AzureMachinePoolInstanceStatus `json:"instances"`
+
+		// Version is the Kubernetes version for the current VMSS model
+		// +optional
+		Version string `json:"version"`
+
 		// ProvisioningState is the provisioning state of the Azure virtual machine.
 		// +optional
 		ProvisioningState *infrav1.VMState `json:"provisioningState,omitempty"`
@@ -134,6 +142,30 @@ type (
 		// controller's output.
 		// +optional
 		FailureMessage *string `json:"failureMessage,omitempty"`
+	}
+
+	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
+	AzureMachinePoolInstanceStatus struct {
+		// Version defines the Kubernetes version for the VM Instance
+		// +optional
+		Version string `json:"version"`
+
+		// ProvisioningState is the provisioning state of the Azure virtual machine instance.
+		// +optional
+		ProvisioningState *infrav1.VMState `json:"provisioningState"`
+
+		// ProviderID is the provider identification of the VMSS Instance
+		// +optional
+		ProviderID string `json:"providerID"`
+
+		// InstanceID is the identification of the Machine Instance within the VMSS
+		// +optional
+		InstanceID string `json:"instanceName"`
+
+		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
+		// the image version the VM is running. If the instance is not running the latest model, it means the instance
+		// may not be running the version of Kubernetes the Machine Pool has specified and needs to be updated.
+		LatestModelApplied bool `json:"latestModelApplied"`
 	}
 
 	// +kubebuilder:object:root=true

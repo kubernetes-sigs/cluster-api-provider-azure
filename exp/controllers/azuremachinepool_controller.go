@@ -120,6 +120,7 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (r *AzureMachinePoolReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
@@ -257,6 +258,10 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	case infrav1.VMStateUpdating:
 		machinePoolScope.V(2).Info("Scale Set is updating", "id", machinePoolScope.ProviderID())
 		machinePoolScope.SetNotReady()
+		// we may still be scaling up, so check back in a bit
+		return reconcile.Result{
+			RequeueAfter: 30 * time.Second,
+		}, nil
 	case infrav1.VMStateDeleting:
 		machinePoolScope.Info("Unexpected scale set deletion", "id", machinePoolScope.ProviderID())
 		r.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure scale set deletion")

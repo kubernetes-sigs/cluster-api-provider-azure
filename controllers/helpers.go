@@ -287,7 +287,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 
 	// Create if it wasn't found
 	if apierrors.IsNotFound(err) {
-		if err := kubeclient.Create(ctx, new); err != nil {
+		if err := kubeclient.Create(ctx, new); err != nil && !apierrors.IsAlreadyExists(err) {
 			return errors.Wrap(err, "failed to create cluster azure json")
 		}
 		return nil

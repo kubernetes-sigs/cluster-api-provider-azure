@@ -55,6 +55,10 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 				State:      infrav1.VMState(to.String(vm.ProvisioningState)),
 			}
 
+			if vm.LatestModelApplied != nil {
+				instance.LatestModelApplied = *vm.LatestModelApplied
+			}
+
 			if vm.Zones != nil && len(*vm.Zones) > 0 {
 				instance.AvailabilityZone = to.StringSlice(vm.Zones)[0]
 			}
