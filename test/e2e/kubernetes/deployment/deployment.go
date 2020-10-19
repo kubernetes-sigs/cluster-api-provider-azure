@@ -20,9 +20,8 @@ package deployment
 
 import (
 	"fmt"
-	"log"
-
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	"log"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -78,6 +77,9 @@ func CreateDeployment(image, name, namespace string) *deploymentBuilder {
 									},
 								},
 							},
+						},
+						NodeSelector: map[string]string{
+							"kubernetes.io/os": "linux",
 						},
 					},
 				},
@@ -159,4 +161,21 @@ func (d *deploymentBuilder) GetService(ports []corev1.ServicePort, lbtype Loadba
 			},
 		},
 	}
+}
+
+func (d *deploymentBuilder) SetImage(name, image string) {
+	for i, c := range d.deployment.Spec.Template.Spec.Containers {
+		if c.Name == name {
+			c.Image = image
+			d.deployment.Spec.Template.Spec.Containers[i] = c
+		}
+	}
+}
+
+func (d *deploymentBuilder) AddWindowsSelectors() {
+	if d.deployment.Spec.Template.Spec.NodeSelector == nil {
+		d.deployment.Spec.Template.Spec.NodeSelector = map[string]string{}
+	}
+
+	d.deployment.Spec.Template.Spec.NodeSelector["kubernetes.io/os"] = "windows"
 }

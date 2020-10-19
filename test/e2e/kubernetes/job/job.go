@@ -22,9 +22,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 func CreateCurlJob(name, endpoint string) *batchv1.Job {
+	name = name + util.RandomString(5)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -43,6 +45,9 @@ func CreateCurlJob(name, endpoint string) *batchv1.Job {
 								endpoint,
 							},
 						},
+					},
+					NodeSelector: map[string]string{
+						"kubernetes.io/os": "linux",
 					},
 				},
 			},

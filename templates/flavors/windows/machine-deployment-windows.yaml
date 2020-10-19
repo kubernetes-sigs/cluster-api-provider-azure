@@ -76,7 +76,7 @@ spec:
       - path: C:\configure-ssh.ps1
         permissions: "0744"
         content: |
-          [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${AZURE_SSH_PUBLIC_KEY_B64:=''}")) > C:\ProgramData\ssh\administrators_authorized_keys
+          [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${AZURE_SSH_PUBLIC_KEY_B64:=''}")) | Add-Content C:\ProgramData\ssh\administrators_authorized_keys
           icacls C:\ProgramData\ssh\administrators_authorized_keys /remove "NT AUTHORITY\Authenticated Users"
           icacls C:\ProgramData\ssh\administrators_authorized_keys /inheritance:r
           icacls C:\ProgramData\ssh\administrators_authorized_keys /grant SYSTEM:`(F`)
