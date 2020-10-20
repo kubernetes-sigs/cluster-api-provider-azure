@@ -82,6 +82,18 @@ spec:
                   the same tag name with different values, the AzureMachine's value
                   takes precedence.
                 type: object
+              identity:
+                default: None
+                description: Identity is the type of identity used for the Virtual
+                  Machine Scale Set. The type 'SystemAssigned' is an implicitly created
+                  identity. The generated identity will be assigned a Subscription
+                  contributor role. The type 'UserAssigned' is a standalone Azure
+                  resource provided by the user and assigned to the VM
+                enum:
+                - None
+                - SystemAssigned
+                - UserAssigned
+                type: string
               location:
                 description: Location is the Azure region location e.g. westus2
                 type: string
@@ -97,6 +109,11 @@ spec:
                 items:
                   type: string
                 type: array
+              roleAssignmentName:
+                description: RoleAssignmentName is the name of the role assignment
+                  to create for a system assigned identity. It can be any valid GUID.
+                  If not specified, a random GUID will be generated.
+                type: string
               template:
                 description: Template contains the details used to build a replica
                   virtual machine within the Machine Pool
@@ -298,6 +315,23 @@ spec:
                 - sshPublicKey
                 - vmSize
                 type: object
+              userAssignedIdentities:
+                description: UserAssignedIdentities is a list of standalone Azure
+                  identities provided by the user The lifecycle of a user-assigned
+                  identity is managed separately from the lifecycle of the AzureMachinePool.
+                  See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+                items:
+                  description: UserAssignedIdentity defines the user-assigned identities
+                    provided by the user to be assigned to Azure resources.
+                  properties:
+                    providerID:
+                      description: 'ProviderID is the identification ID of the user-assigned
+                        Identity, the format of an identity is: ''azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'''
+                      type: string
+                  required:
+                  - providerID
+                  type: object
+                type: array
             required:
             - location
             - template

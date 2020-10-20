@@ -22,6 +22,7 @@ import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 )
 
@@ -29,6 +30,7 @@ import (
 type azureMachinePoolService struct {
 	virtualMachinesScaleSetSvc azure.Service
 	skuCache                   *resourceskus.Cache
+	roleAssignmentsSvc         azure.Service
 }
 
 // newAzureMachinePoolService populates all the services based on input scope.
@@ -37,6 +39,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	return &azureMachinePoolService{
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
+		roleAssignmentsSvc:         roleassignments.NewService(machinePoolScope),
 	}
 }
 
@@ -45,6 +48,11 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to create scale set")
 	}
+
+	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "unable to create role assignment")
+	}
+
 	return nil
 }
 

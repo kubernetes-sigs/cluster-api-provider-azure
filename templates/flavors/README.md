@@ -25,7 +25,7 @@ run ```tilt up ${flavors}``` to spin up worker clusters in Azure represented by 
 Add your desired flavors to tilt_config.json:
 ```json
 {
-    "worker-flavors": ["default", "aks", "ephemeral", "external-cloud-provider", "ipv6", "machinepool", "system-assigned-identity", "user-assigned-identity"]
+    "worker-flavors": ["default", "aks", "ephemeral", "external-cloud-provider", "ipv6", "machinepool", "system-assigned-identity", "user-assigned-identity", "machinepool-system-assigned-identity", "machinepool-user-assigned-identity"]
 }
 ```
 

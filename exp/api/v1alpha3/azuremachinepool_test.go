@@ -135,7 +135,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			t.Parallel()
 			g := gomega.NewGomegaWithT(t)
 			amp := c.Factory(g)
-			actualErr := amp.Validate()
+			actualErr := amp.Validate(nil)
 			c.Expect(g, actualErr)
 		})
 	}

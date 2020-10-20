@@ -156,19 +156,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					Type: compute.ResourceIdentityTypeSystemAssigned,
 				}
 			} else if vmSpec.Identity == infrav1.VMIdentityUserAssigned {
-				if len(vmSpec.UserAssignedIdentities) == 0 {
-					return errors.Wrapf(err, "cannot create VM: The user-assigned identity provider ids must not be null or empty for 'UserAssigned' identity type.")
-				}
-				// UserAssignedIdentities - The list of user identities associated with the Virtual Machine.
-				// The user identity dictionary key references will be ARM resource ids in the form:
-				// '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'.
-				userIdentitiesMap := make(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue, len(vmSpec.UserAssignedIdentities))
-				for _, id := range vmSpec.UserAssignedIdentities {
-					key := id.ProviderID
-					if strings.HasPrefix(id.ProviderID, "azure:///") {
-						key = strings.TrimPrefix(key, "azure:///")
-					}
-					userIdentitiesMap[key] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
+				userIdentitiesMap, err := converters.UserAssignedIdentitiesToVMSDK(vmSpec.UserAssignedIdentities)
+				if err != nil {
+					return errors.Wrapf(err, "failed to assign identity %q", vmSpec.Name)
 				}
 				virtualMachine.Identity = &compute.VirtualMachineIdentity{
 					Type:                   compute.ResourceIdentityTypeUserAssigned,

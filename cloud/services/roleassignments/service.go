@@ -19,6 +19,7 @@ package roleassignments
 import (
 	"github.com/go-logr/logr"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
@@ -33,14 +34,16 @@ type RoleAssignmentScope interface {
 type Service struct {
 	Scope RoleAssignmentScope
 	Client
-	VirtualMachinesClient virtualmachines.Client
+	VirtualMachinesClient        virtualmachines.Client
+	VirtualMachineScaleSetClient scalesets.Client
 }
 
 // NewService creates a new service.
 func NewService(scope RoleAssignmentScope) *Service {
 	return &Service{
-		Scope:                 scope,
-		Client:                NewClient(scope),
-		VirtualMachinesClient: virtualmachines.NewClient(scope),
+		Scope:                        scope,
+		Client:                       NewClient(scope),
+		VirtualMachinesClient:        virtualmachines.NewClient(scope),
+		VirtualMachineScaleSetClient: scalesets.NewClient(scope),
 	}
 }

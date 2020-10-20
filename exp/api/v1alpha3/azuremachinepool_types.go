@@ -81,6 +81,27 @@ type (
 		// This field must match the provider IDs as seen on the node objects corresponding to a machine pool's machine instances.
 		// +optional
 		ProviderIDList []string `json:"providerIDList,omitempty"`
+
+		// Identity is the type of identity used for the Virtual Machine Scale Set.
+		// The type 'SystemAssigned' is an implicitly created identity.
+		// The generated identity will be assigned a Subscription contributor role.
+		// The type 'UserAssigned' is a standalone Azure resource provided by the user
+		// and assigned to the VM
+		// +kubebuilder:default=None
+		// +optional
+		Identity infrav1.VMIdentity `json:"identity,omitempty"`
+
+		// UserAssignedIdentities is a list of standalone Azure identities provided by the user
+		// The lifecycle of a user-assigned identity is managed separately from the lifecycle of
+		// the AzureMachinePool.
+		// See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+		// +optional
+		UserAssignedIdentities []infrav1.UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
+
+		// RoleAssignmentName is the name of the role assignment to create for a system assigned identity. It can be any valid GUID.
+		// If not specified, a random GUID will be generated.
+		// +optional
+		RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
 	}
 
 	// AzureMachinePoolStatus defines the observed state of AzureMachinePool
