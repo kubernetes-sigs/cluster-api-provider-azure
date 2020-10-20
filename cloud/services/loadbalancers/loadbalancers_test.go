@@ -70,6 +70,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 						Name:            "my-publiclb",
 						Role:            infrav1.APIServerRole,
 						Type:            infrav1.Public,
+						SKU:             infrav1.SKUStandard,
 						SubnetName:      "my-cp-subnet",
 						BackendPoolName: "my-publiclb-backendPool",
 						FrontendIPConfigs: []infrav1.FrontendIP{
@@ -175,6 +176,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 						Name:            "my-private-lb",
 						Role:            infrav1.APIServerRole,
 						Type:            infrav1.Internal,
+						SKU:             infrav1.SKUStandard,
 						SubnetName:      "my-cp-subnet",
 						BackendPoolName: "my-private-lb-backendPool",
 						FrontendIPConfigs: []infrav1.FrontendIP{
@@ -270,6 +272,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 						Name:            "cluster-name",
 						Role:            infrav1.NodeOutboundRole,
 						Type:            infrav1.Public,
+						SKU:             infrav1.SKUStandard,
 						BackendPoolName: "cluster-name-outboundBackendPool",
 						FrontendIPConfigs: []infrav1.FrontendIP{
 							{

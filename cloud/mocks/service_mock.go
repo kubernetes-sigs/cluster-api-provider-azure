@@ -452,18 +452,60 @@ func (mr *MockNetworkDescriberMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBName))
 }
 
-// NodeOutboundLBName mocks base method.
-func (m *MockNetworkDescriber) NodeOutboundLBName() string {
+// APIServerLBPoolName mocks base method.
+func (m *MockNetworkDescriber) APIServerLBPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
-func (mr *MockNetworkDescriberMockRecorder) NodeOutboundLBName() *gomock.Call {
+// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
+func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeOutboundLBName))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName), arg0)
+}
+
+// IsAPIServerPrivate mocks base method.
+func (m *MockNetworkDescriber) IsAPIServerPrivate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
+func (mr *MockNetworkDescriberMockRecorder) IsAPIServerPrivate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockNetworkDescriber)(nil).IsAPIServerPrivate))
+}
+
+// OutboundLBName mocks base method.
+func (m *MockNetworkDescriber) OutboundLBName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundLBName indicates an expected call of OutboundLBName.
+func (mr *MockNetworkDescriberMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockNetworkDescriber)(nil).OutboundLBName), arg0)
+}
+
+// OutboundPoolName mocks base method.
+func (m *MockNetworkDescriber) OutboundPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundPoolName indicates an expected call of OutboundPoolName.
+func (mr *MockNetworkDescriberMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).OutboundPoolName), arg0)
 }
 
 // MockClusterDescriber is a mock of ClusterDescriber interface.
@@ -932,16 +974,58 @@ func (mr *MockClusterScoperMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBName))
 }
 
-// NodeOutboundLBName mocks base method.
-func (m *MockClusterScoper) NodeOutboundLBName() string {
+// APIServerLBPoolName mocks base method.
+func (m *MockClusterScoper) APIServerLBPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
-func (mr *MockClusterScoperMockRecorder) NodeOutboundLBName() *gomock.Call {
+// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
+func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockClusterScoper)(nil).NodeOutboundLBName))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName), arg0)
+}
+
+// IsAPIServerPrivate mocks base method.
+func (m *MockClusterScoper) IsAPIServerPrivate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
+func (mr *MockClusterScoperMockRecorder) IsAPIServerPrivate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockClusterScoper)(nil).IsAPIServerPrivate))
+}
+
+// OutboundLBName mocks base method.
+func (m *MockClusterScoper) OutboundLBName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundLBName indicates an expected call of OutboundLBName.
+func (mr *MockClusterScoperMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockClusterScoper)(nil).OutboundLBName), arg0)
+}
+
+// OutboundPoolName mocks base method.
+func (m *MockClusterScoper) OutboundPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundPoolName indicates an expected call of OutboundPoolName.
+func (mr *MockClusterScoperMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockClusterScoper)(nil).OutboundPoolName), arg0)
 }

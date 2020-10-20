@@ -43,7 +43,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		lb := network.LoadBalancer{
-			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
+			Sku:      &network.LoadBalancerSku{Name: converters.SKUtoSDK(lbSpec.SKU)},
 			Location: to.StringPtr(s.Scope.Location()),
 			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 				ClusterName: s.Scope.ClusterName(),
@@ -115,7 +115,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					},
 				},
 			}
-			// TODO: check if this is needed for outbound access
 			if lbSpec.Type == infrav1.Internal {
 				lb.LoadBalancerPropertiesFormat.OutboundRules = nil
 			}

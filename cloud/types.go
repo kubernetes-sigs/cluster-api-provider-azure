@@ -29,20 +29,22 @@ type PublicIPSpec struct {
 
 // NICSpec defines the specification for a Network Interface.
 type NICSpec struct {
-	Name                     string
-	MachineName              string
-	SubnetName               string
-	VNetName                 string
-	VNetResourceGroup        string
-	StaticIPAddress          string
-	LBName                   string
-	LBBackendAddressPoolName string
-	LBNATRuleName            string
-	PublicIPName             string
-	VMSize                   string
-	AcceleratedNetworking    *bool
-	IPv6Enabled              bool
-	EnableIPForwarding       bool
+	Name                      string
+	MachineName               string
+	SubnetName                string
+	VNetName                  string
+	VNetResourceGroup         string
+	StaticIPAddress           string
+	PublicLBName              string
+	PublicLBAddressPoolName   string
+	PublicLBNATRuleName       string
+	InternalLBName            string
+	InternalLBAddressPoolName string
+	PublicIPName              string
+	VMSize                    string
+	AcceleratedNetworking     *bool
+	IPv6Enabled               bool
+	EnableIPForwarding        bool
 }
 
 // DiskSpec defines the specification for a Disk.
@@ -55,6 +57,7 @@ type LBSpec struct {
 	Name              string
 	Role              string
 	Type              infrav1.LBType
+	SKU               infrav1.SKU
 	SubnetName        string
 	BackendPoolName   string
 	FrontendIPConfigs []infrav1.FrontendIP

@@ -161,7 +161,7 @@ const (
 type LBType string
 
 const (
-	// Internal is the value for the Azure load b alancer internal type.
+	// Internal is the value for the Azure load balancer internal type.
 	Internal = LBType("Internal")
 	// Public is the value for the Azure load balancer public type.
 	Public = LBType("Public")

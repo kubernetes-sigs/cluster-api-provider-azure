@@ -146,23 +146,26 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	spec := azure.NICSpec{
-		Name:                  azure.GenerateNICName(m.Name()),
-		MachineName:           m.Name(),
-		VNetName:              m.Vnet().Name,
-		VNetResourceGroup:     m.Vnet().ResourceGroup,
-		SubnetName:            m.Subnet().Name,
-		VMSize:                m.AzureMachine.Spec.VMSize,
-		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-		IPv6Enabled:           m.IsIPv6Enabled(),
-		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
+		Name:                    azure.GenerateNICName(m.Name()),
+		MachineName:             m.Name(),
+		VNetName:                m.Vnet().Name,
+		VNetResourceGroup:       m.Vnet().ResourceGroup,
+		SubnetName:              m.Subnet().Name,
+		VMSize:                  m.AzureMachine.Spec.VMSize,
+		AcceleratedNetworking:   m.AzureMachine.Spec.AcceleratedNetworking,
+		IPv6Enabled:             m.IsIPv6Enabled(),
+		EnableIPForwarding:      m.AzureMachine.Spec.EnableIPForwarding,
+		PublicLBName:            m.OutboundLBName(m.Role()),
+		PublicLBAddressPoolName: m.OutboundPoolName(m.OutboundLBName(m.Role())),
 	}
 	if m.Role() == infrav1.ControlPlane {
-		spec.LBName = m.APIServerLBName()
-		spec.LBBackendAddressPoolName = azure.GenerateBackendAddressPoolName(m.APIServerLBName())
-		spec.LBNATRuleName = m.Name()
-	} else if m.Role() == infrav1.Node {
-		spec.LBName = m.NodeOutboundLBName()
-		spec.LBBackendAddressPoolName = azure.GenerateOutboundBackendAddressPoolName(m.NodeOutboundLBName())
+		if m.IsAPIServerPrivate() {
+			spec.InternalLBName = m.APIServerLBName()
+			spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+		} else {
+			spec.PublicLBNATRuleName = m.Name()
+			spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
+		}
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {

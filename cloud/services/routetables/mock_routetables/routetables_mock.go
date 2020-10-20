@@ -412,18 +412,60 @@ func (mr *MockRouteTableScopeMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockRouteTableScope)(nil).APIServerLBName))
 }
 
-// NodeOutboundLBName mocks base method.
-func (m *MockRouteTableScope) NodeOutboundLBName() string {
+// APIServerLBPoolName mocks base method.
+func (m *MockRouteTableScope) APIServerLBPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
-func (mr *MockRouteTableScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
+func (mr *MockRouteTableScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockRouteTableScope)(nil).NodeOutboundLBName))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockRouteTableScope)(nil).APIServerLBPoolName), arg0)
+}
+
+// IsAPIServerPrivate mocks base method.
+func (m *MockRouteTableScope) IsAPIServerPrivate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
+func (mr *MockRouteTableScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockRouteTableScope)(nil).IsAPIServerPrivate))
+}
+
+// OutboundLBName mocks base method.
+func (m *MockRouteTableScope) OutboundLBName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundLBName indicates an expected call of OutboundLBName.
+func (mr *MockRouteTableScopeMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockRouteTableScope)(nil).OutboundLBName), arg0)
+}
+
+// OutboundPoolName mocks base method.
+func (m *MockRouteTableScope) OutboundPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundPoolName indicates an expected call of OutboundPoolName.
+func (mr *MockRouteTableScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockRouteTableScope)(nil).OutboundPoolName), arg0)
 }
 
 // RouteTableSpecs mocks base method.

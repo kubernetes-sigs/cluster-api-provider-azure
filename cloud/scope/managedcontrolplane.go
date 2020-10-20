@@ -211,3 +211,30 @@ func (s *ManagedControlPlaneScope) IsIPv6Enabled() bool {
 func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	return true
 }
+
+// APIServerLBName returns the API Server LB name.
+func (s *ManagedControlPlaneScope) APIServerLBName() string {
+	return "" // does not apply for AKS
+}
+
+// APIServerLBPoolName returns the API Server LB backend pool name.
+func (s *ManagedControlPlaneScope) APIServerLBPoolName(loadBalancerName string) string {
+	return "" // does not apply for AKS
+}
+
+// IsAPIServerPrivate returns true if the API Server LB is of type Internal.
+// Currently always false as managed control planes do not currently implement private clusters.
+func (s *ManagedControlPlaneScope) IsAPIServerPrivate() bool {
+	return false
+}
+
+// OutboundLBName returns the name of the outbound LB.
+// Note: for managed clusters, the outbound LB lifecycle is not managed.
+func (s *ManagedControlPlaneScope) OutboundLBName(_ string) string {
+	return "kubernetes"
+}
+
+// OutboundPoolName returns the outbound LB backend pool name.
+func (s *ManagedControlPlaneScope) OutboundPoolName(_ string) string {
+	return "aksOutboundBackendPool" // hard-coded in aks
+}

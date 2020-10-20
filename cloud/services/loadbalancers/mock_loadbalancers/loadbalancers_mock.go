@@ -412,18 +412,60 @@ func (mr *MockLBScopeMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockLBScope)(nil).APIServerLBName))
 }
 
-// NodeOutboundLBName mocks base method.
-func (m *MockLBScope) NodeOutboundLBName() string {
+// APIServerLBPoolName mocks base method.
+func (m *MockLBScope) APIServerLBPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
-func (mr *MockLBScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
+func (mr *MockLBScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockLBScope)(nil).NodeOutboundLBName))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockLBScope)(nil).APIServerLBPoolName), arg0)
+}
+
+// IsAPIServerPrivate mocks base method.
+func (m *MockLBScope) IsAPIServerPrivate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
+func (mr *MockLBScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockLBScope)(nil).IsAPIServerPrivate))
+}
+
+// OutboundLBName mocks base method.
+func (m *MockLBScope) OutboundLBName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundLBName indicates an expected call of OutboundLBName.
+func (mr *MockLBScopeMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockLBScope)(nil).OutboundLBName), arg0)
+}
+
+// OutboundPoolName mocks base method.
+func (m *MockLBScope) OutboundPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundPoolName indicates an expected call of OutboundPoolName.
+func (mr *MockLBScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockLBScope)(nil).OutboundPoolName), arg0)
 }
 
 // LBSpecs mocks base method.

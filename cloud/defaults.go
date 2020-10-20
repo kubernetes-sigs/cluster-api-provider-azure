@@ -64,6 +64,16 @@ func GenerateNodePublicIPName(machineName string) string {
 	return fmt.Sprintf("pip-%s", machineName)
 }
 
+// GenerateControlPlaneOutboundLBName generates the name of the control plane outbound LB.
+func GenerateControlPlaneOutboundLBName(clusterName string) string {
+	return fmt.Sprintf("%s-outbound-lb", clusterName)
+}
+
+// GenerateControlPlaneOutboundIPName generates a public IP name, based on the cluster name.
+func GenerateControlPlaneOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
+}
+
 // GenerateNICName generates the name of a network interface based on the name of a VM.
 func GenerateNICName(machineName string) string {
 	return fmt.Sprintf("%s-nic", machineName)

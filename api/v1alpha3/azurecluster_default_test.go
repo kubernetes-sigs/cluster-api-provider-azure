@@ -199,7 +199,7 @@ func TestVnetDefaults(t *testing.T) {
 					ResourceGroup: "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
-							CIDRBlocks: []string{DefaultVnetCIDR, DefaultVnetIPv6CIDR},
+							CIDRBlocks: []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 						},
 					},
 				},
@@ -214,7 +214,7 @@ func TestVnetDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							CIDRBlocks:    []string{DefaultVnetCIDR, DefaultVnetIPv6CIDR},
+							CIDRBlocks:    []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 						},
 					},
 				},
@@ -573,6 +573,41 @@ func TestAPIServerLBDefaults(t *testing.T) {
 								},
 							},
 							Type: Public,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "internal lb",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Internal,
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Name: "cluster-test-internal-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name:             "cluster-test-internal-lb-frontEnd",
+									PrivateIPAddress: DefaultInternalLBIPAddress,
+								},
+							},
+							Type: Internal,
 						},
 					},
 				},
