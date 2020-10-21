@@ -123,6 +123,7 @@ var _ = Describe("Workload cluster creation", func() {
 				Context("Creating a private cluster from the management cluster", func() {
 					AzurePrivateClusterSpec(ctx, func() AzurePrivateClusterSpecInput {
 						return AzurePrivateClusterSpecInput{
+							BootstrapClusterProxy: bootstrapClusterProxy,
 							Namespace:            namespace,
 							ClusterName:          clusterName,
 							ClusterctlConfigPath: clusterctlConfigPath,

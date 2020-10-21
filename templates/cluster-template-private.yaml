@@ -28,22 +28,10 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     apiServerLB:
-      frontendIPs:
-      - name: ${CLUSTER_NAME}-internal-lb-frontend
-        privateIP: 10.128.0.100
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
-    subnets:
-    - cidrBlocks:
-      - ${AZURE_CP_SUBNET_CIDR}
-      name: private-cp-subnet
-      role: control-plane
-    - cidrBlocks:
-      - ${AZURE_NODE_SUBNET_CIDR}
-      name: private-node-subnet
-      role: node
     vnet:
-      name: ${AZURE_VNET_NAME}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
@@ -123,6 +111,9 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    preKubeadmCommands:
+    - if [ -f /tmp/kubeadm.yaml ]; then iptables -t nat -A OUTPUT -p all -d ${AZURE_INTERNAL_LB_IP}
+      -j DNAT --to-destination 127.0.0.1; fi
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}

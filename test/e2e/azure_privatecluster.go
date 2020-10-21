@@ -94,8 +94,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	By("Creating a private workload cluster")
 	clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
-	Expect(os.Setenv(AzureResourceGroup, input.ClusterName)).NotTo(HaveOccurred())
-	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", input.ClusterName))).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureInternalLBIP, "10.128.0.100")).NotTo(HaveOccurred())
 	result := clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 		ClusterProxy: publicClusterProxy,
 		ConfigCluster: clusterctl.ConfigClusterInput{

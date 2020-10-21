@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster
 metadata:
   labels:
-    cni: ${CLUSTER_NAME}-crs-0
+    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -25,28 +25,10 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  additionalTags:
-    creationTimestamp: ${TIMESTAMP}
-    jobName: ${JOB_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
-    apiServerLB:
-      frontendIPs:
-      - name: ${CLUSTER_NAME}-internal-lb-frontend
-        privateIP: ${AZURE_INTERNAL_LB_IP}
-      name: ${CLUSTER_NAME}-internal-lb
-      type: Internal
-    subnets:
-    - cidrBlocks:
-      - ${AZURE_CP_SUBNET_CIDR}
-      name: private-cp-subnet
-      role: control-plane
-    - cidrBlocks:
-      - ${AZURE_NODE_SUBNET_CIDR}
-      name: private-node-subnet
-      role: node
     vnet:
-      name: ${AZURE_VNET_NAME}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
@@ -126,9 +108,6 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    preKubeadmCommands:
-    - if [ -f /tmp/kubeadm.yaml ]; then iptables -t nat -A OUTPUT -p all -d ${AZURE_INTERNAL_LB_IP}
-      -j DNAT --to-destination 127.0.0.1; fi
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
@@ -218,24 +197,3 @@ spec:
             cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
       useExperimentalRetryJoin: true
----
-apiVersion: v1
-data: ${CNI_RESOURCES}
-kind: ConfigMap
-metadata:
-  name: cni-${CLUSTER_NAME}-crs-0
-  namespace: default
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha3
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-crs-0
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      cni: ${CLUSTER_NAME}-crs-0
-  resources:
-  - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-crs-0
-  strategy: ApplyOnce
