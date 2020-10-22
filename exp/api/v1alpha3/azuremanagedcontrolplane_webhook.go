@@ -115,11 +115,7 @@ func (r *AzureManagedControlPlane) Validate() error {
 		}
 	}
 
-	if len(errs) > 0 {
-		return kerrors.NewAggregate(errs)
-	}
-
-	return nil
+	return kerrors.NewAggregate(errs)
 }
 
 // validate DNSServiceIP
