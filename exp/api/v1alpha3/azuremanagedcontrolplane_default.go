@@ -18,14 +18,22 @@ package v1alpha3
 
 import (
 	"encoding/base64"
+	"fmt"
 
 	"golang.org/x/crypto/ssh"
 
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
-// SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane
-func (r *AzureManagedControlPlane) SetDefaultSSHPublicKey() error {
+const (
+	// defaultAKSVnetCIDR is the default Vnet CIDR
+	defaultAKSVnetCIDR = "10.0.0.0/8"
+	// defaultAKSNodeSubnetCIDR is the default Node Subnet CIDR
+	defaultAKSNodeSubnetCIDR = "10.240.0.0/16"
+)
+
+// setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane
+func (r *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
 	sshKeyData := r.Spec.SSHPublicKey
 	if sshKeyData == "" {
 		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
@@ -37,4 +45,31 @@ func (r *AzureManagedControlPlane) SetDefaultSSHPublicKey() error {
 	}
 
 	return nil
+}
+
+// setDefaultNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane
+func (r *AzureManagedControlPlane) setDefaultNodeResourceGroupName() {
+	if r.Spec.NodeResourceGroupName == "" {
+		r.Spec.NodeResourceGroupName = fmt.Sprintf("MC_%s_%s_%s", r.Spec.ResourceGroupName, r.Name, r.Spec.Location)
+	}
+}
+
+// setDefaultVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlane
+func (r *AzureManagedControlPlane) setDefaultVirtualNetwork() {
+	if r.Spec.VirtualNetwork.Name == "" {
+		r.Spec.VirtualNetwork.Name = r.Name
+	}
+	if r.Spec.VirtualNetwork.CIDRBlock == "" {
+		r.Spec.VirtualNetwork.CIDRBlock = defaultAKSVnetCIDR
+	}
+}
+
+// setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane
+func (r *AzureManagedControlPlane) setDefaultSubnet() {
+	if r.Spec.VirtualNetwork.Subnet.Name == "" {
+		r.Spec.VirtualNetwork.Subnet.Name = r.Name
+	}
+	if r.Spec.VirtualNetwork.Subnet.CIDRBlock == "" {
+		r.Spec.VirtualNetwork.Subnet.CIDRBlock = defaultAKSNodeSubnetCIDR
+	}
 }

@@ -30,8 +30,16 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:MinLength:=2
 	Version string `json:"version"`
 
-	// ResourceGroup is the name of the Azure resource group for this AKS Cluster.
-	ResourceGroup string `json:"resourceGroup"`
+	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+	ResourceGroupName string `json:"resourceGroupName"`
+
+	// NodeResourceGroupName is the name of the resource group
+	// containining cluster IaaS resources. Will be populated to default
+	// in webhook.
+	NodeResourceGroupName string `json:"nodeResourceGroupName"`
+
+	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
+	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
 
 	// SubscriotionID is the GUID of the Azure subscription to hold this cluster.
 	SubscriptionID string `json:"subscriptionID,omitempty"`
@@ -73,6 +81,19 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
+}
+
+// ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
+type ManagedControlPlaneVirtualNetwork struct {
+	Name      string                    `json:"name"`
+	CIDRBlock string                    `json:"cidrBlock"`
+	Subnet    ManagedControlPlaneSubnet `json:"subnet,omitempty"`
+}
+
+// ManagedControlPlaneSubnet describes a subnet for an AKS cluster.
+type ManagedControlPlaneSubnet struct {
+	Name      string `json:"name"`
+	CIDRBlock string `json:"cidrBlock"`
 }
 
 // AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane

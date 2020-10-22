@@ -39,8 +39,8 @@ func TestReconcile(t *testing.T) {
 		{
 			name: "managedcluster in terminal provisioning state",
 			managedclusterspec: Spec{
-				Name:          "my-managedcluster",
-				ResourceGroup: "my-rg",
+				Name:              "my-managedcluster",
+				ResourceGroupName: "my-rg",
 			},
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
 			expectedError:            "",
@@ -54,8 +54,8 @@ func TestReconcile(t *testing.T) {
 		{
 			name: "managedcluster in nonterminal provisioning state",
 			managedclusterspec: Spec{
-				Name:          "my-managedcluster",
-				ResourceGroup: "my-rg",
+				Name:              "my-managedcluster",
+				ResourceGroupName: "my-rg",
 			},
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
 			expectedError:            "",
@@ -104,8 +104,8 @@ func TestReconcile(t *testing.T) {
 		{
 			name: "no managedcluster exists",
 			managedclusterspec: Spec{
-				Name:          "my-managedcluster",
-				ResourceGroup: "my-rg",
+				Name:              "my-managedcluster",
+				ResourceGroupName: "my-rg",
 			},
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder) {

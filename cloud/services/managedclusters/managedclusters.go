@@ -37,8 +37,14 @@ type Spec struct {
 	// Name is the name of this AKS Cluster.
 	Name string
 
-	// ResourceGroup is the name of the Azure resource group for this AKS Cluster.
-	ResourceGroup string
+	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+	ResourceGroupName string
+
+	// NodeResourceGroupName is the name of the Azure resource group containing IaaS VMs.
+	NodeResourceGroupName string
+
+	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
+	VnetSubnetID string
 
 	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
 	Location string
@@ -88,7 +94,7 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 	if !ok {
 		return nil, errors.New("expected managed cluster specification")
 	}
-	return s.Client.Get(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
+	return s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 }
 
 // GetCredentials fetches a managed cluster kubeconfig from Azure.
@@ -109,6 +115,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		},
 		Location: &managedClusterSpec.Location,
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+			NodeResourceGroup: &managedClusterSpec.NodeResourceGroupName,
 			DNSPrefix:         &managedClusterSpec.Name,
 			KubernetesVersion: &managedClusterSpec.Version,
 			LinuxProfile: &containerservice.LinuxProfile{
@@ -163,11 +170,12 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			OsDiskSizeGB: &pool.OSDiskSizeGB,
 			Count:        &pool.Replicas,
 			Type:         containerservice.VirtualMachineScaleSets,
+			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
 		}
 		*properties.AgentPoolProfiles = append(*properties.AgentPoolProfiles, profile)
 	}
 
-	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
+	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrapf(err, "failed to get existing managed cluster")
 	} else if !azure.ResourceNotFound(err) {
@@ -178,7 +186,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 	}
 
-	err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name, properties)
+	err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, properties)
 	if err != nil {
 		return fmt.Errorf("failed to create or update managed cluster, %#+v", err)
 	}
@@ -194,13 +202,13 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 	}
 
 	klog.V(2).Infof("Deleting managed cluster  %s ", managedClusterSpec.Name)
-	err := s.Client.Delete(ctx, managedClusterSpec.ResourceGroup, managedClusterSpec.Name)
+	err := s.Client.Delete(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
 			return nil
 		}
-		return errors.Wrapf(err, "failed to delete managed cluster %s in resource group %s", managedClusterSpec.Name, managedClusterSpec.ResourceGroup)
+		return errors.Wrapf(err, "failed to delete managed cluster %s in resource group %s", managedClusterSpec.Name, managedClusterSpec.ResourceGroupName)
 	}
 
 	klog.V(2).Infof("successfully deleted managed cluster %s ", managedClusterSpec.Name)

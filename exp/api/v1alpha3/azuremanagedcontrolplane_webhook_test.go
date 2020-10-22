@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
@@ -30,8 +31,13 @@ func TestDefaultingWebhook(t *testing.T) {
 
 	t.Logf("Testing amcp defaulting webhook with no baseline")
 	amcp := &AzureManagedControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fooName",
+		},
 		Spec: AzureManagedControlPlaneSpec{
-			Version: "1.17.5",
+			ResourceGroupName: "fooRg",
+			Location:          "fooLocation",
+			Version:           "1.17.5",
 		},
 	}
 	amcp.Default()
@@ -40,6 +46,9 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal("calico"))
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(*&amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
+	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
+	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
 	netPlug := "kubenet"
@@ -50,12 +59,18 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.NetworkPolicy = &netPol
 	amcp.Spec.Version = "9.99.99"
 	amcp.Spec.SSHPublicKey = ""
+	amcp.Spec.NodeResourceGroupName = "fooNodeRg"
+	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
+	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
 	amcp.Default()
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
 	g.Expect(*amcp.Spec.LoadBalancerSKU).To(Equal(lbSKU))
 	g.Expect(*amcp.Spec.NetworkPolicy).To(Equal(netPol))
 	g.Expect(amcp.Spec.Version).To(Equal("v9.99.99"))
 	g.Expect(*&amcp.Spec.SSHPublicKey).NotTo(BeEmpty())
+	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
+	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
 }
 
 func TestValidatingWebhook(t *testing.T) {

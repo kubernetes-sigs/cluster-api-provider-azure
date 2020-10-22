@@ -243,6 +243,7 @@ func TestReconcile(t *testing.T) {
 						VMSize:              containerservice.VMSizeTypesStandardD2sV3,
 						OrchestratorVersion: to.StringPtr("9.99.9999"),
 						ProvisioningState:   to.StringPtr("Succeeded"),
+						VnetSubnetID:        to.StringPtr(""),
 					},
 				}, nil)
 			},
