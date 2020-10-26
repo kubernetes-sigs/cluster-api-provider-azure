@@ -117,6 +117,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		AcceleratedNetworking:   m.AzureMachinePool.Spec.Template.AcceleratedNetworking,
 		Identity:                m.AzureMachinePool.Spec.Identity,
 		UserAssignedIdentities:  m.AzureMachinePool.Spec.UserAssignedIdentities,
+		SecurityProfile:         m.AzureMachinePool.Spec.Template.SecurityProfile,
 	}
 }
 

@@ -736,6 +736,136 @@ func TestReconcileVM(t *testing.T) {
 			},
 		},
 		{
+			Name: "can create a vm with encryption at host",
+			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:            "my-vm",
+						Role:            infrav1.Node,
+						NICNames:        []string{"my-nic"},
+						SSHKeyData:      "fakesshpublickey",
+						Size:            "Standard_D2v3",
+						OSDisk:          infrav1.OSDisk{},
+						SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
+					},
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+					g.Expect(*vm.VirtualMachineProperties.SecurityProfile.EncryptionAtHost).To(Equal(true))
+
+				})
+			},
+			ExpectedError: "",
+			SetupSKUs: func(svc *Service) {
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("Standard_D2v3"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"test-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("test-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.EncryptionAtHost),
+								Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+							},
+						},
+					},
+				}
+
+				svc.ResourceSKUCache = resourceskus.NewStaticCache(skus)
+
+			},
+		},
+		{
+			Name: "creating a vm with encryption at host enabled for unsupported VM type fails",
+			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpecs().Return([]azure.VMSpec{
+					{
+						Name:            "my-vm",
+						Role:            infrav1.Node,
+						NICNames:        []string{"my-nic"},
+						SSHKeyData:      "fakesshpublickey",
+						Size:            "Standard_D2v3",
+						OSDisk:          infrav1.OSDisk{},
+						SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				m.Get(context.TODO(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+			ExpectedError: "encryption at host is not supported for VM type Standard_D2v3",
+			SetupSKUs: func(svc *Service) {
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("Standard_D2v3"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"test-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("test-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+						},
+					},
+				}
+
+				svc.ResourceSKUCache = resourceskus.NewStaticCache(skus)
+			},
+		},
+		{
 			Name: "vm creation fails",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.VMSpecs().Return([]azure.VMSpec{

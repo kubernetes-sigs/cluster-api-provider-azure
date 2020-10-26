@@ -62,6 +62,9 @@ func restoreAzureMachineSpec(restored, dst *infrav1alpha3.AzureMachineSpec) {
 	if restored.SpotVMOptions != nil {
 		dst.SpotVMOptions = restored.SpotVMOptions.DeepCopy()
 	}
+	if restored.SecurityProfile != nil {
+		dst.SecurityProfile = restored.SecurityProfile.DeepCopy()
+	}
 	if len(restored.DataDisks) != 0 {
 		dst.DataDisks = restored.DataDisks
 	}

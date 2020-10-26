@@ -297,6 +297,16 @@ spec:
                     - managedDisk
                     - osType
                     type: object
+                  securityProfile:
+                    description: SecurityProfile specifies the Security profile settings
+                      for a virtual machine.
+                    properties:
+                      encryptionAtHost:
+                        description: This field indicates whether Host Encryption
+                          should be enabled or disabled for a virtual machine or virtual
+                          machine scale set. Default is disabled.
+                        type: boolean
+                    type: object
                   sshPublicKey:
                     description: SSHPublicKey is the SSH public key string base64
                       encoded to add to a Virtual Machine

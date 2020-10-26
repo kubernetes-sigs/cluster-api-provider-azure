@@ -135,6 +135,7 @@ type VMSpec struct {
 	DataDisks              []infrav1.DataDisk
 	UserAssignedIdentities []infrav1.UserAssignedIdentity
 	SpotVMOptions          *infrav1.SpotVMOptions
+	SecurityProfile        *infrav1.SecurityProfile
 }
 
 // BastionSpec defines the specification for bastion host.
@@ -162,6 +163,7 @@ type ScaleSetSpec struct {
 	TerminateNotificationTimeout *int
 	Identity                     infrav1.VMIdentity
 	UserAssignedIdentities       []infrav1.UserAssignedIdentity
+	SecurityProfile              *infrav1.SecurityProfile
 }
 
 // TagsSpec defines the specification for a set of tags.

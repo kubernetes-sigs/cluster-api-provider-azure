@@ -86,6 +86,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return err
 	}
 
+	securityProfile, err := getSecurityProfile(vmssSpec, sku)
+	if err != nil {
+		return err
+	}
+
 	// Get the node outbound LB backend pool ID
 	backendAddressPools := []compute.SubResource{}
 	if vmssSpec.PublicLBName != "" {
@@ -141,7 +146,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 						DisablePasswordAuthentication: to.BoolPtr(true),
 					},
 				},
-				StorageProfile: storageProfile,
+				StorageProfile:  storageProfile,
+				SecurityProfile: securityProfile,
 				DiagnosticsProfile: &compute.DiagnosticsProfile{
 					BootDiagnostics: &compute.BootDiagnostics{
 						Enabled: to.BoolPtr(true),
@@ -355,4 +361,18 @@ func getVMSSUpdateFromVMSS(vmss compute.VirtualMachineScaleSet) (compute.Virtual
 	var update compute.VirtualMachineScaleSetUpdate
 	err = update.UnmarshalJSON(json)
 	return update, err
+}
+
+func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*compute.SecurityProfile, error) {
+	if vmssSpec.SecurityProfile == nil {
+		return nil, nil
+	}
+
+	if !sku.HasCapability(resourceskus.EncryptionAtHost) {
+		return nil, errors.Errorf("encryption at host is not supported for VM type %s", vmssSpec.Size)
+	}
+
+	return &compute.SecurityProfile{
+		EncryptionAtHost: to.BoolPtr(*vmssSpec.SecurityProfile.EncryptionAtHost),
+	}, nil
 }

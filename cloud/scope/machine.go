@@ -103,6 +103,7 @@ func (m *MachineScope) VMSpecs() []azure.VMSpec {
 			Identity:               m.AzureMachine.Spec.Identity,
 			UserAssignedIdentities: m.AzureMachine.Spec.UserAssignedIdentities,
 			SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
+			SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
 		},
 	}
 }

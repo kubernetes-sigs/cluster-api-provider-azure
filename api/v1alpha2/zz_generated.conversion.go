@@ -586,6 +586,7 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha2_AzureMachineSpec(in *v1al
 	// WARNING: in.EnableIPForwarding requires manual conversion: does not exist in peer-type
 	// WARNING: in.AcceleratedNetworking requires manual conversion: does not exist in peer-type
 	// WARNING: in.SpotVMOptions requires manual conversion: does not exist in peer-type
+	// WARNING: in.SecurityProfile requires manual conversion: does not exist in peer-type
 	return nil
 }
 
