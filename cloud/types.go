@@ -98,9 +98,23 @@ type VNetSpec struct {
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
-	MachineName string
-	Name        string
+	MachineName  string
+	Name         string
+	ResourceType string
 }
+
+// ResourceType defines the type azure resource being reconciled.
+// Eg. Virtual Machine, Virtual Machine Scale Sets
+type ResourceType string
+
+const (
+
+	// VirtualMachine ...
+	VirtualMachine = "VirtualMachine"
+
+	// VirtualMachineScaleSet ...
+	VirtualMachineScaleSet = "VirtualMachineScaleSet"
+)
 
 // NSGSpec defines the specification for a Security Group.
 type NSGSpec struct {
@@ -146,6 +160,8 @@ type ScaleSetSpec struct {
 	PublicLBAddressPoolName      string
 	AcceleratedNetworking        *bool
 	TerminateNotificationTimeout *int
+	Identity                     infrav1.VMIdentity
+	UserAssignedIdentities       []infrav1.UserAssignedIdentity
 }
 
 // TagsSpec defines the specification for a set of tags.

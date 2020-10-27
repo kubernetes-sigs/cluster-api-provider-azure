@@ -22,6 +22,8 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/util/uuid"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
@@ -86,6 +88,26 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 			amp:     createMachinePoolWithSharedImage(t, "SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(35)),
 			wantErr: true,
 		},
+		{
+			name:    "azuremachinepool with system assigned identity",
+			amp:     createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with system assigned identity, but invalid role",
+			amp:     createMachinePoolWithSystemAssignedIdentity(t, "not_a_uuid"),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachinepool with user assigned identity",
+			amp:     createMachinePoolWithUserAssignedIdentity(t, []string{"azure:://id1", "azure:://id2"}),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachinepool with user assigned identity, but without any provider ids",
+			amp:     createMachinePoolWithUserAssignedIdentity(t, []string{}),
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -118,6 +140,18 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 			name:    "azuremachine with invalid SSHPublicKey",
 			oldAMP:  createMachinePoolWithSSHPublicKey(t, ""),
 			amp:     createMachinePoolWithSSHPublicKey(t, "invalid ssh key"),
+			wantErr: true,
+		},
+		{
+			name:    "azuremachine with system-assigned identity, and role unchanged",
+			oldAMP:  createMachinePoolWithSystemAssignedIdentity(t, "30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
+			amp:     createMachinePoolWithSystemAssignedIdentity(t, "30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
+			wantErr: false,
+		},
+		{
+			name:    "azuremachine with system-assigned identity, and role changed",
+			oldAMP:  createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
+			amp:     createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
 			wantErr: true,
 		},
 	}
@@ -206,6 +240,32 @@ func createMachinePoolWithImageByID(t *testing.T, imageID string, terminateNotif
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
 			},
+		},
+	}
+}
+
+func createMachinePoolWithSystemAssignedIdentity(t *testing.T, role string) *AzureMachinePool {
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Identity:           infrav1.VMIdentitySystemAssigned,
+			RoleAssignmentName: role,
+		},
+	}
+}
+
+func createMachinePoolWithUserAssignedIdentity(t *testing.T, providerIds []string) *AzureMachinePool {
+	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIds))
+
+	for _, providerID := range providerIds {
+		userAssignedIdentities = append(userAssignedIdentities, infrav1.UserAssignedIdentity{
+			ProviderID: providerID,
+		})
+	}
+
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Identity:               infrav1.VMIdentityUserAssigned,
+			UserAssignedIdentities: userAssignedIdentities,
 		},
 	}
 }

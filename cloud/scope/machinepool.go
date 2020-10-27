@@ -115,6 +115,8 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		PublicLBName:            m.ClusterName(),
 		PublicLBAddressPoolName: azure.GenerateOutboundBackendddressPoolName(m.ClusterName()),
 		AcceleratedNetworking:   m.AzureMachinePool.Spec.Template.AcceleratedNetworking,
+		Identity:                m.AzureMachinePool.Spec.Identity,
+		UserAssignedIdentities:  m.AzureMachinePool.Spec.UserAssignedIdentities,
 	}
 }
 
@@ -307,6 +309,20 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	}
 	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+}
+
+// RoleAssignmentSpecs returns the role assignment specs.
+func (m *MachinePoolScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
+	if m.AzureMachinePool.Spec.Identity == infrav1.VMIdentitySystemAssigned {
+		return []azure.RoleAssignmentSpec{
+			{
+				MachineName:  m.Name(),
+				Name:         m.AzureMachinePool.Spec.RoleAssignmentName,
+				ResourceType: azure.VirtualMachineScaleSet,
+			},
+		}
+	}
+	return []azure.RoleAssignmentSpec{}
 }
 
 func (m *MachinePoolScope) getNodeStatusByProviderID(ctx context.Context, providerIDList []string) (map[string]*NodeStatus, error) {

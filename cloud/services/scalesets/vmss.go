@@ -193,8 +193,25 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
+	// Assign Identity to VMSS
+	if vmssSpec.Identity == infrav1.VMIdentitySystemAssigned {
+		vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
+			Type: compute.ResourceIdentityTypeSystemAssigned,
+		}
+	} else if vmssSpec.Identity == infrav1.VMIdentityUserAssigned {
+		userIdentitiesMap, err := converters.UserAssignedIdentitiesToVMSSSDK(vmssSpec.UserAssignedIdentities)
+		if err != nil {
+			return errors.Wrapf(err, "failed to assign identity %q", vmssSpec.Name)
+		}
+		vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
+			Type:                   compute.ResourceIdentityTypeUserAssigned,
+			UserAssignedIdentities: userIdentitiesMap,
+		}
+	}
+
 	// get the VMSS to check if it exists
 	_, err = s.getExisting(ctx, vmssSpec.Name)
+
 	switch {
 	case err != nil && !azure.ResourceNotFound(err):
 		return errors.Wrapf(err, "failed to get VMSS %s", vmssSpec.Name)

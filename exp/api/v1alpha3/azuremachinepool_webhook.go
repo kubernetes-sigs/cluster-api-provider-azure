@@ -18,10 +18,12 @@ package v1alpha3
 
 import (
 	"errors"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -60,13 +62,13 @@ var _ webhook.Validator = &AzureMachinePool{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (amp *AzureMachinePool) ValidateCreate() error {
 	azuremachinepoollog.Info("validate create", "name", amp.Name)
-	return amp.Validate()
+	return amp.Validate(nil)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (amp *AzureMachinePool) ValidateUpdate(old runtime.Object) error {
 	azuremachinepoollog.Info("validate update", "name", amp.Name)
-	return amp.Validate()
+	return amp.Validate(old)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -76,11 +78,13 @@ func (amp *AzureMachinePool) ValidateDelete() error {
 }
 
 // Validate the Azure Machine Pool and return an aggregate error
-func (amp *AzureMachinePool) Validate() error {
+func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 	validators := []func() error{
 		amp.ValidateImage,
 		amp.ValidateTerminateNotificationTimeout,
 		amp.ValidateSSHKey,
+		amp.ValidateUserAssignedIdentity,
+		amp.ValidateSystemAssignedIdentity(old),
 	}
 
 	var errs []error
@@ -135,4 +139,36 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 	}
 
 	return nil
+}
+
+// ValidateUserAssignedIdentity validates the user-assigned identities list
+func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
+	fldPath := field.NewPath("UserAssignedIdentities")
+	if errs := infrav1.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
+		return kerrors.NewAggregate(errs.ToAggregate().Errors())
+	}
+
+	return nil
+}
+
+// ValidateSystemAssignedIdentity validates system-assigned identity role
+func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) func() error {
+	return func() error {
+		var oldRole string
+		if old != nil {
+			oldMachinePool, ok := old.(*AzureMachinePool)
+			if !ok {
+				return fmt.Errorf("unexpected type for old azure machine pool object. Expected: %q, Got: %q",
+					"AzureMachinePool", reflect.TypeOf(old))
+			}
+			oldRole = oldMachinePool.Spec.RoleAssignmentName
+		}
+
+		fldPath := field.NewPath("roleAssignmentName")
+		if errs := infrav1.ValidateSystemAssignedIdentity(amp.Spec.Identity, oldRole, amp.Spec.RoleAssignmentName, fldPath); len(errs) > 0 {
+			return kerrors.NewAggregate(errs.ToAggregate().Errors())
+		}
+
+		return nil
+	}
 }

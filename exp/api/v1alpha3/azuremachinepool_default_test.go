@@ -19,7 +19,10 @@ package v1alpha3
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	. "github.com/onsi/gomega"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
@@ -40,6 +43,38 @@ func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
 	err = publicKeyNotExistTest.amp.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
 	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
+}
+
+func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
+	g := NewWithT(t)
+
+	type test struct {
+		machinePool *AzureMachinePool
+	}
+
+	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
+	roleAssignmentExistTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:           infrav1.VMIdentitySystemAssigned,
+		RoleAssignmentName: existingRoleAssignmentName,
+	}}}
+	roleAssignmentEmptyTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:           infrav1.VMIdentitySystemAssigned,
+		RoleAssignmentName: "",
+	}}}
+	notSystemAssignedTest := test{machinePool: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity: infrav1.VMIdentityUserAssigned,
+	}}}
+
+	roleAssignmentExistTest.machinePool.SetIdentityDefaults()
+	g.Expect(roleAssignmentExistTest.machinePool.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
+
+	roleAssignmentEmptyTest.machinePool.SetIdentityDefaults()
+	g.Expect(roleAssignmentEmptyTest.machinePool.Spec.RoleAssignmentName).To(Not(BeEmpty()))
+	_, err := uuid.Parse(roleAssignmentEmptyTest.machinePool.Spec.RoleAssignmentName)
+	g.Expect(err).To(Not(HaveOccurred()))
+
+	notSystemAssignedTest.machinePool.SetIdentityDefaults()
+	g.Expect(notSystemAssignedTest.machinePool.Spec.RoleAssignmentName).To(BeEmpty())
 }
 
 func createMachinePoolWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMachinePool {

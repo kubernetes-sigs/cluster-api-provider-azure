@@ -225,8 +225,9 @@ func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 	if m.AzureMachine.Spec.Identity == infrav1.VMIdentitySystemAssigned {
 		return []azure.RoleAssignmentSpec{
 			{
-				MachineName: m.Name(),
-				Name:        m.AzureMachine.Spec.RoleAssignmentName,
+				MachineName:  m.Name(),
+				Name:         m.AzureMachine.Spec.RoleAssignmentName,
+				ResourceType: azure.VirtualMachine,
 			},
 		}
 	}
