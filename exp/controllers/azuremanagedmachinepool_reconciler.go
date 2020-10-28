@@ -27,6 +27,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -85,6 +87,9 @@ func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope)
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolReconciler.Reconcile")
+	defer span.End()
+
 	scope.Logger.Info("reconciling machine pool")
 
 	var normalizedVersion *string
@@ -159,6 +164,9 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 
 // Delete reconciles all the services in pre determined order
 func (r *azureManagedMachinePoolReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolReconciler.Delete")
+	defer span.End()
+
 	agentPoolSpec := &agentpools.Spec{
 		Name:          scope.InfraMachinePool.Name,
 		ResourceGroup: scope.ControlPlane.Spec.ResourceGroupName,

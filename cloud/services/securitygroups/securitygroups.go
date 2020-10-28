@@ -18,17 +18,22 @@ package securitygroups
 
 import (
 	"context"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Reconcile")
+	defer span.End()
+
 	if !s.Scope.IsVnetManaged() {
 		s.Scope.V(4).Info("Skipping network security group reconcile in custom VNet mode")
 		return nil
@@ -109,6 +114,9 @@ func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
 
 // Delete deletes the network security group with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Delete")
+	defer span.End()
+
 	for _, nsgSpec := range s.Scope.NSGSpecs() {
 		s.Scope.V(2).Info("deleting security group", "security group", nsgSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)

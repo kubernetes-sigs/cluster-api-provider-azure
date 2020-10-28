@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -60,5 +62,8 @@ func newRoleAssignmentClient(subscriptionID string, baseURI string, authorizer a
 // roleAssignmentName - the name of the role assignment to create. It can be any valid GUID.
 // parameters - parameters for the role assignment.
 func (ac *AzureClient) Create(ctx context.Context, scope string, roleAssignmentName string, parameters authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.AzureClient.Create")
+	defer span.End()
+
 	return ac.roleassignments.Create(ctx, scope, roleAssignmentName, parameters)
 }

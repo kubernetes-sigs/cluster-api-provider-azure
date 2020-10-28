@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -42,7 +44,9 @@ var _ Client = &AzureClient{}
 // NewClient creates a new VM client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {
 	c := newVirtualNetworksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
+	return &AzureClient{
+		virtualnetworks: c,
+	}
 }
 
 // newVirtualNetworksClient creates a new vnet client from subscription ID.
@@ -55,11 +59,17 @@ func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer 
 
 // Get gets the specified virtual network by resource group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vnetName string) (network.VirtualNetwork, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.Get")
+	defer span.End()
+
 	return ac.virtualnetworks.Get(ctx, resourceGroupName, vnetName, "")
 }
 
 // CreateOrUpdate creates or updates a virtual network in the specified resource group.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vnetName string, vn network.VirtualNetwork) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.virtualnetworks.CreateOrUpdate(ctx, resourceGroupName, vnetName, vn)
 	if err != nil {
 		return err
@@ -74,6 +84,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vn
 
 // Delete deletes the specified virtual network.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vnetName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.virtualnetworks.Delete(ctx, resourceGroupName, vnetName)
 	if err != nil {
 		return err
@@ -88,5 +101,8 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vnetName s
 
 // CheckIPAddressAvailability checks whether a private IP address is available for use.
 func (ac *AzureClient) CheckIPAddressAvailability(ctx context.Context, resourceGroupName, vnetName, ip string) (network.IPAddressAvailabilityResult, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.CheckIPAddressAvailability")
+	defer span.End()
+
 	return ac.virtualnetworks.CheckIPAddressAvailability(ctx, resourceGroupName, vnetName, ip)
 }

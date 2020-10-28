@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newInterfacesClient(subscriptionID string, baseURI string, authorizer autor
 
 // Get gets information about the specified network interface.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, nicName string) (network.Interface, error) {
+	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.AzureClient.Get")
+	defer span.End()
+
 	return ac.interfaces.Get(ctx, resourceGroupName, nicName, "")
 }
 
 // CreateOrUpdate creates or updates a network interface.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, nicName string, nic network.Interface) error {
+	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.interfaces.CreateOrUpdate(ctx, resourceGroupName, nicName, nic)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified network interface.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, nicName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.interfaces.Delete(ctx, resourceGroupName, nicName)
 	if err != nil {
 		return err

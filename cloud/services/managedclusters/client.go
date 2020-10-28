@@ -22,7 +22,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -62,6 +64,9 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, name string) 
 
 // GetCredentials fetches the admin kubeconfig for a managed cluster.
 func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, name string) ([]byte, error) {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.GetCredentials")
+	defer span.End()
+
 	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name)
 	if err != nil {
 		return nil, err
@@ -76,6 +81,9 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 
 // CreateOrUpdate creates or updates a managed cluster.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) error {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin operation")
@@ -89,6 +97,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, na
 
 // Delete deletes a managed cluster.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.managedclusters.Delete(ctx, resourceGroupName, name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin operation")

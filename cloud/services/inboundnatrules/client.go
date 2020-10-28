@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newInboundNatRulesClient(subscriptionID string, baseURI string, authorizer 
 
 // Get gets the specified inbound NAT rules.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) (network.InboundNatRule, error) {
+	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.Get")
+	defer span.End()
+
 	return ac.inboundnatrules.Get(ctx, resourceGroupName, lbName, inboundNatRuleName, "")
 }
 
 // CreateOrUpdate creates or updates a inbound NAT rules.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, inboundNatRuleName string, inboundNatRuleParameters network.InboundNatRule) error {
+	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.inboundnatrules.CreateOrUpdate(ctx, resourceGroupName, lbName, inboundNatRuleName, inboundNatRuleParameters)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified inbound NAT rules.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.inboundnatrules.Delete(ctx, resourceGroupName, lbName, inboundNatRuleName)
 	if err != nil {
 		return err

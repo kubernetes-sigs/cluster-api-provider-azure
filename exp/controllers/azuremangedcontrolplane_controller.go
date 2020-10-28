@@ -22,6 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -41,6 +43,7 @@ import (
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // AzureManagedControlPlaneReconciler reconciles a AzureManagedControlPlane object
@@ -99,7 +102,15 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, 
 func (r *AzureManagedControlPlaneReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedControlPlanes", req.Name)
+	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedControlPlane", req.Name)
+
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
+		trace.WithAttributes(
+			label.String("namespace", req.Namespace),
+			label.String("name", req.Name),
+			label.String("kind", "AzureManagedControlPlane"),
+		))
+	defer span.End()
 
 	// Fetch the AzureManagedControlPlane instance
 	azureControlPlane := &infrav1exp.AzureManagedControlPlane{}
@@ -184,6 +195,9 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(req ctrl.Request) (_ ctrl
 }
 
 func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.reconcileNormal")
+	defer span.End()
+
 	scope.Logger.Info("Reconciling AzureManagedControlPlane")
 
 	// If the AzureManagedControlPlane doesn't have our finalizer, add it.
@@ -205,6 +219,9 @@ func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context
 }
 
 func (r *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.reconcileDelete")
+	defer span.End()
+
 	scope.Logger.Info("Reconciling AzureManagedControlPlane delete")
 
 	if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx, scope); err != nil {

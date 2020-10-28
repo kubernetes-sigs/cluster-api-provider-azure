@@ -18,6 +18,7 @@ package securitygroups
 
 import (
 	"github.com/go-logr/logr"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 

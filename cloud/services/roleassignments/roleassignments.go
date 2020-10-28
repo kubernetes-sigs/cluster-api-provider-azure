@@ -19,16 +19,22 @@ package roleassignments
 import (
 	"context"
 	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 const azureBuiltInContributorID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
 
 // Reconcile creates a role assignment.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.Reconcile")
+	defer span.End()
+
 	for _, roleSpec := range s.Scope.RoleAssignmentSpecs() {
 
 		switch roleSpec.ResourceType {
@@ -46,6 +52,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 }
 
 func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignmentSpec) error {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.reconcileVM")
+	defer span.End()
+
 	resultVM, err := s.VirtualMachinesClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get VM to assign role to system assigned identity")
@@ -62,6 +71,9 @@ func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignment
 }
 
 func (s *Service) reconcileVMSS(ctx context.Context, roleSpec azure.RoleAssignmentSpec) error {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.reconcileVMSS")
+	defer span.End()
+
 	resultVMSS, err := s.VirtualMachineScaleSetClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get VMSS to assign role to system assigned identity")
@@ -78,6 +90,9 @@ func (s *Service) reconcileVMSS(ctx context.Context, roleSpec azure.RoleAssignme
 }
 
 func (s *Service) assignRole(ctx context.Context, roleAssignmentName string, principalID *string) error {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.assignRole")
+	defer span.End()
+
 	scope := fmt.Sprintf("/subscriptions/%s/", s.Scope.SubscriptionID())
 	// Azure built-in roles https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
 	contributorRoleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", s.Scope.SubscriptionID(), azureBuiltInContributorID)
@@ -93,5 +108,8 @@ func (s *Service) assignRole(ctx context.Context, roleAssignmentName string, pri
 
 // Delete is a no-op as the role assignments get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.Delete")
+	defer span.End()
+
 	return nil
 }

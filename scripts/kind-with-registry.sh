@@ -58,6 +58,21 @@ containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
     endpoint = ["http://${reg_host}:${reg_port}"]
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
 EOF
 
 for node in $(kind get nodes --name "${KIND_CLUSTER_NAME}"); do
@@ -76,3 +91,11 @@ if [ "${kind_network}" != "bridge" ]; then
     docker network connect "${kind_network}" "${reg_name}" || true
   fi
 fi
+
+# add ingress
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/kind/deploy.yaml
+kubectl wait node "${KIND_CLUSTER_NAME}-control-plane" --for=condition=ready --timeout=90s
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=90s

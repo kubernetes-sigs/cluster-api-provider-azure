@@ -18,13 +18,19 @@ package tags
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "tags.Service.Reconcile")
+	defer span.End()
+
 	for _, tagsSpec := range s.Scope.TagsSpecs() {
 		annotation, err := s.Scope.AnnotationJSON(tagsSpec.Annotation)
 		if err != nil {
@@ -65,6 +71,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete is a no-op as the tags get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "tags.Service.Delete")
+	defer span.End()
+
 	return nil
 }
 

@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -52,6 +53,9 @@ func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.A
 
 // Delete removes the disk client
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
+	ctx, span := tele.Tracer().Start(ctx, "disks.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.disks.Delete(ctx, resourceGroupName, name)
 	if err != nil {
 		return err

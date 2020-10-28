@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newBastionHostsClient(subscriptionID string, baseURI string, authorizer aut
 
 // Get gets information about the specified bastion host.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, bastionName string) (network.BastionHost, error) {
+	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.Get")
+	defer span.End()
+
 	return ac.interfaces.Get(ctx, resourceGroupName, bastionName)
 }
 
 // CreateOrUpdate creates or updates a bastion host.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, bastionName string, bastionHost network.BastionHost) error {
+	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.interfaces.CreateOrUpdate(ctx, resourceGroupName, bastionName, bastionHost)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified network interface.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, bastionName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.interfaces.Delete(ctx, resourceGroupName, bastionName)
 	if err != nil {
 		return err

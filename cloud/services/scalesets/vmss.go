@@ -21,16 +21,16 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // getExisting provides information about a scale set.
@@ -50,6 +50,9 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1exp.VMS
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Reconcile")
+	defer span.End()
+
 	vmssSpec := s.Scope.ScaleSetSpec()
 
 	sku, err := s.ResourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
@@ -284,6 +287,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes a scale set.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
+	defer span.End()
+
 	vmssSpec := s.Scope.ScaleSetSpec()
 	s.Scope.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
