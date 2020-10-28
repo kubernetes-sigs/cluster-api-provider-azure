@@ -40,6 +40,7 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context,
 	}
 	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
 	hostname := m.Spec.InfrastructureRef.Name
+	port := e2eConfig.GetVariable(VMSSHPort)
 	execToPathFn := func(outputFileName, command string, args ...string) func() error {
 		return func() error {
 			f, err := fileOnHost(filepath.Join(outputPath, outputFileName))
@@ -47,7 +48,7 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context,
 				return err
 			}
 			defer f.Close()
-			return execOnHost(controlPlaneEndpoint, hostname, f, command, args...)
+			return execOnHost(controlPlaneEndpoint, hostname, port, f, command, args...)
 		}
 	}
 

@@ -45,6 +45,7 @@ const (
 	AzureVNetName       = "AZURE_VNET_NAME"
 	CNIPathIPv6         = "CNI_IPV6"
 	CNIResourcesIPv6    = "CNI_RESOURCES_IPV6"
+	VMSSHPort           = "VM_SSH_PORT"
 )
 
 func Byf(format string, a ...interface{}) {
