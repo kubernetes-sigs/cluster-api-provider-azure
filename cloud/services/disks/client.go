@@ -25,21 +25,21 @@ import (
 )
 
 // Client wraps go-sdk
-type Client interface {
+type client interface {
 	Delete(context.Context, string, string) error
 }
 
 // AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+type azureClient struct {
 	disks compute.DisksClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
 	c := newDisksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
+	return &azureClient{c}
 }
 
 // newDisksClient creates a new disks client from subscription ID.
@@ -51,7 +51,7 @@ func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.A
 }
 
 // Delete removes the disk client
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
+func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
 	future, err := ac.disks.Delete(ctx, resourceGroupName, name)
 	if err != nil {
 		return err
