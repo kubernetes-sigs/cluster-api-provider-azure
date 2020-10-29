@@ -116,6 +116,7 @@ GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_SKIP ?= Creating a GPU-enabled cluster
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
+GINKGO_ARGS ?=
 ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
@@ -158,37 +159,37 @@ test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with cod
 	go tool cover -func=coverage.out -o coverage.txt
 	go tool cover -html=coverage.out -o coverage.html
 
+.PHONY: test-e2e-run
+test-e2e-run: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
+	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
+    $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
+    	-e2e.artifacts-folder="$(ARTIFACTS)" \
+    	-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+    	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
+
 .PHONY: test-e2e
-test-e2e: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
-	PULL_POLICY=IfNotPresent $(MAKE) docker-build docker-push
-	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	$(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="${GINKGO_SKIP}" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
-	    -e2e.artifacts-folder="$(ARTIFACTS)" \
-	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
-	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
+test-e2e: ## Run e2e tests
+	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
+	$(MAKE) docker-build docker-push \
+	test-e2e-run
 
+LOCAL_GINKGO_ARGS ?= -stream --progress
+LOCAL_GINKGO_ARGS += $(GINKGO_ARGS)
 .PHONY: test-e2e-local
-test-e2e-local: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
-	PULL_POLICY=IfNotPresent $(MAKE) docker-build
-	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	$(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="${GINKGO_SKIP}" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) -stream --progress ./test/e2e -- \
-	    -e2e.artifacts-folder="$(ARTIFACTS)" \
-	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
-	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
+test-e2e-local: ## Run e2e tests
+	PULL_POLICY=IfNotPresent MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
+	$(MAKE) docker-build \
+	GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)' \
+	test-e2e-run
 
+CONFORMANCE_E2E_ARGS ?= -kubetest.config-file=$(KUBETEST_CONF_PATH)
+CONFORMANCE_E2E_ARGS += $(E2E_ARGS)
 .PHONY: test-conformance
-test-conformance: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
-	PULL_POLICY=IfNotPresent $(MAKE) docker-build docker-push
-	MANAGER_IMAGE=$(CONTROLLER_IMG)-$(ARCH):$(TAG) \
-	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
-	$(GINKGO) -v -trace -stream -progress -v -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="${GINKGO_SKIP}" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) ./test/e2e -- \
-	    -e2e.artifacts-folder="$(ARTIFACTS)" \
-	    -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
-	    -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \
-			-kubetest.config-file=$(KUBETEST_CONF_PATH) \
-			-e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
+test-conformance: ## Run conformance test on workload cluster.
+	$(MAKE) test-e2e-local GINKGO_FOCUS="Conformance" E2E_ARGS='$(CONFORMANCE_E2E_ARGS)' GINKGO_ARGS='$(LOCAL_GINKGO_ARGS)'
+
+test-conformance-fast: ## Run conformance test on workload cluster using a subset of the conformance suite in parallel.
+	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_FAST_CONF_PATH) -kubetest.ginkgo-nodes=5 $(E2E_ARGS)"
 
 $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools

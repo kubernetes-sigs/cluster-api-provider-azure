@@ -32,6 +32,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/test/framework/kubetest"
 	"sigs.k8s.io/cluster-api/util"
 )
@@ -67,6 +68,14 @@ var _ = Describe("Conformance Tests", func() {
 	Measure(specName, func(b Benchmarker) {
 		var err error
 
+		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
+		flavor := clusterctl.DefaultFlavor
+		if useCIArtifacts {
+			flavor = "conformance-ci-artifacts"
+			kubernetesVersion, err = kubernetesversions.LatestCIRelease()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+		}
 		workerMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_WORKER_MACHINE_COUNT"), 10, 64)
 		Expect(err).NotTo(HaveOccurred())
 		controlPlaneMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT"), 10, 64)
@@ -80,10 +89,10 @@ var _ = Describe("Conformance Tests", func() {
 					ClusterctlConfigPath:     clusterctlConfigPath,
 					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   clusterctl.DefaultFlavor,
+					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					KubernetesVersion:        kubernetesVersion,
 					ControlPlaneMachineCount: pointer.Int64Ptr(controlPlaneMachineCount),
 					WorkerMachineCount:       pointer.Int64Ptr(workerMachineCount),
 				},

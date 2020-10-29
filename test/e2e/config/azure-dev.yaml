@@ -58,6 +58,8 @@ providers:
         targetName: "cluster-template-nvidia-gpu.yaml"
       - sourcePath: "${PWD}/templates/test/cluster-template-prow-private.yaml"
         targetName: "cluster-template-private.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-ci-version.yaml"
+        targetName: "cluster-template-conformance-ci-artifacts.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.3}"
