@@ -60,13 +60,15 @@ func AzureAcceleratedNetworkingSpec(ctx context.Context, inputGetter func() Azur
 	By("verifying EnableAcceleratedNetworking for the primary NIC of each VM")
 	// NOTE: add SKUs being tested to this lookup table.
 	acceleratedNetworking := map[compute.VirtualMachineSizeTypes]bool{
-		compute.VirtualMachineSizeTypesStandardB2ms:  false,
-		compute.VirtualMachineSizeTypesStandardD2V2:  true,
-		compute.VirtualMachineSizeTypesStandardD2V3:  false,
-		compute.VirtualMachineSizeTypesStandardD2sV3: false,
-		compute.VirtualMachineSizeTypesStandardD4V2:  true,
-		compute.VirtualMachineSizeTypesStandardD4V3:  true,
-		compute.VirtualMachineSizeTypesStandardD8sV3: true,
+		compute.VirtualMachineSizeTypesStandardB2ms:   false,
+		compute.VirtualMachineSizeTypesStandardD2V2:   true,
+		compute.VirtualMachineSizeTypesStandardD2V3:   false,
+		compute.VirtualMachineSizeTypesStandardD2sV3:  false,
+		compute.VirtualMachineSizeTypesStandardD4V2:   true,
+		compute.VirtualMachineSizeTypesStandardD4V3:   true,
+		compute.VirtualMachineSizeTypesStandardD8sV3:  true,
+		compute.VirtualMachineSizeTypesStandardNC6sV3: false,
+		compute.VirtualMachineSizeTypesStandardNV6:    false,
 	}
 	rgName := input.ClusterName
 	page, err := vmsClient.List(ctx, rgName)

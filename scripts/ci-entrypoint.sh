@@ -121,7 +121,7 @@ run_upstream_e2e_tests() {
         fi
     fi
 
-    # setting this env prevents ginkg e2e from trying to run provider setup
+    # setting this env prevents ginkgo e2e from trying to run provider setup
     export KUBERNETES_CONFORMANCE_TEST="y"
     # run the tests
     (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && ./hack/ginkgo-e2e.sh \

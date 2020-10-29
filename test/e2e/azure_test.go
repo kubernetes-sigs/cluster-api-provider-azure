@@ -274,4 +274,53 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 		})
 	})
+
+	// ci-e2e.sh and Prow CI skip this test by default, since N-series GPUs are relatively expensive
+	// and may require specific quota limits on the subscription.
+	// To include this test, set `GINKGO_SKIP=""`.
+	// You can override the default SKU `Standard_NV6` and `Standard_LRS` storage by setting
+	// the `AZURE_GPU_NODE_MACHINE_TYPE` and `AZURE_GPU_NODE_STORAGE_TYPE` environment variables.
+	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
+	Context("Creating a GPU-enabled cluster", func() {
+		It("with a single control plane node and 1 node", func() {
+			result := clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "nvidia-gpu",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					ControlPlaneMachineCount: pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+			})
+			cluster = result.Cluster
+
+			Context("Running a GPU-based calculation", func() {
+				AzureGPUSpec(ctx, func() AzureGPUSpecInput {
+					return AzureGPUSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						SkipCleanup:           skipCleanup,
+					}
+				})
+			})
+
+			Context("Validating accelerated networking", func() {
+				AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
+					return AzureAcceleratedNetworkingSpecInput{
+						ClusterName: clusterName,
+					}
+				})
+			})
+		})
+	})
 })

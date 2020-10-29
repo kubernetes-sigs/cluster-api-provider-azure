@@ -25,7 +25,19 @@ run ```tilt up ${flavors}``` to spin up worker clusters in Azure represented by 
 Add your desired flavors to tilt_config.json:
 ```json
 {
-    "worker-flavors": ["default", "aks", "ephemeral", "external-cloud-provider", "ipv6", "machinepool", "system-assigned-identity", "user-assigned-identity", "machinepool-system-assigned-identity", "machinepool-user-assigned-identity"]
+    "worker-flavors": [
+        "default",
+        "aks",
+        "ephemeral",
+        "external-cloud-provider",
+        "ipv6",
+        "machinepool",
+        "machinepool-system-assigned-identity",
+        "machinepool-user-assigned-identity",
+        "nvidia-gpu",
+        "system-assigned-identity",
+        "user-assigned-identity"
+    ]
 }
 ```
 
@@ -79,6 +91,34 @@ If you wish to override the default variables for flavor workers, you can specif
             "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
             "WORKER_MACHINE_COUNT": "2",
             "AZURE_NODE_MACHINE_TYPE": "Standard_D2s_v3"
+        }
+    }
+}
+```
+
+Here is a practical example: creating a GPU-enabled cluster requires N-series nodes. You can set an
+N-series node type just for the `nvidia-gpu` flavor in `tilt-settings.json` to override any default:
+
+```json
+{
+    "kustomize_substitutions": {
+        "AZURE_SUBSCRIPTION_ID_B64": "****",
+        "AZURE_TENANT_ID_B64": "****",
+        "AZURE_CLIENT_SECRET_B64": "****",
+        "AZURE_CLIENT_ID_B64": "****",
+        "AZURE_ENVIRONMENT": "AzurePublicCloud"
+    },
+    "worker-templates": {
+        "flavors": {
+            "nvidia-gpu": {
+                "AZURE_NODE_MACHINE_TYPE": "Standard_NC6s_v3"
+            }
+        },
+        "metadata": {
+            "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
+            "AZURE_LOCATION": "southcentralus",
+            "KUBERNETES_VERSION": "v1.19.3",
+            "WORKER_MACHINE_COUNT": "1"
         }
     }
 }
