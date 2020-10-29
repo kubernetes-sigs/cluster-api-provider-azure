@@ -203,6 +203,7 @@ func (s *ManagedControlPlaneScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
 }
 
 // IsIPv6Enabled returns true if a cluster is ipv6 enabled.
+// Currently always false as managed control planes do not currently implement ipv6.
 func (s *ManagedControlPlaneScope) IsIPv6Enabled() bool {
 	return false
 }
