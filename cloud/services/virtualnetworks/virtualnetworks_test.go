@@ -19,8 +19,9 @@ package virtualnetworks
 import (
 	"context"
 	"net/http"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"testing"
+
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
@@ -113,7 +114,6 @@ func TestReconcileVnet(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
 				s.VNetSpecs().Return([]azure.VNetSpec{
 					{
@@ -136,7 +136,6 @@ func TestReconcileVnet(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.IsIPv6Enabled().AnyTimes().Return(true)
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
 				s.VNetSpecs().Return([]azure.VNetSpec{
 					{
@@ -203,7 +202,6 @@ func TestReconcileVnet(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
-				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
 				s.VNetSpecs().Return([]azure.VNetSpec{
@@ -245,7 +243,6 @@ func TestReconcileVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.VNetSpecs().Return([]azure.VNetSpec{
 					{
 						ResourceGroup: "custom-vnet-rg",

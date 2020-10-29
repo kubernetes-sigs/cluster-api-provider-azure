@@ -100,11 +100,17 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 
 	agentPoolSpec := &agentpools.Spec{
 		Name:          scope.InfraMachinePool.Name,
-		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
+		ResourceGroup: scope.ControlPlane.Spec.ResourceGroupName,
 		Cluster:       scope.ControlPlane.Name,
 		SKU:           scope.InfraMachinePool.Spec.SKU,
 		Replicas:      replicas,
 		Version:       normalizedVersion,
+		VnetSubnetID: azure.SubnetID(
+			scope.ControlPlane.Spec.SubscriptionID,
+			scope.ControlPlane.Spec.ResourceGroupName,
+			scope.ControlPlane.Spec.VirtualNetwork.Name,
+			scope.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+		),
 	}
 
 	if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {
@@ -115,10 +121,9 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
 
-	nodeResourceGroup := fmt.Sprintf("MC_%s_%s_%s", scope.ControlPlane.Spec.ResourceGroup, scope.ControlPlane.Name, scope.ControlPlane.Spec.Location)
-	vmss, err := r.scaleSetsSvc.List(ctx, nodeResourceGroup)
+	vmss, err := r.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
+		return errors.Wrapf(err, "failed to list vmss in resource group %s", scope.ControlPlane.Spec.NodeResourceGroupName)
 	}
 
 	var match *compute.VirtualMachineScaleSet
@@ -131,10 +136,10 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 	}
 
 	if match == nil {
-		return NewAgentPoolVMSSNotFoundError(nodeResourceGroup, scope.InfraMachinePool.Name)
+		return NewAgentPoolVMSSNotFoundError(scope.ControlPlane.Spec.NodeResourceGroupName, scope.InfraMachinePool.Name)
 	}
 
-	instances, err := r.scaleSetsSvc.ListInstances(ctx, nodeResourceGroup, *match.Name)
+	instances, err := r.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
@@ -156,9 +161,8 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 func (r *azureManagedMachinePoolReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	agentPoolSpec := &agentpools.Spec{
 		Name:          scope.InfraMachinePool.Name,
-		ResourceGroup: scope.ControlPlane.Spec.ResourceGroup,
+		ResourceGroup: scope.ControlPlane.Spec.ResourceGroupName,
 		Cluster:       scope.ControlPlane.Name,
-		SKU:           scope.InfraMachinePool.Spec.SKU,
 	}
 
 	if err := r.agentPoolsSvc.Delete(ctx, agentPoolSpec); err != nil {

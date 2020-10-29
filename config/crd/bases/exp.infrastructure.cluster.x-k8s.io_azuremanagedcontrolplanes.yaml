@@ -101,8 +101,13 @@ spec:
                 - azure
                 - calico
                 type: string
-              resourceGroup:
-                description: ResourceGroup is the name of the Azure resource group
+              nodeResourceGroupName:
+                description: NodeResourceGroupName is the name of the resource group
+                  containining cluster IaaS resources. Will be populated to default
+                  in webhook.
+                type: string
+              resourceGroupName:
+                description: ResourceGroupName is the name of the Azure resource group
                   for this AKS Cluster.
                 type: string
               sshPublicKey:
@@ -117,10 +122,35 @@ spec:
                 description: Version defines the desired Kubernetes version.
                 minLength: 2
                 type: string
+              virtualNetwork:
+                description: VirtualNetwork describes the vnet for the AKS cluster.
+                  Will be created if it does not exist.
+                properties:
+                  cidrBlock:
+                    type: string
+                  name:
+                    type: string
+                  subnet:
+                    description: ManagedControlPlaneSubnet describes a subnet for
+                      an AKS cluster.
+                    properties:
+                      cidrBlock:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - cidrBlock
+                    - name
+                    type: object
+                required:
+                - cidrBlock
+                - name
+                type: object
             required:
             - defaultPoolRef
             - location
-            - resourceGroup
+            - nodeResourceGroupName
+            - resourceGroupName
             - sshPublicKey
             - version
             type: object

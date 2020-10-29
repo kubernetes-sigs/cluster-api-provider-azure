@@ -18,6 +18,7 @@ package virtualnetworks
 
 import (
 	"github.com/go-logr/logr"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
@@ -25,7 +26,7 @@ import (
 type VNetScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	azure.NetworkDescriber
+	Vnet() *infrav1.VnetSpec
 	VNetSpecs() []azure.VNetSpec
 }
 

@@ -11,7 +11,7 @@ spec:
   controlPlaneRef:
     apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureManagedControlPlane
-    name: ${CLUSTER_NAME}-control-plane
+    name: ${CLUSTER_NAME}
   infrastructureRef:
     apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
     kind: AzureManagedCluster
@@ -20,13 +20,13 @@ spec:
 apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedControlPlane
 metadata:
-  name: ${CLUSTER_NAME}-control-plane
+  name: ${CLUSTER_NAME}
   namespace: default
 spec:
   defaultPoolRef:
     name: agentpool0
   location: ${AZURE_LOCATION}
-  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   version: ${KUBERNETES_VERSION}

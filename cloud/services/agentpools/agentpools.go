@@ -35,6 +35,7 @@ type Spec struct {
 	SKU           string
 	Replicas      int32
 	OSDiskSizeGB  int32
+	VnetSubnetID  string
 }
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
@@ -51,6 +52,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Count:               &agentPoolSpec.Replicas,
 			Type:                containerservice.VirtualMachineScaleSets,
 			OrchestratorVersion: agentPoolSpec.Version,
+			VnetSubnetID:        &agentPoolSpec.VnetSubnetID,
 		},
 	}
 
@@ -84,6 +86,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				Count:               existingPool.ManagedClusterAgentPoolProfileProperties.Count,
 				Type:                containerservice.VirtualMachineScaleSets,
 				OrchestratorVersion: existingPool.ManagedClusterAgentPoolProfileProperties.OrchestratorVersion,
+				VnetSubnetID:        existingPool.ManagedClusterAgentPoolProfileProperties.VnetSubnetID,
 			},
 		}
 
