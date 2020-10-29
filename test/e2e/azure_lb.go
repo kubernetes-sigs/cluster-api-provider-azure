@@ -28,9 +28,9 @@ import (
 	"net"
 	"regexp"
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -79,7 +79,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	servicesClient := clientset.CoreV1().Services(corev1.NamespaceDefault)
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
-	jobName := "curl-to-ilb-job"
+
 	ports := []corev1.ServicePort{
 		{
 			Name:     "http",
@@ -123,29 +123,8 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 				break
 			}
 		}
-		ilbJob := &batchv1.Job{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      jobName,
-				Namespace: corev1.NamespaceDefault,
-			},
-			Spec: batchv1.JobSpec{
-				Template: corev1.PodTemplateSpec{
-					Spec: corev1.PodSpec{
-						RestartPolicy: corev1.RestartPolicyNever,
-						Containers: []corev1.Container{
-							{
-								Name:  "curl",
-								Image: "curlimages/curl",
-								Command: []string{
-									"curl",
-									ilbIP,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
+
+		ilbJob := job.CreateCurlJob("curl-to-ilb-job", ilbIP)
 		_, err = jobsClient.Create(ilbJob)
 		Expect(err).NotTo(HaveOccurred())
 		ilbJobInput := WaitForJobCompleteInput{
@@ -159,7 +138,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			By("deleting the ilb test resources")
 			err = servicesClient.Delete(ilbService.Name, &metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = jobsClient.Delete(jobName, &metav1.DeleteOptions{})
+			err = jobsClient.Delete(ilbJob.Name, &metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
 	}
@@ -189,29 +168,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			break
 		}
 	}
-	elbJob := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "curl-to-elb-job",
-			Namespace: corev1.NamespaceDefault,
-		},
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{
-						{
-							Name:  "curl",
-							Image: "curlimages/curl",
-							Command: []string{
-								"curl",
-								elbIP,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	elbJob := job.CreateCurlJob("curl-to-elb-job", elbIP)
 	_, err = jobsClient.Create(elbJob)
 	Expect(err).NotTo(HaveOccurred())
 	elbJobInput := WaitForJobCompleteInput{
