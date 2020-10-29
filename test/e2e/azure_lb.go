@@ -112,17 +112,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 		svc, err := servicesClient.Get(ilbService.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		var ilbIP string
-		for _, i := range svc.Status.LoadBalancer.Ingress {
-			if net.ParseIP(i.IP) != nil {
-				if k8snet.IsIPv6String(i.IP) {
-					ilbIP = fmt.Sprintf("[%s]", i.IP)
-					break
-				}
-				ilbIP = i.IP
-				break
-			}
-		}
+		ilbIP := extractServiceIp(svc)
 
 		ilbJob := job.CreateCurlJob("curl-to-ilb-job", ilbIP)
 		_, err = jobsClient.Create(ilbJob)
@@ -157,17 +147,8 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	By("connecting to the external LB service from a curl pod")
 	svc, err := servicesClient.Get(elbService.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	var elbIP string
-	for _, i := range svc.Status.LoadBalancer.Ingress {
-		if net.ParseIP(i.IP) != nil {
-			if k8snet.IsIPv6String(i.IP) {
-				elbIP = fmt.Sprintf("[%s]", i.IP)
-				break
-			}
-			elbIP = i.IP
-			break
-		}
-	}
+
+	elbIP := extractServiceIp(svc)
 	elbJob := job.CreateCurlJob("curl-to-elb-job", elbIP)
 	_, err = jobsClient.Create(elbJob)
 	Expect(err).NotTo(HaveOccurred())
@@ -203,4 +184,20 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	Expect(err).NotTo(HaveOccurred())
 	err = jobsClient.Delete(elbJob.Name, &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func extractServiceIp(svc *corev1.Service) string {
+	var ilbIP string
+	for _, i := range svc.Status.LoadBalancer.Ingress {
+		if net.ParseIP(i.IP) != nil {
+			if k8snet.IsIPv6String(i.IP) {
+				ilbIP = fmt.Sprintf("[%s]", i.IP)
+				break
+			}
+			ilbIP = i.IP
+			break
+		}
+	}
+
+	return ilbIP
 }
