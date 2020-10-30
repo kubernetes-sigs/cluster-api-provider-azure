@@ -29,7 +29,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	e2e_deployment "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
+	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 	e2e_networkpolicy "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/networkpolicy"
 
@@ -87,20 +87,38 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	By("Creating frontendProd, backend and network-policy pod deployments")
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randInt := r.Intn(99999)
-	frontendProdDeploymentName := fmt.Sprintf("frontend-prod-%v", randInt)
+
+	// Front end
 	frontendLabels := map[string]string{"app": "webapp", "role": "frontend"}
-	frontendProdDeployment, err := e2e_deployment.CreateLinuxDeployment(clientset, "library/nginx:latest", frontendProdDeploymentName, namespaceProd.GetName(), frontendLabels)
+
+	// Front end Prod
+	frontendProdDeploymentName := fmt.Sprintf("frontend-prod-%v", randInt)
+	frontEndProd := deploymentBuilder.CreateDeployment("library/nginx:latest", frontendProdDeploymentName, namespaceProd.GetName())
+	frontEndProd.AddLabels(frontendLabels)
+	frontendProdDeployment, err := frontEndProd.Deploy(clientset)
 	Expect(err).NotTo(HaveOccurred())
+
+	// Front end Dev
 	frontendDevDeploymentName := fmt.Sprintf("frontend-dev-%v", randInt+100000)
-	frontendDevDeployment, err := e2e_deployment.CreateLinuxDeployment(clientset, "library/nginx:latest", frontendDevDeploymentName, namespaceDev.GetName(), frontendLabels)
+	frontEndDev := deploymentBuilder.CreateDeployment("library/nginx:latest", frontendDevDeploymentName, namespaceDev.GetName())
+	frontEndDev.AddLabels(frontendLabels)
+	frontendDevDeployment, err := frontEndDev.Deploy(clientset)
 	Expect(err).NotTo(HaveOccurred())
+
+	// Backend
 	backendDeploymentName := fmt.Sprintf("backend-%v", randInt+200000)
 	backendLabels := map[string]string{"app": "webapp", "role": "backend"}
-	backendDeployment, err := e2e_deployment.CreateLinuxDeployment(clientset, "library/nginx:latest", backendDeploymentName, namespaceDev.GetName(), backendLabels)
+	backendDev := deploymentBuilder.CreateDeployment("library/nginx:latest", backendDeploymentName, namespaceDev.GetName())
+	backendDev.AddLabels(backendLabels)
+	backendDeployment, err := backendDev.Deploy(clientset)
 	Expect(err).NotTo(HaveOccurred())
+
+	// Network policy
 	nwpolicyDeploymentName := fmt.Sprintf("network-policy-%v", randInt+300000)
 	nwpolicyLabels := map[string]string{"app": "webapp", "role": "any"}
-	nwpolicyDeployment, err := e2e_deployment.CreateLinuxDeployment(clientset, "library/nginx:latest", nwpolicyDeploymentName, namespaceDev.GetName(), nwpolicyLabels)
+	nwpolicy := deploymentBuilder.CreateDeployment("library/nginx:latest", nwpolicyDeploymentName, namespaceDev.GetName())
+	nwpolicy.AddLabels(nwpolicyLabels)
+	nwpolicyDeployment, err := nwpolicy.Deploy(clientset)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Ensure there is a running frontend-prod pod")
@@ -132,22 +150,22 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	framework.WaitForDeploymentsAvailable(context.TODO(), nwpolicyDeploymentInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 
 	By("Ensuring we have outbound internet access from the frontend-prod pods")
-	frontendProdPods, err := e2e_deployment.GetPodsFromDeployment(clientset, frontendProdDeployment)
+	frontendProdPods, err := frontEndProd.GetPodsFromDeployment(clientset)
 	Expect(err).NotTo(HaveOccurred())
 	e2e_networkpolicy.EnsureOutboundInternetAccess(clientset, config, frontendProdPods)
 
 	By("Ensuring we have outbound internet access from the frontend-dev pods")
-	frontendDevPods, err := e2e_deployment.GetPodsFromDeployment(clientset, frontendDevDeployment)
+	frontendDevPods, err := frontEndDev.GetPodsFromDeployment(clientset)
 	Expect(err).NotTo(HaveOccurred())
 	e2e_networkpolicy.EnsureOutboundInternetAccess(clientset, config, frontendDevPods)
 
 	By("Ensuring we have outbound internet access from the backend pods")
-	backendPods, err := e2e_deployment.GetPodsFromDeployment(clientset, backendDeployment)
+	backendPods, err := backendDev.GetPodsFromDeployment(clientset)
 	Expect(err).NotTo(HaveOccurred())
 	e2e_networkpolicy.EnsureOutboundInternetAccess(clientset, config, backendPods)
 
 	By("Ensuring we have outbound internet access from the network-policy pods")
-	nwpolicyPods, err := e2e_deployment.GetPodsFromDeployment(clientset, nwpolicyDeployment)
+	nwpolicyPods, err := nwpolicy.GetPodsFromDeployment(clientset)
 	Expect(err).NotTo(HaveOccurred())
 	e2e_networkpolicy.EnsureOutboundInternetAccess(clientset, config, nwpolicyPods)
 
