@@ -70,8 +70,17 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.SetVMState(existingVM.State)
 		default:
 			s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
+			sku, err := s.ResourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
+			}
 
-			storageProfile, err := s.generateStorageProfile(ctx, vmSpec)
+			storageProfile, err := s.generateStorageProfile(ctx, vmSpec, sku)
+			if err != nil {
+				return err
+			}
+
+			securityProfile, err := getSecurityProfile(vmSpec, sku)
 			if err != nil {
 				return err
 			}
@@ -115,7 +124,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					HardwareProfile: &compute.HardwareProfile{
 						VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
 					},
-					StorageProfile: storageProfile,
+					StorageProfile:  storageProfile,
+					SecurityProfile: securityProfile,
 					OsProfile: &compute.OSProfile{
 						ComputerName:  to.StringPtr(vmSpec.Name),
 						AdminUsername: to.StringPtr(azure.DefaultUserName),
@@ -290,7 +300,7 @@ func getResourceNameByID(resourceID string) string {
 }
 
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
-func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpec) (*compute.StorageProfile, error) {
+func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.StorageProfile, error) {
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
 			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
@@ -302,11 +312,6 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 			},
 			Caching: compute.CachingTypes(vmSpec.OSDisk.CachingType),
 		},
-	}
-
-	sku, err := s.ResourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
 	}
 
 	// Checking if the requested VM size has at least 2 vCPUS
@@ -385,4 +390,18 @@ func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMach
 		}
 	}
 	return compute.Spot, compute.Deallocate, billingProfile, nil
+}
+
+func getSecurityProfile(vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.SecurityProfile, error) {
+	if vmSpec.SecurityProfile == nil {
+		return nil, nil
+	}
+
+	if !sku.HasCapability(resourceskus.EncryptionAtHost) {
+		return nil, errors.Errorf("encryption at host is not supported for VM type %s", vmSpec.Size)
+	}
+
+	return &compute.SecurityProfile{
+		EncryptionAtHost: to.BoolPtr(*vmSpec.SecurityProfile.EncryptionAtHost),
+	}, nil
 }

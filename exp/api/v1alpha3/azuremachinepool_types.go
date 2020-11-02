@@ -58,6 +58,10 @@ type (
 		// allowed values are between 5 and 15 (mins)
 		// +optional
 		TerminateNotificationTimeout *int `json:"terminateNotificationTimeout,omitempty"`
+
+		// SecurityProfile specifies the Security profile settings for a virtual machine.
+		// +optional
+		SecurityProfile *infrav1.SecurityProfile `json:"securityProfile,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool

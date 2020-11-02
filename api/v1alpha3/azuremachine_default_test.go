@@ -18,9 +18,10 @@ package v1alpha3
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"

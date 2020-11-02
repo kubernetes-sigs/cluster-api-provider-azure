@@ -60,6 +60,8 @@ const (
 	MinimumVCPUS = 2
 	// MinimumMemory is the minimum memory allowed.
 	MinimumMemory = 2
+	// EncryptionAtHost identifies the capability for encryption at host.
+	EncryptionAtHost = "EncryptionAtHostSupported"
 )
 
 // HasCapability return true for a capability which can be either

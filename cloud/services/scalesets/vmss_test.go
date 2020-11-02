@@ -205,13 +205,13 @@ func TestGetExistingVMSS(t *testing.T) {
 func TestReconcileVMSS(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder)
+		expect        func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "can create a vmss",
 			expectedError: "",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE",
@@ -381,7 +381,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "with accelerated networking enabled",
 			expectedError: "",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE_AN",
@@ -544,7 +544,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "can create a vmss with encryption",
 			expectedError: "",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE",
@@ -720,7 +720,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "can create a vmss with user assigned identity",
 			expectedError: "",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE",
@@ -900,9 +900,103 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "can create a vmss with encryption at host enabled",
+			expectedError: "",
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_EAH",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
+					SubnetName:                   "my-subnet",
+					VNetName:                     "my-vnet",
+					VNetResourceGroup:            "my-rg",
+					PublicLBName:                 "capz-lb",
+					PublicLBAddressPoolName:      "backendPool",
+					AcceleratedNetworking:        nil,
+					TerminateNotificationTimeout: to.IntPtr(7),
+					SecurityProfile:              &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).Do(
+					func(_, _, _ interface{}, vmss compute.VirtualMachineScaleSet) {
+						encryptionAtHost := *vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.SecurityProfile.EncryptionAtHost
+						g.Expect(encryptionAtHost).To(Equal(true))
+					})
+				m.Get(context.TODO(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						InstanceID: to.StringPtr("id-2"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+						ID:   to.StringPtr("id-1"),
+						Name: to.StringPtr("instance-0"),
+					},
+				}, nil)
+				s.SaveK8sVersion()
+				s.NeedsK8sVersionUpdate()
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+			},
+		},
+		{
+			name:          "creating a vmss with encryption at host enabled for unsupported VM type fails",
+			expectedError: "encryption at host is not supported for VM type VM_SIZE",
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:            "my-vmss",
+					Size:            "VM_SIZE",
+					Capacity:        2,
+					SSHKeyData:      "ZmFrZXNzaGtleQo=",
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
+				})
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+			},
+		},
+		{
 			name:          "scale set already exists",
 			expectedError: "",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE_AN",
@@ -1136,7 +1230,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "less than 2 vCPUs",
 			expectedError: "vm size should be bigger or equal to at least 2 vCPUs",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE_1_CPU",
@@ -1148,7 +1242,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "Memory is less than 2Gi",
 			expectedError: "vm memory should be bigger or equal to at least 2Gi",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE_1_MEM",
@@ -1160,7 +1254,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "failed to get SKU",
 			expectedError: "failed to get find SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "INVALID_VM_SIZE",
@@ -1172,7 +1266,7 @@ func TestReconcileVMSS(t *testing.T) {
 		{
 			name:          "fails with internal error",
 			expectedError: "cannot create VMSS: #: Internal error: StatusCode=500",
-			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       "my-vmss",
 					Size:       "VM_SIZE",
@@ -1233,7 +1327,7 @@ func TestReconcileVMSS(t *testing.T) {
 			scopeMock := mock_scalesets.NewMockScaleSetScope(mockCtrl)
 			clientMock := mock_scalesets.NewMockClient(mockCtrl)
 
-			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
+			tc.expect(g, scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:            scopeMock,
@@ -1439,6 +1533,33 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Name:  to.StringPtr(resourceskus.MemoryGB),
 					Value: to.StringPtr("1"),
+				},
+			},
+		},
+		{
+			Name: to.StringPtr("VM_SIZE_EAH"),
+			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
+			},
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+				{
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1"},
+				},
+			},
+			Capabilities: &[]compute.ResourceSkuCapabilities{
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("4"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("8"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.EncryptionAtHost),
+					Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
 				},
 			},
 		},
