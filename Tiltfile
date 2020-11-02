@@ -14,8 +14,8 @@ settings = {
     "kind_cluster_name": "capz",
     "capi_version": "v0.3.10",
     "cert_manager_version": "v0.16.1",
-    "kubernetes_version": "v1.18.8",
-    "aks_kubernetes_version": "v1.17.7"
+    "kubernetes_version": "v1.19.3",
+    "aks_kubernetes_version": "v1.18.8"
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
