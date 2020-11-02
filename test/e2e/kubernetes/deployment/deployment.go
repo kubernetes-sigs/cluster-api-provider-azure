@@ -19,7 +19,10 @@ limitations under the License.
 package deployment
 
 import (
+	"fmt"
 	"log"
+
+	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,32 +33,49 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-// CreateLinuxDeployment will create a deployment for a given image with a name in a namespace
-func CreateLinuxDeployment(clientset *kubernetes.Clientset, image, name, namespace string, labels map[string]string) (*appsv1.Deployment, error) {
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32Ptr(1),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+type deploymentBuilder struct {
+	deployment *appsv1.Deployment
+}
+
+type LoadbalancerType string
+
+const (
+	ExternalLoadbalancer = LoadbalancerType("external")
+	InternalLoadbalancer = LoadbalancerType("internal")
+)
+
+// CreateDeployment will create a deployment for a given image with a name in a namespace
+func CreateDeployment(image, name, namespace string) *deploymentBuilder {
+	e2eDeployment := &deploymentBuilder{
+		deployment: &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+				Labels:    map[string]string{},
 			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+			Spec: appsv1.DeploymentSpec{
+				Replicas: pointer.Int32Ptr(1),
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": name,
+					},
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  name,
-							Image: image,
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("10M"),
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"app": name,
+						},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:  name,
+								Image: image,
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("10m"),
+										corev1.ResourceMemory: resource.MustParse("10M"),
+									},
 								},
 							},
 						},
@@ -65,24 +85,78 @@ func CreateLinuxDeployment(clientset *kubernetes.Clientset, image, name, namespa
 		},
 	}
 
-	deployment, err := clientset.AppsV1().Deployments(namespace).Create(deployment)
+	return e2eDeployment
+}
+
+func (d *deploymentBuilder) AddLabels(labels map[string]string) {
+	for k, v := range labels {
+		d.deployment.ObjectMeta.Labels[k] = v
+		d.deployment.Spec.Selector.MatchLabels[k] = v
+		d.deployment.Spec.Template.ObjectMeta.Labels[k] = v
+	}
+}
+
+func (d *deploymentBuilder) AddContainerPort(name, portName string, portNumber int32, protocol corev1.Protocol) {
+	for _, c := range d.deployment.Spec.Template.Spec.Containers {
+		if c.Name == name {
+			c.Ports = []corev1.ContainerPort{
+				{
+					Name:          portName,
+					ContainerPort: portNumber,
+					Protocol:      protocol,
+				},
+			}
+		}
+	}
+}
+
+func (d *deploymentBuilder) Deploy(clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
+	deployment, err := d.Client(clientset).Create(d.deployment)
 	if err != nil {
-		log.Printf("Error trying to deploy %s [%s] in namespace %s:%s\n", name, image, namespace, err.Error())
+		log.Printf("Error trying to deploy %s in namespace %s:%s\n", d.deployment.Name, d.deployment.ObjectMeta.Namespace, err.Error())
 		return nil, err
 	}
 
 	return deployment, nil
 }
 
-func GetPodsFromDeployment(clientset *kubernetes.Clientset, deployment *appsv1.Deployment) ([]corev1.Pod, error) {
+func (d *deploymentBuilder) Client(clientset *kubernetes.Clientset) typedappsv1.DeploymentInterface {
+	return clientset.AppsV1().Deployments(d.deployment.ObjectMeta.Namespace)
+}
+
+func (d *deploymentBuilder) GetPodsFromDeployment(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
 	opts := metav1.ListOptions{
-		LabelSelector: labels.Set(deployment.Labels).String(),
+		LabelSelector: labels.Set(d.deployment.Labels).String(),
 		Limit:         100,
 	}
-	pods, err := clientset.CoreV1().Pods(deployment.GetNamespace()).List(opts)
+	pods, err := clientset.CoreV1().Pods(d.deployment.GetNamespace()).List(opts)
 	if err != nil {
-		log.Printf("Error trying to get the pods from deployment %s:%s\n", deployment.GetName(), err.Error())
+		log.Printf("Error trying to get the pods from deployment %s:%s\n", d.deployment.GetName(), err.Error())
 		return nil, err
 	}
 	return pods.Items, nil
+}
+
+func (d *deploymentBuilder) GetService(ports []corev1.ServicePort, lbtype LoadbalancerType) *corev1.Service {
+	suffix := "elb"
+	annotations := map[string]string{}
+	if lbtype == InternalLoadbalancer {
+		suffix = "ilb"
+		annotations["service.beta.kubernetes.io/azure-load-balancer-internal"] = "true"
+	}
+
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        fmt.Sprintf("%s-%s", d.deployment.Name, suffix),
+			Namespace:   d.deployment.Namespace,
+			Annotations: annotations,
+		},
+		Spec: corev1.ServiceSpec{
+			Type:  corev1.ServiceTypeLoadBalancer,
+			Ports: ports,
+			Selector: map[string]string{
+				"app": d.deployment.Name,
+			},
+		},
+	}
 }
