@@ -216,7 +216,6 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, er
 	return convertedVM, nil
 }
 
-
 func (s *Service) generateImagePlan() *compute.Plan {
 	image, err := s.Scope.GetVMImage()
 	if err != nil {
@@ -235,7 +234,6 @@ func (s *Service) generateImagePlan() *compute.Plan {
 		Product:   to.StringPtr(image.Marketplace.Offer),
 	}
 }
-
 
 func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) ([]corev1.NodeAddress, error) {
 	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getAddresses")

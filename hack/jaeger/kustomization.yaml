@@ -1,6 +1,0 @@
-resources:
-  - ../../config
-  - resources
-
-patchesStrategicMerge:
-  - sidecar_injection.yaml

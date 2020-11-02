@@ -97,7 +97,7 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 			label.String("namespace", req.Namespace),
 			label.String("name", req.Name),
 			label.String("kind", "AzureCluster"),
-			))
+		))
 	defer span.End()
 
 	// Fetch the AzureCluster instance
