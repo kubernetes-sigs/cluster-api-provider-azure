@@ -284,32 +284,30 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.ControlPlane,
-						NICNames:   []string{"my-nic", "second-nic"},
-						SSHKeyData: "ZmFrZXNzaGtleQo=",
-						Size:       "Standard_D2v3",
-						Zone:       "1",
-						Identity:   infrav1.VMIdentityNone,
-						OSDisk: infrav1.OSDisk{
-							OSType:     "Linux",
-							DiskSizeGB: 128,
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-							},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
 						},
-						DataDisks: []infrav1.DataDisk{
-							{
-								NameSuffix: "mydisk",
-								DiskSizeGB: 64,
-								Lun:        to.Int32Ptr(0),
-							},
-						},
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -439,20 +437,18 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm with system assigned identity",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-vm",
-						Role:                   infrav1.Node,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               infrav1.VMIdentitySystemAssigned,
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-vm",
+					Role:                   infrav1.Node,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               infrav1.VMIdentitySystemAssigned,
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -511,20 +507,18 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm with user assigned identity",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-vm",
-						Role:                   infrav1.Node,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               infrav1.VMIdentityUserAssigned,
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "my-user-id"}},
-						SpotVMOptions:          nil,
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-vm",
+					Role:                   infrav1.Node,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               infrav1.VMIdentityUserAssigned,
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: []infrav1.UserAssignedIdentity{{ProviderID: "my-user-id"}},
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -583,20 +577,18 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a spot vm",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-vm",
-						Role:                   infrav1.Node,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               "",
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          &infrav1.SpotVMOptions{},
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-vm",
+					Role:                   infrav1.Node,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               "",
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          &infrav1.SpotVMOptions{},
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -656,26 +648,24 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm with encryption",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.Node,
-						NICNames:   []string{"my-nic"},
-						SSHKeyData: "fakesshpublickey",
-						Size:       "Standard_D2v3",
-						Zone:       "",
-						Identity:   "",
-						OSDisk: infrav1.OSDisk{
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-								DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
-									ID: "my-diskencryptionset-id",
-								},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.Node,
+					NICNames:   []string{"my-nic"},
+					SSHKeyData: "fakesshpublickey",
+					Size:       "Standard_D2v3",
+					Zone:       "",
+					Identity:   "",
+					OSDisk: infrav1.OSDisk{
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+							DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
+								ID: "my-diskencryptionset-id",
 							},
 						},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
 					},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -734,16 +724,14 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm with encryption at host",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:            "my-vm",
-						Role:            infrav1.Node,
-						NICNames:        []string{"my-nic"},
-						SSHKeyData:      "fakesshpublickey",
-						Size:            "Standard_D2v3",
-						OSDisk:          infrav1.OSDisk{},
-						SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:            "my-vm",
+					Role:            infrav1.Node,
+					NICNames:        []string{"my-nic"},
+					SSHKeyData:      "fakesshpublickey",
+					Size:            "Standard_D2v3",
+					OSDisk:          infrav1.OSDisk{},
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -806,16 +794,14 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "creating a vm with encryption at host enabled for unsupported VM type fails",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:            "my-vm",
-						Role:            infrav1.Node,
-						NICNames:        []string{"my-nic"},
-						SSHKeyData:      "fakesshpublickey",
-						Size:            "Standard_D2v3",
-						OSDisk:          infrav1.OSDisk{},
-						SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:            "my-vm",
+					Role:            infrav1.Node,
+					NICNames:        []string{"my-nic"},
+					SSHKeyData:      "fakesshpublickey",
+					Size:            "Standard_D2v3",
+					OSDisk:          infrav1.OSDisk{},
+					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -864,20 +850,18 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "vm creation fails",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-vm",
-						Role:                   infrav1.ControlPlane,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               "",
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-vm",
+					Role:                   infrav1.ControlPlane,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               "",
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -933,32 +917,30 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "cannot create vm if vCPU is less than 2",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.ControlPlane,
-						NICNames:   []string{"my-nic", "second-nic"},
-						SSHKeyData: "ZmFrZXNzaGtleQo=",
-						Size:       "Standard_D1v3",
-						Zone:       "1",
-						Identity:   infrav1.VMIdentityNone,
-						OSDisk: infrav1.OSDisk{
-							OSType:     "Linux",
-							DiskSizeGB: 128,
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-							},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D1v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
 						},
-						DataDisks: []infrav1.DataDisk{
-							{
-								NameSuffix: "mydisk",
-								DiskSizeGB: 64,
-								Lun:        to.Int32Ptr(0),
-							},
-						},
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -1001,32 +983,30 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "cannot create vm if memory is less than 2Gi",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.ControlPlane,
-						NICNames:   []string{"my-nic", "second-nic"},
-						SSHKeyData: "ZmFrZXNzaGtleQo=",
-						Size:       "Standard_D2v3",
-						Zone:       "1",
-						Identity:   infrav1.VMIdentityNone,
-						OSDisk: infrav1.OSDisk{
-							OSType:     "Linux",
-							DiskSizeGB: 128,
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-							},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
 						},
-						DataDisks: []infrav1.DataDisk{
-							{
-								NameSuffix: "mydisk",
-								DiskSizeGB: 64,
-								Lun:        to.Int32Ptr(0),
-							},
-						},
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -1069,35 +1049,33 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "cannot create vm if does not support ephemeral os",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.ControlPlane,
-						NICNames:   []string{"my-nic", "second-nic"},
-						SSHKeyData: "ZmFrZXNzaGtleQo=",
-						Size:       "Standard_D2v3",
-						Zone:       "1",
-						Identity:   infrav1.VMIdentityNone,
-						OSDisk: infrav1.OSDisk{
-							OSType:     "Linux",
-							DiskSizeGB: 128,
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-							},
-							DiffDiskSettings: &infrav1.DiffDiskSettings{
-								Option: string(compute.Local),
-							},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
 						},
-						DataDisks: []infrav1.DataDisk{
-							{
-								NameSuffix: "mydisk",
-								DiskSizeGB: 64,
-								Lun:        to.Int32Ptr(0),
-							},
+						DiffDiskSettings: &infrav1.DiffDiskSettings{
+							Option: string(compute.Local),
 						},
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -1144,35 +1122,33 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm with EphemeralOSDisk",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.ControlPlane,
-						NICNames:   []string{"my-nic", "second-nic"},
-						SSHKeyData: "ZmFrZXNzaGtleQo=",
-						Size:       "Standard_D2v3",
-						Zone:       "1",
-						Identity:   infrav1.VMIdentityNone,
-						OSDisk: infrav1.OSDisk{
-							OSType:     "Linux",
-							DiskSizeGB: 128,
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-							},
-							DiffDiskSettings: &infrav1.DiffDiskSettings{
-								Option: string(compute.Local),
-							},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
 						},
-						DataDisks: []infrav1.DataDisk{
-							{
-								NameSuffix: "mydisk",
-								DiskSizeGB: 64,
-								Lun:        to.Int32Ptr(0),
-							},
+						DiffDiskSettings: &infrav1.DiffDiskSettings{
+							Option: string(compute.Local),
 						},
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -1309,32 +1285,30 @@ func TestReconcileVM(t *testing.T) {
 		{
 			Name: "can create a vm with a marketplace image using a plan",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:       "my-vm",
-						Role:       infrav1.ControlPlane,
-						NICNames:   []string{"my-nic", "second-nic"},
-						SSHKeyData: "ZmFrZXNzaGtleQo=",
-						Size:       "Standard_D2v3",
-						Zone:       "1",
-						Identity:   infrav1.VMIdentityNone,
-						OSDisk: infrav1.OSDisk{
-							OSType:     "Linux",
-							DiskSizeGB: 128,
-							ManagedDisk: infrav1.ManagedDisk{
-								StorageAccountType: "Premium_LRS",
-							},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
 						},
-						DataDisks: []infrav1.DataDisk{
-							{
-								NameSuffix: "mydisk",
-								DiskSizeGB: 64,
-								Lun:        to.Int32Ptr(0),
-							},
-						},
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
 					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -1514,20 +1488,18 @@ func TestDeleteVM(t *testing.T) {
 			name:          "successfully delete an existing vm",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-existing-vm",
-						Role:                   infrav1.ControlPlane,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               "",
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-existing-vm",
+					Role:                   infrav1.ControlPlane,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               "",
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -1538,20 +1510,18 @@ func TestDeleteVM(t *testing.T) {
 			name:          "vm already deleted",
 			expectedError: "",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-vm",
-						Role:                   infrav1.ControlPlane,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               "",
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-vm",
+					Role:                   infrav1.ControlPlane,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               "",
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -1563,20 +1533,18 @@ func TestDeleteVM(t *testing.T) {
 			name:          "vm deletion fails",
 			expectedError: "failed to delete VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder) {
-				s.VMSpecs().Return([]azure.VMSpec{
-					{
-						Name:                   "my-vm",
-						Role:                   infrav1.ControlPlane,
-						NICNames:               []string{"my-nic"},
-						SSHKeyData:             "fakesshpublickey",
-						Size:                   "Standard_D2v3",
-						Zone:                   "",
-						Identity:               "",
-						OSDisk:                 infrav1.OSDisk{},
-						DataDisks:              nil,
-						UserAssignedIdentities: nil,
-						SpotVMOptions:          nil,
-					},
+				s.VMSpec().Return(azure.VMSpec{
+					Name:                   "my-vm",
+					Role:                   infrav1.ControlPlane,
+					NICNames:               []string{"my-nic"},
+					SSHKeyData:             "fakesshpublickey",
+					Size:                   "Standard_D2v3",
+					Zone:                   "",
+					Identity:               "",
+					OSDisk:                 infrav1.OSDisk{},
+					DataDisks:              nil,
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())

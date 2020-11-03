@@ -88,23 +88,21 @@ type MachineScope struct {
 	AzureMachine *infrav1.AzureMachine
 }
 
-// VMSpecs returns the VM specs.
-func (m *MachineScope) VMSpecs() []azure.VMSpec {
-	return []azure.VMSpec{
-		{
-			Name:                   m.Name(),
-			Role:                   m.Role(),
-			NICNames:               m.NICNames(),
-			SSHKeyData:             m.AzureMachine.Spec.SSHPublicKey,
-			Size:                   m.AzureMachine.Spec.VMSize,
-			OSDisk:                 m.AzureMachine.Spec.OSDisk,
-			DataDisks:              m.AzureMachine.Spec.DataDisks,
-			Zone:                   m.AvailabilityZone(),
-			Identity:               m.AzureMachine.Spec.Identity,
-			UserAssignedIdentities: m.AzureMachine.Spec.UserAssignedIdentities,
-			SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
-			SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
-		},
+// VMSpec returns the VM spec.
+func (m *MachineScope) VMSpec() azure.VMSpec {
+	return azure.VMSpec{
+		Name:                   m.Name(),
+		Role:                   m.Role(),
+		NICNames:               m.NICNames(),
+		SSHKeyData:             m.AzureMachine.Spec.SSHPublicKey,
+		Size:                   m.AzureMachine.Spec.VMSize,
+		OSDisk:                 m.AzureMachine.Spec.OSDisk,
+		DataDisks:              m.AzureMachine.Spec.DataDisks,
+		Zone:                   m.AvailabilityZone(),
+		Identity:               m.AzureMachine.Spec.Identity,
+		UserAssignedIdentities: m.AzureMachine.Spec.UserAssignedIdentities,
+		SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
+		SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
 	}
 }
 

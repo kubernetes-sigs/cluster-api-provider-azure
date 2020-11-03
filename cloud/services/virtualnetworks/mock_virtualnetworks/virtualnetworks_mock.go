@@ -314,16 +314,16 @@ func (mr *MockVNetScopeMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockVNetScope)(nil).Vnet))
 }
 
-// VNetSpecs mocks base method.
-func (m *MockVNetScope) VNetSpecs() []azure.VNetSpec {
+// VNetSpec mocks base method.
+func (m *MockVNetScope) VNetSpec() azure.VNetSpec {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VNetSpecs")
-	ret0, _ := ret[0].([]azure.VNetSpec)
+	ret := m.ctrl.Call(m, "VNetSpec")
+	ret0, _ := ret[0].(azure.VNetSpec)
 	return ret0
 }
 
-// VNetSpecs indicates an expected call of VNetSpecs.
-func (mr *MockVNetScopeMockRecorder) VNetSpecs() *gomock.Call {
+// VNetSpec indicates an expected call of VNetSpec.
+func (mr *MockVNetScopeMockRecorder) VNetSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VNetSpecs", reflect.TypeOf((*MockVNetScope)(nil).VNetSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VNetSpec", reflect.TypeOf((*MockVNetScope)(nil).VNetSpec))
 }

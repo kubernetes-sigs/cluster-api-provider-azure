@@ -47,12 +47,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "vnet-exists",
-						CIDRs:         []string{"10.0.0.0/8"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "vnet-exists",
+					CIDRs:         []string{"10.0.0.0/8"},
 				})
 				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
 					Return(network.VirtualNetwork{
@@ -78,12 +76,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "ipv6-vnet-exists",
-						CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "ipv6-vnet-exists",
+					CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
 				})
 				m.Get(gomockinternal.AContext(), "my-rg", "ipv6-vnet-exists").
 					Return(network.VirtualNetwork{
@@ -114,12 +110,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "vnet-new",
-						CIDRs:         []string{"10.0.0.0/8"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "vnet-new",
+					CIDRs:         []string{"10.0.0.0/8"},
 				})
 				m.Get(gomockinternal.AContext(), "my-rg", "vnet-new").
 					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -136,12 +130,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-new"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "vnet-ipv6-new",
-						CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "vnet-ipv6-new",
+					CIDRs:         []string{"10.0.0.0/8", "2001:1234:5678:9a00::/56"},
 				})
 				m.Get(gomockinternal.AContext(), "my-rg", "vnet-ipv6-new").
 					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -172,12 +164,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.Location().AnyTimes().Return("fake-location")
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "custom-vnet-rg",
-						Name:          "custom-vnet",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "custom-vnet-rg",
+					Name:          "custom-vnet",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
 					Return(network.VirtualNetwork{
@@ -203,12 +193,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "custom-vnet-rg",
-						Name:          "custom-vnet",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "custom-vnet-rg",
+					Name:          "custom-vnet",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
 					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -222,12 +210,10 @@ func TestReconcileVnet(t *testing.T) {
 			expect: func(s *mock_virtualnetworks.MockVNetScopeMockRecorder, m *mock_virtualnetworks.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName().AnyTimes().Return("fake-cluster")
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "custom-vnet-rg",
-						Name:          "custom-vnet",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "custom-vnet-rg",
+					Name:          "custom-vnet",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
 					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
@@ -242,12 +228,10 @@ func TestReconcileVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "custom-vnet"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "custom-vnet-rg",
-						Name:          "custom-vnet",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "custom-vnet-rg",
+					Name:          "custom-vnet",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Get(gomockinternal.AContext(), "custom-vnet-rg", "custom-vnet").
 					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -305,12 +289,10 @@ func TestDeleteVnet(t *testing.T) {
 					"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "vnet-exists",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "vnet-exists",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists")
 			},
@@ -328,12 +310,10 @@ func TestDeleteVnet(t *testing.T) {
 					"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "vnet-exists",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "vnet-exists",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -348,12 +328,10 @@ func TestDeleteVnet(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{ResourceGroup: "my-rg", Name: "my-vnet", ID: "azure/custom-vnet/id"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "my-vnet",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "my-vnet",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 			},
 		},
@@ -370,12 +348,10 @@ func TestDeleteVnet(t *testing.T) {
 					"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "vnet-exists"})
-				s.VNetSpecs().Return([]azure.VNetSpec{
-					{
-						ResourceGroup: "my-rg",
-						Name:          "vnet-exists",
-						CIDRs:         []string{"10.0.0.0/16"},
-					},
+				s.VNetSpec().Return(azure.VNetSpec{
+					ResourceGroup: "my-rg",
+					Name:          "vnet-exists",
+					CIDRs:         []string{"10.0.0.0/16"},
 				})
 				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Honk Server"))

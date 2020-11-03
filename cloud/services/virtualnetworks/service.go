@@ -28,7 +28,7 @@ type VNetScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	Vnet() *infrav1.VnetSpec
-	VNetSpecs() []azure.VNetSpec
+	VNetSpec() azure.VNetSpec
 }
 
 // Service provides operations on azure resources
