@@ -308,7 +308,7 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
 func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.StorageProfile, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.generateStorageProfile")
+	_, span := tele.Tracer().Start(ctx, "virtualmachines.Service.generateStorageProfile")
 	defer span.End()
 
 	storageProfile := &compute.StorageProfile{

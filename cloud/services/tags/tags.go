@@ -71,7 +71,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete is a no-op as the tags get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "tags.Service.Delete")
+	_, span := tele.Tracer().Start(ctx, "tags.Service.Delete")
 	defer span.End()
 
 	return nil

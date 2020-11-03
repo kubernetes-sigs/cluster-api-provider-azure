@@ -49,7 +49,7 @@ func New(scope DiskScope) *Service {
 
 // Reconcile on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "disks.Service.Reconcile")
+	_, span := tele.Tracer().Start(ctx, "disks.Service.Reconcile")
 	defer span.End()
 
 	return nil

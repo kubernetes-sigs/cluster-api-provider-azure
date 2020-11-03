@@ -22,12 +22,14 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
-	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools/mock_agentpools"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 const (
@@ -76,8 +78,8 @@ func TestReconcile(t *testing.T) {
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
 			expectedError:            "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agentpool", gomock.Any()).Return(nil)
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool", gomock.Any()).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 					ProvisioningState: &provisioningstate,
 				}}, nil)
 			},
@@ -92,7 +94,7 @@ func TestReconcile(t *testing.T) {
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
 			expectedError:            "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 					ProvisioningState: &provisioningstate,
 				}}, nil)
 			},
@@ -144,8 +146,8 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agentpool", gomock.Any()).Return(nil)
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool", gomock.Any()).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{
@@ -161,7 +163,7 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "failed to get existing agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -177,8 +179,8 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(nil)
 			},
 		},
 		{
@@ -194,8 +196,8 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -211,7 +213,7 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "failed to create or update agent pool: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(3),
 						OsDiskSizeGB:        to.Int32Ptr(20),
@@ -220,7 +222,7 @@ func TestReconcile(t *testing.T) {
 						ProvisioningState:   to.StringPtr("Failed"),
 					},
 				}, nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool", gomock.AssignableToTypeOf(containerservice.AgentPool{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -236,7 +238,7 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Get(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").Return(containerservice.AgentPool{
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(2),
 						OsDiskSizeGB:        to.Int32Ptr(100),
@@ -294,7 +296,7 @@ func TestDeleteAgentPools(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-cluster", "my-agent-pool")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool")
 			},
 		},
 		{
@@ -306,7 +308,7 @@ func TestDeleteAgentPools(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -319,7 +321,7 @@ func TestDeleteAgentPools(t *testing.T) {
 			},
 			expectedError: "failed to delete agent pool my-agent-pool in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(m *mock_agentpools.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-cluster", "my-agent-pool").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agent-pool").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

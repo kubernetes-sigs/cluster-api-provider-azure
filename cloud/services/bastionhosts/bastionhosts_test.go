@@ -26,6 +26,7 @@ import (
 	mock_bastionhosts "sigs.k8s.io/cluster-api-provider-azure/cloud/services/bastionhosts/mocks_bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
@@ -66,7 +67,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").
+				mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").
 					Return(network.Subnet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -88,8 +89,8 @@ func TestReconcileBastionHosts(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				gomock.InOrder(
-					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
+					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 				)
 			},
 		},
@@ -112,9 +113,9 @@ func TestReconcileBastionHosts(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
 				gomock.InOrder(
-					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
+					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
+					mPublicIP.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 				)
 			},
 		},
@@ -136,10 +137,10 @@ func TestReconcileBastionHosts(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
-				mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil)
-				mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(nil)
-				mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil)
+				mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mPublicIP.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(nil)
+				mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -162,11 +163,11 @@ func TestReconcileBastionHosts(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
-					mPublicIP.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(nil),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})),
+					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")),
+					mPublicIP.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(nil),
+					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})),
 				)
 			},
 		},
@@ -190,9 +191,9 @@ func TestReconcileBastionHosts(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})),
+					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})),
 				)
 			},
 		},
@@ -216,9 +217,9 @@ func TestReconcileBastionHosts(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					mSubnet.Get(context.TODO(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
-					mPublicIP.Get(context.TODO(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
+					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
+					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 				)
 			},
 		},
@@ -290,8 +291,8 @@ func TestDeleteBastionHost(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-bastionhost")
-				m.Delete(context.TODO(), "my-rg", "my-bastionhost1")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost1")
 			},
 		},
 		{
@@ -317,9 +318,9 @@ func TestDeleteBastionHost(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-bastionhost").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.Delete(context.TODO(), "my-rg", "my-bastionhost1")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost1")
 			},
 		},
 		{
@@ -339,7 +340,7 @@ func TestDeleteBastionHost(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-bastionhost").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

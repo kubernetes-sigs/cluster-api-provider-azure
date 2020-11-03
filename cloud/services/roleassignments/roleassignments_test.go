@@ -29,10 +29,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	"k8s.io/klog/klogr"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments/mock_roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
@@ -54,12 +56,12 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						ResourceType: azure.VirtualMachine,
 					},
 				})
-				v.Get(context.TODO(), "my-rg", "test-vm").Return(compute.VirtualMachine{
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{
 					Identity: &compute.VirtualMachineIdentity{
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
-				m.Create(context.TODO(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
+				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
 					Properties: &authorization.RoleAssignmentProperties{
 						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
 						PrincipalID:      to.StringPtr("000"),
@@ -80,7 +82,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						ResourceType: azure.VirtualMachine,
 					},
 				})
-				v.Get(context.TODO(), "my-rg", "test-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -96,12 +98,12 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						ResourceType: azure.VirtualMachine,
 					},
 				})
-				v.Get(context.TODO(), "my-rg", "test-vm").Return(compute.VirtualMachine{
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{
 					Identity: &compute.VirtualMachineIdentity{
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
-				m.Create(context.TODO(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -154,12 +156,12 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						ResourceType: azure.VirtualMachineScaleSet,
 					},
 				})
-				v.Get(context.TODO(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
 					Identity: &compute.VirtualMachineScaleSetIdentity{
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
-				m.Create(context.TODO(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
+				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
 					Properties: &authorization.RoleAssignmentProperties{
 						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
 						PrincipalID:      to.StringPtr("000"),
@@ -180,7 +182,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						ResourceType: azure.VirtualMachineScaleSet,
 					},
 				})
-				v.Get(context.TODO(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -196,12 +198,12 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						ResourceType: azure.VirtualMachineScaleSet,
 					},
 				})
-				v.Get(context.TODO(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
 					Identity: &compute.VirtualMachineScaleSetIdentity{
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
-				m.Create(context.TODO(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}

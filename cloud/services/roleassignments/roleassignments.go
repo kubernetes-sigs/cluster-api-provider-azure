@@ -108,7 +108,7 @@ func (s *Service) assignRole(ctx context.Context, roleAssignmentName string, pri
 
 // Delete is a no-op as the role assignments get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.Delete")
+	_, span := tele.Tracer().Start(ctx, "roleassignments.Service.Delete")
 	defer span.End()
 
 	return nil

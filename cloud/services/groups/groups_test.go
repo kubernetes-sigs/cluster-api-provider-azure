@@ -19,19 +19,19 @@ package groups
 import (
 	"context"
 	"net/http"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"testing"
-
-	. "github.com/onsi/gomega"
-	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups/mock_groups"
-
-	"github.com/golang/mock/gomock"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups/mock_groups"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileGroups(t *testing.T) {
@@ -46,7 +46,7 @@ func TestReconcileGroups(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().Return("my-rg")
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, nil)
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, nil)
 			},
 		},
 		{
@@ -58,8 +58,8 @@ func TestReconcileGroups(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(context.TODO(), "my-rg", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, nil)
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, nil)
 			},
 		},
 		{
@@ -71,8 +71,8 @@ func TestReconcileGroups(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(context.TODO(), "my-rg", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", gomock.AssignableToTypeOf(resources.Group{})).Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -118,7 +118,7 @@ func TestDeleteGroups(t *testing.T) {
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -128,7 +128,7 @@ func TestDeleteGroups(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
-				m.Get(context.TODO(), "my-rg").Return(resources.Group{}, nil)
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, nil)
 			},
 		},
 		{
@@ -139,14 +139,14 @@ func TestDeleteGroups(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					m.Get(context.TODO(), "my-rg").Return(resources.Group{
+					m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{
 						Tags: converters.TagsToMap(infrav1.Tags{
 							"Name": "my-rg",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
 							"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 						}),
 					}, nil),
-					m.Delete(context.TODO(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")),
+					m.Delete(gomockinternal.AContext(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found")),
 				)
 			},
 		},
@@ -158,14 +158,14 @@ func TestDeleteGroups(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					m.Get(context.TODO(), "my-rg").Return(resources.Group{
+					m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{
 						Tags: converters.TagsToMap(infrav1.Tags{
 							"Name": "my-rg",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
 							"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 						}),
 					}, nil),
-					m.Delete(context.TODO(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
+					m.Delete(gomockinternal.AContext(), "my-rg").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 				)
 			},
 		},
@@ -177,14 +177,14 @@ func TestDeleteGroups(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					m.Get(context.TODO(), "my-rg").Return(resources.Group{
+					m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{
 						Tags: converters.TagsToMap(infrav1.Tags{
 							"Name": "my-rg",
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": "owned",
 							"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 						}),
 					}, nil),
-					m.Delete(context.TODO(), "my-rg").Return(nil),
+					m.Delete(gomockinternal.AContext(), "my-rg").Return(nil),
 				)
 			},
 		},

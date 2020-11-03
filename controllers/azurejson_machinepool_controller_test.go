@@ -26,13 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
-
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
 func TestAzureJSONPoolReconciler(t *testing.T) {

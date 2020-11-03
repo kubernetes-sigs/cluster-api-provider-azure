@@ -22,19 +22,19 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/klogr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks/mock_disks"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/golang/mock/gomock"
-
-	"k8s.io/klog/klogr"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestDeleteDisk(t *testing.T) {
@@ -57,8 +57,8 @@ func TestDeleteDisk(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-disk-1")
-				m.Delete(context.TODO(), "my-rg", "honk-disk")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-1")
+				m.Delete(gomockinternal.AContext(), "my-rg", "honk-disk")
 			},
 		},
 		{
@@ -75,8 +75,8 @@ func TestDeleteDisk(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
-				m.Delete(context.TODO(), "my-rg", "my-disk-2").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-2").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{
@@ -93,7 +93,7 @@ func TestDeleteDisk(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-disk-1").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}

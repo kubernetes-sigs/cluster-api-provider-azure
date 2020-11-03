@@ -21,20 +21,19 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
-
-	. "github.com/onsi/gomega"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
-
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
-
-	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables/mock_routetables"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func init() {
@@ -97,13 +96,13 @@ func TestReconcileRouteTables(t *testing.T) {
 				})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(context.TODO(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.Location().Return("westus")
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cp-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cp-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
 				s.NodeRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-node-routetable"})
-				m.Get(context.TODO(), "my-rg", "my-node-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-node-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.Location().Return("westus")
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-node-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
 			},
 		},
 		{
@@ -139,14 +138,14 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{Name: "control-plane-subnet", Role: infrav1.SubnetControlPlane})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(context.TODO(), "my-rg", "my-cp-routetable").Return(network.RouteTable{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{
 					Name: to.StringPtr("my-cp-routetable"),
 					ID:   to.StringPtr("1"),
 				}, nil)
 				s.NodeSubnet().AnyTimes().Return(&infrav1.SubnetSpec{Name: "node-subnet", Role: infrav1.SubnetNode})
 				s.NodeRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-node-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(context.TODO(), "my-rg", "my-node-routetable").Return(network.RouteTable{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-node-routetable").Return(network.RouteTable{
 					Name: to.StringPtr("my-node-routetable"),
 					ID:   to.StringPtr("2"),
 				}, nil)
@@ -176,8 +175,8 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(context.TODO(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-				m.CreateOrUpdate(context.TODO(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.RouteTable{})).Times(0)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(gomockinternal.AContext(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.RouteTable{})).Times(0)
 				s.NodeRouteTable().Times(0)
 			},
 		},
@@ -205,9 +204,9 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Get(context.TODO(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.Location().Return("westus")
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-cp-routetable", gomock.AssignableToTypeOf(network.RouteTable{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cp-routetable", gomock.AssignableToTypeOf(network.RouteTable{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -296,10 +295,10 @@ func TestDeleteRouteTable(t *testing.T) {
 				})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-cp-routetable")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cp-routetable")
 				s.NodeRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-node-routetable"})
 				s.ResourceGroup().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-node-routetable")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-node-routetable")
 			},
 		},
 		{
@@ -334,10 +333,10 @@ func TestDeleteRouteTable(t *testing.T) {
 				})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-cp-routetable").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 				s.NodeRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-node-routetable"})
 				s.ResourceGroup().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-node-routetable").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-node-routetable").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 		{
@@ -363,7 +362,7 @@ func TestDeleteRouteTable(t *testing.T) {
 				}})
 				s.ControlPlaneRouteTable().AnyTimes().Return(&infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-cp-routetable").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				s.NodeRouteTable().Times(0)
 			},
 		},
