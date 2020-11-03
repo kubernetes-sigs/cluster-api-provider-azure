@@ -20,6 +20,10 @@
     - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
+    - [Viewing Telemetry](#viewing-telemetry)
+  - [Instrumenting Telemetry](#instrumenting-telemetry)
+    - [Distributed Tracing](#distributed-tracing)
+    - [Metrics](#metrics)
   - [Manual Testing](#manual-testing)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
@@ -209,6 +213,20 @@ make delete-workload-cluster
 
 > Check out the [troubleshooting guide](troubleshooting.md) for common errors you might run into.
 
+#### Viewing Telemetry
+The CAPZ controller emits tracing and metrics data. When run in Tilt, the KinD cluster is provisioned with a development
+deployment of Jaeger, for distributed tracing, and Prometheus for metrics scraping and visualization. 
+
+The Jaeger and Prometheus deployments are for development purposes only. These illustrate the hooks for tracing and
+metrics, but lack the robustness of production cluster deployments. For example, Jaeger in "all-in-one" mode with only
+in-memory persistence of traces.
+
+After the Tilt cluster has been initialized, to view distributed traces in Jaeger open a browser to 
+`http://localhost:8080`.
+
+To view metrics, run `kubectl port-forward -n capz-system prometheus-prometheus-0 9090` and open 
+`http://localhost:9090` to see the Prometheus UI.
+
 ### Manual Testing
 
 #### Creating a dev cluster
@@ -303,6 +321,45 @@ make create-cluster
 ```
 
 > Check out the [troubleshooting](troubleshooting.md) guide for common errors you might run into.
+
+### Instrumenting Telemetry
+Telemetry is the key to operational transparency. We strive to provide insight into the internal behavior of the
+system through observable traces and metrics.
+
+#### Distributed Tracing
+Distributed tracing provides a hierarchical view of how and why an event occurred. CAPZ is instrumented to trace each
+controller reconcile loop. When the reconcile loop begins, a trace span begins and is stored in loop `context.Context`.
+As the context is passed on to functions below, new spans are created, tied to the parent span by the parent span ID.
+The spans form a hierarchical representation of the activities in the controller.
+
+These spans can also be propagated across service boundaries. The span context can be passed on through metadata such as
+HTTP headers. By propagating span context, it creates a distributed, causal relationship between services and functions.
+
+For tracing, we use [OpenTelemetry](https://github.com/open-telemetry).
+
+Here is an example of staring a span in the beginning of a controller reconcile.
+```go
+ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
+    trace.WithAttributes(
+        label.String("namespace", req.Namespace),
+        label.String("name", req.Name),
+        label.String("kind", "AzureMachine"),
+    ))
+defer span.End()
+```
+The code above creates a context with a new span stored in the context.Context value bag. If a span already existed in
+the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span 
+becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which 
+provide metadata about the span and can be used to query in many distributed tracing systems.
+
+You should consider adding tracing if your func accepts a context.
+
+#### Metrics
+Metrics provide quantitative data about the operations of the controller. This includes cumulative data like 
+counters, single numerical values like guages, and distributions of counts / samples like histograms & summaries.
+
+In CAPZ we expose metrics using the Prometheus client. The Kubebuilder project provides 
+[a guide for metrics and for exposing new ones](https://book.kubebuilder.io/reference/metrics.html#publishing-additional-metrics).
 
 ### Submitting PRs and testing
 
