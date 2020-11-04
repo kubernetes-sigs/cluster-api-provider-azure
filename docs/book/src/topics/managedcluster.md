@@ -47,6 +47,13 @@ export AZURE_SUBSCRIPTION_ID="$(cat ~/sp.json | jq -r .subscriptionId | tr -d '\
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 ```
 
+Managed clusters also require the following feature flags set as environment variables:
+
+```bash
+export EXP_MACHINE_POOL=true
+export EXP_AKS=true
+```
+
 Execute clusterctl to template the resources, then apply to a management cluster:
 
 ```bash
