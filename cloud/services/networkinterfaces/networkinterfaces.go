@@ -22,12 +22,17 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.Service.Reconcile")
+	defer span.End()
+
 	for _, nicSpec := range s.Scope.NICSpecs() {
 
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
@@ -136,6 +141,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the network interface with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.Service.Delete")
+	defer span.End()
+
 	for _, nicSpec := range s.Scope.NICSpecs() {
 		s.Scope.V(2).Info("deleting network interface %s", "network interface", nicSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)

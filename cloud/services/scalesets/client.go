@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -83,6 +84,9 @@ func newPublicIPsClient(subscriptionID string, baseURI string, authorizer autore
 
 // ListInstances retrieves information about the model views of a virtual machine scale set.
 func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vmssName string) ([]compute.VirtualMachineScaleSetVM, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.ListInstances")
+	defer span.End()
+
 	itr, err := ac.scalesetvms.ListComplete(ctx, resourceGroupName, vmssName, "", "", "")
 	if err != nil {
 		return nil, err
@@ -101,6 +105,9 @@ func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vms
 
 // List returns all scale sets in a resource group.
 func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]compute.VirtualMachineScaleSet, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.List")
+	defer span.End()
+
 	itr, err := ac.scalesets.ListComplete(ctx, resourceGroupName)
 	var instances []compute.VirtualMachineScaleSet
 	for ; itr.NotDone(); err = itr.NextWithContext(ctx) {
@@ -115,11 +122,17 @@ func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]co
 
 // Get retrieves information about the model view of a virtual machine scale set.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmssName string) (compute.VirtualMachineScaleSet, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.Get")
+	defer span.End()
+
 	return ac.scalesets.Get(ctx, resourceGroupName, vmssName)
 }
 
 // CreateOrUpdate the operation to create or update a virtual machine scale set.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vmssName string, vmss compute.VirtualMachineScaleSet) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.scalesets.CreateOrUpdate(ctx, resourceGroupName, vmssName, vmss)
 	if err != nil {
 		return err
@@ -135,6 +148,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 // Update update a VM scale set.
 // Parameters: resourceGroupName - the name of the resource group. VMScaleSetName - the name of the VM scale set to create or update. parameters - the scale set object.
 func (ac *AzureClient) Update(ctx context.Context, resourceGroupName, vmssName string, parameters compute.VirtualMachineScaleSetUpdate) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.Update")
+	defer span.End()
+
 	future, err := ac.scalesets.Update(ctx, resourceGroupName, vmssName, parameters)
 	if err != nil {
 		return err
@@ -149,6 +165,9 @@ func (ac *AzureClient) Update(ctx context.Context, resourceGroupName, vmssName s
 
 // UpdateInstances update instances of a VM scale set.
 func (ac *AzureClient) UpdateInstances(ctx context.Context, resourceGroupName, vmssName string, instanceIDs []string) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.UpdateInstances")
+	defer span.End()
+
 	params := compute.VirtualMachineScaleSetVMInstanceRequiredIDs{
 		InstanceIds: &instanceIDs,
 	}
@@ -166,6 +185,9 @@ func (ac *AzureClient) UpdateInstances(ctx context.Context, resourceGroupName, v
 
 // Delete the operation to delete a virtual machine scale set.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmssName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.scalesets.Delete(ctx, resourceGroupName, vmssName)
 	if err != nil {
 		return err
@@ -180,5 +202,8 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmssName s
 
 // GetPublicIPAddress gets the public IP address for the given public IP name.
 func (ac *AzureClient) GetPublicIPAddress(ctx context.Context, resourceGroupName, publicIPName string) (network.PublicIPAddress, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.GetPublicIPAddress")
+	defer span.End()
+
 	return ac.publicIPs.Get(ctx, resourceGroupName, publicIPName, "true")
 }

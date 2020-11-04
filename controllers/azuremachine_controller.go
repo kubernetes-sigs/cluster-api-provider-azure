@@ -22,6 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -42,6 +44,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // AzureMachineReconciler reconciles a AzureMachine object
@@ -114,6 +117,14 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
+
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
+		trace.WithAttributes(
+			label.String("namespace", req.Namespace),
+			label.String("name", req.Name),
+			label.String("kind", "AzureMachine"),
+		))
+	defer span.End()
 
 	// Fetch the AzureMachine VM.
 	azureMachine := &infrav1.AzureMachine{}
@@ -209,6 +220,9 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 }
 
 func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.reconcileNormal")
+	defer span.End()
+
 	machineScope.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
 	if machineScope.AzureMachine.Status.FailureReason != nil || machineScope.AzureMachine.Status.FailureMessage != nil {
@@ -298,6 +312,9 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 }
 
 func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.reconcileDelete")
+	defer span.End()
+
 	machineScope.Info("Handling deleted AzureMachine")
 
 	conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")

@@ -18,12 +18,15 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
@@ -45,6 +48,9 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 
 // Reconcile reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Reconcile")
+	defer span.End()
+
 	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
 		return errors.Wrapf(err, "failed to create scale set")
 	}
@@ -58,6 +64,9 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Delete")
+	defer span.End()
+
 	if err := s.virtualMachinesScaleSetSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete scale set")
 	}

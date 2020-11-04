@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newVirtualMachinesClient(subscriptionID string, baseURI string, authorizer 
 
 // Get retrieves information about the model view or the instance view of a virtual machine.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmName string) (compute.VirtualMachine, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.Get")
+	defer span.End()
+
 	return ac.virtualmachines.Get(ctx, resourceGroupName, vmName, "")
 }
 
 // CreateOrUpdate the operation to create or update a virtual machine.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vmName string, vm compute.VirtualMachine) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.virtualmachines.CreateOrUpdate(ctx, resourceGroupName, vmName, vm)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 
 // Delete the operation to delete a virtual machine.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.virtualmachines.Delete(ctx, resourceGroupName, vmName)
 	if err != nil {
 		return err

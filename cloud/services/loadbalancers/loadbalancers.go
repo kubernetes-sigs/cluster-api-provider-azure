@@ -23,13 +23,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.Reconcile")
+	defer span.End()
+
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		frontEndIPConfigName := azure.GenerateFrontendIPConfigName(lbSpec.Name)
 		backEndAddressPoolName := azure.GenerateBackendAddressPoolName(lbSpec.Name)
@@ -173,6 +178,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the public load balancer with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.Delete")
+	defer span.End()
+
 	for _, lbSpec := range s.Scope.LBSpecs() {
 		s.Scope.V(2).Info("deleting load balancer", "load balancer", lbSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), lbSpec.Name)
@@ -193,6 +201,9 @@ func (s *Service) Delete(ctx context.Context) error {
 // If the IP address is taken or empty, it will make an attempt to find an available IP in the same subnet
 // NOTE: this does not work for VNets with ipv6 CIDRs currently
 func (s *Service) getAvailablePrivateIP(ctx context.Context, resourceGroup, vnetName, PreferredIPAddress string, subnetCIDRs []string) (string, error) {
+	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.getAvailablePrivateIP")
+	defer span.End()
+
 	if len(subnetCIDRs) == 0 {
 		return "", errors.Errorf("failed to find available IP: control plane subnet CIDRs should not be empty")
 	}

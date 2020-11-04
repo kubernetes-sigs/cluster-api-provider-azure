@@ -24,7 +24,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 var (
@@ -90,6 +92,9 @@ type PoolSpec struct {
 
 // Get fetches a managed cluster from Azure.
 func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Get")
+	defer span.End()
+
 	managedClusterSpec, ok := spec.(*Spec)
 	if !ok {
 		return nil, errors.New("expected managed cluster specification")
@@ -99,11 +104,17 @@ func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error
 
 // GetCredentials fetches a managed cluster kubeconfig from Azure.
 func (s *Service) GetCredentials(ctx context.Context, group, name string) ([]byte, error) {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.GetCredentials")
+	defer span.End()
+
 	return s.Client.GetCredentials(ctx, group, name)
 }
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Reconcile")
+	defer span.End()
+
 	managedClusterSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("expected managed cluster specification")
@@ -196,6 +207,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Delete")
+	defer span.End()
+
 	managedClusterSpec, ok := spec.(*Spec)
 	if !ok {
 		return errors.New("expected managed cluster specification")

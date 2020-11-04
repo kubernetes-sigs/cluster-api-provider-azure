@@ -18,6 +18,7 @@ package routetables
 
 import (
 	"github.com/go-logr/logr"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 )

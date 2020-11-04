@@ -21,22 +21,17 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
-	. "github.com/onsi/gomega"
-
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
-
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/golang/mock/gomock"
-
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileSecurityGroups(t *testing.T) {
@@ -82,8 +77,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "nsg-one").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(context.TODO(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-one").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{
 							{
@@ -119,8 +114,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 					Etag:     nil,
 					Location: to.StringPtr("test-location"),
 				}))
-				m.Get(context.TODO(), "my-rg", "nsg-two").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(context.TODO(), "my-rg", "nsg-two", gomockinternal.DiffEq(network.SecurityGroup{
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-two").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-two", gomockinternal.DiffEq(network.SecurityGroup{
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{},
 					},
@@ -156,7 +151,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "nsg-one").Return(network.SecurityGroup{
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-one").Return(network.SecurityGroup{
 					Response: autorest.Response{},
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{
@@ -180,7 +175,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 					ID:   to.StringPtr("fake/nsg/id"),
 					Name: to.StringPtr("nsg-one"),
 				}, nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{
 							{
@@ -216,7 +211,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 					Etag:     to.StringPtr("test-etag"),
 					Location: to.StringPtr("test-location"),
 				}))
-				m.Get(context.TODO(), "my-rg", "nsg-two").Return(network.SecurityGroup{
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-two").Return(network.SecurityGroup{
 					Response: autorest.Response{},
 					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 						SecurityRules: &[]network.SecurityRule{},
@@ -288,8 +283,8 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "nsg-one")
-				m.Delete(context.TODO(), "my-rg", "nsg-two")
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-one")
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-two")
 			},
 		},
 		{
@@ -307,9 +302,9 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "nsg-one").
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-one").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.Delete(context.TODO(), "my-rg", "nsg-two")
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-two")
 			},
 		},
 	}

@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureManagedControlPlaneReconciler are list of services required by cluster controller
@@ -63,6 +64,9 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.Reconcile")
+	defer span.End()
+
 	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(scope.ControlPlane.Spec.SSHPublicKey)
 	if err != nil {
 		return errors.Wrapf(err, "failed to decode SSHPublicKey")
@@ -130,6 +134,9 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 
 // Delete reconciles all the services in pre determined order
 func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.Delete")
+	defer span.End()
+
 	managedClusterSpec := &managedclusters.Spec{
 		Name:              scope.ControlPlane.Name,
 		ResourceGroupName: scope.ControlPlane.Spec.ResourceGroupName,
@@ -149,6 +156,9 @@ func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *
 }
 
 func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.reconcileManagedCluster")
+	defer span.End()
+
 	if net := scope.Cluster.Spec.ClusterNetwork; net != nil {
 		if net.Services != nil {
 			// A user may provide zero or one CIDR blocks. If they provide an empty array,
@@ -225,6 +235,9 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 }
 
 func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.reconcileEndpoint")
+	defer span.End()
+
 	// Fetch newly updated cluster
 	managedClusterResult, err := r.managedClustersSvc.Get(ctx, managedClusterSpec)
 	if err != nil {
@@ -251,6 +264,9 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 }
 
 func (r *azureManagedControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, scope *scope.ManagedControlPlaneScope, managedClusterSpec *managedclusters.Spec) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.reconcileKubeconfig")
+	defer span.End()
+
 	// Always fetch credentials in case of rotation
 	data, err := r.managedClustersSvc.GetCredentials(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	if err != nil {

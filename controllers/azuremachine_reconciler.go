@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
@@ -63,6 +64,9 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Reconcile")
+	defer span.End()
+
 	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create public IP")
 	}
@@ -92,6 +96,9 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 
 // Delete deletes all the services in pre determined order
 func (s *azureMachineService) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Delete")
+	defer span.End()
+
 	if err := s.virtualMachinesSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete machine")
 	}

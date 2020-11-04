@@ -23,6 +23,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -274,6 +275,9 @@ type CloudProviderConfig struct {
 }
 
 func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient client.Client, owner metav1.OwnerReference, new *corev1.Secret, clusterName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.reconcileAzureSecret")
+	defer span.End()
+
 	// Fetch previous secret, if it exists
 	key := types.NamespacedName{
 		Namespace: new.Namespace,
@@ -336,6 +340,9 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 
 // GetOwnerMachinePool returns the MachinePool object owning the current resource.
 func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.GetOwnerMachinePool")
+	defer span.End()
+
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind != "MachinePool" {
 			continue
@@ -354,6 +361,9 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 
 // GetMachinePoolByName finds and return a Machine object using the specified params.
 func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.GetMachinePoolByName")
+	defer span.End()
+
 	m := &capiv1exp.MachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {
@@ -365,6 +375,9 @@ func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name 
 // ShouldDeleteIndividualResources returns false if the resource group is managed and the whole cluster is being deleted
 // meaning that we can rely on a single resource group delete operation as opposed to deleting every individual VM resource.
 func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.ClusterScope) bool {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.ShouldDeleteIndividualResources")
+	defer span.End()
+
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		return true
 	}

@@ -25,7 +25,9 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters/mock_managedclusters"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcile(t *testing.T) {
@@ -45,8 +47,8 @@ func TestReconcile(t *testing.T) {
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
 			expectedError:            "",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-managedcluster", gomock.Any()).Return(nil)
-				m.Get(context.TODO(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any()).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 					ProvisioningState: &provisioningstate,
 				}}, nil)
 			},
@@ -60,7 +62,7 @@ func TestReconcile(t *testing.T) {
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
 			expectedError:            "",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string) {
-				m.Get(context.TODO(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 					ProvisioningState: &provisioningstate,
 				}}, nil)
 			},
@@ -109,8 +111,8 @@ func TestReconcile(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-managedcluster", gomock.Any()).Return(nil)
-				m.Get(context.TODO(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any()).Return(nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
 			},
 		},
 	}

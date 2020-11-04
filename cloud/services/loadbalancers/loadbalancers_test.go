@@ -21,20 +21,18 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/to"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
-	"k8s.io/klog/klogr"
-
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileLoadBalancer(t *testing.T) {
@@ -60,7 +58,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("my-cluster")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publiclb", gomock.AssignableToTypeOf(network.LoadBalancer{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -82,7 +80,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("my-cluster")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				gomock.InOrder(
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publiclb", gomockinternal.DiffEq(network.LoadBalancer{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publiclb", gomockinternal.DiffEq(network.LoadBalancer{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
 							"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr(infrav1.APIServerRole),
@@ -176,7 +174,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				gomock.InOrder(
-					m.CreateOrUpdate(context.TODO(), "my-rg", "cluster-name", gomockinternal.DiffEq(network.LoadBalancer{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "cluster-name", gomockinternal.DiffEq(network.LoadBalancer{
 						Tags: map[string]*string{
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_cluster-name": to.StringPtr("owned"),
 							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr(infrav1.NodeOutboundRole),
@@ -241,9 +239,9 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
 				s.IsIPv6Enabled().AnyTimes().Return(false)
-				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mVnet.CheckIPAddressAvailability(gomockinternal.AContext(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
 			},
 		},
 		{
@@ -269,7 +267,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.Location().AnyTimes().Return("testlocation")
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -297,7 +295,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("my-cluster")
 				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{
 					LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
 						FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
 							{
@@ -307,7 +305,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 								},
 							},
 						}}}, nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomockinternal.DiffEq(network.LoadBalancer{
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb", gomockinternal.DiffEq(network.LoadBalancer{
 					Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
 					Location: to.StringPtr("testlocation"),
 					Tags: map[string]*string{
@@ -392,8 +390,8 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(false)}, nil)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mVnet.CheckIPAddressAvailability(gomockinternal.AContext(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(false)}, nil)
 			},
 		},
 		{
@@ -432,11 +430,11 @@ func TestReconcileLoadBalancer(t *testing.T) {
 				s.ClusterName().AnyTimes().Return("cluster-name")
 				s.IsIPv6Enabled().AnyTimes().Return(false)
 				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				m.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb-2", gomock.AssignableToTypeOf(network.LoadBalancer{}))
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb-3", gomock.AssignableToTypeOf(network.LoadBalancer{}))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				mVnet.CheckIPAddressAvailability(gomockinternal.AContext(), "my-rg", "my-vnet", "10.0.0.10").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb", gomock.AssignableToTypeOf(network.LoadBalancer{}))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb-2", gomock.AssignableToTypeOf(network.LoadBalancer{}))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb-3", gomock.AssignableToTypeOf(network.LoadBalancer{}))
 			},
 		},
 	}
@@ -493,8 +491,8 @@ func TestDeleteLoadBalancer(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-internallb")
-				m.Delete(context.TODO(), "my-rg", "my-publiclb")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-internallb")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publiclb")
 			},
 		},
 		{
@@ -508,7 +506,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-publiclb").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publiclb").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -523,7 +521,7 @@ func TestDeleteLoadBalancer(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-publiclb").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publiclb").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -573,7 +571,7 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 			subnetCidrs: []string{"10.0.8.0/16"},
 			expectedIP:  "10.0.8.0",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.0.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
+				mVnet.CheckIPAddressAvailability(gomockinternal.AContext(), "my-rg", "my-vnet", "10.0.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 			},
 		},
 		{
@@ -581,7 +579,7 @@ func TestGetAvailablePrivateIP(t *testing.T) {
 			subnetCidrs: []string{"10.64.8.0"},
 			expectedIP:  "10.64.8.0",
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
-				mVnet.CheckIPAddressAvailability(context.TODO(), "my-rg", "my-vnet", "10.64.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
+				mVnet.CheckIPAddressAvailability(gomockinternal.AContext(), "my-rg", "my-vnet", "10.64.8.0").Return(network.IPAddressAvailabilityResult{Available: to.BoolPtr(true)}, nil)
 			},
 		},
 	}

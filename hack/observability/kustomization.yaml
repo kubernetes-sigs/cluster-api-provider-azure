@@ -1,0 +1,7 @@
+resources:
+  - ../../config
+  - jaeger
+  - prometheus
+
+patchesStrategicMerge:
+  - jaeger/sidecar_injection.yaml

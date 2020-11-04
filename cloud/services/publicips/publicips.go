@@ -23,11 +23,16 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "publicips.Service.Reconcile")
+	defer span.End()
+
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
 
@@ -73,6 +78,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the public IP with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "publicips.Service.Delete")
+	defer span.End()
+
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		s.Scope.V(2).Info("deleting public IP", "public ip", ip.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), ip.Name)

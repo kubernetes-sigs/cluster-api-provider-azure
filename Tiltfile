@@ -134,7 +134,7 @@ def capz():
     # Apply the kustomized yaml for this provider
     substitutions = settings.get("kustomize_substitutions", {})
     os.environ.update(substitutions)
-    yaml = str(kustomizesub("./config"))
+    yaml = str(kustomizesub("./hack/observability")) # build an observable kind deployment by default
 
 
     # add extra_args if they are defined

@@ -21,27 +21,26 @@ import (
 	"net/http"
 	"testing"
 
-	. "github.com/onsi/gomega"
-	"k8s.io/klog/klogr"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets/mock_scalesets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func init() {
@@ -102,7 +101,7 @@ func TestGetExistingVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
@@ -129,7 +128,7 @@ func TestGetExistingVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vmss"),
 					Sku: &compute.Sku{
@@ -140,7 +139,7 @@ func TestGetExistingVMSS(t *testing.T) {
 						ProvisioningState: to.StringPtr("Succeeded"),
 					},
 				}, nil)
-				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
@@ -160,14 +159,14 @@ func TestGetExistingVMSS(t *testing.T) {
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vmss"),
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						ProvisioningState: to.StringPtr("Succeeded"),
 					},
 				}, nil)
-				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 	}
@@ -245,9 +244,9 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						ID:   to.StringPtr("vmss-id"),
 						Name: to.StringPtr("my-vmss"),
@@ -279,8 +278,8 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
 					Location: to.StringPtr("test-location"),
 					Tags: map[string]*string{
 						"Name": to.StringPtr("my-vmss"),
@@ -414,9 +413,9 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						ID:   to.StringPtr("vmss-id"),
 						Name: to.StringPtr("my-vmss"),
@@ -448,8 +447,8 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
 					Location: to.StringPtr("test-location"),
 					Tags: map[string]*string{
 						"Name": to.StringPtr("my-vmss"),
@@ -581,7 +580,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -591,8 +590,8 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
 					Location: to.StringPtr("test-location"),
 					Tags: map[string]*string{
 						"Name": to.StringPtr("my-vmss"),
@@ -691,7 +690,7 @@ func TestReconcileVMSS(t *testing.T) {
 						},
 					},
 				}))
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						ID:   to.StringPtr("vmss-id"),
 						Name: to.StringPtr("my-vmss"),
@@ -699,7 +698,7 @@ func TestReconcileVMSS(t *testing.T) {
 							ProvisioningState: to.StringPtr("Succeeded"),
 						},
 					}, nil)
-				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
@@ -760,9 +759,9 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						ID:   to.StringPtr("vmss-id"),
 						Name: to.StringPtr("my-vmss"),
@@ -794,8 +793,8 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
 					Location: to.StringPtr("test-location"),
 					Tags: map[string]*string{
 						"Name": to.StringPtr("my-vmss"),
@@ -930,7 +929,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -940,13 +939,13 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).Do(
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).Do(
 					func(_, _, _ interface{}, vmss compute.VirtualMachineScaleSet) {
 						encryptionAtHost := *vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.SecurityProfile.EncryptionAtHost
 						g.Expect(encryptionAtHost).To(Equal(true))
 					})
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						ID:   to.StringPtr("vmss-id"),
 						Name: to.StringPtr("my-vmss"),
@@ -954,7 +953,7 @@ func TestReconcileVMSS(t *testing.T) {
 							ProvisioningState: to.StringPtr("Succeeded"),
 						},
 					}, nil)
-				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
@@ -1029,7 +1028,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						Name:     to.StringPtr("my-vmss"),
 						ID:       to.StringPtr("vmss-id"),
@@ -1123,7 +1122,7 @@ func TestReconcileVMSS(t *testing.T) {
 							},
 						},
 					}, nil)
-				m.ListInstances(context.TODO(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
@@ -1141,8 +1140,8 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.Update(context.TODO(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSetUpdate{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.Update(gomockinternal.AContext(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSetUpdate{
 					Tags: map[string]*string{
 						"Name": to.StringPtr("my-vmss"),
 						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
@@ -1202,7 +1201,7 @@ func TestReconcileVMSS(t *testing.T) {
 						},
 					},
 				})).Return(nil)
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{
 						ID:   to.StringPtr("vmss-id"),
 						Name: to.StringPtr("my-vmss"),
@@ -1299,7 +1298,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vmss").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -1309,8 +1308,8 @@ func TestReconcileVMSS(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
 			},
 		},
@@ -1363,7 +1362,7 @@ func TestDeleteVMSS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-existing-rg", "my-existing-vmss")
+				m.Delete(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss")
 			},
 		},
 		{
@@ -1377,7 +1376,7 @@ func TestDeleteVMSS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "my-vmss").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -1392,7 +1391,7 @@ func TestDeleteVMSS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "my-vmss").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-vmss").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

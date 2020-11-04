@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newRouteTablesClient(subscriptionID string, baseURI string, authorizer auto
 
 // Get gets the specified route table.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, rtName string) (network.RouteTable, error) {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.Get")
+	defer span.End()
+
 	return ac.routetables.Get(ctx, resourceGroupName, rtName, "")
 }
 
 // CreateOrUpdate create or updates a route table in a specified resource group.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, rtName string, rt network.RouteTable) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.routetables.CreateOrUpdate(ctx, resourceGroupName, rtName, rt)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified route table.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, rtName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.routetables.Delete(ctx, resourceGroupName, rtName)
 	if err != nil {
 		return err

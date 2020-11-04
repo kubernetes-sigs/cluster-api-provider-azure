@@ -17,6 +17,7 @@ limitations under the License.
 package gomock
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/mock/gomock"
@@ -35,11 +36,8 @@ type (
 		actual   string
 	}
 
-	logEntryMactcher struct {
-		level   int
-		logFunc string
-		values  []interface{}
-		errors  []error
+	contextMatcher struct {
+		actual interface{}
 	}
 
 	LogMatcher interface {
@@ -87,4 +85,18 @@ func (e *errStrEq) Matches(y interface{}) bool {
 
 func (e *errStrEq) String() string {
 	return fmt.Sprintf("error.Error() %q, but got %q", e.expected, e.actual)
+}
+
+func AContext() gomock.Matcher {
+	return &contextMatcher{}
+}
+
+func (e *contextMatcher) Matches(y interface{}) bool {
+	_, ok := y.(context.Context)
+	e.actual = y
+	return ok
+}
+
+func (e *contextMatcher) String() string {
+	return fmt.Sprintf("expected a context.Context, but got %T", e.actual)
 }

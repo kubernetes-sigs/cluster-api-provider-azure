@@ -60,7 +60,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 					Values: []interface{}{
 						"namespace",
 						instance.Namespace,
-						"AzureCluster",
+						"azureCluster",
 						randName,
 						"msg",
 						"Cluster Controller has not yet set OwnerRef",

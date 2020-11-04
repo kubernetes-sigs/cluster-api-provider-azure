@@ -21,26 +21,22 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/klogr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
-	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
-
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/golang/mock/gomock"
-
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestGetExistingVM(t *testing.T) {
@@ -75,14 +71,14 @@ func TestGetExistingVM(t *testing.T) {
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{
+				mpip.Get(gomockinternal.AContext(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{
 					PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 						PublicIPAddressVersion:   network.IPv4,
 						PublicIPAllocationMethod: network.Static,
 						IPAddress:                to.StringPtr("4.3.2.1"),
 					},
 				}, nil)
-				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{
+				mnic.Get(gomockinternal.AContext(), "my-rg", gomock.Any()).Return(network.Interface{
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
@@ -103,7 +99,7 @@ func TestGetExistingVM(t *testing.T) {
 						},
 					},
 				}, nil)
-				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").Return(compute.VirtualMachine{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vm"),
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
@@ -130,7 +126,7 @@ func TestGetExistingVM(t *testing.T) {
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
@@ -141,7 +137,7 @@ func TestGetExistingVM(t *testing.T) {
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -152,8 +148,8 @@ func TestGetExistingVM(t *testing.T) {
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{
+				mpip.Get(gomockinternal.AContext(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				mnic.Get(gomockinternal.AContext(), "my-rg", gomock.Any()).Return(network.Interface{
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
@@ -174,7 +170,7 @@ func TestGetExistingVM(t *testing.T) {
 						},
 					},
 				}, nil)
-				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").Return(compute.VirtualMachine{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vm"),
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
@@ -201,8 +197,8 @@ func TestGetExistingVM(t *testing.T) {
 			expect: func(s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				mpip.Get(context.TODO(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
-				mnic.Get(context.TODO(), "my-rg", gomock.Any()).Return(network.Interface{
+				mpip.Get(gomockinternal.AContext(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+				mnic.Get(gomockinternal.AContext(), "my-rg", gomock.Any()).Return(network.Interface{
 					InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 						IPConfigurations: &[]network.InterfaceIPConfiguration{
 							{
@@ -223,7 +219,7 @@ func TestGetExistingVM(t *testing.T) {
 						},
 					},
 				}, nil)
-				m.Get(context.TODO(), "my-rg", "my-vm").Return(compute.VirtualMachine{
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").Return(compute.VirtualMachine{
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vm"),
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
@@ -321,7 +317,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -331,8 +327,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
 						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
 						StorageProfile: &compute.StorageProfile{
@@ -464,7 +460,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -474,8 +470,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Identity.Type).To(Equal(compute.ResourceIdentityTypeSystemAssigned))
 					g.Expect(vm.Identity.UserAssignedIdentities).To(HaveLen(0))
 				})
@@ -536,7 +532,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -546,8 +542,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Identity.Type).To(Equal(compute.ResourceIdentityTypeUserAssigned))
 					g.Expect(vm.Identity.UserAssignedIdentities).To(Equal(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{"my-user-id": {}}))
 				})
@@ -608,7 +604,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -618,8 +614,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Priority).To(Equal(compute.Spot))
 					g.Expect(vm.EvictionPolicy).To(Equal(compute.Deallocate))
 					g.Expect(vm.BillingProfile).To(BeNil())
@@ -687,7 +683,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -697,8 +693,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(to.StringPtr("my-diskencryptionset-id")))
 
 				})
@@ -755,7 +751,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -765,8 +761,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(*vm.VirtualMachineProperties.SecurityProfile.EncryptionAtHost).To(Equal(true))
 
 				})
@@ -831,7 +827,7 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 			ExpectedError: "encryption at host is not supported for VM type Standard_D2v3",
@@ -889,7 +885,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -899,8 +895,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 			ExpectedError: "failed to create VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			SetupSKUs: func(svc *Service) {
@@ -967,7 +963,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 			ExpectedError: "vm size should be bigger or equal to at least 2 vCPUs",
@@ -1035,7 +1031,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 			ExpectedError: "vm memory should be bigger or equal to at least 2Gi",
@@ -1106,7 +1102,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 			ExpectedError: "vm size Standard_D2v3 does not support ephemeral os. select a different vm size or disable ephemeral os",
@@ -1184,7 +1180,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -1194,8 +1190,8 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
 						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
 						StorageProfile: &compute.StorageProfile{
@@ -1346,7 +1342,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
-				m.Get(context.TODO(), "my-rg", "my-vm").
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
 					Marketplace: &infrav1.AzureMarketplaceImage{
@@ -1357,8 +1353,8 @@ func TestReconcileVM(t *testing.T) {
 						ThirdPartyImage: true,
 					},
 				}, nil)
-				s.GetBootstrapData(context.TODO()).Return("fake-bootstrap-data", nil)
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					Plan: &compute.Plan{
 						Name:      to.StringPtr("sku-id"),
 						Publisher: to.StringPtr("fake-publisher"),
@@ -1535,7 +1531,7 @@ func TestDeleteVM(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-existing-rg", "my-existing-vm")
+				m.Delete(gomockinternal.AContext(), "my-existing-rg", "my-existing-vm")
 			},
 		},
 		{
@@ -1559,7 +1555,7 @@ func TestDeleteVM(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "my-vm").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -1584,7 +1580,7 @@ func TestDeleteVM(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "my-vm").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

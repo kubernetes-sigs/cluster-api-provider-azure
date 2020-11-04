@@ -74,7 +74,7 @@ func TestReconcilePublicIP(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("testlocation")
 				gomock.InOrder(
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomockinternal.DiffEq(network.PublicIPAddress{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomockinternal.DiffEq(network.PublicIPAddress{
 						Name:     to.StringPtr("my-publicip"),
 						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 						Location: to.StringPtr("testlocation"),
@@ -87,7 +87,7 @@ func TestReconcilePublicIP(t *testing.T) {
 							},
 						},
 					})).Times(1),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip-2", gomockinternal.DiffEq(network.PublicIPAddress{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-2", gomockinternal.DiffEq(network.PublicIPAddress{
 						Name:     to.StringPtr("my-publicip-2"),
 						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 						Location: to.StringPtr("testlocation"),
@@ -100,7 +100,7 @@ func TestReconcilePublicIP(t *testing.T) {
 							},
 						},
 					})).Times(1),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip-3", gomockinternal.DiffEq(network.PublicIPAddress{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-3", gomockinternal.DiffEq(network.PublicIPAddress{
 						Name:     to.StringPtr("my-publicip-3"),
 						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 						Location: to.StringPtr("testlocation"),
@@ -109,7 +109,7 @@ func TestReconcilePublicIP(t *testing.T) {
 							PublicIPAllocationMethod: network.Static,
 						},
 					})).Times(1),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip-ipv6", gomockinternal.DiffEq(network.PublicIPAddress{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-ipv6", gomockinternal.DiffEq(network.PublicIPAddress{
 						Name:     to.StringPtr("my-publicip-ipv6"),
 						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
 						Location: to.StringPtr("testlocation"),
@@ -138,7 +138,7 @@ func TestReconcilePublicIP(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("testlocation")
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}
@@ -192,8 +192,8 @@ func TestDeletePublicIP(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-publicip")
-				m.Delete(context.TODO(), "my-rg", "my-publicip-2")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publicip")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publicip-2")
 			},
 		},
 		{
@@ -210,9 +210,9 @@ func TestDeletePublicIP(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-publicip").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publicip").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.Delete(context.TODO(), "my-rg", "my-publicip-2")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publicip-2")
 			},
 		},
 		{
@@ -226,7 +226,7 @@ func TestDeletePublicIP(t *testing.T) {
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-publicip").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-publicip").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

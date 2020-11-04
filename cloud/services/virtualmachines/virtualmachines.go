@@ -27,36 +27,19 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
-
-// getExisting provides information about a virtual machine.
-func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
-	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
-	if err != nil {
-		return nil, err
-	}
-
-	convertedVM, err := converters.SDKToVM(vm)
-	if err != nil {
-		return convertedVM, err
-	}
-
-	// Discover addresses for NICs associated with the VM
-	// and add them to our converted vm struct
-	addresses, err := s.getAddresses(ctx, vm)
-	if err != nil {
-		return convertedVM, err
-	}
-	convertedVM.Addresses = addresses
-	return convertedVM, nil
-}
 
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Reconcile")
+	defer span.End()
+
 	for _, vmSpec := range s.Scope.VMSpecs() {
 		existingVM, err := s.getExisting(ctx, vmSpec.Name)
 		switch {
@@ -187,6 +170,52 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// Delete deletes the virtual machine with the provided name.
+func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Delete")
+	defer span.End()
+
+	for _, vmSpec := range s.Scope.VMSpecs() {
+		s.Scope.V(2).Info("deleting VM", "vm", vmSpec.Name)
+		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
+		if err != nil && azure.ResourceNotFound(err) {
+			// already deleted
+			continue
+		}
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
+		}
+
+		s.Scope.V(2).Info("successfully deleted VM", "vm", vmSpec.Name)
+	}
+	return nil
+}
+
+// getExisting provides information about a virtual machine.
+func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getExisting")
+	defer span.End()
+
+	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
+	if err != nil {
+		return nil, err
+	}
+
+	convertedVM, err := converters.SDKToVM(vm)
+	if err != nil {
+		return convertedVM, err
+	}
+
+	// Discover addresses for NICs associated with the VM
+	// and add them to our converted vm struct
+	addresses, err := s.getAddresses(ctx, vm)
+	if err != nil {
+		return convertedVM, err
+	}
+	convertedVM.Addresses = addresses
+	return convertedVM, nil
+}
+
 func (s *Service) generateImagePlan() *compute.Plan {
 	image, err := s.Scope.GetVMImage()
 	if err != nil {
@@ -206,25 +235,9 @@ func (s *Service) generateImagePlan() *compute.Plan {
 	}
 }
 
-// Delete deletes the virtual machine with the provided name.
-func (s *Service) Delete(ctx context.Context) error {
-	for _, vmSpec := range s.Scope.VMSpecs() {
-		s.Scope.V(2).Info("deleting VM", "vm", vmSpec.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			continue
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
-		}
-
-		s.Scope.V(2).Info("successfully deleted VM", "vm", vmSpec.Name)
-	}
-	return nil
-}
-
 func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) ([]corev1.NodeAddress, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getAddresses")
+	defer span.End()
 
 	addresses := []corev1.NodeAddress{}
 
@@ -279,6 +292,9 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 
 // getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation
 func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getPublicIPAddress")
+	defer span.End()
+
 	retAddress := corev1.NodeAddress{}
 	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
 	if err != nil {
@@ -290,17 +306,11 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 	return retAddress, nil
 }
 
-// getResourceNameById takes a resource ID like
-// `/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME`
-// and parses out the string after the last slash.
-func getResourceNameByID(resourceID string) string {
-	explodedResourceID := strings.Split(resourceID, "/")
-	resourceName := explodedResourceID[len(explodedResourceID)-1]
-	return resourceName
-}
-
 // generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
 func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.StorageProfile, error) {
+	_, span := tele.Tracer().Start(ctx, "virtualmachines.Service.generateStorageProfile")
+	defer span.End()
+
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
 			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
@@ -372,6 +382,15 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 	storageProfile.ImageReference = imageRef
 
 	return storageProfile, nil
+}
+
+// getResourceNameById takes a resource ID like
+// `/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME`
+// and parses out the string after the last slash.
+func getResourceNameByID(resourceID string) string {
+	explodedResourceID := strings.Split(resourceID, "/")
+	resourceName := explodedResourceID[len(explodedResourceID)-1]
+	return resourceName
 }
 
 func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {

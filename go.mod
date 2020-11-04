@@ -8,6 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.2
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
+	github.com/Azure/go-autorest/tracing v0.6.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/mock v1.4.4
@@ -18,7 +19,13 @@ require (
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/pflag v1.0.5
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
+	go.opentelemetry.io/otel v0.13.0
+	go.opentelemetry.io/otel/exporters/metric/prometheus v0.13.0
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.13.0
+	go.opentelemetry.io/otel/sdk v0.13.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/net v0.0.0-20201002202402-0a1ea396d57c // indirect
 	k8s.io/api v0.17.12

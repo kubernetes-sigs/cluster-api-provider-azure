@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: capz-system
+  annotations:
+    sidecar.jaegertracing.io/inject: "true"
+  name: capz-controller-manager
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          args:
+            - "--metrics-addr=127.0.0.1:8080"
+            - "--enable-leader-election"
+            - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false}"
+            - "--enable-tracing"

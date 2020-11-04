@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -41,7 +43,9 @@ var _ Client = &AzureClient{}
 // NewClient creates a new VM client from subscription ID.
 func NewClient(auth azure.Authorizer) *AzureClient {
 	c := newGroupsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
+	return &AzureClient{
+		groups: c,
+	}
 }
 
 // newGroupsClient creates a new groups client from subscription ID.
@@ -54,16 +58,25 @@ func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.
 
 // Get gets a resource group.
 func (ac *AzureClient) Get(ctx context.Context, name string) (resources.Group, error) {
+	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.Get")
+	defer span.End()
+
 	return ac.groups.Get(ctx, name)
 }
 
 // CreateOrUpdate creates or updates a resource group.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, name string, group resources.Group) (resources.Group, error) {
+	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	return ac.groups.CreateOrUpdate(ctx, name, group)
 }
 
 // Delete deletes a resource group. When you delete a resource group, all of its resources are also deleted.
 func (ac *AzureClient) Delete(ctx context.Context, name string) error {
+	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.groups.Delete(ctx, name)
 	if err != nil {
 		return err

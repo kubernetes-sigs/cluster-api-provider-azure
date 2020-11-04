@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureClusterReconciler is the reconciler called by the AzureCluster controller
@@ -66,6 +67,9 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterReconciler.Reconcile")
+	defer span.End()
+
 	if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
 		return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
 	}
@@ -109,6 +113,9 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterReconciler.Delete")
+	defer span.End()
+
 	if err := r.groupsSvc.Delete(ctx); err != nil {
 		if errors.Is(err, azure.ErrNotOwned) {
 			if err := r.loadBalancerSvc.Delete(ctx); err != nil {

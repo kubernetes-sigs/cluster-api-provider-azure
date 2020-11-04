@@ -28,10 +28,14 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile gets/creates/updates a bastion host.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.Service.Reconcile")
+	defer span.End()
+
 	for _, bastionSpec := range s.Scope.BastionSpecs() {
 		s.Scope.V(2).Info("getting subnet in vnet", "subnet", bastionSpec.SubnetName, "vNet", bastionSpec.VNetName)
 		subnet, err := s.SubnetsClient.Get(ctx, s.Scope.ResourceGroup(), bastionSpec.VNetName, bastionSpec.SubnetName)
@@ -103,6 +107,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the bastion host with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.Service.Delete")
+	defer span.End()
+
 	for _, bastionSpec := range s.Scope.BastionSpecs() {
 
 		s.Scope.V(2).Info("deleting bastion host", "bastion", bastionSpec.Name)
@@ -122,6 +129,9 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 func (s *Service) createBastionPublicIP(ctx context.Context, ipName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.Service.createBastionPublicIP")
+	defer span.End()
+
 	s.Scope.V(2).Info("creating bastion public IP", "public IP", ipName)
 	return s.PublicIPsClient.CreateOrUpdate(
 		ctx,

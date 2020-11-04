@@ -22,35 +22,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
-
-// getExisting provides information about an existing virtual network.
-func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
-	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
-	if err != nil {
-		if azure.ResourceNotFound(err) {
-			return nil, err
-		}
-		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
-	}
-	var prefixes []string
-	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
-		prefixes = to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
-	}
-	return &infrav1.VnetSpec{
-		ResourceGroup: spec.ResourceGroup,
-		ID:            to.String(vnet.ID),
-		Name:          to.String(vnet.Name),
-		CIDRBlocks:    prefixes,
-		Tags:          converters.MapToTags(vnet.Tags),
-	}, nil
-}
 
 // Reconcile gets/creates/updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Reconcile")
+	defer span.End()
+
 	// Following should be created upstream and provided as an input to NewService
 	// A VNet has following dependencies
 	//    * VNet Cidr
@@ -104,6 +87,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Delete")
+	defer span.End()
+
 	for _, vnetSpec := range s.Scope.VNetSpecs() {
 		if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 			s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
@@ -123,4 +109,29 @@ func (s *Service) Delete(ctx context.Context) error {
 		s.Scope.V(2).Info("successfully deleted VNet", "VNet", vnetSpec.Name)
 	}
 	return nil
+}
+
+// getExisting provides information about an existing virtual network.
+func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.getExisting")
+	defer span.End()
+
+	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
+	if err != nil {
+		if azure.ResourceNotFound(err) {
+			return nil, err
+		}
+		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
+	}
+	var prefixes []string
+	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
+		prefixes = to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
+	}
+	return &infrav1.VnetSpec{
+		ResourceGroup: spec.ResourceGroup,
+		ID:            to.String(vnet.ID),
+		Name:          to.String(vnet.Name),
+		CIDRBlocks:    prefixes,
+		Tags:          converters.MapToTags(vnet.Tags),
+	}, nil
 }

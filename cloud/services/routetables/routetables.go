@@ -22,11 +22,16 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Reconcile")
+	defer span.End()
+
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route tables reconcile in custom vnet mode")
 		return nil
@@ -67,6 +72,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the route table with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Delete")
+	defer span.End()
+
 	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil

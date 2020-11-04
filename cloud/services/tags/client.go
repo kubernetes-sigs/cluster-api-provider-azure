@@ -20,9 +20,10 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
-
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,10 +55,16 @@ func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Au
 
 // GetAtScope sends the get at scope request.
 func (ac *AzureClient) GetAtScope(ctx context.Context, scope string) (resources.TagsResource, error) {
+	ctx, span := tele.Tracer().Start(ctx, "tags.AzureClient.GetAtScope")
+	defer span.End()
+
 	return ac.tags.GetAtScope(ctx, scope)
 }
 
 // CreateOrUpdateAtScope allows adding or replacing the entire set of tags on the specified resource or subscription.
 func (ac *AzureClient) CreateOrUpdateAtScope(ctx context.Context, scope string, parameters resources.TagsResource) (resources.TagsResource, error) {
+	ctx, span := tele.Tracer().Start(ctx, "tags.AzureClient.CreateOrUpdateAtScope")
+	defer span.End()
+
 	return ac.tags.CreateOrUpdateAtScope(ctx, scope, parameters)
 }

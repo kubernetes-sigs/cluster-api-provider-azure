@@ -18,7 +18,6 @@ package inboundnatrules
 
 import (
 	"context"
-	"k8s.io/klog/klogr"
 	"net/http"
 	"testing"
 
@@ -27,10 +26,13 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules/mock_inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileInboundNATRule(t *testing.T) {
@@ -57,7 +59,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
-					mLoadBalancer.Get(context.TODO(), "my-rg", "my-lb").Return(network.LoadBalancer{
+					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-lb"),
 						ID:   pointer.StringPtr("my-lb-id"),
 						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -68,7 +70,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 							},
 							InboundNatRules: &[]network.InboundNatRule{},
 						}}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-lb", "my-machine", network.InboundNatRule{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-lb", "my-machine", network.InboundNatRule{
 						Name: pointer.StringPtr("my-machine"),
 						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
 							FrontendPort:         to.Int32Ptr(22),
@@ -99,7 +101,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
-					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").
+					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-public-lb").
 						Return(network.LoadBalancer{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")))
 			},
 		},
@@ -119,7 +121,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
-					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
+					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-public-lb"),
 						ID:   pointer.StringPtr("my-public-lb-id"),
 						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -145,7 +147,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 								},
 							},
 						}}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-public-lb", "my-machine", network.InboundNatRule{
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-public-lb", "my-machine", network.InboundNatRule{
 						Name: pointer.StringPtr("my-machine"),
 						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
 							FrontendPort:         to.Int32Ptr(2202),
@@ -181,7 +183,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				gomock.InOrder(
-					mLoadBalancer.Get(context.TODO(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
+					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-public-lb"),
 						ID:   pointer.StringPtr("my-public-lb-id"),
 						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -207,7 +209,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 								},
 							},
 						}}, nil),
-					mLoadBalancer.Get(context.TODO(), "my-rg", "my-other-public-lb").Return(network.LoadBalancer{
+					mLoadBalancer.Get(gomockinternal.AContext(), "my-rg", "my-other-public-lb").Return(network.LoadBalancer{
 						Name: to.StringPtr("my-other-public-lb"),
 						ID:   pointer.StringPtr("my-public-lb-id"),
 						LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
@@ -218,7 +220,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 							},
 							InboundNatRules: &[]network.InboundNatRule{},
 						}}, nil),
-					m.CreateOrUpdate(context.TODO(), "my-rg", "my-other-public-lb", "my-other-nat-rule", gomock.AssignableToTypeOf(network.InboundNatRule{})))
+					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-other-public-lb", "my-other-nat-rule", gomock.AssignableToTypeOf(network.InboundNatRule{})))
 			},
 		},
 	}
@@ -273,7 +275,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				})
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-md-0")
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-public-lb", "azure-md-0")
 			},
 		},
 		{
@@ -289,7 +291,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-md-1").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-public-lb", "azure-md-1").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
@@ -306,7 +308,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 				})
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
-				m.Delete(context.TODO(), "my-rg", "my-public-lb", "azure-md-2").
+				m.Delete(gomockinternal.AContext(), "my-rg", "my-public-lb", "azure-md-2").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

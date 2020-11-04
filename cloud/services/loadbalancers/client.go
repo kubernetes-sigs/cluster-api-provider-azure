@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newLoadBalancersClient(subscriptionID string, baseURI string, authorizer au
 
 // Get gets the specified load balancer.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, lbName string) (network.LoadBalancer, error) {
+	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.Get")
+	defer span.End()
+
 	return ac.loadbalancers.Get(ctx, resourceGroupName, lbName, "")
 }
 
 // CreateOrUpdate creates or updates a load balancer.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, lb network.LoadBalancer) error {
+	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.loadbalancers.CreateOrUpdate(ctx, resourceGroupName, lbName, lb)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified load balancer.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, lbName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.loadbalancers.Delete(ctx, resourceGroupName, lbName)
 	if err != nil {
 		return err

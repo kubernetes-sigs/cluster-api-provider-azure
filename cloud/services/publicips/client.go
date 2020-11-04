@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newPublicIPAddressesClient(subscriptionID string, baseURI string, authorize
 
 // Get gets the specified public IP address in a specified resource group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, ipName string) (network.PublicIPAddress, error) {
+	ctx, span := tele.Tracer().Start(ctx, "publicips.AzureClient.Get")
+	defer span.End()
+
 	return ac.publicips.Get(ctx, resourceGroupName, ipName, "")
 }
 
 // CreateOrUpdate creates or updates a static or dynamic public IP address.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, ipName string, ip network.PublicIPAddress) error {
+	ctx, span := tele.Tracer().Start(ctx, "publicips.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.publicips.CreateOrUpdate(ctx, resourceGroupName, ipName, ip)
 	if err != nil {
 		return err
@@ -73,6 +81,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified public IP address.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "publicips.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.publicips.Delete(ctx, resourceGroupName, ipName)
 	if err != nil {
 		return err

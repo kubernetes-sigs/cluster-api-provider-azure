@@ -18,16 +18,19 @@ package tags
 
 import (
 	"context"
+	"net/http"
+	"testing"
+
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
-	"net/http"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags/mock_tags"
-	"testing"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
 func TestReconcileTags(t *testing.T) {
@@ -58,9 +61,9 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation-2",
 					},
 				})
-				m.GetAtScope(context.TODO(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
 				s.AnnotationJSON("my-annotation")
-				m.CreateOrUpdateAtScope(context.TODO(), "/sub/123/fake/scope", resources.TagsResource{
+				m.CreateOrUpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsResource{
 					Properties: &resources.Tags{
 						Tags: map[string]*string{
 							"foo":   to.StringPtr("bar"),
@@ -69,9 +72,9 @@ func TestReconcileTags(t *testing.T) {
 					},
 				})
 				s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"foo": "bar", "thing": "stuff"})
-				m.GetAtScope(context.TODO(), "/sub/123/other/scope").Return(resources.TagsResource{}, nil)
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/other/scope").Return(resources.TagsResource{}, nil)
 				s.AnnotationJSON("my-annotation-2")
-				m.CreateOrUpdateAtScope(context.TODO(), "/sub/123/other/scope", resources.TagsResource{
+				m.CreateOrUpdateAtScope(gomockinternal.AContext(), "/sub/123/other/scope", resources.TagsResource{
 					Properties: &resources.Tags{
 						Tags: map[string]*string{
 							"tag1": to.StringPtr("value1"),
@@ -97,7 +100,7 @@ func TestReconcileTags(t *testing.T) {
 					},
 				})
 				s.AnnotationJSON("my-annotation")
-				m.GetAtScope(context.TODO(), "/sub/123/fake/scope").Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 		{
@@ -114,9 +117,9 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(context.TODO(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
 				s.AnnotationJSON("my-annotation")
-				m.CreateOrUpdateAtScope(context.TODO(), "/sub/123/fake/scope", resources.TagsResource{
+				m.CreateOrUpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsResource{
 					Properties: &resources.Tags{
 						Tags: map[string]*string{
 							"key": to.StringPtr("value"),

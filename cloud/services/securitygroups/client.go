@@ -21,7 +21,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
@@ -54,11 +56,17 @@ func newSecurityGroupsClient(subscriptionID string, baseURI string, authorizer a
 
 // Get gets the specified network security group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, sgName string) (network.SecurityGroup, error) {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.Get")
+	defer span.End()
+
 	return ac.securitygroups.Get(ctx, resourceGroupName, sgName, "")
 }
 
 // CreateOrUpdate creates or updates a network security group in the specified resource group.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, sgName string, sg network.SecurityGroup) error {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	var etag string
 	if sg.Etag != nil {
 		etag = *sg.Etag
@@ -88,6 +96,9 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified network security group.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, sgName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.securitygroups.Delete(ctx, resourceGroupName, sgName)
 	if err != nil {
 		return err
