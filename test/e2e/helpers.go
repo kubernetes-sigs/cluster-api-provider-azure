@@ -455,7 +455,7 @@ func newSSHConfig() (*ssh.ClientConfig, error) {
 	}
 	sshConfig := ssh.ClientConfig{
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		User:            azure.DefaultUserName,
+		User:            defaults.DefaultUserName,
 		Auth:            []ssh.AuthMethod{pubkey},
 	}
 	return &sshConfig, nil

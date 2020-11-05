@@ -21,6 +21,8 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/util/conditions"
 )
 
 // Service is a generic interface used by components offering a type of service.
@@ -47,7 +49,6 @@ type CredentialGetter interface {
 
 // Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
 type Authorizer interface {
-	SubscriptionID() string
 	ClientID() string
 	ClientSecret() string
 	CloudEnvironment() string
@@ -60,24 +61,32 @@ type Authorizer interface {
 type NetworkDescriber interface {
 	Vnet() *infrav1.VnetSpec
 	IsVnetManaged() bool
+	Subnets() infrav1.Subnets
 	NodeSubnet() *infrav1.SubnetSpec
 	ControlPlaneSubnet() *infrav1.SubnetSpec
 	IsIPv6Enabled() bool
 	NodeRouteTable() *infrav1.RouteTable
 	ControlPlaneRouteTable() *infrav1.RouteTable
+	APIServerPublicIP() *infrav1.PublicIPSpec
+	APIServerPrivateIP() string
+	APIServerLB() *infrav1.LoadBalancerSpec
 	APIServerLBName() string
 	APIServerLBPoolName(string) string
 	IsAPIServerPrivate() bool
+	NodeOutboundLBName() string
 	OutboundLBName(string) string
 	OutboundPoolName(string) string
+	SetDNSName(dnsSuffix string)
 }
 
 // ClusterDescriber is an interface which can get common Azure Cluster information.
 type ClusterDescriber interface {
-	Authorizer
+	conditions.Setter
+	SubscriptionID() string
 	ResourceGroup() string
 	ClusterName() string
 	Location() string
+	SetFailureDomain(id string, spec clusterv1.FailureDomainSpec)
 	AdditionalTags() infrav1.Tags
 }
 
@@ -85,4 +94,22 @@ type ClusterDescriber interface {
 type ClusterScoper interface {
 	ClusterDescriber
 	NetworkDescriber
+}
+
+// AuthorizedClusterDescriber combines a cluster describer with an authorizer
+type AuthorizedClusterDescriber interface {
+	Authorizer
+	ClusterDescriber
+}
+
+// AuthorizedClusterScoper combines a cluster scoper with an authorizer
+type AuthorizedClusterScoper interface {
+	Authorizer
+	ClusterScoper
+}
+
+// SubscriptionAuthorizer provides an Authorizer as well as a specific subscription for use.
+type SubscriptionAuthorizer interface {
+	Authorizer
+	SubscriptionID() string
 }

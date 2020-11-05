@@ -72,7 +72,7 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to get availability zones")
 	}
 
-	r.scope.SetDNSName()
+	r.scope.SetDNSName(r.scope.AzureClients.ResourceManagerVMDNSSuffix)
 	r.scope.SetControlPlaneIngressRules()
 
 	if err := r.groupsSvc.Reconcile(ctx); err != nil {

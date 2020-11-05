@@ -14,29 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package azure
+package defaults
 
 import (
 	"fmt"
 
-	"github.com/blang/semver"
-	"github.com/pkg/errors"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 
 const (
 	// DefaultUserName is the default username for created vm
 	DefaultUserName = "capi"
-)
-
-const (
-	// DefaultImageOfferID is the default Azure Marketplace offer ID
-	DefaultImageOfferID = "capi"
-	// DefaultImagePublisherID is the default Azure Marketplace publisher ID
-	DefaultImagePublisherID = "cncf-upstream"
-	// LatestVersion is the image version latest
-	LatestVersion = "latest"
 )
 
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
@@ -142,34 +130,6 @@ func ProbeID(subscriptionID, resourceGroup, loadBalancerName, probeName string) 
 // NATRuleID returns the azure resource ID for a inbound NAT rule.
 func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/inboundNatRules/%s", subscriptionID, resourceGroup, loadBalancerName, natRuleName)
-}
-
-// GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
-func getDefaultImageSKUID(k8sVersion string) (string, error) {
-	version, err := semver.ParseTolerant(k8sVersion)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to parse Kubernetes version \"%s\" in spec, expected valid SemVer string", k8sVersion)
-	}
-	return fmt.Sprintf("k8s-%ddot%ddot%d-ubuntu-1804", version.Major, version.Minor, version.Patch), nil
-}
-
-// GetDefaultUbuntuImage returns the default image spec for Ubuntu.
-func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
-	skuID, err := getDefaultImageSKUID(k8sVersion)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get default image")
-	}
-
-	defaultImage := &infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: DefaultImagePublisherID,
-			Offer:     DefaultImageOfferID,
-			SKU:       skuID,
-			Version:   LatestVersion,
-		},
-	}
-
-	return defaultImage, nil
 }
 
 // UserAgent specifies a string to append to the agent identifier.

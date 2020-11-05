@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -38,7 +39,7 @@ type azureClient struct {
 var _ client = (*azureClient)(nil)
 
 // newClient creates a new VM client from subscription ID.
-func newClient(auth azure.Authorizer) *azureClient {
+func newClient(auth azure.SubscriptionAuthorizer) *azureClient {
 	c := newDisksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &azureClient{c}
 }
@@ -47,7 +48,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.DisksClient {
 	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
 	disksClient.Authorizer = authorizer
-	disksClient.AddToUserAgent(azure.UserAgent())
+	disksClient.AddToUserAgent(defaults.UserAgent())
 	return disksClient
 }
 

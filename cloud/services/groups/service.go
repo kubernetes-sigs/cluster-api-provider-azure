@@ -30,7 +30,7 @@ type Service struct {
 // GroupScope defines the scope interface for a group service.
 type GroupScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 }
 
 // NewService creates a new service.

@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 )
 
@@ -71,6 +72,14 @@ type AzureManagedMachinePool struct {
 	Spec   AzureManagedMachinePoolSpec   `json:"spec,omitempty"`
 	Status AzureManagedMachinePoolStatus `json:"status,omitempty"`
 }
+
+// GetConditions returns the list of conditions for an AzureManagedMachinePool API object.
+func (c *AzureManagedMachinePool) GetConditions() clusterv1.Conditions {
+	return nil
+}
+
+// SetConditions will set the given conditions on an AzureManagedMachinePool object
+func (c *AzureManagedMachinePool) SetConditions(conditions clusterv1.Conditions) {}
 
 // +kubebuilder:object:root=true
 

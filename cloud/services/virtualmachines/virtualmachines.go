@@ -31,6 +31,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -72,7 +73,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			for i, nicName := range vmSpec.NICNames {
 				primary := i == 0
 				nicRefs[i] = compute.NetworkInterfaceReference{
-					ID: to.StringPtr(azure.NetworkInterfaceID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicName)),
+					ID: to.StringPtr(defaults.NetworkInterfaceID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicName)),
 					NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
 						Primary: to.BoolPtr(primary),
 					},
@@ -111,14 +112,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					SecurityProfile: securityProfile,
 					OsProfile: &compute.OSProfile{
 						ComputerName:  to.StringPtr(vmSpec.Name),
-						AdminUsername: to.StringPtr(azure.DefaultUserName),
+						AdminUsername: to.StringPtr(defaults.DefaultUserName),
 						CustomData:    to.StringPtr(bootstrapData),
 						LinuxConfiguration: &compute.LinuxConfiguration{
 							DisablePasswordAuthentication: to.BoolPtr(true),
 							SSH: &compute.SSHConfiguration{
 								PublicKeys: &[]compute.SSHPublicKey{
 									{
-										Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+										Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", defaults.DefaultUserName)),
 										KeyData: to.StringPtr(string(sshKey)),
 									},
 								},
@@ -313,7 +314,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 
 	storageProfile := &compute.StorageProfile{
 		OsDisk: &compute.OSDisk{
-			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
+			Name:         to.StringPtr(defaults.GenerateOSDiskName(vmSpec.Name)),
 			OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
 			CreateOption: compute.DiskCreateOptionTypesFromImage,
 			DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
@@ -363,7 +364,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 			CreateOption: compute.DiskCreateOptionTypesEmpty,
 			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
 			Lun:          disk.Lun,
-			Name:         to.StringPtr(azure.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
+			Name:         to.StringPtr(defaults.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
 			Caching:      compute.CachingTypes(disk.CachingType),
 		})
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -39,7 +40,7 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new role assignment client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	c := newRoleAssignmentClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
@@ -48,7 +49,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 func newRoleAssignmentClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) authorization.RoleAssignmentsClient {
 	roleClient := authorization.NewRoleAssignmentsClientWithBaseURI(baseURI, subscriptionID)
 	roleClient.Authorizer = authorizer
-	roleClient.AddToUserAgent(azure.UserAgent())
+	roleClient.AddToUserAgent(defaults.UserAgent())
 	return roleClient
 }
 

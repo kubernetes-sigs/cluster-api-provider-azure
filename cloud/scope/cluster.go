@@ -18,12 +18,7 @@ package scope
 
 import (
 	"context"
-	"fmt"
-	"hash/fnv"
 	"strconv"
-	"strings"
-
-	"k8s.io/utils/net"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -32,6 +27,7 @@ import (
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -41,10 +37,10 @@ import (
 // ClusterScopeParams defines the input parameters used to create a new Scope.
 type ClusterScopeParams struct {
 	AzureClients
-	Client       client.Client
-	Logger       logr.Logger
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
+	Client  client.Client
+	Logger  logr.Logger
+	Cluster *clusterv1.Cluster
+	azure.ClusterScoper
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -53,31 +49,32 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
-	if params.AzureCluster == nil {
-		return nil, errors.New("failed to generate new scope from nil AzureCluster")
+
+	if params.ClusterScoper == nil {
+		return nil, errors.New("failed to generate new scope from nil ClusterScoper")
 	}
 
 	if params.Logger == nil {
 		params.Logger = klogr.New()
 	}
 
-	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
+	err := params.AzureClients.setCredentials(params.ClusterScoper.SubscriptionID())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
 	}
 
-	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
+	helper, err := patch.NewHelper(params.ClusterScoper, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
 	return &ClusterScope{
-		Logger:       params.Logger,
-		Client:       params.Client,
-		AzureClients: params.AzureClients,
-		Cluster:      params.Cluster,
-		AzureCluster: params.AzureCluster,
-		patchHelper:  helper,
+		Logger:        params.Logger,
+		Client:        params.Client,
+		AzureClients:  params.AzureClients,
+		Cluster:       params.Cluster,
+		ClusterScoper: params.ClusterScoper,
+		patchHelper:   helper,
 	}, nil
 }
 
@@ -88,13 +85,18 @@ type ClusterScope struct {
 	patchHelper *patch.Helper
 
 	AzureClients
-	Cluster      *clusterv1.Cluster
-	AzureCluster *infrav1.AzureCluster
+	Cluster *clusterv1.Cluster
+	azure.ClusterScoper
+}
+
+// SubscriptionID returns the Azure client Subscription ID.
+func (s *ClusterScope) SubscriptionID() string {
+	return s.AzureClients.SubscriptionID()
 }
 
 // BaseURI returns the Azure ResourceManagerEndpoint.
 func (s *ClusterScope) BaseURI() string {
-	return s.ResourceManagerEndpoint
+	return s.AzureClients.ResourceManagerEndpoint
 }
 
 // Authorizer returns the Azure client Authorizer.
@@ -107,7 +109,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	var controlPlaneOutboundIP azure.PublicIPSpec
 	if s.IsAPIServerPrivate() {
 		controlPlaneOutboundIP = azure.PublicIPSpec{
-			Name: azure.GenerateControlPlaneOutboundIPName(s.ClusterName()),
+			Name: defaults.GenerateControlPlaneOutboundIPName(s.ClusterName()),
 		}
 	} else {
 		controlPlaneOutboundIP = azure.PublicIPSpec{
@@ -120,7 +122,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return []azure.PublicIPSpec{
 		controlPlaneOutboundIP,
 		{
-			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+			Name: defaults.GenerateNodeOutboundIPName(s.ClusterName()),
 		},
 	}
 }
@@ -144,9 +146,9 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Name: s.NodeOutboundLBName(),
 			FrontendIPConfigs: []infrav1.FrontendIP{
 				{
-					Name: azure.GenerateFrontendIPConfigName(s.NodeOutboundLBName()),
+					Name: defaults.GenerateFrontendIPConfigName(s.NodeOutboundLBName()),
 					PublicIP: &infrav1.PublicIPSpec{
-						Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+						Name: defaults.GenerateNodeOutboundIPName(s.ClusterName()),
 					},
 				},
 			},
@@ -163,18 +165,18 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 
 	specs = append(specs, azure.LBSpec{
 		// Public Control Plane outbound LB
-		Name: azure.GenerateControlPlaneOutboundLBName(s.ClusterName()),
+		Name: defaults.GenerateControlPlaneOutboundLBName(s.ClusterName()),
 		FrontendIPConfigs: []infrav1.FrontendIP{
 			{
-				Name: azure.GenerateFrontendIPConfigName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+				Name: defaults.GenerateFrontendIPConfigName(defaults.GenerateControlPlaneOutboundLBName(s.ClusterName())),
 				PublicIP: &infrav1.PublicIPSpec{
-					Name: azure.GenerateControlPlaneOutboundIPName(s.ClusterName()),
+					Name: defaults.GenerateControlPlaneOutboundIPName(s.ClusterName()),
 				},
 			},
 		},
 		Type:            infrav1.Public,
 		SKU:             infrav1.SKUStandard,
-		BackendPoolName: s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+		BackendPoolName: s.OutboundPoolName(defaults.GenerateControlPlaneOutboundLBName(s.ClusterName())),
 		Role:            infrav1.ControlPlaneOutboundRole,
 	})
 
@@ -240,107 +242,6 @@ func (s *ClusterScope) VNetSpecs() []azure.VNetSpec {
 	}
 }
 
-// Vnet returns the cluster Vnet.
-func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
-	return &s.AzureCluster.Spec.NetworkSpec.Vnet
-}
-
-// IsVnetManaged returns true if the vnet is managed.
-func (s *ClusterScope) IsVnetManaged() bool {
-	return s.Vnet().ID == "" || s.Vnet().Tags.HasOwned(s.ClusterName())
-}
-
-// IsIPv6Enabled returns true if IPv6 is enabled.
-func (s *ClusterScope) IsIPv6Enabled() bool {
-	for _, cidr := range s.AzureCluster.Spec.NetworkSpec.Vnet.CIDRBlocks {
-		if net.IsIPv6CIDRString(cidr) {
-			return true
-		}
-	}
-	return false
-}
-
-// Subnets returns the cluster subnets.
-func (s *ClusterScope) Subnets() infrav1.Subnets {
-	return s.AzureCluster.Spec.NetworkSpec.Subnets
-}
-
-// ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-}
-
-// NodeSubnet returns the cluster node subnet.
-func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-}
-
-// ControlPlaneRouteTable returns the cluster controlplane routetable.
-func (s *ClusterScope) ControlPlaneRouteTable() *infrav1.RouteTable {
-	return &s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet().RouteTable
-}
-
-// NodeRouteTable returns the cluster node routetable.
-func (s *ClusterScope) NodeRouteTable() *infrav1.RouteTable {
-	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
-}
-
-// APIServerLB returns the cluster API Server load balancer.
-func (s *ClusterScope) APIServerLB() *infrav1.LoadBalancerSpec {
-	return &s.AzureCluster.Spec.NetworkSpec.APIServerLB
-}
-
-// APIServerLBName returns the API Server LB name.
-func (s *ClusterScope) APIServerLBName() string {
-	return s.APIServerLB().Name
-}
-
-// IsAPIServerPrivate returns true if the API Server LB is of type Internal.
-func (s *ClusterScope) IsAPIServerPrivate() bool {
-	return s.APIServerLB().Type == infrav1.Internal
-}
-
-// APIServerPublicIP returns the API Server public IP.
-func (s *ClusterScope) APIServerPublicIP() *infrav1.PublicIPSpec {
-	return s.APIServerLB().FrontendIPs[0].PublicIP
-}
-
-// APIServerPrivateIP returns the API Server private IP.
-func (s *ClusterScope) APIServerPrivateIP() string {
-	return s.APIServerLB().FrontendIPs[0].PrivateIPAddress
-}
-
-// APIServerLBPoolName returns the API Server LB backend pool name.
-func (s *ClusterScope) APIServerLBPoolName(loadBalancerName string) string {
-	return azure.GenerateBackendAddressPoolName(loadBalancerName)
-}
-
-// NodeOutboundLBName returns the name of the node outbound LB.
-func (s *ClusterScope) NodeOutboundLBName() string {
-	return s.ClusterName()
-}
-
-// OutboundLBName returns the name of the outbound LB.
-func (s *ClusterScope) OutboundLBName(role string) string {
-	if role == infrav1.Node {
-		return s.ClusterName()
-	}
-	if s.IsAPIServerPrivate() {
-		return azure.GenerateControlPlaneOutboundLBName(s.ClusterName())
-	}
-	return s.APIServerLBName()
-}
-
-// OutboundPoolName returns the outbound LB backend pool name.
-func (s *ClusterScope) OutboundPoolName(loadBalancerName string) string {
-	return azure.GenerateOutboundBackendAddressPoolName(loadBalancerName)
-}
-
-// ResourceGroup returns the cluster resource group.
-func (s *ClusterScope) ResourceGroup() string {
-	return s.AzureCluster.Spec.ResourceGroup
-}
-
 // ClusterName returns the cluster name.
 func (s *ClusterScope) ClusterName() string {
 	return s.Cluster.Name
@@ -349,33 +250,6 @@ func (s *ClusterScope) ClusterName() string {
 // Namespace returns the cluster namespace.
 func (s *ClusterScope) Namespace() string {
 	return s.Cluster.Namespace
-}
-
-// Location returns the cluster location.
-func (s *ClusterScope) Location() string {
-	return s.AzureCluster.Spec.Location
-}
-
-// GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
-func (s *ClusterScope) GenerateFQDN(ipName string) string {
-	h := fnv.New32a()
-	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), ipName))); err != nil {
-		return ""
-	}
-	hash := fmt.Sprintf("%x", h.Sum32())
-	return strings.ToLower(fmt.Sprintf("%s-%s.%s.%s", s.ClusterName(), hash, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix))
-}
-
-// GenerateLegacyFQDN generates an IP name and a fully qualified domain name, based on a hash, cluster name and cluster location.
-// DEPRECATED: use GenerateFQDN instead.
-func (s *ClusterScope) GenerateLegacyFQDN() (string, string) {
-	h := fnv.New32a()
-	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), s.ClusterName()))); err != nil {
-		return "", ""
-	}
-	ipName := fmt.Sprintf("%s-%x", s.ClusterName(), h.Sum32())
-	fqdn := fmt.Sprintf("%s.%s.%s", ipName, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
-	return ipName, fqdn
 }
 
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
@@ -387,7 +261,7 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
-	conditions.SetSummary(s.AzureCluster,
+	conditions.SetSummary(s.ClusterScoper,
 		conditions.WithConditions(
 			infrav1.NetworkInfrastructureReadyCondition,
 		),
@@ -398,7 +272,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 
 	return s.patchHelper.Patch(
 		ctx,
-		s.AzureCluster,
+		s.ClusterScoper,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
@@ -408,15 +282,6 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close(ctx context.Context) error {
 	return s.PatchObject(ctx)
-}
-
-// AdditionalTags returns AdditionalTags from the scope's AzureCluster.
-func (s *ClusterScope) AdditionalTags() infrav1.Tags {
-	tags := make(infrav1.Tags)
-	if s.AzureCluster.Spec.AdditionalTags != nil {
-		tags = s.AzureCluster.Spec.AdditionalTags.DeepCopy()
-	}
-	return tags
 }
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.
@@ -433,14 +298,6 @@ func (s *ClusterScope) APIServerHost() string {
 		return s.APIServerPrivateIP()
 	}
 	return s.APIServerPublicIP().DNSName
-}
-
-// SetFailureDomain will set the spec for a for a given key
-func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
-	if s.AzureCluster.Status.FailureDomains == nil {
-		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
-	}
-	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 
 // SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
@@ -468,34 +325,5 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				DestinationPorts: to.StringPtr(strconv.Itoa(int(s.APIServerPort()))),
 			},
 		}
-	}
-}
-
-// SetDNSName sets the API Server public IP DNS name.
-func (s *ClusterScope) SetDNSName() {
-	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
-	lb := s.APIServerLB()
-	if lb == nil || lb.Name == "" {
-		lbName := fmt.Sprintf("%s-%s", s.ClusterName(), "public-lb")
-		ip, dns := s.GenerateLegacyFQDN()
-		lb = &infrav1.LoadBalancerSpec{
-			Name: lbName,
-			SKU:  infrav1.SKUStandard,
-			FrontendIPs: []infrav1.FrontendIP{
-				{
-					Name: azure.GenerateFrontendIPConfigName(lbName),
-					PublicIP: &infrav1.PublicIPSpec{
-						Name:    ip,
-						DNSName: dns,
-					},
-				},
-			},
-			Type: infrav1.Public,
-		}
-		lb.DeepCopyInto(s.APIServerLB())
-	}
-	// Generate valid FQDN if not set.
-	if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
-		s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
 	}
 }

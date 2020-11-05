@@ -26,6 +26,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -66,7 +67,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 							IdleTimeoutInMinutes:     to.Int32Ptr(4),
 							FrontendIPConfigurations: &frontendIDs,
 							BackendAddressPool: &network.SubResource{
-								ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
+								ID: to.StringPtr(defaults.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
 							},
 						},
 					},
@@ -107,10 +108,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 						LoadDistribution:        network.LoadDistributionDefault,
 						FrontendIPConfiguration: &frontendIPConfig,
 						BackendAddressPool: &network.SubResource{
-							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
+							ID: to.StringPtr(defaults.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
 						},
 						Probe: &network.SubResource{
-							ID: to.StringPtr(azure.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, probeName)),
+							ID: to.StringPtr(defaults.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, probeName)),
 						},
 					},
 				},
@@ -161,14 +162,14 @@ func (s *Service) getFrontendIPConfigs(lbSpec azure.LBSpec) ([]network.FrontendI
 			properties = network.FrontendIPConfigurationPropertiesFormat{
 				PrivateIPAllocationMethod: network.Static,
 				Subnet: &network.Subnet{
-					ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
+					ID: to.StringPtr(defaults.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
 				},
 				PrivateIPAddress: to.StringPtr(ipConfig.PrivateIPAddress),
 			}
 		} else {
 			properties = network.FrontendIPConfigurationPropertiesFormat{
 				PublicIPAddress: &network.PublicIPAddress{
-					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), ipConfig.PublicIP.Name)),
+					ID: to.StringPtr(defaults.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), ipConfig.PublicIP.Name)),
 				},
 			}
 		}
@@ -177,7 +178,7 @@ func (s *Service) getFrontendIPConfigs(lbSpec azure.LBSpec) ([]network.FrontendI
 			Name:                                    to.StringPtr(ipConfig.Name),
 		})
 		frontendIDs = append(frontendIDs, network.SubResource{
-			ID: to.StringPtr(azure.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, ipConfig.Name)),
+			ID: to.StringPtr(defaults.FrontendIPConfigID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, ipConfig.Name)),
 		})
 	}
 	return frontendIPConfigurations, frontendIDs, nil

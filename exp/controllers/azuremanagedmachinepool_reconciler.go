@@ -24,6 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/pkg/errors"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
@@ -110,7 +111,7 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 		SKU:           scope.InfraMachinePool.Spec.SKU,
 		Replicas:      replicas,
 		Version:       normalizedVersion,
-		VnetSubnetID: azure.SubnetID(
+		VnetSubnetID: defaults.SubnetID(
 			scope.ControlPlane.Spec.SubscriptionID,
 			scope.ControlPlane.Spec.ResourceGroupName,
 			scope.ControlPlane.Spec.VirtualNetwork.Name,

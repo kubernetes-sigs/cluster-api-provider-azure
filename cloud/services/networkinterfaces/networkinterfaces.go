@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -46,7 +47,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
 
 			subnet := &network.Subnet{
-				ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName)),
+				ID: to.StringPtr(defaults.SubnetID(s.Scope.SubscriptionID(), nicSpec.VNetResourceGroup, nicSpec.VNetName, nicSpec.SubnetName)),
 			}
 			nicConfig.Subnet = subnet
 
@@ -61,13 +62,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				if nicSpec.PublicLBAddressPoolName != "" {
 					backendAddressPools = append(backendAddressPools,
 						network.BackendAddressPool{
-							ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
+							ID: to.StringPtr(defaults.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBAddressPoolName)),
 						})
 				}
 				if nicSpec.PublicLBNATRuleName != "" {
 					nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
 						{
-							ID: to.StringPtr(azure.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
+							ID: to.StringPtr(defaults.NATRuleID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicLBName, nicSpec.PublicLBNATRuleName)),
 						},
 					}
 				}
@@ -75,14 +76,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
 				backendAddressPools = append(backendAddressPools,
 					network.BackendAddressPool{
-						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
+						ID: to.StringPtr(defaults.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
 					})
 			}
 			nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 			if nicSpec.PublicIPName != "" {
 				nicConfig.PublicIPAddress = &network.PublicIPAddress{
-					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
+					ID: to.StringPtr(defaults.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
 				}
 			}
 

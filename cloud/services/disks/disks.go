@@ -29,7 +29,7 @@ import (
 // DiskScope defines the scope interface for a disk service.
 type DiskScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 	DiskSpecs() []azure.DiskSpec
 }
 

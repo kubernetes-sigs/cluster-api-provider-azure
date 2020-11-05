@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -49,7 +50,7 @@ type (
 		Logger           logr.Logger
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		ClusterScope     azure.ClusterScoper
+		ClusterScope     *ClusterScope
 	}
 
 	// MachinePoolScope defines a scope defined around a machine pool and its cluster.
@@ -59,7 +60,7 @@ type (
 		patchHelper      *patch.Helper
 		MachinePool      *capiv1exp.MachinePool
 		AzureMachinePool *infrav1exp.AzureMachinePool
-		azure.ClusterScoper
+		*ClusterScope
 	}
 
 	// NodeStatus represents the status of a Kubernetes node
@@ -96,7 +97,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 		AzureMachinePool: params.AzureMachinePool,
 		Logger:           params.Logger,
 		patchHelper:      helper,
-		ClusterScoper:    params.ClusterScope,
+		ClusterScope:     params.ClusterScope,
 	}, nil
 }
 
@@ -113,7 +114,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		VNetName:                m.Vnet().Name,
 		VNetResourceGroup:       m.Vnet().ResourceGroup,
 		PublicLBName:            m.OutboundLBName(infrav1.Node),
-		PublicLBAddressPoolName: azure.GenerateOutboundBackendAddressPoolName(m.OutboundLBName(infrav1.Node)),
+		PublicLBAddressPoolName: defaults.GenerateOutboundBackendAddressPoolName(m.OutboundLBName(infrav1.Node)),
 		AcceleratedNetworking:   m.AzureMachinePool.Spec.Template.AcceleratedNetworking,
 		Identity:                m.AzureMachinePool.Spec.Identity,
 		UserAssignedIdentities:  m.AzureMachinePool.Spec.UserAssignedIdentities,
@@ -309,7 +310,7 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 		return m.AzureMachinePool.Spec.Template.Image, nil
 	}
 	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
-	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+	return infrav1.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 }
 
 // RoleAssignmentSpecs returns the role assignment specs.

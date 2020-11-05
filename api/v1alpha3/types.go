@@ -17,6 +17,11 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"fmt"
+
+	"github.com/blang/semver"
+
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -436,4 +441,41 @@ type SecurityProfile struct {
 	// or disabled for a virtual machine or virtual machine scale
 	// set. Default is disabled.
 	EncryptionAtHost *bool `json:"encryptionAtHost,omitempty"`
+}
+
+// GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
+func getDefaultImageSKUID(k8sVersion string) (string, error) {
+	version, err := semver.ParseTolerant(k8sVersion)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to parse Kubernetes version \"%s\" in spec, expected valid SemVer string", k8sVersion)
+	}
+	return fmt.Sprintf("k8s-%ddot%ddot%d-ubuntu-1804", version.Major, version.Minor, version.Patch), nil
+}
+
+const (
+	// DefaultImageOfferID is the default Azure Marketplace offer ID
+	DefaultImageOfferID = "capi"
+	// DefaultImagePublisherID is the default Azure Marketplace publisher ID
+	DefaultImagePublisherID = "cncf-upstream"
+	// LatestVersion is the image version latest
+	LatestVersion = "latest"
+)
+
+// GetDefaultUbuntuImage returns the default image spec for Ubuntu.
+func GetDefaultUbuntuImage(k8sVersion string) (*Image, error) {
+	skuID, err := getDefaultImageSKUID(k8sVersion)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get default image")
+	}
+
+	defaultImage := &Image{
+		Marketplace: &AzureMarketplaceImage{
+			Publisher: DefaultImagePublisherID,
+			Offer:     DefaultImageOfferID,
+			SKU:       skuID,
+			Version:   LatestVersion,
+		},
+	}
+
+	return defaultImage, nil
 }

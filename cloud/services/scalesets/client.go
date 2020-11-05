@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -50,7 +51,7 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VMSS client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	return &AzureClient{
 		scalesetvms: newVirtualMachineScaleSetVMsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
 		scalesets:   newVirtualMachineScaleSetsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
@@ -62,7 +63,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 func newVirtualMachineScaleSetVMsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetVMsClient {
 	c := compute.NewVirtualMachineScaleSetVMsClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(defaults.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 
@@ -70,7 +71,7 @@ func newVirtualMachineScaleSetVMsClient(subscriptionID string, baseURI string, a
 func newVirtualMachineScaleSetsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetsClient {
 	c := compute.NewVirtualMachineScaleSetsClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(defaults.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 
@@ -78,7 +79,7 @@ func newVirtualMachineScaleSetsClient(subscriptionID string, baseURI string, aut
 func newPublicIPsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
 	c := network.NewPublicIPAddressesClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(defaults.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 

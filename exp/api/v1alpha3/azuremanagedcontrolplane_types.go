@@ -123,6 +123,14 @@ type AzureManagedControlPlane struct {
 	Status AzureManagedControlPlaneStatus `json:"status,omitempty"`
 }
 
+// GetConditions returns the list of conditions for an AzureManagedControlPlane API object.
+func (c *AzureManagedControlPlane) GetConditions() clusterv1.Conditions {
+	return nil
+}
+
+// SetConditions will set the given conditions on an AzureManagedControlPlane object
+func (c *AzureManagedControlPlane) SetConditions(conditions clusterv1.Conditions) {}
+
 // +kubebuilder:object:root=true
 
 // AzureManagedControlPlaneList contains a list of AzureManagedControlPlane

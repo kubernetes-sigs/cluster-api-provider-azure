@@ -298,7 +298,7 @@ func TestReconcileVMSS(t *testing.T) {
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 								ComputerNamePrefix: to.StringPtr("my-vmss"),
-								AdminUsername:      to.StringPtr(azure.DefaultUserName),
+								AdminUsername:      to.StringPtr(defaults.DefaultUserName),
 								CustomData:         to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
@@ -467,7 +467,7 @@ func TestReconcileVMSS(t *testing.T) {
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 								ComputerNamePrefix: to.StringPtr("my-vmss"),
-								AdminUsername:      to.StringPtr(azure.DefaultUserName),
+								AdminUsername:      to.StringPtr(defaults.DefaultUserName),
 								CustomData:         to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
@@ -610,7 +610,7 @@ func TestReconcileVMSS(t *testing.T) {
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 								ComputerNamePrefix: to.StringPtr("my-vmss"),
-								AdminUsername:      to.StringPtr(azure.DefaultUserName),
+								AdminUsername:      to.StringPtr(defaults.DefaultUserName),
 								CustomData:         to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
@@ -813,7 +813,7 @@ func TestReconcileVMSS(t *testing.T) {
 						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 								ComputerNamePrefix: to.StringPtr("my-vmss"),
-								AdminUsername:      to.StringPtr(azure.DefaultUserName),
+								AdminUsername:      to.StringPtr(defaults.DefaultUserName),
 								CustomData:         to.StringPtr("fake-bootstrap-data"),
 								LinuxConfiguration: &compute.LinuxConfiguration{
 									SSH: &compute.SSHConfiguration{
@@ -1051,7 +1051,7 @@ func TestReconcileVMSS(t *testing.T) {
 							VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 								OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 									ComputerNamePrefix: to.StringPtr("my-vmss"),
-									AdminUsername:      to.StringPtr(azure.DefaultUserName),
+									AdminUsername:      to.StringPtr(defaults.DefaultUserName),
 									CustomData:         to.StringPtr("fake-bootstrap-data"),
 									LinuxConfiguration: &compute.LinuxConfiguration{
 										SSH: &compute.SSHConfiguration{

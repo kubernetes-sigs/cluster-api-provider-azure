@@ -26,6 +26,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -73,13 +74,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 			if subnetSpec.RouteTableName != "" {
 				subnetProperties.RouteTable = &network.RouteTable{
-					ID: to.StringPtr(azure.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),
+					ID: to.StringPtr(defaults.RouteTableID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.RouteTableName)),
 				}
 			}
 
 			if subnetSpec.SecurityGroupName != "" {
 				subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
-					ID: to.StringPtr(azure.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
+					ID: to.StringPtr(defaults.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
 				}
 			}
 

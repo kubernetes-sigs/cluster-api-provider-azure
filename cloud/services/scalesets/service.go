@@ -30,7 +30,7 @@ import (
 // ScaleSetScope defines the scope interface for a scale sets service.
 type ScaleSetScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 	ScaleSetSpec() azure.ScaleSetSpec
 	GetBootstrapData(ctx context.Context) (string, error)
 	GetVMImage() (*infrav1.Image, error)

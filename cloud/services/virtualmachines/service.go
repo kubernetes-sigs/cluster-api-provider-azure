@@ -32,7 +32,7 @@ import (
 // VMScope defines the scope interface for a virtual machines service.
 type VMScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 	VMSpecs() []azure.VMSpec
 	GetBootstrapData(ctx context.Context) (string, error)
 	GetVMImage() (*infrav1.Image, error)

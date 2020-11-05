@@ -26,7 +26,7 @@ import (
 // VNetScope defines the scope interface for a virtual network service.
 type VNetScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 	Vnet() *infrav1.VnetSpec
 	VNetSpecs() []azure.VNetSpec
 }

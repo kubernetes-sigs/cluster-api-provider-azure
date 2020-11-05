@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -40,7 +41,7 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new tags client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	c := newTagsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
@@ -49,7 +50,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resources.TagsClient {
 	tagsClient := resources.NewTagsClientWithBaseURI(baseURI, subscriptionID)
 	tagsClient.Authorizer = authorizer
-	tagsClient.AddToUserAgent(azure.UserAgent())
+	tagsClient.AddToUserAgent(defaults.UserAgent())
 	return tagsClient
 }
 

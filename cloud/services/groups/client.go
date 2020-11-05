@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -41,7 +42,7 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new VM client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	c := newGroupsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{
 		groups: c,
@@ -52,7 +53,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resources.GroupsClient {
 	groupsClient := resources.NewGroupsClientWithBaseURI(baseURI, subscriptionID)
 	groupsClient.Authorizer = authorizer
-	groupsClient.AddToUserAgent(azure.UserAgent())
+	groupsClient.AddToUserAgent(defaults.UserAgent())
 	return groupsClient
 }
 

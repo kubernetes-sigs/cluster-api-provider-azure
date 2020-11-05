@@ -25,7 +25,7 @@ import (
 // PublicIPScope defines the scope interface for a public IP service.
 type PublicIPScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 	PublicIPSpecs() []azure.PublicIPSpec
 }
 

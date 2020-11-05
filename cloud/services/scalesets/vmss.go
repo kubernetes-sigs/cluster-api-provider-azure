@@ -28,6 +28,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -100,7 +101,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if vmssSpec.PublicLBAddressPoolName != "" {
 			backendAddressPools = append(backendAddressPools,
 				compute.SubResource{
-					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), vmssSpec.PublicLBName, vmssSpec.PublicLBAddressPoolName)),
+					ID: to.StringPtr(defaults.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), vmssSpec.PublicLBName, vmssSpec.PublicLBAddressPoolName)),
 				})
 		}
 	}
@@ -135,13 +136,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: to.StringPtr(vmssSpec.Name),
-					AdminUsername:      to.StringPtr(azure.DefaultUserName),
+					AdminUsername:      to.StringPtr(defaults.DefaultUserName),
 					CustomData:         to.StringPtr(bootstrapData),
 					LinuxConfiguration: &compute.LinuxConfiguration{
 						SSH: &compute.SSHConfiguration{
 							PublicKeys: &[]compute.SSHPublicKey{
 								{
-									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", defaults.DefaultUserName)),
 									KeyData: to.StringPtr(string(sshKey)),
 								},
 							},
@@ -168,7 +169,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 										Name: to.StringPtr(vmssSpec.Name + "-ipconfig"),
 										VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
 											Subnet: &compute.APIEntityReference{
-												ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, vmssSpec.SubnetName)),
+												ID: to.StringPtr(defaults.SubnetID(s.Scope.SubscriptionID(), vmssSpec.VNetResourceGroup, vmssSpec.VNetName, vmssSpec.SubnetName)),
 											},
 											Primary:                         to.BoolPtr(true),
 											PrivateIPAddressVersion:         compute.IPv4,
@@ -339,7 +340,7 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 			CreateOption: compute.DiskCreateOptionTypesEmpty,
 			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
 			Lun:          disk.Lun,
-			Name:         to.StringPtr(azure.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
+			Name:         to.StringPtr(defaults.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
 		})
 	}
 	storageProfile.DataDisks = &dataDisks

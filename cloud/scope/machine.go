@@ -29,6 +29,7 @@ import (
 	"k8s.io/klog/klogr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -42,7 +43,7 @@ import (
 type MachineScopeParams struct {
 	Client       client.Client
 	Logger       logr.Logger
-	ClusterScope azure.ClusterScoper
+	ClusterScope *ClusterScope
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 }
@@ -68,12 +69,12 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 	return &MachineScope{
-		client:        params.Client,
-		Machine:       params.Machine,
-		AzureMachine:  params.AzureMachine,
-		Logger:        params.Logger,
-		patchHelper:   helper,
-		ClusterScoper: params.ClusterScope,
+		client:       params.Client,
+		Machine:      params.Machine,
+		AzureMachine: params.AzureMachine,
+		Logger:       params.Logger,
+		patchHelper:  helper,
+		ClusterScope: params.ClusterScope,
 	}, nil
 }
 
@@ -83,7 +84,7 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	azure.ClusterScoper
+	*ClusterScope
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
 }
@@ -112,7 +113,7 @@ func (m *MachineScope) VMSpecs() []azure.VMSpec {
 func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 	return []azure.TagsSpec{
 		{
-			Scope:      azure.VMID(m.SubscriptionID(), m.ResourceGroup(), m.Name()),
+			Scope:      defaults.VMID(m.SubscriptionID(), m.ResourceGroup(), m.Name()),
 			Tags:       m.AdditionalTags(),
 			Annotation: infrav1.VMTagsLastAppliedAnnotation,
 		},
@@ -124,7 +125,7 @@ func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	var spec []azure.PublicIPSpec
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
 		spec = append(spec, azure.PublicIPSpec{
-			Name: azure.GenerateNodePublicIPName(m.Name()),
+			Name: defaults.GenerateNodePublicIPName(m.Name()),
 		})
 	}
 	return spec
@@ -146,7 +147,7 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	spec := azure.NICSpec{
-		Name:                    azure.GenerateNICName(m.Name()),
+		Name:                    defaults.GenerateNICName(m.Name()),
 		MachineName:             m.Name(),
 		VNetName:                m.Vnet().Name,
 		VNetResourceGroup:       m.Vnet().ResourceGroup,
@@ -170,12 +171,12 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
 		specs = append(specs, azure.NICSpec{
-			Name:                  azure.GeneratePublicNICName(m.Name()),
+			Name:                  defaults.GeneratePublicNICName(m.Name()),
 			MachineName:           m.Name(),
 			VNetName:              m.Vnet().Name,
 			VNetResourceGroup:     m.Vnet().ResourceGroup,
 			SubnetName:            m.Subnet().Name,
-			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
+			PublicIPName:          defaults.GenerateNodePublicIPName(m.Name()),
 			VMSize:                m.AzureMachine.Spec.VMSize,
 			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		})
@@ -196,12 +197,12 @@ func (m *MachineScope) NICNames() []string {
 // DiskSpecs returns the disk specs.
 func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 	spec := azure.DiskSpec{
-		Name: azure.GenerateOSDiskName(m.Name()),
+		Name: defaults.GenerateOSDiskName(m.Name()),
 	}
 	disks := []azure.DiskSpec{spec}
 
 	for _, dd := range m.AzureMachine.Spec.DataDisks {
-		disks = append(disks, azure.DiskSpec{Name: azure.GenerateDataDiskName(m.Name(), dd.NameSuffix)})
+		disks = append(disks, azure.DiskSpec{Name: defaults.GenerateDataDiskName(m.Name(), dd.NameSuffix)})
 	}
 	return disks
 }
@@ -209,9 +210,9 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 // BastionSpecs returns the bastion specs.
 func (m *MachineScope) BastionSpecs() []azure.BastionSpec {
 	spec := azure.BastionSpec{
-		Name:         azure.GenerateOSDiskName(m.Name()),
+		Name:         defaults.GenerateOSDiskName(m.Name()),
 		SubnetName:   m.Subnet().Name,
-		PublicIPName: azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name())),
+		PublicIPName: defaults.GenerateNodePublicIPName(defaults.GenerateNICName(m.Name())),
 		VNetName:     m.Vnet().Name,
 	}
 	return []azure.BastionSpec{spec}
@@ -409,7 +410,7 @@ func (m *MachineScope) Close(ctx context.Context) error {
 func (m *MachineScope) AdditionalTags() infrav1.Tags {
 	tags := make(infrav1.Tags)
 	// Start with the cluster-wide tags...
-	tags.Merge(m.ClusterScoper.AdditionalTags())
+	tags.Merge(m.ClusterScope.AdditionalTags())
 	// ... and merge in the Machine's
 	tags.Merge(m.AzureMachine.Spec.AdditionalTags)
 	// Set the cloud provider tag
@@ -443,5 +444,5 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 		return m.AzureMachine.Spec.Image, nil
 	}
 	m.Info("No image specified for machine, using default", "machine", m.AzureMachine.GetName())
-	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
+	return infrav1.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 }

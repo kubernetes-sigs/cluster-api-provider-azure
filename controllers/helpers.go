@@ -150,7 +150,7 @@ func referSameObject(a, b metav1.OwnerReference) bool {
 }
 
 // GetCloudProviderSecret returns the required azure json secret for the provided parameters.
-func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner metav1.OwnerReference, identityType infrav1.VMIdentity, userIdentityID string) (*corev1.Secret, error) {
+func GetCloudProviderSecret(d azure.AuthorizedClusterScoper, namespace, name string, owner metav1.OwnerReference, identityType infrav1.VMIdentity, userIdentityID string) (*corev1.Secret, error) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -193,7 +193,7 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 	return secret, nil
 }
 
-func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (*CloudProviderConfig, *CloudProviderConfig) {
+func systemAssignedIdentityCloudProviderConfig(d azure.AuthorizedClusterScoper) (*CloudProviderConfig, *CloudProviderConfig) {
 	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
 	controlPlaneConfig.AadClientID = ""
 	controlPlaneConfig.AadClientSecret = ""
@@ -201,7 +201,7 @@ func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (*CloudPro
 	return controlPlaneConfig, workerConfig
 }
 
-func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID string) (*CloudProviderConfig, *CloudProviderConfig) {
+func userAssignedIdentityCloudProviderConfig(d azure.AuthorizedClusterScoper, identityID string) (*CloudProviderConfig, *CloudProviderConfig) {
 	controlPlaneConfig, workerConfig := newCloudProviderConfig(d)
 	controlPlaneConfig.AadClientID = ""
 	controlPlaneConfig.AadClientSecret = ""
@@ -210,7 +210,7 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID s
 	return controlPlaneConfig, workerConfig
 }
 
-func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudProviderConfig, workerConfig *CloudProviderConfig) {
+func newCloudProviderConfig(d azure.AuthorizedClusterScoper) (controlPlaneConfig *CloudProviderConfig, workerConfig *CloudProviderConfig) {
 	return &CloudProviderConfig{
 			Cloud:                        d.CloudEnvironment(),
 			AadClientID:                  d.ClientID(),

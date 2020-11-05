@@ -22,9 +22,10 @@ package mock_inboundnatrules
 
 import (
 	context "context"
+	reflect "reflect"
+
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface.

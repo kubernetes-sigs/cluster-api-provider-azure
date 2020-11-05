@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters"
@@ -81,7 +82,7 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		Version:               strings.TrimPrefix(scope.ControlPlane.Spec.Version, "v"),
 		SSHPublicKey:          string(decodedSSHPublicKey),
 		DNSServiceIP:          scope.ControlPlane.Spec.DNSServiceIP,
-		VnetSubnetID: azure.SubnetID(
+		VnetSubnetID: defaults.SubnetID(
 			scope.ControlPlane.Spec.SubscriptionID,
 			scope.ControlPlane.Spec.ResourceGroupName,
 			scope.ControlPlane.Spec.VirtualNetwork.Name,

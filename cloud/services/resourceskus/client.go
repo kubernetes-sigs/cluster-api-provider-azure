@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -40,7 +41,7 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new Resource SKUs client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	return &AzureClient{
 		skus: newResourceSkusClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer()),
 	}
@@ -50,7 +51,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 func newResourceSkusClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
 	c := compute.NewResourceSkusClientWithBaseURI(baseURI, subscriptionID)
 	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	_ = c.AddToUserAgent(defaults.UserAgent()) // intentionally ignore error as it doesn't matter
 	return c
 }
 

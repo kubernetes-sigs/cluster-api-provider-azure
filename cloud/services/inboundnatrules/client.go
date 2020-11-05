@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/defaults"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -41,7 +42,7 @@ type AzureClient struct {
 var _ Client = &AzureClient{}
 
 // NewClient creates a new inbound NAT rules client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+func NewClient(auth azure.SubscriptionAuthorizer) *AzureClient {
 	c := newInboundNatRulesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
 	return &AzureClient{c}
 }
@@ -50,7 +51,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 func newInboundNatRulesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
 	inboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(baseURI, subscriptionID)
 	inboundNatRulesClient.Authorizer = authorizer
-	inboundNatRulesClient.AddToUserAgent(azure.UserAgent())
+	inboundNatRulesClient.AddToUserAgent(defaults.UserAgent())
 	return inboundNatRulesClient
 }
 

@@ -134,10 +134,10 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:       r.Client,
-		Logger:       log,
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
+		Client:        r.Client,
+		Logger:        log,
+		Cluster:       cluster,
+		ClusterScoper: azureCluster,
 	})
 	if err != nil {
 		err = errors.Errorf("failed to create scope: %+v", err)
@@ -154,19 +154,18 @@ func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Handle deleted clusters
 	if !azureCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, clusterScope)
+		return r.reconcileDelete(ctx, clusterScope, azureCluster)
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileNormal(ctx, clusterScope)
+	return r.reconcileNormal(ctx, clusterScope, azureCluster)
 }
 
-func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope, azureCluster *infrav1.AzureCluster) (reconcile.Result, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
 	defer span.End()
 
 	clusterScope.Info("Reconciling AzureCluster")
-	azureCluster := clusterScope.AzureCluster
 
 	// If the AzureCluster doesn't have our finalizer, add it.
 	controllerutil.AddFinalizer(azureCluster, infrav1.ClusterFinalizer)
@@ -179,7 +178,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	if clusterScope.Vnet().CidrBlock != "" {
 		message := "vnet cidrBlock is deprecated, use cidrBlocks instead"
 		clusterScope.Info(message)
-		r.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
 
 		// Set CIDRBlocks if it is not set.
 		if len(clusterScope.Vnet().CIDRBlocks) == 0 {
@@ -192,7 +191,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		if subnet.CidrBlock != "" {
 			message := "subnet cidrBlock is deprecated, use cidrBlocks instead"
 			clusterScope.Info(message)
-			r.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
+			r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
 
 			// Set CIDRBlocks if it is not set.
 			if len(subnet.CIDRBlocks) == 0 {
@@ -222,13 +221,12 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope, azureCluster *infrav1.AzureCluster) (reconcile.Result, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
 	defer span.End()
 
 	clusterScope.Info("Reconciling AzureCluster delete")
 
-	azureCluster := clusterScope.AzureCluster
 	conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletedReason, clusterv1.ConditionSeverityInfo, "")
 	if err := clusterScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
@@ -242,7 +240,7 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 	}
 
 	// Cluster is deleted so remove the finalizer.
-	controllerutil.RemoveFinalizer(clusterScope.AzureCluster, infrav1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(azureCluster, infrav1.ClusterFinalizer)
 
 	return reconcile.Result{}, nil
 }

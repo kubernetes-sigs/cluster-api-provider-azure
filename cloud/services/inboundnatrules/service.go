@@ -26,7 +26,7 @@ import (
 // InboundNatScope defines the scope interface for an inbound NAT service.
 type InboundNatScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.AuthorizedClusterDescriber
 	InboundNatSpecs() []azure.InboundNatSpec
 }
 

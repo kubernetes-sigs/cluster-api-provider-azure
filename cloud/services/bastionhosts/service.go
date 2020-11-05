@@ -26,8 +26,7 @@ import (
 // BastionScope defines the scope interface for a bastion host service.
 type BastionScope interface {
 	logr.Logger
-	azure.ClusterDescriber
-	azure.NetworkDescriber
+	azure.AuthorizedClusterScoper
 	BastionSpecs() []azure.BastionSpec
 }
 

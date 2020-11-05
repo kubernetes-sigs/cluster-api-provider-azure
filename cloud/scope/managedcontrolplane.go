@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -31,6 +30,7 @@ import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -44,7 +44,7 @@ type ManagedControlPlaneScopeParams struct {
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	MachinePool      *expv1.MachinePool
-	PatchTarget      runtime.Object
+	PatchTarget      conditions.Setter
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -79,7 +79,7 @@ func NewManagedControlPlaneScope(params ManagedControlPlaneScopeParams) (*Manage
 		ControlPlane:     params.ControlPlane,
 		MachinePool:      params.MachinePool,
 		InfraMachinePool: params.InfraMachinePool,
-		PatchTarget:      params.PatchTarget,
+		Setter:           params.PatchTarget,
 		patchHelper:      helper,
 	}, nil
 }
@@ -89,13 +89,13 @@ type ManagedControlPlaneScope struct {
 	logr.Logger
 	Client      client.Client
 	patchHelper *patch.Helper
+	conditions.Setter
 
 	AzureClients
 	Cluster          *clusterv1.Cluster
 	MachinePool      *expv1.MachinePool
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
-	PatchTarget      runtime.Object
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -118,6 +118,9 @@ func (s *ManagedControlPlaneScope) Location() string {
 	}
 	return s.ControlPlane.Spec.Location
 }
+
+// SetFailureDomain sets the failure domains for an AKS cluster. Currently no-op
+func (s *ManagedControlPlaneScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {}
 
 // AdditionalTags returns AdditionalTags from the ControlPlane spec.
 func (s *ManagedControlPlaneScope) AdditionalTags() infrav1.Tags {
@@ -145,7 +148,7 @@ func (s *ManagedControlPlaneScope) Authorizer() autorest.Authorizer {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
-	return s.patchHelper.Patch(ctx, s.PatchTarget)
+	return s.patchHelper.Patch(ctx, s)
 }
 
 // Vnet returns the cluster Vnet.
@@ -189,6 +192,17 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
+// Subnets returns the cluster subnets.
+func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
+	return infrav1.Subnets{
+		{
+			Role:       infrav1.SubnetNode,
+			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+		},
+	}
+}
+
 // NodeSubnet returns the cluster node subnet.
 func (s *ManagedControlPlaneScope) NodeSubnet() *infrav1.SubnetSpec {
 	return &infrav1.SubnetSpec{
@@ -213,6 +227,11 @@ func (s *ManagedControlPlaneScope) IsVnetManaged() bool {
 	return true
 }
 
+// APIServerLB returns the spec for the API Server LB.
+func (s *ManagedControlPlaneScope) APIServerLB() *infrav1.LoadBalancerSpec {
+	return nil
+}
+
 // APIServerLBName returns the API Server LB name.
 func (s *ManagedControlPlaneScope) APIServerLBName() string {
 	return "" // does not apply for AKS
@@ -223,19 +242,38 @@ func (s *ManagedControlPlaneScope) APIServerLBPoolName(loadBalancerName string) 
 	return "" // does not apply for AKS
 }
 
+// APIServerPrivateIP returns the API Server private IP.
+func (s *ManagedControlPlaneScope) APIServerPrivateIP() string {
+	return ""
+}
+
+// APIServerPublicIP returns the API Server public IP.
+func (s *ManagedControlPlaneScope) APIServerPublicIP() *infrav1.PublicIPSpec {
+	return nil
+}
+
 // IsAPIServerPrivate returns true if the API Server LB is of type Internal.
 // Currently always false as managed control planes do not currently implement private clusters.
 func (s *ManagedControlPlaneScope) IsAPIServerPrivate() bool {
 	return false
 }
 
-// OutboundLBName returns the name of the outbound LB.
+// NodeOutboundLBName returns the name of the outbound LB for nodes.
 // Note: for managed clusters, the outbound LB lifecycle is not managed.
-func (s *ManagedControlPlaneScope) OutboundLBName(_ string) string {
+func (s *ManagedControlPlaneScope) NodeOutboundLBName() string {
 	return "kubernetes"
+}
+
+// OutboundLBName returns the name of the outbound LB for the api server.
+func (s *ManagedControlPlaneScope) OutboundLBName(_ string) string {
+	return ""
 }
 
 // OutboundPoolName returns the outbound LB backend pool name.
 func (s *ManagedControlPlaneScope) OutboundPoolName(_ string) string {
 	return "aksOutboundBackendPool" // hard-coded in aks
 }
+
+// SetDNSName sets the API Server public IP DNS name.
+// Currently no-op for AKS.
+func (s *ManagedControlPlaneScope) SetDNSName(dnsSuffix string) {}
