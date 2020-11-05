@@ -26,24 +26,24 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
-type Client interface {
+// client wraps go-sdk
+type client interface {
 	Get(context.Context, string, string) (network.BastionHost, error)
 	CreateOrUpdate(context.Context, string, string, network.BastionHost) error
 	Delete(context.Context, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client
+type azureClient struct {
 	interfaces network.BastionHostsClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
 	c := newBastionHostsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
+	return &azureClient{c}
 }
 
 // newBastionHostsClient creates a new bastion host client from subscription ID.
@@ -55,7 +55,7 @@ func newBastionHostsClient(subscriptionID string, baseURI string, authorizer aut
 }
 
 // Get gets information about the specified bastion host.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, bastionName string) (network.BastionHost, error) {
+func (ac *azureClient) Get(ctx context.Context, resourceGroupName, bastionName string) (network.BastionHost, error) {
 	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.Get")
 	defer span.End()
 
@@ -63,7 +63,7 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, bastionName s
 }
 
 // CreateOrUpdate creates or updates a bastion host.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, bastionName string, bastionHost network.BastionHost) error {
+func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, bastionName string, bastionHost network.BastionHost) error {
 	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.CreateOrUpdate")
 	defer span.End()
 
@@ -80,7 +80,7 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 }
 
 // Delete deletes the specified network interface.
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, bastionName string) error {
+func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, bastionName string) error {
 	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.Delete")
 	defer span.End()
 

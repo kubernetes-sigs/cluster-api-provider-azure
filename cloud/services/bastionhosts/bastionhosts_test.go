@@ -46,7 +46,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-			m *mock_bastionhosts.MockClientMockRecorder,
+			m *mock_bastionhosts.MockclientMockRecorder,
 			mSubnet *mock_subnets.MockClientMockRecorder,
 			mPublicIP *mock_publicips.MockClientMockRecorder)
 	}{
@@ -54,7 +54,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "fail to get subnets",
 			expectedError: "failed to get subnet: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -75,7 +75,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "fail to get publicip",
 			expectedError: "failed to get existing publicIP: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -98,7 +98,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "create publicip fails",
 			expectedError: "failed to create bastion publicIP: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -123,7 +123,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "fails to get a created publicip",
 			expectedError: "failed to get created publicIP: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -147,7 +147,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "bastion successfully created with created public ip",
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -175,7 +175,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "bastion successfully created",
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -201,7 +201,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			name:          "fail to create a bastion",
 			expectedError: "cannot create bastion host: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -233,7 +233,7 @@ func TestReconcileBastionHosts(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_bastionhosts.NewMockBastionScope(mockCtrl)
-			clientMock := mock_bastionhosts.NewMockClient(mockCtrl)
+			clientMock := mock_bastionhosts.NewMockclient(mockCtrl)
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
 			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 
@@ -242,9 +242,9 @@ func TestReconcileBastionHosts(t *testing.T) {
 
 			s := &Service{
 				Scope:           scopeMock,
-				Client:          clientMock,
-				SubnetsClient:   subnetMock,
-				PublicIPsClient: publicIPsMock,
+				client:          clientMock,
+				subnetsClient:   subnetMock,
+				publicIPsClient: publicIPsMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -263,7 +263,7 @@ func TestDeleteBastionHost(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-			m *mock_bastionhosts.MockClientMockRecorder,
+			m *mock_bastionhosts.MockclientMockRecorder,
 			mSubnet *mock_subnets.MockClientMockRecorder,
 			mPublicIP *mock_publicips.MockClientMockRecorder)
 	}{
@@ -272,7 +272,7 @@ func TestDeleteBastionHost(t *testing.T) {
 
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -299,7 +299,7 @@ func TestDeleteBastionHost(t *testing.T) {
 			name:          "bastion host already deleted",
 			expectedError: "",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -327,7 +327,7 @@ func TestDeleteBastionHost(t *testing.T) {
 			name:          "bastion host deletion fails",
 			expectedError: "failed to delete Bastion Host my-bastionhost in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
-				m *mock_bastionhosts.MockClientMockRecorder,
+				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -354,7 +354,7 @@ func TestDeleteBastionHost(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_bastionhosts.NewMockBastionScope(mockCtrl)
-			clientMock := mock_bastionhosts.NewMockClient(mockCtrl)
+			clientMock := mock_bastionhosts.NewMockclient(mockCtrl)
 			subnetMock := mock_subnets.NewMockClient(mockCtrl)
 			publicIPsMock := mock_publicips.NewMockClient(mockCtrl)
 
@@ -363,9 +363,9 @@ func TestDeleteBastionHost(t *testing.T) {
 
 			s := &Service{
 				Scope:           scopeMock,
-				Client:          clientMock,
-				SubnetsClient:   subnetMock,
-				PublicIPsClient: publicIPsMock,
+				client:          clientMock,
+				subnetsClient:   subnetMock,
+				publicIPsClient: publicIPsMock,
 			}
 
 			err := s.Delete(context.TODO())
