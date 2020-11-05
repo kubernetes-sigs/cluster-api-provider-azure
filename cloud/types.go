@@ -54,13 +54,14 @@ type DiskSpec struct {
 
 // LBSpec defines the specification for a Load Balancer.
 type LBSpec struct {
-	Name             string
-	PublicIPName     string
-	Role             string
-	SubnetName       string
-	SubnetCidrs      []string
-	PrivateIPAddress string
-	APIServerPort    int32
+	Name              string
+	Role              string
+	Type              infrav1.LBType
+	SKU               infrav1.SKU
+	SubnetName        string
+	BackendPoolName   string
+	FrontendIPConfigs []infrav1.FrontendIP
+	APIServerPort     int32
 }
 
 // RouteTableRole defines the unique role of a route table.
@@ -80,13 +81,12 @@ type InboundNatSpec struct {
 
 // SubnetSpec defines the specification for a Subnet.
 type SubnetSpec struct {
-	Name                string
-	CIDRs               []string
-	VNetName            string
-	RouteTableName      string
-	SecurityGroupName   string
-	Role                infrav1.SubnetRole
-	InternalLBIPAddress string
+	Name              string
+	CIDRs             []string
+	VNetName          string
+	RouteTableName    string
+	SecurityGroupName string
+	Role              infrav1.SubnetRole
 }
 
 // VNetSpec defines the specification for a Virtual Network.

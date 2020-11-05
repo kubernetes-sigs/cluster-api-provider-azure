@@ -19,7 +19,9 @@ package scope
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"strconv"
+	"strings"
 
 	"k8s.io/utils/net"
 
@@ -100,21 +102,25 @@ func (s *ClusterScope) Authorizer() autorest.Authorizer {
 	return s.AzureClients.Authorizer
 }
 
-// Network returns the cluster network object.
-func (s *ClusterScope) Network() *infrav1.Network {
-	return &s.AzureCluster.Status.Network
-}
-
 // PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
+	var controlPlaneOutboundIP azure.PublicIPSpec
+	if s.IsAPIServerPrivate() {
+		controlPlaneOutboundIP = azure.PublicIPSpec{
+			Name: azure.GenerateControlPlaneOutboundIPName(s.ClusterName()),
+		}
+	} else {
+		controlPlaneOutboundIP = azure.PublicIPSpec{
+			Name:    s.APIServerPublicIP().Name,
+			DNSName: s.APIServerPublicIP().DNSName,
+			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
+		}
+	}
+
 	return []azure.PublicIPSpec{
+		controlPlaneOutboundIP,
 		{
 			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
-		},
-		{
-			Name:    s.Network().APIServerIP.Name,
-			DNSName: s.Network().APIServerIP.DNSName,
-			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
 		},
 	}
 }
@@ -123,32 +129,54 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	specs := []azure.LBSpec{
 		{
-			// Public API Server LB
-			Name:          azure.GeneratePublicLBName(s.ClusterName()),
-			PublicIPName:  s.Network().APIServerIP.Name,
-			APIServerPort: s.APIServerPort(),
-			Role:          infrav1.APIServerRole,
+			// Control Plane LB
+			Name:              s.APIServerLB().Name,
+			SubnetName:        s.ControlPlaneSubnet().Name,
+			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
+			APIServerPort:     s.APIServerPort(),
+			Type:              s.APIServerLB().Type,
+			SKU:               infrav1.SKUStandard,
+			Role:              infrav1.APIServerRole,
+			BackendPoolName:   s.APIServerLBPoolName(s.APIServerLB().Name),
 		},
 		{
 			// Public Node outbound LB
-			Name:         s.ClusterName(),
-			PublicIPName: azure.GenerateNodeOutboundIPName(s.ClusterName()),
-			Role:         infrav1.NodeOutboundRole,
+			Name: s.NodeOutboundLBName(),
+			FrontendIPConfigs: []infrav1.FrontendIP{
+				{
+					Name: azure.GenerateFrontendIPConfigName(s.NodeOutboundLBName()),
+					PublicIP: &infrav1.PublicIPSpec{
+						Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+					},
+				},
+			},
+			Type:            infrav1.Public,
+			SKU:             infrav1.SKUStandard,
+			BackendPoolName: s.OutboundPoolName(s.NodeOutboundLBName()),
+			Role:            infrav1.NodeOutboundRole,
 		},
 	}
-	if !s.IsIPv6Enabled() {
-		// for now no internal LB is created for ipv6 enabled clusters
-		// getAvailablePrivateIP() does not work with IPv6
-		specs = append(specs, azure.LBSpec{
-			// Internal control plane LB
-			Name:             azure.GenerateInternalLBName(s.ClusterName()),
-			SubnetName:       s.ControlPlaneSubnet().Name,
-			SubnetCidrs:      s.ControlPlaneSubnet().CIDRBlocks,
-			PrivateIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
-			APIServerPort:    s.APIServerPort(),
-			Role:             infrav1.InternalRole,
-		})
+
+	if !s.IsAPIServerPrivate() {
+		return specs
 	}
+
+	specs = append(specs, azure.LBSpec{
+		// Public Control Plane outbound LB
+		Name: azure.GenerateControlPlaneOutboundLBName(s.ClusterName()),
+		FrontendIPConfigs: []infrav1.FrontendIP{
+			{
+				Name: azure.GenerateFrontendIPConfigName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+				PublicIP: &infrav1.PublicIPSpec{
+					Name: azure.GenerateControlPlaneOutboundIPName(s.ClusterName()),
+				},
+			},
+		},
+		Type:            infrav1.Public,
+		SKU:             infrav1.SKUStandard,
+		BackendPoolName: s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+		Role:            infrav1.ControlPlaneOutboundRole,
+	})
 
 	return specs
 }
@@ -183,13 +211,12 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	return []azure.SubnetSpec{
 		{
-			Name:                s.ControlPlaneSubnet().Name,
-			CIDRs:               s.ControlPlaneSubnet().CIDRBlocks,
-			VNetName:            s.Vnet().Name,
-			SecurityGroupName:   s.ControlPlaneSubnet().SecurityGroup.Name,
-			Role:                s.ControlPlaneSubnet().Role,
-			RouteTableName:      s.ControlPlaneSubnet().RouteTable.Name,
-			InternalLBIPAddress: s.ControlPlaneSubnet().InternalLBIPAddress,
+			Name:              s.ControlPlaneSubnet().Name,
+			CIDRs:             s.ControlPlaneSubnet().CIDRBlocks,
+			VNetName:          s.Vnet().Name,
+			SecurityGroupName: s.ControlPlaneSubnet().SecurityGroup.Name,
+			Role:              s.ControlPlaneSubnet().Role,
+			RouteTableName:    s.ControlPlaneSubnet().RouteTable.Name,
 		},
 		{
 			Name:              s.NodeSubnet().Name,
@@ -258,6 +285,57 @@ func (s *ClusterScope) NodeRouteTable() *infrav1.RouteTable {
 	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
 }
 
+// APIServerLB returns the cluster API Server load balancer.
+func (s *ClusterScope) APIServerLB() *infrav1.LoadBalancerSpec {
+	return &s.AzureCluster.Spec.NetworkSpec.APIServerLB
+}
+
+// APIServerLBName returns the API Server LB name.
+func (s *ClusterScope) APIServerLBName() string {
+	return s.APIServerLB().Name
+}
+
+// IsAPIServerPrivate returns true if the API Server LB is of type Internal.
+func (s *ClusterScope) IsAPIServerPrivate() bool {
+	return s.APIServerLB().Type == infrav1.Internal
+}
+
+// APIServerPublicIP returns the API Server public IP.
+func (s *ClusterScope) APIServerPublicIP() *infrav1.PublicIPSpec {
+	return s.APIServerLB().FrontendIPs[0].PublicIP
+}
+
+// APIServerPrivateIP returns the API Server private IP.
+func (s *ClusterScope) APIServerPrivateIP() string {
+	return s.APIServerLB().FrontendIPs[0].PrivateIPAddress
+}
+
+// APIServerLBPoolName returns the API Server LB backend pool name.
+func (s *ClusterScope) APIServerLBPoolName(loadBalancerName string) string {
+	return azure.GenerateBackendAddressPoolName(loadBalancerName)
+}
+
+// NodeOutboundLBName returns the name of the node outbound LB.
+func (s *ClusterScope) NodeOutboundLBName() string {
+	return s.ClusterName()
+}
+
+// OutboundLBName returns the name of the outbound LB.
+func (s *ClusterScope) OutboundLBName(role string) string {
+	if role == infrav1.Node {
+		return s.ClusterName()
+	}
+	if s.IsAPIServerPrivate() {
+		return azure.GenerateControlPlaneOutboundLBName(s.ClusterName())
+	}
+	return s.APIServerLBName()
+}
+
+// OutboundPoolName returns the outbound LB backend pool name.
+func (s *ClusterScope) OutboundPoolName(loadBalancerName string) string {
+	return azure.GenerateOutboundBackendAddressPoolName(loadBalancerName)
+}
+
 // ResourceGroup returns the cluster resource group.
 func (s *ClusterScope) ResourceGroup() string {
 	return s.AzureCluster.Spec.ResourceGroup
@@ -278,9 +356,26 @@ func (s *ClusterScope) Location() string {
 	return s.AzureCluster.Spec.Location
 }
 
-// GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
-func (s *ClusterScope) GenerateFQDN() string {
-	return fmt.Sprintf("%s.%s.%s", s.Network().APIServerIP.Name, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
+// GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
+func (s *ClusterScope) GenerateFQDN(ipName string) string {
+	h := fnv.New32a()
+	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), ipName))); err != nil {
+		return ""
+	}
+	hash := fmt.Sprintf("%x", h.Sum32())
+	return strings.ToLower(fmt.Sprintf("%s-%s.%s.%s", s.ClusterName(), hash, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix))
+}
+
+// GenerateLegacyFQDN generates an IP name and a fully qualified domain name, based on a hash, cluster name and cluster location.
+// DEPRECATED: use GenerateFQDN instead.
+func (s *ClusterScope) GenerateLegacyFQDN() (string, string) {
+	h := fnv.New32a()
+	if _, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", s.SubscriptionID(), s.ResourceGroup(), s.ClusterName()))); err != nil {
+		return "", ""
+	}
+	ipName := fmt.Sprintf("%s-%x", s.ClusterName(), h.Sum32())
+	fqdn := fmt.Sprintf("%s.%s.%s", ipName, s.Location(), s.AzureClients.ResourceManagerVMDNSSuffix)
+	return ipName, fqdn
 }
 
 // ListOptionsLabelSelector returns a ListOptions with a label selector for clusterName.
@@ -332,6 +427,14 @@ func (s *ClusterScope) APIServerPort() int32 {
 	return 6443
 }
 
+// APIServerHost returns the APIServerHost used to reach the API server.
+func (s *ClusterScope) APIServerHost() string {
+	if s.IsAPIServerPrivate() {
+		return s.APIServerPrivateIP()
+	}
+	return s.APIServerPublicIP().DNSName
+}
+
 // SetFailureDomain will set the spec for a for a given key
 func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
@@ -365,5 +468,34 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				DestinationPorts: to.StringPtr(strconv.Itoa(int(s.APIServerPort()))),
 			},
 		}
+	}
+}
+
+// SetDNSName sets the API Server public IP DNS name.
+func (s *ClusterScope) SetDNSName() {
+	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
+	lb := s.APIServerLB()
+	if lb == nil || lb.Name == "" {
+		lbName := fmt.Sprintf("%s-%s", s.ClusterName(), "public-lb")
+		ip, dns := s.GenerateLegacyFQDN()
+		lb = &infrav1.LoadBalancerSpec{
+			Name: lbName,
+			SKU:  infrav1.SKUStandard,
+			FrontendIPs: []infrav1.FrontendIP{
+				{
+					Name: azure.GenerateFrontendIPConfigName(lbName),
+					PublicIP: &infrav1.PublicIPSpec{
+						Name:    ip,
+						DNSName: dns,
+					},
+				},
+			},
+			Type: infrav1.Public,
+		}
+		lb.DeepCopyInto(s.APIServerLB())
+	}
+	// Generate valid FQDN if not set.
+	if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
+		s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
 	}
 }

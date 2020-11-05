@@ -65,6 +65,11 @@ type NetworkDescriber interface {
 	IsIPv6Enabled() bool
 	NodeRouteTable() *infrav1.RouteTable
 	ControlPlaneRouteTable() *infrav1.RouteTable
+	APIServerLBName() string
+	APIServerLBPoolName(string) string
+	IsAPIServerPrivate() bool
+	OutboundLBName(string) string
+	OutboundPoolName(string) string
 }
 
 // ClusterDescriber is an interface which can get common Azure Cluster information.

@@ -398,6 +398,76 @@ func (mr *MockNSGScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockNSGScope)(nil).ControlPlaneRouteTable))
 }
 
+// APIServerLBName mocks base method.
+func (m *MockNSGScope) APIServerLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockNSGScopeMockRecorder) APIServerLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockNSGScope)(nil).APIServerLBName))
+}
+
+// APIServerLBPoolName mocks base method.
+func (m *MockNSGScope) APIServerLBPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
+func (mr *MockNSGScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNSGScope)(nil).APIServerLBPoolName), arg0)
+}
+
+// IsAPIServerPrivate mocks base method.
+func (m *MockNSGScope) IsAPIServerPrivate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
+func (mr *MockNSGScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockNSGScope)(nil).IsAPIServerPrivate))
+}
+
+// OutboundLBName mocks base method.
+func (m *MockNSGScope) OutboundLBName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundLBName indicates an expected call of OutboundLBName.
+func (mr *MockNSGScopeMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockNSGScope)(nil).OutboundLBName), arg0)
+}
+
+// OutboundPoolName mocks base method.
+func (m *MockNSGScope) OutboundPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// OutboundPoolName indicates an expected call of OutboundPoolName.
+func (mr *MockNSGScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockNSGScope)(nil).OutboundPoolName), arg0)
+}
+
 // NSGSpecs mocks base method.
 func (m *MockNSGScope) NSGSpecs() []azure.NSGSpec {
 	m.ctrl.T.Helper()

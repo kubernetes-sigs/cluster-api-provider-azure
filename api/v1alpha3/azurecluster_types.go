@@ -52,8 +52,6 @@ type AzureClusterSpec struct {
 
 // AzureClusterStatus defines the observed state of AzureCluster
 type AzureClusterStatus struct {
-	Network Network `json:"network,omitempty"`
-
 	// FailureDomains specifies the list of unique failure domains for the location/region of the cluster.
 	// A FailureDomain maps to Availability Zone with an Azure Region (if the region support them). An
 	// Availability Zone is a separate data center within a region and they can be used to ensure

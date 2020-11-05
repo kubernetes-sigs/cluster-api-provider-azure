@@ -27,15 +27,6 @@ const (
 	Node string = "node"
 )
 
-// Network encapsulates the state of Azure networking resources.
-type Network struct {
-	// APIServerLB is the Kubernetes API server load balancer.
-	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
-
-	// APIServerIP is the Kubernetes API server public IP address.
-	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
-}
-
 // NetworkSpec specifies what the Azure networking resources should look like.
 type NetworkSpec struct {
 	// Vnet is the configuration for the Azure virtual network.
@@ -45,6 +36,10 @@ type NetworkSpec struct {
 	// Subnets is the configuration for the control-plane subnet and the node subnet.
 	// +optional
 	Subnets Subnets `json:"subnets,omitempty"`
+
+	// APIServerLB is the configuration for the control-plane load balancer.
+	// +optional
+	APIServerLB LoadBalancerSpec `json:"apiServerLB,omitempty"`
 }
 
 // VnetSpec configures an Azure virtual network.
@@ -145,42 +140,48 @@ type IngressRule struct {
 // IngressRules is a slice of Azure ingress rules for security groups.
 type IngressRules []*IngressRule
 
-// PublicIP defines an Azure public IP address.
-type PublicIP struct {
-	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	IPAddress string `json:"ipAddress,omitempty"`
-	DNSName   string `json:"dnsName,omitempty"`
+// LoadBalancerSpec defines an Azure load balancer.
+type LoadBalancerSpec struct {
+	ID          string       `json:"id,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	SKU         SKU          `json:"sku,omitempty"`
+	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
+	Type        LBType       `json:"type,omitempty"`
 }
-
-// LoadBalancer defines an Azure load balancer.
-type LoadBalancer struct {
-	ID               string           `json:"id,omitempty"`
-	Name             string           `json:"name,omitempty"`
-	SKU              SKU              `json:"sku,omitempty"`
-	FrontendIPConfig FrontendIPConfig `json:"frontendIpConfig,omitempty"`
-	BackendPool      BackendPool      `json:"backendPool,omitempty"`
-	Tags             Tags             `json:"tags,omitempty"`
-}
-
-// FrontendIPConfig - DO NOT USE
-// this empty struct is here to preserve backwards compatibility and should be removed in v1alpha4
-type FrontendIPConfig struct{}
 
 // SKU defines an Azure load balancer SKU.
 type SKU string
 
 const (
-	// SKUBasic is the value for the Azure load balancer Basic SKU
-	SKUBasic = SKU("Basic")
-	// SKUStandard is the value for the Azure load balancer Standard SKU
+	// SKUStandard is the value for the Azure load balancer Standard SKU.
 	SKUStandard = SKU("Standard")
 )
 
-// BackendPool defines a load balancer backend pool.
-type BackendPool struct {
-	Name string `json:"name,omitempty"`
-	ID   string `json:"id,omitempty"`
+// LBType defines an Azure load balancer Type.
+type LBType string
+
+const (
+	// Internal is the value for the Azure load balancer internal type.
+	Internal = LBType("Internal")
+	// Public is the value for the Azure load balancer public type.
+	Public = LBType("Public")
+)
+
+// FrontendIP defines a load balancer frontend IP configuration.
+type FrontendIP struct {
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// +optional
+	PrivateIPAddress string `json:"privateIP,omitempty"`
+	// +optional
+	PublicIP *PublicIPSpec `json:"publicIP,omitempty"`
+}
+
+// PublicIPSpec defines the inputs to create an Azure public IP address.
+type PublicIPSpec struct {
+	Name string `json:"name"`
+	// +optional
+	DNSName string `json:"dnsName,omitempty"`
 }
 
 // VMState describes the state of an Azure virtual machine.
@@ -396,6 +397,7 @@ type SubnetSpec struct {
 	// InternalLBIPAddress is the IP address that will be used as the internal LB private IP.
 	// For the control plane subnet only.
 	// +optional
+	// Deprecated: Use LoadBalancer private IP instead
 	InternalLBIPAddress string `json:"internalLBIPAddress,omitempty"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.

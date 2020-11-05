@@ -110,7 +110,7 @@ func TestClusterWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster()
+		err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).To(BeNil())
 	})
 }
@@ -135,7 +135,7 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster()
+		err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).ToNot(BeNil())
 	})
 }
@@ -158,7 +158,7 @@ func TestClusterWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := testCase.cluster.validateCluster()
+		err := testCase.cluster.validateCluster(nil)
 		g.Expect(err).To(BeNil())
 	})
 }
@@ -177,7 +177,7 @@ func TestClusterSpecWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := testCase.cluster.validateClusterSpec()
+		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(errs).To(BeNil())
 	})
 }
@@ -202,7 +202,7 @@ func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := testCase.cluster.validateClusterSpec()
+		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(len(errs)).To(BeNumerically(">", 0))
 	})
 }
@@ -225,7 +225,7 @@ func TestClusterSpecWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.cluster.Spec.NetworkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := testCase.cluster.validateClusterSpec()
+		errs := testCase.cluster.validateClusterSpec(nil)
 		g.Expect(errs).To(BeNil())
 	})
 }
@@ -244,7 +244,7 @@ func TestNetworkSpecWithPreexistingVnetValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateNetworkSpec(testCase.networkSpec, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(BeNil())
 	})
 }
@@ -266,7 +266,7 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 	testCase.networkSpec.Subnets = testCase.networkSpec.Subnets[:1]
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateNetworkSpec(testCase.networkSpec, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
@@ -290,7 +290,7 @@ func TestNetworkSpecWithPreexistingVnetInvalidResourceGroup(t *testing.T) {
 	testCase.networkSpec.Vnet.ResourceGroup = "invalid-name###"
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateNetworkSpec(testCase.networkSpec, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.vnet.resourceGroup"))
@@ -314,7 +314,7 @@ func TestNetworkSpecWithoutPreexistingVnetValid(t *testing.T) {
 	testCase.networkSpec.Vnet.ResourceGroup = ""
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateNetworkSpec(testCase.networkSpec, field.NewPath("spec").Child("networkSpec"))
+		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
 		g.Expect(errs).To(BeNil())
 	})
 }
@@ -404,31 +404,6 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets[0].name"))
 		g.Expect(errs[0].BadValue).To(BeEquivalentTo("invalid-subnet-name-due-to-bracket)"))
-	})
-}
-
-func TestSubnetsInvalidInternalLBIPAddress(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name    string
-		subnets Subnets
-	}
-
-	testCase := test{
-		name:    "subnets - invalid internal load balancer ip address",
-		subnets: createValidSubnets(),
-	}
-
-	testCase.subnets[0].InternalLBIPAddress = "2550.1.1.1"
-
-	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
-			field.NewPath("spec").Child("networkSpec").Child("subnets"))
-		g.Expect(errs).To(HaveLen(1))
-		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
-		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets[0].internalLBIPAddress"))
-		g.Expect(errs[0].BadValue).To(BeEquivalentTo("2550.1.1.1"))
 	})
 }
 
@@ -531,15 +506,17 @@ func TestInternalLBIPAddressValid(t *testing.T) {
 	type test struct {
 		name                string
 		internalLBIPAddress string
+		cidrs               []string
 	}
 
 	testCase := test{
 		name:                "subnet name - invalid",
 		internalLBIPAddress: "1.1.1.1",
+		cidrs:               []string{"1.1.1.0/24"},
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		err := validateInternalLBIPAddress(testCase.internalLBIPAddress,
+		err := validateInternalLBIPAddress(testCase.internalLBIPAddress, testCase.cidrs,
 			field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("internalLBIPAddress"))
 		g.Expect(err).To(BeNil())
 	})
@@ -549,8 +526,9 @@ func TestInternalLBIPAddressInvalid(t *testing.T) {
 	g := NewWithT(t)
 
 	internalLBIPAddress := "1.1.1"
+	cidrs := []string{"1.1.1.0/24"}
 
-	err := validateInternalLBIPAddress(internalLBIPAddress,
+	err := validateInternalLBIPAddress(internalLBIPAddress, cidrs,
 		field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("internalLBIPAddress"))
 	g.Expect(err).NotTo(BeNil())
 	g.Expect(err.Type).To(Equal(field.ErrorTypeInvalid))
@@ -595,8 +573,9 @@ func TestIngressRules(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-
+		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateIngressRule(
 				testCase.validRule,
 				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("ingressRules").Index(0),
@@ -605,6 +584,206 @@ func TestIngressRules(t *testing.T) {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidateAPIServerLB(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		lb          LoadBalancerSpec
+		old         LoadBalancerSpec
+		cpCIDRS     []string
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name: "invalid SKU",
+			lb: LoadBalancerSpec{
+				Name: "my-awesome-lb",
+				SKU:  "Awesome",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-config",
+					},
+				},
+				Type: Public,
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueNotSupported",
+				Field:    "apiServerLB.sku",
+				BadValue: "Awesome",
+				Detail:   "supported values: \"Standard\"",
+			},
+		},
+		{
+			name: "invalid Type",
+			lb: LoadBalancerSpec{
+				Type: "Foo",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueNotSupported",
+				Field:    "apiServerLB.type",
+				BadValue: "Foo",
+				Detail:   "supported values: \"Public\", \"Internal\"",
+			},
+		},
+		{
+			name: "invalid Name",
+			lb: LoadBalancerSpec{
+				Name: "***",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.name",
+				BadValue: "***",
+				Detail:   "name of load balancer doesn't match regex ^[-\\w\\._]+$",
+			},
+		},
+		{
+			name: "too many IP configs",
+			lb: LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "apiServerLB.frontendIPConfigs",
+				BadValue: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name: "ip-2",
+					},
+				},
+				Detail: "API Server Load balancer should have 1 Frontend IP configuration",
+			},
+		},
+		{
+			name: "public LB with private IP",
+			lb: LoadBalancerSpec{
+				Type: Public,
+				FrontendIPs: []FrontendIP{
+					{
+						Name:             "ip-1",
+						PrivateIPAddress: "10.0.0.4",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].privateIP",
+				Detail: "Public Load Balancers cannot have a Private IP",
+			},
+		},
+		{
+			name: "internal LB with public IP",
+			lb: LoadBalancerSpec{
+				Type: Internal,
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+						PublicIP: &PublicIPSpec{
+							Name: "my-invalid-ip",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "apiServerLB.frontendIPConfigs[0].publicIP",
+				Detail: "Internal Load Balancers cannot have a Public IP",
+			},
+		},
+		{
+			name: "internal LB with invalid private IP",
+			lb: LoadBalancerSpec{
+				Type: Internal,
+				FrontendIPs: []FrontendIP{
+					{
+						Name:             "ip-1",
+						PrivateIPAddress: "NAIP",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.frontendIPConfigs[0].privateIP",
+				BadValue: "NAIP",
+				Detail:   "Internal LB IP address isn't a valid IPv4 or IPv6 address",
+			},
+		},
+		{
+			name: "internal LB with out of range private IP",
+			lb: LoadBalancerSpec{
+				Type: Internal,
+				FrontendIPs: []FrontendIP{
+					{
+						Name:             "ip-1",
+						PrivateIPAddress: "20.1.2.3",
+					},
+				},
+			},
+			cpCIDRS: []string{"10.0.0.0/24", "10.1.0.0/24"},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "apiServerLB.frontendIPConfigs[0].privateIP",
+				BadValue: "20.1.2.3",
+				Detail:   "Internal LB IP address needs to be in control plane subnet range ([10.0.0.0/24 10.1.0.0/24])",
+			},
+		},
+		{
+			name: "internal LB with in range private IP",
+			lb: LoadBalancerSpec{
+				Type: Internal,
+				SKU:  SKUStandard,
+				Name: "my-private-lb",
+				FrontendIPs: []FrontendIP{
+					{
+						Name:             "ip-1",
+						PrivateIPAddress: "10.1.0.3",
+					},
+				},
+			},
+			cpCIDRS: []string{"10.0.0.0/24", "10.1.0.0/24"},
+			wantErr: false,
+		},
+	}
+
+	for _, test := range testcases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == test.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
 			}
 		})
 	}
@@ -627,7 +806,8 @@ func createValidNetworkSpec() NetworkSpec {
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
 		},
-		Subnets: createValidSubnets(),
+		Subnets:     createValidSubnets(),
+		APIServerLB: createValidAPIServerLB(),
 	}
 }
 
@@ -641,5 +821,22 @@ func createValidSubnets() Subnets {
 			Name: "node-subnet",
 			Role: "node",
 		},
+	}
+}
+
+func createValidAPIServerLB() LoadBalancerSpec {
+	return LoadBalancerSpec{
+		Name: "my-lb",
+		SKU:  SKUStandard,
+		FrontendIPs: []FrontendIP{
+			{
+				Name: "ip-config",
+				PublicIP: &PublicIPSpec{
+					Name:    "public-ip",
+					DNSName: "myfqdn.azure.com",
+				},
+			},
+		},
+		Type: Public,
 	}
 }

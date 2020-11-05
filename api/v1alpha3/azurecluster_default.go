@@ -27,25 +27,19 @@ const (
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
-)
-
-const (
-	// DefaultVnetIPv6CIDR is the ipv6 Vnet CIDR
-	DefaultVnetIPv6CIDR = "2001:1234:5678:9a00::/56"
-	// DefaultControlPlaneSubnetIPv6CIDR is the default Control Plane Subnet CIDR
-	DefaultControlPlaneSubnetIPv6CIDR = "2001:1234:5678:9abc::/64"
-	// DefaultNodeSubnetIPv6CIDR is the default Node Subnet CIDR
-	DefaultNodeSubnetIPv6CIDR = "2001:1234:5678:9abd::/64"
+	// DefaultInternalLBIPAddress is the default internal load balancer ip address
+	DefaultInternalLBIPAddress = "10.0.0.100"
 )
 
 func (c *AzureCluster) setDefaults() {
+	c.setResourceGroupDefault()
 	c.setNetworkSpecDefaults()
 }
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
-	c.setResourceGroupDefault()
 	c.setVnetDefaults()
 	c.setSubnetDefaults()
+	c.setAPIServerLBDefaults()
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -103,6 +97,45 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}
 }
 
+func (c *AzureCluster) setAPIServerLBDefaults() {
+	lb := &c.Spec.NetworkSpec.APIServerLB
+	if lb.Type == "" {
+		lb.Type = Public
+	}
+	if lb.SKU == "" {
+		lb.SKU = SKUStandard
+	}
+
+	if lb.Type == Public {
+		if lb.Name == "" {
+			lb.Name = generatePublicLBName(c.ObjectMeta.Name)
+		}
+		if len(lb.FrontendIPs) == 0 {
+			lb.FrontendIPs = []FrontendIP{
+				{
+					Name: generateFrontendIPConfigName(lb.Name),
+					PublicIP: &PublicIPSpec{
+						Name: generatePublicIPName(c.ObjectMeta.Name),
+					},
+				},
+			}
+		}
+
+	} else if lb.Type == Internal {
+		if lb.Name == "" {
+			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
+		}
+		if len(lb.FrontendIPs) == 0 {
+			lb.FrontendIPs = []FrontendIP{
+				{
+					Name:             generateFrontendIPConfigName(lb.Name),
+					PrivateIPAddress: DefaultInternalLBIPAddress,
+				},
+			}
+		}
+	}
+}
+
 // generateVnetName generates a virtual network name, based on the cluster name.
 func generateVnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "vnet")
@@ -131,4 +164,24 @@ func generateNodeSecurityGroupName(clusterName string) string {
 // generateNodeRouteTableName generates a node route table name, based on the cluster name.
 func generateNodeRouteTableName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
+}
+
+// generateInternalLBName generates a internal load balancer name, based on the cluster name.
+func generateInternalLBName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")
+}
+
+// generatePublicLBName generates a public load balancer name, based on the cluster name.
+func generatePublicLBName(clusterName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
+}
+
+// generatePublicIPName generates a public IP name, based on the cluster name and a hash.
+func generatePublicIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-apiserver", clusterName)
+}
+
+// generateFrontendIPConfigName generates a load balancer frontend IP config name.
+func generateFrontendIPConfigName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }

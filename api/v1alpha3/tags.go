@@ -107,11 +107,11 @@ const (
 	// APIServerRole describes the value for the apiserver role
 	APIServerRole = "apiserver"
 
-	// InternalRole describes the value for the internal role
-	InternalRole = "internal"
-
 	// NodeOutboundRole describes the value for the node outbound LB role
 	NodeOutboundRole = "nodeOutbound"
+
+	// ControlPlaneOutboundRole describes the value for the control plane outbound LB role
+	ControlPlaneOutboundRole = "controlPlaneOutbound"
 
 	// BastionRole describes the value for the bastion role
 	BastionRole = "bastion"

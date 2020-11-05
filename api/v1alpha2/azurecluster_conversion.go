@@ -74,6 +74,8 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	dst.Spec.NetworkSpec.APIServerLB = restored.Spec.NetworkSpec.APIServerLB
+
 	// Manually convert conditions
 	dst.SetConditions(restored.GetConditions())
 
@@ -160,11 +162,6 @@ func Convert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *infr
 	}
 
 	return nil
-}
-
-// Convert_v1alpha2_Network_To_v1alpha3_Network.
-func Convert_v1alpha2_Network_To_v1alpha3_Network(in *Network, out *infrav1alpha3.Network, s apiconversion.Scope) error { //nolint
-	return autoConvert_v1alpha2_Network_To_v1alpha3_Network(in, out, s)
 }
 
 // Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec.

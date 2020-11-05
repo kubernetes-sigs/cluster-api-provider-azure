@@ -28,13 +28,6 @@ import (
 const (
 	// DefaultUserName is the default username for created vm
 	DefaultUserName = "capi"
-	// DefaultInternalLBIPAddress is the default internal load balancer ip address
-	DefaultInternalLBIPAddress = "10.0.0.100"
-)
-
-const (
-	// DefaultInternalLBIPv6Address is the default internal load balancer ip address
-	DefaultInternalLBIPv6Address = "2001:1234:5678:9abc::100"
 )
 
 const (
@@ -46,34 +39,19 @@ const (
 	LatestVersion = "latest"
 )
 
-// GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
-func GenerateInternalLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")
-}
-
-// GeneratePublicLBName generates a public load balancer name, based on the cluster name.
-func GeneratePublicLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
-}
-
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
 }
 
-// GenerateOutboundBackendddressPoolName generates a load balancer outbound backend address pool name.
-func GenerateOutboundBackendddressPoolName(lbName string) string {
+// GenerateOutboundBackendAddressPoolName generates a load balancer outbound backend address pool name.
+func GenerateOutboundBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
 }
 
 // GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
 func GenerateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
-}
-
-// GeneratePublicIPName generates a public IP name, based on the cluster name and a hash.
-func GeneratePublicIPName(clusterName, hash string) string {
-	return fmt.Sprintf("%s-%s", clusterName, hash)
 }
 
 // GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.
@@ -84,6 +62,16 @@ func GenerateNodeOutboundIPName(clusterName string) string {
 // GenerateNodePublicIPName generates a node public IP name, based on the machine name.
 func GenerateNodePublicIPName(machineName string) string {
 	return fmt.Sprintf("pip-%s", machineName)
+}
+
+// GenerateControlPlaneOutboundLBName generates the name of the control plane outbound LB.
+func GenerateControlPlaneOutboundLBName(clusterName string) string {
+	return fmt.Sprintf("%s-outbound-lb", clusterName)
+}
+
+// GenerateControlPlaneOutboundIPName generates a public IP name, based on the cluster name.
+func GenerateControlPlaneOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
 }
 
 // GenerateNICName generates the name of a network interface based on the name of a VM.
@@ -127,8 +115,8 @@ func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
 }
 
 // SecurityGroupID returns the azure resource ID for a given security group.
-func SecurityGroupID(subscriptionID, resourceGroup, routeTableName string) string {
-	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, routeTableName)
+func SecurityGroupID(subscriptionID, resourceGroup, nsgName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, nsgName)
 }
 
 // NetworkInterfaceID returns the azure resource ID for a given network interface.

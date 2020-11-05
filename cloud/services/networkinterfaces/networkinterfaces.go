@@ -73,7 +73,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
-				// only control planes have an attached internal LB
 				backendAddressPools = append(backendAddressPools,
 					network.BackendAddressPool{
 						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),

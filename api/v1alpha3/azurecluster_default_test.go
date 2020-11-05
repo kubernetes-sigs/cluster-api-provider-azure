@@ -114,6 +114,20 @@ func TestVnetDefaults(t *testing.T) {
 								RouteTable:    RouteTable{},
 							},
 						},
+						APIServerLB: LoadBalancerSpec{
+							Name: "my-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "ip-config",
+									PublicIP: &PublicIPSpec{
+										Name:    "public-ip",
+										DNSName: "myfqdn.azure.com",
+									},
+								},
+							},
+							Type: Public,
+						},
 					},
 				},
 			},
@@ -185,7 +199,7 @@ func TestVnetDefaults(t *testing.T) {
 					ResourceGroup: "cluster-test",
 					NetworkSpec: NetworkSpec{
 						Vnet: VnetSpec{
-							CIDRBlocks: []string{DefaultVnetCIDR, DefaultVnetIPv6CIDR},
+							CIDRBlocks: []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 						},
 					},
 				},
@@ -200,7 +214,7 @@ func TestVnetDefaults(t *testing.T) {
 						Vnet: VnetSpec{
 							ResourceGroup: "cluster-test",
 							Name:          "cluster-test-vnet",
-							CIDRBlocks:    []string{DefaultVnetCIDR, DefaultVnetIPv6CIDR},
+							CIDRBlocks:    []string{DefaultVnetCIDR, "2001:1234:5678:9a00::/56"},
 						},
 					},
 				},
@@ -515,6 +529,97 @@ func TestSubnetDefaults(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			tc.cluster.setSubnetDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
+
+func TestAPIServerLBDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name: "no lb",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Name: "cluster-test-public-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-public-lb-frontEnd",
+									PublicIP: &PublicIPSpec{
+										Name:    "pip-cluster-test-apiserver",
+										DNSName: "",
+									},
+								},
+							},
+							Type: Public,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "internal lb",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Internal,
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Name: "cluster-test-internal-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name:             "cluster-test-internal-lb-frontEnd",
+									PrivateIPAddress: DefaultInternalLBIPAddress,
+								},
+							},
+							Type: Internal,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setAPIServerLBDefaults()
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
