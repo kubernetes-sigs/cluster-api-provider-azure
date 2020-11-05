@@ -18,14 +18,39 @@ package inboundnatrules
 
 import (
 	"context"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// InboundNatScope defines the scope interface for an inbound NAT service.
+type InboundNatScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	InboundNatSpecs() []azure.InboundNatSpec
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope InboundNatScope
+	client
+	loadBalancersClient loadbalancers.Client
+}
+
+// New creates a new service.
+func New(scope InboundNatScope) *Service {
+	return &Service{
+		Scope:               scope,
+		client:              newClient(scope),
+		loadBalancersClient: loadbalancers.NewClient(scope),
+	}
+}
 
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -35,7 +60,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for _, inboundNatSpec := range s.Scope.InboundNatSpecs() {
 		s.Scope.V(2).Info("creating inbound NAT rule", "NAT rule", inboundNatSpec.Name)
 
-		lb, err := s.LoadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), inboundNatSpec.LoadBalancerName)
+		lb, err := s.loadBalancersClient.Get(ctx, s.Scope.ResourceGroup(), inboundNatSpec.LoadBalancerName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get Load Balancer %s", inboundNatSpec.LoadBalancerName)
 		}
@@ -70,7 +95,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		s.Scope.V(3).Info("Creating rule %s using port %d", "NAT rule", inboundNatSpec.Name, "port", sshFrontendPort)
 
-		err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), to.String(lb.Name), inboundNatSpec.Name, rule)
+		err = s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), to.String(lb.Name), inboundNatSpec.Name, rule)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create inbound NAT rule %s", inboundNatSpec.Name)
 		}
@@ -87,7 +112,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	for _, inboundNatSpec := range s.Scope.InboundNatSpecs() {
 		s.Scope.V(2).Info("deleting inbound NAT rule", "NAT rule", inboundNatSpec.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), inboundNatSpec.LoadBalancerName, inboundNatSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), inboundNatSpec.LoadBalancerName, inboundNatSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {
 			return errors.Wrapf(err, "failed to delete inbound NAT rule %s", inboundNatSpec.Name)
 		}
