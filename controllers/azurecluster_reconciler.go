@@ -58,7 +58,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		routeTableSvc:    routetables.NewService(scope),
 		subnetsSvc:       subnets.NewService(scope),
 		publicIPSvc:      publicips.NewService(scope),
-		loadBalancerSvc:  loadbalancers.NewService(scope),
+		loadBalancerSvc:  loadbalancers.New(scope),
 		skuCache:         resourceskus.NewCache(scope, scope.Location()),
 	}
 }
