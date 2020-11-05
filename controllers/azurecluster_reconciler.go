@@ -52,7 +52,7 @@ type azureClusterReconciler struct {
 func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
 	return &azureClusterReconciler{
 		scope:            scope,
-		groupsSvc:        groups.NewService(scope),
+		groupsSvc:        groups.New(scope),
 		vnetSvc:          virtualnetworks.NewService(scope),
 		securityGroupSvc: securitygroups.NewService(scope),
 		routeTableSvc:    routetables.NewService(scope),

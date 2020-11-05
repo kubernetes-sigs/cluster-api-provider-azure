@@ -56,7 +56,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	return &azureManagedControlPlaneReconciler{
 		kubeclient:         scope.Client,
 		managedClustersSvc: managedclusters.NewService(scope),
-		groupsSvc:          groups.NewService(scope),
+		groupsSvc:          groups.New(scope),
 		vnetSvc:            virtualnetworks.NewService(scope),
 		subnetsSvc:         subnets.NewService(scope),
 	}
