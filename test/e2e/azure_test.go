@@ -124,18 +124,18 @@ var _ = Describe("Workload cluster creation", func() {
 					AzurePrivateClusterSpec(ctx, func() AzurePrivateClusterSpecInput {
 						return AzurePrivateClusterSpecInput{
 							BootstrapClusterProxy: bootstrapClusterProxy,
-							Namespace:            namespace,
-							ClusterName:          clusterName,
-							ClusterctlConfigPath: clusterctlConfigPath,
-							E2EConfig:            e2eConfig,
-							ArtifactFolder:       artifactFolder,
+							Namespace:             namespace,
+							ClusterName:           clusterName,
+							ClusterctlConfigPath:  clusterctlConfigPath,
+							E2EConfig:             e2eConfig,
+							ArtifactFolder:        artifactFolder,
 						}
 					})
 				})
 			})
 		})
 	} else {
-		Skip("test requires pushing container images to external repository")
+		fmt.Fprintf(GinkgoWriter, "INFO: skipping test requires pushing container images to external repository")
 	}
 
 	It("With 3 control-plane nodes and 2 worker nodes", func() {
