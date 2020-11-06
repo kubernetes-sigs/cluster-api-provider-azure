@@ -123,8 +123,8 @@ func TestGetCloudProviderConfig(t *testing.T) {
 		AzureClients: scope.AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
 		},
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
+		Cluster:       cluster,
+		ClusterScoper: azureCluster,
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -186,8 +186,8 @@ func TestReconcileAzureSecret(t *testing.T) {
 		AzureClients: scope.AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
 		},
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
+		Cluster:       cluster,
+		ClusterScoper: azureCluster,
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 

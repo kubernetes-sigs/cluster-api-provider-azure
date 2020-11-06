@@ -17,11 +17,12 @@ limitations under the License.
 package controllers
 
 import (
+	"testing"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/mocks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"testing"
 
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -47,7 +48,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 	}
 
 	cs := &scope.ClusterScope{
-		AzureCluster: cluster,
+		ClusterScoper: cluster,
 	}
 
 	clusterMock := mocks.NewMockClusterScoper(mockCtrl)

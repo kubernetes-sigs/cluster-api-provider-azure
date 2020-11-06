@@ -170,9 +170,9 @@ func TestConditions(t *testing.T) {
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
 				},
-				Client:       client,
-				Cluster:      cluster,
-				AzureCluster: azureCluster,
+				Client:        client,
+				Cluster:       cluster,
+				ClusterScoper: azureCluster,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
