@@ -37,11 +37,11 @@ import (
 func TestReconcileSecurityGroups(t *testing.T) {
 	testcases := []struct {
 		name   string
-		expect func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder)
+		expect func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder)
 	}{
 		{
 			name: "security groups do not exist",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
@@ -125,7 +125,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			},
 		}, {
 			name: "security group exists",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
@@ -223,7 +223,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			},
 		}, {
 			name: "skipping network security group reconcile in custom VNet mode",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.IsVnetManaged().Return(false)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 			},
@@ -238,13 +238,13 @@ func TestReconcileSecurityGroups(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_securitygroups.NewMockNSGScope(mockCtrl)
-			clientMock := mock_securitygroups.NewMockClient(mockCtrl)
+			clientMock := mock_securitygroups.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			g.Expect(s.Reconcile(context.TODO())).To(Succeed())
@@ -255,11 +255,11 @@ func TestReconcileSecurityGroups(t *testing.T) {
 func TestDeleteSecurityGroups(t *testing.T) {
 	testcases := []struct {
 		name   string
-		expect func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder)
+		expect func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder)
 	}{
 		{
 			name: "security groups exist",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
@@ -289,7 +289,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 		},
 		{
 			name: "security group already deleted",
-			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockClientMockRecorder) {
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name:         "nsg-one",
@@ -317,13 +317,13 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			scopeMock := mock_securitygroups.NewMockNSGScope(mockCtrl)
-			clientMock := mock_securitygroups.NewMockClient(mockCtrl)
+			clientMock := mock_securitygroups.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			g.Expect(s.Delete(context.TODO())).To(Succeed())

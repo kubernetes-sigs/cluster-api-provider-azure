@@ -26,24 +26,24 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
-type Client interface {
+// client wraps go-sdk
+type client interface {
 	Get(context.Context, string, string) (network.SecurityGroup, error)
 	CreateOrUpdate(context.Context, string, string, network.SecurityGroup) error
 	Delete(context.Context, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client
+type azureClient struct {
 	securitygroups network.SecurityGroupsClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
 	c := newSecurityGroupsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{c}
+	return &azureClient{c}
 }
 
 // newSecurityGroupsClient creates a new security groups client from subscription ID.
@@ -55,7 +55,7 @@ func newSecurityGroupsClient(subscriptionID string, baseURI string, authorizer a
 }
 
 // Get gets the specified network security group.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, sgName string) (network.SecurityGroup, error) {
+func (ac *azureClient) Get(ctx context.Context, resourceGroupName, sgName string) (network.SecurityGroup, error) {
 	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.Get")
 	defer span.End()
 
@@ -63,7 +63,7 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, sgName string
 }
 
 // CreateOrUpdate creates or updates a network security group in the specified resource group.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, sgName string, sg network.SecurityGroup) error {
+func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, sgName string, sg network.SecurityGroup) error {
 	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.CreateOrUpdate")
 	defer span.End()
 
@@ -95,7 +95,7 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 }
 
 // Delete deletes the specified network security group.
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, sgName string) error {
+func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, sgName string) error {
 	ctx, span := tele.Tracer().Start(ctx, "securitygroups.AzureClient.Delete")
 	defer span.End()
 

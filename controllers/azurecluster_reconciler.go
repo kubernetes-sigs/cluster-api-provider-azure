@@ -54,7 +54,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		scope:            scope,
 		groupsSvc:        groups.New(scope),
 		vnetSvc:          virtualnetworks.NewService(scope),
-		securityGroupSvc: securitygroups.NewService(scope),
+		securityGroupSvc: securitygroups.New(scope),
 		routeTableSvc:    routetables.New(scope),
 		subnetsSvc:       subnets.NewService(scope),
 		publicIPSvc:      publicips.New(scope),

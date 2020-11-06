@@ -22,12 +22,35 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// NSGScope defines the scope interface for a security groups service.
+type NSGScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	azure.NetworkDescriber
+	NSGSpecs() []azure.NSGSpec
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope NSGScope
+	client
+}
+
+// New creates a new service.
+func New(scope NSGScope) *Service {
+	return &Service{
+		Scope:  scope,
+		client: newClient(scope),
+	}
+}
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -43,7 +66,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		securityRules := make([]network.SecurityRule, 0)
 		var etag *string
 
-		existingNSG, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
+		existingNSG, err := s.client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
 			return errors.Wrapf(err, "failed to get NSG %s in %s", nsgSpec.Name, s.Scope.ResourceGroup())
@@ -79,7 +102,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			},
 			Etag: etag,
 		}
-		err = s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), nsgSpec.Name, sg)
+		err = s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), nsgSpec.Name, sg)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create or update security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
 		}
@@ -119,7 +142,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	for _, nsgSpec := range s.Scope.NSGSpecs() {
 		s.Scope.V(2).Info("deleting security group", "security group", nsgSpec.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
 			continue
