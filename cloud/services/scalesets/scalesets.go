@@ -23,6 +23,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -32,6 +33,37 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// ScaleSetScope defines the scope interface for a scale sets service.
+type ScaleSetScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	ScaleSetSpec() azure.ScaleSetSpec
+	GetBootstrapData(ctx context.Context) (string, error)
+	GetVMImage() (*infrav1.Image, error)
+	SetAnnotation(string, string)
+	SetProviderID(string)
+	UpdateInstanceStatuses(context.Context, []infrav1exp.VMSSVM) error
+	NeedsK8sVersionUpdate() bool
+	SaveK8sVersion()
+	SetProvisioningState(infrav1.VMState)
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope ScaleSetScope
+	Client
+	resourceSKUCache *resourceskus.Cache
+}
+
+// NewService creates a new service.
+func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
+	return &Service{
+		Client:           NewClient(scope),
+		Scope:            scope,
+		resourceSKUCache: skuCache,
+	}
+}
 
 // getExisting provides information about a scale set.
 func (s *Service) getExisting(ctx context.Context, name string) (*infrav1exp.VMSS, error) {
@@ -55,7 +87,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	vmssSpec := s.Scope.ScaleSetSpec()
 
-	sku, err := s.ResourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
+	sku, err := s.resourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get find SKU %s in compute api", vmssSpec.Size)
 	}

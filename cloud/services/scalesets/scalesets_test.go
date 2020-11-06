@@ -1331,7 +1331,7 @@ func TestReconcileVMSS(t *testing.T) {
 			s := &Service{
 				Scope:            scopeMock,
 				Client:           clientMock,
-				ResourceSKUCache: resourceskus.NewStaticCache(getFakeSkus()),
+				resourceSKUCache: resourceskus.NewStaticCache(getFakeSkus()),
 			}
 
 			err := s.Reconcile(context.TODO())
