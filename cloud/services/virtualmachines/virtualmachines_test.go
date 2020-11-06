@@ -258,8 +258,8 @@ func TestGetExistingVM(t *testing.T) {
 			s := &Service{
 				Scope:            scopeMock,
 				Client:           clientMock,
-				InterfacesClient: interfaceMock,
-				PublicIPsClient:  publicIPMock,
+				interfacesClient: interfaceMock,
+				publicIPsClient:  publicIPMock,
 			}
 
 			result, err := s.getExisting(context.TODO(), tc.vmName)
@@ -430,7 +430,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -500,7 +500,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -570,7 +570,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -641,7 +641,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -717,7 +717,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -787,7 +787,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 
-				svc.ResourceSKUCache = resourceskus.NewStaticCache(skus)
+				svc.resourceSKUCache = resourceskus.NewStaticCache(skus)
 
 			},
 		},
@@ -844,7 +844,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 
-				svc.ResourceSKUCache = resourceskus.NewStaticCache(skus)
+				svc.resourceSKUCache = resourceskus.NewStaticCache(skus)
 			},
 		},
 		{
@@ -910,7 +910,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -976,7 +976,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -1042,7 +1042,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -1115,7 +1115,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -1278,7 +1278,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 
 			},
 		},
@@ -1437,7 +1437,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
-				svc.ResourceSKUCache = resourceSkusCache
+				svc.resourceSKUCache = resourceSkusCache
 			},
 		},
 	}
@@ -1460,9 +1460,9 @@ func TestReconcileVM(t *testing.T) {
 			s := &Service{
 				Scope:            scopeMock,
 				Client:           clientMock,
-				InterfacesClient: interfaceMock,
-				PublicIPsClient:  publicIPMock,
-				ResourceSKUCache: resourceskus.NewStaticCache(nil),
+				interfacesClient: interfaceMock,
+				publicIPsClient:  publicIPMock,
+				resourceSKUCache: resourceskus.NewStaticCache(nil),
 			}
 
 			tc.SetupSKUs(s)

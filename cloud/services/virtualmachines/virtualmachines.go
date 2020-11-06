@@ -25,15 +25,52 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	corev1 "k8s.io/api/core/v1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// VMScope defines the scope interface for a virtual machines service.
+type VMScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	VMSpec() azure.VMSpec
+	GetBootstrapData(ctx context.Context) (string, error)
+	GetVMImage() (*infrav1.Image, error)
+	SetAnnotation(string, string)
+	SetProviderID(string)
+	SetAddresses([]corev1.NodeAddress)
+	SetVMState(infrav1.VMState)
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope VMScope
+	Client
+	interfacesClient networkinterfaces.Client
+	publicIPsClient  publicips.Client
+	resourceSKUCache *resourceskus.Cache
+}
+
+// New creates a new service.
+func New(scope VMScope, skuCache *resourceskus.Cache) *Service {
+	return &Service{
+		Scope:            scope,
+		Client:           NewClient(scope),
+		interfacesClient: networkinterfaces.NewClient(scope),
+		publicIPsClient:  publicips.NewClient(scope),
+		resourceSKUCache: skuCache,
+	}
+}
 
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -53,7 +90,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.Scope.SetVMState(existingVM.State)
 	default:
 		s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
-		sku, err := s.ResourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
+		sku, err := s.resourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
 		}
@@ -253,7 +290,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 		nicName := getResourceNameByID(to.String(nicRef.ID))
 
 		// Fetch nic and append its addresses
-		nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
+		nic, err := s.interfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
 		if err != nil {
 			return addresses, err
 		}
@@ -294,7 +331,7 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 	defer span.End()
 
 	retAddress := corev1.NodeAddress{}
-	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
+	publicIP, err := s.publicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
 	if err != nil {
 		return retAddress, err
 	}
