@@ -21,11 +21,35 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// RouteTableScope defines the scope interface for route table service
+type RouteTableScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	azure.NetworkDescriber
+	RouteTableSpecs() []azure.RouteTableSpec
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope RouteTableScope
+	client
+}
+
+// New creates a new service.
+func New(scope *scope.ClusterScope) *Service {
+	return &Service{
+		Scope:  scope,
+		client: newClient(scope),
+	}
+}
 
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -53,7 +77,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		s.Scope.V(2).Info("creating Route Table", "route table", routeTableSpec.Name)
-		err = s.Client.CreateOrUpdate(
+		err = s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
 			routeTableSpec.Name,
@@ -81,7 +105,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
 		s.Scope.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
-		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
 			continue
