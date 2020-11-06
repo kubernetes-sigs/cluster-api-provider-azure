@@ -16,7 +16,7 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_networkinterfaces -source ../client.go Client
-//go:generate ../../../../hack/tools/bin/mockgen -destination networkinterfaces_mock.go -package mock_networkinterfaces -source ../service.go NICScope
+//go:generate ../../../../hack/tools/bin/mockgen -destination networkinterfaces_mock.go -package mock_networkinterfaces -source ../networkinterfaces.go NICScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt networkinterfaces_mock.go > _networkinterfaces_mock.go && mv _networkinterfaces_mock.go networkinterfaces_mock.go"
 package mock_networkinterfaces //nolint
