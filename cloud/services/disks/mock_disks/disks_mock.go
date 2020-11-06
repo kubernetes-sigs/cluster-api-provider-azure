@@ -21,13 +21,17 @@ limitations under the License.
 package mock_disks
 
 import (
-	reflect "reflect"
-
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
+	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	v1alpha30 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // MockDiskScope is a mock of DiskScope interface.
@@ -147,20 +151,6 @@ func (mr *MockDiskScopeMockRecorder) WithName(name interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockDiskScope)(nil).WithName), name)
 }
 
-// SubscriptionID mocks base method.
-func (m *MockDiskScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockDiskScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockDiskScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockDiskScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -245,6 +235,490 @@ func (mr *MockDiskScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockDiskScope)(nil).Authorizer))
 }
 
+// GetNamespace mocks base method.
+func (m *MockDiskScope) GetNamespace() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespace")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetNamespace indicates an expected call of GetNamespace.
+func (mr *MockDiskScopeMockRecorder) GetNamespace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockDiskScope)(nil).GetNamespace))
+}
+
+// SetNamespace mocks base method.
+func (m *MockDiskScope) SetNamespace(namespace string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetNamespace", namespace)
+}
+
+// SetNamespace indicates an expected call of SetNamespace.
+func (mr *MockDiskScopeMockRecorder) SetNamespace(namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockDiskScope)(nil).SetNamespace), namespace)
+}
+
+// GetName mocks base method.
+func (m *MockDiskScope) GetName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetName indicates an expected call of GetName.
+func (mr *MockDiskScopeMockRecorder) GetName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockDiskScope)(nil).GetName))
+}
+
+// SetName mocks base method.
+func (m *MockDiskScope) SetName(name string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetName", name)
+}
+
+// SetName indicates an expected call of SetName.
+func (mr *MockDiskScopeMockRecorder) SetName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetName", reflect.TypeOf((*MockDiskScope)(nil).SetName), name)
+}
+
+// GetGenerateName mocks base method.
+func (m *MockDiskScope) GetGenerateName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGenerateName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetGenerateName indicates an expected call of GetGenerateName.
+func (mr *MockDiskScopeMockRecorder) GetGenerateName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGenerateName", reflect.TypeOf((*MockDiskScope)(nil).GetGenerateName))
+}
+
+// SetGenerateName mocks base method.
+func (m *MockDiskScope) SetGenerateName(name string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetGenerateName", name)
+}
+
+// SetGenerateName indicates an expected call of SetGenerateName.
+func (mr *MockDiskScopeMockRecorder) SetGenerateName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGenerateName", reflect.TypeOf((*MockDiskScope)(nil).SetGenerateName), name)
+}
+
+// GetUID mocks base method.
+func (m *MockDiskScope) GetUID() types.UID {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUID")
+	ret0, _ := ret[0].(types.UID)
+	return ret0
+}
+
+// GetUID indicates an expected call of GetUID.
+func (mr *MockDiskScopeMockRecorder) GetUID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUID", reflect.TypeOf((*MockDiskScope)(nil).GetUID))
+}
+
+// SetUID mocks base method.
+func (m *MockDiskScope) SetUID(uid types.UID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetUID", uid)
+}
+
+// SetUID indicates an expected call of SetUID.
+func (mr *MockDiskScopeMockRecorder) SetUID(uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUID", reflect.TypeOf((*MockDiskScope)(nil).SetUID), uid)
+}
+
+// GetResourceVersion mocks base method.
+func (m *MockDiskScope) GetResourceVersion() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceVersion")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetResourceVersion indicates an expected call of GetResourceVersion.
+func (mr *MockDiskScopeMockRecorder) GetResourceVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceVersion", reflect.TypeOf((*MockDiskScope)(nil).GetResourceVersion))
+}
+
+// SetResourceVersion mocks base method.
+func (m *MockDiskScope) SetResourceVersion(version string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetResourceVersion", version)
+}
+
+// SetResourceVersion indicates an expected call of SetResourceVersion.
+func (mr *MockDiskScopeMockRecorder) SetResourceVersion(version interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResourceVersion", reflect.TypeOf((*MockDiskScope)(nil).SetResourceVersion), version)
+}
+
+// GetGeneration mocks base method.
+func (m *MockDiskScope) GetGeneration() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGeneration")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetGeneration indicates an expected call of GetGeneration.
+func (mr *MockDiskScopeMockRecorder) GetGeneration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGeneration", reflect.TypeOf((*MockDiskScope)(nil).GetGeneration))
+}
+
+// SetGeneration mocks base method.
+func (m *MockDiskScope) SetGeneration(generation int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetGeneration", generation)
+}
+
+// SetGeneration indicates an expected call of SetGeneration.
+func (mr *MockDiskScopeMockRecorder) SetGeneration(generation interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGeneration", reflect.TypeOf((*MockDiskScope)(nil).SetGeneration), generation)
+}
+
+// GetSelfLink mocks base method.
+func (m *MockDiskScope) GetSelfLink() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelfLink")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSelfLink indicates an expected call of GetSelfLink.
+func (mr *MockDiskScopeMockRecorder) GetSelfLink() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfLink", reflect.TypeOf((*MockDiskScope)(nil).GetSelfLink))
+}
+
+// SetSelfLink mocks base method.
+func (m *MockDiskScope) SetSelfLink(selfLink string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSelfLink", selfLink)
+}
+
+// SetSelfLink indicates an expected call of SetSelfLink.
+func (mr *MockDiskScopeMockRecorder) SetSelfLink(selfLink interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSelfLink", reflect.TypeOf((*MockDiskScope)(nil).SetSelfLink), selfLink)
+}
+
+// GetCreationTimestamp mocks base method.
+func (m *MockDiskScope) GetCreationTimestamp() v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCreationTimestamp")
+	ret0, _ := ret[0].(v1.Time)
+	return ret0
+}
+
+// GetCreationTimestamp indicates an expected call of GetCreationTimestamp.
+func (mr *MockDiskScopeMockRecorder) GetCreationTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreationTimestamp", reflect.TypeOf((*MockDiskScope)(nil).GetCreationTimestamp))
+}
+
+// SetCreationTimestamp mocks base method.
+func (m *MockDiskScope) SetCreationTimestamp(timestamp v1.Time) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCreationTimestamp", timestamp)
+}
+
+// SetCreationTimestamp indicates an expected call of SetCreationTimestamp.
+func (mr *MockDiskScopeMockRecorder) SetCreationTimestamp(timestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCreationTimestamp", reflect.TypeOf((*MockDiskScope)(nil).SetCreationTimestamp), timestamp)
+}
+
+// GetDeletionTimestamp mocks base method.
+func (m *MockDiskScope) GetDeletionTimestamp() *v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
+	ret0, _ := ret[0].(*v1.Time)
+	return ret0
+}
+
+// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
+func (mr *MockDiskScopeMockRecorder) GetDeletionTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockDiskScope)(nil).GetDeletionTimestamp))
+}
+
+// SetDeletionTimestamp mocks base method.
+func (m *MockDiskScope) SetDeletionTimestamp(timestamp *v1.Time) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeletionTimestamp", timestamp)
+}
+
+// SetDeletionTimestamp indicates an expected call of SetDeletionTimestamp.
+func (mr *MockDiskScopeMockRecorder) SetDeletionTimestamp(timestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionTimestamp", reflect.TypeOf((*MockDiskScope)(nil).SetDeletionTimestamp), timestamp)
+}
+
+// GetDeletionGracePeriodSeconds mocks base method.
+func (m *MockDiskScope) GetDeletionGracePeriodSeconds() *int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionGracePeriodSeconds")
+	ret0, _ := ret[0].(*int64)
+	return ret0
+}
+
+// GetDeletionGracePeriodSeconds indicates an expected call of GetDeletionGracePeriodSeconds.
+func (mr *MockDiskScopeMockRecorder) GetDeletionGracePeriodSeconds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionGracePeriodSeconds", reflect.TypeOf((*MockDiskScope)(nil).GetDeletionGracePeriodSeconds))
+}
+
+// SetDeletionGracePeriodSeconds mocks base method.
+func (m *MockDiskScope) SetDeletionGracePeriodSeconds(arg0 *int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeletionGracePeriodSeconds", arg0)
+}
+
+// SetDeletionGracePeriodSeconds indicates an expected call of SetDeletionGracePeriodSeconds.
+func (mr *MockDiskScopeMockRecorder) SetDeletionGracePeriodSeconds(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionGracePeriodSeconds", reflect.TypeOf((*MockDiskScope)(nil).SetDeletionGracePeriodSeconds), arg0)
+}
+
+// GetLabels mocks base method.
+func (m *MockDiskScope) GetLabels() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLabels")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetLabels indicates an expected call of GetLabels.
+func (mr *MockDiskScopeMockRecorder) GetLabels() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLabels", reflect.TypeOf((*MockDiskScope)(nil).GetLabels))
+}
+
+// SetLabels mocks base method.
+func (m *MockDiskScope) SetLabels(labels map[string]string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLabels", labels)
+}
+
+// SetLabels indicates an expected call of SetLabels.
+func (mr *MockDiskScopeMockRecorder) SetLabels(labels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLabels", reflect.TypeOf((*MockDiskScope)(nil).SetLabels), labels)
+}
+
+// GetAnnotations mocks base method.
+func (m *MockDiskScope) GetAnnotations() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnnotations")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetAnnotations indicates an expected call of GetAnnotations.
+func (mr *MockDiskScopeMockRecorder) GetAnnotations() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnnotations", reflect.TypeOf((*MockDiskScope)(nil).GetAnnotations))
+}
+
+// SetAnnotations mocks base method.
+func (m *MockDiskScope) SetAnnotations(annotations map[string]string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAnnotations", annotations)
+}
+
+// SetAnnotations indicates an expected call of SetAnnotations.
+func (mr *MockDiskScopeMockRecorder) SetAnnotations(annotations interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockDiskScope)(nil).SetAnnotations), annotations)
+}
+
+// GetFinalizers mocks base method.
+func (m *MockDiskScope) GetFinalizers() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFinalizers")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetFinalizers indicates an expected call of GetFinalizers.
+func (mr *MockDiskScopeMockRecorder) GetFinalizers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFinalizers", reflect.TypeOf((*MockDiskScope)(nil).GetFinalizers))
+}
+
+// SetFinalizers mocks base method.
+func (m *MockDiskScope) SetFinalizers(finalizers []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFinalizers", finalizers)
+}
+
+// SetFinalizers indicates an expected call of SetFinalizers.
+func (mr *MockDiskScopeMockRecorder) SetFinalizers(finalizers interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalizers", reflect.TypeOf((*MockDiskScope)(nil).SetFinalizers), finalizers)
+}
+
+// GetOwnerReferences mocks base method.
+func (m *MockDiskScope) GetOwnerReferences() []v1.OwnerReference {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnerReferences")
+	ret0, _ := ret[0].([]v1.OwnerReference)
+	return ret0
+}
+
+// GetOwnerReferences indicates an expected call of GetOwnerReferences.
+func (mr *MockDiskScopeMockRecorder) GetOwnerReferences() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnerReferences", reflect.TypeOf((*MockDiskScope)(nil).GetOwnerReferences))
+}
+
+// SetOwnerReferences mocks base method.
+func (m *MockDiskScope) SetOwnerReferences(arg0 []v1.OwnerReference) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetOwnerReferences", arg0)
+}
+
+// SetOwnerReferences indicates an expected call of SetOwnerReferences.
+func (mr *MockDiskScopeMockRecorder) SetOwnerReferences(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnerReferences", reflect.TypeOf((*MockDiskScope)(nil).SetOwnerReferences), arg0)
+}
+
+// GetClusterName mocks base method.
+func (m *MockDiskScope) GetClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetClusterName indicates an expected call of GetClusterName.
+func (mr *MockDiskScopeMockRecorder) GetClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterName", reflect.TypeOf((*MockDiskScope)(nil).GetClusterName))
+}
+
+// SetClusterName mocks base method.
+func (m *MockDiskScope) SetClusterName(clusterName string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetClusterName", clusterName)
+}
+
+// SetClusterName indicates an expected call of SetClusterName.
+func (mr *MockDiskScopeMockRecorder) SetClusterName(clusterName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClusterName", reflect.TypeOf((*MockDiskScope)(nil).SetClusterName), clusterName)
+}
+
+// GetManagedFields mocks base method.
+func (m *MockDiskScope) GetManagedFields() []v1.ManagedFieldsEntry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedFields")
+	ret0, _ := ret[0].([]v1.ManagedFieldsEntry)
+	return ret0
+}
+
+// GetManagedFields indicates an expected call of GetManagedFields.
+func (mr *MockDiskScopeMockRecorder) GetManagedFields() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedFields", reflect.TypeOf((*MockDiskScope)(nil).GetManagedFields))
+}
+
+// SetManagedFields mocks base method.
+func (m *MockDiskScope) SetManagedFields(managedFields []v1.ManagedFieldsEntry) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetManagedFields", managedFields)
+}
+
+// SetManagedFields indicates an expected call of SetManagedFields.
+func (mr *MockDiskScopeMockRecorder) SetManagedFields(managedFields interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetManagedFields", reflect.TypeOf((*MockDiskScope)(nil).SetManagedFields), managedFields)
+}
+
+// GetObjectKind mocks base method.
+func (m *MockDiskScope) GetObjectKind() schema.ObjectKind {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectKind")
+	ret0, _ := ret[0].(schema.ObjectKind)
+	return ret0
+}
+
+// GetObjectKind indicates an expected call of GetObjectKind.
+func (mr *MockDiskScopeMockRecorder) GetObjectKind() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectKind", reflect.TypeOf((*MockDiskScope)(nil).GetObjectKind))
+}
+
+// DeepCopyObject mocks base method.
+func (m *MockDiskScope) DeepCopyObject() runtime.Object {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeepCopyObject")
+	ret0, _ := ret[0].(runtime.Object)
+	return ret0
+}
+
+// DeepCopyObject indicates an expected call of DeepCopyObject.
+func (mr *MockDiskScopeMockRecorder) DeepCopyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeepCopyObject", reflect.TypeOf((*MockDiskScope)(nil).DeepCopyObject))
+}
+
+// GetConditions mocks base method.
+func (m *MockDiskScope) GetConditions() v1alpha30.Conditions {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConditions")
+	ret0, _ := ret[0].(v1alpha30.Conditions)
+	return ret0
+}
+
+// GetConditions indicates an expected call of GetConditions.
+func (mr *MockDiskScopeMockRecorder) GetConditions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConditions", reflect.TypeOf((*MockDiskScope)(nil).GetConditions))
+}
+
+// SetConditions mocks base method.
+func (m *MockDiskScope) SetConditions(arg0 v1alpha30.Conditions) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetConditions", arg0)
+}
+
+// SetConditions indicates an expected call of SetConditions.
+func (mr *MockDiskScopeMockRecorder) SetConditions(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConditions", reflect.TypeOf((*MockDiskScope)(nil).SetConditions), arg0)
+}
+
+// SubscriptionID mocks base method.
+func (m *MockDiskScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockDiskScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockDiskScope)(nil).SubscriptionID))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockDiskScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
@@ -285,6 +759,18 @@ func (m *MockDiskScope) Location() string {
 func (mr *MockDiskScopeMockRecorder) Location() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockDiskScope)(nil).Location))
+}
+
+// SetFailureDomain mocks base method.
+func (m *MockDiskScope) SetFailureDomain(id string, spec v1alpha30.FailureDomainSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFailureDomain", id, spec)
+}
+
+// SetFailureDomain indicates an expected call of SetFailureDomain.
+func (mr *MockDiskScopeMockRecorder) SetFailureDomain(id, spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFailureDomain", reflect.TypeOf((*MockDiskScope)(nil).SetFailureDomain), id, spec)
 }
 
 // AdditionalTags mocks base method.

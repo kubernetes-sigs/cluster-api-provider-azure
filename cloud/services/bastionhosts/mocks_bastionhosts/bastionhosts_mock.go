@@ -21,13 +21,17 @@ limitations under the License.
 package mock_bastionhosts
 
 import (
-	reflect "reflect"
-
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
+	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	v1alpha30 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // MockBastionScope is a mock of BastionScope interface.
@@ -147,20 +151,6 @@ func (mr *MockBastionScopeMockRecorder) WithName(name interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockBastionScope)(nil).WithName), name)
 }
 
-// SubscriptionID mocks base method.
-func (m *MockBastionScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockBastionScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockBastionScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockBastionScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -245,6 +235,490 @@ func (mr *MockBastionScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockBastionScope)(nil).Authorizer))
 }
 
+// GetNamespace mocks base method.
+func (m *MockBastionScope) GetNamespace() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespace")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetNamespace indicates an expected call of GetNamespace.
+func (mr *MockBastionScopeMockRecorder) GetNamespace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockBastionScope)(nil).GetNamespace))
+}
+
+// SetNamespace mocks base method.
+func (m *MockBastionScope) SetNamespace(namespace string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetNamespace", namespace)
+}
+
+// SetNamespace indicates an expected call of SetNamespace.
+func (mr *MockBastionScopeMockRecorder) SetNamespace(namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockBastionScope)(nil).SetNamespace), namespace)
+}
+
+// GetName mocks base method.
+func (m *MockBastionScope) GetName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetName indicates an expected call of GetName.
+func (mr *MockBastionScopeMockRecorder) GetName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockBastionScope)(nil).GetName))
+}
+
+// SetName mocks base method.
+func (m *MockBastionScope) SetName(name string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetName", name)
+}
+
+// SetName indicates an expected call of SetName.
+func (mr *MockBastionScopeMockRecorder) SetName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetName", reflect.TypeOf((*MockBastionScope)(nil).SetName), name)
+}
+
+// GetGenerateName mocks base method.
+func (m *MockBastionScope) GetGenerateName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGenerateName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetGenerateName indicates an expected call of GetGenerateName.
+func (mr *MockBastionScopeMockRecorder) GetGenerateName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGenerateName", reflect.TypeOf((*MockBastionScope)(nil).GetGenerateName))
+}
+
+// SetGenerateName mocks base method.
+func (m *MockBastionScope) SetGenerateName(name string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetGenerateName", name)
+}
+
+// SetGenerateName indicates an expected call of SetGenerateName.
+func (mr *MockBastionScopeMockRecorder) SetGenerateName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGenerateName", reflect.TypeOf((*MockBastionScope)(nil).SetGenerateName), name)
+}
+
+// GetUID mocks base method.
+func (m *MockBastionScope) GetUID() types.UID {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUID")
+	ret0, _ := ret[0].(types.UID)
+	return ret0
+}
+
+// GetUID indicates an expected call of GetUID.
+func (mr *MockBastionScopeMockRecorder) GetUID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUID", reflect.TypeOf((*MockBastionScope)(nil).GetUID))
+}
+
+// SetUID mocks base method.
+func (m *MockBastionScope) SetUID(uid types.UID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetUID", uid)
+}
+
+// SetUID indicates an expected call of SetUID.
+func (mr *MockBastionScopeMockRecorder) SetUID(uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUID", reflect.TypeOf((*MockBastionScope)(nil).SetUID), uid)
+}
+
+// GetResourceVersion mocks base method.
+func (m *MockBastionScope) GetResourceVersion() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceVersion")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetResourceVersion indicates an expected call of GetResourceVersion.
+func (mr *MockBastionScopeMockRecorder) GetResourceVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceVersion", reflect.TypeOf((*MockBastionScope)(nil).GetResourceVersion))
+}
+
+// SetResourceVersion mocks base method.
+func (m *MockBastionScope) SetResourceVersion(version string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetResourceVersion", version)
+}
+
+// SetResourceVersion indicates an expected call of SetResourceVersion.
+func (mr *MockBastionScopeMockRecorder) SetResourceVersion(version interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResourceVersion", reflect.TypeOf((*MockBastionScope)(nil).SetResourceVersion), version)
+}
+
+// GetGeneration mocks base method.
+func (m *MockBastionScope) GetGeneration() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGeneration")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetGeneration indicates an expected call of GetGeneration.
+func (mr *MockBastionScopeMockRecorder) GetGeneration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGeneration", reflect.TypeOf((*MockBastionScope)(nil).GetGeneration))
+}
+
+// SetGeneration mocks base method.
+func (m *MockBastionScope) SetGeneration(generation int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetGeneration", generation)
+}
+
+// SetGeneration indicates an expected call of SetGeneration.
+func (mr *MockBastionScopeMockRecorder) SetGeneration(generation interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGeneration", reflect.TypeOf((*MockBastionScope)(nil).SetGeneration), generation)
+}
+
+// GetSelfLink mocks base method.
+func (m *MockBastionScope) GetSelfLink() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelfLink")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSelfLink indicates an expected call of GetSelfLink.
+func (mr *MockBastionScopeMockRecorder) GetSelfLink() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfLink", reflect.TypeOf((*MockBastionScope)(nil).GetSelfLink))
+}
+
+// SetSelfLink mocks base method.
+func (m *MockBastionScope) SetSelfLink(selfLink string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSelfLink", selfLink)
+}
+
+// SetSelfLink indicates an expected call of SetSelfLink.
+func (mr *MockBastionScopeMockRecorder) SetSelfLink(selfLink interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSelfLink", reflect.TypeOf((*MockBastionScope)(nil).SetSelfLink), selfLink)
+}
+
+// GetCreationTimestamp mocks base method.
+func (m *MockBastionScope) GetCreationTimestamp() v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCreationTimestamp")
+	ret0, _ := ret[0].(v1.Time)
+	return ret0
+}
+
+// GetCreationTimestamp indicates an expected call of GetCreationTimestamp.
+func (mr *MockBastionScopeMockRecorder) GetCreationTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreationTimestamp", reflect.TypeOf((*MockBastionScope)(nil).GetCreationTimestamp))
+}
+
+// SetCreationTimestamp mocks base method.
+func (m *MockBastionScope) SetCreationTimestamp(timestamp v1.Time) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCreationTimestamp", timestamp)
+}
+
+// SetCreationTimestamp indicates an expected call of SetCreationTimestamp.
+func (mr *MockBastionScopeMockRecorder) SetCreationTimestamp(timestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCreationTimestamp", reflect.TypeOf((*MockBastionScope)(nil).SetCreationTimestamp), timestamp)
+}
+
+// GetDeletionTimestamp mocks base method.
+func (m *MockBastionScope) GetDeletionTimestamp() *v1.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
+	ret0, _ := ret[0].(*v1.Time)
+	return ret0
+}
+
+// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
+func (mr *MockBastionScopeMockRecorder) GetDeletionTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockBastionScope)(nil).GetDeletionTimestamp))
+}
+
+// SetDeletionTimestamp mocks base method.
+func (m *MockBastionScope) SetDeletionTimestamp(timestamp *v1.Time) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeletionTimestamp", timestamp)
+}
+
+// SetDeletionTimestamp indicates an expected call of SetDeletionTimestamp.
+func (mr *MockBastionScopeMockRecorder) SetDeletionTimestamp(timestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionTimestamp", reflect.TypeOf((*MockBastionScope)(nil).SetDeletionTimestamp), timestamp)
+}
+
+// GetDeletionGracePeriodSeconds mocks base method.
+func (m *MockBastionScope) GetDeletionGracePeriodSeconds() *int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionGracePeriodSeconds")
+	ret0, _ := ret[0].(*int64)
+	return ret0
+}
+
+// GetDeletionGracePeriodSeconds indicates an expected call of GetDeletionGracePeriodSeconds.
+func (mr *MockBastionScopeMockRecorder) GetDeletionGracePeriodSeconds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionGracePeriodSeconds", reflect.TypeOf((*MockBastionScope)(nil).GetDeletionGracePeriodSeconds))
+}
+
+// SetDeletionGracePeriodSeconds mocks base method.
+func (m *MockBastionScope) SetDeletionGracePeriodSeconds(arg0 *int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeletionGracePeriodSeconds", arg0)
+}
+
+// SetDeletionGracePeriodSeconds indicates an expected call of SetDeletionGracePeriodSeconds.
+func (mr *MockBastionScopeMockRecorder) SetDeletionGracePeriodSeconds(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionGracePeriodSeconds", reflect.TypeOf((*MockBastionScope)(nil).SetDeletionGracePeriodSeconds), arg0)
+}
+
+// GetLabels mocks base method.
+func (m *MockBastionScope) GetLabels() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLabels")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetLabels indicates an expected call of GetLabels.
+func (mr *MockBastionScopeMockRecorder) GetLabels() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLabels", reflect.TypeOf((*MockBastionScope)(nil).GetLabels))
+}
+
+// SetLabels mocks base method.
+func (m *MockBastionScope) SetLabels(labels map[string]string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLabels", labels)
+}
+
+// SetLabels indicates an expected call of SetLabels.
+func (mr *MockBastionScopeMockRecorder) SetLabels(labels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLabels", reflect.TypeOf((*MockBastionScope)(nil).SetLabels), labels)
+}
+
+// GetAnnotations mocks base method.
+func (m *MockBastionScope) GetAnnotations() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnnotations")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetAnnotations indicates an expected call of GetAnnotations.
+func (mr *MockBastionScopeMockRecorder) GetAnnotations() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnnotations", reflect.TypeOf((*MockBastionScope)(nil).GetAnnotations))
+}
+
+// SetAnnotations mocks base method.
+func (m *MockBastionScope) SetAnnotations(annotations map[string]string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAnnotations", annotations)
+}
+
+// SetAnnotations indicates an expected call of SetAnnotations.
+func (mr *MockBastionScopeMockRecorder) SetAnnotations(annotations interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockBastionScope)(nil).SetAnnotations), annotations)
+}
+
+// GetFinalizers mocks base method.
+func (m *MockBastionScope) GetFinalizers() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFinalizers")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetFinalizers indicates an expected call of GetFinalizers.
+func (mr *MockBastionScopeMockRecorder) GetFinalizers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFinalizers", reflect.TypeOf((*MockBastionScope)(nil).GetFinalizers))
+}
+
+// SetFinalizers mocks base method.
+func (m *MockBastionScope) SetFinalizers(finalizers []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFinalizers", finalizers)
+}
+
+// SetFinalizers indicates an expected call of SetFinalizers.
+func (mr *MockBastionScopeMockRecorder) SetFinalizers(finalizers interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalizers", reflect.TypeOf((*MockBastionScope)(nil).SetFinalizers), finalizers)
+}
+
+// GetOwnerReferences mocks base method.
+func (m *MockBastionScope) GetOwnerReferences() []v1.OwnerReference {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnerReferences")
+	ret0, _ := ret[0].([]v1.OwnerReference)
+	return ret0
+}
+
+// GetOwnerReferences indicates an expected call of GetOwnerReferences.
+func (mr *MockBastionScopeMockRecorder) GetOwnerReferences() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnerReferences", reflect.TypeOf((*MockBastionScope)(nil).GetOwnerReferences))
+}
+
+// SetOwnerReferences mocks base method.
+func (m *MockBastionScope) SetOwnerReferences(arg0 []v1.OwnerReference) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetOwnerReferences", arg0)
+}
+
+// SetOwnerReferences indicates an expected call of SetOwnerReferences.
+func (mr *MockBastionScopeMockRecorder) SetOwnerReferences(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnerReferences", reflect.TypeOf((*MockBastionScope)(nil).SetOwnerReferences), arg0)
+}
+
+// GetClusterName mocks base method.
+func (m *MockBastionScope) GetClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetClusterName indicates an expected call of GetClusterName.
+func (mr *MockBastionScopeMockRecorder) GetClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterName", reflect.TypeOf((*MockBastionScope)(nil).GetClusterName))
+}
+
+// SetClusterName mocks base method.
+func (m *MockBastionScope) SetClusterName(clusterName string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetClusterName", clusterName)
+}
+
+// SetClusterName indicates an expected call of SetClusterName.
+func (mr *MockBastionScopeMockRecorder) SetClusterName(clusterName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClusterName", reflect.TypeOf((*MockBastionScope)(nil).SetClusterName), clusterName)
+}
+
+// GetManagedFields mocks base method.
+func (m *MockBastionScope) GetManagedFields() []v1.ManagedFieldsEntry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedFields")
+	ret0, _ := ret[0].([]v1.ManagedFieldsEntry)
+	return ret0
+}
+
+// GetManagedFields indicates an expected call of GetManagedFields.
+func (mr *MockBastionScopeMockRecorder) GetManagedFields() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedFields", reflect.TypeOf((*MockBastionScope)(nil).GetManagedFields))
+}
+
+// SetManagedFields mocks base method.
+func (m *MockBastionScope) SetManagedFields(managedFields []v1.ManagedFieldsEntry) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetManagedFields", managedFields)
+}
+
+// SetManagedFields indicates an expected call of SetManagedFields.
+func (mr *MockBastionScopeMockRecorder) SetManagedFields(managedFields interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetManagedFields", reflect.TypeOf((*MockBastionScope)(nil).SetManagedFields), managedFields)
+}
+
+// GetObjectKind mocks base method.
+func (m *MockBastionScope) GetObjectKind() schema.ObjectKind {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectKind")
+	ret0, _ := ret[0].(schema.ObjectKind)
+	return ret0
+}
+
+// GetObjectKind indicates an expected call of GetObjectKind.
+func (mr *MockBastionScopeMockRecorder) GetObjectKind() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectKind", reflect.TypeOf((*MockBastionScope)(nil).GetObjectKind))
+}
+
+// DeepCopyObject mocks base method.
+func (m *MockBastionScope) DeepCopyObject() runtime.Object {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeepCopyObject")
+	ret0, _ := ret[0].(runtime.Object)
+	return ret0
+}
+
+// DeepCopyObject indicates an expected call of DeepCopyObject.
+func (mr *MockBastionScopeMockRecorder) DeepCopyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeepCopyObject", reflect.TypeOf((*MockBastionScope)(nil).DeepCopyObject))
+}
+
+// GetConditions mocks base method.
+func (m *MockBastionScope) GetConditions() v1alpha30.Conditions {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConditions")
+	ret0, _ := ret[0].(v1alpha30.Conditions)
+	return ret0
+}
+
+// GetConditions indicates an expected call of GetConditions.
+func (mr *MockBastionScopeMockRecorder) GetConditions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConditions", reflect.TypeOf((*MockBastionScope)(nil).GetConditions))
+}
+
+// SetConditions mocks base method.
+func (m *MockBastionScope) SetConditions(arg0 v1alpha30.Conditions) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetConditions", arg0)
+}
+
+// SetConditions indicates an expected call of SetConditions.
+func (mr *MockBastionScopeMockRecorder) SetConditions(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConditions", reflect.TypeOf((*MockBastionScope)(nil).SetConditions), arg0)
+}
+
+// SubscriptionID mocks base method.
+func (m *MockBastionScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockBastionScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockBastionScope)(nil).SubscriptionID))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockBastionScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
@@ -287,6 +761,18 @@ func (mr *MockBastionScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockBastionScope)(nil).Location))
 }
 
+// SetFailureDomain mocks base method.
+func (m *MockBastionScope) SetFailureDomain(id string, spec v1alpha30.FailureDomainSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFailureDomain", id, spec)
+}
+
+// SetFailureDomain indicates an expected call of SetFailureDomain.
+func (mr *MockBastionScopeMockRecorder) SetFailureDomain(id, spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFailureDomain", reflect.TypeOf((*MockBastionScope)(nil).SetFailureDomain), id, spec)
+}
+
 // AdditionalTags mocks base method.
 func (m *MockBastionScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
@@ -327,6 +813,20 @@ func (m *MockBastionScope) IsVnetManaged() bool {
 func (mr *MockBastionScopeMockRecorder) IsVnetManaged() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockBastionScope)(nil).IsVnetManaged))
+}
+
+// Subnets mocks base method.
+func (m *MockBastionScope) Subnets() v1alpha3.Subnets {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subnets")
+	ret0, _ := ret[0].(v1alpha3.Subnets)
+	return ret0
+}
+
+// Subnets indicates an expected call of Subnets.
+func (mr *MockBastionScopeMockRecorder) Subnets() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnets", reflect.TypeOf((*MockBastionScope)(nil).Subnets))
 }
 
 // NodeSubnet mocks base method.
@@ -399,6 +899,48 @@ func (mr *MockBastionScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockBastionScope)(nil).ControlPlaneRouteTable))
 }
 
+// APIServerPublicIP mocks base method.
+func (m *MockBastionScope) APIServerPublicIP() *v1alpha3.PublicIPSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerPublicIP")
+	ret0, _ := ret[0].(*v1alpha3.PublicIPSpec)
+	return ret0
+}
+
+// APIServerPublicIP indicates an expected call of APIServerPublicIP.
+func (mr *MockBastionScopeMockRecorder) APIServerPublicIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerPublicIP", reflect.TypeOf((*MockBastionScope)(nil).APIServerPublicIP))
+}
+
+// APIServerPrivateIP mocks base method.
+func (m *MockBastionScope) APIServerPrivateIP() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerPrivateIP")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerPrivateIP indicates an expected call of APIServerPrivateIP.
+func (mr *MockBastionScopeMockRecorder) APIServerPrivateIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerPrivateIP", reflect.TypeOf((*MockBastionScope)(nil).APIServerPrivateIP))
+}
+
+// APIServerLB mocks base method.
+func (m *MockBastionScope) APIServerLB() *v1alpha3.LoadBalancerSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLB")
+	ret0, _ := ret[0].(*v1alpha3.LoadBalancerSpec)
+	return ret0
+}
+
+// APIServerLB indicates an expected call of APIServerLB.
+func (mr *MockBastionScopeMockRecorder) APIServerLB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLB", reflect.TypeOf((*MockBastionScope)(nil).APIServerLB))
+}
+
 // APIServerLBName mocks base method.
 func (m *MockBastionScope) APIServerLBName() string {
 	m.ctrl.T.Helper()
@@ -441,6 +983,20 @@ func (mr *MockBastionScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockBastionScope)(nil).IsAPIServerPrivate))
 }
 
+// NodeOutboundLBName mocks base method.
+func (m *MockBastionScope) NodeOutboundLBName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeOutboundLBName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// NodeOutboundLBName indicates an expected call of NodeOutboundLBName.
+func (mr *MockBastionScopeMockRecorder) NodeOutboundLBName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeOutboundLBName", reflect.TypeOf((*MockBastionScope)(nil).NodeOutboundLBName))
+}
+
 // OutboundLBName mocks base method.
 func (m *MockBastionScope) OutboundLBName(arg0 string) string {
 	m.ctrl.T.Helper()
@@ -467,6 +1023,18 @@ func (m *MockBastionScope) OutboundPoolName(arg0 string) string {
 func (mr *MockBastionScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockBastionScope)(nil).OutboundPoolName), arg0)
+}
+
+// SetDNSName mocks base method.
+func (m *MockBastionScope) SetDNSName(dnsSuffix string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDNSName", dnsSuffix)
+}
+
+// SetDNSName indicates an expected call of SetDNSName.
+func (mr *MockBastionScopeMockRecorder) SetDNSName(dnsSuffix interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDNSName", reflect.TypeOf((*MockBastionScope)(nil).SetDNSName), dnsSuffix)
 }
 
 // BastionSpecs mocks base method.

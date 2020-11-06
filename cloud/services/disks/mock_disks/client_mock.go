@@ -22,9 +22,8 @@ package mock_disks
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // Mockclient is a mock of client interface.

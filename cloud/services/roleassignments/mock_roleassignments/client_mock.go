@@ -22,10 +22,9 @@ package mock_roleassignments
 
 import (
 	context "context"
-	reflect "reflect"
-
 	authorization "github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface.

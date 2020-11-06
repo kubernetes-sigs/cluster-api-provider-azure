@@ -22,14 +22,18 @@ package mock_virtualmachines
 
 import (
 	context "context"
-	reflect "reflect"
-
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
+	v10 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
+	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	v1alpha30 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
 
 // MockVMScope is a mock of VMScope interface.
@@ -149,20 +153,6 @@ func (mr *MockVMScopeMockRecorder) WithName(name interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockVMScope)(nil).WithName), name)
 }
 
-// SubscriptionID mocks base method.
-func (m *MockVMScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockVMScopeMockRecorder) SubscriptionID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockVMScope)(nil).SubscriptionID))
-}
-
 // ClientID mocks base method.
 func (m *MockVMScope) ClientID() string {
 	m.ctrl.T.Helper()
@@ -247,6 +237,490 @@ func (mr *MockVMScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockVMScope)(nil).Authorizer))
 }
 
+// GetNamespace mocks base method.
+func (m *MockVMScope) GetNamespace() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespace")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetNamespace indicates an expected call of GetNamespace.
+func (mr *MockVMScopeMockRecorder) GetNamespace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockVMScope)(nil).GetNamespace))
+}
+
+// SetNamespace mocks base method.
+func (m *MockVMScope) SetNamespace(namespace string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetNamespace", namespace)
+}
+
+// SetNamespace indicates an expected call of SetNamespace.
+func (mr *MockVMScopeMockRecorder) SetNamespace(namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockVMScope)(nil).SetNamespace), namespace)
+}
+
+// GetName mocks base method.
+func (m *MockVMScope) GetName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetName indicates an expected call of GetName.
+func (mr *MockVMScopeMockRecorder) GetName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockVMScope)(nil).GetName))
+}
+
+// SetName mocks base method.
+func (m *MockVMScope) SetName(name string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetName", name)
+}
+
+// SetName indicates an expected call of SetName.
+func (mr *MockVMScopeMockRecorder) SetName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetName", reflect.TypeOf((*MockVMScope)(nil).SetName), name)
+}
+
+// GetGenerateName mocks base method.
+func (m *MockVMScope) GetGenerateName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGenerateName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetGenerateName indicates an expected call of GetGenerateName.
+func (mr *MockVMScopeMockRecorder) GetGenerateName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGenerateName", reflect.TypeOf((*MockVMScope)(nil).GetGenerateName))
+}
+
+// SetGenerateName mocks base method.
+func (m *MockVMScope) SetGenerateName(name string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetGenerateName", name)
+}
+
+// SetGenerateName indicates an expected call of SetGenerateName.
+func (mr *MockVMScopeMockRecorder) SetGenerateName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGenerateName", reflect.TypeOf((*MockVMScope)(nil).SetGenerateName), name)
+}
+
+// GetUID mocks base method.
+func (m *MockVMScope) GetUID() types.UID {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUID")
+	ret0, _ := ret[0].(types.UID)
+	return ret0
+}
+
+// GetUID indicates an expected call of GetUID.
+func (mr *MockVMScopeMockRecorder) GetUID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUID", reflect.TypeOf((*MockVMScope)(nil).GetUID))
+}
+
+// SetUID mocks base method.
+func (m *MockVMScope) SetUID(uid types.UID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetUID", uid)
+}
+
+// SetUID indicates an expected call of SetUID.
+func (mr *MockVMScopeMockRecorder) SetUID(uid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUID", reflect.TypeOf((*MockVMScope)(nil).SetUID), uid)
+}
+
+// GetResourceVersion mocks base method.
+func (m *MockVMScope) GetResourceVersion() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceVersion")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetResourceVersion indicates an expected call of GetResourceVersion.
+func (mr *MockVMScopeMockRecorder) GetResourceVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceVersion", reflect.TypeOf((*MockVMScope)(nil).GetResourceVersion))
+}
+
+// SetResourceVersion mocks base method.
+func (m *MockVMScope) SetResourceVersion(version string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetResourceVersion", version)
+}
+
+// SetResourceVersion indicates an expected call of SetResourceVersion.
+func (mr *MockVMScopeMockRecorder) SetResourceVersion(version interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResourceVersion", reflect.TypeOf((*MockVMScope)(nil).SetResourceVersion), version)
+}
+
+// GetGeneration mocks base method.
+func (m *MockVMScope) GetGeneration() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGeneration")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetGeneration indicates an expected call of GetGeneration.
+func (mr *MockVMScopeMockRecorder) GetGeneration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGeneration", reflect.TypeOf((*MockVMScope)(nil).GetGeneration))
+}
+
+// SetGeneration mocks base method.
+func (m *MockVMScope) SetGeneration(generation int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetGeneration", generation)
+}
+
+// SetGeneration indicates an expected call of SetGeneration.
+func (mr *MockVMScopeMockRecorder) SetGeneration(generation interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGeneration", reflect.TypeOf((*MockVMScope)(nil).SetGeneration), generation)
+}
+
+// GetSelfLink mocks base method.
+func (m *MockVMScope) GetSelfLink() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelfLink")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSelfLink indicates an expected call of GetSelfLink.
+func (mr *MockVMScopeMockRecorder) GetSelfLink() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfLink", reflect.TypeOf((*MockVMScope)(nil).GetSelfLink))
+}
+
+// SetSelfLink mocks base method.
+func (m *MockVMScope) SetSelfLink(selfLink string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSelfLink", selfLink)
+}
+
+// SetSelfLink indicates an expected call of SetSelfLink.
+func (mr *MockVMScopeMockRecorder) SetSelfLink(selfLink interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSelfLink", reflect.TypeOf((*MockVMScope)(nil).SetSelfLink), selfLink)
+}
+
+// GetCreationTimestamp mocks base method.
+func (m *MockVMScope) GetCreationTimestamp() v10.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCreationTimestamp")
+	ret0, _ := ret[0].(v10.Time)
+	return ret0
+}
+
+// GetCreationTimestamp indicates an expected call of GetCreationTimestamp.
+func (mr *MockVMScopeMockRecorder) GetCreationTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreationTimestamp", reflect.TypeOf((*MockVMScope)(nil).GetCreationTimestamp))
+}
+
+// SetCreationTimestamp mocks base method.
+func (m *MockVMScope) SetCreationTimestamp(timestamp v10.Time) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCreationTimestamp", timestamp)
+}
+
+// SetCreationTimestamp indicates an expected call of SetCreationTimestamp.
+func (mr *MockVMScopeMockRecorder) SetCreationTimestamp(timestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCreationTimestamp", reflect.TypeOf((*MockVMScope)(nil).SetCreationTimestamp), timestamp)
+}
+
+// GetDeletionTimestamp mocks base method.
+func (m *MockVMScope) GetDeletionTimestamp() *v10.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionTimestamp")
+	ret0, _ := ret[0].(*v10.Time)
+	return ret0
+}
+
+// GetDeletionTimestamp indicates an expected call of GetDeletionTimestamp.
+func (mr *MockVMScopeMockRecorder) GetDeletionTimestamp() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionTimestamp", reflect.TypeOf((*MockVMScope)(nil).GetDeletionTimestamp))
+}
+
+// SetDeletionTimestamp mocks base method.
+func (m *MockVMScope) SetDeletionTimestamp(timestamp *v10.Time) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeletionTimestamp", timestamp)
+}
+
+// SetDeletionTimestamp indicates an expected call of SetDeletionTimestamp.
+func (mr *MockVMScopeMockRecorder) SetDeletionTimestamp(timestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionTimestamp", reflect.TypeOf((*MockVMScope)(nil).SetDeletionTimestamp), timestamp)
+}
+
+// GetDeletionGracePeriodSeconds mocks base method.
+func (m *MockVMScope) GetDeletionGracePeriodSeconds() *int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeletionGracePeriodSeconds")
+	ret0, _ := ret[0].(*int64)
+	return ret0
+}
+
+// GetDeletionGracePeriodSeconds indicates an expected call of GetDeletionGracePeriodSeconds.
+func (mr *MockVMScopeMockRecorder) GetDeletionGracePeriodSeconds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeletionGracePeriodSeconds", reflect.TypeOf((*MockVMScope)(nil).GetDeletionGracePeriodSeconds))
+}
+
+// SetDeletionGracePeriodSeconds mocks base method.
+func (m *MockVMScope) SetDeletionGracePeriodSeconds(arg0 *int64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeletionGracePeriodSeconds", arg0)
+}
+
+// SetDeletionGracePeriodSeconds indicates an expected call of SetDeletionGracePeriodSeconds.
+func (mr *MockVMScopeMockRecorder) SetDeletionGracePeriodSeconds(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionGracePeriodSeconds", reflect.TypeOf((*MockVMScope)(nil).SetDeletionGracePeriodSeconds), arg0)
+}
+
+// GetLabels mocks base method.
+func (m *MockVMScope) GetLabels() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLabels")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetLabels indicates an expected call of GetLabels.
+func (mr *MockVMScopeMockRecorder) GetLabels() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLabels", reflect.TypeOf((*MockVMScope)(nil).GetLabels))
+}
+
+// SetLabels mocks base method.
+func (m *MockVMScope) SetLabels(labels map[string]string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLabels", labels)
+}
+
+// SetLabels indicates an expected call of SetLabels.
+func (mr *MockVMScopeMockRecorder) SetLabels(labels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLabels", reflect.TypeOf((*MockVMScope)(nil).SetLabels), labels)
+}
+
+// GetAnnotations mocks base method.
+func (m *MockVMScope) GetAnnotations() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnnotations")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetAnnotations indicates an expected call of GetAnnotations.
+func (mr *MockVMScopeMockRecorder) GetAnnotations() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnnotations", reflect.TypeOf((*MockVMScope)(nil).GetAnnotations))
+}
+
+// SetAnnotations mocks base method.
+func (m *MockVMScope) SetAnnotations(annotations map[string]string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAnnotations", annotations)
+}
+
+// SetAnnotations indicates an expected call of SetAnnotations.
+func (mr *MockVMScopeMockRecorder) SetAnnotations(annotations interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockVMScope)(nil).SetAnnotations), annotations)
+}
+
+// GetFinalizers mocks base method.
+func (m *MockVMScope) GetFinalizers() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFinalizers")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetFinalizers indicates an expected call of GetFinalizers.
+func (mr *MockVMScopeMockRecorder) GetFinalizers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFinalizers", reflect.TypeOf((*MockVMScope)(nil).GetFinalizers))
+}
+
+// SetFinalizers mocks base method.
+func (m *MockVMScope) SetFinalizers(finalizers []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFinalizers", finalizers)
+}
+
+// SetFinalizers indicates an expected call of SetFinalizers.
+func (mr *MockVMScopeMockRecorder) SetFinalizers(finalizers interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalizers", reflect.TypeOf((*MockVMScope)(nil).SetFinalizers), finalizers)
+}
+
+// GetOwnerReferences mocks base method.
+func (m *MockVMScope) GetOwnerReferences() []v10.OwnerReference {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOwnerReferences")
+	ret0, _ := ret[0].([]v10.OwnerReference)
+	return ret0
+}
+
+// GetOwnerReferences indicates an expected call of GetOwnerReferences.
+func (mr *MockVMScopeMockRecorder) GetOwnerReferences() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOwnerReferences", reflect.TypeOf((*MockVMScope)(nil).GetOwnerReferences))
+}
+
+// SetOwnerReferences mocks base method.
+func (m *MockVMScope) SetOwnerReferences(arg0 []v10.OwnerReference) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetOwnerReferences", arg0)
+}
+
+// SetOwnerReferences indicates an expected call of SetOwnerReferences.
+func (mr *MockVMScopeMockRecorder) SetOwnerReferences(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnerReferences", reflect.TypeOf((*MockVMScope)(nil).SetOwnerReferences), arg0)
+}
+
+// GetClusterName mocks base method.
+func (m *MockVMScope) GetClusterName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusterName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetClusterName indicates an expected call of GetClusterName.
+func (mr *MockVMScopeMockRecorder) GetClusterName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterName", reflect.TypeOf((*MockVMScope)(nil).GetClusterName))
+}
+
+// SetClusterName mocks base method.
+func (m *MockVMScope) SetClusterName(clusterName string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetClusterName", clusterName)
+}
+
+// SetClusterName indicates an expected call of SetClusterName.
+func (mr *MockVMScopeMockRecorder) SetClusterName(clusterName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClusterName", reflect.TypeOf((*MockVMScope)(nil).SetClusterName), clusterName)
+}
+
+// GetManagedFields mocks base method.
+func (m *MockVMScope) GetManagedFields() []v10.ManagedFieldsEntry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedFields")
+	ret0, _ := ret[0].([]v10.ManagedFieldsEntry)
+	return ret0
+}
+
+// GetManagedFields indicates an expected call of GetManagedFields.
+func (mr *MockVMScopeMockRecorder) GetManagedFields() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedFields", reflect.TypeOf((*MockVMScope)(nil).GetManagedFields))
+}
+
+// SetManagedFields mocks base method.
+func (m *MockVMScope) SetManagedFields(managedFields []v10.ManagedFieldsEntry) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetManagedFields", managedFields)
+}
+
+// SetManagedFields indicates an expected call of SetManagedFields.
+func (mr *MockVMScopeMockRecorder) SetManagedFields(managedFields interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetManagedFields", reflect.TypeOf((*MockVMScope)(nil).SetManagedFields), managedFields)
+}
+
+// GetObjectKind mocks base method.
+func (m *MockVMScope) GetObjectKind() schema.ObjectKind {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectKind")
+	ret0, _ := ret[0].(schema.ObjectKind)
+	return ret0
+}
+
+// GetObjectKind indicates an expected call of GetObjectKind.
+func (mr *MockVMScopeMockRecorder) GetObjectKind() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectKind", reflect.TypeOf((*MockVMScope)(nil).GetObjectKind))
+}
+
+// DeepCopyObject mocks base method.
+func (m *MockVMScope) DeepCopyObject() runtime.Object {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeepCopyObject")
+	ret0, _ := ret[0].(runtime.Object)
+	return ret0
+}
+
+// DeepCopyObject indicates an expected call of DeepCopyObject.
+func (mr *MockVMScopeMockRecorder) DeepCopyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeepCopyObject", reflect.TypeOf((*MockVMScope)(nil).DeepCopyObject))
+}
+
+// GetConditions mocks base method.
+func (m *MockVMScope) GetConditions() v1alpha30.Conditions {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConditions")
+	ret0, _ := ret[0].(v1alpha30.Conditions)
+	return ret0
+}
+
+// GetConditions indicates an expected call of GetConditions.
+func (mr *MockVMScopeMockRecorder) GetConditions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConditions", reflect.TypeOf((*MockVMScope)(nil).GetConditions))
+}
+
+// SetConditions mocks base method.
+func (m *MockVMScope) SetConditions(arg0 v1alpha30.Conditions) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetConditions", arg0)
+}
+
+// SetConditions indicates an expected call of SetConditions.
+func (mr *MockVMScopeMockRecorder) SetConditions(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConditions", reflect.TypeOf((*MockVMScope)(nil).SetConditions), arg0)
+}
+
+// SubscriptionID mocks base method.
+func (m *MockVMScope) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockVMScopeMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockVMScope)(nil).SubscriptionID))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockVMScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
@@ -287,6 +761,18 @@ func (m *MockVMScope) Location() string {
 func (mr *MockVMScopeMockRecorder) Location() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockVMScope)(nil).Location))
+}
+
+// SetFailureDomain mocks base method.
+func (m *MockVMScope) SetFailureDomain(id string, spec v1alpha30.FailureDomainSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFailureDomain", id, spec)
+}
+
+// SetFailureDomain indicates an expected call of SetFailureDomain.
+func (mr *MockVMScopeMockRecorder) SetFailureDomain(id, spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFailureDomain", reflect.TypeOf((*MockVMScope)(nil).SetFailureDomain), id, spec)
 }
 
 // AdditionalTags mocks base method.

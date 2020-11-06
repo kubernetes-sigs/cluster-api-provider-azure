@@ -22,10 +22,9 @@ package mock_groups
 
 import (
 	context "context"
-	reflect "reflect"
-
 	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface.
