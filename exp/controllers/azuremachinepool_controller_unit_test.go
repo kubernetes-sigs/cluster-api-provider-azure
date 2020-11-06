@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/mocks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 
 	. "github.com/onsi/gomega"
@@ -51,14 +50,9 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 		ClusterScoper: cluster,
 	}
 
-	clusterMock := mocks.NewMockClusterScoper(mockCtrl)
-	clusterMock.EXPECT().SubscriptionID().AnyTimes()
-	clusterMock.EXPECT().BaseURI().AnyTimes()
-	clusterMock.EXPECT().Authorizer().AnyTimes()
-
 	mps := &scope.MachinePoolScope{
-		ClusterScoper: clusterMock,
-		MachinePool:   newMachinePool("foo", "poolName"),
+		ClusterScope: cs,
+		MachinePool:  newMachinePool("foo", "poolName"),
 		AzureMachinePool: &infrav1exp.AzureMachinePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "poolName",

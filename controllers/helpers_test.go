@@ -206,7 +206,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
 
-			if err := reconcileAzureSecret(context.Background(), testLog, kubeclient, owner, cloudConfig, azureCluster.ClusterName); err != nil {
+			if err := reconcileAzureSecret(context.Background(), testLog, kubeclient, owner, cloudConfig, azureCluster.ClusterName()); err != nil {
 				t.Error(err)
 			}
 
