@@ -58,7 +58,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 		managedClustersSvc: managedclusters.NewService(scope),
 		groupsSvc:          groups.New(scope),
 		vnetSvc:            virtualnetworks.NewService(scope),
-		subnetsSvc:         subnets.NewService(scope),
+		subnetsSvc:         subnets.New(scope),
 	}
 }
 
