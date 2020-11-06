@@ -40,13 +40,13 @@ import (
 func TestReconcileRoleAssignmentsVM(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder)
+		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create a role assignment",
 			expectedError: "",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -72,7 +72,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 		{
 			name:          "error getting VM",
 			expectedError: "cannot get VM to assign role to system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -88,7 +88,7 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 		{
 			name:          "return error when creating a role assignment",
 			expectedError: "cannot assign role to VM system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -116,15 +116,15 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
-			clientMock := mock_roleassignments.NewMockClient(mockCtrl)
+			clientMock := mock_roleassignments.NewMockclient(mockCtrl)
 			vmMock := mock_virtualmachines.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vmMock.EXPECT())
 
 			s := &Service{
 				Scope:                 scopeMock,
-				Client:                clientMock,
-				VirtualMachinesClient: vmMock,
+				client:                clientMock,
+				virtualMachinesClient: vmMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -140,13 +140,13 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_scalesets.MockClientMockRecorder)
+		expect        func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create a role assignment",
 			expectedError: "",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -172,7 +172,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 		{
 			name:          "error getting VMSS",
 			expectedError: "cannot get VMSS to assign role to system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -188,7 +188,7 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 		{
 			name:          "return error when creating a role assignment",
 			expectedError: "cannot assign role to VMSS system assigned identity: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockClientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("12345")
 				s.ResourceGroup().Return("my-rg")
@@ -216,15 +216,15 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_roleassignments.NewMockRoleAssignmentScope(mockCtrl)
-			clientMock := mock_roleassignments.NewMockClient(mockCtrl)
+			clientMock := mock_roleassignments.NewMockclient(mockCtrl)
 			vmssMock := mock_scalesets.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), vmssMock.EXPECT())
 
 			s := &Service{
 				Scope:                        scopeMock,
-				Client:                       clientMock,
-				VirtualMachineScaleSetClient: vmssMock,
+				client:                       clientMock,
+				virtualMachineScaleSetClient: vmssMock,
 			}
 
 			err := s.Reconcile(context.TODO())

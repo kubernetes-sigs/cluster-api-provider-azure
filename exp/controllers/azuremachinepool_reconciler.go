@@ -42,7 +42,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, cluste
 	return &azureMachinePoolService{
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
-		roleAssignmentsSvc:         roleassignments.NewService(machinePoolScope),
+		roleAssignmentsSvc:         roleassignments.New(machinePoolScope),
 	}
 }
 
