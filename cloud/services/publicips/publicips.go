@@ -24,11 +24,33 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// PublicIPScope defines the scope interface for a public IP service.
+type PublicIPScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	PublicIPSpecs() []azure.PublicIPSpec
+}
+
+// Service provides operations on Azure resources.
+type Service struct {
+	Scope PublicIPScope
+	Client
+}
+
+// New creates a new service.
+func New(scope PublicIPScope) *Service {
+	return &Service{
+		Scope:  scope,
+		Client: NewClient(scope),
+	}
+}
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
