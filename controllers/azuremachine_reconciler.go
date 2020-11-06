@@ -57,7 +57,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		roleAssignmentsSvc:   roleassignments.New(machineScope),
 		disksSvc:             disks.New(machineScope),
 		publicIPsSvc:         publicips.New(machineScope),
-		tagsSvc:              tags.NewService(machineScope),
+		tagsSvc:              tags.New(machineScope),
 		skuCache:             cache,
 	}
 }

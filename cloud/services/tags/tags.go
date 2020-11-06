@@ -18,13 +18,38 @@ package tags
 
 import (
 	"context"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// TagScope defines the scope interface for a tags service.
+type TagScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	TagsSpecs() []azure.TagsSpec
+	AnnotationJSON(string) (map[string]interface{}, error)
+	UpdateAnnotationJSON(string, map[string]interface{}) error
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope TagScope
+	client
+}
+
+// New creates a new service.
+func New(scope TagScope) *Service {
+	return &Service{
+		Scope:  scope,
+		client: newClient(scope),
+	}
+}
 
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -39,7 +64,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		changed, created, deleted, newAnnotation := tagsChanged(annotation, tagsSpec.Tags)
 		if changed {
 			s.Scope.V(2).Info("Updating tags")
-			result, err := s.Client.GetAtScope(ctx, tagsSpec.Scope)
+			result, err := s.client.GetAtScope(ctx, tagsSpec.Scope)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get existing tags")
 			}
@@ -55,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				delete(tags, k)
 			}
 
-			if _, err := s.Client.CreateOrUpdateAtScope(ctx, tagsSpec.Scope, resources.TagsResource{Properties: &resources.Tags{Tags: tags}}); err != nil {
+			if _, err := s.client.CreateOrUpdateAtScope(ctx, tagsSpec.Scope, resources.TagsResource{Properties: &resources.Tags{Tags: tags}}); err != nil {
 				return errors.Wrapf(err, "cannot update tags")
 			}
 
