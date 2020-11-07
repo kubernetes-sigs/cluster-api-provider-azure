@@ -181,7 +181,7 @@ func GetDefaultUbuntuImage(imageID string) (*infrav1.Image, error) {
 	log.Info("Printing image ID in getDefaultUbuntuImage")
 	log.Info(imageID)
 	defaultImage := &infrav1.Image{
-		ID: to.StringPtr(imageID)}
+		ID: to.StringPtr("/subscriptions/c269d43e-ecf1-4ddb-9614-d606afd9c053/resourceGroups/aserg/providers/Microsoft.Compute/images/LinuxAKS")}
 	return defaultImage, nil
 }
 
