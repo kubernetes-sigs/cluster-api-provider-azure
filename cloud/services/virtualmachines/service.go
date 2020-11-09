@@ -33,7 +33,7 @@ import (
 type VMScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	VMSpecs() []azure.VMSpec
+	VMSpec() azure.VMSpec
 	GetBootstrapData(ctx context.Context) (string, error)
 	GetVMImage() (*infrav1.Image, error)
 	SetAnnotation(string, string)

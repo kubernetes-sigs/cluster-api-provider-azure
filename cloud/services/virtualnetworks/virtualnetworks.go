@@ -42,44 +42,43 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//    * Control Plane NSG
 	//    * Node NSG
 	//    * Node Route Table
-	for _, vnetSpec := range s.Scope.VNetSpecs() {
-		existingVnet, err := s.getExisting(ctx, vnetSpec)
+	vnetSpec := s.Scope.VNetSpec()
+	existingVnet, err := s.getExisting(ctx, vnetSpec)
 
-		switch {
-		case err != nil && !azure.ResourceNotFound(err):
-			return errors.Wrapf(err, "failed to get VNet %s", vnetSpec.Name)
+	switch {
+	case err != nil && !azure.ResourceNotFound(err):
+		return errors.Wrapf(err, "failed to get VNet %s", vnetSpec.Name)
 
-		case err == nil:
-			// vnet already exists, cannot update since it's immutable
-			if !existingVnet.IsManaged(s.Scope.ClusterName()) {
-				s.Scope.V(2).Info("Working on custom VNet", "vnet-id", existingVnet.ID)
-			}
-			existingVnet.DeepCopyInto(s.Scope.Vnet())
-
-		default:
-			s.Scope.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
-
-			vnetProperties := network.VirtualNetwork{
-				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-					ClusterName: s.Scope.ClusterName(),
-					Lifecycle:   infrav1.ResourceLifecycleOwned,
-					Name:        to.StringPtr(vnetSpec.Name),
-					Role:        to.StringPtr(infrav1.CommonRole),
-					Additional:  s.Scope.AdditionalTags(),
-				})),
-				Location: to.StringPtr(s.Scope.Location()),
-				VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-					AddressSpace: &network.AddressSpace{
-						AddressPrefixes: &vnetSpec.CIDRs,
-					},
-				},
-			}
-			err = s.Client.CreateOrUpdate(ctx, vnetSpec.ResourceGroup, vnetSpec.Name, vnetProperties)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create virtual network %s", vnetSpec.Name)
-			}
-			s.Scope.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
+	case err == nil:
+		// vnet already exists, cannot update since it's immutable
+		if !existingVnet.IsManaged(s.Scope.ClusterName()) {
+			s.Scope.V(2).Info("Working on custom VNet", "vnet-id", existingVnet.ID)
 		}
+		existingVnet.DeepCopyInto(s.Scope.Vnet())
+
+	default:
+		s.Scope.V(2).Info("creating VNet", "VNet", vnetSpec.Name)
+
+		vnetProperties := network.VirtualNetwork{
+			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+				ClusterName: s.Scope.ClusterName(),
+				Lifecycle:   infrav1.ResourceLifecycleOwned,
+				Name:        to.StringPtr(vnetSpec.Name),
+				Role:        to.StringPtr(infrav1.CommonRole),
+				Additional:  s.Scope.AdditionalTags(),
+			})),
+			Location: to.StringPtr(s.Scope.Location()),
+			VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+				AddressSpace: &network.AddressSpace{
+					AddressPrefixes: &vnetSpec.CIDRs,
+				},
+			},
+		}
+		err = s.Client.CreateOrUpdate(ctx, vnetSpec.ResourceGroup, vnetSpec.Name, vnetProperties)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create virtual network %s", vnetSpec.Name)
+		}
+		s.Scope.V(2).Info("successfully created VNet", "VNet", vnetSpec.Name)
 	}
 
 	return nil
@@ -90,24 +89,23 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Delete")
 	defer span.End()
 
-	for _, vnetSpec := range s.Scope.VNetSpecs() {
-		if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
-			s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
-			continue
-		}
-
-		s.Scope.V(2).Info("deleting VNet", "VNet", vnetSpec.Name)
-		err := s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
-		if err != nil && azure.ResourceNotFound(err) {
-			// already deleted
-			continue
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete VNet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
-		}
-
-		s.Scope.V(2).Info("successfully deleted VNet", "VNet", vnetSpec.Name)
+	vnetSpec := s.Scope.VNetSpec()
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
+		s.Scope.V(4).Info("Skipping VNet deletion in custom vnet mode")
+		return nil
 	}
+
+	s.Scope.V(2).Info("deleting VNet", "VNet", vnetSpec.Name)
+	err := s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
+	if err != nil && azure.ResourceNotFound(err) {
+		// already deleted
+		return nil
+	}
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete VNet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
+	}
+
+	s.Scope.V(2).Info("successfully deleted VNet", "VNet", vnetSpec.Name)
 	return nil
 }
 

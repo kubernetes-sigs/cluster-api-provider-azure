@@ -157,14 +157,12 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 	}
 }
 
-// VNetSpecs returns the virtual network specs.
-func (s *ManagedControlPlaneScope) VNetSpecs() []azure.VNetSpec {
-	return []azure.VNetSpec{
-		{
-			ResourceGroup: s.Vnet().ResourceGroup,
-			Name:          s.Vnet().Name,
-			CIDRs:         s.Vnet().CIDRBlocks,
-		},
+// VNetSpec returns the virtual network spec.
+func (s *ManagedControlPlaneScope) VNetSpec() azure.VNetSpec {
+	return azure.VNetSpec{
+		ResourceGroup: s.Vnet().ResourceGroup,
+		Name:          s.Vnet().Name,
+		CIDRs:         s.Vnet().CIDRBlocks,
 	}
 }
 

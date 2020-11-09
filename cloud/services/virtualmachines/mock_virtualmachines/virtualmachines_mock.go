@@ -302,18 +302,18 @@ func (mr *MockVMScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockVMScope)(nil).AdditionalTags))
 }
 
-// VMSpecs mocks base method.
-func (m *MockVMScope) VMSpecs() []azure.VMSpec {
+// VMSpec mocks base method.
+func (m *MockVMScope) VMSpec() azure.VMSpec {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VMSpecs")
-	ret0, _ := ret[0].([]azure.VMSpec)
+	ret := m.ctrl.Call(m, "VMSpec")
+	ret0, _ := ret[0].(azure.VMSpec)
 	return ret0
 }
 
-// VMSpecs indicates an expected call of VMSpecs.
-func (mr *MockVMScopeMockRecorder) VMSpecs() *gomock.Call {
+// VMSpec indicates an expected call of VMSpec.
+func (mr *MockVMScopeMockRecorder) VMSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSpecs", reflect.TypeOf((*MockVMScope)(nil).VMSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSpec", reflect.TypeOf((*MockVMScope)(nil).VMSpec))
 }
 
 // GetBootstrapData mocks base method.
