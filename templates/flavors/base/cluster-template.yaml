@@ -41,7 +41,6 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     name: "${CLUSTER_NAME}-control-plane"
   kubeadmConfigSpec:
-    useExperimentalRetryJoin: true
     initConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'

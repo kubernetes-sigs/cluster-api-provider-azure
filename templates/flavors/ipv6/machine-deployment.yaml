@@ -45,7 +45,6 @@ metadata:
 spec:
   template:
     spec:
-      useExperimentalRetryJoin: true
       postKubeadmCommands:
         # This frees up :53 on the host for the coredns pods
         - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
