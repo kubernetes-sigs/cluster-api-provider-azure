@@ -21,13 +21,39 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// LBScope defines the scope interface for a load balancer service.
+type LBScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	azure.NetworkDescriber
+	LBSpecs() []azure.LBSpec
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope LBScope
+	Client
+	virtualNetworksClient virtualnetworks.Client
+}
+
+// New creates a new service.
+func New(scope LBScope) *Service {
+	return &Service{
+		Scope:                 scope,
+		Client:                NewClient(scope),
+		virtualNetworksClient: virtualnetworks.NewClient(scope),
+	}
+}
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {

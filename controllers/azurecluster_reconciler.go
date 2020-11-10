@@ -52,13 +52,13 @@ type azureClusterReconciler struct {
 func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
 	return &azureClusterReconciler{
 		scope:            scope,
-		groupsSvc:        groups.NewService(scope),
-		vnetSvc:          virtualnetworks.NewService(scope),
-		securityGroupSvc: securitygroups.NewService(scope),
-		routeTableSvc:    routetables.NewService(scope),
-		subnetsSvc:       subnets.NewService(scope),
-		publicIPSvc:      publicips.NewService(scope),
-		loadBalancerSvc:  loadbalancers.NewService(scope),
+		groupsSvc:        groups.New(scope),
+		vnetSvc:          virtualnetworks.New(scope),
+		securityGroupSvc: securitygroups.New(scope),
+		routeTableSvc:    routetables.New(scope),
+		subnetsSvc:       subnets.New(scope),
+		publicIPSvc:      publicips.New(scope),
+		loadBalancerSvc:  loadbalancers.New(scope),
 		skuCache:         resourceskus.NewCache(scope, scope.Location()),
 	}
 }

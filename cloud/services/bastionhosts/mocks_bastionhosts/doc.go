@@ -16,7 +16,7 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_bastionhosts -source ../client.go Client
-//go:generate ../../../../hack/tools/bin/mockgen -destination bastionhosts_mock.go -package mock_bastionhosts -source ../service.go BastionScope
+//go:generate ../../../../hack/tools/bin/mockgen -destination bastionhosts_mock.go -package mock_bastionhosts -source ../bastionhosts.go BastionScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt bastionhosts_mock.go > _bastionhosts_mock.go && mv _bastionhosts_mock.go bastionhosts_mock.go"
 package mock_bastionhosts //nolint

@@ -36,13 +36,13 @@ import (
 func TestReconcileTags(t *testing.T) {
 	testcases := []struct {
 		name          string
-		expect        func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockClientMockRecorder)
+		expect        func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder)
 		expectedError string
 	}{
 		{
 			name:          "create tags",
 			expectedError: "",
-			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockClientMockRecorder) {
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -87,7 +87,7 @@ func TestReconcileTags(t *testing.T) {
 		{
 			name:          "error getting existing tags",
 			expectedError: "failed to get existing tags: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockClientMockRecorder) {
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -106,7 +106,7 @@ func TestReconcileTags(t *testing.T) {
 		{
 			name:          "error updating tags",
 			expectedError: "cannot update tags: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockClientMockRecorder) {
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -131,7 +131,7 @@ func TestReconcileTags(t *testing.T) {
 		{
 			name:          "tags unchanged",
 			expectedError: "",
-			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockClientMockRecorder) {
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -155,13 +155,13 @@ func TestReconcileTags(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_tags.NewMockTagScope(mockCtrl)
-			clientMock := mock_tags.NewMockClient(mockCtrl)
+			clientMock := mock_tags.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			err := s.Reconcile(context.TODO())

@@ -414,7 +414,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			s := &Service{
 				Scope:  scopeMock,
 				Client: clientMock,
-				ResourceSKUCache: resourceskus.NewStaticCache([]compute.ResourceSku{
+				resourceSKUCache: resourceskus.NewStaticCache([]compute.ResourceSku{
 					{
 						Name: to.StringPtr("Standard_D2v2"),
 						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),

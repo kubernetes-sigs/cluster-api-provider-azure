@@ -16,7 +16,7 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_routetables -source ../client.go Client
-//go:generate ../../../../hack/tools/bin/mockgen -destination routetables_mock.go -package mock_routetables -source ../service.go RouteTableScope
+//go:generate ../../../../hack/tools/bin/mockgen -destination routetables_mock.go -package mock_routetables -source ../routetables.go RouteTableScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt routetables_mock.go > _routetables_mock.go && mv _routetables_mock.go routetables_mock.go"
 package mock_routetables //nolint

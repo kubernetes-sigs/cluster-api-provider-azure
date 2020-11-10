@@ -27,31 +27,31 @@ import (
 	reflect "reflect"
 )
 
-// MockClient is a mock of Client interface.
-type MockClient struct {
+// Mockclient is a mock of client interface.
+type Mockclient struct {
 	ctrl     *gomock.Controller
-	recorder *MockClientMockRecorder
+	recorder *MockclientMockRecorder
 }
 
-// MockClientMockRecorder is the mock recorder for MockClient.
-type MockClientMockRecorder struct {
-	mock *MockClient
+// MockclientMockRecorder is the mock recorder for Mockclient.
+type MockclientMockRecorder struct {
+	mock *Mockclient
 }
 
-// NewMockClient creates a new mock instance.
-func NewMockClient(ctrl *gomock.Controller) *MockClient {
-	mock := &MockClient{ctrl: ctrl}
-	mock.recorder = &MockClientMockRecorder{mock}
+// NewMockclient creates a new mock instance.
+func NewMockclient(ctrl *gomock.Controller) *Mockclient {
+	mock := &Mockclient{ctrl: ctrl}
+	mock.recorder = &MockclientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockClient) EXPECT() *MockClientMockRecorder {
+func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
 // Get mocks base method.
-func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (network.SecurityGroup, error) {
+func (m *Mockclient) Get(arg0 context.Context, arg1, arg2 string) (network.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
 	ret0, _ := ret[0].(network.SecurityGroup)
@@ -60,13 +60,13 @@ func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (network.Secur
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1, arg2)
 }
 
 // CreateOrUpdate mocks base method.
-func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 network.SecurityGroup) error {
+func (m *Mockclient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 network.SecurityGroup) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
@@ -74,13 +74,13 @@ func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg
 }
 
 // CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
 }
 
 // Delete mocks base method.
-func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
+func (m *Mockclient) Delete(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -88,7 +88,7 @@ func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockclient)(nil).Delete), arg0, arg1, arg2)
 }

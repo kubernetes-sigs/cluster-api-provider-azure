@@ -40,14 +40,14 @@ func TestReconcileInboundNATRule(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-			m *mock_inboundnatrules.MockClientMockRecorder,
+			m *mock_inboundnatrules.MockclientMockRecorder,
 			mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
 	}{
 		{
 			name:          "NAT rule successfully created",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder,
 				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
@@ -89,7 +89,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			name:          "fail to get LB",
 			expectedError: "failed to get Load Balancer my-public-lb: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder,
 				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
@@ -109,7 +109,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			name:          "fail to create NAT rule",
 			expectedError: "failed to create inbound NAT rule my-machine: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder,
 				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
@@ -167,7 +167,7 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			name:          "NAT rule already exists",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder,
+				m *mock_inboundnatrules.MockclientMockRecorder,
 				mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
@@ -233,15 +233,15 @@ func TestReconcileInboundNATRule(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
-			clientMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			clientMock := mock_inboundnatrules.NewMockclient(mockCtrl)
 			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), loadBalancerMock.EXPECT())
 
 			s := &Service{
 				Scope:               scopeMock,
-				Client:              clientMock,
-				LoadBalancersClient: loadBalancerMock,
+				client:              clientMock,
+				loadBalancersClient: loadBalancerMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -260,13 +260,13 @@ func TestDeleteNetworkInterface(t *testing.T) {
 		name          string
 		expectedError string
 		expect        func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-			m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
+			m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
 	}{
 		{
 			name:          "successfully delete an existing NAT rule",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
 						Name:             "azure-md-0",
@@ -282,7 +282,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "NAT rule already deleted",
 			expectedError: "",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
 						Name:             "azure-md-1",
@@ -299,7 +299,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			name:          "NAT rule deletion fails",
 			expectedError: "failed to delete inbound NAT rule azure-md-2: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.InboundNatSpecs().Return([]azure.InboundNatSpec{
 					{
 						Name:             "azure-md-2",
@@ -322,15 +322,15 @@ func TestDeleteNetworkInterface(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
-			clientMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			clientMock := mock_inboundnatrules.NewMockclient(mockCtrl)
 			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), loadBalancerMock.EXPECT())
 
 			s := &Service{
 				Scope:               scopeMock,
-				Client:              clientMock,
-				LoadBalancersClient: loadBalancerMock,
+				client:              clientMock,
+				loadBalancersClient: loadBalancerMock,
 			}
 
 			err := s.Delete(context.TODO())
@@ -352,7 +352,7 @@ func TestNatRuleExists(t *testing.T) {
 		expectedResult bool
 		expectedPorts  map[int32]struct{}
 		expect         func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-			m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
+			m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
 	}{
 		{
 			name:     "Rule exists",
@@ -373,7 +373,7 @@ func TestNatRuleExists(t *testing.T) {
 			},
 			expectedResult: true,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
@@ -400,7 +400,7 @@ func TestNatRuleExists(t *testing.T) {
 				2205: {},
 			},
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 			},
 		},
 		{
@@ -410,7 +410,7 @@ func TestNatRuleExists(t *testing.T) {
 			expectedResult: false,
 			expectedPorts:  map[int32]struct{}{},
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 			},
 		},
 	}
@@ -423,15 +423,15 @@ func TestNatRuleExists(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
-			clientMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			clientMock := mock_inboundnatrules.NewMockclient(mockCtrl)
 			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), loadBalancerMock.EXPECT())
 
 			s := &Service{
 				Scope:               scopeMock,
-				Client:              clientMock,
-				LoadBalancersClient: loadBalancerMock,
+				client:              clientMock,
+				loadBalancersClient: loadBalancerMock,
 			}
 
 			ports := make(map[int32]struct{})
@@ -451,7 +451,7 @@ func TestGetAvailablePort(t *testing.T) {
 		expectedError      string
 		expectedPortResult int32
 		expect             func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-			m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
+			m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder)
 	}{
 		{
 			name:               "Empty ports",
@@ -459,7 +459,7 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedError:      "",
 			expectedPortResult: 22,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
@@ -471,7 +471,7 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedError:      "",
 			expectedPortResult: 2201,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
@@ -486,7 +486,7 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedError:      "",
 			expectedPortResult: 2203,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).Return(klogr.New())
 			},
 		},
@@ -496,7 +496,7 @@ func TestGetAvailablePort(t *testing.T) {
 			expectedError:      "No available SSH Frontend ports",
 			expectedPortResult: 0,
 			expect: func(s *mock_inboundnatrules.MockInboundNatScopeMockRecorder,
-				m *mock_inboundnatrules.MockClientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
+				m *mock_inboundnatrules.MockclientMockRecorder, mLoadBalancer *mock_loadbalancers.MockClientMockRecorder) {
 			},
 		},
 	}
@@ -509,15 +509,15 @@ func TestGetAvailablePort(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_inboundnatrules.NewMockInboundNatScope(mockCtrl)
-			clientMock := mock_inboundnatrules.NewMockClient(mockCtrl)
+			clientMock := mock_inboundnatrules.NewMockclient(mockCtrl)
 			loadBalancerMock := mock_loadbalancers.NewMockClient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT(), loadBalancerMock.EXPECT())
 
 			s := &Service{
 				Scope:               scopeMock,
-				Client:              clientMock,
-				LoadBalancersClient: loadBalancerMock,
+				client:              clientMock,
+				loadBalancersClient: loadBalancerMock,
 			}
 
 			res, err := s.getAvailablePort(tc.portsInput)

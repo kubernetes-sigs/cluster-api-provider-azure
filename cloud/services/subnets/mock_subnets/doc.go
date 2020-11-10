@@ -16,7 +16,7 @@ limitations under the License.
 
 // Run go generate to regenerate this mock.
 //go:generate ../../../../hack/tools/bin/mockgen -destination client_mock.go -package mock_subnets -source ../client.go Client
-//go:generate ../../../../hack/tools/bin/mockgen -destination subnets_mock.go -package mock_subnets -source ../service.go SubnetScope
+//go:generate ../../../../hack/tools/bin/mockgen -destination subnets_mock.go -package mock_subnets -source ../subnets.go SubnetScope
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt client_mock.go > _client_mock.go && mv _client_mock.go client_mock.go"
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt subnets_mock.go > _subnets_mock.go && mv _subnets_mock.go subnets_mock.go"
 package mock_subnets //nolint

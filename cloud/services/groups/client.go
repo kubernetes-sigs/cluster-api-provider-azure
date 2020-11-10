@@ -26,24 +26,24 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
-type Client interface {
+// client wraps go-sdk
+type client interface {
 	Get(context.Context, string) (resources.Group, error)
 	CreateOrUpdate(context.Context, string, resources.Group) (resources.Group, error)
 	Delete(context.Context, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client
+type azureClient struct {
 	groups resources.GroupsClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(auth azure.Authorizer) *AzureClient {
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
 	c := newGroupsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
-	return &AzureClient{
+	return &azureClient{
 		groups: c,
 	}
 }
@@ -57,7 +57,7 @@ func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.
 }
 
 // Get gets a resource group.
-func (ac *AzureClient) Get(ctx context.Context, name string) (resources.Group, error) {
+func (ac *azureClient) Get(ctx context.Context, name string) (resources.Group, error) {
 	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.Get")
 	defer span.End()
 
@@ -65,7 +65,7 @@ func (ac *AzureClient) Get(ctx context.Context, name string) (resources.Group, e
 }
 
 // CreateOrUpdate creates or updates a resource group.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, name string, group resources.Group) (resources.Group, error) {
+func (ac *azureClient) CreateOrUpdate(ctx context.Context, name string, group resources.Group) (resources.Group, error) {
 	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.CreateOrUpdate")
 	defer span.End()
 
@@ -73,7 +73,7 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, name string, group re
 }
 
 // Delete deletes a resource group. When you delete a resource group, all of its resources are also deleted.
-func (ac *AzureClient) Delete(ctx context.Context, name string) error {
+func (ac *azureClient) Delete(ctx context.Context, name string) error {
 	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.Delete")
 	defer span.End()
 

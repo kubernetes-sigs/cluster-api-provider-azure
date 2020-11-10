@@ -22,12 +22,34 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+// SubnetScope defines the scope interface for a subnet service.
+type SubnetScope interface {
+	logr.Logger
+	azure.ClusterScoper
+	SubnetSpecs() []azure.SubnetSpec
+}
+
+// Service provides operations on azure resources
+type Service struct {
+	Scope SubnetScope
+	Client
+}
+
+// New creates a new service.
+func New(scope SubnetScope) *Service {
+	return &Service{
+		Scope:  scope,
+		Client: NewClient(scope),
+	}
+}
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {

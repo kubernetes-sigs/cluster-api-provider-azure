@@ -45,7 +45,7 @@ func TestReconcileRouteTables(t *testing.T) {
 		name          string
 		tags          infrav1.Tags
 		expectedError string
-		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder)
+		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder)
 	}{
 		{
 			name: "route tables in custom vnet mode",
@@ -55,7 +55,7 @@ func TestReconcileRouteTables(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					ID:   "1234",
 					Name: "my-vnet",
@@ -72,7 +72,7 @@ func TestReconcileRouteTables(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -113,7 +113,7 @@ func TestReconcileRouteTables(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -159,7 +159,7 @@ func TestReconcileRouteTables(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "failed to get route table my-cp-routetable in my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -188,7 +188,7 @@ func TestReconcileRouteTables(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "failed to create route table my-cp-routetable in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -219,13 +219,13 @@ func TestReconcileRouteTables(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_routetables.NewMockRouteTableScope(mockCtrl)
-			clientMock := mock_routetables.NewMockClient(mockCtrl)
+			clientMock := mock_routetables.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -244,7 +244,7 @@ func TestDeleteRouteTable(t *testing.T) {
 		name          string
 		tags          infrav1.Tags
 		expectedError string
-		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder)
+		expect        func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder)
 	}{
 		{
 			name: "route tables in custom vnet mode",
@@ -254,7 +254,7 @@ func TestDeleteRouteTable(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					ID:   "1234",
 					Name: "my-vnet",
@@ -271,7 +271,7 @@ func TestDeleteRouteTable(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -309,7 +309,7 @@ func TestDeleteRouteTable(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -347,7 +347,7 @@ func TestDeleteRouteTable(t *testing.T) {
 				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
 			},
 			expectedError: "failed to delete route table my-cp-routetable in resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockClientMockRecorder) {
+			expect: func(s *mock_routetables.MockRouteTableScopeMockRecorder, m *mock_routetables.MockclientMockRecorder) {
 				s.Vnet().Return(&infrav1.VnetSpec{
 					Name: "my-vnet",
 				})
@@ -376,13 +376,13 @@ func TestDeleteRouteTable(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_routetables.NewMockRouteTableScope(mockCtrl)
-			clientMock := mock_routetables.NewMockClient(mockCtrl)
+			clientMock := mock_routetables.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			err := s.Delete(context.TODO())

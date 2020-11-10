@@ -38,12 +38,12 @@ func TestReconcileGroups(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder)
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder)
 	}{
 		{
 			name:          "resource group already exist",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, nil)
@@ -52,7 +52,7 @@ func TestReconcileGroups(t *testing.T) {
 		{
 			name:          "create a resource group",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -65,7 +65,7 @@ func TestReconcileGroups(t *testing.T) {
 		{
 			name:          "return error when creating a resource group",
 			expectedError: "failed to create resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -86,13 +86,13 @@ func TestReconcileGroups(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
-			clientMock := mock_groups.NewMockClient(mockCtrl)
+			clientMock := mock_groups.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			err := s.Reconcile(context.TODO())
@@ -110,12 +110,12 @@ func TestDeleteGroups(t *testing.T) {
 	testcases := []struct {
 		name          string
 		expectedError string
-		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder)
+		expect        func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder)
 	}{
 		{
 			name:          "error getting the resource group management state",
 			expectedError: "could not get resource group management state: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
@@ -124,7 +124,7 @@ func TestDeleteGroups(t *testing.T) {
 		{
 			name:          "skip deletion in unmanaged mode",
 			expectedError: azure.ErrNotOwned.Error(),
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
@@ -134,7 +134,7 @@ func TestDeleteGroups(t *testing.T) {
 		{
 			name:          "resource group already deleted",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
@@ -153,7 +153,7 @@ func TestDeleteGroups(t *testing.T) {
 		{
 			name:          "resource group deletion fails",
 			expectedError: "failed to delete resource group my-rg: #: Internal Server Error: StatusCode=500",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
@@ -172,7 +172,7 @@ func TestDeleteGroups(t *testing.T) {
 		{
 			name:          "resource group deletion successfully",
 			expectedError: "",
-			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockClientMockRecorder) {
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
@@ -199,13 +199,13 @@ func TestDeleteGroups(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 			scopeMock := mock_groups.NewMockGroupScope(mockCtrl)
-			clientMock := mock_groups.NewMockClient(mockCtrl)
+			clientMock := mock_groups.NewMockclient(mockCtrl)
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
 				Scope:  scopeMock,
-				Client: clientMock,
+				client: clientMock,
 			}
 
 			err := s.Delete(context.TODO())

@@ -390,7 +390,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			s := &Service{
 				Scope:                 scopeMock,
 				Client:                clientMock,
-				VirtualNetworksClient: vnetMock,
+				virtualNetworksClient: vnetMock,
 			}
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {

@@ -51,13 +51,13 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
 
 	return &azureMachineService{
-		inboundNatRulesSvc:   inboundnatrules.NewService(machineScope),
-		networkInterfacesSvc: networkinterfaces.NewService(machineScope, cache),
-		virtualMachinesSvc:   virtualmachines.NewService(machineScope, cache),
-		roleAssignmentsSvc:   roleassignments.NewService(machineScope),
+		inboundNatRulesSvc:   inboundnatrules.New(machineScope),
+		networkInterfacesSvc: networkinterfaces.New(machineScope, cache),
+		virtualMachinesSvc:   virtualmachines.New(machineScope, cache),
+		roleAssignmentsSvc:   roleassignments.New(machineScope),
 		disksSvc:             disks.New(machineScope),
-		publicIPsSvc:         publicips.NewService(machineScope),
-		tagsSvc:              tags.NewService(machineScope),
+		publicIPsSvc:         publicips.New(machineScope),
+		tagsSvc:              tags.New(machineScope),
 		skuCache:             cache,
 	}
 }

@@ -27,31 +27,31 @@ import (
 	reflect "reflect"
 )
 
-// MockClient is a mock of Client interface.
-type MockClient struct {
+// Mockclient is a mock of client interface.
+type Mockclient struct {
 	ctrl     *gomock.Controller
-	recorder *MockClientMockRecorder
+	recorder *MockclientMockRecorder
 }
 
-// MockClientMockRecorder is the mock recorder for MockClient.
-type MockClientMockRecorder struct {
-	mock *MockClient
+// MockclientMockRecorder is the mock recorder for Mockclient.
+type MockclientMockRecorder struct {
+	mock *Mockclient
 }
 
-// NewMockClient creates a new mock instance.
-func NewMockClient(ctrl *gomock.Controller) *MockClient {
-	mock := &MockClient{ctrl: ctrl}
-	mock.recorder = &MockClientMockRecorder{mock}
+// NewMockclient creates a new mock instance.
+func NewMockclient(ctrl *gomock.Controller) *Mockclient {
+	mock := &Mockclient{ctrl: ctrl}
+	mock.recorder = &MockclientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockClient) EXPECT() *MockClientMockRecorder {
+func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
 // Create mocks base method.
-func (m *MockClient) Create(arg0 context.Context, arg1, arg2 string, arg3 authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
+func (m *Mockclient) Create(arg0 context.Context, arg1, arg2 string, arg3 authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(authorization.RoleAssignment)
@@ -60,7 +60,7 @@ func (m *MockClient) Create(arg0 context.Context, arg1, arg2 string, arg3 author
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockClientMockRecorder) Create(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockclientMockRecorder) Create(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockClient)(nil).Create), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockclient)(nil).Create), arg0, arg1, arg2, arg3)
 }
