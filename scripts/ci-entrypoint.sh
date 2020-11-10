@@ -83,6 +83,7 @@ create_cluster() {
     fi
 
     export CLUSTER_NAME="capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
+    export AZURE_RESOURCE_GROUP=${CLUSTER_NAME}
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-1}
     export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
