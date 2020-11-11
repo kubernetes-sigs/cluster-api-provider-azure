@@ -172,3 +172,12 @@ type TagsSpec struct {
 	Tags       infrav1.Tags
 	Annotation string
 }
+
+// PrivateDNSSpec defines the specification for a private DNS zone.
+type PrivateDNSSpec struct {
+	ZoneName          string
+	VNetName          string
+	VNetResourceGroup string
+	LinkName          string
+	Records           []infrav1.AddressRecord
+}
