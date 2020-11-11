@@ -973,7 +973,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "creating a vmss with encryption at host enabled for unsupported VM type fails",
-			expectedError: "encryption at host is not supported for VM type VM_SIZE",
+			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: encryption at host is not supported for VM type VM_SIZE",
 			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:            "my-vmss",
