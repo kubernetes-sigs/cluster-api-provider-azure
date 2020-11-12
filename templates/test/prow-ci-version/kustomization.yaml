@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: default
 resources:
   - ../prow
+  - patches/machine-pool.yaml
 patchesStrategicMerge:
-  - ../patches/control-plane-image-ci-version.yaml
-  - patches/machine-deployment-ci-version.yaml
+  - patches/azuremachine-marketplace-image.yaml
+  - patches/ci-artifacts-script.yaml

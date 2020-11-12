@@ -72,11 +72,15 @@ var (
 
 	// kubetestConfigFilePath is the path to the kubetest configuration file
 	kubetestConfigFilePath string
+
+	// useCIArtifacts specifies whether or not to use the latest build from the main branch of the Kubernetes repository
+	useCIArtifacts bool
 )
 
 func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
+	flag.BoolVar(&useCIArtifacts, "kubetest.use-ci-artifacts", false, "use the latest build from the main branch of the Kubernetes repository")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.StringVar(&kubetestConfigFilePath, "kubetest.config-file", "", "path to the kubetest configuration file")
