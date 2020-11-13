@@ -18,6 +18,7 @@ package virtualmachines
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -37,6 +39,34 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+)
+
+const (
+	// winAutoLogonFormatString is the format string used to create the AutoLogon
+	// AdditionalUnattendContent configuration for Windows machines.
+	winAutoLogonFormatString = `<AutoLogon>
+			<Username>%s</Username>
+			<Password>
+				<Value>%s</Value>
+			</Password>
+			<Enabled>true</Enabled>
+			<LogonCount>1</LogonCount>
+		</AutoLogon>`
+
+	// winFirstLogonCommandsString is the string used to create the FirstLogonCommands
+	// AdditionalUnattendContent configuration for Windows machines.
+	winFirstLogonCommandsString = `<FirstLogonCommands>
+			<SynchronousCommand>
+				<Description>Copy user data secret contents to init script</Description>
+				<CommandLine>cmd /c "copy C:\AzureData\CustomData.bin C:\init.ps1"</CommandLine>
+				<Order>11</Order>
+			</SynchronousCommand>
+			<SynchronousCommand>
+				<Description>Launch init script</Description>
+				<CommandLine>powershell.exe -NonInteractive -ExecutionPolicy Bypass -File C:\init.ps1</CommandLine>
+				<Order>12</Order>
+			</SynchronousCommand>
+		</FirstLogonCommands>`
 )
 
 // VMScope defines the scope interface for a virtual machines service.
@@ -121,10 +151,50 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get Spot VM options")
 		}
 
-		sshKey, err := base64.StdEncoding.DecodeString(vmSpec.SSHKeyData)
+		randomPassword, err := generateRandomString(32)
 		if err != nil {
-			return errors.Wrapf(err, "failed to decode ssh public key")
+			return fmt.Errorf("failed to generate random string: %w", err)
 		}
+
+		var linuxConfiguration *compute.LinuxConfiguration
+		var windowsConfiguration *compute.WindowsConfiguration
+		if compute.OperatingSystemTypes(vmSpec.OSDisk.OSType) == compute.Windows {
+			windowsConfiguration = &compute.WindowsConfiguration{
+				EnableAutomaticUpdates: pointer.BoolPtr(false),
+				AdditionalUnattendContent: &[]compute.AdditionalUnattendContent{
+					{
+						PassName:      "OobeSystem",
+						ComponentName: "Microsoft-Windows-Shell-Setup",
+						SettingName:   "AutoLogon",
+						Content:       to.StringPtr(fmt.Sprintf(winAutoLogonFormatString, azure.DefaultUserName, randomPassword)),
+					},
+					{
+						PassName:      "OobeSystem",
+						ComponentName: "Microsoft-Windows-Shell-Setup",
+						SettingName:   "FirstLogonCommands",
+						Content:       to.StringPtr(winFirstLogonCommandsString),
+					},
+				},
+			}
+		} else {
+			sshKey, err := base64.StdEncoding.DecodeString(vmSpec.SSHKeyData)
+			if err != nil {
+				return errors.Wrapf(err, "failed to decode ssh public key")
+			}
+
+			linuxConfiguration = &compute.LinuxConfiguration{
+				DisablePasswordAuthentication: to.BoolPtr(true),
+				SSH: &compute.SSHConfiguration{
+					PublicKeys: &[]compute.SSHPublicKey{
+						{
+							Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+							KeyData: to.StringPtr(string(sshKey)),
+						},
+					},
+				},
+			}
+		}
+
 		bootstrapData, err := s.Scope.GetBootstrapData(ctx)
 		if err != nil {
 			return errors.Wrap(err, "failed to retrieve bootstrap data")
@@ -147,20 +217,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				StorageProfile:  storageProfile,
 				SecurityProfile: securityProfile,
 				OsProfile: &compute.OSProfile{
-					ComputerName:  to.StringPtr(vmSpec.Name),
-					AdminUsername: to.StringPtr(azure.DefaultUserName),
-					CustomData:    to.StringPtr(bootstrapData),
-					LinuxConfiguration: &compute.LinuxConfiguration{
-						DisablePasswordAuthentication: to.BoolPtr(true),
-						SSH: &compute.SSHConfiguration{
-							PublicKeys: &[]compute.SSHPublicKey{
-								{
-									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-									KeyData: to.StringPtr(string(sshKey)),
-								},
-							},
-						},
-					},
+					ComputerName:         to.StringPtr(vmSpec.Name),
+					AdminUsername:        to.StringPtr(azure.DefaultUserName),
+					AdminPassword:        to.StringPtr(randomPassword),
+					CustomData:           to.StringPtr(bootstrapData),
+					LinuxConfiguration:   linuxConfiguration,
+					WindowsConfiguration: windowsConfiguration,
 				},
 				NetworkProfile: &compute.NetworkProfile{
 					NetworkInterfaces: &nicRefs,
@@ -458,4 +520,19 @@ func getSecurityProfile(vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.Sec
 	return &compute.SecurityProfile{
 		EncryptionAtHost: to.BoolPtr(*vmSpec.SecurityProfile.EncryptionAtHost),
 	}, nil
+}
+
+// generateRandomString returns a URL-safe, base64 encoded
+// securely generated random string.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func generateRandomString(n int) (string, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), err
 }
