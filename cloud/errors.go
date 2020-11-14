@@ -30,3 +30,6 @@ func ResourceNotFound(err error) bool {
 	derr := autorest.DetailedError{}
 	return errors.As(err, &derr) && derr.StatusCode == 404
 }
+
+// VMDeletedError is returned when a virtual machine is deleted outside of capz
+type VMDeletedError error
