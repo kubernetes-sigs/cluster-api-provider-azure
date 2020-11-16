@@ -224,23 +224,23 @@ def flavors():
         print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))
         os.environ.update({ssh_pub_key: base64_encode_file(ssh_pub_key_path)})
 
-    for flavor in cfg.get("worker-flavors", []):
-        if flavor not in worker_templates:
-            worker_templates.append(flavor)
-    for flavor in worker_templates:
-        deploy_worker_templates(flavor, substitutions)
+    templatelist = [ item for item in listdir("./templates") ]
+    for template in templatelist:
+        if template not in worker_templates and os.path.basename(template).startswith("cluster-template"):
+            worker_templates.append(template)
+    for template in worker_templates:
+        deploy_worker_templates(template, substitutions)
 
 
-def deploy_worker_templates(flavor, substitutions):
-    # validate flavor exists
-    if flavor == "default":
-        yaml_file = "./templates/cluster-template.yaml"
-    else:
-        yaml_file = "./templates/cluster-template-" + flavor + ".yaml"
-        if not os.path.exists(yaml_file):
-            fail(yaml_file + " not found")
+def deploy_worker_templates(template, substitutions):
+    # validate template exists
+    if not os.path.exists(template):
+        fail(template + " not found")
 
-    yaml = str(read_file(yaml_file))
+    yaml = str(read_file(template))
+    flavor = os.path.basename(template).replace("cluster-template-", "").replace(".yaml", "")
+    # for the base cluster-template, flavor is "default"
+    flavor = os.path.basename(flavor).replace("cluster-template", "default")
 
     # azure account and ssh replacements
     for substitution in substitutions:
@@ -288,8 +288,8 @@ def deploy_worker_templates(flavor, substitutions):
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
 
     local_resource(
-        "worker-" + flavor,
-        cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/worker-" + flavor + ".yaml; cat ./.tiltbuild/worker-" + flavor + ".yaml | " + envsubst_cmd + " | kubectl apply -f -",
+        os.path.basename(flavor),
+        cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f -",
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL
     )

@@ -22,24 +22,7 @@ To generate all CAPZ flavors, run `make generate-flavors`.
 run ```tilt up ${flavors}``` to spin up worker clusters in Azure represented by a Tilt local resource.  You can also modify flavors while Tilt is up by running ```tilt args ${flavors}```
 
 #### From Tilt Config
-Add your desired flavors to tilt_config.json:
-```json
-{
-    "worker-flavors": [
-        "default",
-        "aks",
-        "ephemeral",
-        "external-cloud-provider",
-        "ipv6",
-        "machinepool",
-        "machinepool-system-assigned-identity",
-        "machinepool-user-assigned-identity",
-        "nvidia-gpu",
-        "system-assigned-identity",
-        "user-assigned-identity"
-    ]
-}
-```
+Tilt will auto-detect all available flavors from the `templates` directory.
 
 #### Requirements
 Please note your tilt-settings.json must contain at minimum the following fields when using tilt resources to deploy cluster flavors:
@@ -49,7 +32,7 @@ Please note your tilt-settings.json must contain at minimum the following fields
         "AZURE_SUBSCRIPTION_ID_B64": "******",
         "AZURE_TENANT_ID_B64": "******",
         "AZURE_CLIENT_SECRET_B64": "******",
-        "AZURE_CLIENT_ID_B64": "******",
+        "AZURE_CLIENT_ID_B64": "******"
     }
 }
 ```
