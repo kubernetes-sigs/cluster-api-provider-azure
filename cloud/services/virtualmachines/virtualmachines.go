@@ -47,6 +47,7 @@ type VMScope interface {
 	GetBootstrapData(ctx context.Context) (string, error)
 	GetVMImage() (*infrav1.Image, error)
 	SetAnnotation(string, string)
+	ProviderID() string
 	SetProviderID(string)
 	SetAddresses([]corev1.NodeAddress)
 	SetVMState(infrav1.VMState)
@@ -79,7 +80,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	vmSpec := s.Scope.VMSpec()
 	existingVM, err := s.getExisting(ctx, vmSpec.Name)
+
 	switch {
+	// VM got deleted outside of capz
+	case err != nil && azure.ResourceNotFound(err) && s.Scope.ProviderID() != "":
+		s.Scope.SetVMState(infrav1.VMStateDeleted)
+		return azure.VMDeletedError(errors.Errorf("VM with provider id %q has been deleted", s.Scope.ProviderID()))
 	case err != nil && !azure.ResourceNotFound(err):
 		return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
 	case err == nil:

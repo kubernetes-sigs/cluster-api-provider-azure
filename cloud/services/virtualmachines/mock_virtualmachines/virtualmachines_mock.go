@@ -358,6 +358,20 @@ func (mr *MockVMScopeMockRecorder) SetAnnotation(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotation", reflect.TypeOf((*MockVMScope)(nil).SetAnnotation), arg0, arg1)
 }
 
+// ProviderID mocks base method.
+func (m *MockVMScope) ProviderID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProviderID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ProviderID indicates an expected call of ProviderID.
+func (mr *MockVMScopeMockRecorder) ProviderID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProviderID", reflect.TypeOf((*MockVMScope)(nil).ProviderID))
+}
+
 // SetProviderID mocks base method.
 func (m *MockVMScope) SetProviderID(arg0 string) {
 	m.ctrl.T.Helper()

@@ -200,6 +200,9 @@ const (
 	VMStateSucceeded VMState = "Succeeded"
 	// VMStateUpdating ...
 	VMStateUpdating VMState = "Updating"
+	// VMStateDeleted represents a deleted VM
+	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://docs.microsoft.com/en-us/azure/virtual-machines/states-lifecycle#provisioning-states)
+	VMStateDeleted VMState = "Deleted"
 )
 
 // VM describes an Azure virtual machine.

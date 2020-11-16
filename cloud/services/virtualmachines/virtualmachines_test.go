@@ -315,6 +315,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -456,6 +457,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -526,6 +528,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -596,6 +599,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -673,6 +677,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -739,6 +744,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -813,6 +819,7 @@ func TestReconcileVM(t *testing.T) {
 						Version:   "1.0",
 					},
 				}, nil)
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
@@ -869,6 +876,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -945,6 +953,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
@@ -1011,6 +1020,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
@@ -1080,6 +1090,7 @@ func TestReconcileVM(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
@@ -1156,6 +1167,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -1316,6 +1328,7 @@ func TestReconcileVM(t *testing.T) {
 				s.AdditionalTags()
 				s.Location().Return("test-location")
 				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
@@ -1439,6 +1452,23 @@ func TestReconcileVM(t *testing.T) {
 				resourceSkusCache := resourceskus.NewStaticCache(skus)
 				svc.resourceSKUCache = resourceSkusCache
 			},
+		},
+		{
+			Name: "fails when there is a provider id present, but cannot find vm ",
+			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpec().Return(azure.VMSpec{
+					Name: "my-vm",
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ProviderID().Times(2).Return("ExistingVM-ProviderID")
+				s.SetVMState(infrav1.VMStateDeleted)
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+			ExpectedError: "VM with provider id \"ExistingVM-ProviderID\" has been deleted",
+			SetupSKUs:     func(svc *Service) {},
 		},
 	}
 
