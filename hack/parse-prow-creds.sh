@@ -16,9 +16,10 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set +o xtrace
 
 parse_cred() {
-    grep -E -o "$1[[:blank:]]*=[[:blank:]]*\"[^[:space:]\"]+\"" | cut -d '"' -f 2
+    grep -E -o "\b$1[[:blank:]]*=[[:blank:]]*\"[^[:space:]\"]+\"" | cut -d '"' -f 2
 }
 
 # for Prow we use the provided AZURE_CREDENTIALS file.
@@ -28,4 +29,6 @@ if [[ -n "${AZURE_CREDENTIALS:-}" ]]; then
     export AZURE_TENANT_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred TenantID)"
     export AZURE_CLIENT_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred ClientID)"
     export AZURE_CLIENT_SECRET="$(cat ${AZURE_CREDENTIALS} | parse_cred ClientSecret)"
+    export AZURE_MULTI_TENANCY_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred MultiTenancyClientID)"
+    export AZURE_MULTI_TENANCY_SECRET="$(cat ${AZURE_CREDENTIALS} | parse_cred MultiTenancyClientSecret)"
 fi
