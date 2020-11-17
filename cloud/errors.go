@@ -18,6 +18,7 @@ package azure
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Azure/go-autorest/autorest"
 )
@@ -32,4 +33,11 @@ func ResourceNotFound(err error) bool {
 }
 
 // VMDeletedError is returned when a virtual machine is deleted outside of capz
-type VMDeletedError error
+type VMDeletedError struct {
+	ProviderID string
+}
+
+// Error returns the error string
+func (vde VMDeletedError) Error() string {
+	return fmt.Sprintf("VM with provider id %q has been deleted", vde.ProviderID)
+}

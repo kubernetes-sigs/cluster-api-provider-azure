@@ -85,7 +85,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// VM got deleted outside of capz
 	case err != nil && azure.ResourceNotFound(err) && s.Scope.ProviderID() != "":
 		s.Scope.SetVMState(infrav1.VMStateDeleted)
-		return azure.VMDeletedError(errors.Errorf("VM with provider id %q has been deleted", s.Scope.ProviderID()))
+		return azure.VMDeletedError{ProviderID: s.Scope.ProviderID()}
 	case err != nil && !azure.ResourceNotFound(err):
 		return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
 	case err == nil:
