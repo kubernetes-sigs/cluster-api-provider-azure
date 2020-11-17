@@ -433,7 +433,7 @@ func (s *Service) generateOSProfile(ctx context.Context, vmSpec azure.VMSpec) (*
 	}
 
 	switch vmSpec.OSDisk.OSType {
-	case azure.WindowsOS:
+	case string(compute.Windows):
 		// Cloudbase-init is used to generate a password.
 		// https://cloudbase-init.readthedocs.io/en/latest/plugins.html#setting-password-main
 		//

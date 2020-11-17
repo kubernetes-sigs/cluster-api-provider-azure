@@ -56,7 +56,7 @@ spec:
           kubeletExtraArgs:
             cloud-provider: azure
             cloud-config: 'c:/k/azure.json'
-            pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:1.4.0"
+            pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:1.4.1"
       files:
       - contentFrom:
           secret:
