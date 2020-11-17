@@ -22,7 +22,7 @@ package mock_resourceskus
 
 import (
 	context "context"
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
+	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
