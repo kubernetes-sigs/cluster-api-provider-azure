@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
@@ -75,8 +76,9 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 				aadpodv1.BehaviorKey: "namespaced",
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:    p.AzureCluster.Name,
-				infrav1.ClusterLabelNamespace: p.AzureCluster.Namespace,
+				clusterv1.ClusterLabelName:         p.AzureCluster.Name,
+				infrav1.ClusterLabelNamespace:      p.AzureCluster.Namespace,
+				clusterctl.ClusterctlMoveLabelName: "true",
 			},
 			OwnerReferences: p.AzureCluster.OwnerReferences,
 		},
@@ -96,8 +98,9 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 			Name:      fmt.Sprintf("%s-binding", copiedIdentity.Name),
 			Namespace: copiedIdentity.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:    p.AzureCluster.Name,
-				infrav1.ClusterLabelNamespace: p.AzureCluster.Namespace,
+				clusterv1.ClusterLabelName:         p.AzureCluster.Name,
+				infrav1.ClusterLabelNamespace:      p.AzureCluster.Namespace,
+				clusterctl.ClusterctlMoveLabelName: "true",
 			},
 			OwnerReferences: p.AzureCluster.OwnerReferences,
 		},

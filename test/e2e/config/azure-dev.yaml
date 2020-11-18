@@ -79,6 +79,7 @@ variables:
   CONFORMANCE_WORKER_MACHINE_COUNT: "5"
   CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT: "1"
   VM_SSH_PORT: "22"
+  MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
