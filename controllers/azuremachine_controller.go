@@ -270,7 +270,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 		// This means that a VM was created and managed by this controller, but is not present anymore.
 		// In this case, we mark it as failed and leave it to MHC for remediation
-		if _, ok := err.(azure.VMDeletedError); ok {
+		if errors.As(err, &azure.VMDeletedError{}) {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "VMDeleted", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 			machineScope.SetFailureReason(capierrors.UpdateMachineError)
