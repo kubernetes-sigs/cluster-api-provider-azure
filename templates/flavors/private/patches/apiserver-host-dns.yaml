@@ -1,0 +1,16 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+kind: KubeadmControlPlane
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  kubeadmConfigSpec:
+    preKubeadmCommands:
+      # this is a workaround for the hairpin routing problem with internal load balancers.
+      # the first control plane needs to route to itself for kubeadm init to succeed.
+      # TODO: keep only /run/kubeadm/kubeadm.yaml for v1alpha4
+      - if [ -f /tmp/kubeadm.yaml ] || [ -f /run/kubeadm/kubeadm.yaml ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts; fi
+    postKubeadmCommands:
+      # TODO: keep only /run/kubeadm/kubeadm.yaml for v1alpha4
+      # any additional control planes need to route to the load balancer to check the health of the api server before kubeadm join.
+      # after the control plane has joined the cluster, it should route to itself to reach the apiserver.
+      - if [ -f /tmp/kubeadm-join-config.yaml ] || [ -f /run/kubeadm/kubeadm-join-config.yaml ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts; fi

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/privatedns"
 
 	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -45,6 +46,7 @@ type azureClusterReconciler struct {
 	subnetsSvc       azure.Service
 	publicIPSvc      azure.Service
 	loadBalancerSvc  azure.Service
+	privateDNSSvc    azure.Service
 	skuCache         *resourceskus.Cache
 }
 
@@ -59,6 +61,7 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		subnetsSvc:       subnets.New(scope),
 		publicIPSvc:      publicips.New(scope),
 		loadBalancerSvc:  loadbalancers.New(scope),
+		privateDNSSvc:    privatedns.New(scope),
 		skuCache:         resourceskus.NewCache(scope, scope.Location()),
 	}
 }
@@ -103,6 +106,10 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile load balancer")
 	}
 
+	if err := r.privateDNSSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile private dns")
+	}
+
 	return nil
 }
 
@@ -113,6 +120,10 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 
 	if err := r.groupsSvc.Delete(ctx); err != nil {
 		if errors.Is(err, azure.ErrNotOwned) {
+			if err := r.privateDNSSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete private dns")
+			}
+
 			if err := r.loadBalancerSvc.Delete(ctx); err != nil {
 				return errors.Wrapf(err, "failed to delete load balancer")
 			}

@@ -39,6 +39,16 @@ const (
 	LatestVersion = "latest"
 )
 
+const (
+	// Global is the Azure global location value.
+	Global = "global"
+)
+
+const (
+	// PrivateAPIServerHostname will be used as the api server hostname for private clusters.
+	PrivateAPIServerHostname = "apiserver"
+)
+
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
@@ -74,6 +84,21 @@ func GenerateControlPlaneOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
 }
 
+// GeneratePrivateDNSZoneName generates the name of a private DNS zone based on the cluster name.
+func GeneratePrivateDNSZoneName(clusterName string) string {
+	return fmt.Sprintf("%s.capz.io", clusterName)
+}
+
+// GeneratePrivateFQDN generates FQDN for a private API Server.
+func GeneratePrivateFQDN(clusterName string) string {
+	return fmt.Sprintf("%s.%s", PrivateAPIServerHostname, GeneratePrivateDNSZoneName(clusterName))
+}
+
+// GenerateVNetLinkName generates the name of a virtual network link name based on the vnet name.
+func GenerateVNetLinkName(vnetName string) string {
+	return fmt.Sprintf("%s-link", vnetName)
+}
+
 // GenerateNICName generates the name of a network interface based on the name of a VM.
 func GenerateNICName(machineName string) string {
 	return fmt.Sprintf("%s-nic", machineName)
@@ -97,6 +122,11 @@ func GenerateDataDiskName(machineName, nameSuffix string) string {
 // VMID returns the azure resource ID for a given VM.
 func VMID(subscriptionID, resourceGroup, vmName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", subscriptionID, resourceGroup, vmName)
+}
+
+// VNetID returns the azure resource ID for a given VNet.
+func VNetID(subscriptionID, resourceGroup, vnetName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", subscriptionID, resourceGroup, vnetName)
 }
 
 // SubnetID returns the azure resource ID for a given subnet.

@@ -3,4 +3,5 @@ resources:
   - ../default
 patchesStrategicMerge:
   - patches/private-lb.yaml
-  - patches/ilb-iptables-cmd.yaml
+  - patches/apiserver-host-dns.yaml
+

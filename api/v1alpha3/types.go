@@ -440,3 +440,9 @@ type SecurityProfile struct {
 	// set. Default is disabled.
 	EncryptionAtHost *bool `json:"encryptionAtHost,omitempty"`
 }
+
+// AddressRecord specifies a DNS record mapping a hostname to an IPV4 or IPv6 address.
+type AddressRecord struct {
+	Hostname string
+	IP       string
+}

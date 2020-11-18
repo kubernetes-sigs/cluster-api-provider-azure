@@ -238,6 +238,26 @@ func (s *ClusterScope) VNetSpec() azure.VNetSpec {
 	}
 }
 
+// PrivateDNSSpec returns the private dns zone spec.
+func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
+	var spec *azure.PrivateDNSSpec
+	if s.IsAPIServerPrivate() {
+		spec = &azure.PrivateDNSSpec{
+			ZoneName:          azure.GeneratePrivateDNSZoneName(s.ClusterName()),
+			VNetName:          s.Vnet().Name,
+			VNetResourceGroup: s.Vnet().ResourceGroup,
+			LinkName:          azure.GenerateVNetLinkName(s.Vnet().Name),
+			Records: []infrav1.AddressRecord{
+				{
+					Hostname: azure.PrivateAPIServerHostname,
+					IP:       s.APIServerPrivateIP(),
+				},
+			},
+		}
+	}
+	return spec
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet
@@ -425,10 +445,10 @@ func (s *ClusterScope) APIServerPort() int32 {
 	return 6443
 }
 
-// APIServerHost returns the APIServerHost used to reach the API server.
+// APIServerHost returns the hostname used to reach the API server.
 func (s *ClusterScope) APIServerHost() string {
 	if s.IsAPIServerPrivate() {
-		return s.APIServerPrivateIP()
+		return azure.GeneratePrivateFQDN(s.ClusterName())
 	}
 	return s.APIServerPublicIP().DNSName
 }
