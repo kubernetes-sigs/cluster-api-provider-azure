@@ -7,11 +7,18 @@
 
 ## Features
 
- - [Topics](topics)
+- [Topics](https://capz.sigs.k8s.io/topics/topics.html)
+ 
+## Roadmap
+ 
+- [Roadmap](https://capz.sigs.k8s.io/roadmap.html)
 
 ## Development
 
 - [Development guide](development.md)
+- [Kubernetes developers](topics/kubernetes-developers.md)
+- [Proposals](proposals)
+- [Releasing](releasing.md)
 
 ## Troubleshooting
 
