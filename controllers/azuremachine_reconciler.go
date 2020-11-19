@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
@@ -119,16 +120,5 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 		return errors.Wrap(err, "failed to delete OS disk")
 	}
 
-	return nil
-}
-
-// Delete deletes the VM and its disk so it can be replaced.
-func (s *azureMachineService) DeleteVM(ctx context.Context) error {
-	if err := s.virtualMachinesSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete machine")
-	}
-	if err := s.disksSvc.Delete(ctx); err != nil {
-		return errors.Wrap(err, "failed to delete OS disk")
-	}
 	return nil
 }

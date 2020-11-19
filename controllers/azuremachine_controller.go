@@ -309,12 +309,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machineScope.VMState()))
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityWarning, "")
 		machineScope.SetNotReady()
-		// If VM failed provisioning, delete it so it can be recreated
-		err := ams.DeleteVM(ctx)
-		if err != nil {
-			return reconcile.Result{}, errors.Wrapf(err, "failed to delete VM in a failed state")
-		}
-		return reconcile.Result{}, errors.Wrapf(err, "VM deleted, retry creating in next reconcile")
 	default:
 		machineScope.V(2).Info("VM state is undefined", "id", machineScope.GetVMID())
 		conditions.MarkUnknown(machineScope.AzureMachine, infrav1.VMRunningCondition, "", "")
