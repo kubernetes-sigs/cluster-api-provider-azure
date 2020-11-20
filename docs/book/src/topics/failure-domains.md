@@ -101,7 +101,7 @@ The `AzureMachine` controller looks for a failure domain (i.e. availability zone
 
 If you would rather control the placement of virtual machines into a failure domain (i.e. availability zones) then you can explicitly state the failure domain. The best way is to specify this using the **FailureDomain** field within the `Machine` (or `MachineDeployment`) spec.
 
-> **DEPRECATION NOTE**: Failure domains where introduced in v1alpha3. Prior to this you might have used the **AvailabilityZone** on the `AzureMachine` and this is now deprecated. Please update your definitions and use **FailureDomain** instead.
+> **DEPRECATION NOTE**: Failure domains were introduced in v1alpha3. Prior to this you might have used the **AvailabilityZone** on the `AzureMachine` and this is now deprecated. Please update your definitions and use **FailureDomain** instead.
 
 For example:
 
@@ -115,7 +115,7 @@ metadata:
   name: controlplane-0
   namespace: default
 spec:
-  version: "v1.18.8"
+  version: "v1.19.4"
   clusterName: my-cluster
   failureDomain: "1"
   bootstrap:

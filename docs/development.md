@@ -215,16 +215,16 @@ make delete-workload-cluster
 
 #### Viewing Telemetry
 The CAPZ controller emits tracing and metrics data. When run in Tilt, the KinD cluster is provisioned with a development
-deployment of Jaeger, for distributed tracing, and Prometheus for metrics scraping and visualization. 
+deployment of Jaeger, for distributed tracing, and Prometheus for metrics scraping and visualization.
 
 The Jaeger and Prometheus deployments are for development purposes only. These illustrate the hooks for tracing and
 metrics, but lack the robustness of production cluster deployments. For example, Jaeger in "all-in-one" mode with only
 in-memory persistence of traces.
 
-After the Tilt cluster has been initialized, to view distributed traces in Jaeger open a browser to 
+After the Tilt cluster has been initialized, to view distributed traces in Jaeger open a browser to
 `http://localhost:8080`.
 
-To view metrics, run `kubectl port-forward -n capz-system prometheus-prometheus-0 9090` and open 
+To view metrics, run `kubectl port-forward -n capz-system prometheus-prometheus-0 9090` and open
 `http://localhost:9090` to see the Prometheus UI.
 
 ### Manual Testing
@@ -290,7 +290,7 @@ export CONTROL_PLANE_MACHINE_COUNT=3
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.18.8"
+export KUBERNETES_VERSION="v1.19.4"
 
 # Generate SSH key.
 # If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY_B64 to your existing file.
@@ -348,17 +348,17 @@ ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconc
 defer span.End()
 ```
 The code above creates a context with a new span stored in the context.Context value bag. If a span already existed in
-the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span 
-becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which 
+the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span
+becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which
 provide metadata about the span and can be used to query in many distributed tracing systems.
 
 You should consider adding tracing if your func accepts a context.
 
 #### Metrics
-Metrics provide quantitative data about the operations of the controller. This includes cumulative data like 
+Metrics provide quantitative data about the operations of the controller. This includes cumulative data like
 counters, single numerical values like guages, and distributions of counts / samples like histograms & summaries.
 
-In CAPZ we expose metrics using the Prometheus client. The Kubebuilder project provides 
+In CAPZ we expose metrics using the Prometheus client. The Kubebuilder project provides
 [a guide for metrics and for exposing new ones](https://book.kubebuilder.io/reference/metrics.html#publishing-additional-metrics).
 
 ### Submitting PRs and testing
