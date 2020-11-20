@@ -64,6 +64,8 @@ providers:
         targetName: "cluster-template-multi-tenancy.yaml"        
       - sourcePath: "${PWD}/templates/test/cluster-template-prow-windows.yaml"
         targetName: "cluster-template-windows.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool-windows.yaml"
+        targetName: "cluster-template-machine-pool-windows.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.4}"

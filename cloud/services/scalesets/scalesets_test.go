@@ -444,6 +444,9 @@ func TestReconcileVMSS(t *testing.T) {
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 						ID:   to.StringPtr("id-1"),
 						Name: to.StringPtr("instance-0"),
