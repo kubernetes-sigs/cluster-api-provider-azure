@@ -51,9 +51,26 @@ import (
 // AzureMachineReconciler reconciles a AzureMachine object
 type AzureMachineReconciler struct {
 	client.Client
-	Log              logr.Logger
-	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Log                       logr.Logger
+	Recorder                  record.EventRecorder
+	ReconcileTimeout          time.Duration
+	createAzureMachineService azureMachineServiceCreator
+}
+
+type azureMachineServiceCreator func(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService
+
+// NewAzureMachineReconciler returns a new AzureMachineReconciler instance
+func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureMachineReconciler {
+	amr := &AzureMachineReconciler{
+		Client:           client,
+		Log:              log,
+		Recorder:         recorder,
+		ReconcileTimeout: reconcileTimeout,
+	}
+
+	amr.createAzureMachineService = newAzureMachineService
+
+	return amr
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -263,7 +280,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
-	ams := newAzureMachineService(machineScope, clusterScope)
+	ams := r.createAzureMachineService(machineScope, clusterScope)
 
 	err := ams.Reconcile(ctx)
 	if err != nil {
@@ -337,7 +354,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 
 	if ShouldDeleteIndividualResources(ctx, clusterScope) {
 		machineScope.Info("Deleting AzureMachine")
-		if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
+		if err := r.createAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
