@@ -196,13 +196,21 @@ def capz():
 
     k8s_yaml(blob(yaml))
 
-def calico_crs():
+def create_crs():
+    # create config maps
     local("kubectl delete configmaps calico-addon --ignore-not-found=true")
     local("kubectl create configmap calico-addon --from-file=templates/addons/calico.yaml")
     local("kubectl delete configmaps calico-ipv6-addon --ignore-not-found=true")
     local("kubectl create configmap calico-ipv6-addon --from-file=templates/addons/calico-ipv6.yaml")
     local("kubectl delete configmaps flannel-windows-addon --ignore-not-found=true")
-    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/")
+
+    # need to set version for kube-proxy on windows.  
+    # This file is processed then reapply \\ due to the named pipes which need to be escaped for a bug in envsubst library
+	# https://github.com/kubernetes-sigs/cluster-api/issues/4016
+    os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
+    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/ --dry-run=client -o yaml | " + envsubst_cmd + " | sed -e 's/\\\\/\\\\\\\\/' | kubectl apply -f -")
+
+    # set up crs
     local("kubectl wait --for=condition=Available --timeout=300s -n capi-webhook-system deployment/capi-controller-manager")
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")
     local("kubectl apply -f templates/addons/flannel-resource-set.yaml")
@@ -267,8 +275,9 @@ def deploy_worker_templates(template, substitutions):
                 yaml = yaml.replace("${" + substitution + "}", value)
 
     # programmatically define any remaining vars
+    # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     substitutions = {
-        "CLUSTER_NAME": flavor + "-template",
+        "CLUSTER_NAME": flavor.replace("windows", "win") + "-template",
         "AZURE_LOCATION": "eastus",
         "AZURE_VNET_NAME": flavor + "-template-vnet",
         "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
@@ -337,6 +346,6 @@ deploy_capi()
 
 capz()
 
-calico_crs()
+create_crs()
 
 flavors()

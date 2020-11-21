@@ -706,9 +706,9 @@ spec:
         effect: NoSchedule
       containers:
       - name: kube-flannel
-        image: sigwindowstools/flannel:0.12.0
+        image: sigwindowstools/flannel:v0.13.0-nanoserver
         command:
-        - powershell
+        - pwsh
         args:
         - -file
         - /etc/kube-flannel-windows/run.ps1
@@ -739,6 +739,10 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       volumes:
+      - name: wins
+        hostPath:
+          path: \\.\pipe\rancher_wins
+          type: null
       - name: opt
         hostPath:
           path: /opt
@@ -760,7 +764,4 @@ spec:
       - name: kubeadm-config
         configMap:
           name: kubeadm-config
-      - name: wins
-        hostPath:
-          path: \\.\pipe\rancher_wins
-          type: null
+

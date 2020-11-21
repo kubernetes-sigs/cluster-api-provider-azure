@@ -16,9 +16,7 @@ data:
     yq w -i /host/var/lib/kube-proxy/config.conf featureGates.WinOverlay true
     yq w -i /host/var/lib/kube-proxy/config.conf mode "kernelspace"
     wins cli process run --path /k/kube-proxy/kube-proxy.exe --args "--v=6 --config=/var/lib/kube-proxy/config.conf --hostname-override=$env:NODE_NAME --feature-gates=WinOverlay=true"
-
 kind: ConfigMap
-apiVersion: v1
 metadata:
   labels:
     app: kube-proxy
@@ -44,7 +42,7 @@ spec:
       serviceAccountName: kube-proxy
       containers:
       - command:
-        - powershell
+        - pwsh
         args:
         - -file
         - /var/lib/kube-proxy-windows/run-script.ps1
@@ -58,13 +56,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: sigwindowstools/kube-proxy:v1.19.1
+        image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION}-nanoserver
         name: kube-proxy
         volumeMounts:
-        - name: host
-          mountPath: /host
         - name: wins
           mountPath: \\.\pipe\rancher_wins
+        - name: host
+          mountPath: /host
         - mountPath: /var/lib/kube-proxy
           name: kube-proxy
         - mountPath: /var/lib/kube-proxy-windows
@@ -76,6 +74,10 @@ spec:
         operator: Exists
       - operator: Exists
       volumes:
+      - name: wins
+        hostPath:
+          path: \\.\pipe\rancher_wins
+          type: null
       - configMap:
           defaultMode: 420
           name: kube-proxy-windows
@@ -86,9 +88,5 @@ spec:
       - hostPath:
           path: /
         name: host
-      - name: wins
-        hostPath:
-          path: \\.\pipe\rancher_wins
-          type: null
   updateStrategy:
     type: RollingUpdate

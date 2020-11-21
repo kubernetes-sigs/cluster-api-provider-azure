@@ -4,8 +4,6 @@ namespace: default
 resources:
   - ../../flavors/windows
   - ../prow/cni-resource-set-windows.yaml
-  - ../prow/kubeproxy-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cni-resource-set.yaml
-
