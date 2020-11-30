@@ -16,7 +16,7 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
     shift; user=$1
     ;;
   -i | --identity )
-    shift; user=$1
+    shift; identity=$1
     ;;
 esac; shift; done
 if [[ "$1" == '--' ]]; then shift; fi
