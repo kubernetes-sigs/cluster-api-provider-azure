@@ -823,7 +823,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "encryption at host is not supported for VM type Standard_D2v3",
+			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: encryption at host is not supported for VM type Standard_D2v3",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{

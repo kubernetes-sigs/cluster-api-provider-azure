@@ -279,6 +279,25 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 			return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachine")
 		}
 
+		// Handle transient and terminal errors
+		var reconcileError azure.ReconcileError
+		if errors.As(err, &reconcileError) {
+			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
+			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
+
+			if reconcileError.IsTerminal() {
+				machineScope.Error(err, "failed to reconcile AzureMachine", "name", machineScope.Name())
+				return reconcile.Result{}, nil
+			}
+
+			if reconcileError.IsTransient() {
+				machineScope.Error(err, "failed to reconcile AzureMachine", "name", machineScope.Name())
+				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
+			}
+
+			return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachine")
+		}
+
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error creating new AzureMachine", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachine")

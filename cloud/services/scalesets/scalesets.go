@@ -407,7 +407,7 @@ func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*com
 	}
 
 	if !sku.HasCapability(resourceskus.EncryptionAtHost) {
-		return nil, errors.Errorf("encryption at host is not supported for VM type %s", vmssSpec.Size)
+		return nil, azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", vmssSpec.Size))
 	}
 
 	return &compute.SecurityProfile{
