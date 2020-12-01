@@ -65,7 +65,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 	helper, err := patch.NewHelper(params.AzureMachine, params.Client)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to init patch helper")
+		return nil, errors.Errorf("failed to init patch helper: %v ", err)
 	}
 	return &MachineScope{
 		client:        params.Client,
