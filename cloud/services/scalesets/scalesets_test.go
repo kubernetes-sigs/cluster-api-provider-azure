@@ -541,6 +541,173 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "can create a vmss with spot vm",
+			expectedError: "",
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_AN",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "my_disk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					SubnetName:              "my-subnet",
+					VNetName:                "my-vnet",
+					VNetResourceGroup:       "my-rg",
+					PublicLBName:            "capz-lb",
+					PublicLBAddressPoolName: "backendPool",
+					AcceleratedNetworking:   nil,
+					SpotVMOptions:           &infrav1.SpotVMOptions{},
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(gomock.Any(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						ID:         to.StringPtr("my-vm-id"),
+						InstanceID: to.StringPtr("my-vm-1"),
+						Name:       to.StringPtr("my-vm"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					},
+				}, nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
+				s.NeedsK8sVersionUpdate()
+				s.SaveK8sVersion()
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomockinternal.DiffEq(compute.VirtualMachineScaleSet{
+					Location: to.StringPtr("test-location"),
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-vmss"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("node"),
+					},
+					Sku: &compute.Sku{
+						Name:     to.StringPtr("VM_SIZE_AN"),
+						Tier:     to.StringPtr("Standard"),
+						Capacity: to.Int64Ptr(2),
+					},
+					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+						UpgradePolicy: &compute.UpgradePolicy{
+							Mode: compute.UpgradeModeManual,
+						},
+						VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
+							OsProfile: &compute.VirtualMachineScaleSetOSProfile{
+								ComputerNamePrefix: to.StringPtr("my-vmss"),
+								AdminUsername:      to.StringPtr(azure.DefaultUserName),
+								CustomData:         to.StringPtr("fake-bootstrap-data"),
+								LinuxConfiguration: &compute.LinuxConfiguration{
+									SSH: &compute.SSHConfiguration{
+										PublicKeys: &[]compute.SSHPublicKey{
+											{
+												Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+												KeyData: to.StringPtr("fakesshkey\n"),
+											},
+										},
+									},
+									DisablePasswordAuthentication: to.BoolPtr(true),
+								},
+							},
+							StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
+								ImageReference: &compute.ImageReference{
+									Publisher: to.StringPtr("fake-publisher"),
+									Offer:     to.StringPtr("my-offer"),
+									Sku:       to.StringPtr("sku-id"),
+									Version:   to.StringPtr("1.0"),
+								},
+								OsDisk: &compute.VirtualMachineScaleSetOSDisk{
+									OsType:       "Linux",
+									CreateOption: "FromImage",
+									DiskSizeGB:   to.Int32Ptr(120),
+									ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+										StorageAccountType: "Premium_LRS",
+									},
+								},
+								DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
+									{
+										Lun:          to.Int32Ptr(0),
+										Name:         to.StringPtr("my-vmss_my_disk"),
+										CreateOption: "Empty",
+										DiskSizeGB:   to.Int32Ptr(128),
+									},
+								},
+							},
+							DiagnosticsProfile: &compute.DiagnosticsProfile{
+								BootDiagnostics: &compute.BootDiagnostics{
+									Enabled: to.BoolPtr(true),
+								},
+							},
+							NetworkProfile: &compute.VirtualMachineScaleSetNetworkProfile{
+								NetworkInterfaceConfigurations: &[]compute.VirtualMachineScaleSetNetworkConfiguration{
+									{
+										Name: to.StringPtr("my-vmss-netconfig"),
+										VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
+											Primary:                     to.BoolPtr(true),
+											EnableAcceleratedNetworking: to.BoolPtr(true),
+											EnableIPForwarding:          to.BoolPtr(true),
+											IPConfigurations: &[]compute.VirtualMachineScaleSetIPConfiguration{
+												{
+													Name: to.StringPtr("my-vmss-ipconfig"),
+													VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{
+														Subnet: &compute.APIEntityReference{
+															ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
+														},
+														Primary:                         to.BoolPtr(true),
+														PrivateIPAddressVersion:         compute.IPv4,
+														LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Priority:       compute.Spot,
+							EvictionPolicy: compute.Deallocate,
+							BillingProfile: nil,
+						},
+					},
+				}))
+			},
+		},
+		{
 			name:          "can create a vmss with encryption",
 			expectedError: "",
 			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {

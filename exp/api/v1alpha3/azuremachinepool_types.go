@@ -62,6 +62,10 @@ type (
 		// SecurityProfile specifies the Security profile settings for a virtual machine.
 		// +optional
 		SecurityProfile *infrav1.SecurityProfile `json:"securityProfile,omitempty"`
+
+		// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
+		// +optional
+		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool

@@ -118,6 +118,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		Identity:                m.AzureMachinePool.Spec.Identity,
 		UserAssignedIdentities:  m.AzureMachinePool.Spec.UserAssignedIdentities,
 		SecurityProfile:         m.AzureMachinePool.Spec.Template.SecurityProfile,
+		SpotVMOptions:           m.AzureMachinePool.Spec.Template.SpotVMOptions,
 	}
 }
 

@@ -122,7 +122,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 		}
 
-		priority, evictionPolicy, billingProfile, err := getSpotVMOptions(vmSpec.SpotVMOptions)
+		priority, evictionPolicy, billingProfile, err := GetSpotVMOptions(vmSpec.SpotVMOptions)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get Spot VM options")
 		}
@@ -434,7 +434,9 @@ func getResourceNameByID(resourceID string) string {
 	return resourceName
 }
 
-func getSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
+// GetSpotVMOptions takes the spot vm options
+// and returns the indivial vm priority, eviction policy and billing profile
+func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
 	// Spot VM not requested, return zero values to apply defaults
 	if spotVMOptions == nil {
 		return "", "", nil, nil
