@@ -63,12 +63,12 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 
 	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
+		return nil, err
 	}
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to init patch helper")
+		return nil, errors.Errorf("failed to init patch helper: %v", err)
 	}
 
 	return &ClusterScope{
