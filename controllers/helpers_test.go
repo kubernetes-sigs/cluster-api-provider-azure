@@ -86,50 +86,67 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 func TestGetCloudProviderConfig(t *testing.T) {
 	g := NewWithT(t)
 
+	cluster := newCluster("foo")
+	cluster.Default()
+	azureCluster := newAzureCluster("foo", "bar")
+	azureCluster.Default()
+	azureClusterCustomVnet := newAzureClusterWithCustomVnet("foo", "bar")
+	azureClusterCustomVnet.Default()
+
 	cases := map[string]struct {
+		cluster                    *clusterv1.Cluster
+		azureCluster               *infrav1.AzureCluster
 		identityType               infrav1.VMIdentity
 		identityID                 string
 		expectedControlPlaneConfig string
 		expectedWorkerNodeConfig   string
 	}{
 		"serviceprincipal": {
+			cluster:                    cluster,
+			azureCluster:               azureCluster,
 			identityType:               infrav1.VMIdentityNone,
 			expectedControlPlaneConfig: spControlPlaneCloudConfig,
 			expectedWorkerNodeConfig:   spWorkerNodeCloudConfig,
 		},
 		"system-assigned-identity": {
+			cluster:                    cluster,
+			azureCluster:               azureCluster,
 			identityType:               infrav1.VMIdentitySystemAssigned,
 			expectedControlPlaneConfig: systemAssignedControlPlaneCloudConfig,
 			expectedWorkerNodeConfig:   systemAssignedWorkerNodeCloudConfig,
 		},
 		"user-assigned-identity": {
+			cluster:                    cluster,
+			azureCluster:               azureCluster,
 			identityType:               infrav1.VMIdentityUserAssigned,
 			identityID:                 "foobar",
 			expectedControlPlaneConfig: userAssignedControlPlaneCloudConfig,
 			expectedWorkerNodeConfig:   userAssignedWorkerNodeCloudConfig,
 		},
+		"serviceprincipal with custom vnet": {
+			cluster:                    cluster,
+			azureCluster:               azureClusterCustomVnet,
+			identityType:               infrav1.VMIdentityNone,
+			expectedControlPlaneConfig: spCustomVnetControlPlaneCloudConfig,
+			expectedWorkerNodeConfig:   spCustomVnetWorkerNodeCloudConfig,
+		},
 	}
-
-	cluster := newCluster("foo")
-	cluster.Default()
-	azureCluster := newAzureCluster("foo", "bar")
-	azureCluster.Default()
 
 	os.Setenv(auth.ClientID, "fooClient")
 	os.Setenv(auth.ClientSecret, "fooSecret")
 	os.Setenv(auth.TenantID, "fooTenant")
 
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		AzureClients: scope.AzureClients{
-			Authorizer: autorest.NullAuthorizer{},
-		},
-		Cluster:      cluster,
-		AzureCluster: azureCluster,
-	})
-	g.Expect(err).NotTo(HaveOccurred())
-
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+				AzureClients: scope.AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      tc.cluster,
+				AzureCluster: tc.azureCluster,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
 			cloudConfig, err := GetCloudProviderSecret(clusterScope, "default", "foo", metav1.OwnerReference{}, tc.identityType, tc.identityID)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cloudConfig.Data).NotTo(BeNil())
@@ -281,6 +298,36 @@ func newAzureCluster(name, location string) *infrav1.AzureCluster {
 	}
 }
 
+func newAzureClusterWithCustomVnet(name, location string) *infrav1.AzureCluster {
+	return &infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+		},
+		Spec: infrav1.AzureClusterSpec{
+			Location: location,
+			NetworkSpec: infrav1.NetworkSpec{
+				Vnet: infrav1.VnetSpec{
+					Name:          "custom-vnet",
+					ResourceGroup: "custom-vnet-resource-group",
+				},
+				Subnets: infrav1.Subnets{
+					&infrav1.SubnetSpec{
+						Name: "foo-controlplane-subnet",
+						Role: infrav1.SubnetControlPlane,
+					},
+					&infrav1.SubnetSpec{
+						Name: "foo-node-subnet",
+						Role: infrav1.SubnetNode,
+					},
+				},
+			},
+			ResourceGroup:  "bar",
+			SubscriptionID: "baz",
+		},
+	}
+}
+
 const (
 	spControlPlaneCloudConfig = `{
     "cloud": "AzurePublicCloud",
@@ -388,6 +435,44 @@ const (
     "vmType": "vmss",
     "vnetName": "foo-vnet",
     "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true
+}`
+	spCustomVnetControlPlaneCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "aadClientId": "fooClient",
+    "aadClientSecret": "fooSecret",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "custom-vnet-resource-group",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "custom-vnet",
+    "vnetResourceGroup": "custom-vnet-resource-group",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true
+}`
+	spCustomVnetWorkerNodeCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "custom-vnet-resource-group",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "custom-vnet",
+    "vnetResourceGroup": "custom-vnet-resource-group",
     "subnetName": "foo-node-subnet",
     "routeTableName": "foo-node-routetable",
     "loadBalancerSku": "Standard",
