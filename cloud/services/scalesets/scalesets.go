@@ -30,7 +30,6 @@ import (
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -127,7 +126,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return err
 	}
 
-	priority, evictionPolicy, billingProfile, err := virtualmachines.GetSpotVMOptions(vmssSpec.SpotVMOptions)
+	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmssSpec.SpotVMOptions)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get Spot VM options")
 	}

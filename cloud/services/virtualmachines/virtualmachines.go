@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
@@ -122,7 +121,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 		}
 
-		priority, evictionPolicy, billingProfile, err := GetSpotVMOptions(vmSpec.SpotVMOptions)
+		priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmSpec.SpotVMOptions)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get Spot VM options")
 		}
@@ -432,26 +431,6 @@ func getResourceNameByID(resourceID string) string {
 	explodedResourceID := strings.Split(resourceID, "/")
 	resourceName := explodedResourceID[len(explodedResourceID)-1]
 	return resourceName
-}
-
-// GetSpotVMOptions takes the spot vm options
-// and returns the indivial vm priority, eviction policy and billing profile
-func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
-	// Spot VM not requested, return zero values to apply defaults
-	if spotVMOptions == nil {
-		return "", "", nil, nil
-	}
-	var billingProfile *compute.BillingProfile
-	if spotVMOptions.MaxPrice != nil {
-		maxPrice, err := strconv.ParseFloat(*spotVMOptions.MaxPrice, 64)
-		if err != nil {
-			return "", "", nil, err
-		}
-		billingProfile = &compute.BillingProfile{
-			MaxPrice: &maxPrice,
-		}
-	}
-	return compute.Spot, compute.Deallocate, billingProfile, nil
 }
 
 func getSecurityProfile(vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.SecurityProfile, error) {
