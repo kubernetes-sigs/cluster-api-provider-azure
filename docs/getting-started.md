@@ -1,72 +1,48 @@
-# Getting started with cluster-api-provider-azure <!-- omit in toc -->
-
-## Contents <!-- omit in toc -->
-
-<!-- Below is generated using VSCode yzhang.markdown-all-in-one >
-
-<!-- TOC depthFrom:2 -->
-
-- [Prerequisites](#prerequisites)
-  - [Requirements](#requirements)
-  - [Optional](#optional)
-  - [Setting up your Azure environment](#setting-up-your-azure-environment)
-- [Troubleshooting](#troubleshooting)
-  - [Bootstrap running, but resources aren't being created](#bootstrap-running-but-resources-arent-being-created)
-  - [Resources are created but control plane is taking a long time to become ready](#resources-are-created-but-control-plane-is-taking-a-long-time-to-become-ready)
-- [Building from master](#building-from-master)
-
-<!-- /TOC -->
+# Getting started with cluster-api-provider-azure
 
 ## Prerequisites
 
 ### Requirements
 
-- Linux or macOS (Windows isn't supported at the moment)
 - A [Microsoft Azure account](https://azure.microsoft.com/en-us/)
 - Install the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-- Install the [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- [KIND]
-- [kustomize]
-- make
-- gettext (with `envsubst` in your PATH)
-- md5sum
-- bazel
-
-### Optional
-
-- [Homebrew][brew] (MacOS)
-- [jq]
-- [Go]
-
-[brew]: https://brew.sh/
-[go]: https://golang.org/dl/
-[jq]: https://stedolan.github.io/jq/download/
-[kind]: https://sigs.k8s.io/kind
-[kustomize]: https://github.com/kubernetes-sigs/kustomize
 
 ### Setting up your Azure environment
 
-An Azure Service Principal is needed for populating the controller manifests. This utilizes [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
+An Azure Service Principal is needed for deploying Azure resources. The below instructions utilize [environment-based authentication](https://docs.microsoft.com/en-us/go/azure/azure-sdk-go-authorization#use-environment-based-authentication).
 
-  1. List your Azure subscriptions.
+  1. Login with the Azure CLI.
+
+   ```bash
+  az login
+   ```
+  
+  2. List your Azure subscriptions.
 
    ```bash
   az account list -o table
    ```
 
-  2. Save your Subscription ID in an environment variable.
+  3. If more than one account is present, select the account that you want to use.
+
+   ```bash
+  az account set -s <SubscriptionId>
+   ```
+
+  4. Save your Subscription ID in an environment variable.
 
   ```bash
   export AZURE_SUBSCRIPTION_ID="<SubscriptionId>"
   ```
 
-  3. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal.
+  5. Create an Azure Service Principal by running the following command or skip this step and use a previously created Azure Service Principal.
+  NOTE: the "owner" role is required to be able to create role assignments for [system-assigned managed identity](book/src/topics/identity.md).
 
   ```bash
-  az ad sp create-for-rbac --name SPClusterAPI --role owner
+  az ad sp create-for-rbac --role contributor
   ```
 
-  4. Save the output from the above command in environment variables.
+  6. Save the output from the above command in environment variables.
 
   ```bash
   export AZURE_TENANT_ID="<Tenant>"
@@ -78,7 +54,7 @@ An Azure Service Principal is needed for populating the controller manifests. Th
 :warning: NOTE: If your password contains single quotes (`'`), make sure to escape them. To escape a single quote, close the quoting before it, insert the single quote, and re-open the quoting.
 For example, if your password is `foo'blah$`, you should do `export AZURE_CLIENT_SECRET='foo'\''blah$'`.
 
-  5. Set the name of the AzureCloud to be used, the default value that would be used by most users is "AzurePublicCloud", other values are:
+  7. (Optional) Set the name of the AzureCloud to be used. The default value that would be used by most users is "AzurePublicCloud", other values are:
 
  - ChinaCloud: "AzureChinaCloud"
  - GermanCloud: "AzureGermanCloud"
@@ -89,26 +65,10 @@ For example, if your password is `foo'blah$`, you should do `export AZURE_CLIENT
 export AZURE_ENVIRONMENT="AzurePublicCloud"
 ```
 
-<!--An alternative is to install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and have the project's script create the service principal automatically. _Note that the service principals created by the scripts will not be deleted automatically._ -->
+### Building your first cluster
 
-### Using images
+Check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html) to create your first Kubernetes cluster on Azure using Cluster API. Make sure to select the "Azure" tabs.
 
-By default, images offered by "capi" in the Azure Marketplace are used. You can list these *reference images* with this command:
+### Documentation
 
-```bash
-az vm image list --publisher cncf-upstream --offer capi --all -o table
-```
-
-For more control over your nodes, you can use a [*custom image*][custom-images].
-
-## Troubleshooting
-
-Please refer to the [troubleshooting guide][troubleshooting].
-
-## Building from master
-
-If you're interested in developing cluster-api-provider-azure and getting the latest version from `master`, please follow the [development guide][development].
-
-[custom-images]: /docs/topics/custom-images.md
-[development]: /docs/development.md
-[troubleshooting]: /docs/troubleshooting.md
+Please see the [CAPZ book](https://capz.sigs.k8s.io) for in-depth user documentation.
