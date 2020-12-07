@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,6 +86,7 @@ func (r *AzureClusterReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates;azuremachinetemplates/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=azureclusteridentities;azureclusteridentities/status,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile idempotently gets, creates, and updates a cluster.
 func (r *AzureClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
@@ -173,6 +175,27 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
 	if err := clusterScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if azureCluster.Spec.IdentityRef != nil {
+		identity, err := GetClusterIdentityFromRef(ctx, clusterScope.Client, azureCluster.Namespace, azureCluster.Spec.IdentityRef)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if !identity.ClusterNamespaceAllowed(azureCluster.Namespace) {
+			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
+		}
+		if identity.Namespace == azureCluster.Namespace {
+			patchhelper, err := patch.NewHelper(identity, r.Client)
+			if err != nil {
+				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
+			}
+			identity.ObjectMeta.OwnerReferences = azureCluster.GetOwnerReferences()
+			if err := patchhelper.Patch(ctx, identity); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
 	}
 
 	// Handle backcompat for CidrBlock

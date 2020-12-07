@@ -384,7 +384,7 @@ func autoConvert_v1alpha3_AzureClusterSpec_To_v1alpha2_AzureClusterSpec(in *v1al
 	out.Location = in.Location
 	// WARNING: in.ControlPlaneEndpoint requires manual conversion: does not exist in peer-type
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
-	// WARNING: in.IdentityName requires manual conversion: does not exist in peer-type
+	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
 	return nil
 }
 

@@ -6,20 +6,23 @@ This is achieved using the [aad-pod-identity](https://azure.github.io/aad-pod-id
 
 ## Service Principal Identity
 
-Once a new SP Identity is created in Azure, a new resource of [AzureIdentity](https://azure.github.io/aad-pod-identity/docs/concepts/azureidentity/) should be created in the managment cluster, for example
+Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` resource:
 
 ```yaml
-apiVersion: "aadpodidentity.k8s.io/v1"
-kind: AzureIdentity
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureClusterIdentity
 metadata:
-  name: <name-of-identity>
+  name: example-identity
+  namespace: default
 spec:
-  type: 1
-  tenantID: <tenant-id-from-azure-subscription>
+  type: ServicePrincipal
+  tenantID: <azure-tenant-id>
   clientID: <client-id-of-SP-identity>
-  clientPassword: {"name":"<secret-name-for-client-password>","namespace":"default"}
-```
+  clientSecret: {"name":"<secret-name-for-client-password>","namespace":"default"}
+  allowedNamespaces: 
+  - <cluster-namespace>
 
+```
 The password will need to be added in a secret similar to the following example
 
 ```yaml
@@ -45,7 +48,13 @@ data:
   password: PASSWORD
 ```
 
-and then this identity name will be added to the Azure Cluster 
+## allowedNamespaces
+AllowedNamespaces is an array of namespaces that AzureClusters can use this Identity from. CAPZ will not support AzureClusters in namespaces  outside this list. 
+An empty list (default) indicates that AzureCluster can use this AzureClusterIdentity from any namespace. 
+
+## IdentityRef in AzureCluster
+
+The Identity can be added to an `AzureCluster` by using `IdentityRef` field:
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
@@ -60,10 +69,14 @@ spec:
       name: example-cluster-vnet
   resourceGroup: example-cluster
   subscriptionID: <AZURE_SUBSCRIPTION_ID>
-  identityName: <name-of-identity>
-```  
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: AzureClusterIdentity
+    name: <name-of-identity>
+    namespace: <namespace-of-identity>
+```
 
-for more details on how aad-pod-identity works, please check the guide [here](https://azure.github.io/aad-pod-identity/docs/)
+For more details on how aad-pod-identity works, please check the guide [here](https://azure.github.io/aad-pod-identity/docs/).
 
 ## User Assiged Identity
 

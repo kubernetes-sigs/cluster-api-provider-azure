@@ -387,3 +387,20 @@ func ShouldDeleteIndividualResources(ctx context.Context, clusterScope *scope.Cl
 	// Instead, take the long way and delete all resources one by one.
 	return err != nil || !managed
 }
+
+// GetClusterIdentityFromRef returns the AzureClusterIdentity referenced by the AzureCluster.
+func GetClusterIdentityFromRef(ctx context.Context, c client.Client, azureClusterNamespace string, ref *corev1.ObjectReference) (*infrav1.AzureClusterIdentity, error) {
+	identity := &infrav1.AzureClusterIdentity{}
+	if ref != nil {
+		namespace := ref.Namespace
+		if namespace == "" {
+			namespace = azureClusterNamespace
+		}
+		key := client.ObjectKey{Name: ref.Name, Namespace: namespace}
+		if err := c.Get(ctx, key, identity); err != nil {
+			return nil, err
+		}
+		return identity, nil
+	}
+	return nil, nil
+}

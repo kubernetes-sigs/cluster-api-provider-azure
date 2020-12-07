@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
@@ -52,9 +53,9 @@ type AzureClusterSpec struct {
 	// +optional
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
-	// IdentityName is a reference to a AzureIdentity to be used when reconciling this cluster
+	// IdentityRef is a reference to a AzureIdentity to be used when reconciling this cluster
 	// +optional
-	IdentityName *string `json:"identityName,omitempty"`
+	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster

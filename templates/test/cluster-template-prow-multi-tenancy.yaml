@@ -28,7 +28,11 @@ spec:
   additionalTags:
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
-  identityName: ${CLUSTER_IDENTITY_NAME}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+    namespace: ${CLUSTER_IDENTITY_NAMESPACE}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -201,6 +205,19 @@ spec:
             cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
       useExperimentalRetryJoin: true
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureClusterIdentity
+metadata:
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
 ---
 apiVersion: v1
 data: ${CNI_RESOURCES_IPV6}

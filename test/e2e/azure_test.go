@@ -25,13 +25,11 @@ import (
 	"path/filepath"
 	"time"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -356,12 +354,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating a cluster using a different SP identity", func() {
 		BeforeEach(func() {
-			tenantID := os.Getenv("AZURE_TENANT_ID")
-			spClientID := os.Getenv("AZURE_MULTI_TENANCY_ID")
 			spClientSecret := os.Getenv("AZURE_MULTI_TENANCY_SECRET")
-			identityName := e2eConfig.GetVariable(MultiTenancyIdentityName)
-			os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
-
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sp-identity-secret",
@@ -372,38 +365,17 @@ var _ = Describe("Workload cluster creation", func() {
 			}
 			err := bootstrapClusterProxy.GetClient().Create(ctx, secret)
 			Expect(err).ToNot(HaveOccurred())
-
-			azureIdentity := &aadpodv1.AzureIdentity{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AzureIdentity",
-					APIVersion: "aadpodidentity.k8s.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      identityName,
-					Namespace: namespace.Name,
-					Annotations: map[string]string{
-						aadpodv1.BehaviorKey: "namespaced",
-					},
-					Labels: map[string]string{
-						clusterv1.ClusterLabelName:    clusterName,
-						infrav1.ClusterLabelNamespace: namespace.Name,
-					},
-				},
-				Spec: aadpodv1.AzureIdentitySpec{
-					Type:     1,
-					TenantID: tenantID,
-					ClientID: spClientID,
-					ClientPassword: corev1.SecretReference{
-						Name:      "sp-identity-secret",
-						Namespace: namespace.Name,
-					},
-				},
-			}
-			err = bootstrapClusterProxy.GetClient().Create(ctx, azureIdentity)
-			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("with a single control plane node and 1 node", func() {
+			spClientID := os.Getenv("AZURE_MULTI_TENANCY_ID")
+			identityName := e2eConfig.GetVariable(MultiTenancyIdentityName)
+			os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
+			os.Setenv("CLUSTER_IDENTITY_NAMESPACE", namespace.Name)
+			os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
+			os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "sp-identity-secret")
+			os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", namespace.Name)
+
 			result := clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{

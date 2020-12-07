@@ -330,6 +330,18 @@ const (
 	AzureIdentityBindingSelector = "capz-controller-aadpodidentity-selector"
 )
 
+// IdentityType represents different types of identities.
+// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI
+type IdentityType string
+
+const (
+	// UserAssignedMSI represents a user-assigned identity.
+	UserAssignedMSI IdentityType = "UserAssignedMSI"
+
+	// ServicePrincipal represents a service principal.
+	ServicePrincipal IdentityType = "ServicePrincipal"
+)
+
 // OSDisk defines the operating system disk for a VM.
 type OSDisk struct {
 	OSType           string            `json:"osType"`

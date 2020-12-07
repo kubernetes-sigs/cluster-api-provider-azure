@@ -21,7 +21,6 @@ import (
 	"time"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/api/trace"
@@ -30,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
@@ -53,7 +53,7 @@ type AzureIdentityReconciler struct {
 
 // SetupWithManager initializes this controller with a manager
 func (r *AzureIdentityReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
-	log := r.Log.WithValues("controller", "AzureCluster")
+	log := r.Log.WithValues("controller", "AzureIdentity")
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
@@ -82,7 +82,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(mgr ctrl.Manager, options con
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 
-// Reconcile reconciles the azure identity
+// Reconcile reconciles the Azure identity.
 func (r *AzureIdentityReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
@@ -135,7 +135,8 @@ func (r *AzureIdentityReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 			}
 
 		}
-		if binding.Spec.AzureIdentity != to.String(azCluster.Spec.IdentityName) {
+		expectedIdentityName := identity.GetAzureIdentityName(azCluster.Name, azCluster.Namespace, azCluster.Spec.IdentityRef.Name)
+		if binding.Spec.AzureIdentity != expectedIdentityName {
 			bindingsToDelete = append(bindingsToDelete, b)
 		}
 	}
