@@ -50,8 +50,12 @@ spec:
     - sudo iptables -A INPUT -p tcp -m tcp --dport 6443 -j ACCEPT
     clusterConfiguration:
       apiServer:
+        extraArgs:
+          cloud-provider: external
         timeoutForControlPlane: 20m
       controllerManager:
+        extraArgs:
+          cloud-provider: external
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -75,9 +79,13 @@ spec:
     files:
     initConfiguration:
       nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     joinConfiguration:
       nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: external
         name: '{{ ds.meta_data["local_hostname"] }}'
     mounts:
     - - LABEL=etcd_disk
@@ -107,7 +115,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
       privateIPAddress: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
-      imageID: ${AZURE_IMAGE_ID}
+      P: ${AZURE_IMAGE_ID}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachineDeployment
@@ -162,5 +170,7 @@ spec:
     spec:
       joinConfiguration:
         nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
       useExperimentalRetryJoin: true
