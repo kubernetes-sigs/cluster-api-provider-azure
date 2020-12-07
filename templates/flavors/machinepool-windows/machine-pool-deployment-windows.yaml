@@ -27,8 +27,6 @@ metadata:
 spec:
   location: ${AZURE_LOCATION}
   template:
-    image:
-      id: /subscriptions/b9d9436a-0c07-4fe8-b779-2c1030bd7997/resourceGroups/test-cluster-api-images/providers/Microsoft.Compute/images/windowstestvmimage-capz
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
     osDisk:
       osType: "Windows"

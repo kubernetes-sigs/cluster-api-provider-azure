@@ -27,6 +27,8 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 
 	var tests = []struct {
 		k8sVersion     string
+		os             string
+		osVersion      string
 		expectedResult string
 		expectedError  bool
 	}{
@@ -34,47 +36,68 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			k8sVersion:     "v1.14.9",
 			expectedResult: "k8s-1dot14dot9-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "v1.14.10",
 			expectedResult: "k8s-1dot14dot10-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "v1.15.6",
 			expectedResult: "k8s-1dot15dot6-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "v1.15.7",
 			expectedResult: "k8s-1dot15dot7-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "v1.16.3",
 			expectedResult: "k8s-1dot16dot3-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "v1.16.4",
 			expectedResult: "k8s-1dot16dot4-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "1.12.0",
 			expectedResult: "k8s-1dot12dot0-ubuntu-1804",
 			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "1804",
 		},
 		{
 			k8sVersion:     "1.1.notvalid.semver",
 			expectedResult: "",
 			expectedError:  true,
 		},
+		{
+			k8sVersion:     "v1.19.3",
+			expectedResult: "k8s-1dot19dot3-windows-2019",
+			expectedError:  false,
+			os:             "windows",
+			osVersion:      "2019",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.k8sVersion, func(t *testing.T) {
-			id, err := getDefaultImageSKUID(test.k8sVersion)
+			id, err := getDefaultImageSKUID(test.k8sVersion, test.os, test.osVersion)
 
 			if test.expectedError {
 				g.Expect(err).To(HaveOccurred())

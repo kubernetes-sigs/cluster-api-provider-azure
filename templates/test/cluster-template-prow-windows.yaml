@@ -234,8 +234,6 @@ metadata:
 spec:
   template:
     spec:
-      image:
-        id: /subscriptions/b9d9436a-0c07-4fe8-b779-2c1030bd7997/resourceGroups/test-cluster-api-images/providers/Microsoft.Compute/images/windowstestvmimage-capz
       location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
