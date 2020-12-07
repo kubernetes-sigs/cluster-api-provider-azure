@@ -64,6 +64,9 @@ func Test_SDKToVMSS(t *testing.T) {
 							Zones:      to.StringSlicePtr([]string{"zone0"}),
 							VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 								ProvisioningState: to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+								OsProfile: &compute.OSProfile{
+									ComputerName: to.StringPtr("instance-000000"),
+								},
 							},
 						},
 						{
@@ -73,6 +76,9 @@ func Test_SDKToVMSS(t *testing.T) {
 							Zones:      to.StringSlicePtr([]string{"zone1"}),
 							VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 								ProvisioningState: to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+								OsProfile: &compute.OSProfile{
+									ComputerName: to.StringPtr("instance-000001"),
+								},
 							},
 						},
 					}
@@ -95,7 +101,7 @@ func Test_SDKToVMSS(t *testing.T) {
 					expected.Instances[i] = infrav1exp.VMSSVM{
 						ID:               fmt.Sprintf("vm/%d", i),
 						InstanceID:       fmt.Sprintf("%d", i),
-						Name:             fmt.Sprintf("vm%d", i),
+						Name:             fmt.Sprintf("instance-00000%d", i),
 						AvailabilityZone: fmt.Sprintf("zone%d", i),
 						State:            "Succeeded",
 					}

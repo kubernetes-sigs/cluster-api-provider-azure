@@ -51,7 +51,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 			instance := infrav1exp.VMSSVM{
 				ID:         to.String(vm.ID),
 				InstanceID: to.String(vm.InstanceID),
-				Name:       to.String(vm.Name),
+				Name:       to.String(vm.OsProfile.ComputerName),
 				State:      infrav1.VMState(to.String(vm.ProvisioningState)),
 			}
 
