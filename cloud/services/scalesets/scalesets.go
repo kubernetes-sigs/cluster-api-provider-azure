@@ -126,6 +126,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return err
 	}
 
+	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmssSpec.SpotVMOptions)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get Spot VM options")
+	}
+
 	// Get the node outbound LB backend pool ID
 	backendAddressPools := []compute.SubResource{}
 	if vmssSpec.PublicLBName != "" {
@@ -213,6 +218,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 						},
 					},
 				},
+				Priority:       priority,
+				EvictionPolicy: evictionPolicy,
+				BillingProfile: billingProfile,
 			},
 		},
 	}

@@ -15,10 +15,7 @@ without data loss, and resume operation with limited degradation to a service.
 
 ## How do I use Spot Virtual Machines?
 
-**Note**: This feature is only available on Machines at present and not on the
-experimental MachinePools.
-
-To enable a Machine to be backed by a Spot Virtual Machine, add `spotMarketOptions`
+To enable a Machine to be backed by a Spot Virtual Machine, add `spotVMOptions`
 to your `AzureMachineTemplate`:
 
 ```yaml
@@ -49,4 +46,24 @@ spec:
   template:
     spotVMOptions:
       maxPrice: 0.04 # Price in USD per hour (up to 5 decimal places)
+```
+
+The experimental `MachinePool` also supports using spot instances. To enable a `MachinePool` to be backed by spot instances, add `spotVMOptions` to your `AzureMachinePool` spec:
+
+```yaml
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachinePool
+metadata:
+  name: capz-mp-0
+spec:
+  location: westus2
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${YOUR_SSH_PUB_KEY}
+    vmSize: Standard_D2s_v3
+    spotVMOptions: {}
 ```
