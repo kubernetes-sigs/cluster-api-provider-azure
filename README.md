@@ -109,7 +109,7 @@ If you think you have found a bug please follow the instructions below.
 
 ### Tracking new features
 
-We also use the issue tracker to track features. If you have an idea for a feature, or think you can help kops become even more awesome follow the steps below.
+We also use the issue tracker to track features. If you have an idea for a feature, or think you can help Cluster API Provider Azure become even more awesome, then follow the steps below.
 
 - Open a [feature request][feature_request].
 - Remember users might be searching for your issue in the future, so please
