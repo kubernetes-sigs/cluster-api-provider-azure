@@ -82,10 +82,10 @@ do!
 
 This repository uses the Kubernetes bots.  See a full list of the commands [here][prow].
 
-### Implementer office hours
+### Office hours
 
-Maintainers hold office hours every two weeks, with sessions open to all
-developers working on this project.
+The community holds office hours every two weeks, with sessions open to all users and
+developers.
 
 Office hours are hosted on a zoom video chat every other Thursday
 at 08:00 (PT) / 11:00 (ET) / 16:00 (UTC),
