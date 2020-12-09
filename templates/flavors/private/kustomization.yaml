@@ -1,0 +1,7 @@
+namespace: default
+resources:
+  - ../default
+patchesStrategicMerge:
+  - patches/private-lb.yaml
+  - patches/apiserver-host-dns.yaml
+

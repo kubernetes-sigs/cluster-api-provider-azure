@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
@@ -34,7 +35,13 @@ type AzureMachineSpec struct {
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
 
-	VMSize           string           `json:"vmSize"`
+	VMSize string `json:"vmSize"`
+
+	// FailureDomain is the failure domain unique identifier this Machine should be attached to,
+	// as defined in Cluster API. This relates to an Azure Availability Zone
+	FailureDomain *string `json:"failureDomain,omitempty"`
+
+	// DEPRECATED: use FailureDomain instead
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is used to provide details of an image to use during VM creation.
@@ -44,8 +51,34 @@ type AzureMachineSpec struct {
 	// +optional
 	Image *Image `json:"image,omitempty"`
 
+	// Identity is the type of identity used for the virtual machine.
+	// The type 'SystemAssigned' is an implicitly created identity.
+	// The generated identity will be assigned a Subscription contributor role.
+	// The type 'UserAssigned' is a standalone Azure resource provided by the user
+	// and assigned to the VM
+	// +kubebuilder:default=None
+	// +optional
+	Identity VMIdentity `json:"identity,omitempty"`
+
+	// UserAssignedIdentities is a list of standalone Azure identities provided by the user
+	// The lifecycle of a user-assigned identity is managed separately from the lifecycle of
+	// the AzureMachine.
+	// See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+	// +optional
+	UserAssignedIdentities []UserAssignedIdentity `json:"userAssignedIdentities,omitempty"`
+
+	// RoleAssignmentName is the name of the role assignment to create for a system assigned identity. It can be any valid GUID.
+	// If not specified, a random GUID will be generated.
+	// +optional
+	RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
+
+	// OSDisk specifies the parameters for the operating system disk of the machine
 	OSDisk OSDisk `json:"osDisk"`
 
+	// DataDisk specifies the parameters that are used to add one or more data disks to the machine
+	DataDisks []DataDisk `json:"dataDisks,omitempty"`
+
+	// DEPRECATED: to support old clients, will be removed in v1alpha4
 	Location string `json:"location"`
 
 	SSHPublicKey string `json:"sshPublicKey"`
@@ -59,6 +92,35 @@ type AzureMachineSpec struct {
 	// AllocatePublicIP allows the ability to create dynamic public ips for machines where this value is true.
 	// +optional
 	AllocatePublicIP bool `json:"allocatePublicIP,omitempty"`
+
+	// EnableIPForwarding enables IP Forwarding in Azure which is required for some CNI's to send traffic from a pods on one machine
+	// to another. This is required for IpV6 with Calico in combination with User Defined Routes (set by the Azure Cloud Controller
+	// manager). Default is false for disabled.
+	// +optional
+	EnableIPForwarding bool `json:"enableIPForwarding,omitempty"`
+
+	// AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on
+	// whether the requested VMSize supports accelerated networking.
+	// If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
+	// +kubebuilder:validation:nullable
+	// +optional
+	AcceleratedNetworking *bool `json:"acceleratedNetworking,omitempty"`
+
+	// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
+	// +optional
+	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`
+
+	// SecurityProfile specifies the Security profile settings for a virtual machine.
+	// +optional
+	SecurityProfile *SecurityProfile `json:"securityProfile,omitempty"`
+}
+
+// SpotVMOptions defines the options relevant to running the Machine on Spot VMs
+type SpotVMOptions struct {
+	// MaxPrice defines the maximum price the user is willing to pay for Spot VM instances
+	// +optional
+	// +kubebuilder:validation:Type=number
+	MaxPrice *string `json:"maxPrice,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine
@@ -111,6 +173,10 @@ type AzureMachineStatus struct {
 	// controller's output.
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
+
+	// Conditions defines current service state of the AzureMachine.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -140,6 +206,16 @@ type AzureMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AzureMachine `json:"items"`
+}
+
+// GetConditions returns the list of conditions for an AzureMachine API object.
+func (m *AzureMachine) GetConditions() clusterv1.Conditions {
+	return m.Status.Conditions
+}
+
+// SetConditions will set the given conditions on an AzureMachine object
+func (m *AzureMachine) SetConditions(conditions clusterv1.Conditions) {
+	m.Status.Conditions = conditions
 }
 
 func init() {

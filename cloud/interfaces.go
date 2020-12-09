@@ -18,20 +18,71 @@ package azure
 
 import (
 	"context"
+
+	"github.com/Azure/go-autorest/autorest"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 // Service is a generic interface used by components offering a type of service.
 // Example: virtualnetworks service would offer Reconcile/Delete methods.
 type Service interface {
+	Reconcile(ctx context.Context) error
+	Delete(ctx context.Context) error
+}
+
+// OldService is a generic interface for services that have not yet been refactored.
+// Once all services have been converted to use Service, this should be removed.
+// Example: virtualnetworks service would offer Reconcile/Delete methods.
+type OldService interface {
 	Reconcile(ctx context.Context, spec interface{}) error
 	Delete(ctx context.Context, spec interface{}) error
 }
 
-// GetterService is a temporary interface used by components which still require Get methods.
-// Once all components move to storing provider information within the relevant
-// Cluster/Machine specs, this interface should be removed.
-type GetterService interface {
-	Get(ctx context.Context, spec interface{}) (interface{}, error)
-	Reconcile(ctx context.Context, spec interface{}) error
-	Delete(ctx context.Context, spec interface{}) error
+// CredentialGetter is a Service which knows how to retrieve credentials for an Azure
+// resource in a resource group.
+type CredentialGetter interface {
+	Service
+	GetCredentials(ctx context.Context, group string, cluster string) ([]byte, error)
+}
+
+// Authorizer is an interface which can get the subscription ID, base URI, and authorizer for an Azure service.
+type Authorizer interface {
+	SubscriptionID() string
+	ClientID() string
+	ClientSecret() string
+	CloudEnvironment() string
+	TenantID() string
+	BaseURI() string
+	Authorizer() autorest.Authorizer
+}
+
+// NetworkDescriber is an interface which can get common Azure Cluster Networking information.
+type NetworkDescriber interface {
+	Vnet() *infrav1.VnetSpec
+	IsVnetManaged() bool
+	NodeSubnet() *infrav1.SubnetSpec
+	ControlPlaneSubnet() *infrav1.SubnetSpec
+	IsIPv6Enabled() bool
+	NodeRouteTable() *infrav1.RouteTable
+	ControlPlaneRouteTable() *infrav1.RouteTable
+	APIServerLBName() string
+	APIServerLBPoolName(string) string
+	IsAPIServerPrivate() bool
+	OutboundLBName(string) string
+	OutboundPoolName(string) string
+}
+
+// ClusterDescriber is an interface which can get common Azure Cluster information.
+type ClusterDescriber interface {
+	Authorizer
+	ResourceGroup() string
+	ClusterName() string
+	Location() string
+	AdditionalTags() infrav1.Tags
+}
+
+// ClusterScoper combines the ClusterDescriber and NetworkDescriber interfaces.
+type ClusterScoper interface {
+	ClusterDescriber
+	NetworkDescriber
 }

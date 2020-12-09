@@ -23,11 +23,14 @@ set -o pipefail
 : "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
+make envsubst
+
 export REGISTRY="${REGISTRY:-registry.local/fake}"
 
 # Cluster settings.
 export CLUSTER_NAME="${CLUSTER_NAME:-capz-test}"
 export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
+export AZURE_ENVIRONMENT="AzurePublicCloud"
 
 # Azure settings.
 export AZURE_LOCATION="${AZURE_LOCATION:-southcentralus}"
@@ -42,7 +45,7 @@ export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${CONTROL_PLANE_MACHINE_TYPE:-Standard_D2s_v3}"
 export AZURE_NODE_MACHINE_TYPE="${NODE_MACHINE_TYPE:-Standard_D2s_v3}"
 export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
-export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.17.4}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.19.4}"
 export TEMPLATE_PATH="${TEMPLATE_PATH:-cluster-template.yaml}"
 
 # Generate SSH key.
@@ -53,7 +56,7 @@ if ! [ -n "$SSH_KEY_FILE" ]; then
     ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
     echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 fi
-export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build

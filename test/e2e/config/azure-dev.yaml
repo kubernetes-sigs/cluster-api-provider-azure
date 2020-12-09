@@ -1,0 +1,92 @@
+managementClusterName: capz-e2e
+
+images:
+  - name: ${MANAGER_IMAGE}
+    loadBehavior: mustLoad
+
+providers:
+  - name: cluster-api
+    type: CoreProvider
+    versions:
+      - name: v0.3.11
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.11/core-components.yaml
+        type: url
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--enable-leader-election"
+            new: "--enable-leader-election=false"
+  - name: kubeadm
+    type: BootstrapProvider
+    versions:
+      - name: v0.3.11
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.11/bootstrap-components.yaml
+        type: url
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--enable-leader-election"
+            new: "--enable-leader-election=false"
+  - name: kubeadm
+    type: ControlPlaneProvider
+    versions:
+      - name: v0.3.11
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.11/control-plane-components.yaml
+        type: url
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--enable-leader-election"
+            new: "--enable-leader-election=false"
+  - name: azure
+    type: InfrastructureProvider
+    versions:
+      - name: v0.4.0
+        value: "${PWD}/config"
+    files:
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow.yaml"
+        targetName: "cluster-template.yaml"
+      - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-adoption.yaml"
+        targetName: "cluster-template-kcp-adoption.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-ipv6.yaml"
+        targetName: "cluster-template-ipv6.yaml"
+      - sourcePath: "../data/infrastructure-azure/cluster-template-mhc.yaml"
+        targetName: "cluster-template-mhc.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool.yaml"
+        targetName: "cluster-template-machine-pool.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-nvidia-gpu.yaml"
+        targetName: "cluster-template-nvidia-gpu.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-private.yaml"
+        targetName: "cluster-template-private.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-ci-version.yaml"
+        targetName: "cluster-template-conformance-ci-artifacts.yaml"
+
+variables:
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.4}"
+  ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
+  COREDNS_VERSION_UPGRADE_TO: "1.6.7"
+  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.19.4}"
+  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.18.12}"
+  CNI: "${PWD}/templates/addons/calico.yaml"
+  CNI_IPV6: "${PWD}/templates/addons/calico-ipv6.yaml"
+  REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
+  EXP_AKS: "true"
+  EXP_MACHINE_POOL: "true"
+  EXP_CLUSTER_RESOURCE_SET: "true"
+  CONFORMANCE_CI_ARTIFACTS_KUBERNETES_VERSION: "v1.19.4"
+  CONFORMANCE_WORKER_MACHINE_COUNT: "5"
+  CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT: "1"
+  VM_SSH_PORT: "22"
+
+intervals:
+  default/wait-controllers: ["3m", "10s"]
+  default/wait-cluster: ["20m", "10s"]
+  default/wait-control-plane: ["20m", "10s"]
+  default/wait-worker-nodes: ["20m", "10s"]
+  default/wait-delete-cluster: ["30m", "10s"]
+  default/wait-machine-upgrade: ["60m", "10s"]
+  default/wait-machine-remediation: ["30m", "10s"]
+  default/wait-deployment: ["5m", "10s"]
+  default/wait-job: ["5m", "10s"]
+  default/wait-service: ["3m", "10s"]
+  default/wait-machine-pool-nodes: ["20m", "10s"]

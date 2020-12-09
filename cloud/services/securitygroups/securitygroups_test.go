@@ -21,171 +21,312 @@ import (
 	"net/http"
 	"testing"
 
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
-
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/golang/mock/gomock"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/gomega"
+	"k8s.io/klog/klogr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups/mock_securitygroups"
+	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
-func init() {
-	clusterv1.AddToScheme(scheme.Scheme)
-}
-
 func TestReconcileSecurityGroups(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
-		name           string
-		sgName         string
-		isControlPlane bool
-		vnetSpec       *infrav1.VnetSpec
-		expect         func(m *mock_securitygroups.MockClientMockRecorder)
+		name   string
+		expect func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder)
 	}{
 		{
-			name:           "security group does not exists",
-			sgName:         "my-sg",
-			isControlPlane: true,
-			vnetSpec:       &infrav1.VnetSpec{},
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-sg", gomock.AssignableToTypeOf(network.SecurityGroup{}))
+			name: "security groups do not exist",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
+				s.NSGSpecs().Return([]azure.NSGSpec{
+					{
+						Name: "nsg-one",
+						IngressRules: infrav1.IngressRules{
+							{
+								Name:             "first-rule",
+								Description:      "a test rule",
+								Protocol:         "*",
+								Priority:         400,
+								SourcePorts:      to.StringPtr("*"),
+								DestinationPorts: to.StringPtr("*"),
+								Source:           to.StringPtr("*"),
+								Destination:      to.StringPtr("*"),
+							},
+							{
+								Name:             "second-rule",
+								Description:      "another test rule",
+								Protocol:         "*",
+								Priority:         450,
+								SourcePorts:      to.StringPtr("*"),
+								DestinationPorts: to.StringPtr("*"),
+								Source:           to.StringPtr("*"),
+								Destination:      to.StringPtr("*"),
+							},
+						},
+					},
+					{
+						Name:         "nsg-two",
+						IngressRules: infrav1.IngressRules{},
+					},
+				})
+				s.IsVnetManaged().Return(true)
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-one").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{
+							{
+								SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+									Description:              to.StringPtr("a test rule"),
+									SourcePortRange:          to.StringPtr("*"),
+									DestinationPortRange:     to.StringPtr("*"),
+									SourceAddressPrefix:      to.StringPtr("*"),
+									DestinationAddressPrefix: to.StringPtr("*"),
+									Protocol:                 "*",
+									Direction:                "Inbound",
+									Access:                   "Allow",
+									Priority:                 to.Int32Ptr(400),
+								},
+								Name: to.StringPtr("first-rule"),
+							},
+							{
+								SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+									Description:              to.StringPtr("another test rule"),
+									SourcePortRange:          to.StringPtr("*"),
+									DestinationPortRange:     to.StringPtr("*"),
+									SourceAddressPrefix:      to.StringPtr("*"),
+									DestinationAddressPrefix: to.StringPtr("*"),
+									Protocol:                 "*",
+									Direction:                "Inbound",
+									Access:                   "Allow",
+									Priority:                 to.Int32Ptr(450),
+								},
+								Name: to.StringPtr("second-rule"),
+							},
+						},
+					},
+					Etag:     nil,
+					Location: to.StringPtr("test-location"),
+				}))
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-two").Return(network.SecurityGroup{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-two", gomockinternal.DiffEq(network.SecurityGroup{
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{},
+					},
+					Etag:     nil,
+					Location: to.StringPtr("test-location"),
+				}))
 			},
 		}, {
-			name:           "security group does not exist and it's not for a control plane",
-			sgName:         "my-sg",
-			isControlPlane: false,
-			vnetSpec:       &infrav1.VnetSpec{},
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-				m.CreateOrUpdate(context.TODO(), "my-rg", "my-sg", gomock.AssignableToTypeOf(network.SecurityGroup{}))
+			name: "security group exists",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
+				s.NSGSpecs().Return([]azure.NSGSpec{
+					{
+						Name: "nsg-one",
+						IngressRules: infrav1.IngressRules{
+							{
+								Name:             "first-rule",
+								Description:      "a test rule",
+								Protocol:         "*",
+								Priority:         400,
+								SourcePorts:      to.StringPtr("*"),
+								DestinationPorts: to.StringPtr("*"),
+								Source:           to.StringPtr("*"),
+								Destination:      to.StringPtr("*"),
+							},
+						},
+					},
+					{
+						Name:         "nsg-two",
+						IngressRules: infrav1.IngressRules{},
+					},
+				})
+				s.IsVnetManaged().AnyTimes().Return(true)
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-one").Return(network.SecurityGroup{
+					Response: autorest.Response{},
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{
+							{
+								SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+									Description:              to.StringPtr("a different rule"),
+									Protocol:                 "*",
+									SourcePortRange:          to.StringPtr("*"),
+									DestinationPortRange:     to.StringPtr("*"),
+									SourceAddressPrefix:      to.StringPtr("*"),
+									DestinationAddressPrefix: to.StringPtr("*"),
+									Priority:                 to.Int32Ptr(300),
+									Access:                   network.SecurityRuleAccessDeny,
+									Direction:                network.SecurityRuleDirectionOutbound,
+								},
+								Name: to.StringPtr("foo-rule"),
+							},
+						},
+					},
+					Etag: to.StringPtr("test-etag"),
+					ID:   to.StringPtr("fake/nsg/id"),
+					Name: to.StringPtr("nsg-one"),
+				}, nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "nsg-one", gomockinternal.DiffEq(network.SecurityGroup{
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{
+							{
+								SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+									Description:              to.StringPtr("a different rule"),
+									SourcePortRange:          to.StringPtr("*"),
+									DestinationPortRange:     to.StringPtr("*"),
+									SourceAddressPrefix:      to.StringPtr("*"),
+									DestinationAddressPrefix: to.StringPtr("*"),
+									Protocol:                 "*",
+									Direction:                "Outbound",
+									Access:                   "Deny",
+									Priority:                 to.Int32Ptr(300),
+								},
+								Name: to.StringPtr("foo-rule"),
+							},
+							{
+								SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+									Description:              to.StringPtr("a test rule"),
+									SourcePortRange:          to.StringPtr("*"),
+									DestinationPortRange:     to.StringPtr("*"),
+									SourceAddressPrefix:      to.StringPtr("*"),
+									DestinationAddressPrefix: to.StringPtr("*"),
+									Protocol:                 "*",
+									Direction:                "Inbound",
+									Access:                   "Allow",
+									Priority:                 to.Int32Ptr(400),
+								},
+								Name: to.StringPtr("first-rule"),
+							},
+						},
+					},
+					Etag:     to.StringPtr("test-etag"),
+					Location: to.StringPtr("test-location"),
+				}))
+				m.Get(gomockinternal.AContext(), "my-rg", "nsg-two").Return(network.SecurityGroup{
+					Response: autorest.Response{},
+					SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+						SecurityRules: &[]network.SecurityRule{},
+					},
+					Etag: to.StringPtr("test-etag"),
+					ID:   to.StringPtr("fake/nsg/two/id"),
+					Name: to.StringPtr("nsg-two"),
+				}, nil)
 			},
 		}, {
-			name:           "skipping network security group reconcile in custom vnet mode",
-			sgName:         "my-sg",
-			isControlPlane: false,
-			vnetSpec:       &infrav1.VnetSpec{ResourceGroup: "custom-vnet-rg", Name: "custom-vnet", ID: "id1"},
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-
+			name: "skipping network security group reconcile in custom VNet mode",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
+				s.IsVnetManaged().Return(false)
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 			},
 		},
 	}
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
-			sgMock := mock_securitygroups.NewMockClient(mockCtrl)
+			defer mockCtrl.Finish()
 
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
+			scopeMock := mock_securitygroups.NewMockNSGScope(mockCtrl)
+			clientMock := mock_securitygroups.NewMockclient(mockCtrl)
 
-			client := fake.NewFakeClient(cluster)
-
-			tc.expect(sgMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup: "my-rg",
-						NetworkSpec: infrav1.NetworkSpec{
-							Vnet: *tc.vnetSpec,
-						},
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: sgMock,
+				Scope:  scopeMock,
+				client: clientMock,
 			}
 
-			sgSpec := &Spec{
-				Name:           tc.sgName,
-				IsControlPlane: tc.isControlPlane,
-			}
-			g.Expect(s.Reconcile(context.TODO(), sgSpec)).To(Succeed())
+			g.Expect(s.Reconcile(context.TODO())).To(Succeed())
 		})
 	}
 }
 
 func TestDeleteSecurityGroups(t *testing.T) {
-	g := NewWithT(t)
-
 	testcases := []struct {
 		name   string
-		sgName string
-		expect func(m *mock_securitygroups.MockClientMockRecorder)
+		expect func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder)
 	}{
 		{
-			name:   "security group exists",
-			sgName: "my-sg",
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-sg")
+			name: "security groups exist",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
+				s.NSGSpecs().Return([]azure.NSGSpec{
+					{
+						Name: "nsg-one",
+						IngressRules: infrav1.IngressRules{
+							{
+								Name:             "first-rule",
+								Description:      "a test rule",
+								Protocol:         "all",
+								Priority:         400,
+								SourcePorts:      to.StringPtr("*"),
+								DestinationPorts: to.StringPtr("*"),
+								Source:           to.StringPtr("*"),
+								Destination:      to.StringPtr("*"),
+							},
+						},
+					},
+					{
+						Name:         "nsg-two",
+						IngressRules: infrav1.IngressRules{},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-one")
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-two")
 			},
 		},
 		{
-			name:   "security group already deleted",
-			sgName: "my-sg",
-			expect: func(m *mock_securitygroups.MockClientMockRecorder) {
-				m.Delete(context.TODO(), "my-rg", "my-sg").
+			name: "security group already deleted",
+			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
+				s.NSGSpecs().Return([]azure.NSGSpec{
+					{
+						Name:         "nsg-one",
+						IngressRules: infrav1.IngressRules{},
+					},
+					{
+						Name:         "nsg-two",
+						IngressRules: infrav1.IngressRules{},
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-one").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Delete(gomockinternal.AContext(), "my-rg", "nsg-two")
 			},
 		},
 	}
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			t.Parallel()
 			mockCtrl := gomock.NewController(t)
-			sgMock := mock_securitygroups.NewMockClient(mockCtrl)
+			defer mockCtrl.Finish()
 
-			cluster := &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
-			}
+			scopeMock := mock_securitygroups.NewMockNSGScope(mockCtrl)
+			clientMock := mock_securitygroups.NewMockclient(mockCtrl)
 
-			client := fake.NewFakeClient(cluster)
-
-			tc.expect(sgMock.EXPECT())
-
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-				AzureClients: scope.AzureClients{
-					SubscriptionID: "123",
-					Authorizer:     autorest.NullAuthorizer{},
-				},
-				Client:  client,
-				Cluster: cluster,
-				AzureCluster: &infrav1.AzureCluster{
-					Spec: infrav1.AzureClusterSpec{
-						Location: "test-location",
-						ResourceGroup: "my-rg",
-					},
-				},
-			})
-			g.Expect(err).NotTo(HaveOccurred())
+			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
 			s := &Service{
-				Scope:  clusterScope,
-				Client: sgMock,
+				Scope:  scopeMock,
+				client: clientMock,
 			}
 
-			sgSpec := &Spec{
-				Name:           tc.sgName,
-				IsControlPlane: false,
-			}
-
-			g.Expect(s.Delete(context.TODO(), sgSpec)).To(Succeed())
+			g.Expect(s.Delete(context.TODO())).To(Succeed())
 		})
 	}
 }

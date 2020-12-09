@@ -17,10 +17,17 @@ limitations under the License.
 package v1alpha2
 
 import (
+	unsafe "unsafe"
+
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
+
+const (
+	subscriptionIDAnnotation = "azurecluster.infrastructure.cluster.x-k8s.io/subscriptionID"
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1alpha3).
@@ -38,11 +45,39 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		dst.Spec.ControlPlaneEndpoint.Port = int32(endpoint.Port)
 	}
 
+	if subscriptionID, ok := src.Annotations[subscriptionIDAnnotation]; ok {
+		dst.Spec.SubscriptionID = subscriptionID
+		delete(dst.Annotations, subscriptionIDAnnotation)
+		if len(dst.Annotations) == 0 {
+			dst.Annotations = nil
+		}
+	}
+
 	// Manually restore data.
 	restored := &infrav1alpha3.AzureCluster{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+
+	dst.Status.FailureDomains = restored.Status.FailureDomains
+	dst.Spec.NetworkSpec.Vnet.CIDRBlocks = restored.Spec.NetworkSpec.Vnet.CIDRBlocks
+
+	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
+		if restoredSubnet != nil {
+			for _, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
+				if dstSubnet != nil && dstSubnet.Name == restoredSubnet.Name {
+					dstSubnet.RouteTable = restoredSubnet.RouteTable
+					dstSubnet.CIDRBlocks = restoredSubnet.CIDRBlocks
+					dstSubnet.SecurityGroup.IngressRules = restoredSubnet.SecurityGroup.IngressRules
+				}
+			}
+		}
+	}
+
+	dst.Spec.NetworkSpec.APIServerLB = restored.Spec.NetworkSpec.APIServerLB
+
+	// Manually convert conditions
+	dst.SetConditions(restored.GetConditions())
 
 	return nil
 }
@@ -63,6 +98,14 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 				Port: int(src.Spec.ControlPlaneEndpoint.Port),
 			},
 		}
+	}
+
+	// Preserve Spec.SubscriptionID in annotation `azurecluster.infrastructure.cluster.x-k8s.io/subscriptionID`
+	if src.Spec.SubscriptionID != "" {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		dst.Annotations[subscriptionIDAnnotation] = src.Spec.SubscriptionID
 	}
 
 	// Preserve Hub data on down-conversion.
@@ -119,4 +162,108 @@ func Convert_v1alpha3_AzureClusterStatus_To_v1alpha2_AzureClusterStatus(in *infr
 	}
 
 	return nil
+}
+
+// Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec.
+func Convert_v1alpha2_NetworkSpec_To_v1alpha3_NetworkSpec(in *NetworkSpec, out *infrav1alpha3.NetworkSpec, s apiconversion.Scope) error { //nolint
+	if err := Convert_v1alpha2_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
+		return err
+	}
+
+	out.Subnets = make(infrav1alpha3.Subnets, len(in.Subnets))
+	for i := range in.Subnets {
+		if in.Subnets[i] != nil {
+			out.Subnets[i] = &infrav1alpha3.SubnetSpec{}
+			if err := Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in.Subnets[i], out.Subnets[i], s); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec.
+func Convert_v1alpha3_NetworkSpec_To_v1alpha2_NetworkSpec(in *infrav1alpha3.NetworkSpec, out *NetworkSpec, s apiconversion.Scope) error { //nolint
+	if err := Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
+		return err
+	}
+
+	out.Subnets = make(Subnets, len(in.Subnets))
+	for i := range in.Subnets {
+		if in.Subnets[i] != nil {
+			out.Subnets[i] = &SubnetSpec{}
+			if err := Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in.Subnets[i], out.Subnets[i], s); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec.
+func Convert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(in *infrav1alpha3.VnetSpec, out *VnetSpec, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha3_VnetSpec_To_v1alpha2_VnetSpec(in, out, s)
+}
+
+// Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec.
+func Convert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in *SubnetSpec, out *infrav1alpha3.SubnetSpec, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha2_SubnetSpec_To_v1alpha3_SubnetSpec(in, out, s)
+}
+
+// Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec.
+func Convert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in *infrav1alpha3.SubnetSpec, out *SubnetSpec, s apiconversion.Scope) error { //nolint
+	return autoConvert_v1alpha3_SubnetSpec_To_v1alpha2_SubnetSpec(in, out, s)
+}
+
+func Convert_v1alpha3_SecurityGroup_To_v1alpha2_SecurityGroup(in *infrav1alpha3.SecurityGroup, out *SecurityGroup, s apiconversion.Scope) error {
+	out.ID = in.ID
+	out.Name = in.Name
+
+	out.IngressRules = make(IngressRules, len(in.IngressRules))
+	for i := range in.IngressRules {
+		if in.IngressRules[i] != nil {
+			out.IngressRules[i] = &IngressRule{}
+			if err := Convert_v1alpha3_IngressRule_To_v1alpha2_IngressRule(in.IngressRules[i], out.IngressRules[i], s); err != nil {
+				return err
+			}
+		}
+	}
+
+	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
+	return nil
+}
+
+func Convert_v1alpha2_SecurityGroup_To_v1alpha3_SecurityGroup(in *SecurityGroup, out *infrav1alpha3.SecurityGroup, s apiconversion.Scope) error {
+	out.ID = in.ID
+	out.Name = in.Name
+
+	out.IngressRules = make(infrav1alpha3.IngressRules, len(in.IngressRules))
+	for i := range in.IngressRules {
+		if in.IngressRules[i] != nil {
+			out.IngressRules[i] = &infrav1alpha3.IngressRule{}
+			if err := Convert_v1alpha2_IngressRule_To_v1alpha3_IngressRule(in.IngressRules[i], out.IngressRules[i], s); err != nil {
+				return err
+			}
+		}
+	}
+
+	out.Tags = *(*infrav1alpha3.Tags)(unsafe.Pointer(&in.Tags))
+	return nil
+}
+
+// Convert_v1alpha2_IngressRule_To_v1alpha3_IngressRule
+func Convert_v1alpha2_IngressRule_To_v1alpha3_IngressRule(in *IngressRule, out *infrav1alpha3.IngressRule, s apiconversion.Scope) error {
+	return autoConvert_v1alpha2_IngressRule_To_v1alpha3_IngressRule(in, out, s)
+}
+
+// Convert_v1alpha3_IngressRule_To_v1alpha2_IngressRule
+func Convert_v1alpha3_IngressRule_To_v1alpha2_IngressRule(in *infrav1alpha3.IngressRule, out *IngressRule, s apiconversion.Scope) error {
+	return autoConvert_v1alpha3_IngressRule_To_v1alpha2_IngressRule(in, out, s)
+}
+
+// Convert_v1alpha3_ManagedDisk_To_v1alpha2_ManagedDisk converts between api versions
+func Convert_v1alpha3_ManagedDisk_To_v1alpha2_ManagedDisk(in *v1alpha3.ManagedDisk, out *ManagedDisk, s apiconversion.Scope) error {
+	return autoConvert_v1alpha3_ManagedDisk_To_v1alpha2_ManagedDisk(in, out, s)
 }

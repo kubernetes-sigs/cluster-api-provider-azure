@@ -90,4 +90,5 @@ function fetch_tools {
 
   mkdir -p "${tools_bin}"
   mv "${kb_root_dir}"/bin/* "${tools_bin}"
+  rm -f "${tools_bin}"/bin/kubectl
 }

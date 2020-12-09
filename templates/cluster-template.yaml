@@ -1,44 +1,8 @@
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-spec:
-  template:
-    spec:
-      files:
-      - content: |
-          {
-            "cloud": "AzurePublicCloud",
-            "tenantId": "${AZURE_TENANT_ID}",
-            "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-            "aadClientId": "${AZURE_CLIENT_ID}",
-            "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-            "resourceGroup": "${CLUSTER_NAME}",
-            "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-            "location": "${AZURE_LOCATION}",
-            "vmType": "standard",
-            "vnetName": "${CLUSTER_NAME}-vnet",
-            "vnetResourceGroup": "${CLUSTER_NAME}",
-            "subnetName": "${CLUSTER_NAME}-node-subnet",
-            "routeTableName": "${CLUSTER_NAME}-node-routetable",
-            "loadBalancerSku": "standard",
-            "maximumLoadBalancerRuleCount": 250,
-            "useManagedIdentityExtension": false,
-            "useInstanceMetadata": true
-          }
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
-          name: '{{ ds.meta_data["local_hostname"] }}'
----
 apiVersion: cluster.x-k8s.io/v1alpha3
 kind: Cluster
 metadata:
+  labels:
+    cni: calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -55,28 +19,18 @@ spec:
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineDeployment
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureCluster
 metadata:
-  name: ${CLUSTER_NAME}-md-0
+  name: ${CLUSTER_NAME}
+  namespace: default
 spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: null
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
-      version: ${KUBERNETES_VERSION}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -105,33 +59,37 @@ spec:
           allocate-node-cidrs: "false"
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
+          cluster-name: ${CLUSTER_NAME}
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
           name: cloud-config
           readOnly: true
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
     files:
-    - content: |
-        {
-          "cloud": "AzurePublicCloud",
-          "tenantId": "${AZURE_TENANT_ID}",
-          "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-          "aadClientId": "${AZURE_CLIENT_ID}",
-          "aadClientSecret": "${AZURE_CLIENT_SECRET}",
-          "resourceGroup": "${AZURE_RESOURCE_GROUP}",
-          "securityGroupName": "${CLUSTER_NAME}-node-nsg",
-          "location": "${AZURE_LOCATION}",
-          "vmType": "standard",
-          "vnetName": "${CLUSTER_NAME}-vnet",
-          "vnetResourceGroup": "${CLUSTER_NAME}",
-          "subnetName": "${CLUSTER_NAME}-node-subnet",
-          "routeTableName": "${CLUSTER_NAME}-node-routetable",
-          "userAssignedID": "${CLUSTER_NAME}",
-          "loadBalancerSku": "standard",
-          "maximumLoadBalancerRuleCount": 250,
-          "useManagedIdentityExtension": false,
-          "useInstanceMetadata": true
-        }
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
       owner: root:root
       path: /etc/kubernetes/azure.json
       permissions: "0644"
@@ -147,26 +105,62 @@ spec:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
         name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
     useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-kind: AzureCluster
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
-  location: ${AZURE_LOCATION}
-  networkSpec:
-    vnet:
-      name: ${AZURE_VNET_NAME}
-  resourceGroup: ${AZURE_RESOURCE_GROUP}
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      location: ${AZURE_LOCATION}
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-control-plane
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
   template:
@@ -177,21 +171,29 @@ spec:
         managedDisk:
           storageAccountType: Premium_LRS
         osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
-      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-kind: AzureMachineTemplate
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
+  namespace: default
 spec:
   template:
     spec:
-      location: ${AZURE_LOCATION}
-      osDisk:
-        diskSizeGB: 30
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      useExperimentalRetryJoin: true

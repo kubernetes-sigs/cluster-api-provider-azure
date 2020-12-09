@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-func TestImageRequired(t *testing.T) {
+func TestImageOptional(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -34,10 +34,7 @@ func TestImageRequired(t *testing.T) {
 	extension := test{}
 
 	errs := ValidateImage(extension.Image, field.NewPath("image"))
-	g.Expect(errs).To(HaveLen(1))
-	g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
-	g.Expect(errs[0].Field).To(Equal("image"))
-	g.Expect(errs[0].Detail).NotTo(BeEmpty())
+	g.Expect(errs).To(HaveLen(0))
 }
 
 func TestImageTooManyDetails(t *testing.T) {

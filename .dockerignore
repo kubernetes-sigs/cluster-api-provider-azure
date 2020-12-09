@@ -6,7 +6,10 @@
 !/cloud/**
 !/controllers/**
 !/exp/**
+!/feature/**
 !/pkg/**
+!/version/**
+!/util/**
 !/main.go
 !/go.mod
 !/go.sum

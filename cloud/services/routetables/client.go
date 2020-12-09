@@ -21,44 +21,52 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
-type Client interface {
+// client wraps go-sdk
+type client interface {
 	Get(context.Context, string, string) (network.RouteTable, error)
 	CreateOrUpdate(context.Context, string, string, network.RouteTable) error
 	Delete(context.Context, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client
+type azureClient struct {
 	routetables network.RouteTablesClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newRouteTablesClient(subscriptionID, authorizer)
-	return &AzureClient{c}
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
+	c := newRouteTablesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	return &azureClient{c}
 }
 
 // newRouteTablesClient creates a new route tables client from subscription ID.
-func newRouteTablesClient(subscriptionID string, authorizer autorest.Authorizer) network.RouteTablesClient {
-	routeTablesClient := network.NewRouteTablesClient(subscriptionID)
+func newRouteTablesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.RouteTablesClient {
+	routeTablesClient := network.NewRouteTablesClientWithBaseURI(baseURI, subscriptionID)
 	routeTablesClient.Authorizer = authorizer
-	routeTablesClient.AddToUserAgent(azure.UserAgent)
+	routeTablesClient.AddToUserAgent(azure.UserAgent())
 	return routeTablesClient
 }
 
 // Get gets the specified route table.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, rtName string) (network.RouteTable, error) {
+func (ac *azureClient) Get(ctx context.Context, resourceGroupName, rtName string) (network.RouteTable, error) {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.Get")
+	defer span.End()
+
 	return ac.routetables.Get(ctx, resourceGroupName, rtName, "")
 }
 
 // CreateOrUpdate create or updates a route table in a specified resource group.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, rtName string, rt network.RouteTable) error {
+func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, rtName string, rt network.RouteTable) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.routetables.CreateOrUpdate(ctx, resourceGroupName, rtName, rt)
 	if err != nil {
 		return err
@@ -72,7 +80,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 }
 
 // Delete deletes the specified route table.
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, rtName string) error {
+func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, rtName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.routetables.Delete(ctx, resourceGroupName, rtName)
 	if err != nil {
 		return err

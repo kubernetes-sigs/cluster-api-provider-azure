@@ -2,16 +2,16 @@
 
 aliases:
   sig-cluster-lifecycle-leads:
-    - luxas
+    - fabriziopandini
     - justinsb
+    - neolit123
     - timothysc
   cluster-api-admins:
-    - justinsb
-    - detiber
     - davidewatson
+    - detiber
+    - justinsb
     - vincepri
   cluster-api-maintainers:
-    - chuckha
     - detiber
     - justinsb
     - ncdc
@@ -19,9 +19,10 @@ aliases:
   cluster-api-azure-maintainers:
     - awesomenix
     - CecileRobertMichon
+    - devigned
     - justaugustus
-  cluster-api-azure-reviewers:
-    - juan-lee
     - nader-ziada
-    - serbrech
-    - vincepri
+  cluster-api-azure-reviewers:
+    - alexeldeib
+    - cpanato
+    - juan-lee

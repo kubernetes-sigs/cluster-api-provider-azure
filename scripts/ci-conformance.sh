@@ -16,6 +16,7 @@
 
 ###############################################################################
 
+# This script is executed by presubmit `pull-cluster-api-provider-azure-e2e`
 # To run locally, set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID
 
 set -o errexit
@@ -36,128 +37,62 @@ source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
-random-string() {
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1
+# Verify the required Environment Variables are present.
+: "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+: "${AZURE_TENANT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_ID:?Environment variable empty or not defined.}"
+: "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
+
+get_random_region() {
+    local REGIONS=("eastus" "eastus2" "southcentralus" "westus2" "westeurope")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-# build Kubernetes E2E binaries
-build_k8s() {
-    # possibly enable bazel build caching before building kubernetes
-    if [[ "${BAZEL_REMOTE_CACHE_ENABLED:-false}" == "true" ]]; then
-    create_bazel_cache_rcs.sh || true
-    fi
+export LOCAL_ONLY=${LOCAL_ONLY:-"false"}
 
-    pushd "$(go env GOPATH)/src/k8s.io/kubernetes"
+if [[ "${LOCAL_ONLY}" == "true" ]]; then
+  export REGISTRY="localhost:5000/ci-e2e"
+else
+  export REGISTRY=${REGISTRY:-"capzci.azurecr.io/ci-e2e"}
 
-    # make sure we have e2e requirements
-    bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
+  if [[ "${REGISTRY}" =~ azurecr\.io ]]; then
+    # if we are using Azure Container Registry, login
+    ./hack/ensure-azcli.sh
+    az account set -s "${AZURE_SUBSCRIPTION_ID}"
+    az acr login --name capzci
+  fi
+fi
 
-    # ensure the e2e script will find our binaries ...
-    mkdir -p "${PWD}/_output/bin/"
-    cp -f "${PWD}/bazel-bin/test/e2e/e2e.test" "${PWD}/_output/bin/e2e.test"
-    # workaround for mac os
-    cp -f "${PWD}/bazel-bin/vendor/github.com/onsi/ginkgo/ginkgo/darwin_amd64_stripped/ginkgo" "${PWD}/_output/bin/ginkgo" || true
-    PATH="$(dirname "$(find "${PWD}/bazel-bin/" -name kubectl -type f)"):${PATH}"
-    export PATH
+defaultTag=$(date -u '+%Y%m%d%H%M%S')
+export TAG="${defaultTag:-dev}"
+export AZURE_ENVIRONMENT="AzurePublicCloud"
+export GINKGO_NODES=3
+export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
+export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
+export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 
-    # attempt to release some memory after building
-    sync || true
-    echo 1 > /proc/sys/vm/drop_caches || true
+# Generate SSH key.
+AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
+if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
+    SSH_KEY_FILE=.sshkey
+    rm -f "${SSH_KEY_FILE}" 2>/dev/null
+    ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
+    AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
+fi
+export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
 
-    popd
-}
+# timestamp is in RFC-3339 format to match kubetest
+export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
 
-create_cluster() {
-    # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
-    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
-        export CLUSTER_TEMPLATE="test/cluster-template-conformance-ci-version.yaml"
-        export CI_VERSION=${CI_VERSION:-$(curl -sSL https://dl.k8s.io/ci/k8s-master.txt)}
-        export KUBERNETES_VERSION=${CI_VERSION}
-    else
-        export CLUSTER_TEMPLATE="test/cluster-template-conformance.yaml"
-    fi
-
-    export CLUSTER_NAME="capz-conformance-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
-    # Conformance test suite needs a cluster with at least 2 nodes
-    export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-1}
-    export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
-    export REGISTRY=conformance
-    # timestamp is in RFC-3339 format to match kubetest
-    export TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-    ${REPO_ROOT}/hack/create-dev-cluster.sh
-}
-
-run_tests() {
-    # export the target cluster KUBECONFIG if not already set
-    export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
-    # ginkgo regexes
-    SKIP="${SKIP:-}"
-    FOCUS="${FOCUS:-"\\[Conformance\\]"}"
-    # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
-    if [[ "${PARALLEL:-false}" == "true" ]]; then
-        export GINKGO_PARALLEL=y
-        if [[ -z "${SKIP}" ]]; then
-            SKIP="\\[Serial\\]"
-        else
-            SKIP="\\[Serial\\]|${SKIP}"
-        fi
-    fi
-
-    # get the number of worker nodes
-    NUM_NODES="$(kubectl get nodes --kubeconfig="$KUBECONFIG" \
-    -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}' \
-    | grep -cv "node-role.kubernetes.io/master" )"
-
-    # wait for all the nodes to be ready
-    kubectl wait --for=condition=Ready node --kubeconfig="$KUBECONFIG" --all || true
-
-    # setting this env prevents ginkg e2e from trying to run provider setup
-    export KUBERNETES_CONFORMANCE_TEST="y"
-    # run the tests
-    (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && ./hack/ginkgo-e2e.sh \
-    '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
-    "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
-    "--report-dir=${ARTIFACTS}" '--disable-log-dump=true')
-
-    unset KUBECONFIG
-    unset KUBERNETES_CONFORMANCE_TEST
-}
-
-get_logs() {
-    kubectl logs deploy/capz-controller-manager -n capz-system manager > "${ARTIFACTS}/logs/capz-manager.log" || true
-}
-
-# cleanup all resources we use
 cleanup() {
-    timeout 600 kubectl \
-        delete cluster "${CLUSTER_NAME}" || true
-        timeout 600 kubectl \
-        wait --for=delete cluster/"${CLUSTER_NAME}" || true
-    make kind-reset || true
-    # clean up e2e.test symlink
-    (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && rm -f _output/bin/e2e.test) || true
+    ${REPO_ROOT}/hack/log/redact.sh || true
 }
 
-on_exit() {
-    unset KUBECONFIG
-    get_logs
-    # cleanup
-    if [[ -z "${SKIP_CLEANUP:-}" ]]; then
-        cleanup
-    fi
-}
+trap cleanup EXIT
 
-trap on_exit EXIT 
-ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
-mkdir -p "${ARTIFACTS}/logs"
-
-# create cluster
-if [[ -z "${SKIP_CREATE_CLUSTER:-}" ]]; then
-    create_cluster
-fi
-
-# build k8s binaries and run conformance tests
-if [[ -z "${SKIP_TESTS:-}" ]]; then
-    build_k8s
-    run_tests
-fi
+make test-conformance

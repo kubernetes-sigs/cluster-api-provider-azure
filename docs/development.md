@@ -20,12 +20,15 @@
     - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
+    - [Viewing Telemetry](#viewing-telemetry)
+  - [Instrumenting Telemetry](#instrumenting-telemetry)
+    - [Distributed Tracing](#distributed-tracing)
+    - [Metrics](#metrics)
   - [Manual Testing](#manual-testing)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
       - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
       - [Creating the cluster](#creating-the-cluster)
-    - [Debugging cluster creation](#debugging-cluster-creation)
   - [Submitting PRs and testing](#submitting-prs-and-testing)
     - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
@@ -55,7 +58,7 @@
    - `brew install kustomize` on macOS.
    - `choco install kustomize` on Windows.
    - [install instructions][kustomizelinux] on Linux
-6. Configure Python 2.7+ with [pyenv][pyenv] if your default is Python 3.x.
+6. Install Python 3.x or 2.7.x, if neither is already installed.
 7. Install make.
 8. Install [timeout][timeout]
    - `brew install coreutils` on macOS.
@@ -129,7 +132,8 @@ cat <<EOF > tilt-settings.json
       "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_ENVIRONMENT": "AzurePublicCloud"
   }
 }
 EOF
@@ -140,8 +144,12 @@ To build a kind cluster and start Tilt, just run:
 ```shell
 make tilt-up
 ```
+By default, the Cluster API components deployed by Tilt have experimental features turned off.
+If you would like to enable these features, add `extra_args` as specified in [The Cluster API Book](https://cluster-api.sigs.k8s.io/developer/tilt.html#create-a-tilt-settingsjson-file).
 
 Once your kind management cluster is up and running, you can [deploy a workload cluster](#deploying-a-workload-cluster).
+
+You can also [deploy a flavor cluster as a local tilt resource](../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource).
 
 To tear down the kind cluster built by the command above, just run:
 
@@ -178,7 +186,8 @@ cat <<EOF > tilt-settings.json
       "AZURE_SUBSCRIPTION_ID_B64": "$(echo "${AZURE_SUBSCRIPTION_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')"
+      "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
+      "AZURE_ENVIRONMENT": "AzurePublicCloud"
   }
 }
 EOF
@@ -202,6 +211,22 @@ To delete the cluster:
 make delete-workload-cluster
 ```
 
+> Check out the [troubleshooting guide](troubleshooting.md) for common errors you might run into.
+
+#### Viewing Telemetry
+The CAPZ controller emits tracing and metrics data. When run in Tilt, the KinD cluster is provisioned with a development
+deployment of Jaeger, for distributed tracing, and Prometheus for metrics scraping and visualization.
+
+The Jaeger and Prometheus deployments are for development purposes only. These illustrate the hooks for tracing and
+metrics, but lack the robustness of production cluster deployments. For example, Jaeger in "all-in-one" mode with only
+in-memory persistence of traces.
+
+After the Tilt cluster has been initialized, to view distributed traces in Jaeger open a browser to
+`http://localhost:8080`.
+
+To view metrics, run `kubectl port-forward -n capz-system prometheus-prometheus-0 9090` and open
+`http://localhost:9090` to see the Prometheus UI.
+
 ### Manual Testing
 
 #### Creating a dev cluster
@@ -211,6 +236,8 @@ The steps below are provided in a convenient script in [hack/create-dev-cluster.
 ```bash
 CLUSTER_NAME=<my-capz-cluster-name> ./hack/create-dev-cluster.sh
 ```
+
+   NOTE: `CLUSTER_NAME` can only include letters, numbers, and hyphens and can't be longer than 44 characters.
 
 ##### Building and pushing dev images
 
@@ -246,6 +273,10 @@ Here is a list of required configuration parameters (the full list is available 
 export CLUSTER_NAME="capz-cluster"
 export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
 
+# Azure cloud settings
+# To use the default public cloud, otherwise set to AzureChinaCloud|AzureGermanCloud|AzureUSGovernmentCloud
+export AZURE_ENVIRONMENT="AzurePublicCloud"
+
 # Azure settings.
 export AZURE_LOCATION="southcentralus"
 export AZURE_RESOURCE_GROUP=${CLUSTER_NAME}
@@ -259,16 +290,19 @@ export CONTROL_PLANE_MACHINE_COUNT=3
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="Standard_D2s_v3"
 export AZURE_NODE_MACHINE_TYPE="Standard_D2s_v3"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.17.4"
+export KUBERNETES_VERSION="v1.19.4"
 
 # Generate SSH key.
-# If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY to your existing file.
+# If you want to provide your own key, skip this step and set AZURE_SSH_PUBLIC_KEY_B64 to your existing file.
 SSH_KEY_FILE=.sshkey
 rm -f "${SSH_KEY_FILE}" 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
-export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
 ```
+
+⚠️ Please note the generated templates include default values and therefore require the use of `clusterctl` to create the cluster
+or the use of `envsubst` to replace these values
 
 ##### Creating the cluster
 
@@ -286,25 +320,46 @@ Create the cluster:
 make create-cluster
 ```
 
-#### Debugging cluster creation
+> Check out the [troubleshooting](troubleshooting.md) guide for common errors you might run into.
 
-While cluster build out is running, you can optionally follow the controller logs in a separate window as follows:
+### Instrumenting Telemetry
+Telemetry is the key to operational transparency. We strive to provide insight into the internal behavior of the
+system through observable traces and metrics.
 
-```bash
-time kubectl get po -o wide --all-namespaces -w # Watch pod creation until azure-provider-controller-manager-0 is available
+#### Distributed Tracing
+Distributed tracing provides a hierarchical view of how and why an event occurred. CAPZ is instrumented to trace each
+controller reconcile loop. When the reconcile loop begins, a trace span begins and is stored in loop `context.Context`.
+As the context is passed on to functions below, new spans are created, tied to the parent span by the parent span ID.
+The spans form a hierarchical representation of the activities in the controller.
 
-kubectl logs -n capz-system azure-provider-controller-manager-0 manager -f # Follow the controller logs
+These spans can also be propagated across service boundaries. The span context can be passed on through metadata such as
+HTTP headers. By propagating span context, it creates a distributed, causal relationship between services and functions.
+
+For tracing, we use [OpenTelemetry](https://github.com/open-telemetry).
+
+Here is an example of staring a span in the beginning of a controller reconcile.
+```go
+ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
+    trace.WithAttributes(
+        label.String("namespace", req.Namespace),
+        label.String("name", req.Name),
+        label.String("kind", "AzureMachine"),
+    ))
+defer span.End()
 ```
+The code above creates a context with a new span stored in the context.Context value bag. If a span already existed in
+the `ctx` arguement, then the new span would take on the parentID of the existing span, otherwise the new span
+becomes a "root span", one that does not have a parent. The span is also created with labels, or tags, which
+provide metadata about the span and can be used to query in many distributed tracing systems.
 
-An error such as the following in the manager could point to a mismatch between a current CAPI and an old CAPZ version:
+You should consider adding tracing if your func accepts a context.
 
-```
-E0320 23:33:33.288073       1 controller.go:258] controller-runtime/controller "msg"="Reconciler error" "error"="failed to create AzureMachine VM: failed to create nic capz-cluster-control-plane-7z8ng-nic for machine capz-cluster-control-plane-7z8ng: unable to determine NAT rule for control plane network interface: strconv.Atoi: parsing \"capz-cluster-control-plane-7z8ng\": invalid syntax"  "controller"="azuremachine" "request"={"Namespace":"default","Name":"capz-cluster-control-plane-7z8ng"}
-```
+#### Metrics
+Metrics provide quantitative data about the operations of the controller. This includes cumulative data like
+counters, single numerical values like guages, and distributions of counts / samples like histograms & summaries.
 
-After the workload cluster is finished deploying you will have a kubeconfig in `./kubeconfig`.
-You can debug most issues by SSHing into the VMs that have been created and
-reading `/var/lib/waagent/custom-script/download/0/stdout`.
+In CAPZ we expose metrics using the Prometheus client. The Kubebuilder project provides
+[a guide for metrics and for exposing new ones](https://book.kubebuilder.io/reference/metrics.html#publishing-additional-metrics).
 
 ### Submitting PRs and testing
 
@@ -335,38 +390,57 @@ make generate-go
 
 #### E2E Testing
 
-To run E2E locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
+To run E2E locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, and run:
 
 ```bash
 ./scripts/ci-e2e.sh
 ```
 
-You can optionally set `AZURE_SSH_PUBLIC_KEY_FILE` to use your own SSH key.
+You can optionally set the following variables:
+
+| Variable                   | Description                                                                                                               | Default                                                                               |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `E2E_CONF_FILE`            | The path of the [E2E configuration file](https://cluster-api.sigs.k8s.io/developer/e2e.html#defining-an-e2e-config-file). | `${GOPATH}/src/sigs.k8s.io/cluster-api-provider-azure/test/e2e/config/azure-dev.yaml` |
+| `SKIP_CLEANUP`             | Set to `true` if you do not want the bootstrap and workload clusters to be cleaned up after running E2E tests.            | `false`                                                                               |
+| `SKIP_CREATE_MGMT_CLUSTER` | Skip management cluster creation. If skipping managment cluster creation you must specify `KUBECONFIG` and `SKIP_CLEANUP` | `false`                                                                               |
+| `LOCAL_ONLY`               | Use Kind local registry and run the subset of tests which don't require a remotely pushed controller image.               | `true`                                                                                |
+| `REGISTRY`                 | Registry to push the controller image.                                                                                    | `capzci.azurecr.io/ci-e2e`                                                            |
+| `KUBECONFIG`               | Used with `SKIP_CREATE_MGMT_CLUSTER` set to true. Location of kubeconfig for the management cluster you would like to use. Use `kind get kubeconfig --name capz-e2e > kubeconfig.capz-e2e` to get the capz e2e kind cluster config | '~/.kube/config'                                                                                    |
+
+You can also customize the configuration of the CAPZ cluster created by the E2E tests (except for `CLUSTER_NAME`, `AZURE_RESOURCE_GROUP`, `AZURE_VNET_NAME`, `CONTROL_PLANE_MACHINE_COUNT`, and `WORKER_MACHINE_COUNT`, since they are generated by individual test cases). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
 
 #### Conformance Testing
 
 To run Conformance locally, set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID` and run:
 
 ```bash
-./scripts/ci-conformance.sh
+./scripts/ci-entrypoint.sh
 ```
 
 You can optionally set the following variables:
 
-| Variable                    | Description                                                                                                    |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `AZURE_SSH_PUBLIC_KEY_FILE` | Use your own SSH key.                                                                                          |
-| `SKIP_CREATE_CLUSTER`       | Skip cluster creation.                                                                                         |
-| `SKIP_TESTS`                | Skip running Kubernetes E2E tests.                                                                             |
-| `SKIP_CLEANUP`              | Skip deleting the cluster after the tests finish running.                                                      |
-| `KUBECONFIG`                | Provide your existing cluster kubeconfig filepath. If no kubeconfig is provided, `./kubeconfig` will be used.  |
-| `SKIP`                      | Regexp for test cases to skip.                                                                                 |
-| `FOCUS`                     | Regexp for which test cases to run.                                                                            |
-| `PARALLEL`                  | Skip serial tests and set --ginkgo-parallel.                                                                  |
-| `USE_CI_ARTIFACTS`          | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)          |
-| `CI_VERSION`                | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                  |
+| Variable                       | Description                                                                                                   |
+|--------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `AZURE_SSH_PUBLIC_KEY_FILE`    | Use your own SSH key.                                                                                         |
+| `SKIP_CREATE_WORKLOAD_CLUSTER` | Skip workload cluster creation.                                                                               |
+| `SKIP_UPSTREAM_E2E_TESTS`      | Skip running upstream Kubernetes E2E tests.                                                                   |
+| `SKIP_CLEANUP`                 | Skip deleting the cluster after the tests finish running.                                                      |
+| `KUBECONFIG`                   | Provide your existing cluster kubeconfig filepath. If no kubeconfig is provided, `./kubeconfig` will be used.     |
+| `SKIP`                         | Regexp for test cases to skip.                                                                                |
+| `FOCUS`                        | Regexp for which test cases to run.                                                                           |
+| `PARALLEL`                     | Skip serial tests and set --ginkgo-parallel.                                                                  |
+| `USE_CI_ARTIFACTS`             | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)         |
+| `CI_VERSION`                   | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                 |
+| `EXP_MACHINE_POOL`             | Use [Machine Pool](topics/machinepools.md) for worker machines.                                               |
 
-You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
+You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_WORKLOAD_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
+
+In addition to upstream E2E, you can append custom commands to `./scripts/ci-entrypoint.sh` to run E2E from other projects against a CAPZ cluster:
+
+```bash
+export SKIP_UPSTREAM_E2E_TESTS="false"
+./scripts/ci-entrypoint.sh bash -c "cd ${GOPATH}/src/github.com/my-org/my-project && make e2e"
+```
 
 <!-- References -->
 
@@ -379,7 +453,6 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [kind]: https://sigs.k8s.io/kind
 [azure_cli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 [manifests]: /docs/manifests.md
-[pyenv]: https://github.com/pyenv/pyenv
 [kustomize]: https://github.com/kubernetes-sigs/kustomize
 [kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
 [gomock]: https://github.com/golang/mock

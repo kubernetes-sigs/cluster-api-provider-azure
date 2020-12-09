@@ -18,117 +18,140 @@ package securitygroups
 
 import (
 	"context"
-	"strconv"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Spec specification for network security groups
-type Spec struct {
-	Name           string
-	IsControlPlane bool
+// NSGScope defines the scope interface for a security groups service.
+type NSGScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	azure.NetworkDescriber
+	NSGSpecs() []azure.NSGSpec
 }
 
-// Get provides information about a network security group.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	nsgSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.SecurityGroup{}, errors.New("invalid security groups specification")
+// Service provides operations on azure resources
+type Service struct {
+	Scope NSGScope
+	client
+}
+
+// New creates a new service.
+func New(scope NSGScope) *Service {
+	return &Service{
+		Scope:  scope,
+		client: newClient(scope),
 	}
-	securityGroup, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "security group %s not found", nsgSpec.Name)
-	} else if err != nil {
-		return securityGroup, err
-	}
-	return securityGroup, nil
 }
 
 // Reconcile gets/creates/updates a network security group.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
-		s.Scope.V(4).Info("Skipping network security group reconcile in custom vnet mode")
+func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Reconcile")
+	defer span.End()
+
+	if !s.Scope.IsVnetManaged() {
+		s.Scope.V(4).Info("Skipping network security group reconcile in custom VNet mode")
 		return nil
 	}
-	nsgSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid security groups specification")
-	}
 
-	securityRules := &[]network.SecurityRule{}
+	for _, nsgSpec := range s.Scope.NSGSpecs() {
+		securityRules := make([]network.SecurityRule, 0)
+		var etag *string
 
-	if nsgSpec.IsControlPlane {
-		klog.V(2).Infof("using additional rules for control plane %s", nsgSpec.Name)
-		securityRules = &[]network.SecurityRule{
-			{
-				Name: to.StringPtr("allow_ssh"),
-				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Protocol:                 network.SecurityRuleProtocolTCP,
-					SourceAddressPrefix:      to.StringPtr("*"),
-					SourcePortRange:          to.StringPtr("*"),
-					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr("22"),
-					Access:                   network.SecurityRuleAccessAllow,
-					Direction:                network.SecurityRuleDirectionInbound,
-					Priority:                 to.Int32Ptr(100),
-				},
-			},
-			{
-				Name: to.StringPtr("allow_6443"),
-				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-					Protocol:                 network.SecurityRuleProtocolTCP,
-					SourceAddressPrefix:      to.StringPtr("*"),
-					SourcePortRange:          to.StringPtr("*"),
-					DestinationAddressPrefix: to.StringPtr("*"),
-					DestinationPortRange:     to.StringPtr(strconv.Itoa(int(s.Scope.APIServerPort()))),
-					Access:                   network.SecurityRuleAccessAllow,
-					Direction:                network.SecurityRuleDirectionInbound,
-					Priority:                 to.Int32Ptr(101),
-				},
-			},
+		existingNSG, err := s.client.Get(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
+		switch {
+		case err != nil && !azure.ResourceNotFound(err):
+			return errors.Wrapf(err, "failed to get NSG %s in %s", nsgSpec.Name, s.Scope.ResourceGroup())
+		case err == nil:
+			// security group already exists
+			// We append the existing NSG etag to the header to ensure we only apply the updates if the NSG has not been modified.
+			etag = existingNSG.Etag
+			// Check if the expected rules are present
+			update := false
+			securityRules = *existingNSG.SecurityRules
+			for _, rule := range nsgSpec.IngressRules {
+				if !ruleExists(securityRules, converters.IngresstoSecurityRule(*rule)) {
+					update = true
+					securityRules = append(securityRules, converters.IngresstoSecurityRule(*rule))
+				}
+			}
+			if !update {
+				// Skip update for NSG as the required default rules are present
+				s.Scope.V(2).Info("security group exists and no default rules are missing, skipping update", "security group", nsgSpec.Name)
+				continue
+			}
+		default:
+			s.Scope.V(2).Info("creating security group", "security group", nsgSpec.Name)
+			for _, rule := range nsgSpec.IngressRules {
+				securityRules = append(securityRules, converters.IngresstoSecurityRule(*rule))
+			}
+
 		}
-	}
-
-	klog.V(2).Infof("creating security group %s", nsgSpec.Name)
-	err := s.Client.CreateOrUpdate(
-		ctx,
-		s.Scope.ResourceGroup(),
-		nsgSpec.Name,
-		network.SecurityGroup{
+		sg := network.SecurityGroup{
 			Location: to.StringPtr(s.Scope.Location()),
 			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
-				SecurityRules: securityRules,
+				SecurityRules: &securityRules,
 			},
-		},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
-	}
+			Etag: etag,
+		}
+		err = s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), nsgSpec.Name, sg)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create or update security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
+		}
 
-	klog.V(2).Infof("created security group %s", nsgSpec.Name)
-	return err
+		s.Scope.V(2).Info("successfully created or updated security group", "security group", nsgSpec.Name)
+	}
+	return nil
+}
+
+func ruleExists(rules []network.SecurityRule, rule network.SecurityRule) bool {
+	for _, existingRule := range rules {
+		if !strings.EqualFold(to.String(existingRule.Name), to.String(rule.Name)) {
+			continue
+		}
+		if !strings.EqualFold(to.String(existingRule.DestinationPortRange), to.String(rule.DestinationPortRange)) {
+			continue
+		}
+		if existingRule.Protocol != network.SecurityRuleProtocolTCP &&
+			existingRule.Access != network.SecurityRuleAccessAllow &&
+			existingRule.Direction != network.SecurityRuleDirectionInbound {
+			continue
+		}
+		if !strings.EqualFold(to.String(existingRule.SourcePortRange), "*") &&
+			!strings.EqualFold(to.String(existingRule.SourceAddressPrefix), "*") &&
+			!strings.EqualFold(to.String(existingRule.DestinationAddressPrefix), "*") {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // Delete deletes the network security group with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	nsgSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid security groups specification")
-	}
-	klog.V(2).Infof("deleting security group %s", nsgSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
-	}
+func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Delete")
+	defer span.End()
 
-	klog.V(2).Infof("deleted security group %s", nsgSpec.Name)
+	for _, nsgSpec := range s.Scope.NSGSpecs() {
+		s.Scope.V(2).Info("deleting security group", "security group", nsgSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
+		if err != nil && azure.ResourceNotFound(err) {
+			// already deleted
+			continue
+		}
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete security group %s in resource group %s", nsgSpec.Name, s.Scope.ResourceGroup())
+		}
+
+		s.Scope.V(2).Info("successfully deleted security group", "security group", nsgSpec.Name)
+	}
 	return nil
 }

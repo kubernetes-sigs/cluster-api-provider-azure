@@ -1,0 +1,5 @@
+namespace: default
+resources:
+  - ../default
+patchesStrategicMerge:
+  - patches/system-assigned-identity.yaml

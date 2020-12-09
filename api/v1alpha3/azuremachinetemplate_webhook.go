@@ -24,6 +24,7 @@ import (
 // log is for logging in this package.
 var _ = logf.Log.WithName("azuremachinetemplate-resource")
 
+// SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).

@@ -1,0 +1,27 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
+metadata:
+  name: crs-calico
+  namespace: default
+spec:
+  strategy: "ApplyOnce"
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  resources:
+    - name: calico-addon
+      kind: ConfigMap
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
+metadata:
+  name: crs-calico-ipv6
+  namespace: default
+spec:
+  strategy: "ApplyOnce"
+  clusterSelector:
+    matchLabels:
+      cni: calico-ipv6
+  resources:
+    - name: calico-ipv6-addon
+      kind: ConfigMap

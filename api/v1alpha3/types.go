@@ -17,41 +17,8 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"time"
-
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// AzureMachineProviderConditionType is a valid value for AzureMachineProviderCondition.Type
-type AzureMachineProviderConditionType string
-
-// Valid conditions for an Azure machine instance
-const (
-	// MachineCreated indicates whether the machine has been created or not. If not,
-	// it should include a reason and message for the failure.
-	MachineCreated AzureMachineProviderConditionType = "MachineCreated"
-)
-
-// AzureMachineProviderCondition is a condition in a AzureMachineProviderStatus
-type AzureMachineProviderCondition struct {
-	// Type is the type of the condition.
-	Type AzureMachineProviderConditionType `json:"type"`
-	// Status is the status of the condition.
-	Status corev1.ConditionStatus `json:"status"`
-	// LastProbeTime is the last time we probed the condition.
-	// +optional
-	LastProbeTime metav1.Time `json:"lastProbeTime"`
-	// LastTransitionTime is the last time the condition transitioned from one status to another.
-	// +optional
-	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
-	// Reason is a unique, one-word, CamelCase reason for the condition's last transition.
-	// +optional
-	Reason string `json:"reason"`
-	// Message is a human-readable message indicating details about last transition.
-	// +optional
-	Message string `json:"message"`
-}
 
 const (
 	// ControlPlane machine label
@@ -60,19 +27,7 @@ const (
 	Node string = "node"
 )
 
-// Network encapsulates Azure networking resources.
-type Network struct {
-	// SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
-	SecurityGroups map[SecurityGroupRole]SecurityGroup `json:"securityGroups,omitempty"`
-
-	// APIServerLB is the Kubernetes API server load balancer.
-	APIServerLB LoadBalancer `json:"apiServerLb,omitempty"`
-
-	// APIServerIP is the Kubernetes API server public IP address.
-	APIServerIP PublicIP `json:"apiServerIp,omitempty"`
-}
-
-// NetworkSpec encapsulates all things related to Azure network.
+// NetworkSpec specifies what the Azure networking resources should look like.
 type NetworkSpec struct {
 	// Vnet is the configuration for the Azure virtual network.
 	// +optional
@@ -81,6 +36,10 @@ type NetworkSpec struct {
 	// Subnets is the configuration for the control-plane subnet and the node subnet.
 	// +optional
 	Subnets Subnets `json:"subnets,omitempty"`
+
+	// APIServerLB is the configuration for the control-plane load balancer.
+	// +optional
+	APIServerLB LoadBalancerSpec `json:"apiServerLB,omitempty"`
 }
 
 // VnetSpec configures an Azure virtual network.
@@ -96,9 +55,16 @@ type VnetSpec struct {
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed virtual network.
+	// DEPRECATED: Use CIDRBlocks instead
+	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
+	// CIDRBlocks defines the virtual network's address space, specified as one or more address prefixes in CIDR notation.
+	// +optional
+	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
+
 	// Tags is a collection of tags describing the resource.
+	// +optional
 	Tags Tags `json:"tags,omitempty"`
 }
 
@@ -110,22 +76,10 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 // Subnets is a slice of Subnet.
 type Subnets []*SubnetSpec
 
-// ToMap returns a map from id to subnet.
-func (s Subnets) ToMap() map[string]*SubnetSpec {
-	res := make(map[string]*SubnetSpec)
-	for _, x := range s {
-		res[x.ID] = x
-	}
-	return res
-}
-
 // SecurityGroupRole defines the unique role of a security group.
 type SecurityGroupRole string
 
-var (
-	// SecurityGroupBastion defines an SSH bastion role
-	SecurityGroupBastion = SecurityGroupRole("bastion")
-
+const (
 	// SecurityGroupNode defines a Kubernetes workload node role
 	SecurityGroupNode = SecurityGroupRole(Node)
 
@@ -141,10 +95,16 @@ type SecurityGroup struct {
 	Tags         Tags         `json:"tags,omitempty"`
 }
 
+// RouteTable defines an Azure route table.
+type RouteTable struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 // SecurityGroupProtocol defines the protocol type for a security group rule.
 type SecurityGroupProtocol string
 
-var (
+const (
 	// SecurityGroupProtocolAll is a wildcard for all IP protocols
 	SecurityGroupProtocolAll = SecurityGroupProtocol("*")
 
@@ -157,8 +117,12 @@ var (
 
 // IngressRule defines an Azure ingress rule for security groups.
 type IngressRule struct {
+	Name        string                `json:"name"`
 	Description string                `json:"description"`
 	Protocol    SecurityGroupProtocol `json:"protocol"`
+
+	// Priority - A number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
+	Priority int32 `json:"priority,omitempty"`
 
 	// SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
 	SourcePorts *string `json:"sourcePorts,omitempty"`
@@ -176,104 +140,48 @@ type IngressRule struct {
 // IngressRules is a slice of Azure ingress rules for security groups.
 type IngressRules []*IngressRule
 
-// PublicIP defines an Azure public IP address.
-type PublicIP struct {
-	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	IPAddress string `json:"ipAddress,omitempty"`
-	DNSName   string `json:"dnsName,omitempty"`
+// LoadBalancerSpec defines an Azure load balancer.
+type LoadBalancerSpec struct {
+	ID          string       `json:"id,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	SKU         SKU          `json:"sku,omitempty"`
+	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
+	Type        LBType       `json:"type,omitempty"`
 }
 
-// LoadBalancer defines an Azure load balancer.
-type LoadBalancer struct {
-	ID               string           `json:"id,omitempty"`
-	Name             string           `json:"name,omitempty"`
-	SKU              SKU              `json:"sku,omitempty"`
-	FrontendIPConfig FrontendIPConfig `json:"frontendIpConfig,omitempty"`
-	BackendPool      BackendPool      `json:"backendPool,omitempty"`
-	Tags             Tags             `json:"tags,omitempty"`
-	/*
-		// FrontendIPConfigurations - Object representing the frontend IPs to be used for the load balancer
-		FrontendIPConfigurations *[]FrontendIPConfiguration `json:"frontendIPConfigurations,omitempty"`
-		// BackendAddressPools - Collection of backend address pools used by a load balancer
-		BackendAddressPools *[]BackendAddressPool `json:"backendAddressPools,omitempty"`
-		// LoadBalancingRules - Object collection representing the load balancing rules Gets the provisioning
-		LoadBalancingRules *[]LoadBalancingRule `json:"loadBalancingRules,omitempty"`
-		// Probes - Collection of probe objects used in the load balancer
-		Probes *[]Probe `json:"probes,omitempty"`
-		// InboundNatRules - Collection of inbound NAT Rules used by a load balancer. Defining inbound NAT rules on your load balancer is mutually exclusive with defining an inbound NAT pool. Inbound NAT pools are referenced from virtual machine scale sets. NICs that are associated with individual virtual machines cannot reference an Inbound NAT pool. They have to reference individual inbound NAT rules.
-		InboundNatRules *[]InboundNatRule `json:"inboundNatRules,omitempty"`
-		// InboundNatPools - Defines an external port range for inbound NAT to a single backend port on NICs associated with a load balancer. Inbound NAT rules are created automatically for each NIC associated with the Load Balancer using an external port from this range. Defining an Inbound NAT pool on your Load Balancer is mutually exclusive with defining inbound NAT rules. Inbound NAT pools are referenced from virtual machine scale sets. NICs that are associated with individual virtual machines cannot reference an inbound NAT pool. They have to reference individual inbound NAT rules.
-		InboundNatPools *[]InboundNatPool `json:"inboundNatPools,omitempty"`
-		// OutboundRules - The outbound rules.
-		OutboundRules *[]OutboundRule `json:"outboundRules,omitempty"`
-		// ResourceGUID - The resource GUID property of the load balancer resource.
-		ResourceGUID *string `json:"resourceGuid,omitempty"`
-		// ProvisioningState - Gets the provisioning state of the PublicIP resource. Possible values are: 'Updating', 'Deleting', and 'Failed'.
-		ProvisioningState *string `json:"provisioningState,omitempty"`
-	*/
-}
-
-// LoadBalancerSKU enumerates the values for load balancer sku name.
+// SKU defines an Azure load balancer SKU.
 type SKU string
 
-var (
-	SKUBasic    = SKU("Basic")
+const (
+	// SKUStandard is the value for the Azure load balancer Standard SKU.
 	SKUStandard = SKU("Standard")
 )
 
-type FrontendIPConfig struct {
-	// 	/*
-	// 		// FrontendIPConfigurationPropertiesFormat - Properties of the load balancer probe.
-	// 		*FrontendIPConfigurationPropertiesFormat `json:"properties,omitempty"`
-	// 		// Name - The name of the resource that is unique within a resource group. This name can be used to access the resource.
-	// 		Name *string `json:"name,omitempty"`
-	// 		// Etag - A unique read-only string that changes whenever the resource is updated.
-	// 		Etag *string `json:"etag,omitempty"`
-	// 		// Zones - A list of availability zones denoting the IP allocated for the resource needs to come from.
-	// 		Zones *[]string `json:"zones,omitempty"`
-	// 		// ID - Resource ID.
-	// 		ID *string `json:"id,omitempty"`
-	// 	*/
-}
+// LBType defines an Azure load balancer Type.
+type LBType string
 
-type BackendPool struct {
-	Name string `json:"name,omitempty"`
-	ID   string `json:"id,omitempty"`
-}
-
-// LoadBalancerProtocol defines listener protocols for a load balancer.
-type LoadBalancerProtocol string
-
-var (
-	// LoadBalancerProtocolTCP defines the LB API string representing the TCP protocol
-	LoadBalancerProtocolTCP = LoadBalancerProtocol("TCP")
-
-	// LoadBalancerProtocolSSL defines the LB API string representing the TLS protocol
-	LoadBalancerProtocolSSL = LoadBalancerProtocol("SSL")
-
-	// LoadBalancerProtocolHTTP defines the LB API string representing the HTTP protocol at L7
-	LoadBalancerProtocolHTTP = LoadBalancerProtocol("HTTP")
-
-	// LoadBalancerProtocolHTTPS defines the LB API string representing the HTTP protocol at L7
-	LoadBalancerProtocolHTTPS = LoadBalancerProtocol("HTTPS")
+const (
+	// Internal is the value for the Azure load balancer internal type.
+	Internal = LBType("Internal")
+	// Public is the value for the Azure load balancer public type.
+	Public = LBType("Public")
 )
 
-// LoadBalancerListener defines an Azure load balancer listener.
-type LoadBalancerListener struct {
-	Protocol         LoadBalancerProtocol `json:"protocol"`
-	Port             int64                `json:"port"`
-	InstanceProtocol LoadBalancerProtocol `json:"instanceProtocol"`
-	InstancePort     int64                `json:"instancePort"`
+// FrontendIP defines a load balancer frontend IP configuration.
+type FrontendIP struct {
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// +optional
+	PrivateIPAddress string `json:"privateIP,omitempty"`
+	// +optional
+	PublicIP *PublicIPSpec `json:"publicIP,omitempty"`
 }
 
-// LoadBalancerHealthCheck defines an Azure load balancer health check.
-type LoadBalancerHealthCheck struct {
-	Target             string        `json:"target"`
-	Interval           time.Duration `json:"interval"`
-	Timeout            time.Duration `json:"timeout"`
-	HealthyThreshold   int64         `json:"healthyThreshold"`
-	UnhealthyThreshold int64         `json:"unhealthyThreshold"`
+// PublicIPSpec defines the inputs to create an Azure public IP address.
+type PublicIPSpec struct {
+	Name string `json:"name"`
+	// +optional
+	DNSName string `json:"dnsName,omitempty"`
 }
 
 // VMState describes the state of an Azure virtual machine.
@@ -292,6 +200,9 @@ const (
 	VMStateSucceeded VMState = "Succeeded"
 	// VMStateUpdating ...
 	VMStateUpdating VMState = "Updating"
+	// VMStateDeleted represents a deleted VM
+	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://docs.microsoft.com/en-us/azure/virtual-machines/states-lifecycle#provisioning-states)
+	VMStateDeleted VMState = "Deleted"
 )
 
 // VM describes an Azure virtual machine.
@@ -310,28 +221,12 @@ type VM struct {
 	Identity VMIdentity `json:"identity,omitempty"`
 	Tags     Tags       `json:"tags,omitempty"`
 
-	// Addresses contains the Azure instance associated addresses.
+	// Addresses contains the addresses associated with the Azure VM.
 	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
-
-	// HardwareProfile - Specifies the hardware settings for the virtual machine.
-	//HardwareProfile *HardwareProfile `json:"hardwareProfile,omitempty"`
-
-	// StorageProfile - Specifies the storage settings for the virtual machine disks.
-	//StorageProfile *StorageProfile `json:"storageProfile,omitempty"`
-
-	// AdditionalCapabilities - Specifies additional capabilities enabled or disabled on the virtual machine.
-	//AdditionalCapabilities *AdditionalCapabilities `json:"additionalCapabilities,omitempty"`
-
-	// OsProfile - Specifies the operating system settings for the virtual machine.
-	//OsProfile *OSProfile `json:"osProfile,omitempty"`
-	// NetworkProfile - Specifies the network interfaces of the virtual machine.
-	//NetworkProfile *NetworkProfile `json:"networkProfile,omitempty"`
-
-	//AvailabilitySet *SubResource `json:"availabilitySet,omitempty"`
 }
 
 // Image defines information about the image to use for VM creation.
-// There are three ways to specify an image: by ID, Markeplace Image or SharedImageGallery
+// There are three ways to specify an image: by ID, Marketplace Image or SharedImageGallery
 // One of ID, SharedImage or Marketplace should be set.
 type Image struct {
 	// ID specifies an image to use by ID
@@ -347,7 +242,7 @@ type Image struct {
 	Marketplace *AzureMarketplaceImage `json:"marketplace,omitempty"`
 }
 
-// AzureMarketplaceImage defines an image in the Azure marketplace to use for VM creation
+// AzureMarketplaceImage defines an image in the Azure Marketplace to use for VM creation
 type AzureMarketplaceImage struct {
 	// Publisher is the name of the organization that created the image
 	// +kubebuilder:validation:MinLength=1
@@ -367,6 +262,11 @@ type AzureMarketplaceImage struct {
 	// time even if a new version becomes available.
 	// +kubebuilder:validation:MinLength=1
 	Version string `json:"version"`
+	// ThirdPartyImage indicates the image is published by a third party publisher and a Plan
+	// will be generated for it.
+	// +kubebuilder:default=false
+	// +optional
+	ThirdPartyImage bool `json:"thirdPartyImage"`
 }
 
 // AzureSharedGalleryImage defines an image in a Shared Image Gallery to use for VM creation
@@ -392,28 +292,83 @@ type AzureSharedGalleryImage struct {
 	Version string `json:"version"`
 }
 
+// AvailabilityZone specifies an Azure Availability Zone
+//
+// DEPRECATED: Use FailureDomain instead
 type AvailabilityZone struct {
 	ID      *string `json:"id,omitempty"`
 	Enabled *bool   `json:"enabled,omitempty"`
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.
+// +kubebuilder:validation:Enum=None;SystemAssigned;UserAssigned
 type VMIdentity string
 
-type OSDisk struct {
-	OSType      string      `json:"osType"`
-	DiskSizeGB  int32       `json:"diskSizeGB"`
-	ManagedDisk ManagedDisk `json:"managedDisk"`
+const (
+	// VMIdentityNone ...
+	VMIdentityNone VMIdentity = "None"
+	// VMIdentitySystemAssigned ...
+	VMIdentitySystemAssigned VMIdentity = "SystemAssigned"
+	// VMIdentityUserAssigned ...
+	VMIdentityUserAssigned VMIdentity = "UserAssigned"
+)
+
+// UserAssignedIdentity defines the user-assigned identities provided
+// by the user to be assigned to Azure resources.
+type UserAssignedIdentity struct {
+	// ProviderID is the identification ID of the user-assigned Identity, the format of an identity is:
+	// 'azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'
+	ProviderID string `json:"providerID"`
 }
 
+// OSDisk defines the operating system disk for a VM.
+type OSDisk struct {
+	OSType           string            `json:"osType"`
+	DiskSizeGB       int32             `json:"diskSizeGB"`
+	ManagedDisk      ManagedDisk       `json:"managedDisk"`
+	DiffDiskSettings *DiffDiskSettings `json:"diffDiskSettings,omitempty"`
+	// +optional
+	CachingType string `json:"cachingType,omitempty"`
+}
+
+// DataDisk specifies the parameters that are used to add one or more data disks to the machine.
+type DataDisk struct {
+	// NameSuffix is the suffix to be appended to the machine name to generate the disk name.
+	// Each disk name will be in format <machineName>_<nameSuffix>.
+	NameSuffix string `json:"nameSuffix"`
+	// DiskSizeGB is the size in GB to assign to the data disk.
+	DiskSizeGB int32 `json:"diskSizeGB"`
+	// Lun Specifies the logical unit number of the data disk. This value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
+	// The value must be between 0 and 63.
+	Lun *int32 `json:"lun,omitempty"`
+	// +optional
+	CachingType string `json:"cachingType,omitempty"`
+}
+
+// ManagedDisk defines the managed disk options for a VM.
 type ManagedDisk struct {
-	StorageAccountType string `json:"storageAccountType"`
+	StorageAccountType string                       `json:"storageAccountType"`
+	DiskEncryptionSet  *DiskEncryptionSetParameters `json:"diskEncryptionSet,omitempty"`
+}
+
+// DiskEncryptionSetParameters defines disk encryption options.
+type DiskEncryptionSetParameters struct {
+	// ID defines resourceID for diskEncryptionSet resource. It must be in the same subscription
+	ID string `json:"id,omitempty"`
+}
+
+// DiffDiskSettings describe ephemeral disk settings for the os disk.
+type DiffDiskSettings struct {
+	// Option enables ephemeral OS when set to "Local"
+	// See https://docs.microsoft.com/en-us/azure/virtual-machines/ephemeral-os-disks for full details
+	// +kubebuilder:validation:Enum=Local
+	Option string `json:"option"`
 }
 
 // SubnetRole defines the unique role of a subnet.
 type SubnetRole string
 
-var (
+const (
 	// SubnetNode defines a Kubernetes workload node role
 	SubnetNode = SubnetRole(Node)
 
@@ -427,24 +382,67 @@ type SubnetSpec struct {
 	Role SubnetRole `json:"role,omitempty"`
 
 	// ID defines a unique identifier to reference this resource.
+	// +optional
 	ID string `json:"id,omitempty"`
 
 	// Name defines a name for the subnet resource.
 	Name string `json:"name"`
 
 	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
+	// DEPRECATED: Use CIDRBlocks instead
+	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
+
+	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
+	// +optional
+	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
 
 	// InternalLBIPAddress is the IP address that will be used as the internal LB private IP.
 	// For the control plane subnet only.
+	// +optional
+	// Deprecated: Use LoadBalancer private IP instead
 	InternalLBIPAddress string `json:"internalLBIPAddress,omitempty"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
+	// +optional
 	SecurityGroup SecurityGroup `json:"securityGroup,omitempty"`
+
+	// RouteTable defines the route table that should be attached to this subnet.
+	// +optional
+	RouteTable RouteTable `json:"routeTable,omitempty"`
 }
 
-const (
-	AnnotationClusterInfrastructureReady = "azure.cluster.sigs.k8s.io/infrastructure-ready"
-	ValueReady                           = "true"
-	AnnotationControlPlaneReady          = "azure.cluster.sigs.k8s.io/control-plane-ready"
-)
+// GetControlPlaneSubnet returns the cluster control plane subnet.
+func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
+	for _, sn := range n.Subnets {
+		if sn.Role == SubnetControlPlane {
+			return sn
+		}
+	}
+	return nil
+}
+
+// GetNodeSubnet returns the cluster node subnet.
+func (n *NetworkSpec) GetNodeSubnet() *SubnetSpec {
+	for _, sn := range n.Subnets {
+		if sn.Role == SubnetNode {
+			return sn
+		}
+	}
+	return nil
+}
+
+// SecurityProfile specifies the Security profile settings for a
+// virtual machine or virtual machine scale set.
+type SecurityProfile struct {
+	// This field indicates whether Host Encryption should be enabled
+	// or disabled for a virtual machine or virtual machine scale
+	// set. Default is disabled.
+	EncryptionAtHost *bool `json:"encryptionAtHost,omitempty"`
+}
+
+// AddressRecord specifies a DNS record mapping a hostname to an IPV4 or IPv6 address.
+type AddressRecord struct {
+	Hostname string
+	IP       string
+}

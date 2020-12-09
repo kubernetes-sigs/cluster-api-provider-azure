@@ -1,0 +1,7 @@
+- op: replace
+  path: /spec/template/spec/osDisk/managedDisk/storageAccountType
+  value: "Standard_LRS"
+- op: replace
+  path: /spec/template/spec/osDisk/diffDiskSettings
+  value:
+    option: Local

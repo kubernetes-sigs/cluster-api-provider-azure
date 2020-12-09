@@ -25,7 +25,7 @@ func ValidateImage(image *Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if image == nil {
-		allErrs = append(allErrs, field.Required(fldPath, "an image must be specified"))
+		// allow empty image as it is defaulted in the AzureMachine controller
 		return allErrs
 	}
 
@@ -69,7 +69,7 @@ func validateSingleDetailsOnly(image *Image, fldPath *field.Path) field.ErrorLis
 	}
 
 	if !imageDetailsFound {
-		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace and SharedGallery image details"))
+		allErrs = append(allErrs, field.Required(fldPath, "You must supply a ID, Marketplace or SharedGallery image details"))
 	}
 
 	return allErrs

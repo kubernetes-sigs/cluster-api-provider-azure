@@ -3,6 +3,7 @@ namespace: capz-system
 resources:
   - namespace.yaml
   - credentials.yaml
+  - cloud_environment.yaml
 
 bases:
   - ../rbac
@@ -10,3 +11,4 @@ bases:
 
 patchesStrategicMerge:
   - manager_credentials_patch.yaml
+  - manager_cloud_env_patch.yaml

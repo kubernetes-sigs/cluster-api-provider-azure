@@ -1,0 +1,34 @@
+#!/bin/bash
+
+azurecluster="capz-cluster"
+user="capi"
+identity=~/.ssh/id_rsa
+
+while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
+  -V | --version )
+    echo $version
+    exit
+    ;;
+  -am | --azure-machine )
+    shift; azuremachine=$1
+    ;;
+  -u | --user )
+    shift; user=$1
+    ;;
+  -i | --identity )
+    shift; identity=$1
+    ;;
+esac; shift; done
+if [[ "$1" == '--' ]]; then shift; fi
+
+echo "finding address for $azurecluster"
+capimachine=$(kubectl get azuremachine $azuremachine -o json | jq -r '.metadata.ownerReferences | .[]  |  select(.kind == "Machine").name')
+azurecluster=$(kubectl get machine $capimachine -o json | jq -r '.spec.clusterName')
+apiserver=$(kubectl get azurecluster $azurecluster -o json | jq -r '.spec.controlPlaneEndpoint.host')
+echo "found address $apiserver"
+
+echo "finding address for $azuremachine"
+node=$(kubectl get azuremachine $azuremachine -o json | jq -r '.status.addresses[0].address')
+echo "found address $node"
+
+ssh -i $identity -J ${user}@${apiserver} ${user}@${node}

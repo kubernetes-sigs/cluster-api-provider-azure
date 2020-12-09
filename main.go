@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof" //nolint
 	"os"
@@ -25,22 +26,36 @@ import (
 
 	// +kubebuilder:scaffold:imports
 
+	"github.com/Azure/go-autorest/tracing"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/pflag"
+	otelProm "go.opentelemetry.io/otel/exporters/metric/prometheus"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
-	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
-	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/controllers"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	"sigs.k8s.io/cluster-api/feature"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	capifeature "sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
+	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	infrav1alpha3exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
+	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 
 var (
@@ -54,23 +69,29 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = infrav1alpha2.AddToScheme(scheme)
 	_ = infrav1alpha3.AddToScheme(scheme)
+	_ = infrav1alpha3exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
-	_ = infrastructurev1alpha3.AddToScheme(scheme)
+	_ = clusterv1exp.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
 var (
-	metricsAddr             string
-	enableLeaderElection    bool
-	watchNamespace          string
-	profilerAddress         string
-	azureClusterConcurrency int
-	azureMachineConcurrency int
-	syncPeriod              time.Duration
-	healthAddr              string
-	webhookPort             int
+	metricsAddr                 string
+	enableLeaderElection        bool
+	leaderElectionNamespace     string
+	watchNamespace              string
+	profilerAddress             string
+	azureClusterConcurrency     int
+	azureMachineConcurrency     int
+	azureMachinePoolConcurrency int
+	syncPeriod                  time.Duration
+	healthAddr                  string
+	webhookPort                 int
+	reconcileTimeout            time.Duration
+	enableTracing               bool
 )
 
+// InitFlags initializes all command-line flags.
 func InitFlags(fs *pflag.FlagSet) {
 	fs.StringVar(
 		&metricsAddr,
@@ -84,6 +105,13 @@ func InitFlags(fs *pflag.FlagSet) {
 		"enable-leader-election",
 		false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.",
+	)
+
+	flag.StringVar(
+		&leaderElectionNamespace,
+		"leader-election-namespace",
+		"",
+		"Namespace that the controller performs leader election in. If unspecified, the controller will discover which namespace it is running in.",
 	)
 
 	fs.StringVar(
@@ -112,6 +140,11 @@ func InitFlags(fs *pflag.FlagSet) {
 		"Number of AzureMachines to process simultaneously",
 	)
 
+	fs.IntVar(&azureMachinePoolConcurrency,
+		"azuremachinepool-concurrency",
+		10,
+		"Number of AzureMachinePools to process simultaneously")
+
 	fs.DurationVar(&syncPeriod,
 		"sync-period",
 		10*time.Minute,
@@ -128,6 +161,19 @@ func InitFlags(fs *pflag.FlagSet) {
 		"webhook-port",
 		0,
 		"Webhook Server port, disabled by default. When enabled, the manager will only work as webhook server, no reconcilers are installed.",
+	)
+
+	fs.DurationVar(&reconcileTimeout,
+		"reconcile-timeout",
+		reconciler.DefaultLoopTimeout,
+		"The maximum duration a reconcile loop can run (e.g. 90m)",
+	)
+
+	fs.BoolVar(
+		&enableTracing,
+		"enable-tracing",
+		false,
+		"Enable Jaeger tracing to an agent running as a sidecar to the controller.",
 	)
 
 	feature.MutableGates.AddFlag(fs)
@@ -151,6 +197,19 @@ func main() {
 
 	ctrl.SetLogger(klogr.New())
 
+	if enableTracing {
+		flush, err := initJaegerTracing()
+		if err != nil {
+			setupLog.Error(err, "failed to init Jaeger tracing")
+			os.Exit(1)
+		}
+
+		tracing.Register(ot.NewOpenTelemetryAutorestTracer(tele.Tracer()))
+
+		// try to flush all traces before exiting
+		defer flush()
+	}
+
 	// Machine and cluster operations can create enough events to trigger the event recorder spam filter
 	// Setting the burst size higher ensures all events will be recorded and submitted to the API
 	broadcaster := cgrecord.NewBroadcasterWithCorrelatorOptions(cgrecord.CorrelatorOptions{
@@ -158,18 +217,24 @@ func main() {
 	})
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "controller-leader-election-capz",
-		SyncPeriod:             &syncPeriod,
-		Namespace:              watchNamespace,
-		HealthProbeBindAddress: healthAddr,
-		Port:                   webhookPort,
-		EventBroadcaster:       broadcaster,
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        "controller-leader-election-capz",
+		LeaderElectionNamespace: leaderElectionNamespace,
+		SyncPeriod:              &syncPeriod,
+		Namespace:               watchNamespace,
+		HealthProbeBindAddress:  healthAddr,
+		Port:                    webhookPort,
+		EventBroadcaster:        broadcaster,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err := initPrometheusMetrics(); err != nil {
+		setupLog.Error(err, "failed to init Prometheus metrics")
 		os.Exit(1)
 	}
 
@@ -178,33 +243,117 @@ func main() {
 
 	if webhookPort == 0 {
 		if err = (&controllers.AzureMachineReconciler{
-			Client:   mgr.GetClient(),
-			Log:      ctrl.Log.WithName("controllers").WithName("AzureMachine"),
-			Recorder: mgr.GetEventRecorderFor("azuremachine-reconciler"),
+			Client:           mgr.GetClient(),
+			Log:              ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+			Recorder:         mgr.GetEventRecorderFor("azuremachine-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
 			os.Exit(1)
 		}
 		if err = (&controllers.AzureClusterReconciler{
-			Client:   mgr.GetClient(),
-			Log:      ctrl.Log.WithName("controllers").WithName("AzureCluster"),
-			Recorder: mgr.GetEventRecorderFor("azurecluster-reconciler"),
+			Client:           mgr.GetClient(),
+			Log:              ctrl.Log.WithName("controllers").WithName("AzureCluster"),
+			Recorder:         mgr.GetEventRecorderFor("azurecluster-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
 		}
+		if err = (&controllers.AzureJSONTemplateReconciler{
+			Client:           mgr.GetClient(),
+			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
+			Recorder:         mgr.GetEventRecorderFor("azurejsontemplate-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONTemplate")
+			os.Exit(1)
+		}
+		if err = (&controllers.AzureJSONMachineReconciler{
+			Client:           mgr.GetClient(),
+			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachine"),
+			Recorder:         mgr.GetEventRecorderFor("azurejsonmachine-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
+			os.Exit(1)
+		}
+		// just use CAPI MachinePool feature flag rather than create a new one
+		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
+		if feature.Gates.Enabled(capifeature.MachinePool) {
+			if err = (&infrav1controllersexp.AzureMachinePoolReconciler{
+				Client:           mgr.GetClient(),
+				Log:              ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
+				Recorder:         mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
+				ReconcileTimeout: reconcileTimeout,
+			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
+				os.Exit(1)
+			}
+			if err = (&controllers.AzureJSONMachinePoolReconciler{
+				Client:           mgr.GetClient(),
+				Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachinePool"),
+				Recorder:         mgr.GetEventRecorderFor("azurejsonmachinepool-reconciler"),
+				ReconcileTimeout: reconcileTimeout,
+			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachinePool")
+				os.Exit(1)
+			}
+			if feature.Gates.Enabled(feature.AKS) {
+				if err = (&infrav1controllersexp.AzureManagedMachinePoolReconciler{
+					Client:           mgr.GetClient(),
+					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
+					Recorder:         mgr.GetEventRecorderFor("azuremachine-reconciler"),
+					ReconcileTimeout: reconcileTimeout,
+				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedMachinePool")
+					os.Exit(1)
+				}
+				if err = (&infrav1controllersexp.AzureManagedClusterReconciler{
+					Client:           mgr.GetClient(),
+					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedCluster"),
+					Recorder:         mgr.GetEventRecorderFor("azuremanagedcluster-reconciler"),
+					ReconcileTimeout: reconcileTimeout,
+				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedCluster")
+					os.Exit(1)
+				}
+				if err = (&infrav1controllersexp.AzureManagedControlPlaneReconciler{
+					Client:           mgr.GetClient(),
+					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedControlPlane"),
+					Recorder:         mgr.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
+					ReconcileTimeout: reconcileTimeout,
+				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedControlPlane")
+					os.Exit(1)
+				}
+			}
+		}
 	} else {
-		if err = (&infrastructurev1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.AzureCluster{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureCluster")
 			os.Exit(1)
 		}
-		if err = (&infrastructurev1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
 			os.Exit(1)
 		}
-		if err = (&infrastructurev1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.AzureMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
 			os.Exit(1)
+		}
+		// just use CAPI MachinePool feature flag rather than create a new one
+		if feature.Gates.Enabled(capifeature.MachinePool) {
+			if err = (&infrav1alpha3exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
+				os.Exit(1)
+			}
+		}
+		if feature.Gates.Enabled(feature.AKS) {
+			if err = (&infrav1alpha3exp.AzureManagedControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
+				os.Exit(1)
+			}
 		}
 	}
 	// +kubebuilder:scaffold:builder
@@ -219,9 +368,31 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	setupLog.Info("starting manager", "version", version.Get().String())
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func initPrometheusMetrics() error {
+	_, err := otelProm.InstallNewPipeline(otelProm.Config{
+		Registry: metrics.Registry.(*prometheus.Registry), // use the controller runtime metrics registry / gatherer
+	})
+
+	return err
+}
+
+// initJaegerTracing creates and injects a jaeger tracing pipeline into the global.TraceProvider which will write
+// tracing events to a sidecar agent running on localhost:6831.
+func initJaegerTracing() (func(), error) {
+	return jaeger.InstallNewPipeline(
+		jaeger.WithAgentEndpoint("localhost:6831"),
+		jaeger.WithProcess(jaeger.Process{
+			ServiceName: "capz",
+		}),
+		jaeger.WithSDK(&trace.Config{
+			DefaultSampler: trace.AlwaysSample(),
+		}),
+	)
 }

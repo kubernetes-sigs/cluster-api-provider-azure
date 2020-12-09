@@ -19,38 +19,43 @@ package disks
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk
-type Client interface {
+type client interface {
 	Delete(context.Context, string, string) error
 }
 
 // AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+type azureClient struct {
 	disks compute.DisksClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newDisksClient(subscriptionID, authorizer)
-	return &AzureClient{c}
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
+	c := newDisksClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	return &azureClient{c}
 }
 
 // newDisksClient creates a new disks client from subscription ID.
-func newDisksClient(subscriptionID string, authorizer autorest.Authorizer) compute.DisksClient {
-	disksClient := compute.NewDisksClient(subscriptionID)
+func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.DisksClient {
+	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
 	disksClient.Authorizer = authorizer
-	disksClient.AddToUserAgent(azure.UserAgent)
+	disksClient.AddToUserAgent(azure.UserAgent())
 	return disksClient
 }
 
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
+// Delete removes the disk client
+func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
+	ctx, span := tele.Tracer().Start(ctx, "disks.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.disks.Delete(ctx, resourceGroupName, name)
 	if err != nil {
 		return err

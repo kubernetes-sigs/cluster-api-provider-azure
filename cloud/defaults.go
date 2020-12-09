@@ -22,23 +22,12 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 
 const (
 	// DefaultUserName is the default username for created vm
 	DefaultUserName = "capi"
-	// DefaultVnetCIDR is the default Vnet CIDR
-	DefaultVnetCIDR = "10.0.0.0/8"
-	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
-	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
-	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
-	DefaultNodeSubnetCIDR = "10.1.0.0/16"
-	// DefaultInternalLBIPAddress is the default internal load balancer ip address
-	DefaultInternalLBIPAddress = "10.0.0.100"
-	// DefaultAzureDNSZone is the default provided azure dns zone
-	DefaultAzureDNSZone = "cloudapp.azure.com"
-	// UserAgent used for communicating with azure
-	UserAgent = "cluster-api-azure-services"
 )
 
 const (
@@ -50,75 +39,64 @@ const (
 	LatestVersion = "latest"
 )
 
-// SupportedAvailabilityZoneLocations is a slice of the locations where Availability Zones are supported.
-// This is used to validate whether a virtual machine should leverage an Availability Zone.
-// Based on the Availability Zones listed in https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
-var SupportedAvailabilityZoneLocations = []string{
-	// Americas
-	"centralus",
-	"eastus",
-	"eastus2",
-	"westus2",
+const (
+	// Global is the Azure global location value.
+	Global = "global"
+)
 
-	// Europe
-	"francecentral",
-	"northeurope",
-	"uksouth",
-	"westeurope",
+const (
+	// PrivateAPIServerHostname will be used as the api server hostname for private clusters.
+	PrivateAPIServerHostname = "apiserver"
+)
 
-	// Asia Pacific
-	"japaneast",
-	"southeastasia",
+// GenerateBackendAddressPoolName generates a load balancer backend address pool name.
+func GenerateBackendAddressPoolName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "backendPool")
 }
 
-// GenerateVnetName generates a virtual network name, based on the cluster name.
-func GenerateVnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "vnet")
+// GenerateOutboundBackendAddressPoolName generates a load balancer outbound backend address pool name.
+func GenerateOutboundBackendAddressPoolName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "outboundBackendPool")
 }
 
-// GenerateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
-func GenerateControlPlaneSecurityGroupName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "controlplane-nsg")
+// GenerateFrontendIPConfigName generates a load balancer frontend IP config name.
+func GenerateFrontendIPConfigName(lbName string) string {
+	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }
 
-// GenerateNodeSecurityGroupName generates a node security group name, based on the cluster name.
-func GenerateNodeSecurityGroupName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-nsg")
+// GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.
+func GenerateNodeOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-node-outbound", clusterName)
 }
 
-// GenerateNodeRouteTableName generates a node route table name, based on the cluster name.
-func GenerateNodeRouteTableName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-routetable")
+// GenerateNodePublicIPName generates a node public IP name, based on the machine name.
+func GenerateNodePublicIPName(machineName string) string {
+	return fmt.Sprintf("pip-%s", machineName)
 }
 
-// GenerateControlPlaneSubnetName generates a node subnet name, based on the cluster name.
-func GenerateControlPlaneSubnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "controlplane-subnet")
+// GenerateControlPlaneOutboundLBName generates the name of the control plane outbound LB.
+func GenerateControlPlaneOutboundLBName(clusterName string) string {
+	return fmt.Sprintf("%s-outbound-lb", clusterName)
 }
 
-// GenerateNodeSubnetName generates a node subnet name, based on the cluster name.
-func GenerateNodeSubnetName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
+// GenerateControlPlaneOutboundIPName generates a public IP name, based on the cluster name.
+func GenerateControlPlaneOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
 }
 
-// GenerateInternalLBName generates a internal load balancer name, based on the cluster name.
-func GenerateInternalLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "internal-lb")
+// GeneratePrivateDNSZoneName generates the name of a private DNS zone based on the cluster name.
+func GeneratePrivateDNSZoneName(clusterName string) string {
+	return fmt.Sprintf("%s.capz.io", clusterName)
 }
 
-// GeneratePublicLBName generates a public load balancer name, based on the cluster name.
-func GeneratePublicLBName(clusterName string) string {
-	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
+// GeneratePrivateFQDN generates FQDN for a private API Server.
+func GeneratePrivateFQDN(clusterName string) string {
+	return fmt.Sprintf("%s.%s", PrivateAPIServerHostname, GeneratePrivateDNSZoneName(clusterName))
 }
 
-// GeneratePublicIPName generates a public IP name, based on the cluster name and a hash.
-func GeneratePublicIPName(clusterName, hash string) string {
-	return fmt.Sprintf("%s-%s", clusterName, hash)
-}
-
-// GenerateFQDN generates a fully qualified domain name, based on the public IP name and cluster location.
-func GenerateFQDN(publicIPName, location string) string {
-	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
+// GenerateVNetLinkName generates the name of a virtual network link name based on the vnet name.
+func GenerateVNetLinkName(vnetName string) string {
+	return fmt.Sprintf("%s-link", vnetName)
 }
 
 // GenerateNICName generates the name of a network interface based on the name of a VM.
@@ -126,9 +104,74 @@ func GenerateNICName(machineName string) string {
 	return fmt.Sprintf("%s-nic", machineName)
 }
 
+// GeneratePublicNICName generates the name of a public network interface based on the name of a VM.
+func GeneratePublicNICName(machineName string) string {
+	return fmt.Sprintf("%s-public-nic", machineName)
+}
+
 // GenerateOSDiskName generates the name of an OS disk based on the name of a VM.
 func GenerateOSDiskName(machineName string) string {
 	return fmt.Sprintf("%s_OSDisk", machineName)
+}
+
+// GenerateDataDiskName generates the name of a data disk based on the name of a VM.
+func GenerateDataDiskName(machineName, nameSuffix string) string {
+	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
+}
+
+// VMID returns the azure resource ID for a given VM.
+func VMID(subscriptionID, resourceGroup, vmName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", subscriptionID, resourceGroup, vmName)
+}
+
+// VNetID returns the azure resource ID for a given VNet.
+func VNetID(subscriptionID, resourceGroup, vnetName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", subscriptionID, resourceGroup, vnetName)
+}
+
+// SubnetID returns the azure resource ID for a given subnet.
+func SubnetID(subscriptionID, resourceGroup, vnetName, subnetName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s", subscriptionID, resourceGroup, vnetName, subnetName)
+}
+
+// PublicIPID returns the azure resource ID for a given public IP.
+func PublicIPID(subscriptionID, resourceGroup, ipName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/publicIPAddresses/%s", subscriptionID, resourceGroup, ipName)
+}
+
+// RouteTableID returns the azure resource ID for a given route table.
+func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, resourceGroup, routeTableName)
+}
+
+// SecurityGroupID returns the azure resource ID for a given security group.
+func SecurityGroupID(subscriptionID, resourceGroup, nsgName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, nsgName)
+}
+
+// NetworkInterfaceID returns the azure resource ID for a given network interface.
+func NetworkInterfaceID(subscriptionID, resourceGroup, nicName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkInterfaces/%s", subscriptionID, resourceGroup, nicName)
+}
+
+// FrontendIPConfigID returns the azure resource ID for a given frontend IP config.
+func FrontendIPConfigID(subscriptionID, resourceGroup, loadBalancerName, configName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/frontendIPConfigurations/%s", subscriptionID, resourceGroup, loadBalancerName, configName)
+}
+
+// AddressPoolID returns the azure resource ID for a given backend address pool.
+func AddressPoolID(subscriptionID, resourceGroup, loadBalancerName, backendPoolName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/backendAddressPools/%s", subscriptionID, resourceGroup, loadBalancerName, backendPoolName)
+}
+
+// ProbeID returns the azure resource ID for a given probe.
+func ProbeID(subscriptionID, resourceGroup, loadBalancerName, probeName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/probes/%s", subscriptionID, resourceGroup, loadBalancerName, probeName)
+}
+
+// NATRuleID returns the azure resource ID for a inbound NAT rule.
+func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/inboundNatRules/%s", subscriptionID, resourceGroup, loadBalancerName, natRuleName)
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
@@ -157,4 +200,9 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	}
 
 	return defaultImage, nil
+}
+
+// UserAgent specifies a string to append to the agent identifier.
+func UserAgent() string {
+	return fmt.Sprintf("cluster-api-provider-azure/%s", version.Get().String())
 }

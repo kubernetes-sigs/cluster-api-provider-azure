@@ -17,14 +17,24 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
+	"testing"
+
+	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/klogr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 )
 
 var _ = Describe("AzureMachineReconciler", func() {
@@ -34,19 +44,161 @@ var _ = Describe("AzureMachineReconciler", func() {
 	Context("Reconcile an AzureMachine", func() {
 		It("should not error with minimal set up", func() {
 			reconciler := &AzureMachineReconciler{
-				Client: k8sClient,
-				Log:    log.Log,
+				Client: testEnv,
+				Log:    testEnv.Log,
 			}
+
 			By("Calling reconcile")
-			instance := &infrav1.AzureMachine{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
+			name := test.RandomName("foo", 10)
+			instance := &infrav1.AzureMachine{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}}
 			result, err := reconciler.Reconcile(ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: instance.Namespace,
 					Name:      instance.Name,
 				},
 			})
+
 			Expect(err).To(BeNil())
 			Expect(result.RequeueAfter).To(BeZero())
 		})
 	})
 })
+
+func TestConditions(t *testing.T) {
+	g := NewWithT(t)
+	scheme := setupScheme(g)
+
+	testcases := []struct {
+		name               string
+		clusterStatus      clusterv1.ClusterStatus
+		machine            *clusterv1.Machine
+		azureMachine       *infrav1.AzureMachine
+		expectedConditions []clusterv1.Condition
+	}{
+		{
+			name: "cluster infrastructure is not ready yet",
+			clusterStatus: clusterv1.ClusterStatus{
+				InfrastructureReady: false,
+			},
+			machine: &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						clusterv1.ClusterLabelName: "my-cluster",
+					},
+					Name: "my-machine",
+				},
+			},
+			azureMachine: &infrav1.AzureMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "azure-test1",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: clusterv1.GroupVersion.String(),
+							Kind:       "Machine",
+							Name:       "test1",
+						},
+					},
+				},
+			},
+			expectedConditions: []clusterv1.Condition{{
+				Type:     "VMRunning",
+				Status:   v1.ConditionFalse,
+				Severity: clusterv1.ConditionSeverityInfo,
+				Reason:   "WaitingForClusterInfrastructure",
+			}},
+		},
+		{
+			name: "bootstrap data secret reference is not yet available",
+			clusterStatus: clusterv1.ClusterStatus{
+				InfrastructureReady: true,
+			},
+			machine: &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						clusterv1.ClusterLabelName: "my-cluster",
+					},
+					Name: "my-machine",
+				},
+			},
+			azureMachine: &infrav1.AzureMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "azure-test1",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: clusterv1.GroupVersion.String(),
+							Kind:       "Machine",
+							Name:       "test1",
+						},
+					},
+				},
+			},
+			expectedConditions: []clusterv1.Condition{{
+				Type:     "VMRunning",
+				Status:   v1.ConditionFalse,
+				Severity: clusterv1.ConditionSeverityInfo,
+				Reason:   "WaitingForBootstrapData",
+			}},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-cluster",
+				},
+				Status: tc.clusterStatus,
+			}
+			azureCluster := &infrav1.AzureCluster{
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: "123",
+				},
+			}
+			initObjects := []runtime.Object{
+				cluster,
+				tc.machine,
+				azureCluster,
+				tc.azureMachine,
+			}
+			client := fake.NewFakeClientWithScheme(scheme, initObjects...)
+
+			reconciler := &AzureMachineReconciler{
+				Client: client,
+				Log:    klogr.New(),
+			}
+
+			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+				AzureClients: scope.AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Client:       client,
+				Cluster:      cluster,
+				AzureCluster: azureCluster,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+				Client:       client,
+				ClusterScope: clusterScope,
+				Machine:      tc.machine,
+				AzureMachine: tc.azureMachine,
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			_, err = reconciler.reconcileNormal(context.TODO(), machineScope, clusterScope)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			g.Expect(len(machineScope.AzureMachine.GetConditions())).To(Equal(len(tc.expectedConditions)))
+			for i, c := range machineScope.AzureMachine.GetConditions() {
+				g.Expect(conditionsMatch(c, tc.expectedConditions[i])).To(BeTrue())
+			}
+		})
+	}
+
+}
+
+func conditionsMatch(i, j clusterv1.Condition) bool {
+	return i.Type == j.Type &&
+		i.Status == j.Status &&
+		i.Reason == j.Reason &&
+		i.Severity == j.Severity
+}

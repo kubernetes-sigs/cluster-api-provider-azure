@@ -17,45 +17,69 @@ limitations under the License.
 package scope
 
 import (
-	"os"
+	"fmt"
+	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/pkg/errors"
 )
 
 // AzureClients contains all the Azure clients used by the scopes.
 type AzureClients struct {
-	SubscriptionID string
-	Authorizer     autorest.Authorizer
+	auth.EnvironmentSettings
+
+	Authorizer                 autorest.Authorizer
+	ResourceManagerEndpoint    string
+	ResourceManagerVMDNSSuffix string
 }
 
-func (c *AzureClients) setCredentials() error {
-	if c.SubscriptionID == "" {
-		subID, err := getSubscriptionID()
-		if err != nil {
-			return err
-		}
-		c.SubscriptionID = subID
-	}
-	if c.Authorizer == nil {
-		auth, err := getAuthorizer()
-		if err != nil {
-			return err
-		}
-		c.Authorizer = auth
-	}
-	return nil
+// CloudEnvironment returns the Azure environment the controller runs in.
+func (c *AzureClients) CloudEnvironment() string {
+	return c.Environment.Name
 }
 
-func getSubscriptionID() (string, error) {
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+// TenantID returns the Azure tenant id the controller runs in.
+func (c *AzureClients) TenantID() string {
+	return c.Values[auth.TenantID]
+}
+
+// ClientID returns the Azure client id from the controller environment
+func (c *AzureClients) ClientID() string {
+	return c.Values[auth.ClientID]
+}
+
+// ClientSecret returns the Azure client secret from the controller environment
+func (c *AzureClients) ClientSecret() string {
+	return c.Values[auth.ClientSecret]
+}
+
+// SubscriptionID returns the Azure subscription id of the cluster,
+// either specified or from the environment
+func (c *AzureClients) SubscriptionID() string {
+	return c.Values[auth.SubscriptionID]
+}
+
+func (c *AzureClients) setCredentials(subscriptionID string) error {
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return err
+	}
+
 	if subscriptionID == "" {
-		return "", errors.New("error creating azure services. Environment variable AZURE_SUBSCRIPTION_ID is not set")
+		subscriptionID = settings.GetSubscriptionID()
+		if subscriptionID == "" {
+			return fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
+		}
 	}
-	return subscriptionID, nil
-}
 
-func getAuthorizer() (autorest.Authorizer, error) {
-	return auth.NewAuthorizerFromEnvironment()
+	c.EnvironmentSettings = settings
+	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
+	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
+	c.Values[auth.ClientID] = strings.TrimSuffix(c.Values[auth.ClientID], "\n")
+	c.Values[auth.ClientSecret] = strings.TrimSuffix(c.Values[auth.ClientSecret], "\n")
+	c.Values[auth.SubscriptionID] = strings.TrimSuffix(subscriptionID, "\n")
+	c.Values[auth.TenantID] = strings.TrimSuffix(c.Values[auth.TenantID], "\n")
+
+	c.Authorizer, err = c.GetAuthorizer()
+	return err
 }

@@ -21,44 +21,52 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
-type Client interface {
+// client wraps go-sdk
+type client interface {
 	Get(context.Context, string, string, string) (network.InboundNatRule, error)
 	CreateOrUpdate(context.Context, string, string, string, network.InboundNatRule) error
 	Delete(context.Context, string, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client
+type azureClient struct {
 	inboundnatrules network.InboundNatRulesClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new inbound NAT rules client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newInboundNatRulesClient(subscriptionID, authorizer)
-	return &AzureClient{c}
+// newClient creates a new inbound NAT rules client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
+	c := newInboundNatRulesClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	return &azureClient{c}
 }
 
 // newLoadbalancersClient creates a new inbound NAT rules client from subscription ID.
-func newInboundNatRulesClient(subscriptionID string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
-	inboundNatRulesClient := network.NewInboundNatRulesClient(subscriptionID)
+func newInboundNatRulesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
+	inboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(baseURI, subscriptionID)
 	inboundNatRulesClient.Authorizer = authorizer
-	inboundNatRulesClient.AddToUserAgent(azure.UserAgent)
+	inboundNatRulesClient.AddToUserAgent(azure.UserAgent())
 	return inboundNatRulesClient
 }
 
 // Get gets the specified inbound NAT rules.
-func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) (network.InboundNatRule, error) {
+func (ac *azureClient) Get(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) (network.InboundNatRule, error) {
+	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.Get")
+	defer span.End()
+
 	return ac.inboundnatrules.Get(ctx, resourceGroupName, lbName, inboundNatRuleName, "")
 }
 
 // CreateOrUpdate creates or updates a inbound NAT rules.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, inboundNatRuleName string, inboundNatRuleParameters network.InboundNatRule) error {
+func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, inboundNatRuleName string, inboundNatRuleParameters network.InboundNatRule) error {
+	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	future, err := ac.inboundnatrules.CreateOrUpdate(ctx, resourceGroupName, lbName, inboundNatRuleName, inboundNatRuleParameters)
 	if err != nil {
 		return err
@@ -72,7 +80,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 }
 
 // Delete deletes the specified inbound NAT rules.
-func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) error {
+func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) error {
+	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.inboundnatrules.Delete(ctx, resourceGroupName, lbName, inboundNatRuleName)
 	if err != nil {
 		return err

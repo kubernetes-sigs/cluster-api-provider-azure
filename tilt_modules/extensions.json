@@ -1,0 +1,9 @@
+{
+  "Extensions": [
+    {
+      "Name": "cert_manager",
+      "ExtensionRegistry": "https://github.com/tilt-dev/tilt-extensions",
+      "TimeFetched": "2020-10-13T13:51:07.717747266-07:00"
+    }
+  ]
+}

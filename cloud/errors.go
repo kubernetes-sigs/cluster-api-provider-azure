@@ -17,13 +17,91 @@ limitations under the License.
 package azure
 
 import (
+	"errors"
+	"fmt"
+	"time"
+
 	"github.com/Azure/go-autorest/autorest"
 )
 
-// ResourceNotFound parses the error to check if it's a resource not found
+// ErrNotOwned is returned when a resource can't be deleted because it isn't owned.
+var ErrNotOwned = errors.New("resource is not managed and cannot be deleted")
+
+// ResourceNotFound parses the error to check if it's a resource not found error.
 func ResourceNotFound(err error) bool {
-	if derr, ok := err.(autorest.DetailedError); ok && derr.StatusCode == 404 {
-		return true
+	derr := autorest.DetailedError{}
+	return errors.As(err, &derr) && derr.StatusCode == 404
+}
+
+// VMDeletedError is returned when a virtual machine is deleted outside of capz
+type VMDeletedError struct {
+	ProviderID string
+}
+
+// Error returns the error string
+func (vde VMDeletedError) Error() string {
+	return fmt.Sprintf("VM with provider id %q has been deleted", vde.ProviderID)
+}
+
+// ReconcileError represents an error that is not automatically recoverable
+// errorType indicates what type of action is required to recover. It can take two values
+// 1. `Transient` - Can be recovered through manual intervention, will be requeued after
+// 2. `Terminal` - Cannot be recovered, will not be requeued
+type ReconcileError struct {
+	error
+	errorType    ReconcileErrorType
+	requestAfter time.Duration
+}
+
+// ReconcileErrorType represents the type of a ReconcileError
+type ReconcileErrorType string
+
+const (
+	// TransientErrorType can be recovered, will be requeued after a configured time interval
+	TransientErrorType ReconcileErrorType = "Transient"
+	// TerminalErrorType cannot be recovered, will not be requeued
+	TerminalErrorType ReconcileErrorType = "Terminal"
+)
+
+// Error returns the error message for a ReconcileError
+func (t ReconcileError) Error() string {
+	var errStr string
+	if t.error != nil {
+		errStr = t.error.Error()
 	}
-	return false
+	switch t.errorType {
+	case TransientErrorType:
+		return fmt.Sprintf("reconcile error occurred that can be recovered. Object will be requeued after %s "+
+			"The actual error is: %s", t.requestAfter.String(), errStr)
+	case TerminalErrorType:
+		return fmt.Sprintf("reconcile error occurred that cannot be recovered. Object will not be requeued. "+
+			"The actual error is: %s", errStr)
+	default:
+		return fmt.Sprintf("reconcile error occurred with unknown recovery type. The actual error is: %s", errStr)
+	}
+}
+
+// IsTransient returns if the ReconcileError is recoverable
+func (t ReconcileError) IsTransient() bool {
+	return t.errorType == TransientErrorType
+}
+
+// IsTerminal returns if the ReconcileError is recoverable
+func (t ReconcileError) IsTerminal() bool {
+	return t.errorType == TerminalErrorType
+}
+
+// RequeueAfter returns requestAfter value
+func (t ReconcileError) RequeueAfter() time.Duration {
+	return t.requestAfter
+}
+
+// WithTransientError wraps the error in a ReconcileError with errorType as `Transient`
+func WithTransientError(err error, requeueAfter time.Duration) ReconcileError {
+	return ReconcileError{error: err, errorType: TransientErrorType, requestAfter: requeueAfter}
+}
+
+// WithTerminalError wraps the error in a ReconcileError with errorType as `Terminal`
+func WithTerminalError(err error) ReconcileError {
+	return ReconcileError{error: err, errorType: TerminalErrorType}
 }

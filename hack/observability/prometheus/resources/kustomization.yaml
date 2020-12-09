@@ -1,0 +1,3 @@
+resources:
+  - bundle.yaml
+  - prometheus.yaml

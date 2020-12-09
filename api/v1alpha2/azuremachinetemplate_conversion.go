@@ -35,6 +35,7 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 		return err
 	}
 
+	restoreAzureMachineSpec(&restored.Spec.Template.Spec, &dst.Spec.Template.Spec)
 	return nil
 }
 

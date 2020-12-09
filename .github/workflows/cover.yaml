@@ -1,0 +1,15 @@
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: "make test-cover"
+    - uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.out
+        fail_ci_if_error: true

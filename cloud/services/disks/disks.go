@@ -19,42 +19,59 @@ package disks
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Spec specification for disk
-type Spec struct {
-	Name string
+// DiskScope defines the scope interface for a disk service.
+type DiskScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	DiskSpecs() []azure.DiskSpec
 }
 
-// Get on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	return Spec{}, nil
+// Service provides operations on azure resources
+type Service struct {
+	Scope DiskScope
+	client
+}
+
+// New creates a new disks service.
+func New(scope DiskScope) *Service {
+	return &Service{
+		Scope:  scope,
+		client: newClient(scope),
+	}
 }
 
 // Reconcile on disk is currently no-op. OS disks should only be deleted and will create with the VM automatically.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+func (s *Service) Reconcile(ctx context.Context) error {
+	_, span := tele.Tracer().Start(ctx, "disks.Service.Reconcile")
+	defer span.End()
+
 	return nil
 }
 
 // Delete deletes the disk associated with a VM.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	diskSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid disk specification")
-	}
-	klog.V(2).Infof("deleting disk %s", diskSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete disk %s in resource group %s", diskSpec.Name, s.Scope.ResourceGroup())
-	}
+func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "disks.Service.Delete")
+	defer span.End()
 
-	klog.V(2).Infof("successfully deleted disk %s", diskSpec.Name)
+	for _, diskSpec := range s.Scope.DiskSpecs() {
+		s.Scope.V(2).Info("deleting disk", "disk", diskSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), diskSpec.Name)
+		if err != nil && azure.ResourceNotFound(err) {
+			// already deleted
+			continue
+		}
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete disk %s in resource group %s", diskSpec.Name, s.Scope.ResourceGroup())
+		}
+
+		s.Scope.V(2).Info("successfully deleted disk", "disk", diskSpec.Name)
+	}
 	return nil
 }

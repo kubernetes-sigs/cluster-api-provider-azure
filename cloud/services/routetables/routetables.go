@@ -21,79 +21,100 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Spec specification for route table.
-type Spec struct {
-	Name string
+// RouteTableScope defines the scope interface for route table service
+type RouteTableScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	azure.NetworkDescriber
+	RouteTableSpecs() []azure.RouteTableSpec
 }
 
-// Get provides information about a route table.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	routeTableSpec, ok := spec.(*Spec)
-	if !ok {
-		return network.RouteTable{}, errors.New("invalid Route Table Specification")
+// Service provides operations on azure resources
+type Service struct {
+	Scope RouteTableScope
+	client
+}
+
+// New creates a new service.
+func New(scope *scope.ClusterScope) *Service {
+	return &Service{
+		Scope:  scope,
+		client: newClient(scope),
 	}
-	routeTable, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "route table %s not found", routeTableSpec.Name)
-	} else if err != nil {
-		return routeTable, err
-	}
-	return routeTable, nil
 }
 
 // Reconcile gets/creates/updates a route table.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Reconcile")
+	defer span.End()
+
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route tables reconcile in custom vnet mode")
 		return nil
 	}
-	routeTableSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid Route Table Specification")
-	}
-	klog.V(2).Infof("creating route table %s", routeTableSpec.Name)
-	err := s.Client.CreateOrUpdate(
-		ctx,
-		s.Scope.ResourceGroup(),
-		routeTableSpec.Name,
-		network.RouteTable{
-			Location:                   to.StringPtr(s.Scope.Location()),
-			RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
-		},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
-	}
 
-	klog.V(2).Infof("successfully created route table %s", routeTableSpec.Name)
+	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
+		existingRouteTable, err := s.Get(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
+		if !azure.ResourceNotFound(err) {
+			if err != nil {
+				return errors.Wrapf(err, "failed to get route table %s in %s", routeTableSpec.Name, s.Scope.ResourceGroup())
+			}
+
+			// route table already exists
+			// currently don't support specifying your own routes via spec
+			routeTableSpec.Subnet.RouteTable.Name = to.String(existingRouteTable.Name)
+			routeTableSpec.Subnet.RouteTable.ID = to.String(existingRouteTable.ID)
+
+			continue
+		}
+
+		s.Scope.V(2).Info("creating Route Table", "route table", routeTableSpec.Name)
+		err = s.client.CreateOrUpdate(
+			ctx,
+			s.Scope.ResourceGroup(),
+			routeTableSpec.Name,
+			network.RouteTable{
+				Location:                   to.StringPtr(s.Scope.Location()),
+				RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
+			},
+		)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
+		}
+		s.Scope.V(2).Info("successfully created route table", "route table", routeTableSpec.Name)
+	}
 	return nil
 }
 
 // Delete deletes the route table with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	if !s.Scope.Vnet().IsManaged(s.Scope.Name()) {
+func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Delete")
+	defer span.End()
+
+	if !s.Scope.Vnet().IsManaged(s.Scope.ClusterName()) {
 		s.Scope.V(4).Info("Skipping route table deletion in custom vnet mode")
 		return nil
 	}
-	routeTableSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid Route Table Specification")
-	}
-	klog.V(2).Infof("deleting route table %s", routeTableSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
-	}
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
-	}
+	for _, routeTableSpec := range s.Scope.RouteTableSpecs() {
+		s.Scope.V(2).Info("deleting route table", "route table", routeTableSpec.Name)
+		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), routeTableSpec.Name)
+		if err != nil && azure.ResourceNotFound(err) {
+			// already deleted
+			continue
+		}
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete route table %s in resource group %s", routeTableSpec.Name, s.Scope.ResourceGroup())
+		}
 
-	klog.V(2).Infof("successfully deleted route table %s", routeTableSpec.Name)
+		s.Scope.V(2).Info("successfully deleted route table", "route table", routeTableSpec.Name)
+	}
 	return nil
 }

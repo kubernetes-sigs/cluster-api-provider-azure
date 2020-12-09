@@ -1,0 +1,6 @@
+namespace: default
+resources:
+  - ../base
+  - machine-deployment.yaml
+patchesStrategicMerge:
+  - patches/kubeadm-controlplane.yaml

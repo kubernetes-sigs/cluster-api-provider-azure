@@ -21,49 +21,62 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
-type Client interface {
+// client wraps go-sdk
+type client interface {
 	Get(context.Context, string) (resources.Group, error)
 	CreateOrUpdate(context.Context, string, resources.Group) (resources.Group, error)
 	Delete(context.Context, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
-type AzureClient struct {
+// azureClient contains the Azure go-sdk Client
+type azureClient struct {
 	groups resources.GroupsClient
 }
 
-var _ Client = &AzureClient{}
+var _ client = (*azureClient)(nil)
 
-// NewClient creates a new VM client from subscription ID.
-func NewClient(subscriptionID string, authorizer autorest.Authorizer) *AzureClient {
-	c := newGroupsClient(subscriptionID, authorizer)
-	return &AzureClient{c}
+// newClient creates a new VM client from subscription ID.
+func newClient(auth azure.Authorizer) *azureClient {
+	c := newGroupsClient(auth.SubscriptionID(), auth.BaseURI(), auth.Authorizer())
+	return &azureClient{
+		groups: c,
+	}
 }
 
 // newGroupsClient creates a new groups client from subscription ID.
-func newGroupsClient(subscriptionID string, authorizer autorest.Authorizer) resources.GroupsClient {
-	groupsClient := resources.NewGroupsClient(subscriptionID)
+func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resources.GroupsClient {
+	groupsClient := resources.NewGroupsClientWithBaseURI(baseURI, subscriptionID)
 	groupsClient.Authorizer = authorizer
-	groupsClient.AddToUserAgent(azure.UserAgent)
+	groupsClient.AddToUserAgent(azure.UserAgent())
 	return groupsClient
 }
 
 // Get gets a resource group.
-func (ac *AzureClient) Get(ctx context.Context, name string) (resources.Group, error) {
+func (ac *azureClient) Get(ctx context.Context, name string) (resources.Group, error) {
+	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.Get")
+	defer span.End()
+
 	return ac.groups.Get(ctx, name)
 }
 
 // CreateOrUpdate creates or updates a resource group.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, name string, group resources.Group) (resources.Group, error) {
+func (ac *azureClient) CreateOrUpdate(ctx context.Context, name string, group resources.Group) (resources.Group, error) {
+	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.CreateOrUpdate")
+	defer span.End()
+
 	return ac.groups.CreateOrUpdate(ctx, name, group)
 }
 
 // Delete deletes a resource group. When you delete a resource group, all of its resources are also deleted.
-func (ac *AzureClient) Delete(ctx context.Context, name string) error {
+func (ac *azureClient) Delete(ctx context.Context, name string) error {
+	ctx, span := tele.Tracer().Start(ctx, "groups.AzureClient.Delete")
+	defer span.End()
+
 	future, err := ac.groups.Delete(ctx, name)
 	if err != nil {
 		return err

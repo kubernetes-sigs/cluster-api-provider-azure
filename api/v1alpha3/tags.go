@@ -104,20 +104,26 @@ const (
 	// dedicated to this cluster api provider implementation.
 	NameAzureClusterAPIRole = NameAzureProviderPrefix + "role"
 
-	// APIServerRoleTagValue describes the value for the apiserver role
-	APIServerRoleTagValue = "apiserver"
+	// APIServerRole describes the value for the apiserver role
+	APIServerRole = "apiserver"
 
-	// BastionRoleTagValue describes the value for the bastion role
-	BastionRoleTagValue = "bastion"
+	// NodeOutboundRole describes the value for the node outbound LB role
+	NodeOutboundRole = "nodeOutbound"
 
-	// CommonRoleTagValue describes the value for the common role
-	CommonRoleTagValue = "common"
+	// ControlPlaneOutboundRole describes the value for the control plane outbound LB role
+	ControlPlaneOutboundRole = "controlPlaneOutbound"
 
-	// PublicRoleTagValue describes the value for the public role
-	PublicRoleTagValue = "public"
+	// BastionRole describes the value for the bastion role
+	BastionRole = "bastion"
 
-	// PrivateRoleTagValue describes the value for the private role
-	PrivateRoleTagValue = "private"
+	// CommonRole describes the value for the common role
+	CommonRole = "common"
+
+	// VMTagsLastAppliedAnnotation is the key for the machine object annotation
+	// which tracks the AdditionalTags in the Machine Provider Config.
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+	// for annotation formatting rules.
+	VMTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-vm"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.

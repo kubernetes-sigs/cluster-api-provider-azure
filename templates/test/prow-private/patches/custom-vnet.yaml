@@ -1,0 +1,23 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME}
+    subnets:
+      - name: private-cp-subnet
+        role: control-plane
+        cidrBlocks:
+          - ${AZURE_CP_SUBNET_CIDR}
+      - name: private-node-subnet
+        role: node
+        cidrBlocks:
+          - ${AZURE_NODE_SUBNET_CIDR}
+    apiServerLB:
+      name: ${CLUSTER_NAME}-internal-lb
+      type: Internal
+      frontendIPs:
+        - name: ${CLUSTER_NAME}-internal-lb-frontend
+          privateIP: ${AZURE_INTERNAL_LB_IP}

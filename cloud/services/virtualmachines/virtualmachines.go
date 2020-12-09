@@ -18,157 +18,206 @@ package virtualmachines
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Spec input specification for Get/CreateOrUpdate/Delete calls
-type Spec struct {
-	Name       string
-	NICName    string
-	SSHKeyData string
-	Size       string
-	Zone       string
-	Image      *infrav1.Image
-	OSDisk     infrav1.OSDisk
-	CustomData string
+// VMScope defines the scope interface for a virtual machines service.
+type VMScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	VMSpec() azure.VMSpec
+	GetBootstrapData(ctx context.Context) (string, error)
+	GetVMImage() (*infrav1.Image, error)
+	SetAnnotation(string, string)
+	ProviderID() string
+	SetProviderID(string)
+	SetAddresses([]corev1.NodeAddress)
+	SetVMState(infrav1.VMState)
 }
 
-// Get provides information about a virtual machine.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	vmSpec, ok := spec.(*Spec)
-	if !ok {
-		return compute.VirtualMachine{}, errors.New("invalid VM specification")
-	}
-	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		return nil, errors.Wrapf(err, "VM %s not found", vmSpec.Name)
-	} else if err != nil {
-		return vm, err
-	}
+// Service provides operations on azure resources
+type Service struct {
+	Scope VMScope
+	Client
+	interfacesClient networkinterfaces.Client
+	publicIPsClient  publicips.Client
+	resourceSKUCache *resourceskus.Cache
+}
 
-	convertedVM, err := converters.SDKToVM(vm)
-	if err != nil {
-		return convertedVM, err
+// New creates a new service.
+func New(scope VMScope, skuCache *resourceskus.Cache) *Service {
+	return &Service{
+		Scope:            scope,
+		Client:           NewClient(scope),
+		interfacesClient: networkinterfaces.NewClient(scope),
+		publicIPsClient:  publicips.NewClient(scope),
+		resourceSKUCache: skuCache,
 	}
-
-	// Discover addresses for nics associated with the VM
-	// and add them to our converted vm struct
-	addresses, err := s.getAddresses(ctx, vm)
-	if err != nil {
-		return convertedVM, err
-	}
-	convertedVM.Addresses = addresses
-	return convertedVM, nil
 }
 
 // Reconcile gets/creates/updates a virtual machine.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	vmSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid VM specification")
-	}
+func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Reconcile")
+	defer span.End()
 
-	storageProfile, err := generateStorageProfile(*vmSpec)
-	if err != nil {
-		return err
-	}
+	vmSpec := s.Scope.VMSpec()
+	existingVM, err := s.getExisting(ctx, vmSpec.Name)
 
-	klog.V(2).Infof("getting NIC %s", vmSpec.NICName)
-	nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), vmSpec.NICName)
-	if err != nil {
-		return err
-	}
-	klog.V(2).Infof("got NIC %s", vmSpec.NICName)
+	switch {
+	// VM got deleted outside of capz
+	case err != nil && azure.ResourceNotFound(err) && s.Scope.ProviderID() != "":
+		s.Scope.SetVMState(infrav1.VMStateDeleted)
+		return azure.VMDeletedError{ProviderID: s.Scope.ProviderID()}
+	case err != nil && !azure.ResourceNotFound(err):
+		return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
+	case err == nil:
+		// VM already exists, update the spec and skip creation.
+		s.Scope.SetProviderID(fmt.Sprintf("azure:///%s", existingVM.ID))
+		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
+		s.Scope.SetAddresses(existingVM.Addresses)
+		s.Scope.SetVMState(existingVM.State)
+	default:
+		s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
+		sku, err := s.resourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
+		}
 
-	klog.V(2).Infof("creating VM %s ", vmSpec.Name)
+		storageProfile, err := s.generateStorageProfile(ctx, vmSpec, sku)
+		if err != nil {
+			return err
+		}
 
-	// Make sure to use the MachineScope here to get the merger of AzureCluster and AzureMachine tags
-	additionalTags := s.MachineScope.AdditionalTags()
-	// Set the cloud provider tag
-	additionalTags[infrav1.ClusterAzureCloudProviderTagKey(s.MachineScope.Name())] = string(infrav1.ResourceLifecycleOwned)
+		securityProfile, err := getSecurityProfile(vmSpec, sku)
+		if err != nil {
+			return err
+		}
 
-	virtualMachine := compute.VirtualMachine{
-		Location: to.StringPtr(s.Scope.Location()),
-		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-			ClusterName: s.Scope.Name(),
-			Lifecycle:   infrav1.ResourceLifecycleOwned,
-			Name:        to.StringPtr(s.MachineScope.Name()),
-			Role:        to.StringPtr(s.MachineScope.Role()),
-			Additional:  additionalTags,
-		})),
-		VirtualMachineProperties: &compute.VirtualMachineProperties{
-			HardwareProfile: &compute.HardwareProfile{
-				VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
-			},
-			StorageProfile: storageProfile,
-			OsProfile: &compute.OSProfile{
-				ComputerName:  to.StringPtr(vmSpec.Name),
-				AdminUsername: to.StringPtr(azure.DefaultUserName),
-				CustomData:    to.StringPtr(vmSpec.CustomData),
-				LinuxConfiguration: &compute.LinuxConfiguration{
-					DisablePasswordAuthentication: to.BoolPtr(true),
-					SSH: &compute.SSHConfiguration{
-						PublicKeys: &[]compute.SSHPublicKey{
-							{
-								Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-								KeyData: to.StringPtr(vmSpec.SSHKeyData),
+		nicRefs := make([]compute.NetworkInterfaceReference, len(vmSpec.NICNames))
+		for i, nicName := range vmSpec.NICNames {
+			primary := i == 0
+			nicRefs[i] = compute.NetworkInterfaceReference{
+				ID: to.StringPtr(azure.NetworkInterfaceID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicName)),
+				NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
+					Primary: to.BoolPtr(primary),
+				},
+			}
+		}
+
+		priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmSpec.SpotVMOptions)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get Spot VM options")
+		}
+
+		sshKey, err := base64.StdEncoding.DecodeString(vmSpec.SSHKeyData)
+		if err != nil {
+			return errors.Wrapf(err, "failed to decode ssh public key")
+		}
+		bootstrapData, err := s.Scope.GetBootstrapData(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to retrieve bootstrap data")
+		}
+
+		virtualMachine := compute.VirtualMachine{
+			Plan:     s.generateImagePlan(),
+			Location: to.StringPtr(s.Scope.Location()),
+			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+				ClusterName: s.Scope.ClusterName(),
+				Lifecycle:   infrav1.ResourceLifecycleOwned,
+				Name:        to.StringPtr(vmSpec.Name),
+				Role:        to.StringPtr(vmSpec.Role),
+				Additional:  s.Scope.AdditionalTags(),
+			})),
+			VirtualMachineProperties: &compute.VirtualMachineProperties{
+				HardwareProfile: &compute.HardwareProfile{
+					VMSize: compute.VirtualMachineSizeTypes(vmSpec.Size),
+				},
+				StorageProfile:  storageProfile,
+				SecurityProfile: securityProfile,
+				OsProfile: &compute.OSProfile{
+					ComputerName:  to.StringPtr(vmSpec.Name),
+					AdminUsername: to.StringPtr(azure.DefaultUserName),
+					CustomData:    to.StringPtr(bootstrapData),
+					LinuxConfiguration: &compute.LinuxConfiguration{
+						DisablePasswordAuthentication: to.BoolPtr(true),
+						SSH: &compute.SSHConfiguration{
+							PublicKeys: &[]compute.SSHPublicKey{
+								{
+									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+									KeyData: to.StringPtr(string(sshKey)),
+								},
 							},
 						},
 					},
 				},
-			},
-			NetworkProfile: &compute.NetworkProfile{
-				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
-					{
-						ID: nic.ID,
-						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
-							Primary: to.BoolPtr(true),
-						},
+				NetworkProfile: &compute.NetworkProfile{
+					NetworkInterfaces: &nicRefs,
+				},
+				Priority:       priority,
+				EvictionPolicy: evictionPolicy,
+				BillingProfile: billingProfile,
+				DiagnosticsProfile: &compute.DiagnosticsProfile{
+					BootDiagnostics: &compute.BootDiagnostics{
+						Enabled: to.BoolPtr(true),
 					},
 				},
 			},
-		},
+		}
+
+		if vmSpec.Zone != "" {
+			zones := []string{vmSpec.Zone}
+			virtualMachine.Zones = &zones
+		}
+
+		if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
+			virtualMachine.Identity = &compute.VirtualMachineIdentity{
+				Type: compute.ResourceIdentityTypeSystemAssigned,
+			}
+		} else if vmSpec.Identity == infrav1.VMIdentityUserAssigned {
+			userIdentitiesMap, err := converters.UserAssignedIdentitiesToVMSDK(vmSpec.UserAssignedIdentities)
+			if err != nil {
+				return errors.Wrapf(err, "failed to assign identity %q", vmSpec.Name)
+			}
+			virtualMachine.Identity = &compute.VirtualMachineIdentity{
+				Type:                   compute.ResourceIdentityTypeUserAssigned,
+				UserAssignedIdentities: userIdentitiesMap,
+			}
+		}
+
+		if err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), vmSpec.Name, virtualMachine); err != nil {
+			return errors.Wrapf(err, "failed to create VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
+		}
+
+		s.Scope.V(2).Info("successfully created VM", "vm", vmSpec.Name)
 	}
 
-	klog.V(2).Infof("Setting zone %s ", vmSpec.Zone)
-
-	if vmSpec.Zone != "" {
-		zones := []string{vmSpec.Zone}
-		virtualMachine.Zones = &zones
-	}
-
-	err = s.Client.CreateOrUpdate(
-		ctx,
-		s.Scope.ResourceGroup(),
-		vmSpec.Name,
-		virtualMachine)
-	if err != nil {
-		return errors.Wrapf(err, "cannot create vm")
-	}
-
-	klog.V(2).Infof("successfully created VM %s ", vmSpec.Name)
 	return nil
 }
 
 // Delete deletes the virtual machine with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
-	vmSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid VM specification")
-	}
-	klog.V(2).Infof("deleting VM %s ", vmSpec.Name)
+func (s *Service) Delete(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Delete")
+	defer span.End()
+
+	vmSpec := s.Scope.VMSpec()
+	s.Scope.V(2).Info("deleting VM", "vm", vmSpec.Name)
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmSpec.Name)
 	if err != nil && azure.ResourceNotFound(err) {
 		// already deleted
@@ -178,11 +227,57 @@ func (s *Service) Delete(ctx context.Context, spec interface{}) error {
 		return errors.Wrapf(err, "failed to delete VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted VM %s ", vmSpec.Name)
+	s.Scope.V(2).Info("successfully deleted VM", "vm", vmSpec.Name)
 	return nil
 }
 
+// getExisting provides information about a virtual machine.
+func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getExisting")
+	defer span.End()
+
+	vm, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
+	if err != nil {
+		return nil, err
+	}
+
+	convertedVM, err := converters.SDKToVM(vm)
+	if err != nil {
+		return convertedVM, err
+	}
+
+	// Discover addresses for NICs associated with the VM
+	// and add them to our converted vm struct
+	addresses, err := s.getAddresses(ctx, vm)
+	if err != nil {
+		return convertedVM, err
+	}
+	convertedVM.Addresses = addresses
+	return convertedVM, nil
+}
+
+func (s *Service) generateImagePlan() *compute.Plan {
+	image, err := s.Scope.GetVMImage()
+	if err != nil {
+		return nil
+	}
+	if image.Marketplace == nil || image.Marketplace.ThirdPartyImage == false {
+		return nil
+	}
+	if image.Marketplace.Publisher == "" || image.Marketplace.SKU == "" || image.Marketplace.Offer == "" {
+		return nil
+	}
+
+	return &compute.Plan{
+		Publisher: to.StringPtr(image.Marketplace.Publisher),
+		Name:      to.StringPtr(image.Marketplace.SKU),
+		Product:   to.StringPtr(image.Marketplace.Offer),
+	}
+}
+
 func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) ([]corev1.NodeAddress, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getAddresses")
+	defer span.End()
 
 	addresses := []corev1.NodeAddress{}
 
@@ -200,7 +295,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 		nicName := getResourceNameByID(to.String(nicRef.ID))
 
 		// Fetch nic and append its addresses
-		nic, err := s.InterfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
+		nic, err := s.interfacesClient.Get(ctx, s.Scope.ResourceGroup(), nicName)
 		if err != nil {
 			return addresses, err
 		}
@@ -221,7 +316,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 			if ipConfig.PublicIPAddress == nil {
 				continue
 			}
-			// For some reason, the ID seems to be the only field populated in PublicIPAddress.
+			// ID is the only field populated in PublicIPAddress sub-resource.
 			// Thus, we have to go fetch the publicIP with the name.
 			publicIPName := getResourceNameByID(to.String(ipConfig.PublicIPAddress.ID))
 			publicNodeAddress, err := s.getPublicIPAddress(ctx, publicIPName)
@@ -237,8 +332,11 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 
 // getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation
 func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
+	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getPublicIPAddress")
+	defer span.End()
+
 	retAddress := corev1.NodeAddress{}
-	publicIP, err := s.PublicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
+	publicIP, err := s.publicIPsClient.Get(ctx, s.Scope.ResourceGroup(), publicIPAddressName)
 	if err != nil {
 		return retAddress, err
 	}
@@ -246,6 +344,84 @@ func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName st
 	retAddress.Address = to.String(publicIP.IPAddress)
 
 	return retAddress, nil
+}
+
+// generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
+func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.StorageProfile, error) {
+	_, span := tele.Tracer().Start(ctx, "virtualmachines.Service.generateStorageProfile")
+	defer span.End()
+
+	storageProfile := &compute.StorageProfile{
+		OsDisk: &compute.OSDisk{
+			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
+			OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
+			CreateOption: compute.DiskCreateOptionTypesFromImage,
+			DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
+			ManagedDisk: &compute.ManagedDiskParameters{
+				StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
+			},
+			Caching: compute.CachingTypes(vmSpec.OSDisk.CachingType),
+		},
+	}
+
+	// Checking if the requested VM size has at least 2 vCPUS
+	vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to validate the vCPU cabability")
+	}
+	if !vCPUCapability {
+		return nil, errors.New("vm size should be bigger or equal to at least 2 vCPUs")
+	}
+
+	// Checking if the requested VM size has at least 2 Gi of memory
+	MemoryCapability, err := sku.HasCapabilityWithCapacity(resourceskus.MemoryGB, resourceskus.MinimumMemory)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to validate the memory cabability")
+	}
+	if !MemoryCapability {
+		return nil, errors.New("vm memory should be bigger or equal to at least 2Gi")
+	}
+
+	// enable ephemeral OS
+	if vmSpec.OSDisk.DiffDiskSettings != nil {
+		if !sku.HasCapability(resourceskus.EphemeralOSDisk) {
+			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmSpec.Size)
+		}
+
+		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{
+			Option: compute.DiffDiskOptions(vmSpec.OSDisk.DiffDiskSettings.Option),
+		}
+	}
+
+	if vmSpec.OSDisk.ManagedDisk.DiskEncryptionSet != nil {
+		storageProfile.OsDisk.ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(vmSpec.OSDisk.ManagedDisk.DiskEncryptionSet.ID)}
+	}
+
+	dataDisks := []compute.DataDisk{}
+	for _, disk := range vmSpec.DataDisks {
+		dataDisks = append(dataDisks, compute.DataDisk{
+			CreateOption: compute.DiskCreateOptionTypesEmpty,
+			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
+			Lun:          disk.Lun,
+			Name:         to.StringPtr(azure.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
+			Caching:      compute.CachingTypes(disk.CachingType),
+		})
+	}
+	storageProfile.DataDisks = &dataDisks
+
+	image, err := s.Scope.GetVMImage()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get VM image")
+	}
+
+	imageRef, err := converters.ImageToSDK(image)
+	if err != nil {
+		return nil, err
+	}
+
+	storageProfile.ImageReference = imageRef
+
+	return storageProfile, nil
 }
 
 // getResourceNameById takes a resource ID like
@@ -257,41 +433,16 @@ func getResourceNameByID(resourceID string) string {
 	return resourceName
 }
 
-// generateStorageProfile generates a pointer to a compute.StorageProfile which can utilized for VM creation.
-func generateStorageProfile(vmSpec Spec) (*compute.StorageProfile, error) {
-	storageProfile := &compute.StorageProfile{
-		OsDisk: &compute.OSDisk{
-			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
-			OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
-			CreateOption: compute.DiskCreateOptionTypesFromImage,
-			DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
-			ManagedDisk: &compute.ManagedDiskParameters{
-				StorageAccountType: compute.StorageAccountTypes(vmSpec.OSDisk.ManagedDisk.StorageAccountType),
-			},
-		},
+func getSecurityProfile(vmSpec azure.VMSpec, sku resourceskus.SKU) (*compute.SecurityProfile, error) {
+	if vmSpec.SecurityProfile == nil {
+		return nil, nil
 	}
 
-	imageRef, err := converters.ImageToSDK(vmSpec.Image)
-	if err != nil {
-		return nil, err
+	if !sku.HasCapability(resourceskus.EncryptionAtHost) {
+		return nil, azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", vmSpec.Size))
 	}
 
-	storageProfile.ImageReference = imageRef
-
-	return storageProfile, nil
-}
-
-// GenerateRandomString returns a URL-safe, base64 encoded
-// securely generated random string.
-// It will return an error if the system's secure random
-// number generator fails to function correctly, in which
-// case the caller should not continue.
-func GenerateRandomString(n int) (string, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	// Note that err == nil only if we read len(b) bytes.
-	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(b), err
+	return &compute.SecurityProfile{
+		EncryptionAtHost: to.BoolPtr(*vmSpec.SecurityProfile.EncryptionAtHost),
+	}, nil
 }
