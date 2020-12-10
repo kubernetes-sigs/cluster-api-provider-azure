@@ -10,6 +10,9 @@ reviewers:
   - cluster-api-azure-maintainers
   - cluster-api-azure-reviewers
 
+emeritus_maintainers:
+  - ncdc
+
 labels:
   - sig/cluster-lifecycle
   - area/provider/azure
