@@ -194,7 +194,11 @@ type (
 
 		// InstanceID is the identification of the Machine Instance within the VMSS
 		// +optional
-		InstanceID string `json:"instanceName"`
+		InstanceID string `json:"instanceID"`
+
+		// InstanceName is the name of the Machine Instance within the VMSS
+		// +optional
+		InstanceName string `json:"instanceName"`
 
 		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
 		// the image version the VM is running. If the instance is not running the latest model, it means the instance

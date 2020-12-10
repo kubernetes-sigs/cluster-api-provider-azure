@@ -118,8 +118,8 @@ func TestGetExistingVMSS(t *testing.T) {
 				Instances: []infrav1exp.VMSSVM{
 					{
 						ID:         "id-1",
-						InstanceID: "id-2",
-						Name:       "instance-0",
+						InstanceID: "1",
+						Name:       "instance-000001",
 						State:      "Succeeded",
 					},
 				},
@@ -141,12 +141,15 @@ func TestGetExistingVMSS(t *testing.T) {
 				}, nil)
 				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
-						InstanceID: to.StringPtr("id-2"),
+						InstanceID: to.StringPtr("1"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 						ID:   to.StringPtr("id-1"),
-						Name: to.StringPtr("instance-0"),
+						Name: to.StringPtr("instance-0_1"),
 					},
 				}, nil)
 			},
@@ -261,6 +264,9 @@ func TestReconcileVMSS(t *testing.T) {
 						Name:       to.StringPtr("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 					},
 				}, nil)
@@ -430,6 +436,9 @@ func TestReconcileVMSS(t *testing.T) {
 						Name:       to.StringPtr("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 					},
 				}, nil)
@@ -594,6 +603,9 @@ func TestReconcileVMSS(t *testing.T) {
 						Name:       to.StringPtr("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 					},
 				}, nil)
@@ -870,6 +882,9 @@ func TestReconcileVMSS(t *testing.T) {
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 						ID:   to.StringPtr("id-1"),
 						Name: to.StringPtr("instance-0"),
@@ -943,6 +958,9 @@ func TestReconcileVMSS(t *testing.T) {
 						Name:       to.StringPtr("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 					},
 				}, nil)
@@ -1125,6 +1143,9 @@ func TestReconcileVMSS(t *testing.T) {
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 						ID:   to.StringPtr("id-1"),
 						Name: to.StringPtr("instance-0"),
@@ -1294,6 +1315,9 @@ func TestReconcileVMSS(t *testing.T) {
 						InstanceID: to.StringPtr("id-2"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 						ID:   to.StringPtr("id-1"),
 						Name: to.StringPtr("instance-0"),
@@ -1383,6 +1407,9 @@ func TestReconcileVMSS(t *testing.T) {
 						Name:       to.StringPtr("my-vm"),
 						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
 						},
 					},
 				}, nil)

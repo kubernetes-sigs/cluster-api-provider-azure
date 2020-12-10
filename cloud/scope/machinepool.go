@@ -175,6 +175,7 @@ func (m *MachinePoolScope) UpdateInstanceStatuses(ctx context.Context, instances
 		instanceStatuses[i] = &infrav1exp.AzureMachinePoolInstanceStatus{
 			ProviderID:        fmt.Sprintf("azure://%s", instance.ID),
 			InstanceID:        instance.InstanceID,
+			InstanceName:      instance.Name,
 			ProvisioningState: &instance.State,
 		}
 

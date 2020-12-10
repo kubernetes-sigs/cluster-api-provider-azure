@@ -441,9 +441,13 @@ spec:
                   description: AzureMachinePoolInstanceStatus provides status information
                     for each instance in the VMSS
                   properties:
-                    instanceName:
+                    instanceID:
                       description: InstanceID is the identification of the Machine
                         Instance within the VMSS
+                      type: string
+                    instanceName:
+                      description: InstanceName is the name of the Machine Instance
+                        within the VMSS
                       type: string
                     latestModelApplied:
                       description: LatestModelApplied indicates the instance is running
