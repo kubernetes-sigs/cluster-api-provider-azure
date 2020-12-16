@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -35,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
 var _ = Describe("AzureMachineReconciler", func() {
@@ -43,10 +45,7 @@ var _ = Describe("AzureMachineReconciler", func() {
 
 	Context("Reconcile an AzureMachine", func() {
 		It("should not error with minimal set up", func() {
-			reconciler := &AzureMachineReconciler{
-				Client: testEnv,
-				Log:    testEnv.Log,
-			}
+			reconciler := NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout)
 
 			By("Calling reconcile")
 			name := test.RandomName("foo", 10)
@@ -160,11 +159,9 @@ func TestConditions(t *testing.T) {
 				tc.azureMachine,
 			}
 			client := fake.NewFakeClientWithScheme(scheme, initObjects...)
+			recorder := record.NewFakeRecorder(10)
 
-			reconciler := &AzureMachineReconciler{
-				Client: client,
-				Log:    klogr.New(),
-			}
+			reconciler := NewAzureMachineReconciler(client, klogr.New(), recorder, reconciler.DefaultLoopTimeout)
 
 			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{

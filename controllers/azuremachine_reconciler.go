@@ -47,6 +47,8 @@ type azureMachineService struct {
 	skuCache             *resourceskus.Cache
 }
 
+var _ azure.Service = (*azureMachineService)(nil)
+
 // newAzureMachineService populates all the services based on input scope.
 func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
 	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())

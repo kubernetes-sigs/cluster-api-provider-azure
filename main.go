@@ -242,12 +242,8 @@ func main() {
 	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
 	if webhookPort == 0 {
-		if err = (&controllers.AzureMachineReconciler{
-			Client:           mgr.GetClient(),
-			Log:              ctrl.Log.WithName("controllers").WithName("AzureMachine"),
-			Recorder:         mgr.GetEventRecorderFor("azuremachine-reconciler"),
-			ReconcileTimeout: reconcileTimeout,
-		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+		if err = controllers.NewAzureMachineReconciler(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+			mgr.GetEventRecorderFor("azuremachine-reconciler"), reconcileTimeout).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
 			os.Exit(1)
 		}
