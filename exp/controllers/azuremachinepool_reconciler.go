@@ -39,6 +39,8 @@ type azureMachinePoolService struct {
 	vmssExtensionSvc           azure.Service
 }
 
+var _ azure.Service = (*azureMachinePoolService)(nil)
+
 // newAzureMachinePoolService populates all the services based on input scope.
 func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error) {
 	cache, err := resourceskus.GetCache(machinePoolScope, machinePoolScope.Location())

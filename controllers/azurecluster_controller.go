@@ -51,9 +51,26 @@ import (
 // AzureClusterReconciler reconciles a AzureCluster object
 type AzureClusterReconciler struct {
 	client.Client
-	Log              logr.Logger
-	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Log                       logr.Logger
+	Recorder                  record.EventRecorder
+	ReconcileTimeout          time.Duration
+	createAzureClusterService azureClusterServiceCreator
+}
+
+type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
+
+// NewAzureClusterReconciler returns a new AzureClusterReconciler instance
+func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureClusterReconciler {
+	acr := &AzureClusterReconciler{
+		Client:           client,
+		Log:              log,
+		Recorder:         recorder,
+		ReconcileTimeout: reconcileTimeout,
+	}
+
+	acr.createAzureClusterService = newAzureClusterService
+
+	return acr
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -225,7 +242,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		}
 	}
 
-	acr, err := newAzureClusterReconciler(clusterScope)
+	acr, err := r.createAzureClusterService(clusterScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create a new AzureClusterReconciler")
 	}
@@ -261,7 +278,7 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 		return reconcile.Result{}, err
 	}
 
-	acr, err := newAzureClusterReconciler(clusterScope)
+	acr, err := r.createAzureClusterService(clusterScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create a new AzureClusterReconciler")
 	}
