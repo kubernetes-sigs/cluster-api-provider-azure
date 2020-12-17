@@ -231,6 +231,22 @@ func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 	return []azure.RoleAssignmentSpec{}
 }
 
+// VMExtensionSpecs returns the vm extension specs.
+func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
+	name, publisher, version := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment())
+	if name != "" {
+		return []azure.VMExtensionSpec{
+			{
+				Name:      name,
+				VMName:    m.Name(),
+				Publisher: publisher,
+				Version:   version,
+			},
+		}
+	}
+	return []azure.VMExtensionSpec{}
+}
+
 // Subnet returns the machine's subnet based on its role
 func (m *MachineScope) Subnet() *infrav1.SubnetSpec {
 	if m.IsControlPlane() {

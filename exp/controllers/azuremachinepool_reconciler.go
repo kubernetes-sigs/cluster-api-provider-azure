@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/vmssextensions"
+
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -34,6 +36,7 @@ type azureMachinePoolService struct {
 	virtualMachinesScaleSetSvc azure.Service
 	skuCache                   *resourceskus.Cache
 	roleAssignmentsSvc         azure.Service
+	vmssExtensionSvc           azure.Service
 }
 
 // newAzureMachinePoolService populates all the services based on input scope.
@@ -47,6 +50,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
 		roleAssignmentsSvc:         roleassignments.New(machinePoolScope),
+		vmssExtensionSvc:           vmssextensions.New(machinePoolScope),
 	}, nil
 }
 
@@ -61,6 +65,10 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 
 	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "unable to create role assignment")
+	}
+
+	if err := s.vmssExtensionSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "unable to create vmss extension")
 	}
 
 	return nil

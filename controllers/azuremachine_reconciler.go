@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/vmextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -43,6 +44,7 @@ type azureMachineService struct {
 	disksSvc             azure.Service
 	publicIPsSvc         azure.Service
 	tagsSvc              azure.Service
+	vmExtensionsSvc      azure.Service
 	skuCache             *resourceskus.Cache
 }
 
@@ -63,6 +65,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 		disksSvc:             disks.New(machineScope),
 		publicIPsSvc:         publicips.New(machineScope),
 		tagsSvc:              tags.New(machineScope),
+		vmExtensionsSvc:      vmextensions.New(machineScope),
 		skuCache:             cache,
 	}, nil
 }
@@ -90,6 +93,10 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 
 	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "unable to create role assignment")
+	}
+
+	if err := s.vmExtensionsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "unable to create vm extension")
 	}
 
 	if err := s.tagsSvc.Reconcile(ctx); err != nil {

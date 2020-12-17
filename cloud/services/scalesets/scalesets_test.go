@@ -800,6 +800,7 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeRolling,
 			},
+			DoNotRunExtensionsOnOverprovisionedVMs: to.BoolPtr(true),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
 					ComputerNamePrefix: to.StringPtr(defaultVMSSName),
