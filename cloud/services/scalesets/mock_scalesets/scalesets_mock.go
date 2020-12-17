@@ -246,6 +246,20 @@ func (mr *MockScaleSetScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockScaleSetScope)(nil).Authorizer))
 }
 
+// HashKey mocks base method.
+func (m *MockScaleSetScope) HashKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HashKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// HashKey indicates an expected call of HashKey.
+func (mr *MockScaleSetScopeMockRecorder) HashKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockScaleSetScope)(nil).HashKey))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockScaleSetScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

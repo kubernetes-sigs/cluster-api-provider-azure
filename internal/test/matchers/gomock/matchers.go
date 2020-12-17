@@ -45,6 +45,12 @@ type (
 		WithLevel(int) LogMatcher
 		WithLogFunc(string) LogMatcher
 	}
+
+	customMatcher struct {
+		state    map[string]interface{}
+		matcher  func(x interface{}, state map[string]interface{}) bool
+		stringer func(state map[string]interface{}) string
+	}
 )
 
 // DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp
@@ -99,4 +105,21 @@ func (e *contextMatcher) Matches(y interface{}) bool {
 
 func (e *contextMatcher) String() string {
 	return fmt.Sprintf("expected a context.Context, but got %T", e.actual)
+}
+
+// CustomMatcher creates a matcher from two funcs rather than having to make a new struct and implement Matcher
+func CustomMatcher(matcher func(x interface{}, state map[string]interface{}) bool, stringer func(state map[string]interface{}) string) gomock.Matcher {
+	return &customMatcher{
+		state:    make(map[string]interface{}),
+		matcher:  matcher,
+		stringer: stringer,
+	}
+}
+
+func (c customMatcher) Matches(x interface{}) bool {
+	return c.matcher(x, c.state)
+}
+
+func (c customMatcher) String() string {
+	return c.stringer(c.state)
 }

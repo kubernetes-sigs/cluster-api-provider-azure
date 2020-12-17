@@ -55,6 +55,7 @@ type Authorizer interface {
 	TenantID() string
 	BaseURI() string
 	Authorizer() autorest.Authorizer
+	HashKey() string
 }
 
 // NetworkDescriber is an interface which can get common Azure Cluster Networking information.
