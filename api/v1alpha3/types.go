@@ -29,6 +29,23 @@ const (
 	Node string = "node"
 )
 
+// Future contains the data needed for an Azure long running operation to continue across reconcile loops
+type Future struct {
+	// Type describes the type of future, update, create, delete, etc
+	Type string `json:"type"`
+
+	// ResourceGroup is the Azure resource group for the resource
+	// +optional
+	ResourceGroup string `json:"resourceGroup,omitempty"`
+
+	// Name is the name of the Azure resource
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// FutureData is the base64 url encoded json Azure AutoRest Future
+	FutureData string `json:"futureData,omitempty"`
+}
+
 // NetworkSpec specifies what the Azure networking resources should look like.
 type NetworkSpec struct {
 	// Vnet is the configuration for the Azure virtual network.

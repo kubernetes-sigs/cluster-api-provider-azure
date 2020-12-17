@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/autorest"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 // ErrNotOwned is returned when a resource can't be deleted because it isn't owned.
@@ -31,6 +33,12 @@ var ErrNotOwned = errors.New("resource is not managed and cannot be deleted")
 func ResourceNotFound(err error) bool {
 	derr := autorest.DetailedError{}
 	return errors.As(err, &derr) && derr.StatusCode == 404
+}
+
+// ResourceConflict parses the error to check if it's a resource conflict error (409)
+func ResourceConflict(err error) bool {
+	derr := autorest.DetailedError{}
+	return errors.As(err, &derr) && derr.StatusCode == 409
 }
 
 // VMDeletedError is returned when a virtual machine is deleted outside of capz
@@ -104,4 +112,26 @@ func WithTransientError(err error, requeueAfter time.Duration) ReconcileError {
 // WithTerminalError wraps the error in a ReconcileError with errorType as `Terminal`
 func WithTerminalError(err error) ReconcileError {
 	return ReconcileError{error: err, errorType: TerminalErrorType}
+}
+
+// OperationNotDoneError is used to represent a long running operation that is not yet complete
+type OperationNotDoneError struct {
+	Future *infrav1.Future
+}
+
+// NewOperationNotDoneError returns a new OperationNotDoneError wrapping a Future
+func NewOperationNotDoneError(future *infrav1.Future) *OperationNotDoneError {
+	return &OperationNotDoneError{
+		Future: future,
+	}
+}
+
+// Error returns the error represented as a string
+func (onde OperationNotDoneError) Error() string {
+	return fmt.Sprintf("operation type %s on Azure resource %s/%s is not done", onde.Future.Type, onde.Future.ResourceGroup, onde.Future.Name)
+}
+
+// Is returns true if the target is an OperationNotDoneError
+func (onde OperationNotDoneError) Is(target error) bool {
+	return errors.As(target, &OperationNotDoneError{})
 }

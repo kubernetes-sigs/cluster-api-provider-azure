@@ -66,7 +66,7 @@ func (c *AzureClients) SubscriptionID() string {
 // ClientID).
 func (c *AzureClients) HashKey() string {
 	hasher := sha256.New()
-	hasher.Write([]byte(c.TenantID() + c.CloudEnvironment() + c.SubscriptionID() + c.ClientID()))
+	_, _ = hasher.Write([]byte(c.TenantID() + c.CloudEnvironment() + c.SubscriptionID() + c.ClientID()))
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 }
 

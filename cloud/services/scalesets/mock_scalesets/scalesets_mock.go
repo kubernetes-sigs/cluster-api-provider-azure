@@ -435,3 +435,29 @@ func (mr *MockScaleSetScopeMockRecorder) SetProvisioningState(arg0 interface{}) 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProvisioningState", reflect.TypeOf((*MockScaleSetScope)(nil).SetProvisioningState), arg0)
 }
+
+// SetLongRunningOperationState mocks base method.
+func (m *MockScaleSetScope) SetLongRunningOperationState(arg0 *v1alpha3.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockScaleSetScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).SetLongRunningOperationState), arg0)
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha3.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState")
+	ret0, _ := ret[0].(*v1alpha3.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).GetLongRunningOperationState))
+}

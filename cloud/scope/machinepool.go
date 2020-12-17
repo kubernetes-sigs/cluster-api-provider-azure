@@ -29,17 +29,17 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/pointer"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	utilkubeconfig "sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 type (
@@ -163,6 +163,9 @@ func (m *MachinePoolScope) NeedsK8sVersionUpdate() bool {
 // the AzureMachinePool. This calculates the number of ready replicas, the current version the kubelet
 // is running on the node, the provider IDs for the instances and the providerIDList for the AzureMachinePool spec.
 func (m *MachinePoolScope) UpdateInstanceStatuses(ctx context.Context, instances []infrav1exp.VMSSVM) error {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.UpdateInstanceStatuses")
+	defer span.End()
+
 	providerIDs := make([]string, len(instances))
 	for i, instance := range instances {
 		providerIDs[i] = fmt.Sprintf("azure://%s", instance.ID)
@@ -205,6 +208,18 @@ func (m *MachinePoolScope) UpdateInstanceStatuses(ctx context.Context, instances
 // SaveK8sVersion stores the MachinePool spec K8s version to the AzureMachinePool status
 func (m *MachinePoolScope) SaveK8sVersion() {
 	m.AzureMachinePool.Status.Version = *m.MachinePool.Spec.Template.Spec.Version
+}
+
+// SetLongRunningOperationState will set the future on the AzureMachinePool status to allow the resource to continue
+// in the next reconciliation.
+func (m *MachinePoolScope) SetLongRunningOperationState(future *infrav1.Future) {
+	m.AzureMachinePool.Status.LongRunningOperationState = future
+}
+
+// GetLongRunningOperationState will get the future on the AzureMachinePool status to allow the resource to continue
+// in the next reconciliation.
+func (m *MachinePoolScope) GetLongRunningOperationState() *infrav1.Future {
+	return m.AzureMachinePool.Status.LongRunningOperationState
 }
 
 // SetProvisioningState sets the AzureMachinePool provisioning state.
@@ -266,31 +281,34 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.PatchObject")
+	defer span.End()
+
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
 // AzureMachineTemplate gets the Azure machine template in this scope.
 func (m *MachinePoolScope) AzureMachineTemplate(ctx context.Context) (*infrav1.AzureMachineTemplate, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.AzureMachineTemplate")
+	defer span.End()
+
 	ref := m.MachinePool.Spec.Template.Spec.InfrastructureRef
 	return getAzureMachineTemplate(ctx, m.client, ref.Name, ref.Namespace)
 }
 
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
-	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
-}
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.Close")
+	defer span.End()
 
-func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespace string) (*infrav1.AzureMachineTemplate, error) {
-	m := &infrav1.AzureMachineTemplate{}
-	key := client.ObjectKey{Name: name, Namespace: namespace}
-	if err := c.Get(ctx, key, m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
 func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.GetBootstrapData")
+	defer span.End()
+
 	dataSecretName := m.MachinePool.Spec.Template.Spec.Bootstrap.DataSecretName
 	if dataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked Machine Spec's bootstrap.dataSecretName is nil")
@@ -338,7 +356,22 @@ func (m *MachinePoolScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 	return []azure.RoleAssignmentSpec{}
 }
 
+func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespace string) (*infrav1.AzureMachineTemplate, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.getAzureMachineTemplate")
+	defer span.End()
+
+	m := &infrav1.AzureMachineTemplate{}
+	key := client.ObjectKey{Name: name, Namespace: namespace}
+	if err := c.Get(ctx, key, m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (m *MachinePoolScope) getNodeStatusByProviderID(ctx context.Context, providerIDList []string) (map[string]*NodeStatus, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.getNodeStatusByProviderID")
+	defer span.End()
+
 	nodeStatusMap := map[string]*NodeStatus{}
 	for _, id := range providerIDList {
 		nodeStatusMap[id] = &NodeStatus{}
@@ -371,6 +404,9 @@ func (m *MachinePoolScope) getNodeStatusByProviderID(ctx context.Context, provid
 }
 
 func (m *MachinePoolScope) getWorkloadClient(ctx context.Context) (client.Client, error) {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.getWorkloadClient")
+	defer span.End()
+
 	obj := client.ObjectKey{
 		Namespace: m.MachinePool.Namespace,
 		Name:      m.ClusterName(),

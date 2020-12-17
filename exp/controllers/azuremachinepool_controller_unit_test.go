@@ -40,21 +40,19 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 
 	cluster := newAzureCluster("foo")
 	cluster.Spec.ResourceGroup = "resourceGroup"
-	cluster.Spec.Location = "test-location"
+	cluster.Spec.Location = "test-location"
 	cluster.Spec.ResourceGroup = "my-rg"
 	cluster.Spec.SubscriptionID = "123"
 	cluster.Spec.NetworkSpec = infrav1.NetworkSpec{
 		Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 	}
 
-	cs := &scope.ClusterScope{
-		AzureCluster: cluster,
-	}
-
 	clusterMock := mocks.NewMockClusterScoper(mockCtrl)
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Authorizer().AnyTimes()
+	clusterMock.EXPECT().Location().Return(cluster.Spec.Location)
+	clusterMock.EXPECT().HashKey().Return("foo")
 
 	mps := &scope.MachinePoolScope{
 		ClusterScoper: clusterMock,
@@ -66,8 +64,9 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 		},
 	}
 
-	subject := newAzureMachinePoolService(mps, cs)
+	subject, err := newAzureMachinePoolService(mps)
 	g := NewWithT(t)
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(subject).NotTo(BeNil())
 	g.Expect(subject.virtualMachinesScaleSetSvc).NotTo(BeNil())
 	g.Expect(subject.skuCache).NotTo(BeNil())

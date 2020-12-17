@@ -63,8 +63,8 @@ var (
 	clientCache Cacher
 )
 
-// NewCache instantiates a cache and initializes its contents.
-func NewCache(auth azure.Authorizer, location string) *Cache {
+// newCache instantiates a cache and initializes its contents.
+func newCache(auth azure.Authorizer, location string) *Cache {
 	return &Cache{
 		client:   NewClient(auth),
 		location: location,
@@ -88,7 +88,7 @@ func GetCache(auth azure.Authorizer, location string) (*Cache, error) {
 		return c.(*Cache), nil
 	}
 
-	c = NewCache(auth, location)
+	c = newCache(auth, location)
 	clientCache.Add(key, c)
 	return c.(*Cache), nil
 }

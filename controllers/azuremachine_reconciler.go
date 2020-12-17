@@ -19,20 +19,19 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
-
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureMachineService is the group of services called by the AzureMachine controller.
@@ -50,8 +49,11 @@ type azureMachineService struct {
 var _ azure.Service = (*azureMachineService)(nil)
 
 // newAzureMachineService populates all the services based on input scope.
-func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService {
-	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineService, error) {
+	cache, err := resourceskus.GetCache(machineScope, machineScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
 
 	return &azureMachineService{
 		inboundNatRulesSvc:   inboundnatrules.New(machineScope),
@@ -62,7 +64,7 @@ func newAzureMachineService(machineScope *scope.MachineScope, clusterScope *scop
 		publicIPsSvc:         publicips.New(machineScope),
 		tagsSvc:              tags.New(machineScope),
 		skuCache:             cache,
-	}
+	}, nil
 }
 
 // Reconcile reconciles all the services in pre determined order

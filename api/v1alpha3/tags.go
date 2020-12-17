@@ -29,6 +29,12 @@ func (t Tags) Equals(other Tags) bool {
 	return reflect.DeepEqual(t, other)
 }
 
+// HasMatchingSpecVersionHash returns true if the resource has been tagged with a matching resource spec hash value.
+func (t Tags) HasMatchingSpecVersionHash(hash string) bool {
+	value, ok := t[SpecVersionHashTagKey()]
+	return ok && value == hash
+}
+
 // HasOwned returns true if the tags contains a tag that marks the resource as owned by the cluster from the perspective of this management tooling.
 func (t Tags) HasOwned(cluster string) bool {
 	value, ok := t[ClusterTagKey(cluster)]
@@ -66,6 +72,12 @@ func (t Tags) Merge(other Tags) {
 	for k, v := range other {
 		t[k] = v
 	}
+}
+
+// AddSpecVersionHashTag adds a spec version hash to the Azure resource tags to determine if state has changed quickly
+func (t Tags) AddSpecVersionHashTag(hash string) Tags {
+	t[SpecVersionHashTagKey()] = hash
+	return t
 }
 
 // ResourceLifecycle configures the lifecycle of a resource
@@ -125,6 +137,11 @@ const (
 	// for annotation formatting rules.
 	VMTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-vm"
 )
+
+// SpecVersionHashTagKey is the key for the spec version hash used to enable quick spec difference comparison
+func SpecVersionHashTagKey() string {
+	return fmt.Sprintf("%s%s", NameAzureProviderPrefix, "spec-version-hash")
+}
 
 // ClusterTagKey generates the key for resources associated with a cluster.
 func ClusterTagKey(name string) string {
