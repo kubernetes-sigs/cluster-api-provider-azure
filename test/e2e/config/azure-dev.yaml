@@ -60,6 +60,8 @@ providers:
         targetName: "cluster-template-private.yaml"
       - sourcePath: "${PWD}/templates/test/cluster-template-prow-ci-version.yaml"
         targetName: "cluster-template-conformance-ci-artifacts.yaml"
+      - sourcePath: "${PWD}/templates/test/cluster-template-prow-multi-tenancy.yaml"
+        targetName: "cluster-template-multi-tenancy.yaml"        
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.4}"
@@ -77,6 +79,7 @@ variables:
   CONFORMANCE_WORKER_MACHINE_COUNT: "5"
   CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT: "1"
   VM_SSH_PORT: "22"
+  MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]

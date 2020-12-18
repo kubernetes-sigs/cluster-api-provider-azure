@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 )
@@ -25,6 +26,9 @@ const (
 	// ClusterFinalizer allows ReconcileAzureCluster to clean up Azure resources associated with AzureCluster before
 	// removing it from the apiserver.
 	ClusterFinalizer = "azurecluster.infrastructure.cluster.x-k8s.io"
+
+	// ClusterLabelNamespace indicates the namespace of the cluster
+	ClusterLabelNamespace = "azurecluster.infrastructure.cluster.x-k8s.io/cluster-namespace"
 )
 
 // AzureClusterSpec defines the desired state of AzureCluster
@@ -48,6 +52,10 @@ type AzureClusterSpec struct {
 	// ones added by default.
 	// +optional
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
+
+	// IdentityRef is a reference to a AzureIdentity to be used when reconciling this cluster
+	// +optional
+	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster

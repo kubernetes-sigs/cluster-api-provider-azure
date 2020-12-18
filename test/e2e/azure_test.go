@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -345,6 +346,62 @@ var _ = Describe("Workload cluster creation", func() {
 				AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
 					return AzureAcceleratedNetworkingSpecInput{
 						ClusterName: clusterName,
+					}
+				})
+			})
+		})
+	})
+
+	Context("Creating a cluster using a different SP identity", func() {
+		BeforeEach(func() {
+			spClientSecret := os.Getenv("AZURE_MULTI_TENANCY_SECRET")
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sp-identity-secret",
+					Namespace: namespace.Name,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+			}
+			err := bootstrapClusterProxy.GetClient().Create(ctx, secret)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("with a single control plane node and 1 node", func() {
+			spClientID := os.Getenv("AZURE_MULTI_TENANCY_ID")
+			identityName := e2eConfig.GetVariable(MultiTenancyIdentityName)
+			os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
+			os.Setenv("CLUSTER_IDENTITY_NAMESPACE", namespace.Name)
+			os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
+			os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "sp-identity-secret")
+			os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", namespace.Name)
+
+			result := clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "multi-tenancy",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					ControlPlaneMachineCount: pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			})
+			cluster = result.Cluster
+
+			Context("Validating identity", func() {
+				AzureServicePrincipalIdentitySpec(ctx, func() AzureServicePrincipalIdentitySpecInput {
+					return AzureServicePrincipalIdentitySpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
 					}
 				})
 			})

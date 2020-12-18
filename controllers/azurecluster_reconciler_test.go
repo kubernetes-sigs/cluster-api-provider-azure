@@ -25,6 +25,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/mocks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
@@ -113,7 +114,9 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 			tc.expect(groupsMock.EXPECT(), vnetMock.EXPECT(), sgMock.EXPECT(), rtMock.EXPECT(), subnetsMock.EXPECT(), publicIPMock.EXPECT(), lbMock.EXPECT(), dnsMock.EXPECT())
 
 			r := &azureClusterReconciler{
-				scope:            &scope.ClusterScope{},
+				scope: &scope.ClusterScope{
+					AzureCluster: &infrav1.AzureCluster{},
+				},
 				groupsSvc:        groupsMock,
 				vnetSvc:          vnetMock,
 				securityGroupSvc: sgMock,

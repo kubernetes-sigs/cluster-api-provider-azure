@@ -27,11 +27,14 @@ import (
 	"strings"
 	"testing"
 
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -159,6 +162,19 @@ func initScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	// Add aadpodidentity v1 to the scheme.
+	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.CRDGroup, Version: aadpodv1.CRDVersion}
+	scheme.AddKnownTypes(aadPodIdentityGroupVersion,
+		&aadpodv1.AzureIdentity{},
+		&aadpodv1.AzureIdentityList{},
+		&aadpodv1.AzureIdentityBinding{},
+		&aadpodv1.AzureIdentityBindingList{},
+		&aadpodv1.AzureAssignedIdentity{},
+		&aadpodv1.AzureAssignedIdentityList{},
+		&aadpodv1.AzurePodIdentityException{},
+		&aadpodv1.AzurePodIdentityExceptionList{},
+	)
+	metav1.AddToGroupVersion(scheme, aadPodIdentityGroupVersion)
 	return scheme
 }
 

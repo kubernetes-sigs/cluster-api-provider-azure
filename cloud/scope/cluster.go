@@ -49,7 +49,7 @@ type ClusterScopeParams struct {
 
 // NewClusterScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
-func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
+func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -61,9 +61,20 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		params.Logger = klogr.New()
 	}
 
-	err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
-	if err != nil {
-		return nil, err
+	if params.AzureCluster.Spec.IdentityRef == nil {
+		err := params.AzureClients.setCredentials(params.AzureCluster.Spec.SubscriptionID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
+		}
+	} else {
+		credentailsProvider, err := NewAzureCredentialsProvider(ctx, params.Client, params.AzureCluster)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to init credentials provider")
+		}
+		err = params.AzureClients.setCredentialsWithProvider(ctx, params.AzureCluster.Spec.SubscriptionID, credentailsProvider)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
+		}
 	}
 
 	helper, err := patch.NewHelper(params.AzureCluster, params.Client)

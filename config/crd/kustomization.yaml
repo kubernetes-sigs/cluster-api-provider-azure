@@ -8,6 +8,7 @@ resources:
   - bases/infrastructure.cluster.x-k8s.io_azuremachines.yaml
   - bases/infrastructure.cluster.x-k8s.io_azureclusters.yaml
   - bases/infrastructure.cluster.x-k8s.io_azuremachinetemplates.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureclusteridentities.yaml
   - bases/exp.infrastructure.cluster.x-k8s.io_azuremachinepools.yaml
   - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedmachinepools.yaml
   - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedclusters.yaml

@@ -61,6 +61,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	dst.Status.FailureDomains = restored.Status.FailureDomains
 	dst.Spec.NetworkSpec.Vnet.CIDRBlocks = restored.Spec.NetworkSpec.Vnet.CIDRBlocks
+	dst.Spec.IdentityRef = restored.Spec.IdentityRef
 
 	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
 		if restoredSubnet != nil {

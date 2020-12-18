@@ -26,6 +26,8 @@ const (
 	LoadBalancerProvisioningReason = "LoadBalancerProvisioning"
 	// LoadBalancerProvisioningFailedReason used for failure during provisioning of loadbalancer.
 	LoadBalancerProvisioningFailedReason = "LoadBalancerProvisioningFailed"
+	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity
+	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
 
 // AzureMachine Conditions and Reasons

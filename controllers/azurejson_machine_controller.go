@@ -167,7 +167,7 @@ func (r *AzureJSONMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 	}
 
 	// Create the scope.
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       r.Client,
 		Logger:       log,
 		Cluster:      cluster,

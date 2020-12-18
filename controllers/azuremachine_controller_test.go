@@ -163,7 +163,7 @@ func TestConditions(t *testing.T) {
 
 			reconciler := NewAzureMachineReconciler(client, klogr.New(), recorder, reconciler.DefaultLoopTimeout)
 
-			clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
 				},

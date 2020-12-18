@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	// ControllerNamespace is the namespace where controller manager will run
+	ControllerNamespace = "capz-system"
 	// ControlPlane machine label
 	ControlPlane string = "control-plane"
 	// Node machine label
@@ -320,6 +322,25 @@ type UserAssignedIdentity struct {
 	// 'azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'
 	ProviderID string `json:"providerID"`
 }
+
+const (
+	// AzureIdentityBindingSelector is the label used to match with the AzureIdentityBinding
+	// For the controller to match an identity binding, it needs a [label] with the key `aadpodidbinding`
+	// whose value is that of the `selector:` field in the `AzureIdentityBinding`.
+	AzureIdentityBindingSelector = "capz-controller-aadpodidentity-selector"
+)
+
+// IdentityType represents different types of identities.
+// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI
+type IdentityType string
+
+const (
+	// UserAssignedMSI represents a user-assigned identity.
+	UserAssignedMSI IdentityType = "UserAssignedMSI"
+
+	// ServicePrincipal represents a service principal.
+	ServicePrincipal IdentityType = "ServicePrincipal"
+)
 
 // OSDisk defines the operating system disk for a VM.
 type OSDisk struct {

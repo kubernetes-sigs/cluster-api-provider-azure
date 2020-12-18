@@ -17,6 +17,7 @@ limitations under the License.
 package scope
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -81,5 +82,31 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 	c.Values[auth.TenantID] = strings.TrimSuffix(c.Values[auth.TenantID], "\n")
 
 	c.Authorizer, err = c.GetAuthorizer()
+	return err
+}
+
+func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID string, credentialsProvider *AzureCredentialsProvider) error {
+	if credentialsProvider == nil {
+		return fmt.Errorf("Credentials provider cannot have an empty value")
+	}
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return err
+	}
+
+	if subscriptionID == "" {
+		subscriptionID = settings.GetSubscriptionID()
+		if subscriptionID == "" {
+			return fmt.Errorf("error creating azure services. subscriptionID is not set in cluster or AZURE_SUBSCRIPTION_ID env var")
+		}
+	}
+
+	c.EnvironmentSettings = settings
+	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
+	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
+	c.Values[auth.SubscriptionID] = strings.TrimSuffix(subscriptionID, "\n")
+
+	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint)
 	return err
 }
