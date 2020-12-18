@@ -126,7 +126,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 func (m *MachinePoolScope) Name() string {
 	// Windows Machine pools names cannot be longer than 9 chars
 	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS && len(m.AzureMachinePool.Name) > 9 {
-		return "win" + m.AzureMachinePool.Name[len(m.AzureMachinePool.Name)-5:]
+		return "win-" + m.AzureMachinePool.Name[len(m.AzureMachinePool.Name)-5:]
 	}
 	return m.AzureMachinePool.Name
 }
