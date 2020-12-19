@@ -102,6 +102,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to retrieve bootstrap data")
 			}
+			s.Scope.V(2).Info("Bootstrap data is", "bootstrap data:", bootstrapData)
+
+			bootstrapData += fmt.Sprintf("sudo echo 'hi' >> hi.txt")
+			s.Scope.V(2).Info("Bootstrap data is after appending hi", "bootstrap data:", bootstrapData)
+
+			encodedStr := base64.StdEncoding.EncodeToString([]byte(bootstrapData))
 
 			virtualMachine := compute.VirtualMachine{
 				Location: to.StringPtr(s.Scope.Location()),
@@ -120,7 +126,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					OsProfile: &compute.OSProfile{
 						ComputerName:  to.StringPtr(vmSpec.Name),
 						AdminUsername: to.StringPtr(azure.DefaultUserName),
-						CustomData:    to.StringPtr(bootstrapData),
+						//CustomData:    to.StringPtr(bootstrapData),
+						CustomData: to.StringPtr(encodedStr),
 						LinuxConfiguration: &compute.LinuxConfiguration{
 							DisablePasswordAuthentication: to.BoolPtr(true),
 							SSH: &compute.SSHConfiguration{
