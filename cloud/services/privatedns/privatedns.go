@@ -18,15 +18,15 @@ package privatedns
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
 	"github.com/Azure/go-autorest/autorest/to"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Scope defines the scope interface for a private dns service.

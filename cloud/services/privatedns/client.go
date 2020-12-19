@@ -18,11 +18,12 @@ package privatedns
 
 import (
 	"context"
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // Client wraps go-sdk

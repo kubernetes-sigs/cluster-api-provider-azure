@@ -18,7 +18,6 @@ package inboundnatrules
 
 import (
 	"context"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -26,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 

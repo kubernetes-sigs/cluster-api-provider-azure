@@ -17,10 +17,12 @@ limitations under the License.
 package converters
 
 import (
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"strings"
 )
 
 // ErrUserAssignedIdentitiesNotFound is the error thrown when user assigned identities is not passed with the identity type being UserAssigned

@@ -18,13 +18,13 @@ package tags
 
 import (
 	"context"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
