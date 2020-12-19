@@ -17,20 +17,21 @@ limitations under the License.
 package controllers
 
 import (
-	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/golang/mock/gomock"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/mocks"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/mocks"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 )
 
 func Test_newAzureMachinePoolService(t *testing.T) {

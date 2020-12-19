@@ -18,9 +18,9 @@ package v1alpha3
 
 import (
 	"encoding/base64"
-	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"golang.org/x/crypto/ssh"
+	"k8s.io/apimachinery/pkg/util/uuid"
 
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )

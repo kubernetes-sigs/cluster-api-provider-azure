@@ -17,9 +17,10 @@ limitations under the License.
 package converters
 
 import (
+	"testing"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
 	"github.com/onsi/gomega"
-	"testing"
 )
 
 func Test_GetRecordType(t *testing.T) {
