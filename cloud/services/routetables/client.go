@@ -49,8 +49,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newRouteTablesClient creates a new route tables client from subscription ID.
 func newRouteTablesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.RouteTablesClient {
 	routeTablesClient := network.NewRouteTablesClientWithBaseURI(baseURI, subscriptionID)
-	routeTablesClient.Authorizer = authorizer
-	routeTablesClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&routeTablesClient.Client, authorizer)
 	return routeTablesClient
 }
 

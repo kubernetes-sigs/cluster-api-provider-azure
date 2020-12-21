@@ -49,8 +49,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newSecurityGroupsClient creates a new security groups client from subscription ID.
 func newSecurityGroupsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.SecurityGroupsClient {
 	securityGroupsClient := network.NewSecurityGroupsClientWithBaseURI(baseURI, subscriptionID)
-	securityGroupsClient.Authorizer = authorizer
-	securityGroupsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&securityGroupsClient.Client, authorizer)
 	return securityGroupsClient
 }
 

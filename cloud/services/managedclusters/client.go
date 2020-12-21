@@ -52,8 +52,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newManagedClustersClient creates a new managed clusters client from subscription ID.
 func newManagedClustersClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) containerservice.ManagedClustersClient {
 	managedClustersClient := containerservice.NewManagedClustersClientWithBaseURI(baseURI, subscriptionID)
-	managedClustersClient.Authorizer = authorizer
-	managedClustersClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&managedClustersClient.Client, authorizer)
 	return managedClustersClient
 }
 

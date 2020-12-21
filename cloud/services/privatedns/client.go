@@ -56,24 +56,21 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newPrivateZonesClient creates a new private zones client from subscription ID.
 func newPrivateZonesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) privatedns.PrivateZonesClient {
 	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(baseURI, subscriptionID)
-	zonesClient.Authorizer = authorizer
-	zonesClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&zonesClient.Client, authorizer)
 	return zonesClient
 }
 
 // newVirtualNetworkLinksClient creates a new virtual networks link client from subscription ID.
 func newVirtualNetworkLinksClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) privatedns.VirtualNetworkLinksClient {
 	linksClient := privatedns.NewVirtualNetworkLinksClientWithBaseURI(baseURI, subscriptionID)
-	linksClient.Authorizer = authorizer
-	linksClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&linksClient.Client, authorizer)
 	return linksClient
 }
 
 // newRecordSetsClient creates a new record sets client from subscription ID.
 func newRecordSetsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) privatedns.RecordSetsClient {
 	recordsClient := privatedns.NewRecordSetsClientWithBaseURI(baseURI, subscriptionID)
-	recordsClient.Authorizer = authorizer
-	recordsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&recordsClient.Client, authorizer)
 	return recordsClient
 }
 

@@ -19,8 +19,10 @@ package azure
 import (
 	"fmt"
 
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
@@ -205,4 +207,15 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 // UserAgent specifies a string to append to the agent identifier.
 func UserAgent() string {
 	return fmt.Sprintf("cluster-api-provider-azure/%s", version.Get().String())
+}
+
+// SetAutoRestClientDefaults set authorizer and user agent for autorest client
+func SetAutoRestClientDefaults(c *autorest.Client, auth autorest.Authorizer) {
+	c.Authorizer = auth
+	AutoRestClientAppendUserAgent(c, UserAgent())
+}
+
+// AutoRestClientAppendUserAgent autorest client calls "AddToUserAgent" but ignores errors
+func AutoRestClientAppendUserAgent(c *autorest.Client, extension string) {
+	_ = c.AddToUserAgent(extension) // intentionally ignore error as it doesn't matter
 }

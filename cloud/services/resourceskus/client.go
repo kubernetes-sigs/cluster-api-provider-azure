@@ -49,8 +49,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newResourceSkusClient creates a new Resource SKUs client from subscription ID.
 func newResourceSkusClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.ResourceSkusClient {
 	c := compute.NewResourceSkusClientWithBaseURI(baseURI, subscriptionID)
-	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	azure.SetAutoRestClientDefaults(&c.Client, authorizer)
 	return c
 }
 

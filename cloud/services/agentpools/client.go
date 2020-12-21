@@ -50,8 +50,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newAgentPoolsClient creates a new agent pool client from subscription ID.
 func newAgentPoolsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) containerservice.AgentPoolsClient {
 	agentPoolsClient := containerservice.NewAgentPoolsClientWithBaseURI(baseURI, subscriptionID)
-	agentPoolsClient.Authorizer = authorizer
-	agentPoolsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&agentPoolsClient.Client, authorizer)
 	return agentPoolsClient
 }
 

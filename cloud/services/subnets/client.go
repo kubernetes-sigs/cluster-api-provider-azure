@@ -49,8 +49,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newSubnetsClient creates a new subnets client from subscription ID.
 func newSubnetsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.SubnetsClient {
 	subnetsClient := network.NewSubnetsClientWithBaseURI(baseURI, subscriptionID)
-	subnetsClient.Authorizer = authorizer
-	subnetsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&subnetsClient.Client, authorizer)
 	return subnetsClient
 }
 

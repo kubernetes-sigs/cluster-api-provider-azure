@@ -17,8 +17,10 @@ limitations under the License.
 package azure
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
 )
 
@@ -82,6 +84,45 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 			g.Expect(id).To(Equal(test.expectedResult))
+		})
+	}
+}
+
+func TestAutoRestClientAppendUserAgent(t *testing.T) {
+	g := NewWithT(t)
+	userAgent := "cluster-api-provider-azure/2.29.2"
+
+	type args struct {
+		c         *autorest.Client
+		extension string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "should append extension to user agent if extension is not empty",
+			args: args{
+				c:         &autorest.Client{UserAgent: autorest.UserAgent()},
+				extension: userAgent,
+			},
+			want: fmt.Sprintf("%s %s", autorest.UserAgent(), userAgent),
+		},
+		{
+			name: "should no changed if extension is empty",
+			args: args{
+				c:         &autorest.Client{UserAgent: userAgent},
+				extension: "",
+			},
+			want: userAgent,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			AutoRestClientAppendUserAgent(tt.args.c, tt.args.extension)
+
+			g.Expect(tt.want).To(Equal(tt.args.c.UserAgent))
 		})
 	}
 }

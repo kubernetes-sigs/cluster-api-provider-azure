@@ -61,24 +61,21 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newVirtualMachineScaleSetVMsClient creates a new vmss VM client from subscription ID.
 func newVirtualMachineScaleSetVMsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetVMsClient {
 	c := compute.NewVirtualMachineScaleSetVMsClientWithBaseURI(baseURI, subscriptionID)
-	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	azure.SetAutoRestClientDefaults(&c.Client, authorizer)
 	return c
 }
 
 // newVirtualMachineScaleSetsClient creates a new vmss client from subscription ID.
 func newVirtualMachineScaleSetsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetsClient {
 	c := compute.NewVirtualMachineScaleSetsClientWithBaseURI(baseURI, subscriptionID)
-	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	azure.SetAutoRestClientDefaults(&c.Client, authorizer)
 	return c
 }
 
 // newPublicIPsClient creates a new publicIPs client from subscription ID.
 func newPublicIPsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
 	c := network.NewPublicIPAddressesClientWithBaseURI(baseURI, subscriptionID)
-	c.Authorizer = authorizer
-	_ = c.AddToUserAgent(azure.UserAgent()) // intentionally ignore error as it doesn't matter
+	azure.SetAutoRestClientDefaults(&c.Client, authorizer)
 	return c
 }
 

@@ -49,8 +49,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newInterfacesClient creates a new network interfaces client from subscription ID.
 func newInterfacesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.InterfacesClient {
 	nicClient := network.NewInterfacesClientWithBaseURI(baseURI, subscriptionID)
-	nicClient.Authorizer = authorizer
-	nicClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&nicClient.Client, authorizer)
 	return nicClient
 }
 
