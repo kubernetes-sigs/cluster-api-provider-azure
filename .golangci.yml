@@ -23,6 +23,7 @@ linters:
     - prealloc
     - structcheck
     - unconvert
+    - unused
     - varcheck
   # Run with --fast=false for more extensive checks
   fast: true
@@ -37,6 +38,9 @@ issues:
     - path: api/v1alpha2/types\.go
       linters:
         - golint
+    - path: _test\.go
+      linters:
+        - unused
   include:
   - EXC0002 # include "missing comments" issues from golint
   max-issues-per-linter: 0

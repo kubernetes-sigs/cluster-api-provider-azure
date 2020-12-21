@@ -20,33 +20,6 @@ import (
 	"encoding/json"
 )
 
-// updateAnnotationJSON updates the `annotation` on an `annotationReaderWriter` with
-// `content`. `content` in this case should be a `map[string]interface{}`
-// suitable for turning into JSON. This `content` map will be marshalled into a
-// JSON string before being set as the given `annotation`.
-func (r *AzureMachinePoolReconciler) updateAnnotationJSON(rw annotationReaderWriter, annotation string, content map[string]interface{}) error {
-	b, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	r.updateAnnotation(rw, annotation, string(b))
-	return nil
-}
-
-// updateAnnotation updates the `annotation` on an `annotationReaderWriter` with
-// `content`.
-func (r *AzureMachinePoolReconciler) updateAnnotation(rw annotationReaderWriter, annotation string, content string) {
-	// Get the annotations
-	annotations := rw.GetAnnotations()
-
-	// Set our annotation to the given content.
-	annotations[annotation] = content
-
-	// Update the machine pool object with these annotations
-	rw.SetAnnotations(annotations)
-}
-
 // AnnotationJSON returns a map[string]interface from a JSON annotation.
 // This method gets the given `annotation` from an `annotationReaderWriter` and unmarshalls it
 // from a JSON string into a `map[string]interface{}`.
