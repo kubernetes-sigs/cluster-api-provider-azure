@@ -269,6 +269,16 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 	return spec
 }
 
+// AvailabilitySetSpecs returns the availability set specs.
+func (s *ClusterScope) AvailabilitySetSpecs() []azure.AvailabilitySetSpec {
+	if len(s.AzureCluster.Status.FailureDomains) == 0 {
+		return []azure.AvailabilitySetSpec{{
+			Name: azure.GenerateAvailabilitySetName(s.ClusterName(), azure.ControlPlaneNodeGroup),
+		}}
+	}
+	return nil
+}
+
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet

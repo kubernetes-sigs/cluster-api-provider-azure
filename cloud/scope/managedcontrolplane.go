@@ -237,3 +237,8 @@ func (s *ManagedControlPlaneScope) OutboundLBName(_ string) string {
 func (s *ManagedControlPlaneScope) OutboundPoolName(_ string) string {
 	return "aksOutboundBackendPool" // hard-coded in aks
 }
+
+// FailureDomains returns the failure domains
+func (s *ManagedControlPlaneScope) FailureDomains() clusterv1.FailureDomains {
+	return clusterv1.FailureDomains{}
+}

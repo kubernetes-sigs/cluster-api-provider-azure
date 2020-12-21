@@ -35,6 +35,8 @@ const (
 	VirtualMachines ResourceType = "virtualMachines"
 	// Disks is a convenience constant to filter resource SKUs to only include disks.
 	Disks ResourceType = "disks"
+	// AvailabilitySets is a convenience constant to filter resource SKUs to only include availability sets.
+	AvailabilitySets ResourceType = "availabilitySets"
 )
 
 // Supported models an enum of possible boolean values for resource support in the Azure API.
@@ -62,6 +64,8 @@ const (
 	MinimumMemory = 2
 	// EncryptionAtHost identifies the capability for encryption at host.
 	EncryptionAtHost = "EncryptionAtHostSupported"
+	// MaximumPlatformFaultDomainCount identifies the maximum fault domain count for an availability set  in a region
+	MaximumPlatformFaultDomainCount = "MaximumPlatformFaultDomainCount"
 )
 
 // HasCapability return true for a capability which can be either
@@ -107,4 +111,17 @@ func (s SKU) HasCapabilityWithCapacity(name string, value int64) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// GetCapability gets the value assigned to the given capability
+// Eg. MaximumPlatformFaultDomainCount -> "3" will return "3" for the capability "MaximumPlatformFaultDomainCount"
+func (s SKU) GetCapability(name string) (string, bool) {
+	if s.Capabilities != nil {
+		for _, capability := range *s.Capabilities {
+			if capability.Name != nil && *capability.Name == name {
+				return *capability.Value, true
+			}
+		}
+	}
+	return "", false
 }

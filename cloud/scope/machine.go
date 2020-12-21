@@ -309,6 +309,15 @@ func (m *MachineScope) ProviderID() string {
 	return parsed.ID()
 }
 
+// AvailabilitySet returns the availability set for this machine if available
+func (m *MachineScope) AvailabilitySet() (string, bool) {
+	if m.IsControlPlane() {
+		return azure.GenerateAvailabilitySetName(m.ClusterName(), azure.ControlPlaneNodeGroup), true
+	}
+
+	return "", false
+}
+
 // SetProviderID sets the AzureMachine providerID in spec.
 func (m *MachineScope) SetProviderID(v string) {
 	m.AzureMachine.Spec.ProviderID = to.StringPtr(v)

@@ -24,6 +24,7 @@ import (
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/privatedns"
@@ -38,31 +39,34 @@ import (
 
 // azureClusterReconciler is the reconciler called by the AzureCluster controller
 type azureClusterReconciler struct {
-	scope            *scope.ClusterScope
-	groupsSvc        azure.Service
-	vnetSvc          azure.Service
-	securityGroupSvc azure.Service
-	routeTableSvc    azure.Service
-	subnetsSvc       azure.Service
-	publicIPSvc      azure.Service
-	loadBalancerSvc  azure.Service
-	privateDNSSvc    azure.Service
-	skuCache         *resourceskus.Cache
+	scope               *scope.ClusterScope
+	groupsSvc           azure.Service
+	vnetSvc             azure.Service
+	securityGroupSvc    azure.Service
+	routeTableSvc       azure.Service
+	subnetsSvc          azure.Service
+	publicIPSvc         azure.Service
+	loadBalancerSvc     azure.Service
+	privateDNSSvc       azure.Service
+	availabilitySetsSvc azure.Service
+	skuCache            *resourceskus.Cache
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
 func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
+	cache := resourceskus.NewCache(scope, scope.Location())
 	return &azureClusterReconciler{
-		scope:            scope,
-		groupsSvc:        groups.New(scope),
-		vnetSvc:          virtualnetworks.New(scope),
-		securityGroupSvc: securitygroups.New(scope),
-		routeTableSvc:    routetables.New(scope),
-		subnetsSvc:       subnets.New(scope),
-		publicIPSvc:      publicips.New(scope),
-		loadBalancerSvc:  loadbalancers.New(scope),
-		privateDNSSvc:    privatedns.New(scope),
-		skuCache:         resourceskus.NewCache(scope, scope.Location()),
+		scope:               scope,
+		groupsSvc:           groups.New(scope),
+		vnetSvc:             virtualnetworks.New(scope),
+		securityGroupSvc:    securitygroups.New(scope),
+		routeTableSvc:       routetables.New(scope),
+		subnetsSvc:          subnets.New(scope),
+		publicIPSvc:         publicips.New(scope),
+		loadBalancerSvc:     loadbalancers.New(scope),
+		privateDNSSvc:       privatedns.New(scope),
+		availabilitySetsSvc: availabilitysets.New(scope, cache),
+		skuCache:            resourceskus.NewCache(scope, scope.Location()),
 	}
 }
 
@@ -110,6 +114,10 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile private dns")
 	}
 
+	if err := r.availabilitySetsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile availability sets")
+	}
+
 	return nil
 }
 
@@ -146,6 +154,10 @@ func (r *azureClusterReconciler) Delete(ctx context.Context) error {
 
 			if err := r.vnetSvc.Delete(ctx); err != nil {
 				return errors.Wrapf(err, "failed to delete virtual network")
+			}
+
+			if err := r.availabilitySetsSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete availability sets")
 			}
 		} else {
 			return errors.Wrapf(err, "failed to delete resource group")
