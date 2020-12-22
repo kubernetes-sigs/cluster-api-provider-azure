@@ -88,9 +88,9 @@ GINKGO_VER := v1.13.0
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
-KUBECTL_VER := v1.16.13
+KUBECTL_VER := v1.17.16
 KUBECTL_BIN := kubectl
-KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
+KUBECTL := $(KUBECTL_BIN)-$(KUBECTL_VER)
 
 KUBE_APISERVER=$(TOOLS_BIN_DIR)/kube-apiserver
 ETCD=$(TOOLS_BIN_DIR)/etcd
@@ -245,11 +245,7 @@ $(GINKGO): ## Build ginkgo.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
 $(KUBECTL): ## Build kubectl
-	mkdir -p $(TOOLS_BIN_DIR)
-	rm -f "$(KUBECTL)*"
-	curl -fsL https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VER)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
-	ln -sf "$(KUBECTL)" "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)"
-	chmod +x "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)" "$(KUBECTL)"
+	MINIMUM_KUBECTL_VERSION=$(KUBECTL_VER) ./hack/ensure-kubectl.sh
 
 ## --------------------------------------
 ## Linting
