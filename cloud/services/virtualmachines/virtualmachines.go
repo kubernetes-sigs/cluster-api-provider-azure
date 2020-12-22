@@ -102,10 +102,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to retrieve bootstrap data")
 			}
-			s.Scope.V(2).Info("Bootstrap data is", "bootstrap data:", bootstrapData)
+			log.Info("Bootstrap data is", "bootstrap data:", bootstrapData)
 
 			bootstrapData += fmt.Sprintf("sudo echo 'hi' >> hi.txt")
-			s.Scope.V(2).Info("Bootstrap data is after appending hi", "bootstrap data:", bootstrapData)
+
+			log.Info("Bootstrap data is after appending hi", "bootstrap data:", bootstrapData)
 
 			encodedStr := base64.StdEncoding.EncodeToString([]byte(bootstrapData))
 

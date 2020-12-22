@@ -77,6 +77,10 @@ spec:
         overwrite: false
         tableType: gpt
     files:
+      - content: |
+      ${AZURE_CABUNLE_CONTENTS}
+      path: /home/capi/cabundle.crt
+      permissions: "0744"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
