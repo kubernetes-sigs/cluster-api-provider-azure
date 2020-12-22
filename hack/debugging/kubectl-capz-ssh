@@ -1,34 +1,112 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 azurecluster="capz-cluster"
 user="capi"
 identity=~/.ssh/id_rsa
 
-while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
-  -V | --version )
-    echo $version
-    exit
-    ;;
-  -am | --azure-machine )
-    shift; azuremachine=$1
-    ;;
-  -u | --user )
-    shift; user=$1
-    ;;
-  -i | --identity )
-    shift; identity=$1
-    ;;
-esac; shift; done
-if [[ "$1" == '--' ]]; then shift; fi
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
 
-echo "finding address for $azurecluster"
-capimachine=$(kubectl get azuremachine $azuremachine -o json | jq -r '.metadata.ownerReferences | .[]  |  select(.kind == "Machine").name')
-azurecluster=$(kubectl get machine $capimachine -o json | jq -r '.spec.clusterName')
-apiserver=$(kubectl get azurecluster $azurecluster -o json | jq -r '.spec.controlPlaneEndpoint.host')
-echo "found address $apiserver"
+case $key in
+  -h|--help)
+    echo "Utility tool for ssh'ing into CAPZ nodes"
+    echo " "
+    echo "kubectl-capz-ssh [options]"
+    echo " "
+    echo "options:"
+    echo "-h,    --help                       Show brief help"
+    echo "-am,   --azure-machine              Azure Machine name"
+    echo "-amp,  --azure-machine-pool         Azure Machine Pool name"
+    echo "-lamp, --list-azure-machine-pool    List Azure Machine Pool, need --azure-machine-pool to be set as well"
+    echo "-id,   --azure-machine-pool-id      ID of the VMSS instance you want to ssh into"
+    echo "-u,    --user                       User to ssh'ing into"
+    echo "-i,    --identity                   SSH key to be used to ssh'ing into"
+    exit 0
+    ;;
+  -am | --azure-machine)
+  azuremachine="$2"
+  shift # past argument
+  shift # past value
+  ;;
+  -amp | --azure-machine-pool)
+  azuremachinepool="$2"
+  shift # past argument
+  shift # past value
+  ;;
+  -id | --azure-machine-pool-id)
+  azuremachinepoolid="$2"
+  shift # past argument
+  shift # past value
+  ;;
+  -u | --user)
+  user="$2"
+  shift # past argument
+  shift # past value
+  ;;
+  -i | --identity)
+  identity="$2"
+  shift # past argument
+  shift # past value
+  ;;
+  -lamp | --list-azure-machine-pool)
+  listamp=1
+  shift # past argument
+  ;;
+  *)    # unknown option
+  POSITIONAL+=("$1") # save it in an array for later
+  shift # past argument
+  ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
 
-echo "finding address for $azuremachine"
-node=$(kubectl get azuremachine $azuremachine -o json | jq -r '.status.addresses[0].address')
-echo "found address $node"
+echo
+echo "Utility tool to ssh'ing into CAPZ nodes"
+echo
 
-ssh -i $identity -J ${user}@${apiserver} ${user}@${node}
+if [[ "$azuremachinepool" != "" && "$listamp" != "" ]];
+then
+  echo "Listing Azure Machine Pool $azuremachinepool"
+  echo
+  kubectl get azuremachinepools "$azuremachinepool" -o json | jq -r '.status.instances[] | "\(.instanceID)\t\(.instanceName)"' | awk -v FS="," 'BEGIN{print "ID\tComputerName";print "========================================"}{printf "%s\t%s%s",$1,$2,ORS}'
+  exit $?
+fi
+
+if [[ "$azuremachinepool" != "" &&  "$azuremachinepoolid" != "" ]];
+then
+  echo "finding address for $azuremachinepool id $azuremachinepoolid"
+  echo
+  azurecluster=$(kubectl get machinepools $azuremachinepool -o json | jq -r '.metadata.ownerReferences | .[]  |  select(.kind == "Cluster").name')
+  apiserver=$(kubectl get azurecluster $azurecluster -o json | jq -r '.spec.controlPlaneEndpoint.host')
+  echo
+  echo "found address $apiserver"
+
+  echo "finding address for $azuremachinepool node $azuremachinepoolid"
+  echo
+  node=$(kubectl get azuremachinepools $azuremachinepool -o json | jq -cr '.status.instances[] | select( .instanceID | contains("'$azuremachinepoolid'")) | .instanceName')
+  echo
+  echo "found computerName $node"
+  ssh -i $identity -J ${user}@${apiserver} ${user}@${node}
+fi
+
+
+if [[ "$azuremachine" != "" ]];
+then
+  echo "finding address for $azurecluster"
+  echo
+  capimachine=$(kubectl get azuremachine $azuremachine -o json | jq -r '.metadata.ownerReferences | .[]  |  select(.kind == "Machine").name')
+  azurecluster=$(kubectl get machine $capimachine -o json | jq -r '.spec.clusterName')
+  apiserver=$(kubectl get azurecluster $azurecluster -o json | jq -r '.spec.controlPlaneEndpoint.host')
+  echo
+  echo "found address $apiserver"
+
+  echo "finding address for $azuremachine"
+  echo
+  node=$(kubectl get azuremachine $azuremachine -o json | jq -r '.status.addresses[0].address')
+  echo
+  echo "found address $node"
+
+  ssh -i $identity -J ${user}@${apiserver} ${user}@${node}
+fi
