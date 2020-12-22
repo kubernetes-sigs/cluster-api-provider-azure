@@ -21,10 +21,10 @@ linters:
     - misspell
     - nakedret
     - prealloc
+    - staticcheck
     - structcheck
     - unconvert
     - varcheck
-    - staticcheck
   # Run with --fast=false for more extensive checks
   fast: true
 issues:
