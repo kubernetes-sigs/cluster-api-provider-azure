@@ -32,7 +32,8 @@ const (
 )
 
 const (
-	IIS = WindowsTestImages("IIS")
+	IIS   = WindowsTestImages("IIS")
+	Httpd = WindowsTestImages("httpd")
 )
 
 type WindowsImage struct {
@@ -56,9 +57,18 @@ func GetWindowsImage(testImage WindowsTestImages, version OSVersion) string {
 		},
 	}
 
+	httpd := WindowsImage{
+		BaseImage: "k8sprow.azurecr.io/kubernetes-e2e-test-images/httpd",
+		Tags: map[OSVersion]string{
+			LTSC2019: "2.4.39-alpine",
+		},
+	}
+
 	switch testImage {
 	case IIS:
 		return iisImage.GetImage(version)
+	case Httpd:
+		return httpd.GetImage(version)
 	default:
 		return iisImage.GetImage(version)
 	}

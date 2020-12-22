@@ -21,10 +21,11 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"net"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	k8snet "k8s.io/utils/net"
-	"net"
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
@@ -79,7 +80,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	if input.Windows {
 		windowsVersion, err := node.GetWindowsVersion(clientset)
 		Expect(err).NotTo(HaveOccurred())
-		iisImage := windows.GetWindowsImage(windows.IIS, windowsVersion)
+		iisImage := windows.GetWindowsImage(windows.Httpd, windowsVersion)
 		webDeployment.SetImage(deploymentName, iisImage)
 		webDeployment.AddWindowsSelectors()
 	}
