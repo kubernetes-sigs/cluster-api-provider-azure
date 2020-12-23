@@ -37,7 +37,7 @@ import (
 )
 
 func init() {
-	clusterv1.AddToScheme(scheme.Scheme)
+	_ = clusterv1.AddToScheme(scheme.Scheme)
 }
 
 func TestReconcileRouteTables(t *testing.T) {

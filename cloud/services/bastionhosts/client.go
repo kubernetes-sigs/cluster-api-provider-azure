@@ -49,8 +49,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newBastionHostsClient creates a new bastion host client from subscription ID.
 func newBastionHostsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.BastionHostsClient {
 	bastionClient := network.NewBastionHostsClientWithBaseURI(baseURI, subscriptionID)
-	bastionClient.Authorizer = authorizer
-	bastionClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&bastionClient.Client, authorizer)
 	return bastionClient
 }
 

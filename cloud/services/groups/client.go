@@ -51,8 +51,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newGroupsClient creates a new groups client from subscription ID.
 func newGroupsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resources.GroupsClient {
 	groupsClient := resources.NewGroupsClientWithBaseURI(baseURI, subscriptionID)
-	groupsClient.Authorizer = authorizer
-	groupsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&groupsClient.Client, authorizer)
 	return groupsClient
 }
 

@@ -9,6 +9,7 @@ linters:
   disable-all: true
   enable:
     - deadcode
+    - errcheck
     - goconst
     - gofmt
     - goimports

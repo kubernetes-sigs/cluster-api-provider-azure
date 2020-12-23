@@ -48,8 +48,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newTagsClient creates a new tags client from subscription ID.
 func newTagsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) resources.TagsClient {
 	tagsClient := resources.NewTagsClientWithBaseURI(baseURI, subscriptionID)
-	tagsClient.Authorizer = authorizer
-	tagsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&tagsClient.Client, authorizer)
 	return tagsClient
 }
 

@@ -50,8 +50,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newVirtualMachinesClient creates a new VM client from subscription ID.
 func newVirtualMachinesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachinesClient {
 	vmClient := compute.NewVirtualMachinesClientWithBaseURI(baseURI, subscriptionID)
-	vmClient.Authorizer = authorizer
-	vmClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&vmClient.Client, authorizer)
 	return vmClient
 }
 

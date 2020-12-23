@@ -49,8 +49,7 @@ func NewClient(auth azure.Authorizer) *AzureClient {
 // newPublicIPAddressesClient creates a new public IP client from subscription ID.
 func newPublicIPAddressesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.PublicIPAddressesClient {
 	publicIPsClient := network.NewPublicIPAddressesClientWithBaseURI(baseURI, subscriptionID)
-	publicIPsClient.Authorizer = authorizer
-	publicIPsClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&publicIPsClient.Client, authorizer)
 	return publicIPsClient
 }
 

@@ -49,8 +49,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newLoadbalancersClient creates a new inbound NAT rules client from subscription ID.
 func newInboundNatRulesClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) network.InboundNatRulesClient {
 	inboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(baseURI, subscriptionID)
-	inboundNatRulesClient.Authorizer = authorizer
-	inboundNatRulesClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&inboundNatRulesClient.Client, authorizer)
 	return inboundNatRulesClient
 }
 

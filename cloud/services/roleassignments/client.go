@@ -47,8 +47,7 @@ func newClient(auth azure.Authorizer) *azureClient {
 // newRoleAssignmentClient creates a role assignments client from subscription ID.
 func newRoleAssignmentClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) authorization.RoleAssignmentsClient {
 	roleClient := authorization.NewRoleAssignmentsClientWithBaseURI(baseURI, subscriptionID)
-	roleClient.Authorizer = authorizer
-	roleClient.AddToUserAgent(azure.UserAgent())
+	azure.SetAutoRestClientDefaults(&roleClient.Client, authorizer)
 	return roleClient
 }
 
