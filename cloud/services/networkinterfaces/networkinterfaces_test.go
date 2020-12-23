@@ -440,7 +440,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				fmt.Printf(cmp.Diff(err.Error(), tc.expectedError))
+				fmt.Print(cmp.Diff(err.Error(), tc.expectedError))
 
 				g.Expect(err.Error()).To(Equal(tc.expectedError))
 			} else {
