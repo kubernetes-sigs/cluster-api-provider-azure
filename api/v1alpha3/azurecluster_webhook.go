@@ -17,7 +17,11 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"reflect"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -56,8 +60,35 @@ func (c *AzureCluster) ValidateCreate() error {
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	clusterlog.Info("validate update", "name", c.Name)
+	var allErrs field.ErrorList
 	old := oldRaw.(*AzureCluster)
-	return c.validateCluster(old)
+
+	if !reflect.DeepEqual(c.Spec.ResourceGroup, old.Spec.ResourceGroup) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "ResourceGroup"),
+				c.Spec.ResourceGroup, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(c.Spec.SubscriptionID, old.Spec.SubscriptionID) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "SubscriptionID"),
+				c.Spec.SubscriptionID, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(c.Spec.Location, old.Spec.Location) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "Location"),
+				c.Spec.Location, "field is immutable"),
+		)
+	}
+
+	if len(allErrs) == 0 {
+		return c.validateCluster(old)
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type

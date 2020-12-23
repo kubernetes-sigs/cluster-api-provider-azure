@@ -100,9 +100,10 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 	g := NewWithT(t)
 
 	tests := []struct {
-		name    string
-		cluster *AzureCluster
-		wantErr bool
+		name       string
+		oldCluster *AzureCluster
+		cluster    *AzureCluster
+		wantErr    bool
 	}{
 		{
 			name: "azurecluster with pre-existing vnet - valid spec",
@@ -157,10 +158,53 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			}(),
 			wantErr: true,
 		},
+		{
+			name: "azurecluster resource group is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					ResourceGroup: "demoResourceGroup",
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					ResourceGroup: "demoResourceGroup-2",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azurecluster subscription ID is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					SubscriptionID: "212ec1q8",
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					SubscriptionID: "212ec1q9",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "azurecluster location is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					Location: "North Europe",
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					Location: "West Europe",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.cluster.ValidateUpdate(createValidCluster())
+			t.Parallel()
+			err := tc.cluster.ValidateUpdate(tc.oldCluster)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
