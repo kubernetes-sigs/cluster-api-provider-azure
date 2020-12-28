@@ -48,7 +48,7 @@ azuremachinetemplate.infrastructure.cluster.x-k8s.io/azure-gpu-md-0 created
 kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/azure-gpu-md-0 created
 ```
 
-Wait until the cluster and nodes are finished provisioning. The GPU nodes make take several minutes
+Wait until the cluster and nodes are finished provisioning. The GPU nodes may take several minutes
 to provision, since each one must install drivers and supporting software.
 
 ```bash

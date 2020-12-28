@@ -154,7 +154,7 @@ should be fairly clear from context.
 
 AKS clusters deployed from CAPZ currently only support a limited,
 "blessed" configuration. This was primarily to keep the initial
-implementation simple. If you'd like to managed AKS cluster with CAPZ
+implementation simple. If you'd like to run managed AKS cluster with CAPZ
 and need an additional feature, please open a pull request or issue with
 details. We're happy to help!
 

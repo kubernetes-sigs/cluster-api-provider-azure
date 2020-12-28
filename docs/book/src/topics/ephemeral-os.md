@@ -30,14 +30,14 @@ When `diffDiskSettings.option` is set to `Local`, ephemeral OS will be enabled. 
 
 ## Known Limitations
 
-Not all SKU sizes support ephemeral os. CAPZ will query Azure's resource
+Not all SKU sizes support ephemeral OS. CAPZ will query Azure's resource
 SKUs API to check if the requested VM size supports ephemeral OS. If
 not, the azuremachine controller will log an event with the
 corresponding error on the AzureMachine object.
 
 ## Example
 
-The below example shows how to enable ephemeral OS for a machine template. For control plane nodes, we strongly recommend using [etcd data disks](data-disks.md)to avoid data loss.
+The below example shows how to enable ephemeral OS for a machine template. For control plane nodes, we strongly recommend using [etcd data disks](data-disks.md) to avoid data loss.
 
 ````yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3

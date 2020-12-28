@@ -23,7 +23,7 @@ spec:
   - <cluster-namespace>
 
 ```
-The password will need to be added in a secret similar to the following example
+The password will need to be added in a secret similar to the following example:
 
 ```yaml
 apiVersion: v1
@@ -35,7 +35,7 @@ data:
   clientSecret: <client-secret-of-SP-identity>
 ```
 
-OR the password can also as a Certificate 
+OR the password can also be added as a Certificate:
 
 ```yaml
 apiVersion: v1
@@ -78,6 +78,6 @@ spec:
 
 For more details on how aad-pod-identity works, please check the guide [here](https://azure.github.io/aad-pod-identity/docs/).
 
-## User Assiged Identity
+## User Assigned Identity
 
 _will be supported in a future release_

@@ -32,7 +32,7 @@
 *Source: [MachinePool API Proposal](https://github.com/kubernetes-sigs/cluster-api/blob/bf51a2502f9007b531f6a9a2c1a4eae1586fb8ca/docs/proposals/20190919-machinepool-api.md)*
 
 ## AzureMachinePool
-Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` though the infrastructure
+Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` through the infrastructure
 type `AzureMachinePool`. An `AzureMachinePool` corresponds to an [Azure Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview),
 which provides the cloud provider specific resource for orchestrating a group of Virtual Machines.
 
