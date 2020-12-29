@@ -112,6 +112,11 @@ func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.AzureCluster.Status.Network
 }
 
+// NetworkSpec returns the cluster networkSpec object.
+func (s *ClusterScope) NetworkSpec() *infrav1.NetworkSpec {
+	return &s.AzureCluster.Spec.NetworkSpec
+}
+
 // PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	return []azure.PublicIPSpec{

@@ -65,9 +65,13 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 
 // Reconcile reconciles all the services in pre determined order
 func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
+
+	createPublicIP := r.scope.NetworkSpec().HasPublicIP
 	//check
-	if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
-		return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
+	if createPublicIP == true {
+		if err := r.createOrUpdateNetworkAPIServerIP(); err != nil {
+			return errors.Wrapf(err, "failed to create or update network API server IP for cluster %s in location %s", r.scope.ClusterName(), r.scope.Location())
+		}
 	}
 
 	//check
@@ -99,8 +103,10 @@ func (r *azureClusterReconciler) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to reconcile subnet")
 	}
 
-	if err := r.publicIPSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile public IP")
+	if createPublicIP == true {
+		if err := r.publicIPSvc.Reconcile(ctx); err != nil {
+			return errors.Wrapf(err, "failed to reconcile public IP")
+		}
 	}
 
 	/*if err := r.loadBalancerSvc.Reconcile(ctx); err != nil {

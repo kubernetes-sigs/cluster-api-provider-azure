@@ -45,6 +45,9 @@ type NetworkSpec struct {
 	// +optional
 	Vnet VnetSpec `json:"vnet,omitempty"`
 
+	//hasPublicIP is the boolean value representing whether the cluster should have public IP resource, set this value to False for managment cluster
+	HasPublicIP bool `json:"hasPublicIP,omitempty"`
+
 	// Subnets is the configuration for the control-plane subnet and the node subnet.
 	// +optional
 	Subnets Subnets `json:"subnets,omitempty"`

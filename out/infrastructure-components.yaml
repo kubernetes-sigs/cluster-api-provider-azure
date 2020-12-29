@@ -330,6 +330,8 @@ spec:
                 - host
                 - port
                 type: object
+              controlPlaneEndpointIP:
+                type: string
               location:
                 type: string
               networkSpec:
@@ -437,6 +439,8 @@ spec:
                     required:
                     - name
                     type: object
+                  hasPublicIP: 
+                    type: boolean
                 type: object
               resourceGroup:
                 type: string
@@ -1143,6 +1147,8 @@ spec:
                     - version
                     type: object
                 type: object
+              imageID:
+                type: string
               location:
                 description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                 type: string
@@ -1180,6 +1186,8 @@ spec:
                 - managedDisk
                 - osType
                 type: object
+              privateIPAddress:
+                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
@@ -1557,6 +1565,8 @@ spec:
                             - version
                             type: object
                         type: object
+                      imageID:
+                        type: string
                       location:
                         description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                         type: string
@@ -1594,6 +1604,8 @@ spec:
                         - managedDisk
                         - osType
                         type: object
+                      privateIPAddress:
+                        type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string
