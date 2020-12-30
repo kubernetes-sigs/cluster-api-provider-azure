@@ -165,8 +165,6 @@ spec:
                     required:
                     - name
                     type: object
-                  hasPublicIP: 
-                    type: boolean
                 type: object
               resourceGroup:
                 type: string
@@ -513,6 +511,8 @@ spec:
                     required:
                     - name
                     type: object
+                  hasPublicIP:
+                    type: boolean
                 type: object
               resourceGroup:
                 type: string
