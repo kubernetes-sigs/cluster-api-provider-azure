@@ -1,0 +1,6 @@
+namespace: default
+resources:
+  - ../base-windows
+  - machine-deployment.yaml
+  - machine-deployment-windows.yaml
+  

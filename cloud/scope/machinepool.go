@@ -124,6 +124,10 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 
 // Name returns the Azure Machine Pool Name.
 func (m *MachinePoolScope) Name() string {
+	// Windows Machine pools names cannot be longer than 9 chars
+	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS && len(m.AzureMachinePool.Name) > 9 {
+		return "win-" + m.AzureMachinePool.Name[len(m.AzureMachinePool.Name)-5:]
+	}
 	return m.AzureMachinePool.Name
 }
 
@@ -310,6 +314,12 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	if m.AzureMachinePool.Spec.Template.Image != nil {
 		return m.AzureMachinePool.Spec.Template.Image, nil
 	}
+
+	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS {
+		m.Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName())
+		return azure.GetDefaultWindowsImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+	}
+
 	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 }

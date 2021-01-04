@@ -1,0 +1,14 @@
+# this file fixes the named pipes which need to be escaped due to bug in envsubst library
+# https://github.com/kubernetes-sigs/cluster-api/issues/4016
+- op: replace
+  path: /spec/template/spec/containers/0/volumeMounts/0
+  value:
+    name: wins
+    mountPath: \\\\.\pipe\rancher_wins
+- op: replace
+  path: /spec/template/spec/volumes/0
+  value:
+    name: wins
+    hostPath:
+      path: \\\\.\pipe\rancher_wins
+      type: null

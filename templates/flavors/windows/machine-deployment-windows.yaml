@@ -1,0 +1,82 @@
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-md-win"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-md-win"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  template:
+    spec:
+      location: ${AZURE_LOCATION}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+      osDisk:
+        osType: "Windows"
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: "Premium_LRS"
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-win"
+spec:
+  template:
+    spec:
+      preKubeadmCommands:
+        - powershell c:/create-external-network.ps1
+        - powershell c:/configure-ssh.ps1
+      joinConfiguration:
+        nodeRegistration:
+          name: '{{ ds.meta_data["local_hostname"] }}'
+          kubeletExtraArgs:
+            cloud-provider: azure
+            cloud-config: 'c:/k/azure.json'
+            pod-infra-container-image: "mcr.microsoft.com/oss/kubernetes/pause:1.4.1"
+      files:
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-md-win-azure-json
+            key: worker-node-azure.json
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - path: C:/create-external-network.ps1
+        permissions: "0744"
+        content: |
+          # required as a work around for Flannel and Wins bugs
+          # https://github.com/coreos/flannel/issues/1359
+          # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
+          ipmo C:\k\debug\hns.psm1;
+          New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
+      - path: C:/configure-ssh.ps1
+        permissions: "0744"
+        content: |
+          [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${AZURE_SSH_PUBLIC_KEY_B64:=''}")) | Add-Content C:/ProgramData/ssh/administrators_authorized_keys
+          icacls C:/ProgramData/ssh/administrators_authorized_keys /remove "NT AUTHORITY\Authenticated Users"
+          icacls C:/ProgramData/ssh/administrators_authorized_keys /inheritance:r
+          icacls C:/ProgramData/ssh/administrators_authorized_keys /grant SYSTEM:F
+          icacls C:/ProgramData/ssh/administrators_authorized_keys /grant BUILTIN\Administrators:F
+          restart-service sshd

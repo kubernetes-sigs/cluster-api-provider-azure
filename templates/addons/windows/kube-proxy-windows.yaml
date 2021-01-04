@@ -1,0 +1,92 @@
+apiVersion: v1
+data:
+  run-script.ps1: |-
+    $ErrorActionPreference = "Stop";
+    mkdir -force /host/var/lib/kube-proxy/var/run/secrets/kubernetes.io/serviceaccount
+    mkdir -force /host/k/kube-proxy
+
+    cp -force /k/kube-proxy/* /host/k/kube-proxy
+    cp -force /var/lib/kube-proxy/* /host/var/lib/kube-proxy
+    cp -force /var/run/secrets/kubernetes.io/serviceaccount/* /host/var/lib/kube-proxy/var/run/secrets/kubernetes.io/serviceaccount #FIXME?
+
+    $networkName = (Get-Content /host/etc/cni/net.d/* | ConvertFrom-Json).name
+    $sourceVip = ($env:POD_IP -split "\.")[0..2] + 0 -join "."
+    yq w -i /host/var/lib/kube-proxy/config.conf winkernel.sourceVip $sourceVip
+    yq w -i /host/var/lib/kube-proxy/config.conf winkernel.networkName $networkName
+    yq w -i /host/var/lib/kube-proxy/config.conf featureGates.WinOverlay true
+    yq w -i /host/var/lib/kube-proxy/config.conf mode "kernelspace"
+    wins cli process run --path /k/kube-proxy/kube-proxy.exe --args "--v=6 --config=/var/lib/kube-proxy/config.conf --hostname-override=$env:NODE_NAME --feature-gates=WinOverlay=true"
+kind: ConfigMap
+metadata:
+  labels:
+    app: kube-proxy
+  name: kube-proxy-windows
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: kube-proxy
+  name: kube-proxy-windows
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-proxy-windows
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-proxy-windows
+    spec:
+      serviceAccountName: kube-proxy
+      containers:
+      - command:
+        - pwsh
+        args:
+        - -file
+        - /var/lib/kube-proxy-windows/run-script.ps1
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION}-nanoserver
+        name: kube-proxy
+        volumeMounts:
+        - name: wins
+          mountPath: \\.\pipe\rancher_wins
+        - name: host
+          mountPath: /host
+        - mountPath: /var/lib/kube-proxy
+          name: kube-proxy
+        - mountPath: /var/lib/kube-proxy-windows
+          name: kube-proxy-windows
+      nodeSelector:
+        kubernetes.io/os: windows
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - operator: Exists
+      volumes:
+      - name: wins
+        hostPath:
+          path: \\.\pipe\rancher_wins
+          type: null
+      - configMap:
+          defaultMode: 420
+          name: kube-proxy-windows
+        name: kube-proxy-windows
+      - configMap:
+          name: kube-proxy
+        name: kube-proxy
+      - hostPath:
+          path: /
+        name: host
+  updateStrategy:
+    type: RollingUpdate

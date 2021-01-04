@@ -203,6 +203,14 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 	Expect(cniPathIPv6).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathIPv6)
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathIPv6, CNIResourcesIPv6)
 
+	// Read CNI_WINDOWS file and set CNI_RESOURCES_WINDOWS environmental variable
+	// This file is generated with escapes due to the named pipes which need to be escaped for a bug in envsubst library
+	// https://github.com/kubernetes-sigs/cluster-api/issues/4016
+	Expect(config.Variables).To(HaveKey(CNIPathWindows), "Missing %s variable in the config", CNIPathWindows)
+	cniPathWindows := config.GetVariable(CNIPathWindows)
+	Expect(cniPathWindows).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathWindows)
+	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathWindows, CNIResourcesWindows)
+
 	clusterctlConfig := clusterctl.CreateRepository(context.TODO(), createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
 	return clusterctlConfig

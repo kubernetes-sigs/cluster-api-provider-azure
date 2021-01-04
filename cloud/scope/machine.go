@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
@@ -260,6 +261,15 @@ func (m *MachineScope) AvailabilityZone() string {
 
 // Name returns the AzureMachine name.
 func (m *MachineScope) Name() string {
+	// Windows Machine names cannot be longer than 15 chars
+	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS && len(m.AzureMachine.Name) > 15 {
+		clustername := m.ClusterName()
+		if len(m.ClusterName()) > 9 {
+			clustername = strings.TrimSuffix(clustername[0:9], "-")
+		}
+
+		return clustername + "-" + m.AzureMachine.Name[len(m.AzureMachine.Name)-5:]
+	}
 	return m.AzureMachine.Name
 }
 
@@ -440,6 +450,12 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	if m.AzureMachine.Spec.Image != nil {
 		return m.AzureMachine.Spec.Image, nil
 	}
-	m.Info("No image specified for machine, using default", "machine", m.AzureMachine.GetName())
+
+	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
+		m.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName())
+		return azure.GetDefaultWindowsImage(to.String(m.Machine.Spec.Version))
+	}
+
+	m.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 }

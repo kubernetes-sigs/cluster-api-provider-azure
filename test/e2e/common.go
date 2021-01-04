@@ -49,8 +49,10 @@ const (
 	AzureNodeSubnetCidr      = "AZURE_NODE_SUBNET_CIDR"
 	CNIPathIPv6              = "CNI_IPV6"
 	CNIResourcesIPv6         = "CNI_RESOURCES_IPV6"
-	VMSSHPort                = "VM_SSH_PORT"
+	CNIPathWindows           = "CNI_WINDOWS"
+	CNIResourcesWindows      = "CNI_RESOURCES_WINDOWS"
 	MultiTenancyIdentityName = "MULTI_TENANCY_IDENTITY_NAME"
+	VMSSHPort                = "VM_SSH_PORT"
 	JobName                  = "JOB_NAME"
 	Timestamp                = "TIMESTAMP"
 )

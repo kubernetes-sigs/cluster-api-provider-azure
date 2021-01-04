@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+resources:
+  - ../../addons/windows
+patchesJson6902:
+- target:
+    group: apps
+    version: v1
+    kind: DaemonSet
+    name: kube-proxy-windows
+    namespace: kube-system
+  path: windows-e2e-namedpipes-fix.yaml
+- target:
+    group: apps
+    version: v1
+    kind: DaemonSet
+    name: kube-flannel-ds-windows-amd64
+    namespace: kube-system
+  path: windows-e2e-namedpipes-fix.yaml
+

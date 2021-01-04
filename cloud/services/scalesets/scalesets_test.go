@@ -384,6 +384,83 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "can create a vmss with a Windows node",
+			expectedError: "",
+			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       "my-vmss",
+					Size:       "VM_SIZE_EAH",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Windows",
+						DiskSizeGB: 120,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
+					SubnetName:                   "my-subnet",
+					VNetName:                     "my-vnet",
+					VNetResourceGroup:            "my-rg",
+					PublicLBName:                 "capz-lb",
+					PublicLBAddressPoolName:      "backendPool",
+					AcceleratedNetworking:        nil,
+					TerminateNotificationTimeout: to.IntPtr(7),
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).Do(
+					func(_, _, _ interface{}, vmss compute.VirtualMachineScaleSet) {
+						g.Expect(vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType).To(Equal(compute.Windows))
+						g.Expect(*vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.AdminPassword).Should(HaveLen(123))
+						g.Expect(*vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.AdminUsername).Should(Equal("capi"))
+						g.Expect(*vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
+					})
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").
+					Return(compute.VirtualMachineScaleSet{
+						ID:   to.StringPtr("vmss-id"),
+						Name: to.StringPtr("my-vmss"),
+						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+						},
+					}, nil)
+				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
+					{
+						InstanceID: to.StringPtr("id-2"),
+						VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
+							ProvisioningState: to.StringPtr("Succeeded"),
+							OsProfile: &compute.OSProfile{
+								ComputerName: to.StringPtr("instance-000001"),
+							},
+						},
+						ID:   to.StringPtr("id-1"),
+						Name: to.StringPtr("instance-0"),
+					},
+				}, nil)
+				s.SaveK8sVersion()
+				s.NeedsK8sVersionUpdate()
+				s.UpdateInstanceStatuses(gomock.Any(), gomock.Len(1)).Return(nil)
+				s.SetProviderID("azure://vmss-id")
+				s.SetAnnotation("cluster-api-provider-azure", "true")
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+			},
+		},
+		{
 			name:          "with accelerated networking enabled",
 			expectedError: "",
 			expect: func(g *gomega.WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {

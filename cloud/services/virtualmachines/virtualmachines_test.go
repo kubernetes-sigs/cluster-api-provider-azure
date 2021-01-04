@@ -650,6 +650,93 @@ func TestReconcileVM(t *testing.T) {
 			},
 		},
 		{
+			Name: "can create a windows vm",
+			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpec().Return(azure.VMSpec{
+
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Windows",
+						DiskSizeGB: 128,
+						ManagedDisk: infrav1.ManagedDisk{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
+				},
+				)
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
+					Marketplace: &infrav1.AzureMarketplaceImage{
+						Publisher: "fake-publisher",
+						Offer:     "my-offer",
+						SKU:       "sku-id",
+						Version:   "1.0",
+					},
+				}, nil)
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
+					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.OsType).To(Equal(compute.Windows))
+					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminPassword).Should(HaveLen(123))
+					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminUsername).Should(Equal("capi"))
+					g.Expect(*vm.VirtualMachineProperties.OsProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
+
+				})
+			},
+			ExpectedError: "",
+			SetupSKUs: func(svc *Service) {
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("Standard_D2v3"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"test-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("test-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus)
+				svc.resourceSKUCache = resourceSkusCache
+			},
+		},
+		{
 			Name: "can create a vm with encryption",
 			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
 				s.VMSpec().Return(azure.VMSpec{

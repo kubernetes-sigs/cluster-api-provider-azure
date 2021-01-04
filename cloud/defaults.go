@@ -35,10 +35,17 @@ const (
 const (
 	// DefaultImageOfferID is the default Azure Marketplace offer ID
 	DefaultImageOfferID = "capi"
+	// DefaultWindowsImageOfferID is the default Azure Marketplace offer ID for Windows
+	DefaultWindowsImageOfferID = "capi-windows"
 	// DefaultImagePublisherID is the default Azure Marketplace publisher ID
 	DefaultImagePublisherID = "cncf-upstream"
 	// LatestVersion is the image version latest
 	LatestVersion = "latest"
+)
+
+const (
+	// WindowsOS is Windows OS value for OSDisk
+	WindowsOS = "Windows"
 )
 
 const (
@@ -177,17 +184,17 @@ func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName stri
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
-func getDefaultImageSKUID(k8sVersion string) (string, error) {
+func getDefaultImageSKUID(k8sVersion, os, osVersion string) (string, error) {
 	version, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to parse Kubernetes version \"%s\" in spec, expected valid SemVer string", k8sVersion)
 	}
-	return fmt.Sprintf("k8s-%ddot%ddot%d-ubuntu-1804", version.Major, version.Minor, version.Patch), nil
+	return fmt.Sprintf("k8s-%ddot%ddot%d-%s-%s", version.Major, version.Minor, version.Patch, os, osVersion), nil
 }
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
 func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
-	skuID, err := getDefaultImageSKUID(k8sVersion)
+	skuID, err := getDefaultImageSKUID(k8sVersion, "ubuntu", "1804")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get default image")
 	}
@@ -196,6 +203,25 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			Publisher: DefaultImagePublisherID,
 			Offer:     DefaultImageOfferID,
+			SKU:       skuID,
+			Version:   LatestVersion,
+		},
+	}
+
+	return defaultImage, nil
+}
+
+// GetDefaultWindowsImage returns the default image spec for Windows.
+func GetDefaultWindowsImage(k8sVersion string) (*infrav1.Image, error) {
+	skuID, err := getDefaultImageSKUID(k8sVersion, "windows", "2019")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get default image")
+	}
+
+	defaultImage := &infrav1.Image{
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			Publisher: DefaultImagePublisherID,
+			Offer:     DefaultWindowsImageOfferID,
 			SKU:       skuID,
 			Version:   LatestVersion,
 		},

@@ -1,0 +1,5 @@
+namespace: default
+resources:
+  - ../base-windows
+  - machine-pool-deployment.yaml
+  - machine-pool-deployment-windows.yaml

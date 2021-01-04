@@ -21,14 +21,15 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"net"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
 	k8snet "k8s.io/utils/net"
-	"net"
-	"regexp"
 	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	corev1 "k8s.io/api/core/v1"
@@ -44,6 +45,7 @@ type AzureLBSpecInput struct {
 	ClusterName           string
 	SkipCleanup           bool
 	IPv6                  bool
+	Windows               bool
 }
 
 // AzureLBSpec implements a test that verifies Azure internal and external load balancers can
@@ -65,9 +67,24 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	clientset = clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
 
-	By("creating an Apache HTTP deployment")
-	webDeployment := deploymentBuilder.CreateDeployment("httpd", "web", corev1.NamespaceDefault)
-	webDeployment.AddContainerPort("httpd", "http", 80, corev1.ProtocolTCP)
+	By("creating an HTTP deployment")
+	deploymentName := "web"
+	// if case of input.SkipCleanup we need a unique name for windows
+	if input.Windows {
+		deploymentName = "web-windows"
+	}
+
+	webDeployment := deploymentBuilder.CreateDeployment("httpd", deploymentName, corev1.NamespaceDefault)
+	webDeployment.AddContainerPort("http", "http", 80, corev1.ProtocolTCP)
+
+	if input.Windows {
+		windowsVersion, err := node.GetWindowsVersion(clientset)
+		Expect(err).NotTo(HaveOccurred())
+		iisImage := windows.GetWindowsImage(windows.Httpd, windowsVersion)
+		webDeployment.SetImage(deploymentName, iisImage)
+		webDeployment.AddWindowsSelectors()
+	}
+
 	deployment, err := webDeployment.Deploy(clientset)
 	Expect(err).NotTo(HaveOccurred())
 	deployInput := WaitForDeploymentsAvailableInput{
@@ -167,11 +184,8 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			defer resp.Body.Close()
 		}
 		Expect(err).NotTo(HaveOccurred())
-		body, err := ioutil.ReadAll(resp.Body)
+		Expect(resp.StatusCode).To(Equal(200))
 		Expect(err).NotTo(HaveOccurred())
-		matched, err := regexp.MatchString("It works!", string(body))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(matched).To(BeTrue())
 	}
 
 	if input.SkipCleanup {

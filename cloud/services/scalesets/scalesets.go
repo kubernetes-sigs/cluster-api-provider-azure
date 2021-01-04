@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
@@ -142,13 +143,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
-	sshKey, err := base64.StdEncoding.DecodeString(vmssSpec.SSHKeyData)
+	osProfile, err := s.generateOSProfile(ctx, vmssSpec)
 	if err != nil {
-		return errors.Wrapf(err, "failed to decode ssh public key")
-	}
-	bootstrapData, err := s.Scope.GetBootstrapData(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to retrieve bootstrap data")
+		return err
 	}
 
 	vmss := compute.VirtualMachineScaleSet{
@@ -170,22 +167,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Mode: compute.UpgradeModeManual,
 			},
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
-				OsProfile: &compute.VirtualMachineScaleSetOSProfile{
-					ComputerNamePrefix: to.StringPtr(vmssSpec.Name),
-					AdminUsername:      to.StringPtr(azure.DefaultUserName),
-					CustomData:         to.StringPtr(bootstrapData),
-					LinuxConfiguration: &compute.LinuxConfiguration{
-						SSH: &compute.SSHConfiguration{
-							PublicKeys: &[]compute.SSHPublicKey{
-								{
-									Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
-									KeyData: to.StringPtr(string(sshKey)),
-								},
-							},
-						},
-						DisablePasswordAuthentication: to.BoolPtr(true),
-					},
-				},
+				OsProfile:       osProfile,
 				StorageProfile:  storageProfile,
 				SecurityProfile: securityProfile,
 				DiagnosticsProfile: &compute.DiagnosticsProfile{
@@ -397,6 +379,52 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 	storageProfile.ImageReference = imageRef
 
 	return storageProfile, nil
+}
+
+func (s *Service) generateOSProfile(ctx context.Context, vmssSpec azure.ScaleSetSpec) (*compute.VirtualMachineScaleSetOSProfile, error) {
+	sshKey, err := base64.StdEncoding.DecodeString(vmssSpec.SSHKeyData)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to decode ssh public key")
+	}
+	bootstrapData, err := s.Scope.GetBootstrapData(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
+	}
+
+	osProfile := &compute.VirtualMachineScaleSetOSProfile{
+		ComputerNamePrefix: to.StringPtr(vmssSpec.Name),
+		AdminUsername:      to.StringPtr(azure.DefaultUserName),
+		CustomData:         to.StringPtr(bootstrapData),
+	}
+
+	switch vmssSpec.OSDisk.OSType {
+	case string(compute.Windows):
+		// Cloudbase-init is used to generate a password.
+		// https://cloudbase-init.readthedocs.io/en/latest/plugins.html#setting-password-main
+		//
+		// We generate a random password here in case of failure
+		// but the password on the VM will NOT be the same as created here.
+		// Access is provided via SSH public key that is set during deployment
+		// Azure also provides a way to reset user passwords in the case of need.
+		osProfile.AdminPassword = to.StringPtr(generators.SudoRandomPassword(123))
+		osProfile.WindowsConfiguration = &compute.WindowsConfiguration{
+			EnableAutomaticUpdates: to.BoolPtr(false),
+		}
+	default:
+		osProfile.LinuxConfiguration = &compute.LinuxConfiguration{
+			DisablePasswordAuthentication: to.BoolPtr(true),
+			SSH: &compute.SSHConfiguration{
+				PublicKeys: &[]compute.SSHPublicKey{
+					{
+						Path:    to.StringPtr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", azure.DefaultUserName)),
+						KeyData: to.StringPtr(string(sshKey)),
+					},
+				},
+			},
+		}
+	}
+
+	return osProfile, nil
 }
 
 func getVMSSUpdateFromVMSS(vmss compute.VirtualMachineScaleSet) (compute.VirtualMachineScaleSetUpdate, error) {

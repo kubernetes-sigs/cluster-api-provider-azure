@@ -17,3 +17,4 @@
     - [Managed Clusters (AKS)](./topics/managedcluster.md)
     - [Spot Virtual Machines](./topics/spot-vms.md)
     - [Virtual Networks](./topics/custom-vnet.md)
+    - [Windows](./topics/windows.md)
