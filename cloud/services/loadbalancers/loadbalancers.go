@@ -101,13 +101,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		if lbSpec.Role == infrav1.APIServerRole {
-			probeName := "HTTPSProbe"
+			probeName := "TCPProbe"
 			lb.LoadBalancerPropertiesFormat.Probes = &[]network.Probe{
 				{
 					Name: to.StringPtr(probeName),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolHTTPS,
-						RequestPath:       to.StringPtr("/healthz"),
+						Protocol:          network.ProbeProtocolTCP,
 						Port:              to.Int32Ptr(lbSpec.APIServerPort),
 						IntervalInSeconds: to.Int32Ptr(15),
 						NumberOfProbes:    to.Int32Ptr(4),
