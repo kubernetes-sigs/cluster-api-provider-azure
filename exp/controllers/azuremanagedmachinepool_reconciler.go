@@ -72,7 +72,8 @@ func (a *AgentPoolVMSSNotFoundError) Error() string {
 
 // Is returns true if the target error is an `AgentPoolVMSSNotFoundError`.
 func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
-	_, ok := target.(*AgentPoolVMSSNotFoundError)
+	var err *AgentPoolVMSSNotFoundError
+	ok := errors.As(target, &err)
 	return ok
 }
 
