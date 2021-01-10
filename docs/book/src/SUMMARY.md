@@ -15,6 +15,7 @@
     - [IPv6](./topics/ipv6.md)
     - [Machine Pools (VMSS)](./topics/machinepools.md)
     - [Managed Clusters (AKS)](./topics/managedcluster.md)
+    - [Multitenancy](./topics/multitenancy.md)
     - [Spot Virtual Machines](./topics/spot-vms.md)
     - [Virtual Networks](./topics/custom-vnet.md)
     - [Windows](./topics/windows.md)
