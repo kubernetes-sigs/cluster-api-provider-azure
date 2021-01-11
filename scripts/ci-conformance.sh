@@ -76,6 +76,7 @@ export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -
 export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
+export WINDOWS="${WINDOWS:-false}"
 
 # Generate SSH key.
 AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
@@ -93,4 +94,8 @@ cleanup() {
 
 trap cleanup EXIT
 
-make test-conformance
+if [[ "${WINDOWS}" == "true" ]]; then
+  make test-windows-upstream
+else
+  make test-conformance
+fi
