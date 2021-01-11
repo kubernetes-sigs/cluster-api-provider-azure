@@ -416,23 +416,31 @@ To run the Kubernetes Conformance test suite locally, you can run
 ./scripts/ci-conformance.sh
 ```
 
-With the following environment variables defined, you can build a CAPZ cluster from the HEAD of Kubernetes main branch or release branch, and run the Conformance test suite against it:
+Optional settings are:
 
-| Environment Variable | Value                                                                                                                                                                                                    |
-|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `E2E_ARGS`           | `-kubetest.use-ci-artifacts`                                                                                                                                                                             |
+| Environment Variable | Default Value   | Description |
+|----------------------|-----------------|-------------|
+| `WINDOWS`            | `false` | Run conformance against Windows nodes |
+| `CONFORMANCE_NODES`  | `1` |Number of parallel ginkgo nodes to run     |
+
+With the following environment variables defined, you can build a CAPZ cluster from the HEAD of Kubernetes main branch or release branch, and run the Conformance test suite against it.  This is not enabled for Windows currently.
+
+| Environment Variable | Value  |
+|----------------------|--------|
+| `E2E_ARGS`           | `-kubetest.use-ci-artifacts` |
 | `KUBERNETES_VERSION` | `latest` - extract Kubernetes version from https://dl.k8s.io/ci/latest.txt (main's HEAD)<br>`latest-1.21` - extract Kubernetes version from https://dl.k8s.io/ci/latest-1.21.txt (release branch's HEAD) |
+
 
 With the following environment variables defined, CAPZ runs `./scripts/ci-build-kubernetes.sh` as part of `./scripts/ci-conformance.sh`, which allows developers to build Kubernetes from source and run the Kubernetes Conformance test suite against a CAPZ cluster based on the custom build:
 
-| Environment Variable    | Value                                                                   |
-|-------------------------|-------------------------------------------------------------------------|
-| `AZURE_STORAGE_ACCOUNT` | Your Azure storage account name                                         |
-| `AZURE_STORAGE_KEY`     | Your Azure storage key                                                  |
+| Environment Variable    | Value      |
+|-------------------------|------------|
+| `AZURE_STORAGE_ACCOUNT` | Your Azure storage account name |
+| `AZURE_STORAGE_KEY`     | Your Azure storage key |
 | `JOB_NAME`              | `test` (an enviroment variable used by CI, can be any non-empty string) |
-| `LOCAL_ONLY`            | `false`                                                                 |
-| `REGISTRY`              | Your Registry                                                           |
-| `TEST_K8S`              | `true`                                                                  |
+| `LOCAL_ONLY`            | `false`    |
+| `REGISTRY`              | Your Registry |
+| `TEST_K8S`              | `true`     |
 
 #### Running custom test suites on CAPZ clusters
 
