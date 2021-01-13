@@ -19,10 +19,13 @@ limitations under the License.
 package e2e
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,14 +35,17 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
 // Test suite flags
@@ -79,6 +85,71 @@ var (
 	// useCIArtifacts specifies whether or not to use the latest build from the main branch of the Kubernetes repository
 	useCIArtifacts bool
 )
+
+type (
+	AzureClusterProxy struct {
+		framework.ClusterProxy
+	}
+)
+
+func NewAzureClusterProxy(name string, kubeconfigPath string, scheme *runtime.Scheme, options ...framework.Option) *AzureClusterProxy {
+	return &AzureClusterProxy{
+		ClusterProxy: framework.NewClusterProxy(name, kubeconfigPath, scheme, options...),
+	}
+}
+
+func (acp *AzureClusterProxy) CollectWorkloadClusterLogs(ctx context.Context, namespace, name, outputPath string) {
+	const (
+		kubesystem = "kube-system"
+	)
+
+	Byf("Dumping workload cluster %s/%s logs", namespace, name)
+	acp.ClusterProxy.CollectWorkloadClusterLogs(ctx, namespace, name, outputPath)
+
+	Byf("Dumping workload cluster %s/%s kube-system pod logs", namespace, name)
+	aboveMachinesPath := strings.Replace(outputPath, "/machines", "", 1)
+	workload := acp.GetWorkloadCluster(ctx, namespace, name)
+	pods := &corev1.PodList{}
+	Expect(workload.GetClient().List(ctx, pods, client.InNamespace(kubesystem))).To(Succeed())
+
+	for _, pod := range pods.Items {
+		for _, container := range pod.Spec.Containers {
+			// Watch each container's logs in a goroutine so we can stream them all concurrently.
+			go func(pod corev1.Pod, container corev1.Container) {
+				defer GinkgoRecover()
+
+				Byf("Creating log watcher for controller %s/%s, container %s", kubesystem, pod.Name, container.Name)
+				logFile := path.Join(aboveMachinesPath, kubesystem, pod.Name, container.Name+".log")
+				Expect(os.MkdirAll(filepath.Dir(logFile), 0755)).To(Succeed())
+
+				f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				Expect(err).NotTo(HaveOccurred())
+				defer f.Close()
+
+				opts := &corev1.PodLogOptions{
+					Container: container.Name,
+					Follow:    true,
+				}
+
+				podLogs, err := workload.GetClientSet().CoreV1().Pods(kubesystem).GetLogs(pod.Name, opts).Stream()
+				if err != nil {
+					// Failing to stream logs should not cause the test to fail
+					Byf("Error starting logs stream for pod %s/%s, container %s: %v", kubesystem, pod.Name, container.Name, err)
+					return
+				}
+				defer podLogs.Close()
+
+				out := bufio.NewWriter(f)
+				defer out.Flush()
+				_, err = out.ReadFrom(podLogs)
+				if err != nil && err != io.ErrUnexpectedEOF {
+					// Failing to stream logs should not cause the test to fail
+					Byf("Got error while streaming logs for pod %s/%s, container %s: %v", kubesystem, pod.Name, container.Name, err)
+				}
+			}(pod, container)
+		}
+	}
+}
 
 func init() {
 	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
@@ -140,7 +211,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	kubeconfigPath := parts[3]
 
 	e2eConfig = loadE2EConfig(configPath)
-	bootstrapClusterProxy = framework.NewClusterProxy("bootstrap", kubeconfigPath, initScheme(),
+	bootstrapClusterProxy = NewAzureClusterProxy("bootstrap", kubeconfigPath, initScheme(),
 		framework.WithMachineLogCollector(AzureLogCollector{}))
 })
 
@@ -231,7 +302,7 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, scheme *runtime.Scheme,
 		Expect(kubeconfigPath).To(BeAnExistingFile(), "Failed to get the kubeconfig file for the bootstrap cluster")
 	}
 
-	clusterProxy := framework.NewClusterProxy("bootstrap", kubeconfigPath, scheme)
+	clusterProxy := NewAzureClusterProxy("bootstrap", kubeconfigPath, scheme)
 	Expect(clusterProxy).ToNot(BeNil(), "Failed to get a bootstrap cluster proxy")
 
 	return clusterProvider, clusterProxy

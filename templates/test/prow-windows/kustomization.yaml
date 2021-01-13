@@ -7,3 +7,4 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cni-resource-set.yaml
+  - ../patches/controller-manager.yaml

@@ -27,15 +27,15 @@ import (
 	. "github.com/onsi/gomega"
 	k8snet "k8s.io/utils/net"
 
-	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
-	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/test/framework"
+
+	deploymentBuilder "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/job"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 )
 
 // AzureLBSpecInput is the input for AzureLBSpec.

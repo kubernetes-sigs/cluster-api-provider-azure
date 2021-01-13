@@ -84,6 +84,7 @@ spec:
           cluster-cidr: 2001:1234:5678:9a40::/58
           cluster-name: ${CLUSTER_NAME}
           configure-cloud-routes: "true"
+          v: "4"
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json

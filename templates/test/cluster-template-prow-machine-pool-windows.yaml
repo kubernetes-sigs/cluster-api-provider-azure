@@ -64,6 +64,7 @@ spec:
           cloud-provider: azure
           cluster-name: ${CLUSTER_NAME}
           configure-cloud-routes: "false"
+          v: "4"
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
