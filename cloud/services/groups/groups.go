@@ -86,6 +86,10 @@ func (s *Service) Delete(ctx context.Context) error {
 	defer span.End()
 
 	managed, err := s.IsGroupManaged(ctx)
+	if err != nil && azure.ResourceNotFound(err) {
+		// already deleted or doesn't exist
+		return nil
+	}
 	if err != nil {
 		return errors.Wrap(err, "could not get resource group management state")
 	}

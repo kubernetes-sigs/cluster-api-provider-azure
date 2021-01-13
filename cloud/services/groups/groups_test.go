@@ -151,6 +151,16 @@ func TestDeleteGroups(t *testing.T) {
 			},
 		},
 		{
+			name:          "resource group get returns error",
+			expectedError: "",
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not Found"))
+			},
+		},
+		{
 			name:          "resource group deletion fails",
 			expectedError: "failed to delete resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
