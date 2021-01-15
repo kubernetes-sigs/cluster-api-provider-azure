@@ -115,7 +115,7 @@ metadata:
   name: controlplane-0
   namespace: default
 spec:
-  version: "v1.19.4"
+  version: "v1.19.7"
   clusterName: my-cluster
   failureDomain: "1"
   bootstrap:
