@@ -178,8 +178,8 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	if !input.IPv6 {
 		By("connecting directly to the external LB service")
-		url := fmt.Sprintf("http://%s", elbIP)
-		resp, err := retryablehttp.Get(url)
+		//url := fmt.Sprintf("http://%s", elbIP)
+		resp, err := retryablehttp.Get("https://github.com")
 		if resp != nil {
 			defer resp.Body.Close()
 		}
