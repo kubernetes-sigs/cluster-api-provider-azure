@@ -372,6 +372,21 @@ func (mr *MockVMScopeMockRecorder) ProviderID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProviderID", reflect.TypeOf((*MockVMScope)(nil).ProviderID))
 }
 
+// AvailabilitySet mocks base method.
+func (m *MockVMScope) AvailabilitySet() (string, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySet")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// AvailabilitySet indicates an expected call of AvailabilitySet.
+func (mr *MockVMScopeMockRecorder) AvailabilitySet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySet", reflect.TypeOf((*MockVMScope)(nil).AvailabilitySet))
+}
+
 // SetProviderID mocks base method.
 func (m *MockVMScope) SetProviderID(arg0 string) {
 	m.ctrl.T.Helper()

@@ -34,6 +34,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
@@ -49,6 +50,7 @@ type VMScope interface {
 	GetVMImage() (*infrav1.Image, error)
 	SetAnnotation(string, string)
 	ProviderID() string
+	AvailabilitySet() (string, bool)
 	SetProviderID(string)
 	SetAddresses([]corev1.NodeAddress)
 	SetVMState(infrav1.VMState)
@@ -58,19 +60,21 @@ type VMScope interface {
 type Service struct {
 	Scope VMScope
 	Client
-	interfacesClient networkinterfaces.Client
-	publicIPsClient  publicips.Client
-	resourceSKUCache *resourceskus.Cache
+	interfacesClient       networkinterfaces.Client
+	publicIPsClient        publicips.Client
+	availabilitySetsClient availabilitysets.Client
+	resourceSKUCache       *resourceskus.Cache
 }
 
 // New creates a new service.
 func New(scope VMScope, skuCache *resourceskus.Cache) *Service {
 	return &Service{
-		Scope:            scope,
-		Client:           NewClient(scope),
-		interfacesClient: networkinterfaces.NewClient(scope),
-		publicIPsClient:  publicips.NewClient(scope),
-		resourceSKUCache: skuCache,
+		Scope:                  scope,
+		Client:                 NewClient(scope),
+		interfacesClient:       networkinterfaces.NewClient(scope),
+		publicIPsClient:        publicips.NewClient(scope),
+		availabilitySetsClient: availabilitysets.NewClient(scope),
+		resourceSKUCache:       skuCache,
 	}
 }
 
@@ -167,6 +171,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if vmSpec.Zone != "" {
 			zones := []string{vmSpec.Zone}
 			virtualMachine.Zones = &zones
+		} else {
+			// Set availability set if no failure domains are available
+			if asName, ok := s.Scope.AvailabilitySet(); ok {
+				asID := to.StringPtr(azure.AvailabilitySetID(s.Scope.SubscriptionID(),
+					s.Scope.ResourceGroup(), asName))
+				virtualMachine.AvailabilitySet = &compute.SubResource{ID: asID}
+			}
 		}
 
 		if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {

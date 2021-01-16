@@ -58,6 +58,11 @@ const (
 	PrivateAPIServerHostname = "apiserver"
 )
 
+const (
+	// ControlPlaneNodeGroup will be used to create availability set for control plane machines
+	ControlPlaneNodeGroup = "control-plane"
+)
+
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
@@ -128,6 +133,12 @@ func GenerateDataDiskName(machineName, nameSuffix string) string {
 	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
 }
 
+// GenerateAvailabilitySetName generates the name of a availability set based on the cluster name and the node group
+// node group identifies the set of nodes that belong to this availability sets. Eg. control-plane
+func GenerateAvailabilitySetName(clusterName, nodeGroup string) string {
+	return fmt.Sprintf("%s_%s-as", clusterName, nodeGroup)
+}
+
 // VMID returns the azure resource ID for a given VM.
 func VMID(subscriptionID, resourceGroup, vmName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", subscriptionID, resourceGroup, vmName)
@@ -181,6 +192,11 @@ func ProbeID(subscriptionID, resourceGroup, loadBalancerName, probeName string) 
 // NATRuleID returns the azure resource ID for a inbound NAT rule.
 func NATRuleID(subscriptionID, resourceGroup, loadBalancerName, natRuleName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/%s/inboundNatRules/%s", subscriptionID, resourceGroup, loadBalancerName, natRuleName)
+}
+
+// AvailabilitySetID returns the azure resource ID for a given availability set.
+func AvailabilitySetID(subscriptionID, resourceGroup, availabilitySetName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/availabilitySets/%s", subscriptionID, resourceGroup, availabilitySetName)
 }
 
 // GetDefaultImageSKUID gets the SKU ID of the image to use for the provided version of Kubernetes.
