@@ -50,13 +50,6 @@ func (i *WindowsImage) GetImage(version OSVersion) string {
 }
 
 func GetWindowsImage(testImage WindowsTestImages, version OSVersion) string {
-	iisImage := WindowsImage{
-		BaseImage: "mcr.microsoft.com/windows/servercore/iis",
-		Tags: map[OSVersion]string{
-			LTSC2019: "windowsservercore-ltsc2019",
-		},
-	}
-
 	httpd := WindowsImage{
 		BaseImage: "k8sprow.azurecr.io/kubernetes-e2e-test-images/httpd",
 		Tags: map[OSVersion]string{
@@ -64,12 +57,5 @@ func GetWindowsImage(testImage WindowsTestImages, version OSVersion) string {
 		},
 	}
 
-	switch testImage {
-	case IIS:
-		return iisImage.GetImage(version)
-	case Httpd:
-		return httpd.GetImage(version)
-	default:
-		return iisImage.GetImage(version)
-	}
+	return httpd.GetImage(version)
 }
