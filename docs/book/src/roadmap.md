@@ -2,22 +2,19 @@
 
 This roadmap is a constant work in progress, subject to frequent revision. Dates are approximations. Features are listed in no particular order.
 
-## v0.5 (v1alpha4) ~ Q4 2020
+## v0.5 (v1alpha4) ~ Q1 2021
 
 |Area|Description|Issue/Proposal|
 |--|--|--|
-|Network|IPV6 support|[#153](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/153)|
 |OS|Windows worker nodes|[#153](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/153)|
-|Compute|GPU Nodes|[#426](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/426)|
-|Network|Private Clusters|[#486](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/486)|
 |Identity|Multi-tenancy within one manager instance|[#586](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/586)|
 |UX|Bootstrap failure detection|[#603](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/603)|
+|UX|Add tracing and metrics|[#311](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/311)|
 
 ## v1beta1/v1 ~ TBD
 
 |Area|Description|Issue/Proposal|
 |--|--|--|
-|UX|Add tracing and metrics|[#311](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/311)|
 |Network|Allow multiple subnets of role "node"|[#664](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/664)|
 |Network|Azure Bastion hosts|[#165](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/165)|
 |Identity|AAD Support|[#481](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/481)|
