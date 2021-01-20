@@ -143,31 +143,22 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.NICSpec {
-	spec := azure.NICSpec{
-		Name:                  azure.GenerateNICName(m.Name()),
-		MachineName:           m.Name(),
-		VNetName:              m.Vnet().Name,
-		VNetResourceGroup:     m.Vnet().ResourceGroup,
-		SubnetName:            m.Subnet().Name,
-		VMSize:                m.AzureMachine.Spec.VMSize,
-		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+	log := klogr.New()
+	specs := []azure.NICSpec{}
+	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
+		log.Info("networkInterface name is","networkInterface name",networkInterface.Name)
+		spec := azure.NICSpec{
+			Name: 				   networkInterface.Name,
+			MachineName:		   m.Name(),
+			VNetName:              networkInterface.VnetName,	
+			VNetResourceGroup:     networkInterface.VnetResourceGroup,
+			SubnetName:            networkInterface.SubnetName,
+			VMSize:                m.AzureMachine.Spec.VMSize,
+			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+			StaticIPAddress: 	   networkInterface.StaticIPAddress,
+		}
+		specs = append(specs, spec)
 	}
-	if m.Role() == infrav1.ControlPlane {
-		publicLBName := azure.GeneratePublicLBName(m.ClusterName())
-		spec.PublicLBName = publicLBName
-		spec.PublicLBAddressPoolName = azure.GenerateBackendAddressPoolName(publicLBName)
-		spec.PublicLBNATRuleName = m.Name()
-		internalLBName := azure.GenerateInternalLBName(m.ClusterName())
-		spec.InternalLBName = internalLBName
-		spec.InternalLBAddressPoolName = azure.GenerateBackendAddressPoolName(internalLBName)
-		spec.StaticIPAddress = m.AzureMachine.Spec.PrivateIPAddress
-	} else if m.Role() == infrav1.Node {
-		publicLBName := m.ClusterName()
-		spec.PublicLBName = publicLBName
-		spec.PublicLBAddressPoolName = azure.GenerateOutboundBackendddressPoolName(publicLBName)
-		spec.StaticIPAddress = m.AzureMachine.Spec.PrivateIPAddress
-	}
-	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP == true {
 		specs = append(specs, azure.NICSpec{
 			Name:                  azure.GeneratePublicNICName(m.Name()),
@@ -180,7 +171,6 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		})
 	}
-
 	return specs
 }
 

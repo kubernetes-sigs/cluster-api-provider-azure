@@ -33,7 +33,7 @@ spec:
       resourceGroup: ${AZURE_VNET_RESOURCE_GROUP}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
-  controlPlaneEndpointIP: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
+  controlPlaneEndpointIP: ${AZURE_CONTROL_PLANE_STATIC_IP_ADDRESS}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -102,6 +102,13 @@ metadata:
 spec:
   template:
     spec:
+      networkInterfaces:
+      - name: ${AZURE_CONTROL_PLANE_NIC_NAME}
+        vnetName: ${AZURE_CONTROL_PLANE_VNET_NAME} 
+        subnetName: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
+        vnetResourceGroup: ${AZURE_CONTROL_PLANE_VNET_RESOURCE_GROUP}
+        isPrimary: true
+        staticIPAddress: ${AZURE_CONTROL_PLANE_STATIC_IP_ADDRESS:=""}
       dataDisks:
       - diskSizeGB: 256
         lun: 0
@@ -114,7 +121,6 @@ spec:
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
-      privateIPAddress: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
       imageID: ${AZURE_IMAGE_ID}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -124,7 +130,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
+  replicas: 1
   selector:
     matchLabels: null
   template:
@@ -150,6 +156,13 @@ spec:
   template:
     spec:
       location: ${AZURE_LOCATION}
+      networkInterfaces:
+      - name: ${AZURE_NODE_MACHINE_NIC_NAME}
+        vnetName:  ${AZURE_NODE_MACHINE_VNET_NAME}
+        subnetName: ${AZURE_NODE_MACHINE_SUBNET_NAME}
+        vnetResourceGroup: ${AZURE_NODE_MACHINE_VNET_RESOURCE_GROUP}
+        isPrimary: true
+        staticIPAddress: ${AZURE_NODE_MACHINE_PRIMARY_STATIC_IP_ADDRESS:=""}
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -157,7 +170,6 @@ spec:
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
-      privateIPAddress: ${AZURE_NODE_MACHINE_PRIVATE_IP_ADDRESS}
       imageID: ${AZURE_IMAGE_ID}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3

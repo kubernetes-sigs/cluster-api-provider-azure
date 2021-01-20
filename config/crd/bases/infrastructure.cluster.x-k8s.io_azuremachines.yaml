@@ -451,8 +451,30 @@ spec:
                 type: object
               sshPublicKey:
                 type: string
-              privateIPAddress:
-                type: string
+              networkInterfaces:
+                description: Network Interfaces for a VM
+                items:
+                  description: Specifies a network interface that you want to add to the VM
+                  properties:
+                    name:
+                      type: string
+                    vnetName:
+                      type: string
+                    subnetName:
+                      type: string
+                    vnetResourceGroup:
+                      type: string
+                    isPrimary:
+                      type: boolean
+                    staticIPAddress:
+                      type: string
+                  required:
+                  - name
+                  - vnetName
+                  - subnetName
+                  - vnetResourceGroup
+                  type: object
+                type: array  
               imageID:
                 type: string
               userAssignedIdentities:
@@ -478,6 +500,7 @@ spec:
             - osDisk
             - sshPublicKey
             - vmSize
+            - networkInterfaces
             type: object
           status:
             description: AzureMachineStatus defines the observed state of AzureMachine
