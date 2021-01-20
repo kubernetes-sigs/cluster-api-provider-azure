@@ -12,6 +12,7 @@
     - [Failure Domains](./topics/failure-domains.md)
     - [GPU-enabled Clusters](./topics/gpu.md)
     - [Identity](./topics/identity.md)
+    - [Identity use cases](./topics/identities-use-cases.md)
     - [IPv6](./topics/ipv6.md)
     - [Machine Pools (VMSS)](./topics/machinepools.md)
     - [Managed Clusters (AKS)](./topics/managedcluster.md)
