@@ -22,11 +22,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	k8snet "k8s.io/utils/net"
 
+	retriablehttp "github.com/hashicorp/go-retryablehttp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -148,6 +150,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 			err = jobsClient.Delete(ilbJob.Name, &metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
+		time.Sleep(10 * time.Minute) // sleep a bit to let infra catch up
 	}
 
 	By("creating an external Load Balancer service")
@@ -176,20 +179,17 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	}
 	WaitForJobComplete(context.TODO(), elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
-	// TODO: determine root issue of failures of addressing the ELB from prow and fix
-	// see https://kubernetes.slack.com/archives/CEX9HENG7/p1610547551019900
-
-	//if !input.IPv6 {
-	//	By("connecting directly to the external LB service")
-	//	url := fmt.Sprintf("http://%s", elbIP)
-	//	resp, err := retryablehttp.Get(url)
-	//	if resp != nil {
-	//		defer resp.Body.Close()
-	//	}
-	//	Expect(err).NotTo(HaveOccurred())
-	//	Expect(resp.StatusCode).To(Equal(200))
-	//	Expect(err).NotTo(HaveOccurred())
-	//}
+	if !input.IPv6 {
+		By("connecting directly to the external LB service")
+		url := fmt.Sprintf("http://%s", elbIP)
+		resp, err := retriablehttp.Get(url)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(200))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	if input.SkipCleanup {
 		return
