@@ -6,6 +6,7 @@ resources:
   - cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
+  - ../patches/controller-manager.yaml
   - patches/cluster-cni.yaml
   - patches/custom-vnet.yaml
 
