@@ -88,13 +88,15 @@ var (
 
 type (
 	AzureClusterProxy struct {
-		framework.ClusterProxy
+		capi_e2e.ClusterProxy
 	}
 )
 
 func NewAzureClusterProxy(name string, kubeconfigPath string, scheme *runtime.Scheme, options ...framework.Option) *AzureClusterProxy {
+	proxy, ok := framework.NewClusterProxy(name, kubeconfigPath, scheme, options...).(capi_e2e.ClusterProxy)
+	Expect(ok).To(BeTrue(), "framework.NewClusterProxy must implement capi_e2e.ClusterProxy")
 	return &AzureClusterProxy{
-		ClusterProxy: framework.NewClusterProxy(name, kubeconfigPath, scheme, options...),
+		ClusterProxy: proxy,
 	}
 }
 
