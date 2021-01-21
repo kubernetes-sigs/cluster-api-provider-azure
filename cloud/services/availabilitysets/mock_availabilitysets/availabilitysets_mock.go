@@ -26,7 +26,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // MockAvailabilitySetScope is a mock of AvailabilitySetScope interface.
@@ -328,16 +327,17 @@ func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetEnabled() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetEnabled))
 }
 
-// AvailabilitySetSpecs mocks base method.
-func (m *MockAvailabilitySetScope) AvailabilitySetSpecs() []azure.AvailabilitySetSpec {
+// AvailabilitySet mocks base method.
+func (m *MockAvailabilitySetScope) AvailabilitySet() (string, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetSpecs")
-	ret0, _ := ret[0].([]azure.AvailabilitySetSpec)
-	return ret0
+	ret := m.ctrl.Call(m, "AvailabilitySet")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
-// AvailabilitySetSpecs indicates an expected call of AvailabilitySetSpecs.
-func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetSpecs() *gomock.Call {
+// AvailabilitySet indicates an expected call of AvailabilitySet.
+func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetSpecs", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySet", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySet))
 }

@@ -328,8 +328,17 @@ func (m *MachineScope) ProviderID() string {
 
 // AvailabilitySet returns the availability set for this machine if available
 func (m *MachineScope) AvailabilitySet() (string, bool) {
-	if m.IsControlPlane() && m.AvailabilitySetEnabled() {
+	if !m.AvailabilitySetEnabled() {
+		return "", false
+	}
+
+	if m.IsControlPlane() {
 		return azure.GenerateAvailabilitySetName(m.ClusterName(), azure.ControlPlaneNodeGroup), true
+	}
+
+	// get machine deployment name from labels for machines that maybe part of a machine deployment.
+	if mdName, ok := m.Machine.Labels[clusterv1.MachineDeploymentLabelName]; ok {
+		return azure.GenerateAvailabilitySetName(m.ClusterName(), mdName), true
 	}
 
 	return "", false

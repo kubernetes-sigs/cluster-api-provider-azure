@@ -19,6 +19,7 @@ package availabilitysets
 import (
 	"context"
 	"errors"
+	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest"
@@ -26,11 +27,8 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-
-	"testing"
 
 	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilitysets/mock_availabilitysets"
@@ -48,8 +46,8 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).MinTimes(2).Return(klogr.New())
+				s.AvailabilitySet().Return("as-name", true)
 				s.ResourceGroup().Return("my-rg")
-				s.AvailabilitySetSpecs().Return([]azure.AvailabilitySetSpec{{Name: "as-name"}}).Times(2)
 				s.ClusterName().Return("cl-name")
 				s.AdditionalTags().Return(map[string]string{})
 				s.Location().Return("test-location")
@@ -83,10 +81,10 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			},
 		},
 		{
-			name:          "noop if there are no availability set specs",
+			name:          "noop if the machine does not need to be assigned an availability set (machines without a deployment)",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySetSpecs().Return(nil)
+				s.AvailabilitySet().Return("as-name", false)
 			},
 			setupSKUs: func(svc *Service) {
 			},
@@ -96,8 +94,8 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 			expectedError: "failed to create availability set as-name: something went wrong",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AvailabilitySet().Return("as-name", true)
 				s.ResourceGroup().Return("my-rg")
-				s.AvailabilitySetSpecs().Return([]azure.AvailabilitySetSpec{{Name: "as-name"}}).Times(2)
 				s.ClusterName().Return("cl-name")
 				s.AdditionalTags().Return(map[string]string{})
 				s.Location().Return("test-location")
@@ -164,47 +162,72 @@ func TestDeleteAvailabilitySets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.ResourceGroup().Return("my-rg")
-				s.AvailabilitySetSpecs().Return([]azure.AvailabilitySetSpec{{Name: "as-name"}})
+				s.AvailabilitySet().Return("as-name", true)
+				s.ResourceGroup().Return("my-rg").Times(2)
+				m.Get(gomockinternal.AContext(), "my-rg", "as-name").
+					Return(compute.AvailabilitySet{AvailabilitySetProperties: &compute.AvailabilitySetProperties{}}, nil)
 				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(nil)
 			},
 		},
 		{
-			name:          "noop if there are no availability sets",
+			name:          "noop if AvailabilitySet returns false",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.AvailabilitySetSpecs().Return(nil)
+				s.AvailabilitySet().Return("as-name", false)
 			},
 		},
 		{
-			name:          "returns error",
-			expectedError: "failed to delete availability set as-name in resource group my-rg: something went wrong",
-			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.ResourceGroup().Return("my-rg").MinTimes(2)
-				s.AvailabilitySetSpecs().Return([]azure.AvailabilitySetSpec{{Name: "as-name"}})
-				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(errors.New("something went wrong"))
-			},
-		},
-		{
-			name:          "noop if availability set is not found",
+			name:          "noop if availability set has vms",
 			expectedError: "",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
-				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AvailabilitySet().Return("as-name", true)
 				s.ResourceGroup().Return("my-rg")
-				s.AvailabilitySetSpecs().Return([]azure.AvailabilitySetSpec{{Name: "as-name"}})
+				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{
+					AvailabilitySetProperties: &compute.AvailabilitySetProperties{VirtualMachines: &[]compute.SubResource{
+						{ID: to.StringPtr("vm-id")}}}}, nil)
+			},
+		},
+		{
+			name:          "noop if availability set is already deleted - get returns 404",
+			expectedError: "",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AvailabilitySet().Return("as-name", true)
+				s.ResourceGroup().Return("my-rg")
+				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{},
+					autorest.DetailedError{StatusCode: 404})
+			},
+		},
+		{
+			name:          "noop if availability set is already deleted - delete returns 404",
+			expectedError: "",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AvailabilitySet().Return("as-name", true)
+				s.ResourceGroup().Return("my-rg").Times(2)
+				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{}, nil)
 				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(autorest.DetailedError{StatusCode: 404})
 			},
 		},
 		{
-			name:          "noop if availability set is not found, and continue to the next one",
-			expectedError: "",
+			name:          "returns error when availability set get fails",
+			expectedError: "failed to get availability set as-name in resource group my-rg: something went wrong",
+			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
+				s.AvailabilitySet().Return("as-name", true)
+				s.ResourceGroup().Return("my-rg").Times(2)
+				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{},
+					errors.New("something went wrong"))
+			},
+		},
+		{
+			name:          "returns error when delete fails",
+			expectedError: "failed to delete availability set as-name in resource group my-rg: something went wrong",
 			expect: func(s *mock_availabilitysets.MockAvailabilitySetScopeMockRecorder, m *mock_availabilitysets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.ResourceGroup().Return("my-rg").MinTimes(2)
-				s.AvailabilitySetSpecs().Return([]azure.AvailabilitySetSpec{{Name: "as-name-not-found"}, {Name: "as-name"}})
-				m.Delete(gomockinternal.AContext(), "my-rg", "as-name-not-found").Return(autorest.DetailedError{StatusCode: 404})
-				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(nil)
+				s.AvailabilitySet().Return("as-name", true)
+				s.ResourceGroup().Return("my-rg").Times(3)
+				m.Get(gomockinternal.AContext(), "my-rg", "as-name").Return(compute.AvailabilitySet{}, nil)
+				m.Delete(gomockinternal.AContext(), "my-rg", "as-name").Return(errors.New("something went wrong"))
 			},
 		},
 	}

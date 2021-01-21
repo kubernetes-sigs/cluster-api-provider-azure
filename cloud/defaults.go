@@ -135,8 +135,10 @@ func GenerateDataDiskName(machineName, nameSuffix string) string {
 	return fmt.Sprintf("%s_%s", machineName, nameSuffix)
 }
 
-// GenerateAvailabilitySetName generates the name of a availability set based on the cluster name and the node group
-// node group identifies the set of nodes that belong to this availability sets. Eg. control-plane
+// GenerateAvailabilitySetName generates the name of a availability set based on the cluster name and the node group.
+// node group identifies the set of nodes that belong to this availability set:
+// For control plane nodes, this will be `control-plane`.
+// For worker nodes, this will be the machine deployment name.
 func GenerateAvailabilitySetName(clusterName, nodeGroup string) string {
 	return fmt.Sprintf("%s_%s-as", clusterName, nodeGroup)
 }
