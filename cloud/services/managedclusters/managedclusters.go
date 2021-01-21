@@ -199,7 +199,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, properties)
 	if err != nil {
-		return fmt.Errorf("failed to create or update managed cluster, %#+v", err)
+		return fmt.Errorf("failed to create or update managed cluster, %w", err)
 	}
 
 	return nil
