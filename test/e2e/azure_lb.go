@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	k8snet "k8s.io/utils/net"
 
+	"github.com/hashicorp/go-retryablehttp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -182,17 +183,17 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	// TODO: determine root issue of failures of addressing the ELB from prow and fix
 	// see https://kubernetes.slack.com/archives/CEX9HENG7/p1610547551019900
 
-	//if !input.IPv6 {
-	//	By("connecting directly to the external LB service")
-	//	url := fmt.Sprintf("http://%s", elbIP)
-	//	resp, err := retryablehttp.Get(url)
-	//	if resp != nil {
-	//		defer resp.Body.Close()
-	//	}
-	//	Expect(err).NotTo(HaveOccurred())
-	//	Expect(resp.StatusCode).To(Equal(200))
-	//	Expect(err).NotTo(HaveOccurred())
-	//}
+	if !input.IPv6 {
+		By("connecting directly to the external LB service")
+		url := fmt.Sprintf("http://%s", elbIP)
+		resp, err := retryablehttp.Get(url)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(200))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	if input.SkipCleanup {
 		return
