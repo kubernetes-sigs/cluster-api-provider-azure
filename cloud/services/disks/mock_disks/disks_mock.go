@@ -300,6 +300,20 @@ func (mr *MockDiskScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockDiskScope)(nil).AdditionalTags))
 }
 
+// AvailabilitySetEnabled mocks base method.
+func (m *MockDiskScope) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockDiskScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockDiskScope)(nil).AvailabilitySetEnabled))
+}
+
 // DiskSpecs mocks base method.
 func (m *MockDiskScope) DiskSpecs() []azure.DiskSpec {
 	m.ctrl.T.Helper()

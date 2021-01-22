@@ -300,6 +300,20 @@ func (mr *MockAvailabilitySetScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AdditionalTags))
 }
 
+// AvailabilitySetEnabled mocks base method.
+func (m *MockAvailabilitySetScope) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockAvailabilitySetScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockAvailabilitySetScope)(nil).AvailabilitySetEnabled))
+}
+
 // AvailabilitySetSpecs mocks base method.
 func (m *MockAvailabilitySetScope) AvailabilitySetSpecs() []azure.AvailabilitySetSpec {
 	m.ctrl.T.Helper()

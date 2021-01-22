@@ -300,6 +300,20 @@ func (mr *MockNSGScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockNSGScope)(nil).AdditionalTags))
 }
 
+// AvailabilitySetEnabled mocks base method.
+func (m *MockNSGScope) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockNSGScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockNSGScope)(nil).AvailabilitySetEnabled))
+}
+
 // Vnet mocks base method.
 func (m *MockNSGScope) Vnet() *v1alpha3.VnetSpec {
 	m.ctrl.T.Helper()

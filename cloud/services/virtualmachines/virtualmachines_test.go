@@ -329,6 +329,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
 						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
@@ -471,6 +472,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Identity.Type).To(Equal(compute.ResourceIdentityTypeSystemAssigned))
 					g.Expect(vm.Identity.UserAssignedIdentities).To(HaveLen(0))
@@ -542,6 +544,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Identity.Type).To(Equal(compute.ResourceIdentityTypeUserAssigned))
 					g.Expect(vm.Identity.UserAssignedIdentities).To(Equal(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{"my-user-id": {}}))
@@ -613,6 +616,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.Priority).To(Equal(compute.Spot))
 					g.Expect(vm.EvictionPolicy).To(Equal(compute.Deallocate))
@@ -699,6 +703,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.OsType).To(Equal(compute.Windows))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminPassword).Should(HaveLen(123))
@@ -778,6 +783,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(to.StringPtr("my-diskencryptionset-id")))
 
@@ -846,6 +852,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(*vm.VirtualMachineProperties.SecurityProfile.EncryptionAtHost).To(Equal(true))
 
@@ -1135,6 +1142,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 			ExpectedError: "failed to create VM my-vm in resource group my-rg: #: Internal Server Error: StatusCode=500",
@@ -1426,6 +1434,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					VirtualMachineProperties: &compute.VirtualMachineProperties{
 						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
@@ -1588,6 +1597,7 @@ func TestReconcileVM(t *testing.T) {
 					},
 				}, nil)
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
 					Plan: &compute.Plan{
 						Name:      to.StringPtr("sku-id"),

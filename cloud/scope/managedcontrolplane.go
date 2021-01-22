@@ -26,13 +26,12 @@ import (
 	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new
@@ -117,6 +116,11 @@ func (s *ManagedControlPlaneScope) Location() string {
 		return ""
 	}
 	return s.ControlPlane.Spec.Location
+}
+
+// AvailabilitySetEnabled is always false for a managed control plane
+func (s *ManagedControlPlaneScope) AvailabilitySetEnabled() bool {
+	return false // not applicable for a managed control plane
 }
 
 // AdditionalTags returns AdditionalTags from the ControlPlane spec.

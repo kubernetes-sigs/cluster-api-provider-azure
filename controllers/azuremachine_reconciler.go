@@ -19,20 +19,19 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
-
 	"github.com/pkg/errors"
+
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureMachineService is the group of services called by the AzureMachine controller.

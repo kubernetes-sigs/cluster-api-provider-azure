@@ -300,6 +300,20 @@ func (mr *MockPublicIPScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockPublicIPScope)(nil).AdditionalTags))
 }
 
+// AvailabilitySetEnabled mocks base method.
+func (m *MockPublicIPScope) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockPublicIPScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockPublicIPScope)(nil).AvailabilitySetEnabled))
+}
+
 // PublicIPSpecs mocks base method.
 func (m *MockPublicIPScope) PublicIPSpecs() []azure.PublicIPSpec {
 	m.ctrl.T.Helper()

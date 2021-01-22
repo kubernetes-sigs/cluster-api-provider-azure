@@ -22,13 +22,10 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	corev1 "k8s.io/api/core/v1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -38,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -168,16 +166,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			},
 		}
 
-		if vmSpec.Zone != "" {
+		// Set availability set if no failure domains are available
+		if asName, ok := s.Scope.AvailabilitySet(); ok {
+			asID := to.StringPtr(azure.AvailabilitySetID(s.Scope.SubscriptionID(),
+				s.Scope.ResourceGroup(), asName))
+			virtualMachine.AvailabilitySet = &compute.SubResource{ID: asID}
+		} else if vmSpec.Zone != "" {
 			zones := []string{vmSpec.Zone}
 			virtualMachine.Zones = &zones
-		} else {
-			// Set availability set if no failure domains are available
-			if asName, ok := s.Scope.AvailabilitySet(); ok {
-				asID := to.StringPtr(azure.AvailabilitySetID(s.Scope.SubscriptionID(),
-					s.Scope.ResourceGroup(), asName))
-				virtualMachine.AvailabilitySet = &compute.SubResource{ID: asID}
-			}
 		}
 
 		if vmSpec.Identity == infrav1.VMIdentitySystemAssigned {
