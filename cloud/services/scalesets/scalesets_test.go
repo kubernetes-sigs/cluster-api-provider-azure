@@ -543,8 +543,8 @@ func TestDeleteVMSS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss").
-					Return(nil)
+				m.DeleteAsync(gomockinternal.AContext(), "my-existing-rg", "my-existing-vmss").
+					Return(nil, nil)
 			},
 		},
 		{
@@ -558,8 +558,8 @@ func TestDeleteVMSS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(gomockinternal.AContext(), resourceGroup, name).
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
+					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
@@ -573,8 +573,8 @@ func TestDeleteVMSS(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				m.Delete(gomockinternal.AContext(), resourceGroup, name).
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
+					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
 	}

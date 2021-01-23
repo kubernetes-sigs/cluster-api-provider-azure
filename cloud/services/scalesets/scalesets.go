@@ -151,7 +151,7 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	vmssSpec := s.Scope.ScaleSetSpec()
 	s.Scope.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
+	_, err := s.Client.DeleteAsync(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
