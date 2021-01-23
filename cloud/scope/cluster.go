@@ -269,6 +269,11 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 	return spec
 }
 
+// AvailabilitySetEnabled informs control plane machines they should be part of an Availability Set
+func (s *ClusterScope) AvailabilitySetEnabled() bool {
+	return len(s.AvailabilitySetSpecs()) > 0
+}
+
 // AvailabilitySetSpecs returns the availability set specs.
 func (s *ClusterScope) AvailabilitySetSpecs() []azure.AvailabilitySetSpec {
 	if len(s.AzureCluster.Status.FailureDomains) == 0 {

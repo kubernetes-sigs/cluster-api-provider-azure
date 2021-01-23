@@ -81,6 +81,7 @@ type ClusterDescriber interface {
 	ClusterName() string
 	Location() string
 	AdditionalTags() infrav1.Tags
+	AvailabilitySetEnabled() bool
 }
 
 // ClusterScoper combines the ClusterDescriber and NetworkDescriber interfaces.
