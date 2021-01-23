@@ -98,7 +98,7 @@ type AzureMachineSpec struct {
 	// +optional
 	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`
 
-	PrivateIPAddress string `json:"privateIPAddress"`
+	PrivateIPAddress string `json:"privateIPAddress,omitempty"`
 	ImageID          string `json:"imageID"`
 
 	NetworkInterfaces []NetworkInterface `json:"networkInterfaces"`

@@ -130,7 +130,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: 1
+  replicas: ${WORKER_MACHINE_COUNT}
   selector:
     matchLabels: null
   template:
