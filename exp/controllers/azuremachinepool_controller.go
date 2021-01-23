@@ -255,11 +255,12 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		return reconcile.Result{}, nil
 	}
 
-	ams := newAzureMachinePoolService(machinePoolScope, clusterScope)
-
-	err := ams.Reconcile(ctx)
+	ams, err := newAzureMachinePoolService(machinePoolScope)
 	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed creating a newAzureMachinePoolService")
+	}
 
+	if err := ams.Reconcile(ctx); err != nil {
 		// Handle transient and terminal errors
 		var reconcileError azure.ReconcileError
 		if errors.As(err, &reconcileError) {
@@ -324,7 +325,12 @@ func (r *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, machin
 	machinePoolScope.Info("Handling deleted AzureMachinePool")
 
 	if infracontroller.ShouldDeleteIndividualResources(ctx, clusterScope) {
-		if err := newAzureMachinePoolService(machinePoolScope, clusterScope).Delete(ctx); err != nil {
+		amps, err := newAzureMachinePoolService(machinePoolScope)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed creating a new AzureMachinePoolService")
+		}
+
+		if err := amps.Delete(ctx); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 		}
 	}

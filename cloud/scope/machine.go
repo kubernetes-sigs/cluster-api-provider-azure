@@ -28,8 +28,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -37,6 +35,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -194,13 +195,13 @@ func (m *MachineScope) NICNames() []string {
 
 // DiskSpecs returns the disk specs.
 func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
-	spec := azure.DiskSpec{
+	disks := make([]azure.DiskSpec, 1+len(m.AzureMachine.Spec.DataDisks))
+	disks[0] = azure.DiskSpec{
 		Name: azure.GenerateOSDiskName(m.Name()),
 	}
-	disks := []azure.DiskSpec{spec}
 
-	for _, dd := range m.AzureMachine.Spec.DataDisks {
-		disks = append(disks, azure.DiskSpec{Name: azure.GenerateDataDiskName(m.Name(), dd.NameSuffix)})
+	for i, dd := range m.AzureMachine.Spec.DataDisks {
+		disks[i+1] = azure.DiskSpec{Name: azure.GenerateDataDiskName(m.Name(), dd.NameSuffix)}
 	}
 	return disks
 }

@@ -473,6 +473,29 @@ spec:
                   - latestModelApplied
                   type: object
                 type: array
+              longRunningOperationState:
+                description: LongRunningOperationState saves the state for an Azure
+                  long running operations so it can be continued on the next reconciliation
+                  loop.
+                properties:
+                  futureData:
+                    description: FutureData is the base64 url encoded json Azure AutoRest
+                      Future
+                    type: string
+                  name:
+                    description: Name is the name of the Azure resource
+                    type: string
+                  resourceGroup:
+                    description: ResourceGroup is the Azure resource group for the
+                      resource
+                    type: string
+                  type:
+                    description: Type describes the type of future, update, create,
+                      delete, etc
+                    type: string
+                required:
+                - type
+                type: object
               provisioningState:
                 description: ProvisioningState is the provisioning state of the Azure
                   virtual machine.

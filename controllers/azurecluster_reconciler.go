@@ -53,8 +53,12 @@ type azureClusterReconciler struct {
 }
 
 // newAzureClusterReconciler populates all the services based on input scope
-func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconciler {
-	cache := resourceskus.NewCache(scope, scope.Location())
+func newAzureClusterReconciler(scope *scope.ClusterScope) (*azureClusterReconciler, error) {
+	skuCache, err := resourceskus.GetCache(scope, scope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating a NewCache")
+	}
+
 	return &azureClusterReconciler{
 		scope:               scope,
 		groupsSvc:           groups.New(scope),
@@ -65,9 +69,9 @@ func newAzureClusterReconciler(scope *scope.ClusterScope) *azureClusterReconcile
 		publicIPSvc:         publicips.New(scope),
 		loadBalancerSvc:     loadbalancers.New(scope),
 		privateDNSSvc:       privatedns.New(scope),
-		availabilitySetsSvc: availabilitysets.New(scope, cache),
-		skuCache:            resourceskus.NewCache(scope, scope.Location()),
-	}
+		availabilitySetsSvc: availabilitysets.New(scope, skuCache),
+		skuCache:            skuCache,
+	}, nil
 }
 
 // Reconcile reconciles all the services in pre determined order

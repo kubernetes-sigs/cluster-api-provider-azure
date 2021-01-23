@@ -57,7 +57,7 @@ type AzureMachineReconciler struct {
 	createAzureMachineService azureMachineServiceCreator
 }
 
-type azureMachineServiceCreator func(machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) *azureMachineService
+type azureMachineServiceCreator func(machineScope *scope.MachineScope) (*azureMachineService, error)
 
 // NewAzureMachineReconciler returns a new AzureMachineReconciler instance
 func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureMachineReconciler {
@@ -280,10 +280,17 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
-	ams := r.createAzureMachineService(machineScope, clusterScope)
-
-	err := ams.Reconcile(ctx)
+	ams, err := r.createAzureMachineService(machineScope)
 	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
+	}
+
+	err = ams.Reconcile(ctx)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to create AzureMachineService")
+	}
+
+	if err := ams.Reconcile(ctx); err != nil {
 
 		// This means that a VM was created and managed by this controller, but is not present anymore.
 		// In this case, we mark it as failed and leave it to MHC for remediation
@@ -367,7 +374,12 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 
 	if ShouldDeleteIndividualResources(ctx, clusterScope) {
 		machineScope.Info("Deleting AzureMachine")
-		if err := r.createAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
+		ams, err := r.createAzureMachineService(machineScope)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
+		}
+
+		if err := ams.Delete(ctx); err != nil {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())

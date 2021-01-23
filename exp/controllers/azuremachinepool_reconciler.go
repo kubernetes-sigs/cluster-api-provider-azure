@@ -37,13 +37,17 @@ type azureMachinePoolService struct {
 }
 
 // newAzureMachinePoolService populates all the services based on input scope.
-func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) *azureMachinePoolService {
-	cache := resourceskus.NewCache(clusterScope, clusterScope.Location())
+func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error) {
+	cache, err := resourceskus.GetCache(machinePoolScope, machinePoolScope.Location())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create a NewCache")
+	}
+
 	return &azureMachinePoolService{
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
 		roleAssignmentsSvc:         roleassignments.New(machinePoolScope),
-	}
+	}, nil
 }
 
 // Reconcile reconciles all the services in pre determined order.

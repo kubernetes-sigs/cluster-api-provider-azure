@@ -21,11 +21,14 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/pkg/errors"
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	"sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -45,15 +48,49 @@ type Cache struct {
 	data []compute.ResourceSku
 }
 
+// Cacher describes the ability to get and to add items to cache
+type Cacher interface {
+	Get(key interface{}) (value interface{}, ok bool)
+	Add(key interface{}, value interface{})
+}
+
 // NewCacheFunc allows for mocking out the underlying client
 type NewCacheFunc func(azure.Authorizer, string) *Cache
 
-// NewCache instantiates a cache and initializes its contents.
-func NewCache(auth azure.Authorizer, location string) *Cache {
+var (
+	_           Client = &AzureClient{}
+	doOnce      sync.Once
+	clientCache Cacher
+)
+
+// newCache instantiates a cache and initializes its contents.
+func newCache(auth azure.Authorizer, location string) *Cache {
 	return &Cache{
 		client:   NewClient(auth),
 		location: location,
 	}
+}
+
+// GetCache either creates a new SKUs cache or returns an existing one based on the location + Authorizer HashKey()
+func GetCache(auth azure.Authorizer, location string) (*Cache, error) {
+	var err error
+	doOnce.Do(func() {
+		clientCache, err = ttllru.New(128, 24*time.Hour)
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating LRU cache for resourceSKUs cache")
+	}
+
+	key := location + "_" + auth.HashKey()
+	c, ok := clientCache.Get(key)
+	if ok {
+		return c.(*Cache), nil
+	}
+
+	c = newCache(auth, location)
+	clientCache.Add(key, c)
+	return c.(*Cache), nil
 }
 
 // NewStaticCacheFn returns a function that initializes a cache with data and no ability to refresh. Used for testing.

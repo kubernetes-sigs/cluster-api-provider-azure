@@ -18,6 +18,8 @@ package scope
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -60,6 +62,14 @@ func (c *AzureClients) SubscriptionID() string {
 	return c.Values[auth.SubscriptionID]
 }
 
+// HashKey returns a base64 url encoded sha256 hash for the Auth scope (Azure TenantID + CloudEnv + SubscriptionID +
+// ClientID).
+func (c *AzureClients) HashKey() string {
+	hasher := sha256.New()
+	_, _ = hasher.Write([]byte(c.TenantID() + c.CloudEnvironment() + c.SubscriptionID() + c.ClientID()))
+	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+}
+
 func (c *AzureClients) setCredentials(subscriptionID string) error {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
@@ -87,7 +97,7 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 
 func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID string, credentialsProvider *AzureCredentialsProvider) error {
 	if credentialsProvider == nil {
-		return fmt.Errorf("Credentials provider cannot have an empty value")
+		return fmt.Errorf("credentials provider cannot have an empty value")
 	}
 
 	settings, err := auth.GetSettingsFromEnvironment()

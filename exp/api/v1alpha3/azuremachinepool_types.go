@@ -176,6 +176,11 @@ type (
 		// Conditions defines current service state of the AzureMachinePool.
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+		// LongRunningOperationState saves the state for an Azure long running operations so it can be continued on the
+		// next reconciliation loop.
+		// +optional
+		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
 	}
 
 	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS

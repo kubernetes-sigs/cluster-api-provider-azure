@@ -244,6 +244,20 @@ func (mr *MockRoleAssignmentScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockRoleAssignmentScope)(nil).Authorizer))
 }
 
+// HashKey mocks base method.
+func (m *MockRoleAssignmentScope) HashKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HashKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// HashKey indicates an expected call of HashKey.
+func (mr *MockRoleAssignmentScopeMockRecorder) HashKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockRoleAssignmentScope)(nil).HashKey))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockRoleAssignmentScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

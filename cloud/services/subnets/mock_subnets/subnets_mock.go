@@ -244,6 +244,20 @@ func (mr *MockSubnetScopeMockRecorder) Authorizer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockSubnetScope)(nil).Authorizer))
 }
 
+// HashKey mocks base method.
+func (m *MockSubnetScope) HashKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HashKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// HashKey indicates an expected call of HashKey.
+func (mr *MockSubnetScopeMockRecorder) HashKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockSubnetScope)(nil).HashKey))
+}
+
 // ResourceGroup mocks base method.
 func (m *MockSubnetScope) ResourceGroup() string {
 	m.ctrl.T.Helper()

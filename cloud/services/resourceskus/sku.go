@@ -94,22 +94,25 @@ func (s SKU) HasCapability(name string) bool {
 // "CombinedTempDiskAndCachedWriteBytesPerSecond", "UncachedDiskIOPS",
 // and "UncachedDiskBytesPerSecond"
 func (s SKU) HasCapabilityWithCapacity(name string, value int64) (bool, error) {
-	if s.Capabilities != nil {
-		for _, capability := range *s.Capabilities {
-			if capability.Name != nil && *capability.Name == name {
-				if capability.Value != nil {
-					intVal, err := strconv.ParseInt(*capability.Value, 10, 64)
-					if err != nil {
-						return false, errors.Wrapf(err, "failed to parse string '%s' as int64", *capability.Value)
-					}
-					if intVal >= value {
-						return true, nil
-					}
-				}
-				return false, nil
-			}
+	if s.Capabilities == nil {
+		return false, nil
+	}
+
+	for _, capability := range *s.Capabilities {
+		if capability.Name == nil || *capability.Name != name || capability.Value == nil {
+			continue
+		}
+
+		intVal, err := strconv.ParseInt(*capability.Value, 10, 64)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to parse string '%s' as int64", *capability.Value)
+		}
+
+		if intVal >= value {
+			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
