@@ -37,7 +37,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets/mock_scalesets"
@@ -68,7 +67,7 @@ func TestNewService(t *testing.T) {
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
-				Location: "test-location",
+				Location:       "test-location",
 				ResourceGroup:  "my-rg",
 				SubscriptionID: "123",
 				NetworkSpec: infrav1.NetworkSpec{
@@ -260,10 +259,7 @@ func TestReconcileVMSS(t *testing.T) {
 				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, createdVMSS, instances)
 				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
 				s.SetLongRunningOperationState(nil)
-				s.SetProvisioningState(infrav1.VMStateSucceeded)
 				s.NeedsK8sVersionUpdate().Return(false)
-				infraVMSS := converters.SDKToVMSS(createdVMSS, instances)
-				s.UpdateInstanceStatuses(gomockinternal.AContext(), infraVMSS.Instances).Return(nil)
 			},
 		},
 		{
@@ -280,7 +276,6 @@ func TestReconcileVMSS(t *testing.T) {
 				instances := newDefaultInstances()
 				vmss = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, vmss, instances)
 				s.SetProviderID(fmt.Sprintf("azure://%s", *vmss.ID))
-				s.SetProvisioningState(infrav1.VMStateUpdating)
 
 				// create a VMSS patch with an updated hash to match the spec
 				updatedVMSS := newDefaultVMSS()
@@ -959,7 +954,6 @@ func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetSco
 	s.GetLongRunningOperationState().Return(nil)
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
 		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-	s.SetProvisioningState(infrav1.VMStateCreating)
 }
 
 func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, future *infrav1.Future) {
@@ -989,6 +983,5 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupDefaultVMSSExpectations(s)
 	s.SetProviderID("azure://vmss-id")
-	s.SetProvisioningState(infrav1.VMStateUpdating)
 	s.GetLongRunningOperationState().Return(nil)
 }

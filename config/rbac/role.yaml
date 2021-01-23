@@ -86,6 +86,26 @@ rules:
 - apiGroups:
   - exp.infrastructure.cluster.x-k8s.io
   resources:
+  - azuremachinepoolmachines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - exp.infrastructure.cluster.x-k8s.io
+  resources:
+  - azuremachinepoolmachines/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - exp.infrastructure.cluster.x-k8s.io
+  resources:
   - azuremachinepools
   verbs:
   - create

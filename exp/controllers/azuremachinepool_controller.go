@@ -111,6 +111,11 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 			&handler.EnqueueRequestsFromMapFunc{
 				ToRequests: azureClusterMapper,
 			}).
+		Watches(
+			&source.Kind{Type: &infrav1exp.AzureMachinePoolMachine{}},
+			&handler.EnqueueRequestsFromMapFunc{
+				ToRequests: AzureMachinePoolMachineMapper(mgr.GetScheme(), log),
+			}).
 		Build(r)
 	if err != nil {
 		return errors.Wrapf(err, "error creating controller")
@@ -137,6 +142,8 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(mgr ctrl.Manager, options 
 
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepools,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepools/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=exp.infrastructure.cluster.x-k8s.io,resources=azuremachinepoolmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch

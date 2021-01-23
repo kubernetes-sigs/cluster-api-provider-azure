@@ -94,6 +94,49 @@ func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Sche
 	}), nil
 }
 
+// AzureMachinePoolMachineMapper creates a mapping handler to transform AzureMachinePoolMachine to AzureMachinePools
+func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) handler.ToRequestsFunc {
+	return func(o handler.MapObject) []ctrl.Request {
+		gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
+		if err != nil {
+			log.Error(errors.WithStack(err), "failed to find GVK for AzureMachinePool")
+			return nil
+		}
+
+		azureMachinePoolMachine, ok := o.Object.(*infrav1exp.AzureMachinePoolMachine)
+		if !ok {
+			log.Error(errors.Errorf("expected an AzureCluster, got %T instead", o.Object), "failed to map AzureMachinePoolMachine")
+			return nil
+		}
+
+		log = log.WithValues("AzureMachinePoolMachine", azureMachinePoolMachine.Name, "Namespace", azureMachinePoolMachine.Namespace)
+		for _, ref := range azureMachinePoolMachine.OwnerReferences {
+			if ref.Kind != gvk.Kind {
+				continue
+			}
+
+			gv, err := schema.ParseGroupVersion(ref.APIVersion)
+			if err != nil {
+				log.Error(errors.WithStack(err), "unable to parse group version", "APIVersion", ref.APIVersion)
+				return nil
+			}
+
+			if gv.Group == gvk.Group {
+				return []ctrl.Request{
+					{
+						NamespacedName: types.NamespacedName{
+							Name:      ref.Name,
+							Namespace: azureMachinePoolMachine.Namespace,
+						},
+					},
+				}
+			}
+		}
+
+		return nil
+	}
+}
+
 // AzureManagedClusterToAzureManagedMachinePoolsMapper creates a mapping handler to transform AzureManagedClusters into
 // AzureManagedMachinePools. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the MachinePools belonging to the cluster, then finally projecting the infrastructure reference
@@ -195,6 +238,55 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 			},
 		}
 	}), nil
+}
+
+func MachinePoolToAzureMachinePoolMachine(kClient client.Client, log logr.Logger) handler.ToRequestsFunc{
+	return func(o handler.MapObject) []ctrl.Request {
+		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		defer cancel()
+
+		m, ok := o.Object.(*clusterv1exp.MachinePool)
+		if !ok {
+			log.Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
+			return nil
+		}
+
+		cluster, err := util.GetOwnerCluster(ctx, kClient, m.ObjectMeta)
+		switch {
+		case apierrors.IsNotFound(err) || cluster == nil:
+			log.Info("owning cluster not found")
+			return nil
+		case err != nil:
+			log.Error(err, "failed to get owning cluster")
+			return nil
+		}
+
+		mpToAmp := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)
+
+		var azureMachinePoolMachineRequests []ctrl.Request
+		for _, req := range mpToAmp(o) {
+			labels := map[string]string{
+				clusterv1.ClusterLabelName:      cluster.Name,
+				infrav1exp.MachinePoolNameLabel: req.Name,
+			}
+
+			ampml := &infrav1exp.AzureMachinePoolMachineList{}
+			if err := kClient.List(ctx, ampml, client.InNamespace(cluster.Namespace), client.MatchingLabels(labels)); err != nil {
+				log.Error(err, "failed to fetch AzureMachinePoolMachines")
+			}
+
+			for _, machine := range ampml.Items {
+				azureMachinePoolMachineRequests = append(azureMachinePoolMachineRequests, ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      machine.Name,
+						Namespace: machine.Namespace,
+					},
+				})
+			}
+		}
+
+		return azureMachinePoolMachineRequests
+	}
 }
 
 // MachinePoolToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for

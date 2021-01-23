@@ -21,22 +21,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,7 +40,11 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // AzureClusterToAzureMachinesMapper creates a mapping handler to transform AzureClusters into AzureMachines. The transform
@@ -116,22 +115,6 @@ func GetOwnerClusterName(obj metav1.ObjectMeta) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-// GetObjectsToRequestsByNamespaceAndClusterName returns the slice of ctrl.Requests consisting the list items contained in the unstructured list.
-func GetObjectsToRequestsByNamespaceAndClusterName(ctx context.Context, c client.Client, clusterKey client.ObjectKey, list *unstructured.UnstructuredList) []ctrl.Request {
-	// list all of the requested objects within the cluster namespace with the cluster name label
-	if err := c.List(ctx, list, client.InNamespace(clusterKey.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterKey.Name}); err != nil {
-		return nil
-	}
-
-	results := make([]ctrl.Request, len(list.Items))
-	for i, obj := range list.Items {
-		results[i] = ctrl.Request{
-			NamespacedName: client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()},
-		}
-	}
-	return results
 }
 
 // Returns true if a and b point to the same object
@@ -339,7 +322,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 }
 
 // GetOwnerMachinePool returns the MachinePool object owning the current resource.
-func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*capiv1exp.MachinePool, error) {
+func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*clusterv1exp.MachinePool, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.GetOwnerMachinePool")
 	defer span.End()
 
@@ -352,19 +335,54 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 			return nil, errors.WithStack(err)
 		}
 
-		if gv.Group == capiv1exp.GroupVersion.Group {
+		if gv.Group == clusterv1exp.GroupVersion.Group {
 			return GetMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
 		}
 	}
 	return nil, nil
 }
 
-// GetMachinePoolByName finds and return a Machine object using the specified params.
-func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
+// GetOwnerAzureMachinePool returns the AzureMachinePool object owning the current resource.
+func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*infrav1exp.AzureMachinePool, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.GetOwnerAzureMachinePool")
+	defer span.End()
+
+	for _, ref := range obj.OwnerReferences {
+		if ref.Kind != "AzureMachinePool" {
+			continue
+		}
+
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		if gv.Group == infrav1exp.GroupVersion.Group {
+			return GetAzureMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
+		}
+	}
+	return nil, nil
+}
+
+// GetMachinePoolByName finds and return a MachinePool object using the specified params.
+func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*clusterv1exp.MachinePool, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.GetMachinePoolByName")
 	defer span.End()
 
-	m := &capiv1exp.MachinePool{}
+	m := &clusterv1exp.MachinePool{}
+	key := client.ObjectKey{Name: name, Namespace: namespace}
+	if err := c.Get(ctx, key, m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// GetAzureMachinePoolByName finds and return an AzureMachinePool object using the specified params.
+func GetAzureMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*infrav1exp.AzureMachinePool, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.GetAzureMachinePoolByName")
+	defer span.End()
+
+	m := &infrav1exp.AzureMachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {
 		return nil, err

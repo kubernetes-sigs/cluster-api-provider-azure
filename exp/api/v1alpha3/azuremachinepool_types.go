@@ -24,6 +24,11 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
+const (
+	// MachinePoolNameLabel indicates the AzureMachinePool name the AzureMachinePoolMachine belongs
+	MachinePoolNameLabel = "azuremachinepool.infrastructure.cluster.x-k8s.io/machine-pool"
+)
+
 type (
 	// AzureMachineTemplate defines the template for an AzureMachine.
 	AzureMachineTemplate struct {
@@ -111,6 +116,26 @@ type (
 		// If not specified, a random GUID will be generated.
 		// +optional
 		RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
+
+		// MaxUnavailable is the max number of replicas which can be unavailable at any time. For example, if the
+		// machine pool has a replica count of 5 and a MaxUnavailable value of 2, a rolling upgrade will never exceed
+		// more than 2 machines unavailable at a time.
+		//
+		// Note: If the MaxUnavailable value is equal to the machine pool replica value, there is
+		// the possibility of application down time.
+		// +kubebuilder:default=1
+		MaxUnavailable int32 `json:"maxUnavailable,omitempty"`
+
+		// MaxSurge is the number of replicas to surge during an upgrade. For example, if the machine pool has a replica
+		// count of 5 and a MaxSurge value of 4, during an upgrade, the number of Virtual Machine Scale Set instances
+		// will increase to 9 consisting of the 5 existing replicas and 4 new replicas running the updated model. The
+		// surge will temporaly increase the number of machines in the VMSS to expedite upgrades.
+		//
+		// Note: Azure Subscriptions have a limited quota of CPUs. This quota can be expanded upon request. Due to the
+		// nature of this feature, spikes due to surge may cause you to exceed quota.
+		//
+		// See Also: https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits
+		MaxSurge *int32 `json:"maxSurge,omitempty"`
 	}
 
 	// AzureMachinePoolStatus defines the observed state of AzureMachinePool
@@ -122,10 +147,6 @@ type (
 		// Replicas is the most recently observed number of replicas.
 		// +optional
 		Replicas int32 `json:"replicas"`
-
-		// Instances is the VM instance status for each VM in the VMSS
-		// +optional
-		Instances []*AzureMachinePoolInstanceStatus `json:"instances,omitempty"`
 
 		// Version is the Kubernetes version for the current VMSS model
 		// +optional
@@ -181,34 +202,6 @@ type (
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
-	}
-
-	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
-	AzureMachinePoolInstanceStatus struct {
-		// Version defines the Kubernetes version for the VM Instance
-		// +optional
-		Version string `json:"version"`
-
-		// ProvisioningState is the provisioning state of the Azure virtual machine instance.
-		// +optional
-		ProvisioningState *infrav1.VMState `json:"provisioningState"`
-
-		// ProviderID is the provider identification of the VMSS Instance
-		// +optional
-		ProviderID string `json:"providerID"`
-
-		// InstanceID is the identification of the Machine Instance within the VMSS
-		// +optional
-		InstanceID string `json:"instanceID"`
-
-		// InstanceName is the name of the Machine Instance within the VMSS
-		// +optional
-		InstanceName string `json:"instanceName"`
-
-		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
-		// the image version the VM is running. If the instance is not running the latest model, it means the instance
-		// may not be running the version of Kubernetes the Machine Pool has specified and needs to be updated.
-		LatestModelApplied bool `json:"latestModelApplied"`
 	}
 
 	// +kubebuilder:object:root=true

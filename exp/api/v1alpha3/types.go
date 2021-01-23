@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"fmt"
+
+	"github.com/google/go-cmp/cmp"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
@@ -45,3 +49,59 @@ type (
 		Instances []VMSSVM           `json:"instances,omitempty"`
 	}
 )
+
+// HasModelChanges returns true if the spec fields which will mutate the Azure VMSS model are different.
+func (vmss VMSS) HasModelChanges(other VMSS) bool {
+	equal := cmp.Equal(vmss.Image, other.Image) &&
+		cmp.Equal(vmss.Identity, other.Identity) &&
+		cmp.Equal(vmss.Sku, other.Sku) &&
+		cmp.Equal(vmss.Zones, other.Zones)
+	return !equal
+}
+
+func (vmss VMSS) ReadyAndNotRunningLatestModel() []VMSSVM {
+	var instances []VMSSVM
+	for _, instance := range vmss.Instances {
+		if !instance.LatestModelApplied && instance.State == infrav1.VMStateSucceeded {
+			instances = append(instances, instance)
+		}
+	}
+
+	return instances
+}
+
+func (vmss VMSS) ReadyAndRunningLatestModel() []VMSSVM {
+	var instances []VMSSVM
+	for _, instance := range vmss.Instances {
+		if instance.LatestModelApplied && instance.State == infrav1.VMStateSucceeded {
+			instances = append(instances, instance)
+		}
+	}
+
+	return instances
+}
+
+func (vmss VMSS) ReadyInstances() []VMSSVM {
+	var instances []VMSSVM
+	for _, instance := range vmss.Instances {
+		if instance.State == infrav1.VMStateSucceeded {
+			instances = append(instances, instance)
+		}
+	}
+
+	return instances
+}
+
+func (vmss VMSS) InstancesByProviderID() map[string]VMSSVM {
+	instancesByProviderID := make(map[string]VMSSVM, len(vmss.Instances))
+	for _, instance := range vmss.Instances {
+		instancesByProviderID[instance.ProviderID()] = instance
+	}
+
+	return instancesByProviderID
+}
+
+// ProviderID returns the K8s provider ID for the VMSS instance
+func (vm VMSSVM) ProviderID() string {
+	return fmt.Sprintf("azure://%s", vm.ID)
+}

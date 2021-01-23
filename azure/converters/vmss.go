@@ -48,23 +48,41 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	if len(sdkinstances) > 0 {
 		vmss.Instances = make([]infrav1exp.VMSSVM, len(sdkinstances))
 		for i, vm := range sdkinstances {
-			instance := infrav1exp.VMSSVM{
-				ID:         to.String(vm.ID),
-				InstanceID: to.String(vm.InstanceID),
-				Name:       to.String(vm.OsProfile.ComputerName),
-				State:      infrav1.VMState(to.String(vm.ProvisioningState)),
-			}
-
-			if vm.LatestModelApplied != nil {
-				instance.LatestModelApplied = *vm.LatestModelApplied
-			}
-
-			if vm.Zones != nil && len(*vm.Zones) > 0 {
-				instance.AvailabilityZone = to.StringSlice(vm.Zones)[0]
-			}
-			vmss.Instances[i] = instance
+			vmss.Instances[i] = *SDKToVMSSVM(vm)
 		}
 	}
 
 	return vmss
+}
+
+// SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM
+func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *infrav1exp.VMSSVM {
+	instance := infrav1exp.VMSSVM{
+		ID:                 to.String(sdkInstance.ID),
+		InstanceID:         to.String(sdkInstance.InstanceID),
+		LatestModelApplied: true,
+	}
+
+	if sdkInstance.VirtualMachineScaleSetVMProperties == nil {
+		return &instance
+	}
+
+	instance.State = infrav1.VMStateCreating
+	if sdkInstance.ProvisioningState != nil {
+		instance.State = infrav1.VMState(to.String(sdkInstance.ProvisioningState))
+	}
+
+	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
+		instance.Name = *sdkInstance.OsProfile.ComputerName
+	}
+
+	if sdkInstance.LatestModelApplied != nil {
+		instance.LatestModelApplied = *sdkInstance.LatestModelApplied
+	}
+
+	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
+		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
+	}
+
+	return &instance
 }

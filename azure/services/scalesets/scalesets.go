@@ -37,35 +37,38 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// ScaleSetScope defines the scope interface for a scale sets service.
-type ScaleSetScope interface {
-	logr.Logger
-	azure.ClusterDescriber
-	ScaleSetSpec() azure.ScaleSetSpec
-	GetBootstrapData(ctx context.Context) (string, error)
-	GetVMImage() (*infrav1.Image, error)
-	SetAnnotation(string, string)
-	SetProviderID(string)
-	UpdateInstanceStatuses(context.Context, []infrav1exp.VMSSVM) error
-	NeedsK8sVersionUpdate() bool
-	SaveK8sVersion()
-	SetProvisioningState(infrav1.VMState)
-	SetLongRunningOperationState(*infrav1.Future)
-	GetLongRunningOperationState() *infrav1.Future
-}
+type (
+	// ScaleSetScope defines the scope interface for a scale sets service.
+	ScaleSetScope interface {
+		logr.Logger
+		azure.ClusterDescriber
+		GetBootstrapData(ctx context.Context) (string, error)
+		GetLongRunningOperationState() *infrav1.Future
+		GetVMImage() (*infrav1.Image, error)
+		MaxSurge() int32
+		MaxUnavailable() int32
+		NeedsK8sVersionUpdate() bool
+		SaveK8sVersion()
+		ScaleSetSpec() azure.ScaleSetSpec
+		SetAnnotation(string, string)
+		SetLongRunningOperationState(*infrav1.Future)
+		SetProviderID(string)
+		SetVMSSState(*infrav1exp.VMSS)
+	}
 
-type vmssBuildResult struct {
-	VMSSWithoutHash compute.VirtualMachineScaleSet
-	Tags            infrav1.Tags
-	Hash            string
-}
+	vmssBuildResult struct {
+		VMSSWithoutHash compute.VirtualMachineScaleSet
+		Tags            infrav1.Tags
+		Hash            string
+	}
 
-// Service provides operations on azure resources
-type Service struct {
-	Scope ScaleSetScope
-	Client
-	resourceSKUCache *resourceskus.Cache
-}
+	// Service provides operations on azure resources
+	Service struct {
+		Scope ScaleSetScope
+		Client
+		resourceSKUCache *resourceskus.Cache
+	}
+)
 
 // NewService creates a new service.
 func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
@@ -77,7 +80,7 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 }
 
 // Reconcile idempotently gets, creates, and updates a scale set.
-func (s *Service) Reconcile(ctx context.Context) error {
+func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Reconcile")
 	defer span.End()
 
@@ -95,6 +98,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	} else {
 		fetchedVMSS, err = s.getVirtualMachineScaleSetIfDone(ctx, future)
 	}
+
+	defer func() {
+		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
+		if fetchedVMSS == nil {
+			fetchedVMSS, _ = s.getVirtualMachineScaleSet(ctx)
+		}
+		s.Scope.SetVMSSState(fetchedVMSS)
+	}()
 
 	switch {
 	case err != nil && !azure.ResourceNotFound(err):
@@ -130,16 +141,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	// if we get to hear, we have completed any long running VMSS operations (creates / updates)
 	s.Scope.SetLongRunningOperationState(nil)
-
-	defer func() {
-		// make sure we always set the provisioning state at the end of reconcile
-		s.Scope.SetProvisioningState(fetchedVMSS.State)
-	}()
-
-	if err := s.reconcileInstances(ctx, fetchedVMSS); err != nil {
-		return errors.Wrap(err, "failed to reconcile instances")
-	}
-
 	return nil
 }
 
@@ -176,7 +177,6 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 
 	vmss := result.VMSSWithoutHash
 	vmss.Tags = converters.TagsToMap(result.Tags.AddSpecVersionHashTag(result.Hash))
-	s.Scope.SetProvisioningState(infrav1.VMStateCreating)
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
 		return future, errors.Wrapf(err, "cannot create VMSS")
@@ -184,7 +184,6 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 
 	s.Scope.V(2).Info("starting to create VMSS", "scale set", spec.Name)
 	s.Scope.SetLongRunningOperationState(future)
-	s.Scope.SaveK8sVersion()
 	return future, err
 }
 
@@ -218,6 +217,11 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 		return nil, errors.Wrapf(err, "failed to generate vmss patch for %s", spec.Name)
 	}
 
+	if s.Scope.MaxSurge() > 0 && hasModelModifyingDifferences(infraVMSS, vmss) {
+		// surge capacity with the intention of lowering during instance reconciliation
+		patch.Sku.Capacity = to.Int64Ptr(*patch.Sku.Capacity + int64(s.Scope.MaxSurge()))
+	}
+
 	// wipe out network profile, so updates won't conflict with Cloud Provider updates
 	patch.VirtualMachineProfile.NetworkProfile = nil
 	future, err := s.UpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, patch)
@@ -228,41 +232,86 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 		return future, errors.Wrapf(err, "failed updating VMSS")
 	}
 
-	s.Scope.SetProvisioningState(infrav1.VMStateUpdating)
 	s.Scope.SetLongRunningOperationState(future)
 	s.Scope.V(2).Info("successfully started to update vmss", "scale set", spec.Name)
 	return future, err
 }
 
-func (s *Service) reconcileInstances(ctx context.Context, vmss *infrav1exp.VMSS) error {
+func hasModelModifyingDifferences(infraVMSS *infrav1exp.VMSS, vmss compute.VirtualMachineScaleSet) bool {
+	other := converters.SDKToVMSS(vmss, []compute.VirtualMachineScaleSetVM{})
+	return infraVMSS.HasModelChanges(*other)
+}
+
+// reconcileInstances manages rolling upgrades of instances.
+func (s *Service) reconcileInstances(ctx context.Context, vmss *infrav1exp.VMSS) (retErr error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.reconcileInstances")
 	defer span.End()
 
-	// check to see if we are running the most K8s version specified in the MachinePool spec
-	// if not, then update the instances that are not running that model
-	if s.Scope.NeedsK8sVersionUpdate() {
-		instanceIDs := make([]string, len(vmss.Instances))
-		for i, vm := range vmss.Instances {
-			instanceIDs[i] = vm.InstanceID
-		}
-
-		if err := s.Client.UpdateInstances(ctx, s.Scope.ResourceGroup(), vmss.Name, instanceIDs); err != nil {
-			return errors.Wrapf(err, "failed to update VMSS %s instances", vmss.Name)
-		}
-
-		s.Scope.SaveK8sVersion()
-		// get the VMSS to update status
-		var err error
-		vmss, err = s.getVirtualMachineScaleSet(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to get VMSS after updating an instance")
-		}
+	instances := make(map[string]infrav1exp.VMSSVM, len(vmss.Instances))
+	for _, instance := range vmss.Instances {
+		instances[instance.InstanceID] = instance
 	}
 
-	// update the status.
-	if err := s.Scope.UpdateInstanceStatuses(ctx, vmss.Instances); err != nil {
-		return errors.Wrap(err, "unable to update instance status")
+	var (
+		latestReadyInstances = vmss.ReadyAndRunningLatestModel()
+		outOfDateInstances   = vmss.ReadyAndNotRunningLatestModel()
+		readyInstances       = vmss.ReadyInstances()
+		desiredCapacity      = s.Scope.ScaleSetSpec().Capacity
+		maxUnavailable       = int64(s.Scope.MaxUnavailable())
+	)
+
+	s.Scope.V(2).Info("reconcileInstances",
+		"desiredCapacity", desiredCapacity,
+		"actualCapacity", len(instances),
+		"ready", len(readyInstances),
+		"outOfDate", len(outOfDateInstances),
+		"upToDate", len(latestReadyInstances),
+		"surge", s.Scope.MaxSurge(),
+		"maxUnavailable", maxUnavailable,
+	)
+
+	// we have all of the capacity needed, de-provision other instances
+	if int64(len(latestReadyInstances)) >= desiredCapacity {
+		instancesToKeep := make(map[string]infrav1exp.VMSSVM, desiredCapacity)
+		count := int64(0)
+		for _, instance := range latestReadyInstances {
+			if count >= desiredCapacity {
+				break
+			}
+			instancesToKeep[instance.InstanceID] = instance
+			count++
+		}
+
+		// drain and delete other instances
+
+		return nil
 	}
+
+	// if we have not reached out disruption budget, then attempt to upgrade
+	if len(readyInstances) > int(desiredCapacity-maxUnavailable) {
+		disruptionBudget := len(readyInstances) - int(desiredCapacity-maxUnavailable)
+		fmt.Println(disruptionBudget)
+		// drain and upgrade instances within the disruption budget
+	}
+
+	//if err := s.Client.UpdateInstances(ctx, s.Scope.ResourceGroup(), vmss.Name, instanceIDs); err != nil {
+	//	return errors.Wrapf(err, "failed to update VMSS %s instances", vmss.Name)
+	//}
+	//
+	//s.Scope.SaveK8sVersion()
+	//// get the VMSS to update status
+	//var err error
+	//vmss, err = s.getVirtualMachineScaleSet(ctx)
+	//if err != nil {
+	//	return errors.Wrap(err, "failed to get VMSS after updating an instance")
+	//}
+
+	return nil
+}
+
+func (s *Service) drainInstance(ctx context.Context, instance infrav1exp.VMSSVM) error {
+	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.drainInstance")
+	defer span.End()
 
 	return nil
 }

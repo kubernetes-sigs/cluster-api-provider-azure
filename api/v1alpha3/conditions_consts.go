@@ -51,3 +51,25 @@ const (
 	// WaitingForBootstrapDataReason used when machine is waiting for bootstrap data to be ready before proceeding.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 )
+
+// AzureMachinePool Conditions and Reasons
+const (
+	// PoolRunningCondition reports on current status of the Azure VM.
+	PoolRunningCondition clusterv1.ConditionType = "PoolRunning"
+	// PoolCreatingReason describes the machine pool creating
+	PoolCreatingReason = "PoolCreating"
+	// PoolCreatingReason describes the machine pool deleting
+	PoolDeletingReason = "PoolDeleting"
+
+	// PoolDesiredReplicasCondition reports on the scaling state of the machine pool
+	PoolDesiredReplicasCondition clusterv1.ConditionType = "PoolDesiredReplicas"
+	// PoolScaleUpReason describes the machine pool scaling up
+	PoolScaleUpReason = "PoolScalingUp"
+	// PoolScaleUpReason describes the machine pool scaling down
+	PoolScaleDownReason = "PoolScalingDown"
+
+	// PoolModelUpdatingCondition reports on the model state of the pool
+	PoolModelUpdatedCondition clusterv1.ConditionType = "PoolModelUpdated"
+	// PoolModelOutOfDateReason describes the machine pool model being out of date
+	PoolModelOutOfDateReason = "PoolModelOutOfDate"
+)

@@ -25,7 +25,7 @@ import (
 	"time"
 
 	// +kubebuilder:scaffold:imports
-
+	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/go-autorest/tracing"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/pflag"
@@ -48,7 +48,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
-	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -91,19 +90,20 @@ func init() {
 }
 
 var (
-	metricsAddr                 string
-	enableLeaderElection        bool
-	leaderElectionNamespace     string
-	watchNamespace              string
-	profilerAddress             string
-	azureClusterConcurrency     int
-	azureMachineConcurrency     int
-	azureMachinePoolConcurrency int
-	syncPeriod                  time.Duration
-	healthAddr                  string
-	webhookPort                 int
-	reconcileTimeout            time.Duration
-	enableTracing               bool
+	metricsAddr                        string
+	enableLeaderElection               bool
+	leaderElectionNamespace            string
+	watchNamespace                     string
+	profilerAddress                    string
+	azureClusterConcurrency            int
+	azureMachineConcurrency            int
+	azureMachinePoolConcurrency        int
+	azureMachinePoolMachineConcurrency int
+	syncPeriod                         time.Duration
+	healthAddr                         string
+	webhookPort                        int
+	reconcileTimeout                   time.Duration
+	enableTracing                      bool
 )
 
 // InitFlags initializes all command-line flags.
@@ -159,6 +159,11 @@ func InitFlags(fs *pflag.FlagSet) {
 		"azuremachinepool-concurrency",
 		10,
 		"Number of AzureMachinePools to process simultaneously")
+
+	fs.IntVar(&azureMachinePoolMachineConcurrency,
+		"azuremachinepoolmachine-concurrency",
+		10,
+		"Number of AzureMachinePoolMachines to process simultaneously")
 
 	fs.DurationVar(&syncPeriod,
 		"sync-period",
@@ -308,6 +313,15 @@ func main() {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
 				os.Exit(1)
 			}
+			if err = infrav1controllersexp.NewAzureMachinePoolMachineController(
+				mgr.GetClient(),
+				ctrl.Log.WithName("controllers").WithName("AzureMachinePoolMachine"),
+				mgr.GetEventRecorderFor("azuremachinepoolmachine-reconciler"),
+				reconcileTimeout,
+			).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolMachineConcurrency}); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePoolMachine")
+				os.Exit(1)
+			}
 			if err = (&controllers.AzureJSONMachinePoolReconciler{
 				Client:           mgr.GetClient(),
 				Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachinePool"),
@@ -362,6 +376,11 @@ func main() {
 		if feature.Gates.Enabled(capifeature.MachinePool) {
 			if err = (&infrav1alpha3exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePool")
+				os.Exit(1)
+			}
+
+			if err = (&infrav1alpha3exp.AzureMachinePoolMachine{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachinePoolMachine")
 				os.Exit(1)
 			}
 		}

@@ -330,20 +330,6 @@ func (mr *MockScaleSetScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockScaleSetScope)(nil).AvailabilitySetEnabled))
 }
 
-// ScaleSetSpec mocks base method.
-func (m *MockScaleSetScope) ScaleSetSpec() azure.ScaleSetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ScaleSetSpec")
-	ret0, _ := ret[0].(azure.ScaleSetSpec)
-	return ret0
-}
-
-// ScaleSetSpec indicates an expected call of ScaleSetSpec.
-func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec))
-}
-
 // GetBootstrapData mocks base method.
 func (m *MockScaleSetScope) GetBootstrapData(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
@@ -357,6 +343,20 @@ func (m *MockScaleSetScope) GetBootstrapData(ctx context.Context) (string, error
 func (mr *MockScaleSetScopeMockRecorder) GetBootstrapData(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBootstrapData", reflect.TypeOf((*MockScaleSetScope)(nil).GetBootstrapData), ctx)
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha3.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState")
+	ret0, _ := ret[0].(*v1alpha3.Future)
+	return ret0
+}
+
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).GetLongRunningOperationState))
 }
 
 // GetVMImage mocks base method.
@@ -374,42 +374,32 @@ func (mr *MockScaleSetScopeMockRecorder) GetVMImage() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVMImage", reflect.TypeOf((*MockScaleSetScope)(nil).GetVMImage))
 }
 
-// SetAnnotation mocks base method.
-func (m *MockScaleSetScope) SetAnnotation(arg0, arg1 string) {
+// MaxSurge mocks base method.
+func (m *MockScaleSetScope) MaxSurge() int32 {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetAnnotation", arg0, arg1)
-}
-
-// SetAnnotation indicates an expected call of SetAnnotation.
-func (mr *MockScaleSetScopeMockRecorder) SetAnnotation(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotation", reflect.TypeOf((*MockScaleSetScope)(nil).SetAnnotation), arg0, arg1)
-}
-
-// SetProviderID mocks base method.
-func (m *MockScaleSetScope) SetProviderID(arg0 string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetProviderID", arg0)
-}
-
-// SetProviderID indicates an expected call of SetProviderID.
-func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderID", reflect.TypeOf((*MockScaleSetScope)(nil).SetProviderID), arg0)
-}
-
-// UpdateInstanceStatuses mocks base method.
-func (m *MockScaleSetScope) UpdateInstanceStatuses(arg0 context.Context, arg1 []v1alpha30.VMSSVM) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateInstanceStatuses", arg0, arg1)
-	ret0, _ := ret[0].(error)
+	ret := m.ctrl.Call(m, "MaxSurge")
+	ret0, _ := ret[0].(int32)
 	return ret0
 }
 
-// UpdateInstanceStatuses indicates an expected call of UpdateInstanceStatuses.
-func (mr *MockScaleSetScopeMockRecorder) UpdateInstanceStatuses(arg0, arg1 interface{}) *gomock.Call {
+// MaxSurge indicates an expected call of MaxSurge.
+func (mr *MockScaleSetScopeMockRecorder) MaxSurge() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstanceStatuses", reflect.TypeOf((*MockScaleSetScope)(nil).UpdateInstanceStatuses), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxSurge", reflect.TypeOf((*MockScaleSetScope)(nil).MaxSurge))
+}
+
+// MaxUnavailable mocks base method.
+func (m *MockScaleSetScope) MaxUnavailable() int32 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MaxUnavailable")
+	ret0, _ := ret[0].(int32)
+	return ret0
+}
+
+// MaxUnavailable indicates an expected call of MaxUnavailable.
+func (mr *MockScaleSetScopeMockRecorder) MaxUnavailable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxUnavailable", reflect.TypeOf((*MockScaleSetScope)(nil).MaxUnavailable))
 }
 
 // NeedsK8sVersionUpdate mocks base method.
@@ -438,16 +428,30 @@ func (mr *MockScaleSetScopeMockRecorder) SaveK8sVersion() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveK8sVersion", reflect.TypeOf((*MockScaleSetScope)(nil).SaveK8sVersion))
 }
 
-// SetProvisioningState mocks base method.
-func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha3.VMState) {
+// ScaleSetSpec mocks base method.
+func (m *MockScaleSetScope) ScaleSetSpec() azure.ScaleSetSpec {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetProvisioningState", arg0)
+	ret := m.ctrl.Call(m, "ScaleSetSpec")
+	ret0, _ := ret[0].(azure.ScaleSetSpec)
+	return ret0
 }
 
-// SetProvisioningState indicates an expected call of SetProvisioningState.
-func (mr *MockScaleSetScopeMockRecorder) SetProvisioningState(arg0 interface{}) *gomock.Call {
+// ScaleSetSpec indicates an expected call of ScaleSetSpec.
+func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProvisioningState", reflect.TypeOf((*MockScaleSetScope)(nil).SetProvisioningState), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec))
+}
+
+// SetAnnotation mocks base method.
+func (m *MockScaleSetScope) SetAnnotation(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAnnotation", arg0, arg1)
+}
+
+// SetAnnotation indicates an expected call of SetAnnotation.
+func (mr *MockScaleSetScopeMockRecorder) SetAnnotation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotation", reflect.TypeOf((*MockScaleSetScope)(nil).SetAnnotation), arg0, arg1)
 }
 
 // SetLongRunningOperationState mocks base method.
@@ -462,16 +466,26 @@ func (mr *MockScaleSetScopeMockRecorder) SetLongRunningOperationState(arg0 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).SetLongRunningOperationState), arg0)
 }
 
-// GetLongRunningOperationState mocks base method.
-func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha3.Future {
+// SetProviderID mocks base method.
+func (m *MockScaleSetScope) SetProviderID(arg0 string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLongRunningOperationState")
-	ret0, _ := ret[0].(*v1alpha3.Future)
-	return ret0
+	m.ctrl.Call(m, "SetProviderID", arg0)
 }
 
-// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
-func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState() *gomock.Call {
+// SetProviderID indicates an expected call of SetProviderID.
+func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).GetLongRunningOperationState))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderID", reflect.TypeOf((*MockScaleSetScope)(nil).SetProviderID), arg0)
+}
+
+// SetVMSSState mocks base method.
+func (m *MockScaleSetScope) SetVMSSState(arg0 *v1alpha30.VMSS) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVMSSState", arg0)
+}
+
+// SetVMSSState indicates an expected call of SetVMSSState.
+func (mr *MockScaleSetScopeMockRecorder) SetVMSSState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVMSSState", reflect.TypeOf((*MockScaleSetScope)(nil).SetVMSSState), arg0)
 }
