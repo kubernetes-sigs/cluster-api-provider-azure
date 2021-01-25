@@ -19,6 +19,8 @@ package azure
 import (
 	"fmt"
 
+	"github.com/Azure/go-autorest/autorest/azure"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -244,6 +246,18 @@ func GetDefaultWindowsImage(k8sVersion string) (*infrav1.Image, error) {
 	}
 
 	return defaultImage, nil
+}
+
+// GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
+// The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux which allows running arbitrary scripts on the VM.
+// Its role is to detect and report Kubernetes bootstrap failure or success.
+func GetBootstrappingVMExtension(osType string, cloud string) (name, publisher, version string) {
+	// currently, the bootstrap extension is only available for Linux and in AzurePublicCloud.
+	if osType == "Linux" && cloud == azure.PublicCloud.Name {
+		return "CAPZ.Linux.Bootstrapping", "Microsoft.Azure.ContainerUpstream", "1.0"
+	}
+
+	return "", "", ""
 }
 
 // UserAgent specifies a string to append to the agent identifier.

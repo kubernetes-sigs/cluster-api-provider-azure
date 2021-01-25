@@ -368,6 +368,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
 			},
+			DoNotRunExtensionsOnOverprovisionedVMs: to.BoolPtr(true),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile:       osProfile,
 				StorageProfile:  storageProfile,
