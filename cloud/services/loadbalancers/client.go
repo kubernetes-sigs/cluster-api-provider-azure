@@ -66,14 +66,32 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.AzureClient.CreateOrUpdate")
 	defer span.End()
 
-	future, err := ac.loadbalancers.CreateOrUpdate(ctx, resourceGroupName, lbName, lb)
+	var etag string
+	if lb.Etag != nil {
+		etag = *lb.Etag
+	}
+
+	req, err := ac.loadbalancers.CreateOrUpdatePreparer(ctx, resourceGroupName, lbName, lb)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return err
 	}
+
+	if etag != "" {
+		req.Header.Add("If-Match", etag)
+	}
+
+	future, err := ac.loadbalancers.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "CreateOrUpdate", future.Response(), "Failure sending request")
+		return err
+	}
+
 	err = future.WaitForCompletionRef(ctx, ac.loadbalancers.Client)
 	if err != nil {
 		return err
 	}
+
 	_, err = future.Result(ac.loadbalancers)
 	return err
 }
