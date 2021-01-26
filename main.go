@@ -257,17 +257,17 @@ func main() {
 	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
 	if webhookPort == 0 {
-		if err = controllers.NewAzureMachineReconciler(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("AzureMachine"),
-			mgr.GetEventRecorderFor("azuremachine-reconciler"), reconcileTimeout).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+		if err = controllers.NewAzureMachineReconciler(mgr.GetClient(),
+			ctrl.Log.WithName("controllers").WithName("AzureMachine"),
+			mgr.GetEventRecorderFor("azuremachine-reconciler"), reconcileTimeout).
+			SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
 			os.Exit(1)
 		}
-		if err = (&controllers.AzureClusterReconciler{
-			Client:           mgr.GetClient(),
-			Log:              ctrl.Log.WithName("controllers").WithName("AzureCluster"),
-			Recorder:         mgr.GetEventRecorderFor("azurecluster-reconciler"),
-			ReconcileTimeout: reconcileTimeout,
-		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
+		if err = controllers.NewAzureClusterReconciler(mgr.GetClient(),
+			ctrl.Log.WithName("controllers").WithName("AzureCluster"),
+			mgr.GetEventRecorderFor("azurecluster-reconciler"), reconcileTimeout).
+			SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
 		}
@@ -301,12 +301,10 @@ func main() {
 		// just use CAPI MachinePool feature flag rather than create a new one
 		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 		if feature.Gates.Enabled(capifeature.MachinePool) {
-			if err = (&infrav1controllersexp.AzureMachinePoolReconciler{
-				Client:           mgr.GetClient(),
-				Log:              ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
-				Recorder:         mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
-				ReconcileTimeout: reconcileTimeout,
-			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+			if err = infrav1controllersexp.NewAzureMachinePoolReconciler(mgr.GetClient(),
+				ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
+				mgr.GetEventRecorderFor("azuremachinepool-reconciler"), reconcileTimeout).
+				SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
 				os.Exit(1)
 			}
@@ -320,12 +318,10 @@ func main() {
 				os.Exit(1)
 			}
 			if feature.Gates.Enabled(feature.AKS) {
-				if err = (&infrav1controllersexp.AzureManagedMachinePoolReconciler{
-					Client:           mgr.GetClient(),
-					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
-					Recorder:         mgr.GetEventRecorderFor("azuremachine-reconciler"),
-					ReconcileTimeout: reconcileTimeout,
-				}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+				if err = infrav1controllersexp.NewAzureManagedMachinePoolReconciler(mgr.GetClient(),
+					ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
+					mgr.GetEventRecorderFor("azuremachine-reconciler"), reconcileTimeout).
+					SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 					setupLog.Error(err, "unable to create controller", "controller", "AzureManagedMachinePool")
 					os.Exit(1)
 				}

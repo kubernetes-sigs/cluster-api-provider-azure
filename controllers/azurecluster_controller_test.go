@@ -80,11 +80,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 
 			c, err := client.New(testEnv.Config, client.Options{Scheme: testEnv.GetScheme()})
 			Expect(err).ToNot(HaveOccurred())
-			reconciler := &AzureClusterReconciler{
-				Client:           c,
-				Log:              log,
-				ReconcileTimeout: 1 * time.Second,
-			}
+			reconciler := NewAzureClusterReconciler(c, log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), 1*time.Second)
 
 			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 			_, err = reconciler.Reconcile(ctrl.Request{

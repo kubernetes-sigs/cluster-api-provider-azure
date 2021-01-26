@@ -50,9 +50,26 @@ import (
 // AzureManagedMachinePoolReconciler reconciles a AzureManagedMachinePool object
 type AzureManagedMachinePoolReconciler struct {
 	client.Client
-	Log              logr.Logger
-	Recorder         record.EventRecorder
-	ReconcileTimeout time.Duration
+	Log                                  logr.Logger
+	Recorder                             record.EventRecorder
+	ReconcileTimeout                     time.Duration
+	createAzureManagedMachinePoolService azureManagedMachinePoolServiceCreator
+}
+
+type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService
+
+// NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance
+func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureManagedMachinePoolReconciler {
+	ampr := &AzureManagedMachinePoolReconciler{
+		Client:           client,
+		Log:              log,
+		Recorder:         recorder,
+		ReconcileTimeout: reconcileTimeout,
+	}
+
+	ampr.createAzureManagedMachinePoolService = newAzureManagedMachinePoolService
+
+	return ampr
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -212,7 +229,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context,
 		return reconcile.Result{}, err
 	}
 
-	if err := newAzureManagedMachinePoolReconciler(scope).Reconcile(ctx, scope); err != nil {
+	if err := r.createAzureManagedMachinePoolService(scope).Reconcile(ctx, scope); err != nil {
 		if IsAgentPoolVMSSNotFoundError(err) {
 			// if the underlying VMSS is not yet created, requeue for 30s in the future
 			return reconcile.Result{
@@ -234,7 +251,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context,
 
 	scope.Logger.Info("Reconciling AzureManagedMachinePool delete")
 
-	if err := newAzureManagedMachinePoolReconciler(scope).Delete(ctx, scope); err != nil {
+	if err := r.createAzureManagedMachinePoolService(scope).Delete(ctx, scope); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 	}
 

@@ -33,8 +33,8 @@ import (
 )
 
 type (
-	// azureManagedMachinePoolReconciler are list of services required by cluster controller
-	azureManagedMachinePoolReconciler struct {
+	// azureManagedMachinePoolService are list of services required by cluster controller
+	azureManagedMachinePoolService struct {
 		kubeclient    client.Client
 		agentPoolsSvc azure.OldService
 		scaleSetsSvc  NodeLister
@@ -77,9 +77,9 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 	return ok
 }
 
-// newAzureManagedMachinePoolReconciler populates all the services based on input scope
-func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolReconciler {
-	return &azureManagedMachinePoolReconciler{
+// newAzureManagedMachinePoolService populates all the services based on input scope
+func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService {
+	return &azureManagedMachinePoolService{
 		kubeclient:    scope.Client,
 		agentPoolsSvc: agentpools.NewService(scope),
 		scaleSetsSvc:  scalesets.NewClient(scope),
@@ -87,8 +87,8 @@ func newAzureManagedMachinePoolReconciler(scope *scope.ManagedControlPlaneScope)
 }
 
 // Reconcile reconciles all the services in pre determined order
-func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolReconciler.Reconcile")
+func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
 	defer span.End()
 
 	scope.Logger.Info("reconciling machine pool")
@@ -123,11 +123,11 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 		agentPoolSpec.OSDiskSizeGB = *scope.InfraMachinePool.Spec.OSDiskSizeGB
 	}
 
-	if err := r.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
+	if err := s.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
 
-	vmss, err := r.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
+	vmss, err := s.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", scope.ControlPlane.Spec.NodeResourceGroupName)
 	}
@@ -145,7 +145,7 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 		return NewAgentPoolVMSSNotFoundError(scope.ControlPlane.Spec.NodeResourceGroupName, scope.InfraMachinePool.Name)
 	}
 
-	instances, err := r.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
+	instances, err := s.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
@@ -164,8 +164,8 @@ func (r *azureManagedMachinePoolReconciler) Reconcile(ctx context.Context, scope
 }
 
 // Delete reconciles all the services in pre determined order
-func (r *azureManagedMachinePoolReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolReconciler.Delete")
+func (s *azureManagedMachinePoolService) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Delete")
 	defer span.End()
 
 	agentPoolSpec := &agentpools.Spec{
@@ -174,7 +174,7 @@ func (r *azureManagedMachinePoolReconciler) Delete(ctx context.Context, scope *s
 		Cluster:       scope.ControlPlane.Name,
 	}
 
-	if err := r.agentPoolsSvc.Delete(ctx, agentPoolSpec); err != nil {
+	if err := s.agentPoolsSvc.Delete(ctx, agentPoolSpec); err != nil {
 		return errors.Wrapf(err, "failed to delete machine pool %s", scope.InfraMachinePool.Name)
 	}
 
