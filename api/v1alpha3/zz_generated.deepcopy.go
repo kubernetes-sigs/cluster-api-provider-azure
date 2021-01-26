@@ -23,7 +23,7 @@ package v1alpha3
 import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
@@ -179,7 +179,7 @@ func (in *AzureClusterIdentityStatus) DeepCopyInto(out *AzureClusterIdentityStat
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(apiv1alpha3.Conditions, len(*in))
+		*out = make(v1alpha4.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -262,14 +262,14 @@ func (in *AzureClusterStatus) DeepCopyInto(out *AzureClusterStatus) {
 	*out = *in
 	if in.FailureDomains != nil {
 		in, out := &in.FailureDomains, &out.FailureDomains
-		*out = make(apiv1alpha3.FailureDomains, len(*in))
+		*out = make(v1alpha4.FailureDomains, len(*in))
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(apiv1alpha3.Conditions, len(*in))
+		*out = make(v1alpha4.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -436,7 +436,7 @@ func (in *AzureMachineStatus) DeepCopyInto(out *AzureMachineStatus) {
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(apiv1alpha3.Conditions, len(*in))
+		*out = make(v1alpha4.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -766,11 +766,7 @@ func (in IngressRules) DeepCopyInto(out *IngressRules) {
 		in := &in
 		*out = make(IngressRules, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(IngressRule)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }
@@ -835,11 +831,7 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 		in, out := &in.Subnets, &out.Subnets
 		*out = make(Subnets, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(SubnetSpec)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	in.APIServerLB.DeepCopyInto(&out.APIServerLB)
@@ -913,11 +905,7 @@ func (in *SecurityGroup) DeepCopyInto(out *SecurityGroup) {
 		in, out := &in.IngressRules, &out.IngressRules
 		*out = make(IngressRules, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(IngressRule)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.Tags != nil {
@@ -1007,11 +995,7 @@ func (in Subnets) DeepCopyInto(out *Subnets) {
 		in := &in
 		*out = make(Subnets, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(SubnetSpec)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }

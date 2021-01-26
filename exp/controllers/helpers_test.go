@@ -25,17 +25,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 )
 
@@ -50,7 +49,7 @@ func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 		newMachinePoolWithInfrastructureRef(clusterName, "my-machine-1"),
 		newMachinePool(clusterName, "my-machine-2"),
 	}
-	fakeClient := fake.NewFakeClientWithScheme(scheme, initObjects...)
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default").Return(log)
@@ -58,17 +57,15 @@ func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 	mapper, err := AzureClusterToAzureMachinePoolsMapper(fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper.Map(handler.MapObject{
-		Object: &infrav1.AzureCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterName,
-				Namespace: "default",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Name:       clusterName,
-						Kind:       "Cluster",
-						APIVersion: clusterv1.GroupVersion.String(),
-					},
+	requests := mapper(&infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName,
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       clusterName,
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -88,7 +85,7 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 		newManagedMachinePoolInfraReference(clusterName, "my-mmp-2"),
 		newMachinePool(clusterName, "my-machine-2"),
 	}
-	fakeClient := fake.NewFakeClientWithScheme(scheme, initObjects...)
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default").Return(log)
@@ -96,22 +93,19 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper.Map(handler.MapObject{
-		Object: &infrav1exp.AzureManagedCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterName,
-				Namespace: "default",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Name:       clusterName,
-						Kind:       "Cluster",
-						APIVersion: clusterv1.GroupVersion.String(),
-					},
+	requests := mapper(&infrav1exp.AzureManagedCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName,
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       clusterName,
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
 	})
-
 	g.Expect(requests).To(ConsistOf([]reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
@@ -150,24 +144,22 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 		cluster,
 		newAzureManagedControlPlane(cpName),
 	}
-	fakeClient := fake.NewFakeClientWithScheme(scheme, initObjects...)
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "az-"+cluster.Name, "Namespace", "default")
 
 	mapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(fakeClient, log)
 	g.Expect(err).NotTo(HaveOccurred())
-	requests := mapper.Map(handler.MapObject{
-		Object: &infrav1exp.AzureManagedCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "az-" + cluster.Name,
-				Namespace: "default",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Name:       cluster.Name,
-						Kind:       "Cluster",
-						APIVersion: clusterv1.GroupVersion.String(),
-					},
+	requests := mapper(&infrav1exp.AzureManagedCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "az-" + cluster.Name,
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       cluster.Name,
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -187,15 +179,13 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 	cases := []struct {
 		Name             string
 		Setup            func(logMock *mock_log.MockLogger)
-		MapObjectFactory func(*GomegaWithT) handler.MapObject
+		MapObjectFactory func(*GomegaWithT) client.Object
 		Expect           func(*GomegaWithT, []reconcile.Request)
 	}{
 		{
 			Name: "MachinePoolToAzureMachinePool",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newMachinePoolWithInfrastructureRef("azureCluster", "machinePool"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newMachinePoolWithInfrastructureRef("azureCluster", "machinePool")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(1))
@@ -209,10 +199,8 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 		},
 		{
 			Name: "MachinePoolWithoutMatchingInfraRef",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newMachinePool("azureCluster", "machinePool"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newMachinePool("azureCluster", "machinePool")
 			},
 			Setup: func(logMock *mock_log.MockLogger) {
 				ampGK := infrav1exp.GroupVersion.WithKind("AzureMachinePool").GroupKind()
@@ -224,13 +212,11 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 		},
 		{
 			Name: "NotAMachinePool",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newCluster("azureCluster"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newCluster("azureCluster")
 			},
 			Setup: func(logMock *mock_log.MockLogger) {
-				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1alpha3.Cluster")
+				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1alpha4.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
 				g.Expect(reqs).To(HaveLen(0))
@@ -262,21 +248,19 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 	cases := []struct {
 		Name             string
 		Setup            func(*GomegaWithT, *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client)
-		MapObjectFactory func(*GomegaWithT) handler.MapObject
+		MapObjectFactory func(*GomegaWithT) client.Object
 		Expect           func(*GomegaWithT, []reconcile.Request)
 	}{
 		{
 			Name: "NotAnAzureCluster",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newMachinePool("foo", "bar"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newMachinePool("foo", "bar")
 			},
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
-				kClient := fake.NewFakeClientWithScheme(newScheme(g))
-				log.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1alpha3.MachinePool"), "failed to get AzureCluster")
+				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
+				log.EXPECT().Error(gomockinternal.ErrStrEq("expected a AzureCluster but got a *v1alpha4.MachinePool"), "failed to get AzureCluster")
 
 				return log, mockCtrl, kClient
 			},
@@ -286,16 +270,14 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterDoesNotExist",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newAzureCluster("foo"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newAzureCluster("foo")
 			},
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
 				logWithValues := mock_log.NewMockLogger(mockCtrl)
-				kClient := fake.NewFakeClientWithScheme(newScheme(g))
+				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
 				logWithValues.EXPECT().Info("owning cluster not found")
 				return log, mockCtrl, kClient
@@ -306,10 +288,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterExistsButDoesNotHaveMachinePools",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newAzureCluster("foo"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newAzureCluster("foo")
 			},
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
@@ -320,7 +300,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 					newCluster(clusterName),
 					newAzureCluster(clusterName),
 				}
-				kClient := fake.NewFakeClientWithScheme(newScheme(g), initObj...)
+				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
 				return log, mockCtrl, kClient
 			},
@@ -330,10 +310,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterExistsWithMachinePoolsButNoInfraRefs",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newAzureCluster("foo"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newAzureCluster("foo")
 			},
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
@@ -346,7 +324,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 					newMachinePool(clusterName, "pool1"),
 					newMachinePool(clusterName, "pool2"),
 				}
-				kClient := fake.NewFakeClientWithScheme(newScheme(g), initObj...)
+				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
 				return log, mockCtrl, kClient
 			},
@@ -356,10 +334,8 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 		},
 		{
 			Name: "AzureClusterExistsWithMachinePoolsWithOneInfraRefs",
-			MapObjectFactory: func(g *GomegaWithT) handler.MapObject {
-				return handler.MapObject{
-					Object: newAzureCluster("foo"),
-				}
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newAzureCluster("foo")
 			},
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
@@ -373,7 +349,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 					newAzureMachinePool(clusterName, "azurepool2"),
 					newMachinePoolWithInfrastructureRef(clusterName, "pool2"),
 				}
-				kClient := fake.NewFakeClientWithScheme(newScheme(g), initObj...)
+				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).WithRuntimeObjects(initObj...).Build()
 				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
 				return log, mockCtrl, kClient
 			},

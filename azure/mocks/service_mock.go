@@ -26,7 +26,12 @@ import (
 
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
+<<<<<<< HEAD
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+=======
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 )
 
 // MockReconciler is a mock of Reconciler interface.
@@ -355,11 +360,19 @@ func (m *MockNetworkDescriber) EXPECT() *MockNetworkDescriberMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // APIServerLBName mocks base method.
 func (m *MockNetworkDescriber) APIServerLBName() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "APIServerLBName")
 	ret0, _ := ret[0].(string)
+=======
+// Vnet mocks base method.
+func (m *MockNetworkDescriber) Vnet() *v1alpha4.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -383,11 +396,19 @@ func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName(arg0 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName), arg0)
 }
 
+<<<<<<< HEAD
 // ControlPlaneRouteTable mocks base method.
 func (m *MockNetworkDescriber) ControlPlaneRouteTable() *v1alpha3.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
 	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+=======
+// NodeSubnet mocks base method.
+func (m *MockNetworkDescriber) NodeSubnet() *v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnet")
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -398,10 +419,10 @@ func (mr *MockNetworkDescriberMockRecorder) ControlPlaneRouteTable() *gomock.Cal
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockNetworkDescriber) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
+func (m *MockNetworkDescriber) ControlPlaneSubnet() *v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
 	return ret0
 }
 
@@ -454,10 +475,10 @@ func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged() *gomock.Call {
 }
 
 // NodeRouteTable mocks base method.
-func (m *MockNetworkDescriber) NodeRouteTable() *v1alpha3.RouteTable {
+func (m *MockNetworkDescriber) NodeRouteTable() *v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
 	return ret0
 }
 
@@ -467,11 +488,19 @@ func (mr *MockNetworkDescriberMockRecorder) NodeRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeRouteTable))
 }
 
+<<<<<<< HEAD
 // NodeSubnet mocks base method.
 func (m *MockNetworkDescriber) NodeSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
 	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+=======
+// ControlPlaneRouteTable mocks base method.
+func (m *MockNetworkDescriber) ControlPlaneRouteTable() *v1alpha4.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -722,8 +751,41 @@ func (m *MockClusterDescriber) TenantID() string {
 	return ret0
 }
 
+<<<<<<< HEAD
 // TenantID indicates an expected call of TenantID.
 func (mr *MockClusterDescriberMockRecorder) TenantID() *gomock.Call {
+=======
+// Location indicates an expected call of Location.
+func (mr *MockClusterDescriberMockRecorder) Location() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterDescriber)(nil).Location))
+}
+
+// AdditionalTags mocks base method.
+func (m *MockClusterDescriber) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+	return ret0
+}
+
+// AdditionalTags indicates an expected call of AdditionalTags.
+func (mr *MockClusterDescriberMockRecorder) AdditionalTags() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterDescriber)(nil).AdditionalTags))
+}
+
+// AvailabilitySetEnabled mocks base method.
+func (m *MockClusterDescriber) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockClusterDescriberMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterDescriber)(nil).TenantID))
 }
@@ -891,11 +953,33 @@ func (mr *MockClusterScoperMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockClusterScoper)(nil).ClusterName))
 }
 
+<<<<<<< HEAD
 // ControlPlaneRouteTable mocks base method.
 func (m *MockClusterScoper) ControlPlaneRouteTable() *v1alpha3.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
 	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+=======
+// Location mocks base method.
+func (m *MockClusterScoper) Location() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Location")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Location indicates an expected call of Location.
+func (mr *MockClusterScoperMockRecorder) Location() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterScoper)(nil).Location))
+}
+
+// AdditionalTags mocks base method.
+func (m *MockClusterScoper) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -919,11 +1003,19 @@ func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
 }
 
+<<<<<<< HEAD
 // HashKey mocks base method.
 func (m *MockClusterScoper) HashKey() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HashKey")
 	ret0, _ := ret[0].(string)
+=======
+// Vnet mocks base method.
+func (m *MockClusterScoper) Vnet() *v1alpha4.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -947,11 +1039,19 @@ func (mr *MockClusterScoperMockRecorder) IsAPIServerPrivate() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockClusterScoper)(nil).IsAPIServerPrivate))
 }
 
+<<<<<<< HEAD
 // IsIPv6Enabled mocks base method.
 func (m *MockClusterScoper) IsIPv6Enabled() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsIPv6Enabled")
 	ret0, _ := ret[0].(bool)
+=======
+// NodeSubnet mocks base method.
+func (m *MockClusterScoper) NodeSubnet() *v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnet")
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -961,11 +1061,19 @@ func (mr *MockClusterScoperMockRecorder) IsIPv6Enabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockClusterScoper)(nil).IsIPv6Enabled))
 }
 
+<<<<<<< HEAD
 // IsVnetManaged mocks base method.
 func (m *MockClusterScoper) IsVnetManaged() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsVnetManaged")
 	ret0, _ := ret[0].(bool)
+=======
+// ControlPlaneSubnet mocks base method.
+func (m *MockClusterScoper) ControlPlaneSubnet() *v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -990,10 +1098,10 @@ func (mr *MockClusterScoperMockRecorder) Location() *gomock.Call {
 }
 
 // NodeRouteTable mocks base method.
-func (m *MockClusterScoper) NodeRouteTable() *v1alpha3.RouteTable {
+func (m *MockClusterScoper) NodeRouteTable() *v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
 	return ret0
 }
 
@@ -1003,11 +1111,19 @@ func (mr *MockClusterScoperMockRecorder) NodeRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockClusterScoper)(nil).NodeRouteTable))
 }
 
+<<<<<<< HEAD
 // NodeSubnet mocks base method.
 func (m *MockClusterScoper) NodeSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
 	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+=======
+// ControlPlaneRouteTable mocks base method.
+func (m *MockClusterScoper) ControlPlaneRouteTable() *v1alpha4.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 

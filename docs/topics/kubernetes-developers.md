@@ -54,7 +54,7 @@ Next update your Kubeadm control plane configuration.  The details are truncated
 
 ```yaml
 kind: KubeadmControlPlane
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 metadata:
   name: "your-control-plane"
 spec:
@@ -71,7 +71,7 @@ Kubeadm expects the kubelet binary to exist on the VM before it will join the no
 In your `KubeadmControlPlane` and `KubeadmConfigTemplate` add a script reference:
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
@@ -91,7 +91,7 @@ spec:
         chmod +x "/usr/bin/$KUBELET_PACKAGE_NAME"
         systemctl restart kubelet
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0

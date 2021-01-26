@@ -43,7 +43,7 @@
 ### Base requirements
 
 1. Install [go][go]
-   - Get the latest patch version for go v1.13.
+   - Get the latest patch version for go v1.15.
 2. Install [jq][jq]
    - `brew install jq` on macOS.
    - `chocolatey install jq` on Windows.
@@ -53,7 +53,7 @@
    - [install instructions][gettextwindows] on Windows.
    - `sudo apt install gettext` on Ubuntu Linux.
 4. Install [KIND][kind]
-   - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0`.
+   - `GO111MODULE="on" go get sigs.k8s.io/kind@v0.9.0`.
 5. Install [Kustomize][kustomize]
    - `brew install kustomize` on macOS.
    - `choco install kustomize` on Windows.

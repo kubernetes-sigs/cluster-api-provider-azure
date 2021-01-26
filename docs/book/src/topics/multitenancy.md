@@ -9,7 +9,7 @@ This is achieved using the [aad-pod-identity](https://azure.github.io/aad-pod-id
 Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` resource:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureClusterIdentity
 metadata:
   name: example-identity
@@ -57,7 +57,7 @@ An empty list (default) indicates that AzureCluster can use this AzureClusterIde
 The Identity can be added to an `AzureCluster` by using `IdentityRef` field:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureCluster
 metadata:
   name: example-cluster
@@ -70,7 +70,7 @@ spec:
   resourceGroup: example-cluster
   subscriptionID: <AZURE_SUBSCRIPTION_ID>
   identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureClusterIdentity
     name: <name-of-identity>
     namespace: <namespace-of-identity>

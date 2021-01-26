@@ -28,7 +28,8 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -55,6 +56,7 @@ func (m *MockVMScope) EXPECT() *MockVMScopeMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // AdditionalTags mocks base method.
 func (m *MockVMScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
@@ -65,15 +67,68 @@ func (m *MockVMScope) AdditionalTags() v1alpha3.Tags {
 
 // AdditionalTags indicates an expected call of AdditionalTags.
 func (mr *MockVMScopeMockRecorder) AdditionalTags() *gomock.Call {
+=======
+// Enabled mocks base method.
+func (m *MockVMScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockVMScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockVMScope)(nil).Enabled))
+}
+
+// Info mocks base method.
+func (m *MockVMScope) Info(msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockVMScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockVMScope)(nil).Info), varargs...)
+}
+
+// Error mocks base method.
+func (m *MockVMScope) Error(err error, msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockVMScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockVMScope)(nil).AdditionalTags))
 }
 
+<<<<<<< HEAD
 // Authorizer mocks base method.
 func (m *MockVMScope) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Authorizer")
 	ret0, _ := ret[0].(autorest.Authorizer)
+=======
+// V mocks base method.
+func (m *MockVMScope) V(level int) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.Logger)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -288,11 +343,19 @@ func (mr *MockVMScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockVMScope)(nil).Location))
 }
 
+<<<<<<< HEAD
 // ProviderID mocks base method.
 func (m *MockVMScope) ProviderID() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProviderID")
 	ret0, _ := ret[0].(string)
+=======
+// AdditionalTags mocks base method.
+func (m *MockVMScope) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -340,10 +403,20 @@ func (mr *MockVMScopeMockRecorder) SetAnnotation(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotation", reflect.TypeOf((*MockVMScope)(nil).SetAnnotation), arg0, arg1)
 }
 
+<<<<<<< HEAD
 // SetProviderID mocks base method.
 func (m *MockVMScope) SetProviderID(arg0 string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetProviderID", arg0)
+=======
+// GetVMImage mocks base method.
+func (m *MockVMScope) GetVMImage() (*v1alpha4.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVMImage")
+	ret0, _ := ret[0].(*v1alpha4.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 }
 
 // SetProviderID indicates an expected call of SetProviderID.
@@ -420,8 +493,13 @@ func (mr *MockVMScopeMockRecorder) VMSpec() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSpec", reflect.TypeOf((*MockVMScope)(nil).VMSpec))
 }
 
+<<<<<<< HEAD
 // WithName mocks base method.
 func (m *MockVMScope) WithName(name string) logr.Logger {
+=======
+// SetVMState mocks base method.
+func (m *MockVMScope) SetVMState(arg0 v1alpha4.VMState) {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WithName", name)
 	ret0, _ := ret[0].(logr.Logger)

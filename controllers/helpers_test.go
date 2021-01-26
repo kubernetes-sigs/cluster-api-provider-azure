@@ -35,13 +35,12 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
@@ -55,27 +54,25 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 		newMachineWithInfrastructureRef(clusterName, "my-machine-1"),
 		newMachine(clusterName, "my-machine-2"),
 	}
-	client := fake.NewFakeClientWithScheme(scheme, initObjects...)
+	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	log := mock_log.NewMockLogger(mockCtrl)
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default")
-	mapper, err := AzureClusterToAzureMachinesMapper(client, scheme, log)
+	mapper, err := AzureClusterToAzureMachinesMapper(client, &infrav1.AzureMachine{}, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
-	requests := mapper.Map(handler.MapObject{
-		Object: &infrav1.AzureCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterName,
-				Namespace: "default",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Name:       clusterName,
-						Kind:       "Cluster",
-						APIVersion: clusterv1.GroupVersion.String(),
-					},
+	requests := mapper(&infrav1.AzureCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName,
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       clusterName,
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
 				},
 			},
 		},
@@ -171,17 +168,17 @@ func TestReconcileAzureSecret(t *testing.T) {
 	}{
 		"azuremachine should reconcile secret successfully": {
 			kind:       "AzureMachine",
-			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
 			ownerName:  "azureMachineName",
 		},
 		"azuremachinepool should reconcile secret successfully": {
 			kind:       "AzureMachinePool",
-			apiVersion: "exp.infrastructure.cluster.x-k8s.io/v1alpha3",
+			apiVersion: "exp.infrastructure.cluster.x-k8s.io/v1alpha4",
 			ownerName:  "azureMachinePoolName",
 		},
 		"azuremachinetemplate should reconcile secret successfully": {
 			kind:       "AzureMachineTemplate",
-			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
 			ownerName:  "azureMachineTemplateName",
 		},
 	}
@@ -210,7 +207,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 
 	scheme := setupScheme(g)
 
-	kubeclient := fake.NewFakeClientWithScheme(scheme)
+	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -312,11 +309,11 @@ func newAzureClusterWithCustomVnet(name, location string) *infrav1.AzureCluster 
 					ResourceGroup: "custom-vnet-resource-group",
 				},
 				Subnets: infrav1.Subnets{
-					&infrav1.SubnetSpec{
+					infrav1.SubnetSpec{
 						Name: "foo-controlplane-subnet",
 						Role: infrav1.SubnetControlPlane,
 					},
-					&infrav1.SubnetSpec{
+					infrav1.SubnetSpec{
 						Name: "foo-node-subnet",
 						Role: infrav1.SubnetNode,
 					},

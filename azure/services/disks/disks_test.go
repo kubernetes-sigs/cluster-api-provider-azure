@@ -27,10 +27,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks/mock_disks"
@@ -217,13 +217,7 @@ func TestDiskSpecs(t *testing.T) {
 			}
 			tc.azureMachineModifyFunc(azureMachine)
 
-			initObjects := []runtime.Object{
-				cluster,
-				machine,
-				azureCluster,
-				azureMachine,
-			}
-			client := fake.NewFakeClientWithScheme(scheme, initObjects...)
+			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(cluster, machine, azureCluster, azureMachine).Build()
 			clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},

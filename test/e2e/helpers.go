@@ -41,14 +41,13 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,8 +59,8 @@ type deploymentsClientAdapter struct {
 }
 
 // Get fetches the deployment named by the key and updates the provided object.
-func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	deployment, err := c.client.Get(key.Name, metav1.GetOptions{})
+func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	deployment, err := c.client.Get(context.Background(), key.Name, metav1.GetOptions{})
 	if deployObj, ok := obj.(*appsv1.Deployment); ok {
 		deployment.DeepCopyInto(deployObj)
 	}
@@ -111,8 +110,8 @@ type jobsClientAdapter struct {
 }
 
 // Get fetches the job named by the key and updates the provided object.
-func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	job, err := c.client.Get(key.Name, metav1.GetOptions{})
+func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	job, err := c.client.Get(context.Background(), key.Name, metav1.GetOptions{})
 	if jobObj, ok := obj.(*batchv1.Job); ok {
 		job.DeepCopyInto(jobObj)
 	}
@@ -160,8 +159,8 @@ type servicesClientAdapter struct {
 }
 
 // Get fetches the service named by the key and updates the provided object.
-func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	service, err := c.client.Get(key.Name, metav1.GetOptions{})
+func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	service, err := c.client.Get(context.Background(), key.Name, metav1.GetOptions{})
 	if serviceObj, ok := obj.(*corev1.Service); ok {
 		service.DeepCopyInto(serviceObj)
 	}
@@ -217,7 +216,7 @@ func describeEvents(clientset *kubernetes.Clientset, namespace, name string) str
 			FieldSelector: fmt.Sprintf("involvedObject.name=%s", name),
 			Limit:         20,
 		}
-		evts, err := clientset.CoreV1().Events(namespace).List(opts)
+		evts, err := clientset.CoreV1().Events(namespace).List(context.Background(), opts)
 		if err != nil {
 			b.WriteString(err.Error())
 		} else {

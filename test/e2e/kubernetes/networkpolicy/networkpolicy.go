@@ -19,6 +19,7 @@ limitations under the License.
 package networkpolicy
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -60,14 +61,14 @@ func CreateNetworkPolicyFromFile(clientset *kubernetes.Clientset, filename, name
 }
 
 func createNetworkPolicyV1(clientset *kubernetes.Clientset, namespace string, networkPolicy *networkingv1.NetworkPolicy) error {
-	_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(networkPolicy)
+	_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(context.Background(), networkPolicy, metav1.CreateOptions{})
 	return err
 }
 
 // DeleteNetworkPolicy will create a NetworkPolicy from file with a name
 func DeleteNetworkPolicy(clientset *kubernetes.Clientset, name, namespace string) {
-	opts := &metav1.DeleteOptions{}
-	err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(name, opts)
+	opts := metav1.DeleteOptions{}
+	err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), name, opts)
 	Expect(err).NotTo(HaveOccurred())
 }
 

@@ -28,12 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -50,7 +50,7 @@ var _ = Describe("AzureMachineReconciler", func() {
 			By("Calling reconcile")
 			name := test.RandomName("foo", 10)
 			instance := &infrav1.AzureMachine{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}}
-			result, err := reconciler.Reconcile(ctrl.Request{
+			result, err := reconciler.Reconcile(context.Background(), ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: instance.Namespace,
 					Name:      instance.Name,
@@ -158,7 +158,7 @@ func TestConditions(t *testing.T) {
 				azureCluster,
 				tc.azureMachine,
 			}
-			client := fake.NewFakeClientWithScheme(scheme, initObjects...)
+			client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 			recorder := record.NewFakeRecorder(10)
 
 			reconciler := NewAzureMachineReconciler(client, klogr.New(), recorder, reconciler.DefaultLoopTimeout)

@@ -6,12 +6,12 @@ patchesJson6902:
 - path: patches/ephemeral.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
-    version: v1alpha3
+    version: v1alpha4
     kind: AzureMachineTemplate
     name: "${CLUSTER_NAME}-md-0"
 - path: patches/ephemeral.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
-    version: v1alpha3
+    version: v1alpha4
     kind: AzureMachineTemplate
     name: "${CLUSTER_NAME}-control-plane"

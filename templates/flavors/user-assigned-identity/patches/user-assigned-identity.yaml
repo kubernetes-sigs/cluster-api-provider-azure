@@ -1,6 +1,6 @@
 ---
 kind: AzureMachineTemplate
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
@@ -11,7 +11,7 @@ spec:
       - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}
 ---
 kind: AzureMachineTemplate
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 metadata:
   name: "${CLUSTER_NAME}-md-0"
 spec:

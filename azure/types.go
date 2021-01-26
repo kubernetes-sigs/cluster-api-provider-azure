@@ -17,7 +17,7 @@ limitations under the License.
 package azure
 
 import (
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 // PublicIPSpec defines the specification for a Public IP.

@@ -93,7 +93,7 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 }
 
 // Subnets is a slice of Subnet.
-type Subnets []*SubnetSpec
+type Subnets []SubnetSpec
 
 // SecurityGroupRole defines the unique role of a security group.
 type SecurityGroupRole string
@@ -157,7 +157,7 @@ type IngressRule struct {
 }
 
 // IngressRules is a slice of Azure ingress rules for security groups.
-type IngressRules []*IngressRule
+type IngressRules []IngressRule
 
 // LoadBalancerSpec defines an Azure load balancer.
 type LoadBalancerSpec struct {
@@ -456,7 +456,7 @@ type SubnetSpec struct {
 func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
 	for _, sn := range n.Subnets {
 		if sn.Role == SubnetControlPlane {
-			return sn
+			return &sn
 		}
 	}
 	return nil
@@ -466,7 +466,7 @@ func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
 func (n *NetworkSpec) GetNodeSubnet() *SubnetSpec {
 	for _, sn := range n.Subnets {
 		if sn.Role == SubnetNode {
-			return sn
+			return &sn
 		}
 	}
 	return nil

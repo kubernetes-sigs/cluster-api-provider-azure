@@ -26,7 +26,8 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -53,6 +54,7 @@ func (m *MockLBScope) EXPECT() *MockLBScopeMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // APIServerLBName mocks base method.
 func (m *MockLBScope) APIServerLBName() string {
 	m.ctrl.T.Helper()
@@ -69,6 +71,41 @@ func (mr *MockLBScopeMockRecorder) APIServerLBName() *gomock.Call {
 
 // APIServerLBPoolName mocks base method.
 func (m *MockLBScope) APIServerLBPoolName(arg0 string) string {
+=======
+// Enabled mocks base method.
+func (m *MockLBScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockLBScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockLBScope)(nil).Enabled))
+}
+
+// Info mocks base method.
+func (m *MockLBScope) Info(msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockLBScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLBScope)(nil).Info), varargs...)
+}
+
+// Error mocks base method.
+func (m *MockLBScope) Error(err error, msg string, keysAndValues ...interface{}) {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
 	ret0, _ := ret[0].(string)
@@ -81,11 +118,19 @@ func (mr *MockLBScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockLBScope)(nil).APIServerLBPoolName), arg0)
 }
 
+<<<<<<< HEAD
 // AdditionalTags mocks base method.
 func (m *MockLBScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
 	ret0, _ := ret[0].(v1alpha3.Tags)
+=======
+// V mocks base method.
+func (m *MockLBScope) V(level int) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.Logger)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -311,11 +356,19 @@ func (mr *MockLBScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockLBScope)(nil).IsIPv6Enabled))
 }
 
+<<<<<<< HEAD
 // IsVnetManaged mocks base method.
 func (m *MockLBScope) IsVnetManaged() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsVnetManaged")
 	ret0, _ := ret[0].(bool)
+=======
+// AdditionalTags mocks base method.
+func (m *MockLBScope) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -339,11 +392,19 @@ func (mr *MockLBScopeMockRecorder) LBSpecs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LBSpecs", reflect.TypeOf((*MockLBScope)(nil).LBSpecs))
 }
 
+<<<<<<< HEAD
 // Location mocks base method.
 func (m *MockLBScope) Location() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Location")
 	ret0, _ := ret[0].(string)
+=======
+// Vnet mocks base method.
+func (m *MockLBScope) Vnet() *v1alpha4.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -368,10 +429,10 @@ func (mr *MockLBScopeMockRecorder) NodeRouteTable() *gomock.Call {
 }
 
 // NodeSubnet mocks base method.
-func (m *MockLBScope) NodeSubnet() *v1alpha3.SubnetSpec {
+func (m *MockLBScope) NodeSubnet() *v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
 	return ret0
 }
 
@@ -381,8 +442,27 @@ func (mr *MockLBScopeMockRecorder) NodeSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockLBScope)(nil).NodeSubnet))
 }
 
+<<<<<<< HEAD
 // OutboundLBName mocks base method.
 func (m *MockLBScope) OutboundLBName(arg0 string) string {
+=======
+// ControlPlaneSubnet mocks base method.
+func (m *MockLBScope) ControlPlaneSubnet() *v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+	return ret0
+}
+
+// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
+func (mr *MockLBScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockLBScope)(nil).ControlPlaneSubnet))
+}
+
+// IsIPv6Enabled mocks base method.
+func (m *MockLBScope) IsIPv6Enabled() bool {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
 	ret0, _ := ret[0].(string)
@@ -395,11 +475,19 @@ func (mr *MockLBScopeMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockLBScope)(nil).OutboundLBName), arg0)
 }
 
+<<<<<<< HEAD
 // OutboundPoolName mocks base method.
 func (m *MockLBScope) OutboundPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
 	ret0, _ := ret[0].(string)
+=======
+// NodeRouteTable mocks base method.
+func (m *MockLBScope) NodeRouteTable() *v1alpha4.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeRouteTable")
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -409,11 +497,19 @@ func (mr *MockLBScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockLBScope)(nil).OutboundPoolName), arg0)
 }
 
+<<<<<<< HEAD
 // ResourceGroup mocks base method.
 func (m *MockLBScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResourceGroup")
 	ret0, _ := ret[0].(string)
+=======
+// ControlPlaneRouteTable mocks base method.
+func (m *MockLBScope) ControlPlaneRouteTable() *v1alpha4.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 

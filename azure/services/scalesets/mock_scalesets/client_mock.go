@@ -28,7 +28,8 @@ import (
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 // MockClient is a mock of Client interface.
@@ -97,11 +98,19 @@ func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
 }
 
+<<<<<<< HEAD
 // DeleteAsync mocks base method.
 func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1alpha3.Future, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*v1alpha3.Future)
+=======
+// CreateOrUpdateAsync mocks base method.
+func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) (*v1alpha4.Future, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*v1alpha4.Future)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,11 +136,19 @@ func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
 }
 
+<<<<<<< HEAD
 // GetPublicIPAddress mocks base method.
 func (m *MockClient) GetPublicIPAddress(arg0 context.Context, arg1, arg2 string) (network.PublicIPAddress, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPublicIPAddress", arg0, arg1, arg2)
 	ret0, _ := ret[0].(network.PublicIPAddress)
+=======
+// UpdateAsync mocks base method.
+func (m *MockClient) UpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSetUpdate) (*v1alpha4.Future, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAsync", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*v1alpha4.Future)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -143,7 +160,7 @@ func (mr *MockClientMockRecorder) GetPublicIPAddress(arg0, arg1, arg2 interface{
 }
 
 // GetResultIfDone mocks base method.
-func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1alpha3.Future) (compute.VirtualMachineScaleSet, error) {
+func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1alpha4.Future) (compute.VirtualMachineScaleSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetResultIfDone", ctx, future)
 	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
@@ -187,11 +204,19 @@ func (mr *MockClientMockRecorder) ListInstances(arg0, arg1, arg2 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstances", reflect.TypeOf((*MockClient)(nil).ListInstances), arg0, arg1, arg2)
 }
 
+<<<<<<< HEAD
 // Update mocks base method.
 func (m *MockClient) Update(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSetUpdate) (compute.VirtualMachineScaleSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
+=======
+// DeleteAsync mocks base method.
+func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1alpha4.Future, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*v1alpha4.Future)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

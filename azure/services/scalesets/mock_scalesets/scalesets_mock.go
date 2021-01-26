@@ -27,9 +27,14 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
+<<<<<<< HEAD
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+=======
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1alpha30 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	v1alpha40 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 // MockScaleSetScope is a mock of ScaleSetScope interface.
@@ -55,11 +60,67 @@ func (m *MockScaleSetScope) EXPECT() *MockScaleSetScopeMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // AdditionalTags mocks base method.
 func (m *MockScaleSetScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
 	ret0, _ := ret[0].(v1alpha3.Tags)
+=======
+// Enabled mocks base method.
+func (m *MockScaleSetScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockScaleSetScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockScaleSetScope)(nil).Enabled))
+}
+
+// Info mocks base method.
+func (m *MockScaleSetScope) Info(msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockScaleSetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockScaleSetScope)(nil).Info), varargs...)
+}
+
+// Error mocks base method.
+func (m *MockScaleSetScope) Error(err error, msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockScaleSetScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{err, msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockScaleSetScope)(nil).Error), varargs...)
+}
+
+// V mocks base method.
+func (m *MockScaleSetScope) V(level int) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.Logger)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -287,11 +348,19 @@ func (mr *MockScaleSetScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetScope)(nil).Location))
 }
 
+<<<<<<< HEAD
 // NeedsK8sVersionUpdate mocks base method.
 func (m *MockScaleSetScope) NeedsK8sVersionUpdate() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NeedsK8sVersionUpdate")
 	ret0, _ := ret[0].(bool)
+=======
+// AdditionalTags mocks base method.
+func (m *MockScaleSetScope) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -341,6 +410,39 @@ func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec))
 }
 
+<<<<<<< HEAD
+=======
+// GetBootstrapData mocks base method.
+func (m *MockScaleSetScope) GetBootstrapData(ctx context.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBootstrapData", ctx)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBootstrapData indicates an expected call of GetBootstrapData.
+func (mr *MockScaleSetScopeMockRecorder) GetBootstrapData(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBootstrapData", reflect.TypeOf((*MockScaleSetScope)(nil).GetBootstrapData), ctx)
+}
+
+// GetVMImage mocks base method.
+func (m *MockScaleSetScope) GetVMImage() (*v1alpha4.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVMImage")
+	ret0, _ := ret[0].(*v1alpha4.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVMImage indicates an expected call of GetVMImage.
+func (mr *MockScaleSetScopeMockRecorder) GetVMImage() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVMImage", reflect.TypeOf((*MockScaleSetScope)(nil).GetVMImage))
+}
+
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 // SetAnnotation mocks base method.
 func (m *MockScaleSetScope) SetAnnotation(arg0, arg1 string) {
 	m.ctrl.T.Helper()
@@ -377,8 +479,13 @@ func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderID", reflect.TypeOf((*MockScaleSetScope)(nil).SetProviderID), arg0)
 }
 
+<<<<<<< HEAD
 // SetProvisioningState mocks base method.
 func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha3.VMState) {
+=======
+// UpdateInstanceStatuses mocks base method.
+func (m *MockScaleSetScope) UpdateInstanceStatuses(arg0 context.Context, arg1 []v1alpha40.VMSSVM) error {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetProvisioningState", arg0)
 }
@@ -431,8 +538,13 @@ func (mr *MockScaleSetScopeMockRecorder) UpdateInstanceStatuses(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstanceStatuses", reflect.TypeOf((*MockScaleSetScope)(nil).UpdateInstanceStatuses), arg0, arg1)
 }
 
+<<<<<<< HEAD
 // V mocks base method.
 func (m *MockScaleSetScope) V(level int) logr.InfoLogger {
+=======
+// SetProvisioningState mocks base method.
+func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha4.VMState) {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
 	ret0, _ := ret[0].(logr.InfoLogger)
@@ -445,8 +557,13 @@ func (mr *MockScaleSetScopeMockRecorder) V(level interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockScaleSetScope)(nil).V), level)
 }
 
+<<<<<<< HEAD
 // WithName mocks base method.
 func (m *MockScaleSetScope) WithName(name string) logr.Logger {
+=======
+// SetLongRunningOperationState mocks base method.
+func (m *MockScaleSetScope) SetLongRunningOperationState(arg0 *v1alpha4.Future) {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WithName", name)
 	ret0, _ := ret[0].(logr.Logger)
@@ -459,6 +576,7 @@ func (mr *MockScaleSetScopeMockRecorder) WithName(name interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockScaleSetScope)(nil).WithName), name)
 }
 
+<<<<<<< HEAD
 // WithValues mocks base method.
 func (m *MockScaleSetScope) WithValues(keysAndValues ...interface{}) logr.Logger {
 	m.ctrl.T.Helper()
@@ -468,6 +586,13 @@ func (m *MockScaleSetScope) WithValues(keysAndValues ...interface{}) logr.Logger
 	}
 	ret := m.ctrl.Call(m, "WithValues", varargs...)
 	ret0, _ := ret[0].(logr.Logger)
+=======
+// GetLongRunningOperationState mocks base method.
+func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha4.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState")
+	ret0, _ := ret[0].(*v1alpha4.Future)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 

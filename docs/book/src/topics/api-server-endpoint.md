@@ -24,7 +24,7 @@ When creating a workload cluster with `apiServerLB` type `Internal`, the managem
 Here is an example of configuring the API Server LB type:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureCluster
 metadata:
   name: my-private-cluster
@@ -44,7 +44,7 @@ If also specifying a [custom virtual network](./custom-vnet.md), make sure you p
 For example:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureCluster
 metadata:
   name: my-private-cluster
@@ -79,7 +79,7 @@ When using an api server load balancer of type `Public`, a dynamic public IP add
 You can also choose to provide your own public api server IP. To do so, specify the existing public IP as follows:
 
 ````yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureCluster
 metadata:
   name: my-cluster

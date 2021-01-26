@@ -26,7 +26,12 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
+<<<<<<< HEAD
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+=======
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -53,11 +58,67 @@ func (m *MockVMSSExtensionScope) EXPECT() *MockVMSSExtensionScopeMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // AdditionalTags mocks base method.
 func (m *MockVMSSExtensionScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
 	ret0, _ := ret[0].(v1alpha3.Tags)
+=======
+// Enabled mocks base method.
+func (m *MockVMSSExtensionScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockVMSSExtensionScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Enabled))
+}
+
+// Info mocks base method.
+func (m *MockVMSSExtensionScope) Info(msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
+}
+
+// Info indicates an expected call of Info.
+func (mr *MockVMSSExtensionScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Info), varargs...)
+}
+
+// Error mocks base method.
+func (m *MockVMSSExtensionScope) Error(err error, msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockVMSSExtensionScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{err, msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Error), varargs...)
+}
+
+// V mocks base method.
+func (m *MockVMSSExtensionScope) V(level int) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.Logger)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -269,11 +330,19 @@ func (mr *MockVMSSExtensionScopeMockRecorder) SubscriptionID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockVMSSExtensionScope)(nil).SubscriptionID))
 }
 
+<<<<<<< HEAD
 // TenantID mocks base method.
 func (m *MockVMSSExtensionScope) TenantID() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TenantID")
 	ret0, _ := ret[0].(string)
+=======
+// AdditionalTags mocks base method.
+func (m *MockVMSSExtensionScope) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 

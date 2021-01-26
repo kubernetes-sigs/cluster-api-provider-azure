@@ -19,6 +19,7 @@ limitations under the License.
 package namespace
 
 import (
+	"context"
 	"log"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +36,7 @@ func Create(clientset *kubernetes.Clientset, name string, labels map[string]stri
 		},
 	}
 
-	namespace, err := clientset.CoreV1().Namespaces().Create(ns)
+	namespace, err := clientset.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("failed trying to create namespace (%s):%s\n", name, err.Error())
 		return nil, err
@@ -49,7 +50,7 @@ func CreateNamespaceDeleteIfExist(clientset *kubernetes.Clientset, name string, 
 	if err == nil {
 		// Delete existing namespace if exists to avoid dirty exit in last round of test
 		log.Printf("namespace %s already exist", n)
-		err := clientset.CoreV1().Namespaces().Delete(name, &metav1.DeleteOptions{})
+		err := clientset.CoreV1().Namespaces().Delete(context.Background(), name, metav1.DeleteOptions{})
 		if err != nil {
 			log.Printf("Error trying to delete namespace (%s):%s\n", name, err.Error())
 			return nil, err
@@ -62,7 +63,7 @@ func CreateNamespaceDeleteIfExist(clientset *kubernetes.Clientset, name string, 
 // Get returns a namespace for with a given name
 func Get(clientset *kubernetes.Clientset, name string) (*corev1.Namespace, error) {
 	opts := metav1.GetOptions{}
-	namespace, err := clientset.CoreV1().Namespaces().Get(name, opts)
+	namespace, err := clientset.CoreV1().Namespaces().Get(context.Background(), name, opts)
 	if err != nil {
 		log.Printf("failed trying to get namespace (%s):%s\n", name, err.Error())
 		return nil, err

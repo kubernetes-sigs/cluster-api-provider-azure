@@ -26,7 +26,8 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	reflect "reflect"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -53,8 +54,27 @@ func (m *MockBastionScope) EXPECT() *MockBastionScopeMockRecorder {
 	return m.recorder
 }
 
+<<<<<<< HEAD
 // APIServerLBName mocks base method.
 func (m *MockBastionScope) APIServerLBName() string {
+=======
+// Enabled mocks base method.
+func (m *MockBastionScope) Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockBastionScopeMockRecorder) Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockBastionScope)(nil).Enabled))
+}
+
+// Info mocks base method.
+func (m *MockBastionScope) Info(msg string, keysAndValues ...interface{}) {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "APIServerLBName")
 	ret0, _ := ret[0].(string)
@@ -67,6 +87,7 @@ func (mr *MockBastionScopeMockRecorder) APIServerLBName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockBastionScope)(nil).APIServerLBName))
 }
 
+<<<<<<< HEAD
 // APIServerLBPoolName mocks base method.
 func (m *MockBastionScope) APIServerLBPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
@@ -83,6 +104,10 @@ func (mr *MockBastionScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *g
 
 // AdditionalTags mocks base method.
 func (m *MockBastionScope) AdditionalTags() v1alpha3.Tags {
+=======
+// Error mocks base method.
+func (m *MockBastionScope) Error(err error, msg string, keysAndValues ...interface{}) {
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
 	ret0, _ := ret[0].(v1alpha3.Tags)
@@ -95,11 +120,19 @@ func (mr *MockBastionScopeMockRecorder) AdditionalTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockBastionScope)(nil).AdditionalTags))
 }
 
+<<<<<<< HEAD
 // Authorizer mocks base method.
 func (m *MockBastionScope) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Authorizer")
 	ret0, _ := ret[0].(autorest.Authorizer)
+=======
+// V mocks base method.
+func (m *MockBastionScope) V(level int) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.Logger)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -280,6 +313,7 @@ func (mr *MockBastionScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockBastionScope)(nil).HashKey))
 }
 
+<<<<<<< HEAD
 // Info mocks base method.
 func (m *MockBastionScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
@@ -288,6 +322,14 @@ func (m *MockBastionScope) Info(msg string, keysAndValues ...interface{}) {
 		varargs = append(varargs, a)
 	}
 	m.ctrl.Call(m, "Info", varargs...)
+=======
+// AdditionalTags mocks base method.
+func (m *MockBastionScope) AdditionalTags() v1alpha4.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha4.Tags)
+	return ret0
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 }
 
 // Info indicates an expected call of Info.
@@ -311,11 +353,19 @@ func (mr *MockBastionScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockBastionScope)(nil).IsAPIServerPrivate))
 }
 
+<<<<<<< HEAD
 // IsIPv6Enabled mocks base method.
 func (m *MockBastionScope) IsIPv6Enabled() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsIPv6Enabled")
 	ret0, _ := ret[0].(bool)
+=======
+// Vnet mocks base method.
+func (m *MockBastionScope) Vnet() *v1alpha4.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -339,11 +389,19 @@ func (mr *MockBastionScopeMockRecorder) IsVnetManaged() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockBastionScope)(nil).IsVnetManaged))
 }
 
+<<<<<<< HEAD
 // Location mocks base method.
 func (m *MockBastionScope) Location() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Location")
 	ret0, _ := ret[0].(string)
+=======
+// NodeSubnet mocks base method.
+func (m *MockBastionScope) NodeSubnet() *v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnet")
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -353,6 +411,7 @@ func (mr *MockBastionScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockBastionScope)(nil).Location))
 }
 
+<<<<<<< HEAD
 // NodeRouteTable mocks base method.
 func (m *MockBastionScope) NodeRouteTable() *v1alpha3.RouteTable {
 	m.ctrl.T.Helper()
@@ -372,6 +431,13 @@ func (m *MockBastionScope) NodeSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
 	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+=======
+// ControlPlaneSubnet mocks base method.
+func (m *MockBastionScope) ControlPlaneSubnet() *v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
+	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -395,11 +461,19 @@ func (mr *MockBastionScopeMockRecorder) OutboundLBName(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockBastionScope)(nil).OutboundLBName), arg0)
 }
 
+<<<<<<< HEAD
 // OutboundPoolName mocks base method.
 func (m *MockBastionScope) OutboundPoolName(arg0 string) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
 	ret0, _ := ret[0].(string)
+=======
+// NodeRouteTable mocks base method.
+func (m *MockBastionScope) NodeRouteTable() *v1alpha4.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeRouteTable")
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -409,11 +483,19 @@ func (mr *MockBastionScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockBastionScope)(nil).OutboundPoolName), arg0)
 }
 
+<<<<<<< HEAD
 // ResourceGroup mocks base method.
 func (m *MockBastionScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResourceGroup")
 	ret0, _ := ret[0].(string)
+=======
+// ControlPlaneRouteTable mocks base method.
+func (m *MockBastionScope) ControlPlaneRouteTable() *v1alpha4.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha4.RouteTable)
+>>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 

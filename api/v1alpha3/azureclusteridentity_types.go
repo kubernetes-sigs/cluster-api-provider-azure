@@ -19,7 +19,7 @@ package v1alpha3
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity
@@ -55,7 +55,6 @@ type AzureClusterIdentityStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azureclusteridentities,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureClusterIdentity is the Schema for the azureclustersidentities API

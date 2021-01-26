@@ -60,7 +60,6 @@ type AzureManagedMachinePoolStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedmachinepools,scope=Namespaced,categories=cluster-api,shortName=ammp
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureManagedMachinePool is the Schema for the azuremanagedmachinepools API

@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
@@ -69,6 +69,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 		})
 
 		It("should fail with context timeout error if context expires", func() {
+			ctx := context.Background()
 			mockCtrl := gomock.NewController(GinkgoT())
 			defer mockCtrl.Finish()
 
@@ -83,7 +84,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 			reconciler := NewAzureClusterReconciler(c, log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), 1*time.Second)
 
 			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
-			_, err = reconciler.Reconcile(ctrl.Request{
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: instance.Namespace,
 					Name:      instance.Name,
