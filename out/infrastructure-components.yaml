@@ -330,6 +330,8 @@ spec:
                 - host
                 - port
                 type: object
+              controlPlaneEndpointIP:
+                type: string
               location:
                 type: string
               networkSpec:
@@ -1143,9 +1145,35 @@ spec:
                     - version
                     type: object
                 type: object
+              imageID:
+                type: string
               location:
                 description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                 type: string
+              networkInterfaces:
+                description: Network Interfaces for a VM
+                items:
+                  description: Specifies a network interface that you want to add to the VM
+                  properties:
+                    isPrimary:
+                      type: boolean
+                    name:
+                      type: string
+                    staticIPAddress:
+                      type: string
+                    subnetName:
+                      type: string
+                    vnetName:
+                      type: string
+                    vnetResourceGroup:
+                      type: string
+                  required:
+                  - name
+                  - vnetName
+                  - subnetName
+                  - vnetResourceGroup
+                  type: object
+                type: array
               osDisk:
                 description: OSDisk specifies the parameters for the operating system disk of the machine
                 properties:
@@ -1211,6 +1239,7 @@ spec:
             - osDisk
             - sshPublicKey
             - vmSize
+            - networkInterfaces
             type: object
           status:
             description: AzureMachineStatus defines the observed state of AzureMachine
@@ -1557,9 +1586,35 @@ spec:
                             - version
                             type: object
                         type: object
+                      imageID:
+                        type: string
                       location:
                         description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                         type: string
+                      networkInterfaces:
+                        description: Network Interfaces for a VM
+                        items:
+                          description: Specifies a network interface that you want to add to the VM
+                          properties:
+                            isPrimary:
+                              type: boolean
+                            name:
+                              type: string
+                            staticIPAddress:
+                              type: string
+                            subnetName:
+                              type: string
+                            vnetName:
+                              type: string
+                            vnetResourceGroup:
+                              type: string
+                          required:
+                          - name
+                          - vnetName
+                          - subnetName
+                          - vnetResourceGroup
+                          type: object
+                        type: array
                       osDisk:
                         description: OSDisk specifies the parameters for the operating system disk of the machine
                         properties:
@@ -1625,6 +1680,7 @@ spec:
                     - osDisk
                     - sshPublicKey
                     - vmSize
+                    - networkInterfaces
                     type: object
                 required:
                 - spec
@@ -2298,7 +2354,7 @@ spec:
         - --metrics-addr=127.0.0.1:8080
         - --webhook-port=9443
         - --feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false}
-        image: niachary/cluster-api-azure-controller-amd64:dev
+        image: niachary/cluster-api-azure-controller_niharikatest-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -2404,7 +2460,7 @@ spec:
             secretKeyRef:
               key: arm-endpoint
               name: capz-manager-bootstrap-credentials
-        image: niachary/cluster-api-azure-controller-amd64:dev
+        image: niachary/cluster-api-azure-controller_niharikatest-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
