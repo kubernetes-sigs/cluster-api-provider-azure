@@ -68,10 +68,7 @@ type filterUnclonedMachinesPredicate struct {
 }
 
 func (f filterUnclonedMachinesPredicate) Create(e event.CreateEvent) bool {
-	return f.Generic(event.GenericEvent{
-		Meta:   e.Meta,
-		Object: e.Object,
-	})
+	return f.Generic(event.GenericEvent(e))
 }
 
 func (f filterUnclonedMachinesPredicate) Update(e event.UpdateEvent) bool {

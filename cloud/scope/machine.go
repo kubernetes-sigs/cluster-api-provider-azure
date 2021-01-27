@@ -122,7 +122,7 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 // PublicIPSpecs returns the public IP specs.
 func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	var spec []azure.PublicIPSpec
-	if m.AzureMachine.Spec.AllocatePublicIP == true {
+	if m.AzureMachine.Spec.AllocatePublicIP {
 		spec = append(spec, azure.PublicIPSpec{
 			Name: azure.GenerateNodePublicIPName(m.Name()),
 		})
@@ -168,7 +168,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		}
 	}
 	specs := []azure.NICSpec{spec}
-	if m.AzureMachine.Spec.AllocatePublicIP == true {
+	if m.AzureMachine.Spec.AllocatePublicIP {
 		specs = append(specs, azure.NICSpec{
 			Name:                  azure.GeneratePublicNICName(m.Name()),
 			MachineName:           m.Name(),

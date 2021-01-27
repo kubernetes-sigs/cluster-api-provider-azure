@@ -68,7 +68,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrapf(err, "failed to get existing tags")
 			}
-			tags := make(map[string]*string, 0)
+			tags := make(map[string]*string)
 			if result.Properties != nil && result.Properties.Tags != nil {
 				tags = result.Properties.Tags
 			}

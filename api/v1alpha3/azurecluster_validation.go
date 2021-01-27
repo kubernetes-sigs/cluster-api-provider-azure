@@ -151,7 +151,7 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 		}
 	}
 	for k, v := range requiredSubnetRoles {
-		if v == false {
+		if !v {
 			allErrs = append(allErrs, field.Required(fldPath,
 				fmt.Sprintf("required role %s not included in provided subnets", k)))
 		}
@@ -197,8 +197,7 @@ func validateInternalLBIPAddress(address string, cidrs []string, fldPath *field.
 // validateIngressRule validates an IngressRule
 func validateIngressRule(ingressRule *IngressRule, fldPath *field.Path) *field.Error {
 	if ingressRule.Priority < 100 || ingressRule.Priority > 4096 {
-		return field.Invalid(fldPath, ingressRule.Priority,
-			fmt.Sprintf("ingress priorities should be between 100 and 4096"))
+		return field.Invalid(fldPath, ingressRule.Priority, "ingress priorities should be between 100 and 4096")
 	}
 
 	return nil
@@ -234,13 +233,13 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 	// There should only be one IP config.
 	if len(lb.FrontendIPs) != 1 {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
-			fmt.Sprintf("API Server Load balancer should have 1 Frontend IP configuration")))
+			"API Server Load balancer should have 1 Frontend IP configuration"))
 	} else {
 		// if Internal, IP config should not have a public IP.
 		if lb.Type == Internal {
 			if lb.FrontendIPs[0].PublicIP != nil {
 				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("publicIP"),
-					fmt.Sprintf("Internal Load Balancers cannot have a Public IP")))
+					"Internal Load Balancers cannot have a Public IP"))
 			}
 			if lb.FrontendIPs[0].PrivateIPAddress != "" {
 				if err := validateInternalLBIPAddress(lb.FrontendIPs[0].PrivateIPAddress, cidrs,
@@ -257,7 +256,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 		if lb.Type == Public {
 			if lb.FrontendIPs[0].PrivateIPAddress != "" {
 				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
-					fmt.Sprintf("Public Load Balancers cannot have a Private IP")))
+					"Public Load Balancers cannot have a Private IP"))
 			}
 		}
 	}

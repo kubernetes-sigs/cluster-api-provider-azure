@@ -53,7 +53,7 @@ var (
 	logger                 = record.NewLogger(record.WithThreshold(to.IntPtr(1)), record.WithWriter(ginkgo.GinkgoWriter))
 	scheme                 = runtime.NewScheme()
 	env                    *envtest.Environment
-	clusterAPIVersionRegex = regexp.MustCompile("^(\\W)sigs.k8s.io/cluster-api v(.+)")
+	clusterAPIVersionRegex = regexp.MustCompile(`^(\W)sigs.k8s.io/cluster-api v(.+)`)
 )
 
 func init() {
