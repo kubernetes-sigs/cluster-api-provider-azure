@@ -513,7 +513,7 @@ func TestReconcileVMSS(t *testing.T) {
 			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
-				g.Expect(err).To(MatchError(tc.expectedError), fmt.Sprintf("%s", err.Error()))
+				g.Expect(err).To(MatchError(tc.expectedError), err.Error())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
 			}

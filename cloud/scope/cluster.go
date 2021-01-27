@@ -472,7 +472,7 @@ func (s *ClusterScope) APIServerHost() string {
 // SetFailureDomain will set the spec for a for a given key
 func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
-		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains, 0)
+		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)
 	}
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }

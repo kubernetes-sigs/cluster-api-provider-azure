@@ -251,9 +251,11 @@ func (s *Service) generateImagePlan() *compute.Plan {
 	if err != nil {
 		return nil
 	}
-	if image.Marketplace == nil || image.Marketplace.ThirdPartyImage == false {
+
+	if image.Marketplace == nil || !image.Marketplace.ThirdPartyImage {
 		return nil
 	}
+
 	if image.Marketplace.Publisher == "" || image.Marketplace.SKU == "" || image.Marketplace.Offer == "" {
 		return nil
 	}

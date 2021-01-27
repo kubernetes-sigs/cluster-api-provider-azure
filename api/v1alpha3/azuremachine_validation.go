@@ -168,11 +168,8 @@ func ValidateManagedDisk(old, new ManagedDisk, fieldPath *field.Path) field.Erro
 func validateDiffDiskSetings(d *DiffDiskSettings, fldPath *field.Path) *field.Error {
 	if d != nil {
 		if d.Option != string(compute.Local) {
-			return field.Invalid(
-				fldPath.Child("option"),
-				d,
-				fmt.Sprintf("changing ephemeral os settings after machine creation is not allowed"),
-			)
+			msg := "changing ephemeral os settings after machine creation is not allowed"
+			return field.Invalid(fldPath.Child("option"), d, msg)
 		}
 	}
 	return nil
@@ -183,25 +180,18 @@ func validateDiffDiskSettingsUpdate(old, new *DiffDiskSettings, fieldPath *field
 	fldPath := fieldPath.Child("diffDiskSettings")
 
 	if old == nil && new != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, new, fmt.Sprintf("enabling ephemeral os after machine creation is not allowed")))
+		allErrs = append(allErrs, field.Invalid(fldPath, new, "enabling ephemeral os after machine creation is not allowed"))
 		return allErrs
 	}
 	if old != nil && new == nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, new, fmt.Sprintf("disabling ephemeral os after machine creation is not allowed")))
+		allErrs = append(allErrs, field.Invalid(fldPath, new, "disabling ephemeral os after machine creation is not allowed"))
 		return allErrs
 	}
 
 	if old != nil && new != nil {
 		if old.Option != new.Option {
-			allErrs = append(
-				allErrs,
-				field.Invalid(
-					fldPath.Child("option"),
-					new,
-					fmt.Sprintf("changing ephemeral os settings after machine creation is not allowed"),
-				),
-			)
-			return allErrs
+			msg := "changing ephemeral os settings after machine creation is not allowed"
+			return append(allErrs, field.Invalid(fldPath.Child("option"), new, msg))
 		}
 	}
 
