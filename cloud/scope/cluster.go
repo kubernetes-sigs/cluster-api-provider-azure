@@ -269,21 +269,6 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 	return spec
 }
 
-// AvailabilitySetEnabled informs control plane machines they should be part of an Availability Set
-func (s *ClusterScope) AvailabilitySetEnabled() bool {
-	return len(s.AvailabilitySetSpecs()) > 0
-}
-
-// AvailabilitySetSpecs returns the availability set specs.
-func (s *ClusterScope) AvailabilitySetSpecs() []azure.AvailabilitySetSpec {
-	if len(s.AzureCluster.Status.FailureDomains) == 0 {
-		return []azure.AvailabilitySetSpec{{
-			Name: azure.GenerateAvailabilitySetName(s.ClusterName(), azure.ControlPlaneNodeGroup),
-		}}
-	}
-	return nil
-}
-
 // Vnet returns the cluster Vnet.
 func (s *ClusterScope) Vnet() *infrav1.VnetSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.Vnet
@@ -398,6 +383,11 @@ func (s *ClusterScope) Namespace() string {
 // Location returns the cluster location.
 func (s *ClusterScope) Location() string {
 	return s.AzureCluster.Spec.Location
+}
+
+// AvailabilitySetEnabled informs machines that they should be part of an Availability Set.
+func (s *ClusterScope) AvailabilitySetEnabled() bool {
+	return len(s.AzureCluster.Status.FailureDomains) == 0
 }
 
 // GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.

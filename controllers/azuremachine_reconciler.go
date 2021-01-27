@@ -23,6 +23,7 @@ import (
 
 	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilitysets"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
 	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
@@ -45,6 +46,7 @@ type azureMachineService struct {
 	publicIPsSvc         azure.Service
 	tagsSvc              azure.Service
 	vmExtensionsSvc      azure.Service
+	availabilitySetsSvc  azure.Service
 	skuCache             *resourceskus.Cache
 }
 
@@ -66,6 +68,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 		publicIPsSvc:         publicips.New(machineScope),
 		tagsSvc:              tags.New(machineScope),
 		vmExtensionsSvc:      vmextensions.New(machineScope),
+		availabilitySetsSvc:  availabilitysets.New(machineScope, cache),
 		skuCache:             cache,
 	}, nil
 }
@@ -85,6 +88,10 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 
 	if err := s.networkInterfacesSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create network interface")
+	}
+
+	if err := s.availabilitySetsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "failed to create availability set")
 	}
 
 	if err := s.virtualMachinesSvc.Reconcile(ctx); err != nil {
@@ -129,6 +136,10 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 
 	if err := s.disksSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete OS disk")
+	}
+
+	if err := s.availabilitySetsSvc.Delete(ctx); err != nil {
+		return errors.Wrapf(err, "failed to delete availability set")
 	}
 
 	return nil
