@@ -12,7 +12,7 @@ By default, images offered by "capi" in the [Azure Marketplace][azure-marketplac
 az vm image list --publisher cncf-upstream --offer capi --all -o table
 ```
 
-But for more control over your nodes, you should build and use a *custom image*.
+Note: These images are not updated for security fixes and it is recommended to always use the latest patch version for the Kubernetes version you wish to run. For production-like environments, and for more control over your nodes, it is highly recommended to build and use your own custom images.
 
 ## Building a custom image
 
