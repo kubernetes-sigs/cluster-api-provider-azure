@@ -130,6 +130,7 @@ var _ = Describe("Workload cluster creation", func() {
 							ClusterctlConfigPath:  clusterctlConfigPath,
 							E2EConfig:             e2eConfig,
 							ArtifactFolder:        artifactFolder,
+							SkipCleanup:           skipCleanup,
 						}
 					})
 				})

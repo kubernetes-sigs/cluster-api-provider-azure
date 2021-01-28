@@ -46,6 +46,7 @@ type AzurePrivateClusterSpecInput struct {
 	ClusterctlConfigPath  string
 	E2EConfig             *clusterctl.E2EConfig
 	ArtifactFolder        string
+	SkipCleanup           bool
 }
 
 // AzurePrivateClusterSpec implements a test that creates a workload cluster with a private API endpoint.
@@ -114,8 +115,18 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
 	})
 	cluster = result.Cluster
-
 	Expect(cluster).ToNot(BeNil())
+
+	Context("Creating an accessible load balancer", func() {
+		AzureLBSpec(ctx, func() AzureLBSpecInput {
+			return AzureLBSpecInput{
+				BootstrapClusterProxy: publicClusterProxy,
+				Namespace:             input.Namespace,
+				ClusterName:           clusterName,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 }
 
 // SetupExistingVNet creates a resource group and a VNet to be used by a workload cluster.
