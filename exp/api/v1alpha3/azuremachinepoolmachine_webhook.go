@@ -48,5 +48,3 @@ func (ampm *AzureMachinePoolMachine) ValidateDelete() error {
 	azuremachinepoolmachinelog.Info("validate delete", "name", ampm.Name)
 	return nil
 }
-
-

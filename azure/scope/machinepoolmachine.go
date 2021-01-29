@@ -93,30 +93,37 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 	}, nil
 }
 
+// Name is the name of the Machine Pool Machine
 func (s *MachinePoolMachineScope) Name() string {
 	return s.AzureMachinePoolMachine.Name
 }
 
+// InstanceID is the unique ID of the machine within the Machine Pool
 func (s *MachinePoolMachineScope) InstanceID() string {
 	return s.AzureMachinePoolMachine.Status.InstanceID
 }
 
+// ScaleSetName is the name of the VMSS
 func (s *MachinePoolMachineScope) ScaleSetName() string {
 	return s.AzureMachinePool.Name
 }
 
+// GetLongRunningOperationState gets a future representing the current state of a long running operation if one exists
 func (s *MachinePoolMachineScope) GetLongRunningOperationState() *infrav1.Future {
 	return s.AzureMachinePoolMachine.Status.LongRunningOperationState
 }
 
+// SetLongRunningOperationState sets a future representing the current state of a long running operation
 func (s *MachinePoolMachineScope) SetLongRunningOperationState(future *infrav1.Future) {
 	s.AzureMachinePoolMachine.Status.LongRunningOperationState = future
 }
 
+// SetVMSSVM update the scope with the current state of the VMSS VM
 func (s *MachinePoolMachineScope) SetVMSSVM(instance *infrav1exp.VMSSVM) {
 	s.instance = instance
 }
 
+// Close updates the state of MachinePoolMachine
 func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
 	defer span.End()
@@ -133,8 +140,9 @@ func (s *MachinePoolMachineScope) ShouldDrain() bool {
 	return true
 }
 
+// Drain safely drains workloads from the machine's K8s node so that the machine can be replaced
 func (s *MachinePoolMachineScope) Drain(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
+	_, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
 	defer span.End()
 
 	//patchHelper, err := patch.NewHelper(s.AzureMachinePoolMachine, s.client)

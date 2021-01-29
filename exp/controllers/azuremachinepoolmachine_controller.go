@@ -68,6 +68,7 @@ type (
 	}
 )
 
+// NewAzureMachinePoolMachineController creates a new AzureMachinePoolMachineController to handle updates to Azure Machine Pool Machines
 func NewAzureMachinePoolMachineController(c client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureMachinePoolMachineController {
 	return &AzureMachinePoolMachineController{
 		Client:            c,
@@ -322,6 +323,7 @@ func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) 
 	}
 }
 
+// Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM
 func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Reconcile")
 	defer span.End()
@@ -333,6 +335,7 @@ func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error
 	return nil
 }
 
+// Delete will attempt to drain and delete the Azure VMSS VM
 func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Delete")
 	defer span.End()

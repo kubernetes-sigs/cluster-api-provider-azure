@@ -240,54 +240,54 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 	}), nil
 }
 
-func MachinePoolToAzureMachinePoolMachine(kClient client.Client, log logr.Logger) handler.ToRequestsFunc{
-	return func(o handler.MapObject) []ctrl.Request {
-		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
-		defer cancel()
-
-		m, ok := o.Object.(*clusterv1exp.MachinePool)
-		if !ok {
-			log.Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
-			return nil
-		}
-
-		cluster, err := util.GetOwnerCluster(ctx, kClient, m.ObjectMeta)
-		switch {
-		case apierrors.IsNotFound(err) || cluster == nil:
-			log.Info("owning cluster not found")
-			return nil
-		case err != nil:
-			log.Error(err, "failed to get owning cluster")
-			return nil
-		}
-
-		mpToAmp := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)
-
-		var azureMachinePoolMachineRequests []ctrl.Request
-		for _, req := range mpToAmp(o) {
-			labels := map[string]string{
-				clusterv1.ClusterLabelName:      cluster.Name,
-				infrav1exp.MachinePoolNameLabel: req.Name,
-			}
-
-			ampml := &infrav1exp.AzureMachinePoolMachineList{}
-			if err := kClient.List(ctx, ampml, client.InNamespace(cluster.Namespace), client.MatchingLabels(labels)); err != nil {
-				log.Error(err, "failed to fetch AzureMachinePoolMachines")
-			}
-
-			for _, machine := range ampml.Items {
-				azureMachinePoolMachineRequests = append(azureMachinePoolMachineRequests, ctrl.Request{
-					NamespacedName: types.NamespacedName{
-						Name:      machine.Name,
-						Namespace: machine.Namespace,
-					},
-				})
-			}
-		}
-
-		return azureMachinePoolMachineRequests
-	}
-}
+//func MachinePoolToAzureMachinePoolMachine(kClient client.Client, log logr.Logger) handler.ToRequestsFunc {
+//	return func(o handler.MapObject) []ctrl.Request {
+//		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+//		defer cancel()
+//
+//		m, ok := o.Object.(*clusterv1exp.MachinePool)
+//		if !ok {
+//			log.Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
+//			return nil
+//		}
+//
+//		cluster, err := util.GetOwnerCluster(ctx, kClient, m.ObjectMeta)
+//		switch {
+//		case apierrors.IsNotFound(err) || cluster == nil:
+//			log.Info("owning cluster not found")
+//			return nil
+//		case err != nil:
+//			log.Error(err, "failed to get owning cluster")
+//			return nil
+//		}
+//
+//		mpToAmp := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)
+//
+//		var azureMachinePoolMachineRequests []ctrl.Request
+//		for _, req := range mpToAmp(o) {
+//			labels := map[string]string{
+//				clusterv1.ClusterLabelName:      cluster.Name,
+//				infrav1exp.MachinePoolNameLabel: req.Name,
+//			}
+//
+//			ampml := &infrav1exp.AzureMachinePoolMachineList{}
+//			if err := kClient.List(ctx, ampml, client.InNamespace(cluster.Namespace), client.MatchingLabels(labels)); err != nil {
+//				log.Error(err, "failed to fetch AzureMachinePoolMachines")
+//			}
+//
+//			for _, machine := range ampml.Items {
+//				azureMachinePoolMachineRequests = append(azureMachinePoolMachineRequests, ctrl.Request{
+//					NamespacedName: types.NamespacedName{
+//						Name:      machine.Name,
+//						Namespace: machine.Namespace,
+//					},
+//				})
+//			}
+//		}
+//
+//		return azureMachinePoolMachineRequests
+//	}
+//}
 
 // MachinePoolToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.

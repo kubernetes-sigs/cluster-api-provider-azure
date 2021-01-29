@@ -163,6 +163,7 @@ func (m *MachinePoolScope) NeedsK8sVersionUpdate() bool {
 	return m.AzureMachinePool.Status.Version != *m.MachinePool.Spec.Template.Spec.Version
 }
 
+// SetVMSSState updates the machine pool scope with the current state of the VMSS
 func (m *MachinePoolScope) SetVMSSState(vmssState *infrav1exp.VMSS) {
 	m.vmssState = vmssState
 }
@@ -242,6 +243,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 
 	// determine which machines need to be deleted since they are not in Azure
 	for key, val := range existingMachinesByProviderID {
+		val := val
 		if _, ok := latestMachinesByProviderID[key]; !ok {
 			if err := m.client.Delete(ctx, &val); err != nil && !apierrors.IsNotFound(err) {
 				return errors.Wrap(err, "failed deleting machine")
@@ -321,10 +323,12 @@ func (m *MachinePoolScope) GetLongRunningOperationState() *infrav1.Future {
 	return m.AzureMachinePool.Status.LongRunningOperationState
 }
 
+// MaxUnavailable is the max number of unavailable machine pool machines
 func (m *MachinePoolScope) MaxUnavailable() int32 {
 	return m.AzureMachinePool.Spec.MaxUnavailable
 }
 
+// MaxSurge is the max replica count the machine pool can grow to during an upgrade
 func (m *MachinePoolScope) MaxSurge() int32 {
 	if m.AzureMachinePool.Spec.MaxSurge != nil {
 		return *m.AzureMachinePool.Spec.MaxSurge

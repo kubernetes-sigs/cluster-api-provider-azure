@@ -44,10 +44,6 @@ type (
 		// +optional
 		NodeRef *corev1.ObjectReference `json:"nodeRef,omitempty"`
 
-		// Ready is true when the provider resource is ready.
-		// +optional
-		Ready bool `json:"ready"`
-
 		// Version defines the Kubernetes version for the VM Instance
 		// +optional
 		Version string `json:"version"`
@@ -62,11 +58,6 @@ type (
 		// InstanceName is the name of the Machine Instance within the VMSS
 		// +optional
 		InstanceName string `json:"instanceName"`
-
-		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
-		// the image version the VM is running. If the instance is not running the latest model, it means the instance
-		// may not be running the version of Kubernetes the Machine Pool has specified and needs to be updated.
-		LatestModelApplied bool `json:"latestModelApplied"`
 
 		// FailureReason will be set in the event that there is a terminal problem
 		// reconciling the MachinePool machine and will contain a succinct value suitable
@@ -96,6 +87,15 @@ type (
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
+
+		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
+		// the image version the VM is running. If the instance is not running the latest model, it means the instance
+		// may not be running the version of Kubernetes the Machine Pool has specified and needs to be updated.
+		LatestModelApplied bool `json:"latestModelApplied"`
+
+		// Ready is true when the provider resource is ready.
+		// +optional
+		Ready bool `json:"ready"`
 	}
 
 	// +kubebuilder:object:root=true

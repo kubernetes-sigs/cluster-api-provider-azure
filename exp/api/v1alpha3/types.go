@@ -59,6 +59,7 @@ func (vmss VMSS) HasModelChanges(other VMSS) bool {
 	return !equal
 }
 
+// ReadyAndNotRunningLatestModel returns VMSSVMs that are ready and not running the latest model
 func (vmss VMSS) ReadyAndNotRunningLatestModel() []VMSSVM {
 	var instances []VMSSVM
 	for _, instance := range vmss.Instances {
@@ -70,6 +71,7 @@ func (vmss VMSS) ReadyAndNotRunningLatestModel() []VMSSVM {
 	return instances
 }
 
+// ReadyAndRunningLatestModel returns VMSSVMs running the latest model and are ready
 func (vmss VMSS) ReadyAndRunningLatestModel() []VMSSVM {
 	var instances []VMSSVM
 	for _, instance := range vmss.Instances {
@@ -81,6 +83,7 @@ func (vmss VMSS) ReadyAndRunningLatestModel() []VMSSVM {
 	return instances
 }
 
+// ReadyInstances returns VMSSVMs that are ready
 func (vmss VMSS) ReadyInstances() []VMSSVM {
 	var instances []VMSSVM
 	for _, instance := range vmss.Instances {
@@ -92,6 +95,7 @@ func (vmss VMSS) ReadyInstances() []VMSSVM {
 	return instances
 }
 
+// InstancesByProviderID returns VMSSVMs by ID
 func (vmss VMSS) InstancesByProviderID() map[string]VMSSVM {
 	instancesByProviderID := make(map[string]VMSSVM, len(vmss.Instances))
 	for _, instance := range vmss.Instances {
