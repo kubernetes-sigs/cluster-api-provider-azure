@@ -22,31 +22,31 @@ import (
 	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/privatedns"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureClusterService is the reconciler called by the AzureCluster controller
 type azureClusterService struct {
 	scope            *scope.ClusterScope
-	groupsSvc        azure.Service
-	vnetSvc          azure.Service
-	securityGroupSvc azure.Service
-	routeTableSvc    azure.Service
-	subnetsSvc       azure.Service
-	publicIPSvc      azure.Service
-	loadBalancerSvc  azure.Service
-	privateDNSSvc    azure.Service
+	groupsSvc        azure.Reconciler
+	vnetSvc          azure.Reconciler
+	securityGroupSvc azure.Reconciler
+	routeTableSvc    azure.Reconciler
+	subnetsSvc       azure.Reconciler
+	publicIPSvc      azure.Reconciler
+	loadBalancerSvc  azure.Reconciler
+	privateDNSSvc    azure.Reconciler
 	skuCache         *resourceskus.Cache
 }
 
@@ -71,7 +71,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 	}, nil
 }
 
-var _ azure.Service = (*azureClusterService)(nil)
+var _ azure.Reconciler = (*azureClusterService)(nil)
 
 // Reconcile reconciles all the services in pre determined order
 func (s *azureClusterService) Reconcile(ctx context.Context) error {
