@@ -1,7 +1,6 @@
 namespace: capz-system
 
 resources:
-  - crds.yaml
   - operator.yaml
   - role_binding.yaml
   - role.yaml

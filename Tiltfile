@@ -134,8 +134,11 @@ def capz():
     # Apply the kustomized yaml for this provider
     substitutions = settings.get("kustomize_substitutions", {})
     os.environ.update(substitutions)
-    yaml = str(kustomizesub("./hack/observability")) # build an observable kind deployment by default
 
+    # deploy jaeger crds directly due to kubernetes apply: unable to recognize "": no matches for kind "Jaeger" in version "jaegertracing.io/v1"
+    local("kubectl apply -f ./hack/observability/jaeger/resources/crds.yaml")
+
+    yaml = str(kustomizesub("./hack/observability")) # build an observable kind deployment by default
 
     # add extra_args if they are defined
     if settings.get("extra_args"):
