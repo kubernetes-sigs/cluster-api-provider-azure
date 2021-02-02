@@ -964,8 +964,8 @@ func (in *SpotVMOptions) DeepCopyInto(out *SpotVMOptions) {
 	*out = *in
 	if in.MaxPrice != nil {
 		in, out := &in.MaxPrice, &out.MaxPrice
-		*out = new(string)
-		**out = **in
+		x := (*in).DeepCopy()
+		*out = &x
 	}
 }
 
