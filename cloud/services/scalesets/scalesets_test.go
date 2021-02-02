@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/klogr"
@@ -324,6 +325,29 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
+				vmss = setHashOnVMSS(g, vmss)
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
+					Return(putFuture, nil)
+				setupCreatingSucceededExpectations(s, m, putFuture)
+			},
+		},
+		{
+			name:          "should start creating a vmss with spot vm and a maximum price",
+			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				spec := newDefaultVMSSSpec()
+				maxPrice := resource.MustParse("0.001")
+				spec.SpotVMOptions = &infrav1.SpotVMOptions{
+					MaxPrice: &maxPrice,
+				}
+				s.ScaleSetSpec().Return(spec).AnyTimes()
+				setupDefaultVMSSStartCreatingExpectations(s, m)
+				vmss := newDefaultVMSS()
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.BillingProfile = &compute.BillingProfile{
+					MaxPrice: to.Float64Ptr(0.001),
+				}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
 				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
