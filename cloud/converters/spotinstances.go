@@ -32,7 +32,7 @@ func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMach
 	}
 	var billingProfile *compute.BillingProfile
 	if spotVMOptions.MaxPrice != nil {
-		maxPrice, err := strconv.ParseFloat(*spotVMOptions.MaxPrice, 64)
+		maxPrice, err := strconv.ParseFloat(spotVMOptions.MaxPrice.AsDec().String(), 64)
 		if err != nil {
 			return "", "", nil, err
 		}
