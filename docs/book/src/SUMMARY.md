@@ -3,6 +3,7 @@
 [Introduction](./introduction.md)
 [Roadmap](./roadmap.md)
 - [Topics](./topics/topics.md)
+    - [AAD Integration](./topics/aad-integration.md)
     - [API Server Endpoint](./topics/api-server-endpoint.md)
     - [Cloud Provider Config](./topics/cloud-provider-config.md)
     - [Custom Images](./topics/custom-images.md)
