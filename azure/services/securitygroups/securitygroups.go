@@ -140,6 +140,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Delete")
 	defer span.End()
 
+	if !s.Scope.IsVnetManaged() {
+		s.Scope.V(4).Info("Skipping network security group delete in custom VNet mode")
+		return nil
+	}
+
 	for _, nsgSpec := range s.Scope.NSGSpecs() {
 		s.Scope.V(2).Info("deleting security group", "security group", nsgSpec.Name)
 		err := s.client.Delete(ctx, s.Scope.ResourceGroup(), nsgSpec.Name)
