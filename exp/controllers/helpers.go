@@ -363,3 +363,9 @@ func AzureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 		return result
 	}
 }
+
+// isTerminalState returns true if the VMState is a terminal state for an Azure resource
+func isTerminalState(state infrav1.VMState) bool {
+	return state == infrav1.VMStateFailed || state == infrav1.VMStateSucceeded
+}
+

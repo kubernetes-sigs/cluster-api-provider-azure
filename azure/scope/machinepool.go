@@ -475,11 +475,11 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	}
 
 	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS {
-		m.Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName())
+		m.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName())
 		return azure.GetDefaultWindowsImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 	}
 
-	m.Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
+	m.V(4).Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 }
 

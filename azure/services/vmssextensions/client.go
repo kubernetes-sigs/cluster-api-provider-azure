@@ -28,6 +28,7 @@ import (
 // Client wraps go-sdk
 type client interface {
 	CreateOrUpdate(context.Context, string, string, string, compute.VirtualMachineScaleSetExtension) error
+	Get(context.Context, string, string, string) (compute.VirtualMachineScaleSetExtension, error)
 	Delete(context.Context, string, string, string) error
 }
 
@@ -49,6 +50,14 @@ func newVirtualMachineScaleSetExtensionsClient(subscriptionID string, baseURI st
 	vmssextensionsClient := compute.NewVirtualMachineScaleSetExtensionsClientWithBaseURI(baseURI, subscriptionID)
 	azure.SetAutoRestClientDefaults(&vmssextensionsClient.Client, authorizer)
 	return vmssextensionsClient
+}
+
+// Get creates or updates the virtual machine scale set extension
+func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmssName, name string) (compute.VirtualMachineScaleSetExtension, error) {
+	ctx, span := tele.Tracer().Start(ctx, "vmssextensions.AzureClient.Get")
+	defer span.End()
+
+	return ac.vmssextensions.Get(ctx, resourceGroupName, vmssName, name, "")
 }
 
 // CreateOrUpdate creates or updates the virtual machine scale set extension

@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions"
-
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -28,12 +26,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
 type azureMachinePoolService struct {
 	virtualMachinesScaleSetSvc azure.Reconciler
+	scope                      *scope.MachinePoolScope
 	skuCache                   *resourceskus.Cache
 	roleAssignmentsSvc         azure.Reconciler
 	vmssExtensionSvc           azure.Reconciler
@@ -49,6 +49,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 	}
 
 	return &azureMachinePoolService{
+		scope:                      machinePoolScope,
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
 		roleAssignmentsSvc:         roleassignments.New(machinePoolScope),

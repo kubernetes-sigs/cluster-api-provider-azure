@@ -55,8 +55,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMExtensionSpecs() {
+		_, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name)
+		if !azure.ResourceNotFound(err) {
+			continue
+		}
+
 		s.Scope.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
-		err := s.client.CreateOrUpdate(
+		err = s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
 			extensionSpec.VMName,

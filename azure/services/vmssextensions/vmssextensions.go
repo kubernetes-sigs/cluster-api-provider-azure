@@ -55,8 +55,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
+		_, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name)
+		if !azure.ResourceNotFound(err) {
+			continue
+		}
+
 		s.Scope.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
-		err := s.client.CreateOrUpdate(
+		err = s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
 			extensionSpec.ScaleSetName,
@@ -80,6 +85,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 }
 
 // Delete is a no-op. Extensions will be deleted as part of VMSS deletion.
-func (s *Service) Delete(ctx context.Context) error {
+func (s *Service) Delete(_ context.Context) error {
 	return nil
 }

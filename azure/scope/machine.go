@@ -487,10 +487,10 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	}
 
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS {
-		m.Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName())
+		m.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.AzureMachine.GetName())
 		return azure.GetDefaultWindowsImage(to.String(m.Machine.Spec.Version))
 	}
 
-	m.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
+	m.V(4).Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 }

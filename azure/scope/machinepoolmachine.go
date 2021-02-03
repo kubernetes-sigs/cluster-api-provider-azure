@@ -25,7 +25,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/klogr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	utilkubeconfig "sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -123,6 +125,40 @@ func (s *MachinePoolMachineScope) SetVMSSVM(instance *infrav1exp.VMSSVM) {
 	s.instance = instance
 }
 
+// ProvisioningState returns the AzureMachinePoolMachine provisioning state.
+func (s *MachinePoolMachineScope) ProvisioningState() infrav1.VMState {
+	if s.AzureMachinePoolMachine.Status.ProvisioningState != nil {
+		return *s.AzureMachinePoolMachine.Status.ProvisioningState
+	}
+	return ""
+}
+
+// SetReady sets the AzureMachinePoolMachine Ready Status to true.
+func (s *MachinePoolMachineScope) SetReady() {
+	s.AzureMachinePool.Status.Ready = true
+}
+
+// SetNotReady sets the AzureMachinePoolMachine Ready Status to false.
+func (s *MachinePoolMachineScope)  SetNotReady() {
+	s.AzureMachinePool.Status.Ready = false
+}
+
+// SetFailureMessage sets the AzureMachinePoolMachine status failure message.
+func (s *MachinePoolMachineScope)  SetFailureMessage(v error) {
+	s.AzureMachinePool.Status.FailureMessage = pointer.StringPtr(v.Error())
+}
+
+// SetFailureReason sets the AzureMachinePoolMachine status failure reason.
+func (s *MachinePoolMachineScope) SetFailureReason(v capierrors.MachineStatusError) {
+	s.AzureMachinePool.Status.FailureReason = &v
+}
+
+
+// ProviderID returns the AzureMachinePool ID by parsing Spec.ProviderID.
+func (s *MachinePoolMachineScope) ProviderID() string {
+	return s.AzureMachinePoolMachine.Spec.ProviderID
+}
+
 // Close updates the state of MachinePoolMachine
 func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
@@ -204,6 +240,10 @@ func (s *MachinePoolMachineScope) getNode(ctx context.Context) (*corev1.Node, er
 
 	if s.AzureMachinePoolMachine.Status.NodeRef == nil {
 		return getNodeByProviderID(ctx, workloadClient, s.AzureMachinePoolMachine.Spec.ProviderID)
+	}
+
+	if s.AzureMachinePoolMachine.Status.NodeRef.Name == "" {
+		return nil, nil
 	}
 
 	var node corev1.Node

@@ -18,16 +18,19 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -262,7 +265,7 @@ func (r *AzureMachinePoolMachineController) reconcileNormal(ctx context.Context,
 			}
 
 			if reconcileError.IsTransient() {
-				machineScope.Error(err, "failed to reconcile AzureMachinePool", "name", machineScope.Name())
+				machineScope.V(4).Info("failed to reconcile AzureMachinePoolMachine", "name", machineScope.Name(), "transient_error", err)
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 
@@ -270,6 +273,29 @@ func (r *AzureMachinePoolMachineController) reconcileNormal(ctx context.Context,
 		}
 
 		return reconcile.Result{}, err
+	}
+
+	state := machineScope.ProvisioningState()
+	switch state {
+	case infrav1.VMStateSucceeded:
+		machineScope.V(2).Info("Scale Set VM is running", "id", machineScope.ProviderID())
+		machineScope.SetReady()
+	case infrav1.VMStateFailed:
+		machineScope.SetNotReady()
+		machineScope.Error(errors.New("Failed to create or update scale set VM"), "Scale Set VM is in failed state", "id", machineScope.ProviderID())
+		r.Recorder.Eventf(machineScope.AzureMachinePoolMachine, corev1.EventTypeWarning, "FailedVMState", "Azure scale set VM is in failed state")
+		machineScope.SetFailureReason(capierrors.UpdateMachineError)
+		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", state))
+	default:
+		machineScope.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
+		machineScope.SetNotReady()
+	}
+
+	if !isTerminalState(state) {
+		// we are in a non-terminal state, retry in a bit
+		return reconcile.Result{
+			RequeueAfter: 30 * time.Second,
+		}, nil
 	}
 
 	return reconcile.Result{}, nil
@@ -303,7 +329,7 @@ func (r *AzureMachinePoolMachineController) reconcileDelete(ctx context.Context,
 			}
 
 			if reconcileError.IsTransient() {
-				machineScope.Error(err, "failed to reconcile AzureMachinePoolMachine", "name", machineScope.Name())
+				machineScope.V(4).Info("failed to delete AzureMachinePoolMachine", "name", machineScope.Name(), "transient_error", err)
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 
