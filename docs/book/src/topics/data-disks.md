@@ -7,8 +7,13 @@ This document describes how to specify data disks to be provisioned and attached
 Azure Machines support optionally specifying a list of data disks to be attached to the virtual machine. Each data disk must have:
  - `nameSuffix` - the name suffix of the disk to be created. Each disk will be named `<machineName>_<nameSuffix>` to ensure uniqueness. 
  - `diskSizeGB` - the disk size in GB.
+ - `managedDisk` - (optional) the managed disk for a VM (see below)
  - `lun` - the logical unit number (see below)
  
+### Managed Disk
+
+See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview) for more information.
+
 ### Disk LUN
  
  The LUN specifies the logical unit number of the data disk, between 0 and 63. Its value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
@@ -81,8 +86,12 @@ spec:
       dataDisks:
         - nameSuffix: etcddisk
           diskSizeGB: 256
+          managedDisk:
+            storageAccountType: Standard_LRS
           lun: 0
         - nameSuffix: mydisk
           diskSizeGB: 128
+          managedDisk:
+            storageAccountType: Standard_LRS
           lun: 1
 ````

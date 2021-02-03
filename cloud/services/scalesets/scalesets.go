@@ -534,15 +534,19 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 		dataDisks[i] = compute.VirtualMachineScaleSetDataDisk{
 			CreateOption: compute.DiskCreateOptionTypesEmpty,
 			DiskSizeGB:   to.Int32Ptr(disk.DiskSizeGB),
-			ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-				StorageAccountType: compute.StorageAccountTypes(disk.ManagedDisk.StorageAccountType),
-			},
-			Lun:  disk.Lun,
-			Name: to.StringPtr(azure.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
+			Lun:          disk.Lun,
+			Name:         to.StringPtr(azure.GenerateDataDiskName(vmssSpec.Name, disk.NameSuffix)),
 		}
 
-		if disk.ManagedDisk.DiskEncryptionSet != nil {
-			dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(disk.ManagedDisk.DiskEncryptionSet.ID)}
+		if disk.ManagedDisk != nil {
+			dataDisks[i].ManagedDisk = &compute.VirtualMachineScaleSetManagedDiskParameters{
+				StorageAccountType: compute.StorageAccountTypes(disk.ManagedDisk.StorageAccountType),
+			}
+
+			if disk.ManagedDisk.DiskEncryptionSet != nil {
+				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(disk.ManagedDisk.DiskEncryptionSet.ID)}
+			}
+
 		}
 	}
 	storageProfile.DataDisks = &dataDisks

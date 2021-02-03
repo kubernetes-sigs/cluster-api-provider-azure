@@ -348,6 +348,45 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "valid managed disk storage account type",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_disk_2",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(1),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid managed disk storage account type",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "invalid storage account",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range testcases {

@@ -94,11 +94,15 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 			nameSet[disk.NameSuffix] = struct{}{}
 		}
 
-		allErrs := append(allErrs, validateStorageAccountType(disk.ManagedDisk.StorageAccountType, fieldPath)...)
+		// validate optional managed disk option
+		if disk.ManagedDisk != nil {
+			allErrs = append(allErrs, validateStorageAccountType(disk.ManagedDisk.StorageAccountType, fieldPath)...)
 
-		if errs:= ValidateManagedDisk(disk.ManagedDisk, disk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
-			allErrs = append(allErrs, errs...)
+			if errs := ValidateManagedDisk(*disk.ManagedDisk, *disk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
 		}
+
 		// validate that all LUNs are unique and between 0 and 63.
 		if disk.Lun == nil {
 			allErrs = append(allErrs, field.Required(fieldPath, "LUN should not be nil"))
