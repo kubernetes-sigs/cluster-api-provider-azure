@@ -20,8 +20,15 @@ package e2e
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
 	"path/filepath"
+	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,6 +41,22 @@ type AzureLogCollector struct{}
 // CollectMachineLog collects logs from a machine.
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context,
 	managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
+	var errors []error
+
+	if err := collectLogsFromNode(ctx, managementClusterClient, m, outputPath); err != nil {
+		errors = append(errors, err)
+	}
+
+	if err := collectBootLog(ctx, m, outputPath); err != nil {
+		errors = append(errors, err)
+	}
+
+	return kinderrors.NewAggregate(errors)
+
+}
+
+// collectLogsFromNode collects logs from various sources by ssh'ing into the node
+func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
 	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
 	if err != nil {
 		return err
@@ -48,7 +71,9 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context,
 				return err
 			}
 			defer f.Close()
-			return execOnHost(controlPlaneEndpoint, hostname, port, f, command, args...)
+			return retryWithExponentialBackOff(func() error {
+				return execOnHost(controlPlaneEndpoint, hostname, port, f, command, args...)
+			})
 		}
 	}
 
@@ -82,4 +107,45 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context,
 			"cat", "/var/log/cloud-init-output.log",
 		),
 	})
+}
+
+// collectBootLog collects boot logs of the vm by using azure boot diagnostics
+func collectBootLog(ctx context.Context, m *clusterv1.Machine, outputPath string) error {
+	resourceId := strings.TrimPrefix(*m.Spec.ProviderID, "azure:///")
+	resource, err := azure.ParseResourceID(resourceId)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse resource id")
+	}
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get settings from environment")
+	}
+
+	vmClient := compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
+	vmClient.Authorizer, err = settings.GetAuthorizer()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get authorizer")
+	}
+
+	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get boot diagnostics data")
+	}
+
+	resp, err := http.Get(*bootDiagnostics.SerialConsoleLogBlobURI)
+	if err != nil || resp.StatusCode != 200 {
+		return errors.Wrapf(err, "failed to get logs from serial console uri")
+	}
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read response body")
+	}
+
+	if err := ioutil.WriteFile(filepath.Join(outputPath, "boot.log"), content, 0644); err != nil {
+		return errors.Wrapf(err, "failed to write response to file")
+	}
+
+	return nil
 }
