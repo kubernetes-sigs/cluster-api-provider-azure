@@ -99,11 +99,12 @@ func Test_SDKToVMSS(t *testing.T) {
 
 				for i := 0; i < 2; i++ {
 					expected.Instances[i] = infrav1exp.VMSSVM{
-						ID:               fmt.Sprintf("vm/%d", i),
-						InstanceID:       fmt.Sprintf("%d", i),
-						Name:             fmt.Sprintf("instance-00000%d", i),
-						AvailabilityZone: fmt.Sprintf("zone%d", i),
-						State:            "Succeeded",
+						ID:                 fmt.Sprintf("vm/%d", i),
+						InstanceID:         fmt.Sprintf("%d", i),
+						Name:               fmt.Sprintf("instance-00000%d", i),
+						AvailabilityZone:   fmt.Sprintf("zone%d", i),
+						State:              "Succeeded",
+						LatestModelApplied: true,
 					}
 				}
 				g.Expect(actual).To(gomega.Equal(&expected))

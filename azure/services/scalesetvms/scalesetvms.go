@@ -92,24 +92,29 @@ func (s *Service) Delete(ctx context.Context) (*infrav1.Future, error) {
 	)
 
 	log := s.Scope.WithValues("resourceGroup", resourceGroup, "scaleset", vmssName, "instanceID", instanceID)
-	log.Info("entering delete")
+
+	defer func() {
+		if instance, err := s.Client.Get(ctx, resourceGroup, vmssName, instanceID); err == nil {
+			log.Info("updating vmss vm state", "state", instance.ProvisioningState)
+			s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
+		}
+	}()
+
+	log.V(4).Info("entering delete")
 	future := s.Scope.GetLongRunningOperationState()
 	if future != nil {
 		if future.Type != DeleteFuture {
 			return future, azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
 		}
 
-		log.Info("checking if the instance is done deleting")
+		log.V(4).Info("checking if the instance is done deleting")
 		if _, err := s.Client.GetResultIfDone(ctx, future); err != nil {
 			// fetch instance to update status
-			if instance, err := s.Client.Get(ctx, resourceGroup, vmssName, instanceID); err != nil {
-				s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
-			}
 			return future, errors.Wrap(err, "failed to get result of long running operation")
 		}
 
 		// there was no error in fetching the result, the future has been completed
-		log.Info("successfully deleted the instance")
+		log.V(4).Info("successfully deleted the instance")
 		return nil, nil
 	}
 
@@ -123,11 +128,6 @@ func (s *Service) Delete(ctx context.Context) (*infrav1.Future, error) {
 		return nil, errors.Wrapf(err, "failed to delete instance %s/%s", vmssName, instanceID)
 	}
 
-	// fetch instance to update status
-	if instance, err := s.Client.Get(ctx, resourceGroup, vmssName, instanceID); err != nil {
-		s.Scope.SetVMSSVM(converters.SDKToVMSSVM(instance))
-	}
-
-	log.V(2).Info("successfully started deleting the instance")
+	log.V(4).Info("successfully started deleting the instance")
 	return future, nil
 }

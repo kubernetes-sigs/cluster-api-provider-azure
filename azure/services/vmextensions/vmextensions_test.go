@@ -23,12 +23,12 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions/mock_vmextensions"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions/mock_vmextensions"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
 
@@ -59,7 +59,11 @@ func TestReconcileVMExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
 			},
 		},
@@ -84,6 +88,8 @@ func TestReconcileVMExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 
 			},

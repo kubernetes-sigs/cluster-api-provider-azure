@@ -368,4 +368,3 @@ func AzureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 func isTerminalState(state infrav1.VMState) bool {
 	return state == infrav1.VMStateFailed || state == infrav1.VMStateSucceeded
 }
-

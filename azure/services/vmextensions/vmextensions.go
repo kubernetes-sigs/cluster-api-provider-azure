@@ -55,13 +55,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMExtensionSpecs() {
-		_, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name)
-		if !azure.ResourceNotFound(err) {
+		if _, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.VMName, extensionSpec.Name); err == nil {
+			// check for the extension and don't update if already exists
 			continue
 		}
 
 		s.Scope.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
-		err = s.client.CreateOrUpdate(
+		err := s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
 			extensionSpec.VMName,
@@ -77,15 +77,17 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Location: to.StringPtr(s.Scope.Location()),
 			},
 		)
+
 		if err != nil {
 			return errors.Wrapf(err, "failed to create VM extension %s on VM %s in resource group %s", extensionSpec.Name, extensionSpec.VMName, s.Scope.ResourceGroup())
 		}
+
 		s.Scope.V(2).Info("successfully created VM extension", "vm extension", extensionSpec.Name)
 	}
 	return nil
 }
 
 // Delete is a no-op. Extensions will be deleted as part of VM deletion.
-func (s *Service) Delete(ctx context.Context) error {
+func (s *Service) Delete(_ context.Context) error {
 	return nil
 }

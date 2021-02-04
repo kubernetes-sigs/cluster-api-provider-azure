@@ -1,11 +1,11 @@
 /*
-Copyright 2020 The Kubernetes Authors.
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -133,18 +133,14 @@ func (s *MachinePoolMachineScope) ProvisioningState() infrav1.VMState {
 	return ""
 }
 
-// SetReady sets the AzureMachinePoolMachine Ready Status to true.
-func (s *MachinePoolMachineScope) SetReady() {
-	s.AzureMachinePool.Status.Ready = true
-}
-
-// SetNotReady sets the AzureMachinePoolMachine Ready Status to false.
-func (s *MachinePoolMachineScope)  SetNotReady() {
-	s.AzureMachinePool.Status.Ready = false
+// IsReady indicates the machine has successfully provisioned and has a node ref associated
+func (s *MachinePoolMachineScope) IsReady() bool {
+	state := s.AzureMachinePoolMachine.Status.ProvisioningState
+	return s.AzureMachinePoolMachine.Status.Ready && state != nil && *state == infrav1.VMStateSucceeded
 }
 
 // SetFailureMessage sets the AzureMachinePoolMachine status failure message.
-func (s *MachinePoolMachineScope)  SetFailureMessage(v error) {
+func (s *MachinePoolMachineScope) SetFailureMessage(v error) {
 	s.AzureMachinePool.Status.FailureMessage = pointer.StringPtr(v.Error())
 }
 
@@ -152,7 +148,6 @@ func (s *MachinePoolMachineScope)  SetFailureMessage(v error) {
 func (s *MachinePoolMachineScope) SetFailureReason(v capierrors.MachineStatusError) {
 	s.AzureMachinePool.Status.FailureReason = &v
 }
-
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.ProviderID.
 func (s *MachinePoolMachineScope) ProviderID() string {
@@ -163,10 +158,6 @@ func (s *MachinePoolMachineScope) ProviderID() string {
 func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
 	defer span.End()
-
-	if err := s.updateState(ctx); err != nil {
-		return errors.Wrap(err, "failed to update state")
-	}
 
 	return s.patchHelper.Patch(ctx, s.AzureMachinePoolMachine)
 }
@@ -199,7 +190,9 @@ func (s *MachinePoolMachineScope) Drain(ctx context.Context) error {
 	return nil
 }
 
-func (s *MachinePoolMachineScope) updateState(ctx context.Context) error {
+// UpdateStatus updates the node reference for the machine and other status fields. This func should be called at the
+// end of a reconcile request and after updating the scope with the most recent Azure data.
+func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Get")
 	defer span.End()
 

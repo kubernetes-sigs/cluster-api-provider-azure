@@ -33,7 +33,6 @@ import (
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
 type azureMachinePoolService struct {
 	virtualMachinesScaleSetSvc azure.Reconciler
-	scope                      *scope.MachinePoolScope
 	skuCache                   *resourceskus.Cache
 	roleAssignmentsSvc         azure.Reconciler
 	vmssExtensionSvc           azure.Reconciler
@@ -49,7 +48,6 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 	}
 
 	return &azureMachinePoolService{
-		scope:                      machinePoolScope,
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
 		roleAssignmentsSvc:         roleassignments.New(machinePoolScope),
@@ -68,10 +66,6 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 
 	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "unable to create role assignment")
-	}
-
-	if err := s.vmssExtensionSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "unable to create vmss extension")
 	}
 
 	return nil

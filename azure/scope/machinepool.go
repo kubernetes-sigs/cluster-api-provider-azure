@@ -25,7 +25,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
@@ -241,17 +240,83 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		}
 	}
 
-	// determine which machines need to be deleted since they are not in Azure
-	for key, val := range existingMachinesByProviderID {
-		val := val
-		if _, ok := latestMachinesByProviderID[key]; !ok {
-			if err := m.client.Delete(ctx, &val); err != nil && !apierrors.IsNotFound(err) {
-				return errors.Wrap(err, "failed deleting machine")
-			}
+	// select machines to delete to lower the replica count
+	toDelete := m.selectMachinesToDelete(existingMachinesByProviderID)
+	for _, machine := range toDelete {
+		machine := machine
+		if err := m.client.Delete(ctx, &machine); err != nil {
+			return errors.Wrap(err, "failed deleting machine to reduce replica count")
 		}
 	}
 
 	return nil
+}
+
+func getProviderIDs(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) []string {
+	ids := make([]string, len(machinesByProviderID))
+	idx := 0
+	for k := range machinesByProviderID {
+		ids[idx] = k
+		idx++
+	}
+	return ids
+}
+
+func (m *MachinePoolScope) selectMachinesToDelete(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) map[string]infrav1exp.AzureMachinePoolMachine {
+	desiredReplicaCount := int(*m.MachinePool.Spec.Replicas)
+	readyMachines := getReadyMachines(machinesByProviderID)
+	if desiredReplicaCount > len(readyMachines) {
+		m.V(4).Info("we don't have enough ready machines, so don't try to delete any", "desired", desiredReplicaCount, "ready", getProviderIDs(readyMachines))
+		return nil
+	}
+
+	readyAndNotMarkedForDelete := make(map[string]infrav1exp.AzureMachinePoolMachine)
+	for providerID, machine := range readyMachines {
+		if machine.ObjectMeta.DeletionTimestamp.IsZero() {
+			// this is not marked for delete
+			readyAndNotMarkedForDelete[providerID] = machine
+		}
+	}
+
+	numberOfOverProvisioned := len(machinesByProviderID) - desiredReplicaCount
+	if numberOfOverProvisioned <= 0 {
+		m.V(4).Info("no over-provisioned machines", "desired", desiredReplicaCount, "overprovisioned", numberOfOverProvisioned)
+		return nil // no over-provisioned machines
+	}
+
+	m.V(4).Info("found over-provisioned machines", "desired", desiredReplicaCount, "overprovisioned", numberOfOverProvisioned)
+	// pick machines that are not
+	numberofMachinesSelectedToBeDeleted := 0
+	toDelete := make(map[string]infrav1exp.AzureMachinePoolMachine)
+	for k, v := range machinesByProviderID {
+		if _, ok := readyAndNotMarkedForDelete[k]; ok {
+			// if not a known good machine move on
+			continue
+		}
+
+		toDelete[k] = v
+		numberofMachinesSelectedToBeDeleted++
+		if numberofMachinesSelectedToBeDeleted >= numberOfOverProvisioned {
+			break
+		}
+	}
+
+	if len(toDelete) >= numberOfOverProvisioned {
+		m.V(4).Info("found enough machines not ready or marked for delete", "toDelete", getProviderIDs(toDelete), "numToDelete", len(toDelete), "overprovisioned", numberOfOverProvisioned)
+		return toDelete
+	}
+
+	// we are still over-provisioned, select ready machines to delete
+	for k, v := range readyAndNotMarkedForDelete {
+		toDelete[k] = v
+		numberofMachinesSelectedToBeDeleted++
+		if numberofMachinesSelectedToBeDeleted >= numberOfOverProvisioned {
+			break
+		}
+	}
+
+	m.V(4).Info("included ready machines to delete", "toDelete", getProviderIDs(toDelete), "numToDelete", len(toDelete), "overprovisioned", numberOfOverProvisioned)
+	return toDelete
 }
 
 func (m *MachinePoolScope) createMachine(ctx context.Context, machine infrav1exp.VMSSVM) error {
@@ -523,4 +588,15 @@ func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespa
 		return nil, err
 	}
 	return m, nil
+}
+
+func getReadyMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) map[string]infrav1exp.AzureMachinePoolMachine {
+	readyMachines := make(map[string]infrav1exp.AzureMachinePoolMachine)
+	for k, v := range machinesByProviderID {
+		if v.Status.Ready && v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.VMStateSucceeded {
+			readyMachines[k] = v
+		}
+	}
+
+	return readyMachines
 }

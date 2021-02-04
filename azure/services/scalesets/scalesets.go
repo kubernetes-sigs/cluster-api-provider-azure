@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -50,6 +51,7 @@ type (
 		NeedsK8sVersionUpdate() bool
 		SaveK8sVersion()
 		ScaleSetSpec() azure.ScaleSetSpec
+		VMSSExtensionSpecs() []azure.VMSSExtensionSpec
 		SetAnnotation(string, string)
 		SetLongRunningOperationState(*infrav1.Future)
 		SetProviderID(string)
@@ -176,7 +178,6 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 	}
 
 	vmss := result.VMSSWithoutHash
-	vmss.Tags = converters.TagsToMap(result.Tags.AddSpecVersionHashTag(result.Hash))
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
 		return future, errors.Wrapf(err, "cannot create VMSS")
@@ -199,31 +200,25 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 		return nil, errors.Wrapf(err, "failed to generate scale set update parameters for %s", spec.Name)
 	}
 
-	if infraVMSS.Tags.HasMatchingSpecVersionHash(result.Hash) {
-		// The VMSS built from the AzureMachinePool spec matches the hash in the tag of the existing VMSS. This means
-		// the VMSS does not need to be patched since it has not changed.
-		//
-		// hash(AzureMachinePool.Spec)
-		//
-		// Note: if a user were to mutate the VMSS in Azure rather than through CAPZ, this hash match may match, but not
-		// reflect the state of the specification in K8s.
-		return nil, nil
-	}
-
 	vmss := result.VMSSWithoutHash
-	vmss.Tags = converters.TagsToMap(result.Tags.AddSpecVersionHashTag(result.Hash))
 	patch, err := getVMSSUpdateFromVMSS(vmss)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to generate vmss patch for %s", spec.Name)
 	}
 
-	if s.Scope.MaxSurge() > 0 && hasModelModifyingDifferences(infraVMSS, vmss) {
+	hasModelChanges := hasModelModifyingDifferences(infraVMSS, vmss)
+	if s.Scope.MaxSurge() > 0 && hasModelChanges {
 		// surge capacity with the intention of lowering during instance reconciliation
 		patch.Sku.Capacity = to.Int64Ptr(*patch.Sku.Capacity + int64(s.Scope.MaxSurge()))
 	}
 
-	// wipe out network profile, so updates won't conflict with Cloud Provider updates
-	patch.VirtualMachineProfile.NetworkProfile = nil
+	// If there are no model changes and no increase in the replica count, do not update the VMSS.
+	// Decreases in replica count is handled by deleting AzureMachinePoolMachine instances in the MachinePoolScope
+	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges {
+		s.Scope.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasChanges", hasModelChanges)
+		return nil, nil
+	}
+
 	future, err := s.UpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, patch)
 	if err != nil {
 		if azure.ResourceConflict(err) {
@@ -332,6 +327,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		return result, err
 	}
 
+	extensions := s.generateExtensions()
+
 	vmss := compute.VirtualMachineScaleSet{
 		Location: to.StringPtr(s.Scope.Location()),
 		Sku: &compute.Sku{
@@ -381,6 +378,9 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 				Priority:       priority,
 				EvictionPolicy: evictionPolicy,
 				BillingProfile: billingProfile,
+				ExtensionProfile: &compute.VirtualMachineScaleSetExtensionProfile{
+					Extensions: &extensions,
+				},
 			},
 		},
 	}
@@ -474,6 +474,23 @@ func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *i
 	}
 
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
+}
+
+func (s *Service) generateExtensions() []compute.VirtualMachineScaleSetExtension {
+	extensions := make([]compute.VirtualMachineScaleSetExtension, len(s.Scope.VMSSExtensionSpecs()))
+	for i, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
+		extensions[i] = compute.VirtualMachineScaleSetExtension{
+			Name: &extensionSpec.Name,
+			VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+				Publisher:          to.StringPtr(extensionSpec.Publisher),
+				Type:               to.StringPtr(extensionSpec.Name),
+				TypeHandlerVersion: to.StringPtr(extensionSpec.Version),
+				Settings:           nil,
+				ProtectedSettings:  nil,
+			},
+		}
+	}
+	return extensions
 }
 
 // generateStorageProfile generates a pointer to a compute.VirtualMachineScaleSetStorageProfile which can utilized for VM creation.
@@ -581,9 +598,15 @@ func getVMSSUpdateFromVMSS(vmss compute.VirtualMachineScaleSet) (compute.Virtual
 	if err != nil {
 		return compute.VirtualMachineScaleSetUpdate{}, err
 	}
+
 	var update compute.VirtualMachineScaleSetUpdate
-	err = update.UnmarshalJSON(jsonData)
-	return update, err
+	if err := update.UnmarshalJSON(jsonData); err != nil {
+		return update, err
+	}
+
+	// wipe out network profile, so updates won't conflict with Cloud Provider updates
+	update.VirtualMachineProfile.NetworkProfile = nil
+	return update, nil
 }
 
 func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*compute.SecurityProfile, error) {

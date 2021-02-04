@@ -43,9 +43,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesetvms"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesetvms"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -53,7 +53,7 @@ import (
 )
 
 type (
-	azureMachinePoolMachineReconcilerFactory func(*scope.MachinePoolMachineScope) azure.Service
+	azureMachinePoolMachineReconcilerFactory func(*scope.MachinePoolMachineScope) azure.Reconciler
 
 	// AzureMachinePoolMachineController handles Kubernetes change events for a AzureMachinePoolMachine resources
 	AzureMachinePoolMachineController struct {
@@ -127,7 +127,7 @@ func (r *AzureMachinePoolMachineController) SetupWithManager(mgr ctrl.Manager, o
 func (r *AzureMachinePoolMachineController) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
+	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolMachineController.Reconcile",
 		trace.WithAttributes(
@@ -279,19 +279,17 @@ func (r *AzureMachinePoolMachineController) reconcileNormal(ctx context.Context,
 	switch state {
 	case infrav1.VMStateSucceeded:
 		machineScope.V(2).Info("Scale Set VM is running", "id", machineScope.ProviderID())
-		machineScope.SetReady()
 	case infrav1.VMStateFailed:
-		machineScope.SetNotReady()
 		machineScope.Error(errors.New("Failed to create or update scale set VM"), "Scale Set VM is in failed state", "id", machineScope.ProviderID())
 		r.Recorder.Eventf(machineScope.AzureMachinePoolMachine, corev1.EventTypeWarning, "FailedVMState", "Azure scale set VM is in failed state")
 		machineScope.SetFailureReason(capierrors.UpdateMachineError)
 		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", state))
 	default:
 		machineScope.V(2).Info(fmt.Sprintf("Scale Set VM is %s", state), "id", machineScope.ProviderID())
-		machineScope.SetNotReady()
 	}
 
-	if !isTerminalState(state) {
+	if !isTerminalState(state) || !machineScope.IsReady() {
+		machineScope.V(2).Info("Requeuing", "state", state, "ready", machineScope.IsReady())
 		// we are in a non-terminal state, retry in a bit
 		return reconcile.Result{
 			RequeueAfter: 30 * time.Second,
@@ -342,7 +340,7 @@ func (r *AzureMachinePoolMachineController) reconcileDelete(ctx context.Context,
 	return reconcile.Result{}, nil
 }
 
-func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) azure.Service {
+func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) azure.Reconciler {
 	return &azureMachinePoolMachineReconciler{
 		Scope:              scope,
 		scalesetVMsService: scalesetvms.NewService(scope),
@@ -358,6 +356,10 @@ func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error
 		return errors.Wrap(err, "failed to reconcile scalesetVMs")
 	}
 
+	if err := r.Scope.UpdateStatus(ctx); err != nil {
+		return errors.Wrap(err, "failed to update vmss vm status")
+	}
+
 	return nil
 }
 
@@ -365,6 +367,12 @@ func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error
 func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Delete")
 	defer span.End()
+
+	defer func() {
+		if err := r.Scope.UpdateStatus(ctx); err != nil {
+			r.Scope.V(4).Info("failed tup update vmss vm status during delete")
+		}
+	}()
 
 	future, err := r.scalesetVMsService.Delete(ctx)
 	r.Scope.SetLongRunningOperationState(future)

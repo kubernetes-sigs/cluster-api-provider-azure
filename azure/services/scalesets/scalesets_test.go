@@ -67,7 +67,7 @@ func TestNewService(t *testing.T) {
 		Cluster: cluster,
 		AzureCluster: &infrav1.AzureCluster{
 			Spec: infrav1.AzureClusterSpec{
-				Location:       "test-location",
+				Location: "test-location",
 				ResourceGroup:  "my-rg",
 				SubscriptionID: "123",
 				NetworkSpec: infrav1.NetworkSpec{
@@ -125,10 +125,11 @@ func TestGetExistingVMSS(t *testing.T) {
 				Capacity: int64(1),
 				Instances: []infrav1exp.VMSSVM{
 					{
-						ID:         "my-vm-id",
-						InstanceID: "my-vm-1",
-						Name:       "instance-000001",
-						State:      "Succeeded",
+						ID:                 "my-vm-id",
+						InstanceID:         "my-vm-1",
+						Name:               "instance-000001",
+						State:              "Succeeded",
+						LatestModelApplied: true,
 					},
 				},
 			},
@@ -242,10 +243,10 @@ func TestReconcileVMSS(t *testing.T) {
 				defaultSpec := newDefaultVMSSSpec()
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := setHashOnVMSS(g, newDefaultVMSS())
+				vmss := newDefaultVMSS()
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -256,40 +257,9 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				createdVMSS := newDefaultVMSS()
 				instances := newDefaultInstances()
-				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, createdVMSS, instances)
+				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
 				s.SetLongRunningOperationState(nil)
-				s.NeedsK8sVersionUpdate().Return(false)
-			},
-		},
-		{
-			name:          "should try to update VMSS if the hash does not match",
-			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PATCH on Azure resource my-rg/my-vmss is not done",
-			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
-				// create a spec which will be different than the default VMSS
-				defaultSpec := newDefaultVMSSSpec()
-				defaultSpec.Capacity = 3
-				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
-
-				// expect Azure already has a default VMSS created with an operation that is done
-				vmss := newDefaultVMSS()
-				instances := newDefaultInstances()
-				vmss = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, vmss, instances)
-				s.SetProviderID(fmt.Sprintf("azure://%s", *vmss.ID))
-
-				// create a VMSS patch with an updated hash to match the spec
-				updatedVMSS := newDefaultVMSS()
-				updatedVMSS.ID = vmss.ID
-				updatedVMSS.Sku.Capacity = to.Int64Ptr(3)
-				updatedVMSS = setHashOnVMSS(g, updatedVMSS)
-				patch, err := getVMSSUpdateFromVMSS(updatedVMSS)
-				g.Expect(err).ToNot(HaveOccurred())
-				patch.VirtualMachineProfile.NetworkProfile = nil
-				m.UpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(patch)).
-					Return(patchFuture, nil)
-				s.SetLongRunningOperationState(patchFuture)
-				m.GetResultIfDone(gomockinternal.AContext(), patchFuture).Return(compute.VirtualMachineScaleSet{},
-					azure.NewOperationNotDoneError(patchFuture))
 			},
 		},
 		{
@@ -304,10 +274,9 @@ func TestReconcileVMSS(t *testing.T) {
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
 				(*netConfigs)[0].EnableAcceleratedNetworking = to.BoolPtr(true)
 				vmss.Sku.Name = to.StringPtr(spec.Size)
-				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -321,10 +290,9 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss := newDefaultVMSS()
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
-				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -344,10 +312,9 @@ func TestReconcileVMSS(t *testing.T) {
 					MaxPrice: to.Float64Ptr(0.001),
 				}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
-				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -368,10 +335,9 @@ func TestReconcileVMSS(t *testing.T) {
 						ID: to.StringPtr("my-diskencryptionset-id"),
 					},
 				}
-				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -394,10 +360,9 @@ func TestReconcileVMSS(t *testing.T) {
 						"/subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1": {},
 					},
 				}
-				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -414,10 +379,9 @@ func TestReconcileVMSS(t *testing.T) {
 					EncryptionAtHost: to.BoolPtr(true),
 				}
 				vmss.Sku.Name = to.StringPtr(spec.Size)
-				vmss = setHashOnVMSS(g, vmss)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, putFuture)
+				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
 			},
 		},
 		{
@@ -444,7 +408,6 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSUpdateExpectations(s)
 				existingVMSS := newDefaultExistingVMSS()
 				existingVMSS.Sku.Capacity = to.Int64Ptr(1)
-				existingVMSS = setHashOnVMSS(g, existingVMSS)
 				instances := newDefaultInstances()
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(existingVMSS, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil)
@@ -452,13 +415,14 @@ func TestReconcileVMSS(t *testing.T) {
 				clone := newDefaultExistingVMSS()
 				clone.Sku.Capacity = to.Int64Ptr(2)
 				patchVMSS, err := getVMSSUpdateFromVMSS(clone)
-				patchVMSS = setHashOnVMSSUpdate(g, clone, patchVMSS)
-				patchVMSS.VirtualMachineProfile.NetworkProfile = nil
 				g.Expect(err).NotTo(HaveOccurred())
+				patchVMSS.VirtualMachineProfile.NetworkProfile = nil
 				m.UpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(patchVMSS)).
 					Return(patchFuture, nil)
 				s.SetLongRunningOperationState(patchFuture)
 				m.GetResultIfDone(gomockinternal.AContext(), patchFuture).Return(compute.VirtualMachineScaleSet{}, azure.NewOperationNotDoneError(patchFuture))
+				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(clone, nil)
+				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil)
 			},
 		},
 		{
@@ -506,6 +470,9 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
+				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
+					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.SetVMSSState(nil)
 			},
 		},
 	}
@@ -897,6 +864,20 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 						NotBeforeTimeout: to.StringPtr("PT7M"),
 					},
 				},
+				ExtensionProfile: &compute.VirtualMachineScaleSetExtensionProfile{
+					Extensions: &[]compute.VirtualMachineScaleSetExtension{
+						{
+							Name: to.StringPtr("someExtension"),
+							VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+								Publisher:          to.StringPtr("somePublisher"),
+								Type:               to.StringPtr("someExtension"),
+								TypeHandlerVersion: to.StringPtr("someVersion"),
+								Settings:           nil,
+								ProtectedSettings:  nil,
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -918,22 +899,7 @@ func newDefaultInstances() []compute.VirtualMachineScaleSetVM {
 	}
 }
 
-func setHashOnVMSS(g *WithT, vmss compute.VirtualMachineScaleSet) compute.VirtualMachineScaleSet {
-	hash, err := base64EncodedHash(vmss)
-	g.Expect(err).To(BeNil())
-	vmss.Tags["sigs.k8s.io_cluster-api-provider-azure_spec-version-hash"] = &hash
-	return vmss
-}
-
-func setHashOnVMSSUpdate(g *WithT, vmss compute.VirtualMachineScaleSet, update compute.VirtualMachineScaleSetUpdate) compute.VirtualMachineScaleSetUpdate {
-	hash, err := base64EncodedHash(vmss)
-	g.Expect(err).To(BeNil())
-	update.Tags["sigs.k8s.io_cluster-api-provider-azure_spec-version-hash"] = &hash
-	return update
-}
-
-func setupDefaultVMSSInProgressOperationDoneExpectations(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) compute.VirtualMachineScaleSet {
-	setHashOnVMSS(g, createdVMSS)
+func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) compute.VirtualMachineScaleSet {
 	createdVMSS.ID = to.StringPtr("vmss-id")
 	createdVMSS.ProvisioningState = to.StringPtr(string(infrav1.VMStateSucceeded))
 	setupDefaultVMSSExpectations(s)
@@ -946,6 +912,8 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(g *WithT, s *mock_scale
 	s.GetLongRunningOperationState().Return(future)
 	m.GetResultIfDone(gomockinternal.AContext(), future).Return(createdVMSS, nil).AnyTimes()
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil).AnyTimes()
+	s.MaxSurge().Return(int32(0))
+	s.SetVMSSState(gomock.Any())
 	return createdVMSS
 }
 
@@ -956,10 +924,12 @@ func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetSco
 		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 }
 
-func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, future *infrav1.Future) {
+func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, vmss compute.VirtualMachineScaleSet, future *infrav1.Future) {
 	s.SetLongRunningOperationState(future)
-	s.SaveK8sVersion()
 	m.GetResultIfDone(gomockinternal.AContext(), future).Return(compute.VirtualMachineScaleSet{}, azure.NewOperationNotDoneError(future))
+	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(vmss, nil)
+	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(newDefaultInstances(), nil).AnyTimes()
+	s.SetVMSSState(gomock.Any())
 }
 
 func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
@@ -978,10 +948,19 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 			Version:   "1.0",
 		},
 	}, nil)
+	s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+		{
+			Name:      "someExtension",
+			Publisher: "somePublisher",
+			Version:   "someVersion",
+		},
+	}).AnyTimes()
 }
 
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupDefaultVMSSExpectations(s)
 	s.SetProviderID("azure://vmss-id")
 	s.GetLongRunningOperationState().Return(nil)
+	s.MaxSurge().Return(int32(0))
+	s.SetVMSSState(gomock.Any())
 }

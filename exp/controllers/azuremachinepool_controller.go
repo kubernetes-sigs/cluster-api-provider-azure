@@ -321,7 +321,6 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		machinePoolScope.SetNotReady()
 	}
 
-
 	if !isTerminalState(state) {
 		// we are in a non-terminal state, retry in a bit
 		return reconcile.Result{

@@ -55,13 +55,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
-		_, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name)
-		if !azure.ResourceNotFound(err) {
+		if _, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name); err == nil {
+			// check for the extension and don't update if already exists
 			continue
 		}
 
-		s.Scope.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
-		err = s.client.CreateOrUpdate(
+		s.Scope.V(2).Info("creating VMSS extension", "vmss extension", extensionSpec.Name)
+		err := s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
 			extensionSpec.ScaleSetName,
@@ -76,10 +76,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				},
 			},
 		)
+
 		if err != nil {
-			return errors.Wrapf(err, "failed to create VM extension %s on scale set %s in resource group %s", extensionSpec.Name, extensionSpec.ScaleSetName, s.Scope.ResourceGroup())
+			return errors.Wrapf(err, "failed to create VMSS extension %s on scale set %s in resource group %s", extensionSpec.Name, extensionSpec.ScaleSetName, s.Scope.ResourceGroup())
 		}
-		s.Scope.V(2).Info("successfully created VM extension", "vm extension", extensionSpec.Name)
+
+		s.Scope.V(2).Info("successfully created VMSS extension", "vmss extension", extensionSpec.Name)
 	}
 	return nil
 }
