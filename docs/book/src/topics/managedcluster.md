@@ -24,9 +24,9 @@ executing clusterctl.
 
 ```bash
 # Kubernetes values
-export CLUSTER_NAME="foobar"
+export CLUSTER_NAME="my-cluster"
 export WORKER_MACHINE_COUNT=2
-export KUBERNETES_VERSION="v1.17.4"
+export KUBERNETES_VERSION="v1.19.6"
 
 # Azure values
 export AZURE_LOCATION="southcentralus"
@@ -35,7 +35,7 @@ export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
 # this example uses an sdk authentication file and parses the subscriptionId with jq
 # this file may be created using
 #
-# `az ad sp create-for-rbac --sdk-auth [roles] > sp.json`
+# `az ad sp create-for-rbac --role Contributor --sdk-auth > sp.json`
 #
 # when logged in with a service principal, it's also available using
 #
@@ -57,8 +57,8 @@ export EXP_AKS=true
 Execute clusterctl to template the resources, then apply to a management cluster:
 
 ```bash
-# replace v0.4.4 with the appropriate version you're using
-clusterctl config cluster my-cluster --kubernetes-version v1.17.4 --flavor aks -i azure:v0.4.4 > cluster.yaml
+clusterctl init --infrastructure azure
+clusterctl config cluster ${CLUSTER_NAME} --kubernetes-version ${KUBERNETES_VERSION} --flavor aks > cluster.yaml
 
 # assumes an existing management cluster
 kubectl apply -f cluster.yaml
@@ -101,7 +101,7 @@ spec:
   resourceGroup: foo-bar
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
-  version: v1.17.4
+  version: v1.19.6
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
 ---
@@ -127,7 +127,7 @@ spec:
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
-      version: v1.17.4
+      version: v1.19.6
 ---
 apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureManagedMachinePool
