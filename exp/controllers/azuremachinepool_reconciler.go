@@ -19,27 +19,27 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/vmssextensions"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions"
 
 	"github.com/pkg/errors"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/scalesets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
 type azureMachinePoolService struct {
-	virtualMachinesScaleSetSvc azure.Service
+	virtualMachinesScaleSetSvc azure.Reconciler
 	skuCache                   *resourceskus.Cache
-	roleAssignmentsSvc         azure.Service
-	vmssExtensionSvc           azure.Service
+	roleAssignmentsSvc         azure.Reconciler
+	vmssExtensionSvc           azure.Reconciler
 }
 
-var _ azure.Service = (*azureMachinePoolService)(nil)
+var _ azure.Reconciler = (*azureMachinePoolService)(nil)
 
 // newAzureMachinePoolService populates all the services based on input scope.
 func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error) {

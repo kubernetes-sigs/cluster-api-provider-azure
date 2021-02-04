@@ -32,12 +32,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -46,9 +46,9 @@ import (
 type azureManagedControlPlaneReconciler struct {
 	kubeclient         client.Client
 	managedClustersSvc *managedclusters.Service
-	groupsSvc          azure.Service
-	vnetSvc            azure.Service
-	subnetsSvc         azure.Service
+	groupsSvc          azure.Reconciler
+	vnetSvc            azure.Reconciler
+	subnetsSvc         azure.Reconciler
 }
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope

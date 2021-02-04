@@ -3,7 +3,7 @@
 
 # Allow only these
 !/api/**
-!/cloud/**
+!/azure/**
 !/controllers/**
 !/exp/**
 !/feature/**

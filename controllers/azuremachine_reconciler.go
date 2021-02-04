@@ -21,36 +21,36 @@ import (
 
 	"github.com/pkg/errors"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/availabilitysets"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/inboundnatrules"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/roleassignments"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/vmextensions"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/availabilitysets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/inboundnatrules"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // azureMachineService is the group of services called by the AzureMachine controller.
 type azureMachineService struct {
-	networkInterfacesSvc azure.Service
-	inboundNatRulesSvc   azure.Service
-	virtualMachinesSvc   azure.Service
-	roleAssignmentsSvc   azure.Service
-	disksSvc             azure.Service
-	publicIPsSvc         azure.Service
-	tagsSvc              azure.Service
-	vmExtensionsSvc      azure.Service
-	availabilitySetsSvc  azure.Service
+	networkInterfacesSvc azure.Reconciler
+	inboundNatRulesSvc   azure.Reconciler
+	virtualMachinesSvc   azure.Reconciler
+	roleAssignmentsSvc   azure.Reconciler
+	disksSvc             azure.Reconciler
+	publicIPsSvc         azure.Reconciler
+	tagsSvc              azure.Reconciler
+	vmExtensionsSvc      azure.Reconciler
+	availabilitySetsSvc  azure.Reconciler
 	skuCache             *resourceskus.Cache
 }
 
-var _ azure.Service = (*azureMachineService)(nil)
+var _ azure.Reconciler = (*azureMachineService)(nil)
 
 // newAzureMachineService populates all the services based on input scope.
 func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineService, error) {
