@@ -526,7 +526,7 @@ kind-create: ## create capz kind cluster if needed
 	./scripts/kind-with-registry.sh
 
 .PHONY: tilt-up
-tilt-up: $(ENVSUBST) $(KUSTOMIZE) kind-create ## start tilt and build kind cluster if needed
+tilt-up: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) kind-create ## start tilt and build kind cluster if needed
 	EXP_CLUSTER_RESOURCE_SET=true EXP_AKS=true EXP_MACHINE_POOL=true tilt up
 
 .PHONY: delete-cluster

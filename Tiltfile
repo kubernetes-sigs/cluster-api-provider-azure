@@ -1,6 +1,10 @@
 # -*- mode: Python -*-
 
 envsubst_cmd = "./hack/tools/bin/envsubst"
+tools_bin = "./hack/tools/bin"
+
+#Add tools to path
+os.putenv('PATH', os.getenv('PATH') + ':' + tools_bin) 
 
 update_settings(k8s_upsert_timeout_secs=60)  # on first tilt up, often can take longer than 30 seconds
 
