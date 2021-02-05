@@ -455,3 +455,109 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureMachine_ValidateManagedDisks(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name     string
+		disks    []DataDisk
+		oldDisks []DataDisk
+		wantErr  bool
+	}{
+		{
+			name:     "valid nil data disks",
+			disks:    nil,
+			oldDisks: nil,
+			wantErr:  false,
+		},
+		{
+			name:     "valid empty data disks",
+			disks:    []DataDisk{},
+			oldDisks: []DataDisk{},
+			wantErr:  false,
+		},
+		{
+			name: "valid managed disks updates",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix: "my_old_disk",
+					DiskSizeGB: 48,
+					Lun:        to.Int32Ptr(0),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_other_old_disk",
+					DiskSizeGB: 16,
+					Lun:        to.Int32Ptr(1),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "cannot update managed disk storage account type after machine creation",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateManagedDisks(test.oldDisks, test.disks, field.NewPath("dataDisks"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}

@@ -174,6 +174,21 @@ func ValidateManagedDisk(old, new ManagedDisk, fieldPath *field.Path) field.Erro
 	return allErrs
 }
 
+// ValidateManagedDisks validates updates to Data disks' managed disk field.
+func ValidateManagedDisks(old, new []DataDisk, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	for i, disk := range new {
+		if disk.ManagedDisk != nil && old[i].ManagedDisk != nil {
+			if errs := ValidateManagedDisk(*old[i].ManagedDisk, *disk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+	}
+
+	return allErrs
+}
+
 func validateDiffDiskSetings(d *DiffDiskSettings, fldPath *field.Path) *field.Error {
 	if d != nil {
 		if d.Option != string(compute.Local) {
