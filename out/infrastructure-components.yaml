@@ -439,6 +439,8 @@ spec:
                     required:
                     - name
                     type: object
+                  hasPublicIP: 
+                    type: boolean
                 type: object
               resourceGroup:
                 type: string
@@ -1208,6 +1210,8 @@ spec:
                 - managedDisk
                 - osType
                 type: object
+              privateIPAddress:
+                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
@@ -1649,6 +1653,8 @@ spec:
                         - managedDisk
                         - osType
                         type: object
+                      privateIPAddress:
+                        type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string
