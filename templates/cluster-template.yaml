@@ -29,7 +29,7 @@ spec:
       - name: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
         role: ${AZURE_CONTROL_PLANE_SUBNET_ROLE}
     vnet:
-      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+      name: ${AZURE_CONTROL_PLANE_VNET_NAME:=${CLUSTER_NAME}-vnet}
       resourceGroup: ${AZURE_CONTROL_PLANE_VNET_RESOURCE_GROUP}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -76,7 +76,6 @@ spec:
         layout: true
         overwrite: false
         tableType: gpt
-    files:
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -107,7 +106,7 @@ spec:
         vnetName: ${AZURE_CONTROL_PLANE_VNET_NAME} 
         subnetName: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
         vnetResourceGroup: ${AZURE_CONTROL_PLANE_VNET_RESOURCE_GROUP}
-        isPrimary: true
+        isPrimary: ${IS_NIC_PRIMARY}
         staticIPAddress: ${AZURE_CONTROL_PLANE_STATIC_IP_ADDRESS:=""}
       dataDisks:
       - diskSizeGB: ${AZURE_CONTROL_PLANE_DATADISK_SIZE:=256}
@@ -161,7 +160,7 @@ spec:
         vnetName:  ${AZURE_NODE_MACHINE_VNET_NAME}
         subnetName: ${AZURE_NODE_MACHINE_SUBNET_NAME}
         vnetResourceGroup: ${AZURE_NODE_MACHINE_VNET_RESOURCE_GROUP}
-        isPrimary: true
+        isPrimary: ${IS_NIC_PRIMARY}
         staticIPAddress: ${AZURE_NODE_MACHINE_STATIC_IP_ADDRESS:=""}
       osDisk:
         diskSizeGB: ${AZURE_NODE_OSDISK_SIZE:=128}
