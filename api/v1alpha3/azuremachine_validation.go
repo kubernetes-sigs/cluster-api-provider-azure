@@ -178,6 +178,11 @@ func ValidateManagedDisk(old, new ManagedDisk, fieldPath *field.Path) field.Erro
 func ValidateManagedDisks(old, new []DataDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
+	if len(old) != len(new) {
+		allErrs = append(allErrs, field.Invalid(fieldPath, new, "changing data disks after machine creation is not allowed"))
+		return allErrs
+	}
+
 	for i, disk := range new {
 		if disk.ManagedDisk != nil && old[i].ManagedDisk != nil {
 			if errs := ValidateManagedDisk(*old[i].ManagedDisk, *disk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
