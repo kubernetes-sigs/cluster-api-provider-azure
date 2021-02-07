@@ -348,6 +348,45 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "valid managed disk storage account type",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_disk_2",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(1),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid managed disk storage account type",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "invalid storage account",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range testcases {
@@ -410,6 +449,202 @@ func TestAzureMachine_ValidateSystemAssignedIdentity(t *testing.T) {
 			err := ValidateSystemAssignedIdentity(tc.Identity, tc.old, tc.roleAssignmentName, field.NewPath("sshPublicKey"))
 			if tc.wantErr {
 				g.Expect(err).ToNot(HaveLen(0))
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
+func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name     string
+		disks    []DataDisk
+		oldDisks []DataDisk
+		wantErr  bool
+	}{
+		{
+			name:     "valid nil data disks",
+			disks:    nil,
+			oldDisks: nil,
+			wantErr:  false,
+		},
+		{
+			name:     "valid empty data disks",
+			disks:    []DataDisk{},
+			oldDisks: []DataDisk{},
+			wantErr:  false,
+		},
+		{
+			name: "valid data disk updates",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix: "my_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(0),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_other_disk",
+					DiskSizeGB: 64,
+					Lun:        to.Int32Ptr(1),
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "cannot update data disk fields after machine creation",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 128,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validate updates to optional fields",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 128,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun: to.Int32Ptr(0),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix:  "my_disk_1",
+					DiskSizeGB:  128,
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "data disks cannot be added after machine creation",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_disk_2",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(2),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "data disks cannot be removed after machine creation",
+			disks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+				{
+					NameSuffix: "my_disk_2",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Premium_LRS",
+					},
+					Lun:         to.Int32Ptr(2),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			oldDisks: []DataDisk{
+				{
+					NameSuffix: "my_disk_1",
+					DiskSizeGB: 64,
+					ManagedDisk: &ManagedDisk{
+						StorageAccountType: "Standard_LRS",
+					},
+					Lun:         to.Int32Ptr(0),
+					CachingType: string(compute.PossibleCachingTypesValues()[0]),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateDataDisksUpdate(test.oldDisks, test.disks, field.NewPath("dataDisks"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}

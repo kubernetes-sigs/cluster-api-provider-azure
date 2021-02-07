@@ -94,6 +94,15 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 			nameSet[disk.NameSuffix] = struct{}{}
 		}
 
+		// validate optional managed disk option
+		if disk.ManagedDisk != nil {
+			allErrs = append(allErrs, validateStorageAccountType(disk.ManagedDisk.StorageAccountType, fieldPath)...)
+
+			if errs := ValidateManagedDisk(*disk.ManagedDisk, *disk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			}
+		}
+
 		// validate that all LUNs are unique and between 0 and 63.
 		if disk.Lun == nil {
 			allErrs = append(allErrs, field.Required(fieldPath, "LUN should not be nil"))
@@ -160,6 +169,53 @@ func ValidateManagedDisk(old, new ManagedDisk, fieldPath *field.Path) field.Erro
 
 	if old.StorageAccountType != new.StorageAccountType {
 		allErrs = append(allErrs, field.Invalid(fieldPath.Child("storageAccountType"), new, "changing storage account type after machine creation is not allowed"))
+	}
+
+	return allErrs
+}
+
+// ValidateDataDisksUpdate validates updates to Data disks.
+func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	diskErrMsg := "adding/removing data disks after machine creation is not allowed"
+	fieldErrMsg := "modifying data disk's fields after machine creation is not allowed"
+
+	if len(oldDataDisks) != len(newDataDisks) {
+		allErrs = append(allErrs, field.Invalid(fieldPath, newDataDisks, diskErrMsg))
+		return allErrs
+	}
+
+	oldDisks := make(map[string]DataDisk)
+
+	for _, disk := range oldDataDisks {
+		oldDisks[disk.NameSuffix] = disk
+	}
+
+	for i, newDisk := range newDataDisks {
+		if oldDisk, ok := oldDisks[newDisk.NameSuffix]; ok {
+			if newDisk.DiskSizeGB != oldDisk.DiskSizeGB {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("diskSizeGB"), newDataDisks, fieldErrMsg))
+			}
+
+			if newDisk.ManagedDisk != nil && oldDisk.ManagedDisk != nil {
+				allErrs = append(allErrs, ValidateManagedDisk(*oldDisk.ManagedDisk, *newDisk.ManagedDisk, fieldPath.Index(i).Child("managedDisk"))...)
+			} else if (newDisk.ManagedDisk != nil && oldDisk.ManagedDisk == nil) || (newDisk.ManagedDisk == nil && oldDisk.ManagedDisk != nil) {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("managedDisk"), newDataDisks, fieldErrMsg))
+			}
+
+			if (newDisk.Lun != nil && oldDisk.Lun != nil) && (*newDisk.Lun != *oldDisk.Lun) {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("lun"), newDataDisks, fieldErrMsg))
+			} else if (newDisk.Lun != nil && oldDisk.Lun == nil) || (newDisk.Lun == nil && oldDisk.Lun != nil) {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("lun"), newDataDisks, fieldErrMsg))
+			}
+
+			if newDisk.CachingType != oldDisk.CachingType {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("cachingType"), newDataDisks, fieldErrMsg))
+			}
+		} else {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("nameSuffix"), newDataDisks, diskErrMsg))
+		}
 	}
 
 	return allErrs
