@@ -28,6 +28,7 @@ import (
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	apiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	errors "sigs.k8s.io/cluster-api/errors"
 )
@@ -289,6 +290,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha4.OSDisk)(nil), (*OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(a.(*v1alpha4.OSDisk), b.(*OSDisk), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*PublicIPSpec)(nil), (*v1alpha4.PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(a.(*PublicIPSpec), b.(*v1alpha4.PublicIPSpec), scope)
 	}); err != nil {
@@ -354,6 +360,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*apiv1alpha3.APIEndpoint)(nil), (*apiv1alpha4.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_APIEndpoint_To_v1alpha4_APIEndpoint(a.(*apiv1alpha3.APIEndpoint), b.(*apiv1alpha4.APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*AzureClusterSpec)(nil), (*v1alpha4.AzureClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_AzureClusterSpec_To_v1alpha4_AzureClusterSpec(a.(*AzureClusterSpec), b.(*v1alpha4.AzureClusterSpec), scope)
 	}); err != nil {
@@ -394,6 +405,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*apiv1alpha4.APIEndpoint)(nil), (*apiv1alpha3.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_APIEndpoint_To_v1alpha3_APIEndpoint(a.(*apiv1alpha4.APIEndpoint), b.(*apiv1alpha3.APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*v1alpha4.AzureClusterSpec)(nil), (*AzureClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(a.(*v1alpha4.AzureClusterSpec), b.(*AzureClusterSpec), scope)
 	}); err != nil {
@@ -426,11 +442,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1alpha4.NetworkSpec)(nil), (*NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(a.(*v1alpha4.NetworkSpec), b.(*NetworkSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*v1alpha4.OSDisk)(nil), (*OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(a.(*v1alpha4.OSDisk), b.(*OSDisk), scope)
 	}); err != nil {
 		return err
 	}
@@ -623,7 +634,7 @@ func Convert_v1alpha3_AzureClusterIdentityStatus_To_v1alpha4_AzureClusterIdentit
 }
 
 func autoConvert_v1alpha4_AzureClusterIdentityStatus_To_v1alpha3_AzureClusterIdentityStatus(in *v1alpha4.AzureClusterIdentityStatus, out *AzureClusterIdentityStatus, s conversion.Scope) error {
-	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -681,7 +692,9 @@ func autoConvert_v1alpha3_AzureClusterSpec_To_v1alpha4_AzureClusterSpec(in *Azur
 	out.ResourceGroup = in.ResourceGroup
 	out.SubscriptionID = in.SubscriptionID
 	out.Location = in.Location
-	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
+	if err := Convert_v1alpha3_APIEndpoint_To_v1alpha4_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
+		return err
+	}
 	out.AdditionalTags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.IdentityRef = (*v1.ObjectReference)(unsafe.Pointer(in.IdentityRef))
 	return nil
@@ -694,7 +707,9 @@ func autoConvert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *v1al
 	out.ResourceGroup = in.ResourceGroup
 	out.SubscriptionID = in.SubscriptionID
 	out.Location = in.Location
-	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
+	if err := Convert_v1alpha4_APIEndpoint_To_v1alpha3_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
+		return err
+	}
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.IdentityRef = (*v1.ObjectReference)(unsafe.Pointer(in.IdentityRef))
 	return nil
@@ -708,9 +723,9 @@ func autoConvert_v1alpha3_AzureClusterStatus_To_v1alpha4_AzureClusterStatus(in *
 }
 
 func autoConvert_v1alpha4_AzureClusterStatus_To_v1alpha3_AzureClusterStatus(in *v1alpha4.AzureClusterStatus, out *AzureClusterStatus, s conversion.Scope) error {
-	out.FailureDomains = *(*apiv1alpha4.FailureDomains)(unsafe.Pointer(&in.FailureDomains))
+	out.FailureDomains = *(*apiv1alpha3.FailureDomains)(unsafe.Pointer(&in.FailureDomains))
 	out.Ready = in.Ready
-	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -856,7 +871,7 @@ func autoConvert_v1alpha4_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in *
 	out.VMState = (*VMState)(unsafe.Pointer(in.VMState))
 	out.FailureReason = (*errors.MachineStatusError)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -1338,6 +1353,11 @@ func autoConvert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OS
 	out.DiffDiskSettings = (*DiffDiskSettings)(unsafe.Pointer(in.DiffDiskSettings))
 	out.CachingType = in.CachingType
 	return nil
+}
+
+// Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk is an autogenerated conversion function.
+func Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk, s conversion.Scope) error {
+	return autoConvert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in, out, s)
 }
 
 func autoConvert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *PublicIPSpec, out *v1alpha4.PublicIPSpec, s conversion.Scope) error {

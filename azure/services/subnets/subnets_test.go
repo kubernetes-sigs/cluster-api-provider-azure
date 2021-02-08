@@ -209,11 +209,11 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
-				s.NodeSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+				s.NodeSubnet().AnyTimes().Return(infrav1.SubnetSpec{
 					Name: "my-subnet",
 					Role: infrav1.SubnetNode,
 				})
-				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{
 					Name: "my-subnet-1",
 					Role: infrav1.SubnetControlPlane,
 				})
@@ -278,11 +278,11 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
-				s.NodeSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+				s.NodeSubnet().AnyTimes().Return(infrav1.SubnetSpec{
 					Name: "my-subnet",
 					Role: infrav1.SubnetNode,
 				})
-				s.ControlPlaneSubnet().AnyTimes().Return(&infrav1.SubnetSpec{
+				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{
 					Name: "my-subnet-1",
 					Role: infrav1.SubnetControlPlane,
 				})

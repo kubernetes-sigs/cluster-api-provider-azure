@@ -53,18 +53,20 @@ type AzureManagedMachinePoolReconciler struct {
 	Log                                  logr.Logger
 	Recorder                             record.EventRecorder
 	ReconcileTimeout                     time.Duration
+	WatchFilterValue                     string
 	createAzureManagedMachinePoolService azureManagedMachinePoolServiceCreator
 }
 
 type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService
 
 // NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance
-func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureManagedMachinePoolReconciler {
+func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureManagedMachinePoolReconciler {
 	ampr := &AzureManagedMachinePoolReconciler{
 		Client:           client,
 		Log:              log,
 		Recorder:         recorder,
 		ReconcileTimeout: reconcileTimeout,
+		WatchFilterValue: watchFilterValue,
 	}
 
 	ampr.createAzureManagedMachinePoolService = newAzureManagedMachinePoolService
@@ -85,7 +87,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(azManagedMachinePool).
-		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},

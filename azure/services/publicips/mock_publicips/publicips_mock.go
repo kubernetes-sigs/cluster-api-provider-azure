@@ -26,7 +26,6 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -54,67 +53,11 @@ func (m *MockPublicIPScope) EXPECT() *MockPublicIPScopeMockRecorder {
 	return m.recorder
 }
 
-<<<<<<< HEAD
 // AdditionalTags mocks base method.
-func (m *MockPublicIPScope) AdditionalTags() v1alpha3.Tags {
+func (m *MockPublicIPScope) AdditionalTags() v1alpha4.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
-=======
-// Enabled mocks base method.
-func (m *MockPublicIPScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockPublicIPScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockPublicIPScope)(nil).Enabled))
-}
-
-// Info mocks base method.
-func (m *MockPublicIPScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockPublicIPScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockPublicIPScope)(nil).Info), varargs...)
-}
-
-// Error mocks base method.
-func (m *MockPublicIPScope) Error(err error, msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockPublicIPScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockPublicIPScope)(nil).Error), varargs...)
-}
-
-// V mocks base method.
-func (m *MockPublicIPScope) V(level int) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.Logger)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
+	ret0, _ := ret[0].(v1alpha4.Tags)
 	return ret0
 }
 
@@ -354,19 +297,11 @@ func (mr *MockPublicIPScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockPublicIPScope)(nil).TenantID))
 }
 
-<<<<<<< HEAD
 // V mocks base method.
-func (m *MockPublicIPScope) V(level int) logr.InfoLogger {
+func (m *MockPublicIPScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
-=======
-// AdditionalTags mocks base method.
-func (m *MockPublicIPScope) AdditionalTags() v1alpha4.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 

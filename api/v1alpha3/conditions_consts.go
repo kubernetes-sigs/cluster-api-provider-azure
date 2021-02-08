@@ -16,7 +16,7 @@ limitations under the License.
 
 package v1alpha3
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 // AzureCluster Conditions and Reasons
 const (

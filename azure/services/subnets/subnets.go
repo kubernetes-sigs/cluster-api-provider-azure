@@ -63,7 +63,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get subnet %s", subnetSpec.Name)
 		case err == nil:
 			// subnet already exists, update the spec and skip creation
-			var subnet *infrav1.SubnetSpec
+			var subnet infrav1.SubnetSpec
 			if subnetSpec.Role == infrav1.SubnetControlPlane {
 				subnet = s.Scope.ControlPlaneSubnet()
 			} else if subnetSpec.Role == infrav1.SubnetNode {

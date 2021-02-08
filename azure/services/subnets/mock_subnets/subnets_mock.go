@@ -26,7 +26,6 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -54,7 +53,6 @@ func (m *MockSubnetScope) EXPECT() *MockSubnetScopeMockRecorder {
 	return m.recorder
 }
 
-<<<<<<< HEAD
 // APIServerLBName mocks base method.
 func (m *MockSubnetScope) APIServerLBName() string {
 	m.ctrl.T.Helper()
@@ -71,41 +69,6 @@ func (mr *MockSubnetScopeMockRecorder) APIServerLBName() *gomock.Call {
 
 // APIServerLBPoolName mocks base method.
 func (m *MockSubnetScope) APIServerLBPoolName(arg0 string) string {
-=======
-// Enabled mocks base method.
-func (m *MockSubnetScope) Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Enabled indicates an expected call of Enabled.
-func (mr *MockSubnetScopeMockRecorder) Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockSubnetScope)(nil).Enabled))
-}
-
-// Info mocks base method.
-func (m *MockSubnetScope) Info(msg string, keysAndValues ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockSubnetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockSubnetScope)(nil).Info), varargs...)
-}
-
-// Error mocks base method.
-func (m *MockSubnetScope) Error(err error, msg string, keysAndValues ...interface{}) {
->>>>>>> 6d7f7629... initial change to v1alpha4 types
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
 	ret0, _ := ret[0].(string)
@@ -118,19 +81,11 @@ func (mr *MockSubnetScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockSubnetScope)(nil).APIServerLBPoolName), arg0)
 }
 
-<<<<<<< HEAD
 // AdditionalTags mocks base method.
-func (m *MockSubnetScope) AdditionalTags() v1alpha3.Tags {
+func (m *MockSubnetScope) AdditionalTags() v1alpha4.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
-=======
-// V mocks base method.
-func (m *MockSubnetScope) V(level int) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.Logger)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
+	ret0, _ := ret[0].(v1alpha4.Tags)
 	return ret0
 }
 
@@ -239,10 +194,10 @@ func (mr *MockSubnetScopeMockRecorder) ClusterName() *gomock.Call {
 }
 
 // ControlPlaneRouteTable mocks base method.
-func (m *MockSubnetScope) ControlPlaneRouteTable() *v1alpha3.RouteTable {
+func (m *MockSubnetScope) ControlPlaneRouteTable() v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	ret0, _ := ret[0].(v1alpha4.RouteTable)
 	return ret0
 }
 
@@ -253,10 +208,10 @@ func (mr *MockSubnetScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockSubnetScope) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
+func (m *MockSubnetScope) ControlPlaneSubnet() v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
 	return ret0
 }
 
@@ -342,19 +297,11 @@ func (mr *MockSubnetScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockSubnetScope)(nil).IsAPIServerPrivate))
 }
 
-<<<<<<< HEAD
 // IsIPv6Enabled mocks base method.
 func (m *MockSubnetScope) IsIPv6Enabled() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsIPv6Enabled")
 	ret0, _ := ret[0].(bool)
-=======
-// AdditionalTags mocks base method.
-func (m *MockSubnetScope) AdditionalTags() v1alpha4.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -378,19 +325,11 @@ func (mr *MockSubnetScopeMockRecorder) IsVnetManaged() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockSubnetScope)(nil).IsVnetManaged))
 }
 
-<<<<<<< HEAD
 // Location mocks base method.
 func (m *MockSubnetScope) Location() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Location")
 	ret0, _ := ret[0].(string)
-=======
-// Vnet mocks base method.
-func (m *MockSubnetScope) Vnet() *v1alpha4.VnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -401,10 +340,10 @@ func (mr *MockSubnetScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NodeRouteTable mocks base method.
-func (m *MockSubnetScope) NodeRouteTable() *v1alpha3.RouteTable {
+func (m *MockSubnetScope) NodeRouteTable() v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	ret0, _ := ret[0].(v1alpha4.RouteTable)
 	return ret0
 }
 
@@ -415,10 +354,10 @@ func (mr *MockSubnetScopeMockRecorder) NodeRouteTable() *gomock.Call {
 }
 
 // NodeSubnet mocks base method.
-func (m *MockSubnetScope) NodeSubnet() *v1alpha4.SubnetSpec {
+func (m *MockSubnetScope) NodeSubnet() v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
 	return ret0
 }
 
@@ -428,19 +367,11 @@ func (mr *MockSubnetScopeMockRecorder) NodeSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockSubnetScope)(nil).NodeSubnet))
 }
 
-<<<<<<< HEAD
 // OutboundLBName mocks base method.
 func (m *MockSubnetScope) OutboundLBName(arg0 string) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
 	ret0, _ := ret[0].(string)
-=======
-// ControlPlaneSubnet mocks base method.
-func (m *MockSubnetScope) ControlPlaneSubnet() *v1alpha4.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha4.SubnetSpec)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -464,19 +395,11 @@ func (mr *MockSubnetScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockSubnetScope)(nil).OutboundPoolName), arg0)
 }
 
-<<<<<<< HEAD
 // ResourceGroup mocks base method.
 func (m *MockSubnetScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResourceGroup")
 	ret0, _ := ret[0].(string)
-=======
-// NodeRouteTable mocks base method.
-func (m *MockSubnetScope) NodeRouteTable() *v1alpha4.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha4.RouteTable)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -486,19 +409,11 @@ func (mr *MockSubnetScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockSubnetScope)(nil).ResourceGroup))
 }
 
-<<<<<<< HEAD
 // SubnetSpecs mocks base method.
 func (m *MockSubnetScope) SubnetSpecs() []azure.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubnetSpecs")
 	ret0, _ := ret[0].([]azure.SubnetSpec)
-=======
-// ControlPlaneRouteTable mocks base method.
-func (m *MockSubnetScope) ControlPlaneRouteTable() *v1alpha4.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(*v1alpha4.RouteTable)
->>>>>>> 6d7f7629... initial change to v1alpha4 types
 	return ret0
 }
 
@@ -537,10 +452,10 @@ func (mr *MockSubnetScopeMockRecorder) TenantID() *gomock.Call {
 }
 
 // V mocks base method.
-func (m *MockSubnetScope) V(level int) logr.InfoLogger {
+func (m *MockSubnetScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 
@@ -551,10 +466,10 @@ func (mr *MockSubnetScopeMockRecorder) V(level interface{}) *gomock.Call {
 }
 
 // Vnet mocks base method.
-func (m *MockSubnetScope) Vnet() *v1alpha3.VnetSpec {
+func (m *MockSubnetScope) Vnet() *v1alpha4.VnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
+	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
 	return ret0
 }
 

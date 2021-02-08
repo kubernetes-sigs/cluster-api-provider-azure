@@ -11,7 +11,7 @@ spec:
       containers:
         - name: manager
           args:
-            - "--metrics-addr=127.0.0.1:8080"
-            - "--enable-leader-election"
+            - "--metrics-bind-addr=127.0.0.1:8080"
+            - "--leader-elect"
             - "--feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false}"
             - "--enable-tracing"

@@ -295,27 +295,27 @@ func (s *ClusterScope) Subnets() infrav1.Subnets {
 }
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
+func (s *ClusterScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-	return &subnet
+	return subnet
 }
 
 // NodeSubnet returns the cluster node subnet.
-func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
+func (s *ClusterScope) NodeSubnet() infrav1.SubnetSpec {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-	return &subnet
+	return subnet
 }
 
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
-func (s *ClusterScope) ControlPlaneRouteTable() *infrav1.RouteTable {
+func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-	return &subnet.RouteTable
+	return subnet.RouteTable
 }
 
 // NodeRouteTable returns the cluster node routetable.
-func (s *ClusterScope) NodeRouteTable() *infrav1.RouteTable {
+func (s *ClusterScope) NodeRouteTable() infrav1.RouteTable {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-	return &subnet.RouteTable
+	return subnet.RouteTable
 }
 
 // APIServerLB returns the cluster API Server load balancer.
@@ -484,7 +484,8 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 // SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
 func (s *ClusterScope) SetControlPlaneIngressRules() {
 	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
-		s.ControlPlaneSubnet().SecurityGroup.IngressRules = infrav1.IngressRules{
+		subnet := s.ControlPlaneSubnet()
+		subnet.SecurityGroup.IngressRules = infrav1.IngressRules{
 			infrav1.IngressRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
@@ -506,6 +507,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				DestinationPorts: to.StringPtr(strconv.Itoa(int(s.APIServerPort()))),
 			},
 		}
+		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
 	}
 }
 

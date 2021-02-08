@@ -52,6 +52,7 @@ type AzureManagedControlPlaneReconciler struct {
 	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
+	WatchFilterValue string
 }
 
 // SetupWithManager initializes this controller with a manager.
@@ -67,7 +68,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(azManagedControlPlane).
-		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		// watch AzureManagedCluster resources
 		Watches(
 			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},

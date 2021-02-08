@@ -170,13 +170,13 @@ func (s *ManagedControlPlaneScope) VNetSpec() azure.VNetSpec {
 }
 
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
-func (s *ManagedControlPlaneScope) ControlPlaneRouteTable() *infrav1.RouteTable {
-	return nil
+func (s *ManagedControlPlaneScope) ControlPlaneRouteTable() infrav1.RouteTable {
+	return infrav1.RouteTable{}
 }
 
 // NodeRouteTable returns the cluster node routetable.
-func (s *ManagedControlPlaneScope) NodeRouteTable() *infrav1.RouteTable {
-	return nil
+func (s *ManagedControlPlaneScope) NodeRouteTable() infrav1.RouteTable {
+	return infrav1.RouteTable{}
 }
 
 // SubnetSpecs returns the subnets specs.
@@ -191,16 +191,16 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
 }
 
 // NodeSubnet returns the cluster node subnet.
-func (s *ManagedControlPlaneScope) NodeSubnet() *infrav1.SubnetSpec {
-	return &infrav1.SubnetSpec{
+func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
+	return infrav1.SubnetSpec{
 		Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
 	}
 }
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ManagedControlPlaneScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return nil
+func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
+	return infrav1.SubnetSpec{}
 }
 
 // IsIPv6Enabled returns true if a cluster is ipv6 enabled.

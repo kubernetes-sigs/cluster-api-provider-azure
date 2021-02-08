@@ -23,7 +23,7 @@ package v1alpha3
 import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/cluster-api/api/v1alpha4"
+	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
@@ -179,7 +179,7 @@ func (in *AzureClusterIdentityStatus) DeepCopyInto(out *AzureClusterIdentityStat
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(v1alpha4.Conditions, len(*in))
+		*out = make(apiv1alpha3.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -262,14 +262,14 @@ func (in *AzureClusterStatus) DeepCopyInto(out *AzureClusterStatus) {
 	*out = *in
 	if in.FailureDomains != nil {
 		in, out := &in.FailureDomains, &out.FailureDomains
-		*out = make(v1alpha4.FailureDomains, len(*in))
+		*out = make(apiv1alpha3.FailureDomains, len(*in))
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(v1alpha4.Conditions, len(*in))
+		*out = make(apiv1alpha3.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -436,7 +436,7 @@ func (in *AzureMachineStatus) DeepCopyInto(out *AzureMachineStatus) {
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(v1alpha4.Conditions, len(*in))
+		*out = make(apiv1alpha3.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

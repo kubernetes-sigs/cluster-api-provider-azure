@@ -1,5 +1,5 @@
 resources:
-  - ../../config
+  - ../../config/default
   - jaeger
   - prometheus
 

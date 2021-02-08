@@ -28,11 +28,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/windows"
 )
 
-func GetWindowsVersion(clientset *kubernetes.Clientset) (windows.OSVersion, error) {
+func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (windows.OSVersion, error) {
 	options := v1.ListOptions{
 		LabelSelector: "kubernetes.io/os=windows",
 	}
-	result, err := clientset.CoreV1().Nodes().List(context.Background(), options)
+	result, err := clientset.CoreV1().Nodes().List(ctx, options)
 	if err != nil {
 		return windows.Unknown, err
 	}

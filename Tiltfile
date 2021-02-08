@@ -16,7 +16,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v0.3.11",
+    "capi_version": "nightly_master_20210210",
     "cert_manager_version": "v0.16.1",
     "kubernetes_version": "v1.19.7",
     "aks_kubernetes_version": "v1.18.8"
@@ -42,7 +42,7 @@ if "default_registry" in settings:
 # deploy CAPI
 def deploy_capi():
     version = settings.get("capi_version")
-    capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
+    capi_uri = "https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/{}/cluster-api-components.yaml".format(version)
     cmd = "curl -sSL {} | {} | kubectl apply -f -".format(capi_uri, envsubst_cmd)
     local(cmd, quiet=True)
     if settings.get("extra_args"):
@@ -157,21 +157,6 @@ def capz():
         deps = ["api", "cloud", "config", "controllers", "exp", "feature", "pkg", "go.mod", "go.sum", "main.go"]
     )
 
-    k8s_resource('capz-controller-manager:deployment:capz-system', objects=[
-        'azureclusters.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-        'azuremachinepools.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-        'azuremachines.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-        'azuremachinetemplates.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-        'azuremanagedclusters.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-        'azuremanagedcontrolplanes.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-        'azuremanagedmachinepools.exp.infrastructure.cluster.x-k8s.io:customresourcedefinition',
-    ])
-
-    k8s_resource('capz-controller-manager:deployment:capi-webhook-system', objects=[
-        'capz-validating-webhook-configuration:validatingwebhookconfiguration',
-        'capz-mutating-webhook-configuration:mutatingwebhookconfiguration',
-    ])
-
     dockerfile_contents = "\n".join([
         tilt_helper_dockerfile_header,
         tilt_dockerfile_header,
@@ -215,7 +200,6 @@ def create_crs():
     local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/ --dry-run=client -o yaml | " + envsubst_cmd + " | sed -e 's/\\\\/\\\\\\\\/' | kubectl apply -f -")
 
     # set up crs
-    local("kubectl wait --for=condition=Available --timeout=300s -n capi-webhook-system deployment/capi-controller-manager")
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")
     local("kubectl apply -f templates/addons/flannel-resource-set.yaml")
 

@@ -98,9 +98,12 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
 	var cidrBlocks []string
-	if subnet, err := networkSpec.GetControlPlaneSubnet(); err != nil {
-		cidrBlocks = subnet.CIDRBlocks
+	subnet, err := networkSpec.GetControlPlaneSubnet()
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
 	}
+	cidrBlocks = subnet.CIDRBlocks
+
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 	if len(allErrs) == 0 {
 		return nil
@@ -139,14 +142,12 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				requiredSubnetRoles[role] = true
 			}
 		}
-		if subnet.SecurityGroup.IngressRules != nil {
-			for _, ingressRule := range subnet.SecurityGroup.IngressRules {
-				if err := validateIngressRule(
-					ingressRule,
-					fldPath.Index(i).Child("securityGroup").Child("ingressRules").Index(i),
-				); err != nil {
-					allErrs = append(allErrs, err)
-				}
+		for _, ingressRule := range subnet.SecurityGroup.IngressRules {
+			if err := validateIngressRule(
+				ingressRule,
+				fldPath.Index(i).Child("securityGroup").Child("ingressRules").Index(i),
+			); err != nil {
+				allErrs = append(allErrs, err)
 			}
 		}
 	}

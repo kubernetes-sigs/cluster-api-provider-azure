@@ -40,7 +40,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 
 	Context("Reconcile an AzureCluster", func() {
 		It("should reconcile and exit early due to the cluster not having an OwnerRef", func() {
-			ctx := context.Background()
+			ctx := context.TODO()
 			logListener := record.NewListener(testEnv.LogRecorder)
 			del := logListener.Listen()
 			defer del()
@@ -69,7 +69,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 		})
 
 		It("should fail with context timeout error if context expires", func() {
-			ctx := context.Background()
+			ctx := context.TODO()
 			mockCtrl := gomock.NewController(GinkgoT())
 			defer mockCtrl.Finish()
 
@@ -81,7 +81,7 @@ var _ = Describe("AzureClusterReconciler", func() {
 
 			c, err := client.New(testEnv.Config, client.Options{Scheme: testEnv.GetScheme()})
 			Expect(err).ToNot(HaveOccurred())
-			reconciler := NewAzureClusterReconciler(c, log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), 1*time.Second)
+			reconciler := NewAzureClusterReconciler(c, log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), 1*time.Second, "")
 
 			instance := &infrav1.AzureCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 			_, err = reconciler.Reconcile(ctx, ctrl.Request{

@@ -54,18 +54,20 @@ type AzureClusterReconciler struct {
 	Log                       logr.Logger
 	Recorder                  record.EventRecorder
 	ReconcileTimeout          time.Duration
+	WatchFilterValue          string
 	createAzureClusterService azureClusterServiceCreator
 }
 
 type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
 
 // NewAzureClusterReconciler returns a new AzureClusterReconciler instance
-func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureClusterReconciler {
+func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureClusterReconciler {
 	acr := &AzureClusterReconciler{
 		Client:           client,
 		Log:              log,
 		Recorder:         recorder,
 		ReconcileTimeout: reconcileTimeout,
+		WatchFilterValue: watchFilterValue,
 	}
 
 	acr.createAzureClusterService = newAzureClusterService
@@ -79,7 +81,7 @@ func (r *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		Build(r)
 	if err != nil {
 		return errors.Wrapf(err, "error creating controller")

@@ -45,7 +45,7 @@ var _ = Describe("AzureMachineReconciler", func() {
 
 	Context("Reconcile an AzureMachine", func() {
 		It("should not error with minimal set up", func() {
-			reconciler := NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout)
+			reconciler := NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout, "")
 
 			By("Calling reconcile")
 			name := test.RandomName("foo", 10)
@@ -161,7 +161,7 @@ func TestConditions(t *testing.T) {
 			client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 			recorder := record.NewFakeRecorder(10)
 
-			reconciler := NewAzureMachineReconciler(client, klogr.New(), recorder, reconciler.DefaultLoopTimeout)
+			reconciler := NewAzureMachineReconciler(client, klogr.New(), recorder, reconciler.DefaultLoopTimeout, "")
 
 			clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{

@@ -68,6 +68,7 @@ func TestGettingEnvironment(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			os.Setenv("AZURE_ENVIRONMENT", test.azureEnv)
+			defer unsetAzureEnvValue()
 			c := AzureClients{}
 			err := c.setCredentials("1234")
 			if test.expectedError {
@@ -80,4 +81,8 @@ func TestGettingEnvironment(t *testing.T) {
 			}
 		})
 	}
+}
+
+func unsetAzureEnvValue() {
+	os.Unsetenv("AZURE_ENVIRONMENT")
 }

@@ -84,11 +84,6 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 		return false
 	}
 
-	// if e.Object == nil {
-	// 	f.log.Error(nil, "Generic event has no new metadata", "event", e)
-	// 	return false
-	// }
-
 	// when watching machines, we only care about machines users created one-off
 	// outside of machinedeployments/machinesets and using AzureMachineTemplates. if a machine is part of a machineset
 	// or machinedeployment, we already created a secret for the template. All machines

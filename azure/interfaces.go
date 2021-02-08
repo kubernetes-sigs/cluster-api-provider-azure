@@ -62,11 +62,11 @@ type Authorizer interface {
 type NetworkDescriber interface {
 	Vnet() *infrav1.VnetSpec
 	IsVnetManaged() bool
-	NodeSubnet() *infrav1.SubnetSpec
-	ControlPlaneSubnet() *infrav1.SubnetSpec
+	NodeSubnet() infrav1.SubnetSpec
+	ControlPlaneSubnet() infrav1.SubnetSpec
 	IsIPv6Enabled() bool
-	NodeRouteTable() *infrav1.RouteTable
-	ControlPlaneRouteTable() *infrav1.RouteTable
+	NodeRouteTable() infrav1.RouteTable
+	ControlPlaneRouteTable() infrav1.RouteTable
 	APIServerLBName() string
 	APIServerLBPoolName(string) string
 	IsAPIServerPrivate() bool

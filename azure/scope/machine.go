@@ -248,7 +248,7 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 }
 
 // Subnet returns the machine's subnet based on its role
-func (m *MachineScope) Subnet() *infrav1.SubnetSpec {
+func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 	if m.IsControlPlane() {
 		return m.ControlPlaneSubnet()
 	}
