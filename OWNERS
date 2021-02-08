@@ -10,7 +10,9 @@ reviewers:
   - cluster-api-azure-maintainers
   - cluster-api-azure-reviewers
 
-emeritus_maintainers:
+emeritus_approvers:
+  - awesomenix
+  - justaugustus
   - ncdc
 
 labels:
