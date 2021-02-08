@@ -337,6 +337,8 @@ spec:
               networkSpec:
                 description: NetworkSpec encapsulates all things related to Azure network.
                 properties:
+                  hasPublicIP:
+                    type: boolean
                   subnets:
                     description: Subnets is the configuration for the control-plane subnet and the node subnet.
                     items:
@@ -439,8 +441,6 @@ spec:
                     required:
                     - name
                     type: object
-                  hasPublicIP: 
-                    type: boolean
                 type: object
               resourceGroup:
                 type: string
@@ -1210,8 +1210,6 @@ spec:
                 - managedDisk
                 - osType
                 type: object
-              privateIPAddress:
-                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
@@ -1653,8 +1651,6 @@ spec:
                         - managedDisk
                         - osType
                         type: object
-                      privateIPAddress:
-                        type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string
@@ -2360,7 +2356,7 @@ spec:
         - --metrics-addr=127.0.0.1:8080
         - --webhook-port=9443
         - --feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false}
-        image: niachary/cluster-api-azure-controller_niharikatest-amd64:dev
+        image: niachary/cluster-api-azure-controller-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -2466,7 +2462,7 @@ spec:
             secretKeyRef:
               key: arm-endpoint
               name: capz-manager-bootstrap-credentials
-        image: niachary/cluster-api-azure-controller_niharikatest-amd64:dev
+        image: niachary/cluster-api-azure-controller-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
