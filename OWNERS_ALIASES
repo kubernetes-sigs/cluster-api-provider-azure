@@ -7,19 +7,17 @@ aliases:
     - neolit123
     - timothysc
   cluster-api-admins:
-    - davidewatson
     - detiber
     - justinsb
     - vincepri
   cluster-api-maintainers:
+    - CecileRobertMichon
     - detiber
     - justinsb
     - vincepri
   cluster-api-azure-maintainers:
-    - awesomenix
     - CecileRobertMichon
     - devigned
-    - justaugustus
     - nader-ziada
   cluster-api-azure-reviewers:
     - alexeldeib
