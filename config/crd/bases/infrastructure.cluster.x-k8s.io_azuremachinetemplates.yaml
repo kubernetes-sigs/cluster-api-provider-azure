@@ -416,8 +416,30 @@ spec:
                         type: array
                       vmSize:
                         type: string
-                      privateIPAddress:
-                        type: string
+                      networkInterfaces:
+                        description: Network Interfaces for a VM
+                        items:
+                          description: Specifies a network interface that you want to add to the VM
+                          properties:
+                            name:
+                              type: string
+                            vnetName:
+                              type: string
+                            subnetName:
+                              type: string
+                            vnetResourceGroup:
+                              type: string
+                            isPrimary:
+                              type: boolean
+                            staticIPAddress:
+                              type: string
+                          required:
+                          - name
+                          - vnetName
+                          - subnetName
+                          - vnetResourceGroup
+                          type: object 
+                        type: array
                       imageID:
                         type: string
                     required:
@@ -425,6 +447,7 @@ spec:
                     - osDisk
                     - sshPublicKey
                     - vmSize
+                    - networkInterfaces
                     type: object
                 required:
                 - spec

@@ -29,11 +29,11 @@ spec:
       - name: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
         role: ${AZURE_CONTROL_PLANE_SUBNET_ROLE}
     vnet:
-      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
-      resourceGroup: ${AZURE_VNET_RESOURCE_GROUP}
+      name: ${AZURE_CONTROL_PLANE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+      resourceGroup: ${AZURE_CONTROL_PLANE_VNET_RESOURCE_GROUP}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
-  controlPlaneEndpointIP: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
+  controlPlaneEndpointIP: ${AZURE_CONTROL_PLANE_STATIC_IP_ADDRESS}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: KubeadmControlPlane
@@ -76,11 +76,6 @@ spec:
         layout: true
         overwrite: false
         tableType: gpt
-    files:
-      - content: |
-        ${AZURE_CABUNLE_CONTENTS}
-      path: /home/capi/cabundle.crt
-      permissions: "0744"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -106,19 +101,25 @@ metadata:
 spec:
   template:
     spec:
+      networkInterfaces:
+      - name: ${AZURE_CONTROL_PLANE_NIC_NAME}
+        vnetName: ${AZURE_CONTROL_PLANE_VNET_NAME} 
+        subnetName: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
+        vnetResourceGroup: ${AZURE_CONTROL_PLANE_VNET_RESOURCE_GROUP}
+        isPrimary: ${IS_NIC_PRIMARY}
+        staticIPAddress: ${AZURE_CONTROL_PLANE_STATIC_IP_ADDRESS:=""}
       dataDisks:
-      - diskSizeGB: 256
+      - diskSizeGB: ${AZURE_CONTROL_PLANE_DATADISK_SIZE:=256}
         lun: 0
         nameSuffix: etcddisk
       location: ${AZURE_LOCATION}
       osDisk:
-        diskSizeGB: 128
+        diskSizeGB: ${AZURE_CONTROL_PLANE_OSDISK_SIZE:=128}
         managedDisk:
           storageAccountType: Standard_LRS
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
-      privateIPAddress: ${AZURE_CONTROL_PLANE_PRIVATE_IP_ADDRESS}
       imageID: ${AZURE_IMAGE_ID}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -154,14 +155,20 @@ spec:
   template:
     spec:
       location: ${AZURE_LOCATION}
+      networkInterfaces:
+      - name: ${AZURE_NODE_MACHINE_NIC_NAME}
+        vnetName:  ${AZURE_NODE_MACHINE_VNET_NAME}
+        subnetName: ${AZURE_NODE_MACHINE_SUBNET_NAME}
+        vnetResourceGroup: ${AZURE_NODE_MACHINE_VNET_RESOURCE_GROUP}
+        isPrimary: ${IS_NIC_PRIMARY}
+        staticIPAddress: ${AZURE_NODE_MACHINE_STATIC_IP_ADDRESS:=""}
       osDisk:
-        diskSizeGB: 128
+        diskSizeGB: ${AZURE_NODE_OSDISK_SIZE:=128}
         managedDisk:
           storageAccountType: Standard_LRS
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
-      privateIPAddress: ${AZURE_NODE_MACHINE_PRIVATE_IP_ADDRESS}
       imageID: ${AZURE_IMAGE_ID}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3

@@ -98,8 +98,10 @@ type AzureMachineSpec struct {
 	// +optional
 	SpotVMOptions *SpotVMOptions `json:"spotVMOptions,omitempty"`
 
-	PrivateIPAddress string `json:"privateIPAddress"`
+	PrivateIPAddress string `json:"privateIPAddress,omitempty"`
 	ImageID          string `json:"imageID"`
+
+	NetworkInterfaces []NetworkInterface `json:"networkInterfaces"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs
@@ -108,6 +110,22 @@ type SpotVMOptions struct {
 	// +optional
 	// +kubebuilder:validation:Type=number
 	MaxPrice *string `json:"maxPrice,omitempty"`
+}
+
+//NetworkInterfaces allows user to add multiple nics to the VMs
+type NetworkInterface struct{
+	//Name of the network interface
+	Name string `json:"name"`
+	//Name of the vnet
+	VnetName string `json:"vnetName"`
+	//Name of the subnet
+	SubnetName string `json:"subnetName"`
+	//Resource Group for the Vnet
+	VnetResourceGroup string `json:"vnetResourceGroup"`
+	//Flag for Primary NIC
+	IsPrimary bool `json:"isPrimary,omitempty"`
+	//static IP address
+	StaticIPAddress string `json:"staticIPAddress,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine

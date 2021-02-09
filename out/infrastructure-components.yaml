@@ -337,6 +337,8 @@ spec:
               networkSpec:
                 description: NetworkSpec encapsulates all things related to Azure network.
                 properties:
+                  hasPublicIP:
+                    type: boolean
                   subnets:
                     description: Subnets is the configuration for the control-plane subnet and the node subnet.
                     items:
@@ -439,8 +441,6 @@ spec:
                     required:
                     - name
                     type: object
-                  hasPublicIP: 
-                    type: boolean
                 type: object
               resourceGroup:
                 type: string
@@ -1152,6 +1152,30 @@ spec:
               location:
                 description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                 type: string
+              networkInterfaces:
+                description: Network Interfaces for a VM
+                items:
+                  description: Specifies a network interface that you want to add to the VM
+                  properties:
+                    isPrimary:
+                      type: boolean
+                    name:
+                      type: string
+                    staticIPAddress:
+                      type: string
+                    subnetName:
+                      type: string
+                    vnetName:
+                      type: string
+                    vnetResourceGroup:
+                      type: string
+                  required:
+                  - name
+                  - vnetName
+                  - subnetName
+                  - vnetResourceGroup
+                  type: object
+                type: array
               osDisk:
                 description: OSDisk specifies the parameters for the operating system disk of the machine
                 properties:
@@ -1186,8 +1210,6 @@ spec:
                 - managedDisk
                 - osType
                 type: object
-              privateIPAddress:
-                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
@@ -1219,6 +1241,7 @@ spec:
             - osDisk
             - sshPublicKey
             - vmSize
+            - networkInterfaces
             type: object
           status:
             description: AzureMachineStatus defines the observed state of AzureMachine
@@ -1570,6 +1593,30 @@ spec:
                       location:
                         description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                         type: string
+                      networkInterfaces:
+                        description: Network Interfaces for a VM
+                        items:
+                          description: Specifies a network interface that you want to add to the VM
+                          properties:
+                            isPrimary:
+                              type: boolean
+                            name:
+                              type: string
+                            staticIPAddress:
+                              type: string
+                            subnetName:
+                              type: string
+                            vnetName:
+                              type: string
+                            vnetResourceGroup:
+                              type: string
+                          required:
+                          - name
+                          - vnetName
+                          - subnetName
+                          - vnetResourceGroup
+                          type: object
+                        type: array
                       osDisk:
                         description: OSDisk specifies the parameters for the operating system disk of the machine
                         properties:
@@ -1604,8 +1651,6 @@ spec:
                         - managedDisk
                         - osType
                         type: object
-                      privateIPAddress:
-                        type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string
@@ -1637,6 +1682,7 @@ spec:
                     - osDisk
                     - sshPublicKey
                     - vmSize
+                    - networkInterfaces
                     type: object
                 required:
                 - spec
