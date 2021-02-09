@@ -1,4 +1,4 @@
-module niachary/cluster-api-provider-azure
+module github.com/niachary/cluster-api-provider-azure
 
 go 1.13
 
