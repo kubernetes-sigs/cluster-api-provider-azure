@@ -445,18 +445,17 @@ func newDefaultPublicAPIServerLB() network.LoadBalancer {
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
 						},
 						Probe: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/HTTPSProbe"),
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/probes/TCPProbe"),
 						},
 					},
 				},
 			},
 			Probes: &[]network.Probe{
 				{
-					Name: to.StringPtr(httpsProbe),
+					Name: to.StringPtr(tcpProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolHTTPS,
+						Protocol:          network.ProbeProtocolTCP,
 						Port:              to.Int32Ptr(6443),
-						RequestPath:       to.StringPtr("/healthz"),
 						IntervalInSeconds: to.Int32Ptr(15),
 						NumberOfProbes:    to.Int32Ptr(4),
 					},
@@ -525,7 +524,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/backendAddressPools/my-private-lb-backendPool"),
 						},
 						Probe: &network.SubResource{
-							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/HTTPSProbe"),
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-private-lb/probes/TCPProbe"),
 						},
 					},
 				},
@@ -533,11 +532,10 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 			OutboundRules: &[]network.OutboundRule{},
 			Probes: &[]network.Probe{
 				{
-					Name: to.StringPtr(httpsProbe),
+					Name: to.StringPtr(tcpProbe),
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolHTTPS,
+						Protocol:          network.ProbeProtocolTCP,
 						Port:              to.Int32Ptr(6443),
-						RequestPath:       to.StringPtr("/healthz"),
 						IntervalInSeconds: to.Int32Ptr(15),
 						NumberOfProbes:    to.Int32Ptr(4),
 					},

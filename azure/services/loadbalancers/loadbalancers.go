@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	httpsProbe  = "HTTPSProbe"
+	tcpProbe    = "TCPProbe"
 	lbRuleHTTPS = "LBRuleHTTPS"
 	outboundNAT = "OutboundNATAllProtocols"
 )
@@ -269,7 +269,7 @@ func (s *Service) getLoadBalancingRules(lbSpec azure.LBSpec, frontendIDs []netwo
 						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
 					},
 					Probe: &network.SubResource{
-						ID: to.StringPtr(azure.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, httpsProbe)),
+						ID: to.StringPtr(azure.ProbeID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, tcpProbe)),
 					},
 				},
 			},
@@ -290,10 +290,9 @@ func (s *Service) getProbes(lbSpec azure.LBSpec) []network.Probe {
 	if lbSpec.Role == infrav1.APIServerRole {
 		return []network.Probe{
 			{
-				Name: to.StringPtr(httpsProbe),
+				Name: to.StringPtr(tcpProbe),
 				ProbePropertiesFormat: &network.ProbePropertiesFormat{
-					Protocol:          network.ProbeProtocolHTTPS,
-					RequestPath:       to.StringPtr("/healthz"),
+					Protocol:          network.ProbeProtocolTCP,
 					Port:              to.Int32Ptr(lbSpec.APIServerPort),
 					IntervalInSeconds: to.Int32Ptr(15),
 					NumberOfProbes:    to.Int32Ptr(4),
