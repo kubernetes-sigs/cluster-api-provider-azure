@@ -102,8 +102,20 @@ var _ = Describe("Conformance Tests", func() {
 			}, result)
 			cluster = result.Cluster
 		})
-
 		b.RecordValue("cluster creation", runtime.Seconds())
+
+		Context("Creating an accessible load balancer", func() {
+			AzureLBSpec(ctx, func() AzureLBSpecInput {
+				return AzureLBSpecInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Namespace:             namespace,
+					ClusterName:           clusterName,
+					SkipCleanup:           skipCleanup,
+					IsVMSS:                true,
+				}
+			})
+		})
+
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
 		runtime = b.Time("conformance suite", func() {
 			kubetest.Run(context.Background(),
