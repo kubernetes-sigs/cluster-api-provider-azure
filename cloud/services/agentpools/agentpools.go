@@ -53,6 +53,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	profile := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			VMSize:              containerservice.VMSizeTypes(agentPoolSpec.SKU),
+			OsType:              containerservice.Linux,
 			OsDiskSizeGB:        &agentPoolSpec.OSDiskSizeGB,
 			Count:               &agentPoolSpec.Replicas,
 			Type:                containerservice.VirtualMachineScaleSets,
@@ -87,6 +88,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 				VMSize:              existingPool.ManagedClusterAgentPoolProfileProperties.VMSize,
+				OsType:              containerservice.Linux,
 				OsDiskSizeGB:        existingPool.ManagedClusterAgentPoolProfileProperties.OsDiskSizeGB,
 				Count:               existingPool.ManagedClusterAgentPoolProfileProperties.Count,
 				Type:                containerservice.VirtualMachineScaleSets,
