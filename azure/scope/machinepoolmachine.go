@@ -57,6 +57,7 @@ type (
 		AzureMachinePoolMachine *infrav1exp.AzureMachinePoolMachine
 		AzureMachinePool        *infrav1exp.AzureMachinePool
 		MachinePool             *capiv1exp.MachinePool
+		MachinePoolScope        *MachinePoolScope
 		client                  client.Client
 		patchHelper             *patch.Helper
 		instance                *infrav1exp.VMSSVM
@@ -80,6 +81,17 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 		params.Logger = klogr.New()
 	}
 
+	ampScope, err := NewMachinePoolScope(MachinePoolScopeParams{
+		Client:           params.Client,
+		Logger:           params.Logger,
+		MachinePool:      params.MachinePool,
+		AzureMachinePool: params.AzureMachinePool,
+		ClusterScope:     params.ClusterScope,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build machine pool scope")
+	}
+
 	helper, err := patch.NewHelper(params.AzureMachinePoolMachine, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
@@ -90,6 +102,7 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 		ClusterScoper:           params.ClusterScope,
 		Logger:                  params.Logger,
 		MachinePool:             params.MachinePool,
+		MachinePoolScope:        ampScope,
 		client:                  params.Client,
 		patchHelper:             helper,
 	}, nil
@@ -107,7 +120,7 @@ func (s *MachinePoolMachineScope) InstanceID() string {
 
 // ScaleSetName is the name of the VMSS
 func (s *MachinePoolMachineScope) ScaleSetName() string {
-	return s.AzureMachinePool.Name
+	return s.MachinePoolScope.Name()
 }
 
 // GetLongRunningOperationState gets a future representing the current state of a long running operation if one exists
@@ -162,34 +175,6 @@ func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	return s.patchHelper.Patch(ctx, s.AzureMachinePoolMachine)
 }
 
-// ShouldDrain returns a bool indicating the controller should attempt drain the node before deleting
-func (s *MachinePoolMachineScope) ShouldDrain() bool {
-	return true
-}
-
-// Drain safely drains workloads from the machine's K8s node so that the machine can be replaced
-func (s *MachinePoolMachineScope) Drain(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
-	defer span.End()
-
-	//patchHelper, err := patch.NewHelper(s.AzureMachinePoolMachine, s.client)
-	//if err != nil {
-	//	return ctrl.Result{}, err
-	//}
-	//
-	//getNodeStatusByProviderID(ctx)
-	//
-	//s.Info("Draining node", "node", m.Status.NodeRef.Name)
-	//// The DrainingSucceededCondition never exists before the node is drained for the first time,
-	//// so its transition time can be used to record the first time draining.
-	//// This `if` condition prevents the transition time to be changed more than once.
-	//if conditions.Get(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition) == nil {
-	//	conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition, clusterv1.DrainingReason, clusterv1.ConditionSeverityInfo, "Draining the node before deletion")
-	//}
-
-	return nil
-}
-
 // UpdateStatus updates the node reference for the machine and other status fields. This func should be called at the
 // end of a reconcile request and after updating the scope with the most recent Azure data.
 func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
@@ -232,7 +217,7 @@ func (s *MachinePoolMachineScope) getNode(ctx context.Context) (*corev1.Node, er
 	}
 
 	if s.AzureMachinePoolMachine.Status.NodeRef == nil {
-		return getNodeByProviderID(ctx, workloadClient, s.AzureMachinePoolMachine.Spec.ProviderID)
+		return s.getNodeByProviderID(ctx, workloadClient, s.AzureMachinePoolMachine.Spec.ProviderID)
 	}
 
 	if s.AzureMachinePoolMachine.Status.NodeRef.Name == "" {
@@ -248,7 +233,7 @@ func (s *MachinePoolMachineScope) getNode(ctx context.Context) (*corev1.Node, er
 	return &node, err
 }
 
-func getNodeByProviderID(ctx context.Context, workloadClient client.Client, providerID string) (*corev1.Node, error) {
+func (s *MachinePoolMachineScope) getNodeByProviderID(ctx context.Context, workloadClient client.Client, providerID string) (*corev1.Node, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getNodeRefForProviderID")
 	defer span.End()
 
@@ -259,7 +244,9 @@ func getNodeByProviderID(ctx context.Context, workloadClient client.Client, prov
 		}
 
 		for _, node := range nodeList.Items {
+			s.V(4).Info("node", "node", node.Spec.ProviderID, "provider", providerID)
 			if node.Spec.ProviderID == providerID {
+				s.V(4).Info("matched", "node", node.Spec.ProviderID, "provider", providerID)
 				return &node, nil
 			}
 		}

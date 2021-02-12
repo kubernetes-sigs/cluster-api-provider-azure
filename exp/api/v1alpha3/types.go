@@ -54,44 +54,10 @@ type (
 func (vmss VMSS) HasModelChanges(other VMSS) bool {
 	equal := cmp.Equal(vmss.Image, other.Image) &&
 		cmp.Equal(vmss.Identity, other.Identity) &&
-		cmp.Equal(vmss.Zones, other.Zones)
+		cmp.Equal(vmss.Zones, other.Zones) &&
+		cmp.Equal(vmss.Tags, other.Tags) &&
+		cmp.Equal(vmss.Sku, other.Sku)
 	return !equal
-}
-
-// ReadyAndNotRunningLatestModel returns VMSSVMs that are ready and not running the latest model
-func (vmss VMSS) ReadyAndNotRunningLatestModel() []VMSSVM {
-	var instances []VMSSVM
-	for _, instance := range vmss.Instances {
-		if !instance.LatestModelApplied && instance.State == infrav1.VMStateSucceeded {
-			instances = append(instances, instance)
-		}
-	}
-
-	return instances
-}
-
-// ReadyAndRunningLatestModel returns VMSSVMs running the latest model and are ready
-func (vmss VMSS) ReadyAndRunningLatestModel() []VMSSVM {
-	var instances []VMSSVM
-	for _, instance := range vmss.Instances {
-		if instance.LatestModelApplied && instance.State == infrav1.VMStateSucceeded {
-			instances = append(instances, instance)
-		}
-	}
-
-	return instances
-}
-
-// ReadyInstances returns VMSSVMs that are ready
-func (vmss VMSS) ReadyInstances() []VMSSVM {
-	var instances []VMSSVM
-	for _, instance := range vmss.Instances {
-		if instance.State == infrav1.VMStateSucceeded {
-			instances = append(instances, instance)
-		}
-	}
-
-	return instances
 }
 
 // InstancesByProviderID returns VMSSVMs by ID

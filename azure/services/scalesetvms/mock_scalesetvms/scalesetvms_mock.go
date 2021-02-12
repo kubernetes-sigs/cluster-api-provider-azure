@@ -381,3 +381,15 @@ func (mr *MockScaleSetVMScopeMockRecorder) GetLongRunningOperationState() *gomoc
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetVMScope)(nil).GetLongRunningOperationState))
 }
+
+// SetLongRunningOperationState mocks base method.
+func (m *MockScaleSetVMScope) SetLongRunningOperationState(future *v1alpha3.Future) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLongRunningOperationState", future)
+}
+
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockScaleSetVMScopeMockRecorder) SetLongRunningOperationState(future interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockScaleSetVMScope)(nil).SetLongRunningOperationState), future)
+}

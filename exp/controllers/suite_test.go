@@ -23,9 +23,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
+
+	"sigs.k8s.io/cluster-api-provider-azure/controllers"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 
 	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
 	// +kubebuilder:scaffold:imports
@@ -66,7 +68,7 @@ var _ = BeforeSuite(func(done Done) {
 		reconciler.DefaultLoopTimeout).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	Expect(NewAzureMachinePoolReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+		reconciler.DefaultLoopTimeout).SetupWithManager(testEnv.Manager, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: 1}})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 

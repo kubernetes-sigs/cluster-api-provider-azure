@@ -99,8 +99,8 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 
 // ValidateImage of an AzureMachinePool
 func (amp *AzureMachinePool) ValidateImage() error {
-	if amp.Spec.Template.Image != nil {
-		image := amp.Spec.Template.Image
+	if amp.Spec.Template.Image != nil && amp.Spec.Template.Image.Image != nil {
+		image := amp.Spec.Template.Image.Image
 		if errs := infrav1.ValidateImage(image, field.NewPath("image")); len(errs) > 0 {
 			agg := kerrors.NewAggregate(errs.ToAggregate().Errors())
 			azuremachinepoollog.Info("Invalid image: %s", agg.Error())

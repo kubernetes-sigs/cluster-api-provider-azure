@@ -45,32 +45,32 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	}{
 		{
 			name:    "azuremachinepool with marketplace image - full",
-			amp:     createMachinePoolWithtMarketPlaceImage(t, "PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithtMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing publisher",
-			amp:     createMachinePoolWithtMarketPlaceImage(t, "", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithtMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with shared gallery image - full",
-			amp:     createMachinePoolWithSharedImage(t, "SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing subscription",
-			amp:     createMachinePoolWithSharedImage(t, "", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithSharedImage("", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with image by - with id",
-			amp:     createMachinePoolWithImageByID(t, "ID123", to.IntPtr(10)),
+			amp:     createMachinePoolWithImageByID("ID123", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with image by - without id",
-			amp:     createMachinePoolWithImageByID(t, "", to.IntPtr(10)),
+			amp:     createMachinePoolWithImageByID("", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
@@ -85,27 +85,27 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 		},
 		{
 			name:    "azuremachinepool with wrong terminate notification",
-			amp:     createMachinePoolWithSharedImage(t, "SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(35)),
+			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(35)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with system assigned identity",
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
+			amp:     createMachinePoolWithSystemAssignedIdentity(string(uuid.NewUUID())),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with system assigned identity, but invalid role",
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, "not_a_uuid"),
+			amp:     createMachinePoolWithSystemAssignedIdentity("not_a_uuid"),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with user assigned identity",
-			amp:     createMachinePoolWithUserAssignedIdentity(t, []string{"azure:://id1", "azure:://id2"}),
+			amp:     createMachinePoolWithUserAssignedIdentity([]string{"azure:://id1", "azure:://id2"}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with user assigned identity, but without any provider ids",
-			amp:     createMachinePoolWithUserAssignedIdentity(t, []string{}),
+			amp:     createMachinePoolWithUserAssignedIdentity([]string{}),
 			wantErr: true,
 		},
 	}
@@ -144,14 +144,14 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name:    "azuremachine with system-assigned identity, and role unchanged",
-			oldAMP:  createMachinePoolWithSystemAssignedIdentity(t, "30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, "30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
+			oldAMP:  createMachinePoolWithSystemAssignedIdentity("30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
+			amp:     createMachinePoolWithSystemAssignedIdentity("30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachine with system-assigned identity, and role changed",
-			oldAMP:  createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
+			oldAMP:  createMachinePoolWithSystemAssignedIdentity(string(uuid.NewUUID())),
+			amp:     createMachinePoolWithSystemAssignedIdentity(string(uuid.NewUUID())),
 			wantErr: true,
 		},
 	}
@@ -182,16 +182,18 @@ func TestAzureMachine_Default(t *testing.T) {
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
 	publicKeyNotExistTest.amp.Default()
-	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo((BeEmpty()))
+	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 }
 
-func createMachinePoolWithtMarketPlaceImage(t *testing.T, publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := &infrav1.Image{
-		Marketplace: &infrav1.AzureMarketplaceImage{
-			Publisher: publisher,
-			Offer:     offer,
-			SKU:       sku,
-			Version:   version,
+func createMachinePoolWithtMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+	image := &AzureDefaultingImage{
+		Image: &infrav1.Image{
+			Marketplace: &infrav1.AzureMarketplaceImage{
+				Publisher: publisher,
+				Offer:     offer,
+				SKU:       sku,
+				Version:   version,
+			},
 		},
 	}
 
@@ -206,14 +208,16 @@ func createMachinePoolWithtMarketPlaceImage(t *testing.T, publisher, offer, sku,
 	}
 }
 
-func createMachinePoolWithSharedImage(t *testing.T, subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := &infrav1.Image{
-		SharedGallery: &infrav1.AzureSharedGalleryImage{
-			SubscriptionID: subscriptionID,
-			ResourceGroup:  resourceGroup,
-			Name:           name,
-			Gallery:        gallery,
-			Version:        version,
+func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+	image := &AzureDefaultingImage{
+		Image: &infrav1.Image{
+			SharedGallery: &infrav1.AzureSharedGalleryImage{
+				SubscriptionID: subscriptionID,
+				ResourceGroup:  resourceGroup,
+				Name:           name,
+				Gallery:        gallery,
+				Version:        version,
+			},
 		},
 	}
 
@@ -228,9 +232,11 @@ func createMachinePoolWithSharedImage(t *testing.T, subscriptionID, resourceGrou
 	}
 }
 
-func createMachinePoolWithImageByID(t *testing.T, imageID string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := &infrav1.Image{
-		ID: &imageID,
+func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout *int) *AzureMachinePool {
+	image := &AzureDefaultingImage{
+		Image: &infrav1.Image{
+			ID: &imageID,
+		},
 	}
 
 	return &AzureMachinePool{
@@ -244,7 +250,7 @@ func createMachinePoolWithImageByID(t *testing.T, imageID string, terminateNotif
 	}
 }
 
-func createMachinePoolWithSystemAssignedIdentity(t *testing.T, role string) *AzureMachinePool {
+func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Identity:           infrav1.VMIdentitySystemAssigned,
@@ -253,7 +259,7 @@ func createMachinePoolWithSystemAssignedIdentity(t *testing.T, role string) *Azu
 	}
 }
 
-func createMachinePoolWithUserAssignedIdentity(t *testing.T, providerIds []string) *AzureMachinePool {
+func createMachinePoolWithUserAssignedIdentity(providerIds []string) *AzureMachinePool {
 	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIds))
 
 	for _, providerID := range providerIds {

@@ -156,15 +156,23 @@ func (m *MachinePoolScope) ProvisioningState() infrav1.VMState {
 	return ""
 }
 
-// NeedsK8sVersionUpdate compares the MachinePool spec and the AzureMachinePool status to determine if the
-// VMSS model needs to be updated
-func (m *MachinePoolScope) NeedsK8sVersionUpdate() bool {
-	return m.AzureMachinePool.Status.Version != *m.MachinePool.Spec.Template.Spec.Version
-}
-
 // SetVMSSState updates the machine pool scope with the current state of the VMSS
 func (m *MachinePoolScope) SetVMSSState(vmssState *infrav1exp.VMSS) {
 	m.vmssState = vmssState
+}
+
+// NeedsRequeue return true if any machines are not on the latest model or the VMSS is not in a terminal provisioning state
+func (m *MachinePoolScope) NeedsRequeue() bool {
+	if m.vmssState != nil {
+		for _, machine := range m.vmssState.Instances {
+			if !machine.LatestModelApplied {
+				return true
+			}
+		}
+	}
+
+	state := m.AzureMachinePool.Status.ProvisioningState
+	return state != nil && !infrav1.IsTerminalVMState(*state)
 }
 
 // updateReplicasAndProviderIDs ties the Azure VMSS instance data and the Node status data together to build and update
@@ -209,10 +217,11 @@ func (m *MachinePoolScope) getMachinePoolMachines(ctx context.Context) ([]infrav
 }
 
 func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.Close")
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.applyAzureMachinePoolMachines")
 	defer span.End()
 
 	if m.vmssState == nil {
+		m.Info("vmssState is nil")
 		return nil
 	}
 
@@ -231,24 +240,50 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 	}
 
 	// determine which machines need to be created to reflect the current state in Azure
-	latestMachinesByProviderID := m.vmssState.InstancesByProviderID()
-	for key, val := range latestMachinesByProviderID {
-		if _, ok := existingMachinesByProviderID[key]; !ok {
+	azureMachinesByProviderID := m.vmssState.InstancesByProviderID()
+	for key, val := range azureMachinesByProviderID {
+		machine, ok := existingMachinesByProviderID[key]
+		if !ok {
+			m.V(4).Info("creating machine", "machine", key)
 			if err := m.createMachine(ctx, val); err != nil {
 				return errors.Wrap(err, "failed creating machine")
+			}
+			continue
+		}
+		machine.Status.LatestModelApplied = val.LatestModelApplied // make sure we have the most recent data
+	}
+
+	deleted := false
+	// delete machines that no longer exist in Azure
+	for key, machine := range existingMachinesByProviderID {
+		machine := machine
+		if _, ok := azureMachinesByProviderID[key]; !ok {
+			deleted = true
+			m.V(4).Info("deleting machine", "machine", key)
+			delete(existingMachinesByProviderID, key)
+			if err := m.client.Delete(ctx, &machine); err != nil {
+				return errors.Wrap(err, "failed deleting machine to reduce replica count")
 			}
 		}
 	}
 
+	if deleted {
+		m.V(4).Info("deleted machines")
+		// exit early to be less greedy about delete
+		return nil
+	}
+
 	// select machines to delete to lower the replica count
 	toDelete := m.selectMachinesToDelete(existingMachinesByProviderID)
-	for _, machine := range toDelete {
+	for key, machine := range toDelete {
 		machine := machine
+		m.Info("deleting selected machine", "machine", key)
 		if err := m.client.Delete(ctx, &machine); err != nil {
 			return errors.Wrap(err, "failed deleting machine to reduce replica count")
 		}
 	}
 
+	m.Info("done cleaning up machines")
 	return nil
 }
 
@@ -262,60 +297,97 @@ func getProviderIDs(machinesByProviderID map[string]infrav1exp.AzureMachinePoolM
 	return ids
 }
 
+// selectMachinesToDelete will build a map of machines by provider ID to delete prioritizing in the following order
+// 1) failed machines
+// 2) over-provisioned machines prioritized by out of date models first
+// 3) over-provisioned ready machines
+// 4) ready machines within budget which have out of date models
 func (m *MachinePoolScope) selectMachinesToDelete(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) map[string]infrav1exp.AzureMachinePoolMachine {
-	desiredReplicaCount := int(*m.MachinePool.Spec.Replicas)
-	readyMachines := getReadyMachines(machinesByProviderID)
-	if desiredReplicaCount > len(readyMachines) {
-		m.V(4).Info("we don't have enough ready machines, so don't try to delete any", "desired", desiredReplicaCount, "ready", getProviderIDs(readyMachines))
-		return nil
-	}
+	var (
+		desiredReplicaCount        = int(*m.MachinePool.Spec.Replicas)
+		failedMachines             = getFailedMachines(machinesByProviderID)
+		readyMachines              = getReadyMachines(machinesByProviderID)
+		machinesWithoutLatestModel = getMachinesWithoutLatestModel(machinesByProviderID)
+		overProvisionCount         = len(readyMachines) - desiredReplicaCount
+		maxUnavailable             = int(m.AzureMachinePool.Spec.MaxUnavailable)
+		disruptionBudget           = func() int {
+			if maxUnavailable > desiredReplicaCount {
+				return desiredReplicaCount
+			}
 
-	readyAndNotMarkedForDelete := make(map[string]infrav1exp.AzureMachinePoolMachine)
-	for providerID, machine := range readyMachines {
-		if machine.ObjectMeta.DeletionTimestamp.IsZero() {
-			// this is not marked for delete
-			readyAndNotMarkedForDelete[providerID] = machine
-		}
-	}
+			return len(readyMachines) - desiredReplicaCount + maxUnavailable
+		}()
+	)
 
-	numberOfOverProvisioned := len(machinesByProviderID) - desiredReplicaCount
-	if numberOfOverProvisioned <= 0 {
-		m.V(4).Info("no over-provisioned machines", "desired", desiredReplicaCount, "overprovisioned", numberOfOverProvisioned)
-		return nil // no over-provisioned machines
-	}
-
-	m.V(4).Info("found over-provisioned machines", "desired", desiredReplicaCount, "overprovisioned", numberOfOverProvisioned)
-	// pick machines that are not
-	numberofMachinesSelectedToBeDeleted := 0
 	toDelete := make(map[string]infrav1exp.AzureMachinePoolMachine)
-	for k, v := range machinesByProviderID {
-		if _, ok := readyAndNotMarkedForDelete[k]; ok {
-			// if not a known good machine move on
-			continue
+	if len(failedMachines) > 0 {
+		m.V(4).Info("failed machines", "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable, "failedMachines", getProviderIDs(failedMachines))
+		for k, v := range failedMachines {
+			toDelete[k] = v
 		}
-
-		toDelete[k] = v
-		numberofMachinesSelectedToBeDeleted++
-		if numberofMachinesSelectedToBeDeleted >= numberOfOverProvisioned {
-			break
-		}
-	}
-
-	if len(toDelete) >= numberOfOverProvisioned {
-		m.V(4).Info("found enough machines not ready or marked for delete", "toDelete", getProviderIDs(toDelete), "numToDelete", len(toDelete), "overprovisioned", numberOfOverProvisioned)
 		return toDelete
 	}
 
-	// we are still over-provisioned, select ready machines to delete
-	for k, v := range readyAndNotMarkedForDelete {
-		toDelete[k] = v
-		numberofMachinesSelectedToBeDeleted++
-		if numberofMachinesSelectedToBeDeleted >= numberOfOverProvisioned {
-			break
+	// if we have not yet reached our desired count, don't try to delete anything but failed machines
+	if len(readyMachines) < desiredReplicaCount {
+		m.V(4).Info("not enough ready machines", "desiredReplicaCount", desiredReplicaCount, "readyMachinesCount", len(readyMachines), "machinesByProviderID", len(machinesByProviderID))
+		return toDelete
+	}
+
+	if overProvisionCount > 0 {
+		m.V(4).Info("over-provisioned", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "machinesWithoutLatestModel", getProviderIDs(machinesWithoutLatestModel))
+		// we are over-provisioned try to remove old models
+		for k, v := range machinesWithoutLatestModel {
+			if len(toDelete) >= overProvisionCount {
+				return toDelete
+			}
+
+			toDelete[k] = v
+		}
+
+		m.V(4).Info("over-provisioned ready", "desiredReplicaCount", desiredReplicaCount, "overProvisionCount", overProvisionCount, "readyMachines", getProviderIDs(readyMachines))
+		// remove ready machines
+		for k, v := range readyMachines {
+			if len(toDelete) >= overProvisionCount {
+				return toDelete
+			}
+
+			toDelete[k] = v
+		}
+
+		return toDelete
+	}
+
+	if len(machinesWithoutLatestModel) <= 0 {
+		m.V(4).Info("no machines without latest")
+		// nothing more to do since we have all the latest model and not over-provisioned
+		return toDelete
+	}
+
+	// have
+	if desiredReplicaCount-len(readyMachines) >= maxUnavailable {
+		m.V(4).Info("too many unavailable", "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable, "readyMachines", getProviderIDs(readyMachines), "readyMachinesCount", len(readyMachines))
+		return nil
+	}
+
+	if disruptionBudget <= 0 {
+		m.V(4).Info("no disruption budget", "disruptionBudget", disruptionBudget, "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable)
+		return nil
+	}
+
+	m.V(4).Info("removing readies", "desiredReplicaCount", desiredReplicaCount, "maxUnavailable", maxUnavailable, "readyMachines", getProviderIDs(readyMachines), "readyMachinesCount", len(readyMachines))
+	for k, v := range readyMachines {
+		if len(toDelete) >= disruptionBudget {
+			m.Info("included ready machines to delete", "toDelete", getProviderIDs(toDelete), "numToDelete", len(toDelete))
+			return toDelete
+		}
+
+		if !v.Status.LatestModelApplied {
+			toDelete[k] = v
 		}
 	}
 
-	m.V(4).Info("included ready machines to delete", "toDelete", getProviderIDs(toDelete), "numToDelete", len(toDelete), "overprovisioned", numberOfOverProvisioned)
+	m.V(4).Info("completed without filling toDelete", "toDelete", getProviderIDs(toDelete), "numToDelete", len(toDelete))
 	return toDelete
 }
 
@@ -369,11 +441,6 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine infrav1exp
 	}
 
 	return nil
-}
-
-// SaveK8sVersion stores the MachinePool spec K8s version to the AzureMachinePool status
-func (m *MachinePoolScope) SaveK8sVersion() {
-	m.AzureMachinePool.Status.Version = *m.MachinePool.Spec.Template.Spec.Version
 }
 
 // SetLongRunningOperationState will set the future on the AzureMachinePool status to allow the resource to continue
@@ -498,6 +565,7 @@ func (m *MachinePoolScope) Close(ctx context.Context) error {
 
 	if m.vmssState != nil {
 		if err := m.applyAzureMachinePoolMachines(ctx); err != nil {
+			m.Error(err, "failed to apply changes to the AzureMachinePoolMachines")
 			return errors.Wrap(err, "failed to apply changes to AzureMachinePoolMachines")
 		}
 
@@ -535,17 +603,30 @@ func (m *MachinePoolScope) GetBootstrapData(ctx context.Context) (string, error)
 // GetVMImage picks an image from the machine configuration, or uses a default one.
 func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
-	if m.AzureMachinePool.Spec.Template.Image != nil {
-		return m.AzureMachinePool.Spec.Template.Image, nil
+	if m.AzureMachinePool.Spec.Template.Image != nil && !m.AzureMachinePool.Spec.Template.Image.Defaulted {
+		return m.AzureMachinePool.Spec.Template.Image.Image, nil
 	}
 
+	var (
+		err          error
+		defaultImage *infrav1.Image
+	)
 	if m.AzureMachinePool.Spec.Template.OSDisk.OSType == azure.WindowsOS {
 		m.V(4).Info("No image specified for machine, using default Windows Image", "machine", m.MachinePool.GetName())
-		return azure.GetDefaultWindowsImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+		defaultImage, err = azure.GetDefaultWindowsImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+	} else {
+		defaultImage, err = azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
 	}
 
-	m.V(4).Info("No image specified for machine, using default", "machine", m.MachinePool.GetName())
-	return azure.GetDefaultUbuntuImage(to.String(m.MachinePool.Spec.Template.Spec.Version))
+	if err != nil {
+		return defaultImage, errors.Wrap(err, "failed to get default OS image")
+	}
+
+	m.AzureMachinePool.Spec.Template.Image = &infrav1exp.AzureDefaultingImage{
+		Image:     defaultImage,
+		Defaulted: true,
+	}
+	return defaultImage, nil
 }
 
 // RoleAssignmentSpecs returns the role assignment specs.
@@ -590,13 +671,37 @@ func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespa
 	return m, nil
 }
 
+func getFailedMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) map[string]infrav1exp.AzureMachinePoolMachine {
+	machines := make(map[string]infrav1exp.AzureMachinePoolMachine)
+	for k, v := range machinesByProviderID {
+		// ready status, with provisioning state Succeeded, and not marked for delete
+		if v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.VMStateFailed {
+			machines[k] = v
+		}
+	}
+
+	return machines
+}
+
 func getReadyMachines(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) map[string]infrav1exp.AzureMachinePoolMachine {
 	readyMachines := make(map[string]infrav1exp.AzureMachinePoolMachine)
 	for k, v := range machinesByProviderID {
+		// ready status, with provisioning state Succeeded, and not marked for delete
 		if v.Status.Ready && v.Status.ProvisioningState != nil && *v.Status.ProvisioningState == infrav1.VMStateSucceeded {
 			readyMachines[k] = v
 		}
 	}
 
 	return readyMachines
+}
+
+func getMachinesWithoutLatestModel(machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) map[string]infrav1exp.AzureMachinePoolMachine {
+	machinesWithLatestModel := make(map[string]infrav1exp.AzureMachinePoolMachine)
+	for k, v := range machinesByProviderID {
+		if !v.Status.LatestModelApplied {
+			machinesWithLatestModel[k] = v
+		}
+	}
+
+	return machinesWithLatestModel
 }

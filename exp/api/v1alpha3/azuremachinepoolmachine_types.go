@@ -101,6 +101,7 @@ type (
 	// +kubebuilder:object:root=true
 	// +kubebuilder:subresource:status
 	// +kubebuilder:resource:path=azuremachinepoolmachines,scope=Namespaced,categories=cluster-api,shortName=ampm
+	// +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".status.version",description="Kubernetes version"
 	// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Flag indicating infrastructure is successfully provisioned"
 	// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.provisioningState",description="Azure VMSS VM provisioning state"
 	// +kubebuilder:printcolumn:name="Cluster",type="string",priority=1,JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AzureMachinePoolMachine belongs"

@@ -41,7 +41,7 @@ type (
 		// which is based on Ubuntu.
 		// +kubebuilder:validation:nullable
 		// +optional
-		Image *infrav1.Image `json:"image,omitempty"`
+		Image *AzureDefaultingImage `json:"image,omitempty"`
 
 		// OSDisk contains the operating system disk information for a Virtual Machine
 		OSDisk infrav1.OSDisk `json:"osDisk"`
@@ -71,6 +71,23 @@ type (
 		// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
 		// +optional
 		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
+	}
+
+	// AzureDefaultingImage defines information about the image to use for VMSS VM creation.
+	// There are three ways to specify an image: by ID, Marketplace Image or SharedImageGallery
+	// One of ID, SharedImage or Marketplace should be set.
+	//
+	// If no image is specified, the image will be defaulted by the controller and Defaulted set to true which will
+	// inform the controller that if the parent MachinePool.Spec.Template.Spec.Version field is updated, this image
+	// will be updated with the corresponding default image. If Defaulted is set to false, the controller will not
+	// update the image reference when the MachinePool.Spec.Template.Spec.Version changes.
+	AzureDefaultingImage struct {
+		*infrav1.Image `json:",omitempty"`
+
+		// Defaulted informs the controller that the image reference was defaulted so that it can be updated by changes
+		// to the MachinePool.Spec.Template.Spec.Version field by default.
+		// +optional
+		Defaulted bool `json:"defaulted,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool

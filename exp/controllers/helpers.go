@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +33,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
@@ -70,7 +73,7 @@ func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Sche
 
 		clusterName, ok := controllers.GetOwnerClusterName(azCluster.ObjectMeta)
 		if !ok {
-			log.Info("unable to get the owner cluster")
+			log.V(4).Info("unable to get the owner cluster")
 			return nil
 		}
 
@@ -167,7 +170,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme
 
 		clusterName, ok := controllers.GetOwnerClusterName(azCluster.ObjectMeta)
 		if !ok {
-			log.Info("unable to get the owner cluster")
+			log.V(4).Info("unable to get the owner cluster")
 			return nil
 		}
 
@@ -240,62 +243,13 @@ func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log lo
 	}), nil
 }
 
-//func MachinePoolToAzureMachinePoolMachine(kClient client.Client, log logr.Logger) handler.ToRequestsFunc {
-//	return func(o handler.MapObject) []ctrl.Request {
-//		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
-//		defer cancel()
-//
-//		m, ok := o.Object.(*clusterv1exp.MachinePool)
-//		if !ok {
-//			log.Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
-//			return nil
-//		}
-//
-//		cluster, err := util.GetOwnerCluster(ctx, kClient, m.ObjectMeta)
-//		switch {
-//		case apierrors.IsNotFound(err) || cluster == nil:
-//			log.Info("owning cluster not found")
-//			return nil
-//		case err != nil:
-//			log.Error(err, "failed to get owning cluster")
-//			return nil
-//		}
-//
-//		mpToAmp := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)
-//
-//		var azureMachinePoolMachineRequests []ctrl.Request
-//		for _, req := range mpToAmp(o) {
-//			labels := map[string]string{
-//				clusterv1.ClusterLabelName:      cluster.Name,
-//				infrav1exp.MachinePoolNameLabel: req.Name,
-//			}
-//
-//			ampml := &infrav1exp.AzureMachinePoolMachineList{}
-//			if err := kClient.List(ctx, ampml, client.InNamespace(cluster.Namespace), client.MatchingLabels(labels)); err != nil {
-//				log.Error(err, "failed to fetch AzureMachinePoolMachines")
-//			}
-//
-//			for _, machine := range ampml.Items {
-//				azureMachinePoolMachineRequests = append(azureMachinePoolMachineRequests, ctrl.Request{
-//					NamespacedName: types.NamespacedName{
-//						Name:      machine.Name,
-//						Namespace: machine.Namespace,
-//					},
-//				})
-//			}
-//		}
-//
-//		return azureMachinePoolMachineRequests
-//	}
-//}
-
 // MachinePoolToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for
 // MachinePool events and returns reconciliation requests for an infrastructure provider object.
 func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Logger) handler.ToRequestsFunc {
 	return func(o handler.MapObject) []reconcile.Request {
 		m, ok := o.Object.(*clusterv1exp.MachinePool)
 		if !ok {
-			log.Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
+			log.V(4).Info("attempt to map incorrect type", "type", fmt.Sprintf("%T", o.Object))
 			return nil
 		}
 
@@ -304,7 +258,7 @@ func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Lo
 		// Return early if the GroupKind doesn't match what we expect.
 		infraGK := ref.GroupVersionKind().GroupKind()
 		if gk != infraGK {
-			log.Info("gk does not match", "gk", gk, "infraGK", infraGK)
+			log.V(4).Info("gk does not match", "gk", gk, "infraGK", infraGK)
 			return nil
 		}
 
@@ -336,7 +290,7 @@ func AzureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 		cluster, err := util.GetOwnerCluster(ctx, kClient, c.ObjectMeta)
 		switch {
 		case apierrors.IsNotFound(err) || cluster == nil:
-			logWithValues.Info("owning cluster not found")
+			logWithValues.V(4).Info("owning cluster not found")
 			return nil
 		case err != nil:
 			logWithValues.Error(err, "failed to get owning cluster")
@@ -364,7 +318,107 @@ func AzureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger)
 	}
 }
 
-// isTerminalState returns true if the VMState is a terminal state for an Azure resource
-func isTerminalState(state infrav1.VMState) bool {
-	return state == infrav1.VMStateFailed || state == infrav1.VMStateSucceeded
+// AzureMachinePoolToAzureMachinePoolMachines maps an AzureMachinePool to it's child AzureMachinePoolMachines through
+// Cluster and MachinePool labels
+func AzureMachinePoolToAzureMachinePoolMachines(kClient client.Client, log logr.Logger) handler.ToRequestsFunc {
+	return func(o handler.MapObject) []reconcile.Request {
+		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		defer cancel()
+
+		amp, ok := o.Object.(*infrav1exp.AzureMachinePool)
+		if !ok {
+			log.Error(errors.Errorf("expected a AzureMachinePool but got a %T", o.Object), "failed to get AzureMachinePool")
+			return nil
+		}
+		logWithValues := log.WithValues("AzureMachinePool", amp.Name, "Namespace", amp.Namespace)
+
+		labels := map[string]string{
+			clusterv1.ClusterLabelName:      amp.Labels[clusterv1.ClusterLabelName],
+			infrav1exp.MachinePoolNameLabel: amp.Name,
+		}
+		ampml := &infrav1exp.AzureMachinePoolMachineList{}
+		if err := kClient.List(ctx, ampml, client.InNamespace(amp.Namespace), client.MatchingLabels(labels)); err != nil {
+			logWithValues.Error(err, "failed to list AzureMachinePoolMachines")
+			return nil
+		}
+
+		logWithValues.Info("mapping from AzureMachinePool", "count", len(ampml.Items))
+		var result []reconcile.Request
+		for _, m := range ampml.Items {
+			result = append(result, reconcile.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: m.Namespace,
+					Name:      m.Name,
+				},
+			})
+		}
+
+		return result
+	}
+}
+
+// MachinePoolModelHasChanged predicates any events based on changes to the AzureMachinePool model
+func MachinePoolModelHasChanged(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			log := logger.WithValues("predicate", "MachinePoolModelHasChanged", "eventType", "update")
+
+			oldAmp, ok := e.ObjectOld.(*infrav1exp.AzureMachinePool)
+			if !ok {
+
+				log.V(4).Info("Expected AzureMachinePool", "type", e.ObjectOld.GetObjectKind().GroupVersionKind().String())
+				return false
+			}
+			log = log.WithValues("namespace", oldAmp.Namespace, "azureMachinePool", oldAmp.Name)
+
+			newAmp := e.ObjectNew.(*infrav1exp.AzureMachinePool)
+
+			// if any of these are not equal, run the update
+			shouldUpdate := !cmp.Equal(oldAmp.Spec.Identity, newAmp.Spec.Identity) ||
+				!cmp.Equal(oldAmp.Spec.Template, newAmp.Spec.Template) ||
+				!cmp.Equal(oldAmp.Spec.UserAssignedIdentities, newAmp.Spec.UserAssignedIdentities)
+
+			//if shouldUpdate {
+			log.Info("machine pool predicate", "shouldUpdate", shouldUpdate)
+			//}
+			return shouldUpdate
+		},
+		CreateFunc:  func(e event.CreateEvent) bool { return false },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
+	}
+}
+
+// MachinePoolMachineHasStateOrVersionChange predicates any events based on changes to the AzureMachinePoolMachine status
+// relevant for the AzureMachinePool controller
+func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			log := logger.WithValues("predicate", "MachinePoolModelHasChanged", "eventType", "update")
+
+			oldAmp, ok := e.ObjectOld.(*infrav1exp.AzureMachinePoolMachine)
+			if !ok {
+
+				log.V(4).Info("Expected AzureMachinePoolMachine", "type", e.ObjectOld.GetObjectKind().GroupVersionKind().String())
+				return false
+			}
+			log = log.WithValues("namespace", oldAmp.Namespace, "machinePoolMachine", oldAmp.Name)
+
+			newAmp := e.ObjectNew.(*infrav1exp.AzureMachinePoolMachine)
+
+			// if any of these are not equal, run the update
+			shouldUpdate := oldAmp.Status.LatestModelApplied != newAmp.Status.LatestModelApplied ||
+				oldAmp.Status.Version != newAmp.Status.Version ||
+				oldAmp.Status.ProvisioningState != newAmp.Status.ProvisioningState ||
+				oldAmp.Status.Ready != newAmp.Status.Ready
+
+			if shouldUpdate {
+				log.Info("machine pool machine predicate", "shouldUpdate", shouldUpdate)
+			}
+			return shouldUpdate
+		},
+		CreateFunc:  func(e event.CreateEvent) bool { return false },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
+	}
 }

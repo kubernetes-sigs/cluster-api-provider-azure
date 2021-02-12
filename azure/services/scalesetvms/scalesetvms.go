@@ -39,6 +39,7 @@ type (
 		ScaleSetName() string
 		SetVMSSVM(vmssvm *infrav1exp.VMSSVM)
 		GetLongRunningOperationState() *infrav1.Future
+		SetLongRunningOperationState(future *infrav1.Future)
 	}
 
 	// Service provides operations on azure resources
@@ -81,7 +82,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 }
 
 // Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long running operation.
-func (s *Service) Delete(ctx context.Context) (*infrav1.Future, error) {
+func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
 	defer span.End()
 
@@ -104,18 +105,19 @@ func (s *Service) Delete(ctx context.Context) (*infrav1.Future, error) {
 	future := s.Scope.GetLongRunningOperationState()
 	if future != nil {
 		if future.Type != DeleteFuture {
-			return future, azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
+			return azure.WithTransientError(errors.New("attempting to delete, non-delete operation in progress"), 30*time.Second)
 		}
 
 		log.V(4).Info("checking if the instance is done deleting")
 		if _, err := s.Client.GetResultIfDone(ctx, future); err != nil {
 			// fetch instance to update status
-			return future, errors.Wrap(err, "failed to get result of long running operation")
+			return errors.Wrap(err, "failed to get result of long running operation")
 		}
 
 		// there was no error in fetching the result, the future has been completed
 		log.V(4).Info("successfully deleted the instance")
-		return nil, nil
+		s.Scope.SetLongRunningOperationState(nil)
+		return nil
 	}
 
 	// since the future was nil, there is no ongoing activity; start deleting the instance
@@ -123,11 +125,19 @@ func (s *Service) Delete(ctx context.Context) (*infrav1.Future, error) {
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
-			return nil, nil
+			return nil
 		}
-		return nil, errors.Wrapf(err, "failed to delete instance %s/%s", vmssName, instanceID)
+		return errors.Wrapf(err, "failed to delete instance %s/%s", vmssName, instanceID)
 	}
 
-	log.V(4).Info("successfully started deleting the instance")
-	return future, nil
+	s.Scope.SetLongRunningOperationState(future)
+
+	log.V(4).Info("checking if the instance is done deleting")
+	if _, err := s.Client.GetResultIfDone(ctx, future); err != nil {
+		// fetch instance to update status
+		return errors.Wrap(err, "failed to get result of long running operation")
+	}
+
+	s.Scope.SetLongRunningOperationState(nil)
+	return nil
 }

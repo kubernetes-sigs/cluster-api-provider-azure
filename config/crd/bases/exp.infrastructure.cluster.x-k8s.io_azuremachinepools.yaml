@@ -186,6 +186,11 @@ spec:
                       the image will default the Azure Marketplace "capi" offer, which
                       is based on Ubuntu.
                     properties:
+                      defaulted:
+                        description: Defaulted informs the controller that the image
+                          reference was defaulted so that it can be updated by changes
+                          to the MachinePool.Spec.Template.Spec.Version field by default.
+                        type: boolean
                       id:
                         description: ID specifies an image to use by ID
                         type: string

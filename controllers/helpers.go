@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -36,15 +37,26 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+)
+
+type (
+	// Options are controller options extended
+	Options struct {
+		controller.Options
+		Cache *CoalescingRequestCache
+	}
 )
 
 // AzureClusterToAzureMachinesMapper creates a mapping handler to transform AzureClusters into AzureMachines. The transform
@@ -76,7 +88,7 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 
 		clusterName, ok := GetOwnerClusterName(azCluster.ObjectMeta)
 		if !ok {
-			log.Info("unable to get the owner cluster")
+			log.V(4).Info("unable to get the owner cluster")
 			return nil
 		}
 
@@ -283,7 +295,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 	tag, exists := old.Labels[clusterName]
 
 	if exists && tag != string(infrav1.ResourceLifecycleOwned) {
-		log.Info("returning early from json reconcile, user provided secret already exists")
+		log.V(2).Info("returning early from json reconcile, user provided secret already exists")
 		return nil
 	}
 
@@ -299,7 +311,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 	hasData := equality.Semantic.DeepEqual(old.Data, new.Data)
 	if hasData && hasOwner {
 		// no update required
-		log.Info("returning early from json reconcile, no update needed")
+		log.V(2).Info("returning early from json reconcile, no update needed")
 		return nil
 	}
 
@@ -311,12 +323,12 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 		old.Data = new.Data
 	}
 
-	log.Info("updating azure json")
+	log.V(2).Info("updating azure json")
 	if err := kubeclient.Update(ctx, old); err != nil {
 		return errors.Wrap(err, "failed to update cluster azure json when diff was required")
 	}
 
-	log.Info("done updating azure json")
+	log.V(2).Info("done updating azure json")
 
 	return nil
 }
@@ -421,4 +433,74 @@ func GetClusterIdentityFromRef(ctx context.Context, c client.Client, azureCluste
 		return identity, nil
 	}
 	return nil, nil
+}
+
+// CoalescingRequestCache uses and underlying time to live last recently used cache to track high frequency requests.
+// A reconciler should call ShouldProcess to determine if the key has expired. If the key has expired, a zero value
+// time.Time and true is returned. If the key has not expired, the expiration and false is returned. Upon successful
+// reconciliation a reconciler should call Reconciled to update the cache expiry.
+type CoalescingRequestCache struct {
+	lastSuccessfulReconciliationCache *ttllru.Cache
+}
+
+// NewCoalescingRequestCache creates a new instance of a CoalescingRequestCache given a specified window of expiration
+func NewCoalescingRequestCache(window time.Duration) (*CoalescingRequestCache, error) {
+	cache, err := ttllru.New(1024, window)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build ttllru cache")
+	}
+
+	return &CoalescingRequestCache{
+		lastSuccessfulReconciliationCache: cache,
+	}, nil
+}
+
+// ShouldProcess determines if the key has expired. If the key has expired, a zero value
+// time.Time and true is returned. If the key has not expired, the expiration and false is returned.
+func (cache *CoalescingRequestCache) ShouldProcess(key string) (time.Time, bool) {
+	_, expiration, ok := cache.lastSuccessfulReconciliationCache.Peek(key)
+	return expiration, !ok
+}
+
+// Reconciled updates the cache expiry for a given key
+func (cache *CoalescingRequestCache) Reconciled(key string) {
+	cache.lastSuccessfulReconciliationCache.Add(key, nil)
+}
+
+type coalescingReconciler struct {
+	upstream reconcile.Reconciler
+	cache    *CoalescingRequestCache
+	log      logr.Logger
+}
+
+// NewCoalescingReconciler returns a reconcile wrapper that will delay new reconcile.Requests
+// after the cache expiry of the request string key.
+// A successful reconciliation is defined as as one where no error is returned
+func NewCoalescingReconciler(upstream reconcile.Reconciler, cache *CoalescingRequestCache, log logr.Logger) reconcile.Reconciler {
+	return &coalescingReconciler{
+		upstream: upstream,
+		cache:    cache,
+		log:      log.WithName("CoalescingReconciler"),
+	}
+}
+
+// Reconcile sends a request to the upstream reconciler if the request is outside of the debounce window
+func (rc *coalescingReconciler) Reconcile(r reconcile.Request) (reconcile.Result, error) {
+	log := rc.log.WithValues("request", r.String())
+
+	if expiration, ok := rc.cache.ShouldProcess(r.String()); !ok {
+		log.V(4).Info("not processing", "expiration", expiration)
+		return reconcile.Result{RequeueAfter: time.Until(expiration)}, nil
+	}
+
+	log.V(4).Info("processing")
+	result, err := rc.upstream.Reconcile(r)
+	if err != nil {
+		log.V(4).Info("not successful")
+		return result, err
+	}
+
+	log.V(4).Info("successful")
+	rc.cache.Reconciled(r.String())
+	return result, err
 }

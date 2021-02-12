@@ -21,6 +21,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - description: Kubernetes version
+      jsonPath: .status.version
+      name: Version
+      type: string
     - description: Flag indicating infrastructure is successfully provisioned
       jsonPath: .status.ready
       name: Ready

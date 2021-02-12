@@ -64,3 +64,18 @@ func (mr *MockclientMockRecorder) Create(arg0, arg1, arg2, arg3 interface{}) *go
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockclient)(nil).Create), arg0, arg1, arg2, arg3)
 }
+
+// Get mocks base method.
+func (m *Mockclient) Get(arg0 context.Context, arg1, arg2 string) (authorization.RoleAssignment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
+	ret0, _ := ret[0].(authorization.RoleAssignment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockclientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1, arg2)
+}

@@ -29,6 +29,7 @@ import (
 // client wraps go-sdk
 type client interface {
 	Create(context.Context, string, string, authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error)
+	Get(context.Context, string, string) (authorization.RoleAssignment, error)
 }
 
 // azureClient contains the Azure go-sdk Client
@@ -65,4 +66,12 @@ func (ac *azureClient) Create(ctx context.Context, scope string, roleAssignmentN
 	defer span.End()
 
 	return ac.roleassignments.Create(ctx, scope, roleAssignmentName, parameters)
+}
+
+// Get a role assignment
+func (ac *azureClient) Get(ctx context.Context, scope, roleAssignmentName string) (authorization.RoleAssignment, error) {
+	ctx, span := tele.Tracer().Start(ctx, "roleassignments.AzureClient.Get")
+	defer span.End()
+
+	return ac.roleassignments.Get(ctx, scope, roleAssignmentName)
 }

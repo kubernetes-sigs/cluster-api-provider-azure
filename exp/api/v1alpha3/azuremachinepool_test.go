@@ -47,13 +47,15 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
 						Template: exp.AzureMachineTemplate{
-							Image: &infrav1.Image{
-								SharedGallery: &infrav1.AzureSharedGalleryImage{
-									SubscriptionID: "foo",
-									ResourceGroup:  "blah",
-									Name:           "bin",
-									Gallery:        "bazz",
-									Version:        "1.2.3",
+							Image: &exp.AzureDefaultingImage{
+								Image: &infrav1.Image{
+									SharedGallery: &infrav1.AzureSharedGalleryImage{
+										SubscriptionID: "foo",
+										ResourceGroup:  "blah",
+										Name:           "bin",
+										Gallery:        "bazz",
+										Version:        "1.2.3",
+									},
 								},
 							},
 						},
@@ -70,7 +72,9 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
 						Template: exp.AzureMachineTemplate{
-							Image: new(infrav1.Image),
+							Image: &exp.AzureDefaultingImage{
+								Image: new(infrav1.Image),
+							},
 						},
 					},
 				}

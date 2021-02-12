@@ -18,6 +18,7 @@ package roleassignments
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -61,6 +62,69 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
+					Properties: &authorization.RoleAssignmentProperties{
+						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
+						PrincipalID:      to.StringPtr("000"),
+					},
+				}))
+			},
+		},
+		{
+			name:          "do not update if a role assignment exists",
+			expectedError: "",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubscriptionID().AnyTimes().Return("12345")
+				s.ResourceGroup().Return("my-rg")
+				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
+					{
+						MachineName:  "test-vm",
+						ResourceType: azure.VirtualMachine,
+					},
+				})
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{
+					Identity: &compute.VirtualMachineIdentity{
+						PrincipalID: to.StringPtr("000"),
+					},
+				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{
+						Properties: &authorization.RoleAssignmentPropertiesWithScope{
+							RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
+							PrincipalID:      to.StringPtr("000"),
+							Scope:            to.StringPtr("/subscriptions/12345/"),
+						},
+					}, nil)
+			},
+		},
+		{
+			name:          "should update if a role assignment exists, but doesn't match",
+			expectedError: "",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_virtualmachines.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubscriptionID().AnyTimes().Return("12345")
+				s.ResourceGroup().Return("my-rg")
+				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
+					{
+						MachineName:  "test-vm",
+						ResourceType: azure.VirtualMachine,
+					},
+				})
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vm").Return(compute.VirtualMachine{
+					Identity: &compute.VirtualMachineIdentity{
+						PrincipalID: to.StringPtr("000"),
+					},
+				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{
+						Properties: &authorization.RoleAssignmentPropertiesWithScope{
+							RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/something_else"),
+							PrincipalID:      to.StringPtr("007"),
+						},
+					}, nil)
 				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
 					Properties: &authorization.RoleAssignmentProperties{
 						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
@@ -103,6 +167,8 @@ func TestReconcileRoleAssignmentsVM(t *testing.T) {
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -161,6 +227,70 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
+					Properties: &authorization.RoleAssignmentProperties{
+						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
+						PrincipalID:      to.StringPtr("000"),
+					},
+				}))
+			},
+		},
+		{
+			name:          "do not update if a role assignment exists",
+			expectedError: "",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubscriptionID().AnyTimes().Return("12345")
+				s.ResourceGroup().Return("my-rg")
+				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
+					{
+						MachineName:  "test-vmss",
+						ResourceType: azure.VirtualMachineScaleSet,
+					},
+				})
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+					Identity: &compute.VirtualMachineScaleSetIdentity{
+						PrincipalID: to.StringPtr("000"),
+					},
+				}, nil)
+				contributorRoleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", "12345", azureBuiltInContributorID)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{
+						Properties: &authorization.RoleAssignmentPropertiesWithScope{
+							RoleDefinitionID: to.StringPtr(contributorRoleDefinitionID),
+							PrincipalID:      to.StringPtr("000"),
+							Scope:            to.StringPtr("/subscriptions/12345/"),
+						},
+					}, nil)
+			},
+		},
+		{
+			name:          "should update if a role assignment exists, but doesn't match",
+			expectedError: "",
+			expect: func(s *mock_roleassignments.MockRoleAssignmentScopeMockRecorder, m *mock_roleassignments.MockclientMockRecorder, v *mock_scalesets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.SubscriptionID().AnyTimes().Return("12345")
+				s.ResourceGroup().Return("my-rg")
+				s.RoleAssignmentSpecs().Return([]azure.RoleAssignmentSpec{
+					{
+						MachineName:  "test-vmss",
+						ResourceType: azure.VirtualMachineScaleSet,
+					},
+				})
+				v.Get(gomockinternal.AContext(), "my-rg", "test-vmss").Return(compute.VirtualMachineScaleSet{
+					Identity: &compute.VirtualMachineScaleSetIdentity{
+						PrincipalID: to.StringPtr("000"),
+					},
+				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{
+						Properties: &authorization.RoleAssignmentPropertiesWithScope{
+							RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/something_else"),
+							PrincipalID:      to.StringPtr("007"),
+						},
+					}, nil)
 				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{
 					Properties: &authorization.RoleAssignmentProperties{
 						RoleDefinitionID: to.StringPtr("/subscriptions/12345/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"),
@@ -203,6 +333,8 @@ func TestReconcileRoleAssignmentsVMSS(t *testing.T) {
 						PrincipalID: to.StringPtr("000"),
 					},
 				}, nil)
+				m.Get(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid")).
+					Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.Create(gomockinternal.AContext(), "/subscriptions/12345/", gomock.AssignableToTypeOf("uuid"), gomock.AssignableToTypeOf(authorization.RoleAssignmentCreateParameters{})).Return(authorization.RoleAssignment{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},

@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/authorization/mgmt/authorization"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -130,7 +131,17 @@ func (s *Service) assignRole(ctx context.Context, roleAssignmentName string, pri
 			PrincipalID:      principalID,
 		},
 	}
-	_, err := s.client.Create(ctx, scope, roleAssignmentName, params)
+
+	role, err := s.client.Get(ctx, scope, roleAssignmentName)
+	if err == nil && cmp.Equal(role.Properties.PrincipalID, principalID) && cmp.Equal(role.Properties.RoleDefinitionID, &contributorRoleDefinitionID) {
+		return nil // already exists
+	}
+
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrap(err, "failed to fetch role assignment")
+	}
+
+	_, err = s.client.Create(ctx, scope, roleAssignmentName, params)
 	return err
 }
 

@@ -52,6 +52,23 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 		}
 	}
 
+	if sdkvmss.VirtualMachineProfile != nil &&
+		sdkvmss.VirtualMachineProfile.StorageProfile != nil &&
+		sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference != nil {
+
+		imageRef := sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference
+		vmss.Image = infrav1.Image{
+			ID: imageRef.ID,
+			Marketplace: &infrav1.AzureMarketplaceImage{
+				Publisher:       to.String(imageRef.Publisher),
+				Offer:           to.String(imageRef.Offer),
+				SKU:             to.String(imageRef.Sku),
+				Version:         to.String(imageRef.Version),
+				ThirdPartyImage: false,
+			},
+		}
+	}
+
 	return vmss
 }
 

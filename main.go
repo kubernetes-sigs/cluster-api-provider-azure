@@ -371,14 +371,24 @@ func registerControllers(mgr manager.Manager) {
 	// just use CAPI MachinePool feature flag rather than create a new one
 	setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 	if feature.Gates.Enabled(capifeature.MachinePool) {
+		mpCache, err := controllers.NewCoalescingRequestCache(20 * time.Second)
+		if err != nil {
+			setupLog.Error(err, "failed to build mpCache CoalescingRequestCache")
+		}
+
 		if err := infrav1controllersexp.NewAzureMachinePoolReconciler(
 			mgr.GetClient(),
 			ctrl.Log.WithName("controllers").WithName("AzureMachinePool"),
 			mgr.GetEventRecorderFor("azuremachinepool-reconciler"),
 			reconcileTimeout,
-		).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
+		).SetupWithManager(mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}, Cache: mpCache}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
 			os.Exit(1)
+		}
+
+		mpmCache, err := controllers.NewCoalescingRequestCache(10 * time.Second)
+		if err != nil {
+			setupLog.Error(err, "failed to build mpmCache CoalescingRequestCache")
 		}
 
 		if err := infrav1controllersexp.NewAzureMachinePoolMachineController(
@@ -386,7 +396,7 @@ func registerControllers(mgr manager.Manager) {
 			ctrl.Log.WithName("controllers").WithName("AzureMachinePoolMachine"),
 			mgr.GetEventRecorderFor("azuremachinepoolmachine-reconciler"),
 			reconcileTimeout,
-		).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolMachineConcurrency}); err != nil {
+		).SetupWithManager(mgr, controllers.Options{Options: controller.Options{MaxConcurrentReconciles: azureMachinePoolMachineConcurrency}, Cache: mpmCache}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePoolMachine")
 			os.Exit(1)
 		}

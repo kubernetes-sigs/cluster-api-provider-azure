@@ -402,32 +402,6 @@ func (mr *MockScaleSetScopeMockRecorder) MaxUnavailable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxUnavailable", reflect.TypeOf((*MockScaleSetScope)(nil).MaxUnavailable))
 }
 
-// NeedsK8sVersionUpdate mocks base method.
-func (m *MockScaleSetScope) NeedsK8sVersionUpdate() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NeedsK8sVersionUpdate")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// NeedsK8sVersionUpdate indicates an expected call of NeedsK8sVersionUpdate.
-func (mr *MockScaleSetScopeMockRecorder) NeedsK8sVersionUpdate() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeedsK8sVersionUpdate", reflect.TypeOf((*MockScaleSetScope)(nil).NeedsK8sVersionUpdate))
-}
-
-// SaveK8sVersion mocks base method.
-func (m *MockScaleSetScope) SaveK8sVersion() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SaveK8sVersion")
-}
-
-// SaveK8sVersion indicates an expected call of SaveK8sVersion.
-func (mr *MockScaleSetScopeMockRecorder) SaveK8sVersion() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveK8sVersion", reflect.TypeOf((*MockScaleSetScope)(nil).SaveK8sVersion))
-}
-
 // ScaleSetSpec mocks base method.
 func (m *MockScaleSetScope) ScaleSetSpec() azure.ScaleSetSpec {
 	m.ctrl.T.Helper()

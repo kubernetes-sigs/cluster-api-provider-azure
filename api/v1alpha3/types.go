@@ -484,3 +484,8 @@ type AddressRecord struct {
 	Hostname string
 	IP       string
 }
+
+// IsTerminalVMState returns true if the VMState is a terminal state for an Azure resource
+func IsTerminalVMState(state VMState) bool {
+	return state == VMStateFailed || state == VMStateSucceeded
+}

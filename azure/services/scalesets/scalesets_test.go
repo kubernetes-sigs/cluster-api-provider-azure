@@ -246,7 +246,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss := newDefaultVMSS()
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -257,8 +257,7 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				createdVMSS := newDefaultVMSS()
 				instances := newDefaultInstances()
-				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
-				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
+				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.SetLongRunningOperationState(nil)
 			},
 		},
@@ -276,7 +275,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss.Sku.Name = to.StringPtr(spec.Size)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -292,7 +291,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -314,7 +313,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -337,7 +336,7 @@ func TestReconcileVMSS(t *testing.T) {
 				}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -362,7 +361,7 @@ func TestReconcileVMSS(t *testing.T) {
 				}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -381,7 +380,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss.Sku.Name = to.StringPtr(spec.Size)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, vmss, putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
 			},
 		},
 		{
@@ -472,7 +471,6 @@ func TestReconcileVMSS(t *testing.T) {
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				s.SetVMSSState(nil)
 			},
 		},
 	}
@@ -914,6 +912,7 @@ func setupDefaultVMSSInProgressOperationDoneExpectations(s *mock_scalesets.MockS
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil).AnyTimes()
 	s.MaxSurge().Return(int32(0))
 	s.SetVMSSState(gomock.Any())
+	s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
 	return createdVMSS
 }
 
@@ -930,6 +929,7 @@ func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockR
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(vmss, nil)
 	m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(newDefaultInstances(), nil).AnyTimes()
 	s.SetVMSSState(gomock.Any())
+	s.SetProviderID(fmt.Sprintf("azure://%s", *vmss.ID))
 }
 
 func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
