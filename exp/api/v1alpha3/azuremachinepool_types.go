@@ -125,7 +125,7 @@ type (
 
 		// Instances is the VM instance status for each VM in the VMSS
 		// +optional
-		Instances []*AzureMachinePoolInstanceStatus `json:"instances"`
+		Instances []*AzureMachinePoolInstanceStatus `json:"instances,omitempty"`
 
 		// Version is the Kubernetes version for the current VMSS model
 		// +optional
