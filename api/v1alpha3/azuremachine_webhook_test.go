@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
+	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 )
 
@@ -165,6 +166,18 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 			machine:    createMachineWithOsDiskCacheType(t, "invalid_cache_type"),
 			wantErr:    true,
 		},
+		{
+			name:       "azuremachine with invalid data disk's managed disk's storage account type",
+			oldMachine: createMachineWithDataDiskManagedDisk(t, "Premium_LRS"),
+			machine:    createMachineWithDataDiskManagedDisk(t, "invalid_storage_account"),
+			wantErr:    true,
+		},
+		{
+			name:       "azuremachine with invalid data disk's managed disk update",
+			oldMachine: createMachineWithDataDiskManagedDisk(t, "Premium_LRS"),
+			machine:    createMachineWithDataDiskManagedDisk(t, "Standard_LRS"),
+			wantErr:    true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -269,4 +282,30 @@ func createMachineWithOsDiskCacheType(t *testing.T, cacheType string) *AzureMach
 	}
 	machine.Spec.OSDisk.CachingType = cacheType
 	return machine
+}
+
+func createMachineWithDataDiskManagedDisk(t *testing.T, storageAccountType string) *AzureMachine {
+	machine := &AzureMachine{
+		Spec: AzureMachineSpec{
+			SSHPublicKey: validSSHPublicKey,
+			OSDisk:       validOSDisk,
+			DataDisks: []DataDisk{
+				createDataDisk(t, 16, 0, "disk_one", storageAccountType, "None"),
+			},
+		},
+	}
+
+	return machine
+}
+
+func createDataDisk(t *testing.T, diskSizeGB int32, lun int32, name string, storageAccountType string, cacheType string) DataDisk {
+	return DataDisk{
+		NameSuffix: name,
+		DiskSizeGB: diskSizeGB,
+		Lun:        to.Int32Ptr(lun),
+		ManagedDisk: &ManagedDisk{
+			StorageAccountType: storageAccountType,
+		},
+		CachingType: cacheType,
+	}
 }

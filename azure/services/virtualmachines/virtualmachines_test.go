@@ -307,6 +307,25 @@ func TestReconcileVM(t *testing.T) {
 							DiskSizeGB: 64,
 							Lun:        to.Int32Ptr(0),
 						},
+						{
+							NameSuffix: "myDiskWithManagedDisk",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(1),
+							ManagedDisk: &infrav1.ManagedDisk{
+								StorageAccountType: "Premium_LRS",
+							},
+						},
+						{
+							NameSuffix: "managedDiskWithEncryption",
+							DiskSizeGB: 128,
+							Lun:        to.Int32Ptr(2),
+							ManagedDisk: &infrav1.ManagedDisk{
+								StorageAccountType: "Premium_LRS",
+								DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
+									ID: "my_id",
+								},
+							},
+						},
 					},
 					UserAssignedIdentities: nil,
 					SpotVMOptions:          nil,
@@ -355,6 +374,27 @@ func TestReconcileVM(t *testing.T) {
 									Name:         to.StringPtr("my-vm_mydisk"),
 									CreateOption: "Empty",
 									DiskSizeGB:   to.Int32Ptr(64),
+								},
+								{
+									Lun:          to.Int32Ptr(1),
+									Name:         to.StringPtr("my-vm_myDiskWithManagedDisk"),
+									CreateOption: "Empty",
+									DiskSizeGB:   to.Int32Ptr(128),
+									ManagedDisk: &compute.ManagedDiskParameters{
+										StorageAccountType: "Premium_LRS",
+									},
+								},
+								{
+									Lun:          to.Int32Ptr(2),
+									Name:         to.StringPtr("my-vm_managedDiskWithEncryption"),
+									CreateOption: "Empty",
+									DiskSizeGB:   to.Int32Ptr(128),
+									ManagedDisk: &compute.ManagedDiskParameters{
+										StorageAccountType: "Premium_LRS",
+										DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+											ID: to.StringPtr("my_id"),
+										},
+									},
 								},
 							},
 						},

@@ -398,6 +398,16 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 			Name:         to.StringPtr(azure.GenerateDataDiskName(vmSpec.Name, disk.NameSuffix)),
 			Caching:      compute.CachingTypes(disk.CachingType),
 		}
+
+		if disk.ManagedDisk != nil {
+			dataDisks[i].ManagedDisk = &compute.ManagedDiskParameters{
+				StorageAccountType: compute.StorageAccountTypes(disk.ManagedDisk.StorageAccountType),
+			}
+
+			if disk.ManagedDisk.DiskEncryptionSet != nil {
+				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(disk.ManagedDisk.DiskEncryptionSet.ID)}
+			}
+		}
 	}
 	storageProfile.DataDisks = &dataDisks
 

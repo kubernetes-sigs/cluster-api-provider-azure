@@ -790,6 +790,25 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 				DiskSizeGB: 128,
 				Lun:        to.Int32Ptr(0),
 			},
+			{
+				NameSuffix: "my_disk_with_managed_disk",
+				DiskSizeGB: 128,
+				Lun:        to.Int32Ptr(1),
+				ManagedDisk: &infrav1.ManagedDisk{
+					StorageAccountType: "Standard_LRS",
+				},
+			},
+			{
+				NameSuffix: "managed_disk_with_encryption",
+				DiskSizeGB: 128,
+				Lun:        to.Int32Ptr(2),
+				ManagedDisk: &infrav1.ManagedDisk{
+					StorageAccountType: "Standard_LRS",
+					DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
+						ID: "encryption_id",
+					},
+				},
+			},
 		},
 		SubnetName:                   "my-subnet",
 		VNetName:                     "my-vnet",
@@ -863,6 +882,27 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 							Name:         to.StringPtr("my-vmss_my_disk"),
 							CreateOption: "Empty",
 							DiskSizeGB:   to.Int32Ptr(128),
+						},
+						{
+							Lun:          to.Int32Ptr(1),
+							Name:         to.StringPtr("my-vmss_my_disk_with_managed_disk"),
+							CreateOption: "Empty",
+							DiskSizeGB:   to.Int32Ptr(128),
+							ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+								StorageAccountType: "Standard_LRS",
+							},
+						},
+						{
+							Lun:          to.Int32Ptr(2),
+							Name:         to.StringPtr("my-vmss_managed_disk_with_encryption"),
+							CreateOption: "Empty",
+							DiskSizeGB:   to.Int32Ptr(128),
+							ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+								StorageAccountType: "Standard_LRS",
+								DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+									ID: to.StringPtr("encryption_id"),
+								},
+							},
 						},
 					},
 				},
