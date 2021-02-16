@@ -96,25 +96,51 @@ type VNetSpec struct {
 	CIDRs         []string
 }
 
+// ContainerGroupSpec is a collection of related containers, identities and volumes
 type ContainerGroupSpec struct {
 	Name                   string
 	Identity               infrav1.VMIdentity
 	UserAssignedIdentities []infrav1.UserAssignedIdentity
 	Containers             []ContainerSpec
-	BootstrapData          string
+	Volumes []ContainerVolumeSpec
 }
 
+// ContainerSpec defines a container within a Container Group
 type ContainerSpec struct {
 	Name    string
 	Command []string
 	EnvVars []ContainerEnvironmentVariableSpec
 	Image   string
+	VolumeMounts []ContainerVolumeMountSpec
 }
 
+// ContainerEnvironmentVariableSpec is a key value pair where either Value or SecureValue can be set
 type ContainerEnvironmentVariableSpec struct {
 	Name        string
 	SecureValue string
 	Value       string
+}
+
+// ContainerVolumeMountSpec ties the ContainerVolumeSpec to the Container mount path
+type ContainerVolumeMountSpec struct {
+	// Name of the container volume spec to mount
+	Name string
+	// MountPath of the volume
+	MountPath string
+}
+
+// ContainerVolumeSpec is a named set of secret files
+type ContainerVolumeSpec struct {
+	Name string
+	Secrets []ContainerSecretSpec
+}
+
+// ContainerSecretSpec is the name of a secret with base64 encoded content
+type ContainerSecretSpec struct {
+	// Name is the file name of the secret under the mount path
+	Name string
+	// Value must be a base64 encoded string
+	Value string
 }
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.

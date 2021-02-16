@@ -66,7 +66,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	containerGroup := s.containerGroupSpecToContainerGroup(spec)
-	s.Scope.Info("!!!!!!!bootstrapData!!!!!!!", "data", spec.BootstrapData)
 	cg, err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), s.Scope.Name(), containerGroup)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update the container group")

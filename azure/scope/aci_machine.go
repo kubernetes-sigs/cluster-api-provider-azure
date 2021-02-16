@@ -154,7 +154,7 @@ func (m *ContainerInstanceMachineScope) ContainerGroupSpec(ctx context.Context) 
 		Containers: []azure.ContainerSpec{
 			{
 				Name:    "virtual-kubelet",
-				Command: []string{"./init.sh"},
+				Command: []string{"tail", "-f", "/dev/null"},
 				EnvVars: []azure.ContainerEnvironmentVariableSpec{
 					{
 						Name:  "foo",
@@ -162,9 +162,25 @@ func (m *ContainerInstanceMachineScope) ContainerGroupSpec(ctx context.Context) 
 					},
 				},
 				Image: "devigned/vktest",
+				VolumeMounts: []azure.ContainerVolumeMountSpec{
+					{
+						Name: "bootstrapVolume",
+						MountPath: "/var/lib/capi",
+					},
+				},
 			},
 		},
-		BootstrapData: bootstrapData,
+		Volumes: []azure.ContainerVolumeSpec{
+			{
+				Name:    "bootstrapVolume",
+				Secrets: []azure.ContainerSecretSpec{
+					{
+						Name:  "bootstrap.yml",
+						Value: bootstrapData,
+					},
+				},
+			},
+		},
 	}, nil
 }
 
