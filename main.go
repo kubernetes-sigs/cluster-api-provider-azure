@@ -24,6 +24,7 @@ import (
 	"os"
 	"time"
 
+	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	// +kubebuilder:scaffold:imports
 
 	"github.com/Azure/go-autorest/tracing"
@@ -49,6 +50,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
+
 	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/controllers"
@@ -75,6 +77,7 @@ func init() {
 	_ = infrav1alpha3exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = clusterv1exp.AddToScheme(scheme)
+	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 
 	// Add aadpodidentity v1 to the scheme.
@@ -91,19 +94,20 @@ func init() {
 }
 
 var (
-	metricsAddr                 string
-	enableLeaderElection        bool
-	leaderElectionNamespace     string
-	watchNamespace              string
-	profilerAddress             string
-	azureClusterConcurrency     int
-	azureMachineConcurrency     int
-	azureMachinePoolConcurrency int
-	syncPeriod                  time.Duration
-	healthAddr                  string
-	webhookPort                 int
-	reconcileTimeout            time.Duration
-	enableTracing               bool
+	metricsAddr                              string
+	enableLeaderElection                     bool
+	leaderElectionNamespace                  string
+	watchNamespace                           string
+	profilerAddress                          string
+	azureClusterConcurrency                  int
+	azureMachineConcurrency                  int
+	azureMachinePoolConcurrency              int
+	azureContainerInstanceMachineConcurrency int
+	syncPeriod                               time.Duration
+	healthAddr                               string
+	webhookPort                              int
+	reconcileTimeout                         time.Duration
+	enableTracing                            bool
 )
 
 // InitFlags initializes all command-line flags.
@@ -159,6 +163,11 @@ func InitFlags(fs *pflag.FlagSet) {
 		"azuremachinepool-concurrency",
 		10,
 		"Number of AzureMachinePools to process simultaneously")
+
+	fs.IntVar(&azureContainerInstanceMachineConcurrency,
+		"azurecontainerinstancemachine-concurrency",
+		10,
+		"Number of AzureContainerInstanceMachines to process simultaneously")
 
 	fs.DurationVar(&syncPeriod,
 		"sync-period",
@@ -271,6 +280,16 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
 		}
+
+		if err = controllers.NewAzureContainerInstanceMachineReconciler(mgr.GetClient(),
+			ctrl.Log.WithName("controllers").WithName("AzureContainerInstanceMachine"),
+			mgr.GetEventRecorderFor("azurecontainerinstancemachine-reconciler"),
+			reconcileTimeout,
+		).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureContainerInstanceMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureContainerInstanceMachine")
+			os.Exit(1)
+		}
+
 		if err = (&controllers.AzureJSONTemplateReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
@@ -372,6 +391,7 @@ func main() {
 			}
 		}
 	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {

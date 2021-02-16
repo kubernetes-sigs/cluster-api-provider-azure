@@ -56,6 +56,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout).
 		SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
+	Expect(NewAzureContainerInstanceMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azurecontainerinstancemachine-reconciler"), reconciler.DefaultLoopTimeout).
+		SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+
 	// +kubebuilder:scaffold:scheme
 
 	By("starting the manager")

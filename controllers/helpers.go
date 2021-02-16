@@ -57,6 +57,26 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 		return nil, errors.Wrapf(err, "failed to find GVK for AzureMachine")
 	}
 
+	return AzureClusterToAzureMachinesTypeMapper(c, gvk, log)
+}
+
+// AzureClusterToAzureContainerInstanceMachinesMapper creates a mapping handler to transform AzureClusters into
+// AzureContainerInstanceMachines. The transform requires AzureCluster to map to the owning Cluster, then from the
+// Cluster, collect the Machines belonging to the cluster, then finally projecting the infrastructure reference to the
+// AzureClusterToAzureContainerInstanceMachine.
+func AzureClusterToAzureContainerInstanceMachinesMapper(c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.Mapper, error) {
+	gvk, err := apiutil.GVKForObject(new(infrav1.AzureContainerInstanceMachine), scheme)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find GVK for AzureContainerInstanceMachine")
+	}
+
+	return AzureClusterToAzureMachinesTypeMapper(c, gvk, log)
+}
+
+// AzureClusterToAzureMachinesTypeMapper creates a mapping handler to transform AzureClusters into Azure Machine Types. The transform
+// requires AzureCluster to map to the owning Cluster, then from the Cluster, collect the Machines belonging to the cluster,
+// then finally projecting the infrastructure reference to the AzureMachine.
+func AzureClusterToAzureMachinesTypeMapper(c client.Client, gvk schema.GroupVersionKind, log logr.Logger) (handler.Mapper, error) {
 	return handler.ToRequestsFunc(func(o handler.MapObject) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
 		defer cancel()

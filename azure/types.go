@@ -96,6 +96,27 @@ type VNetSpec struct {
 	CIDRs         []string
 }
 
+type ContainerGroupSpec struct {
+	Name                   string
+	Identity               infrav1.VMIdentity
+	UserAssignedIdentities []infrav1.UserAssignedIdentity
+	Containers             []ContainerSpec
+	BootstrapData          string
+}
+
+type ContainerSpec struct {
+	Name    string
+	Command []string
+	EnvVars []ContainerEnvironmentVariableSpec
+	Image   string
+}
+
+type ContainerEnvironmentVariableSpec struct {
+	Name        string
+	SecureValue string
+	Value       string
+}
+
 // RoleAssignmentSpec defines the specification for a Role Assignment.
 type RoleAssignmentSpec struct {
 	MachineName  string

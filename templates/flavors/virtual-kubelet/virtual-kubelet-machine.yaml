@@ -1,0 +1,38 @@
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Machine
+metadata:
+  name: "${CLUSTER_NAME}-vkm-0"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  version: "${KUBERNETES_VERSION}"
+  bootstrap:
+    configRef:
+      name: "${CLUSTER_NAME}-bvkm-0"
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+      kind: KubeadmConfig
+  infrastructureRef:
+    name: "${CLUSTER_NAME}-avkm-0"
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: AzureContainerInstanceMachine
+
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureContainerInstanceMachine
+metadata:
+  name: "${CLUSTER_NAME}-avkm-0"
+spec:
+  identity: SystemAssigned
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfig
+metadata:
+  name: "${CLUSTER_NAME}-bvkm-0"
+spec:
+  useExperimentalRetryJoin: true
+  joinConfiguration:
+    nodeRegistration:
+      name: '{{ ds.meta_data["local_hostname"] }}'
+      kubeletExtraArgs:
+        cloud-provider: azure
+        cloud-config: /etc/kubernetes/azure.json

@@ -1,0 +1,4 @@
+namespace: default
+resources:
+  - ../base
+  - virtual-kubelet-machine.yaml

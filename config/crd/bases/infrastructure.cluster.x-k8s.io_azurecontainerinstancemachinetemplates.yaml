@@ -1,0 +1,114 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: azurecontainerinstancemachinetemplates.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: AzureContainerInstanceMachineTemplate
+    listKind: AzureContainerInstanceMachineTemplateList
+    plural: azurecontainerinstancemachinetemplates
+    singular: azurecontainerinstancemachinetemplate
+  scope: Namespaced
+  versions:
+  - name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: AzureContainerInstanceMachineTemplate is the Schema for the azurecontainerinstancemachinetemplates
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AzureContainerInstanceMachineTemplateSpec defines the desired
+              state of AzureContainerInstanceMachineTemplate
+            properties:
+              template:
+                description: AzureContainerInstanceMachineTemplateResource describes
+                  the data needed to create an AzureContainerInstanceMachine from
+                  a template
+                properties:
+                  spec:
+                    description: Spec is the specification of the desired behavior
+                      of the machine.
+                    properties:
+                      additionalTags:
+                        additionalProperties:
+                          type: string
+                        description: AdditionalTags is an optional set of tags to
+                          add to an instance, in addition to the ones added by default
+                          by the Azure provider. If both the AzureCluster and the
+                          AzureMachine specify the same tag name with different values,
+                          the AzureMachine's value takes precedence.
+                        type: object
+                      allocatePublicIP:
+                        description: AllocatePublicIP allows the ability to create
+                          dynamic public ips for machines where this value is true.
+                        type: boolean
+                      identity:
+                        default: None
+                        description: Identity is the type of identity used for the
+                          virtual machine. The type 'SystemAssigned' is an implicitly
+                          created identity. The generated identity will be assigned
+                          a Subscription contributor role. The type 'UserAssigned'
+                          is a standalone Azure resource provided by the user and
+                          assigned to the VM
+                        enum:
+                        - None
+                        - SystemAssigned
+                        - UserAssigned
+                        type: string
+                      providerID:
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
+                        type: string
+                      userAssignedIdentities:
+                        description: UserAssignedIdentities is a list of standalone
+                          Azure identities provided by the user The lifecycle of a
+                          user-assigned identity is managed separately from the lifecycle
+                          of the AzureMachine. See https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli
+                        items:
+                          description: UserAssignedIdentity defines the user-assigned
+                            identities provided by the user to be assigned to Azure
+                            resources.
+                          properties:
+                            providerID:
+                              description: 'ProviderID is the identification ID of
+                                the user-assigned Identity, the format of an identity
+                                is: ''azure:///subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}'''
+                              type: string
+                          required:
+                          - providerID
+                          type: object
+                        type: array
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
