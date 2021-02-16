@@ -98,8 +98,14 @@ func (s Service) containerGroupSpecToContainerGroup(spec azure.ContainerGroupSpe
 		for i, envVar := range c.EnvVars {
 			envVars[i] = containerinstance.EnvironmentVariable{
 				Name:        to.StringPtr(envVar.Name),
-				Value:       to.StringPtr(envVar.Value),
-				SecureValue: to.StringPtr(envVar.SecureValue),
+			}
+
+			if envVar.Value != "" {
+				envVars[i].Value = to.StringPtr(envVar.Value)
+			}
+
+			if envVar.SecureValue != "" {
+				envVars[i].SecureValue = to.StringPtr(envVar.SecureValue)
 			}
 		}
 
@@ -113,10 +119,6 @@ func (s Service) containerGroupSpecToContainerGroup(spec azure.ContainerGroupSpe
 					Requests: &containerinstance.ResourceRequests{
 						MemoryInGB: to.Float64Ptr(4),
 						CPU:        to.Float64Ptr(2),
-					},
-					Limits:   &containerinstance.ResourceLimits{
-						MemoryInGB: to.Float64Ptr(8),
-						CPU:        to.Float64Ptr(4),
 					},
 				},
 			},
