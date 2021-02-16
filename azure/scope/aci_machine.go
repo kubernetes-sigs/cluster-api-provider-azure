@@ -154,7 +154,7 @@ func (m *ContainerInstanceMachineScope) ContainerGroupSpec(ctx context.Context) 
 		Containers: []azure.ContainerSpec{
 			{
 				Name:    "virtual-kubelet",
-				Command: []string{"tail", "-f", "/dev/null"},
+				Command: []string{"/init.sh"},
 				EnvVars: []azure.ContainerEnvironmentVariableSpec{
 					{
 						Name:  "foo",

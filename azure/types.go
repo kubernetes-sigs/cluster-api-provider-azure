@@ -102,15 +102,15 @@ type ContainerGroupSpec struct {
 	Identity               infrav1.VMIdentity
 	UserAssignedIdentities []infrav1.UserAssignedIdentity
 	Containers             []ContainerSpec
-	Volumes []ContainerVolumeSpec
+	Volumes                []ContainerVolumeSpec
 }
 
 // ContainerSpec defines a container within a Container Group
 type ContainerSpec struct {
-	Name    string
-	Command []string
-	EnvVars []ContainerEnvironmentVariableSpec
-	Image   string
+	Name         string
+	Command      []string
+	EnvVars      []ContainerEnvironmentVariableSpec
+	Image        string
 	VolumeMounts []ContainerVolumeMountSpec
 }
 
@@ -131,7 +131,7 @@ type ContainerVolumeMountSpec struct {
 
 // ContainerVolumeSpec is a named set of secret files
 type ContainerVolumeSpec struct {
-	Name string
+	Name    string
 	Secrets []ContainerSecretSpec
 }
 

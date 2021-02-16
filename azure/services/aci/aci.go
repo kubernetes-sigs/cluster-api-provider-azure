@@ -208,5 +208,9 @@ func (s Service) containerGroupSpecToContainerGroup(spec azure.ContainerGroupSpe
 		})),
 		Name:     to.StringPtr(s.Scope.Name()),
 		Location: to.StringPtr(s.Scope.Location()),
+		// give a min identity to enable instance metadata service
+		Identity: &containerinstance.ContainerGroupIdentity{
+			Type: containerinstance.SystemAssigned,
+		},
 	}
 }

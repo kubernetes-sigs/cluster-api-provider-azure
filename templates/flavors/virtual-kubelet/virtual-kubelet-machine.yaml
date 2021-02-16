@@ -32,7 +32,7 @@ spec:
   useExperimentalRetryJoin: true
   joinConfiguration:
     nodeRegistration:
-      name: '{{ ds.meta_data["local_hostname"] }}'
+      name: '{{ v1.local_hostname }}'
       kubeletExtraArgs:
         cloud-provider: azure
         cloud-config: /etc/kubernetes/azure.json

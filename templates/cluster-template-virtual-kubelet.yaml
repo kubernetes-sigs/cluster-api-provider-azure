@@ -178,5 +178,5 @@ spec:
       kubeletExtraArgs:
         cloud-config: /etc/kubernetes/azure.json
         cloud-provider: azure
-      name: '{{ ds.meta_data["local_hostname"] }}'
+      name: '{{ v1.local_hostname }}'
   useExperimentalRetryJoin: true
