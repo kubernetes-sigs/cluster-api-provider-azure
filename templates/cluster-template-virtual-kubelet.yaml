@@ -165,6 +165,14 @@ metadata:
   name: ${CLUSTER_NAME}-bvkm-0
   namespace: default
 spec:
+  files:
+  - contentFrom:
+      secret:
+        key: worker-node-azure.json
+        name: ${CLUSTER_NAME}-md-0-azure-json
+    owner: root:root
+    path: /etc/kubernetes/azure.json
+    permissions: "0644"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:

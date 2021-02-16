@@ -164,7 +164,7 @@ func (m *ContainerInstanceMachineScope) ContainerGroupSpec(ctx context.Context) 
 				Image: "devigned/vktest",
 				VolumeMounts: []azure.ContainerVolumeMountSpec{
 					{
-						Name: "bootstrapVolume",
+						Name: "bootstrapvolume",
 						MountPath: "/var/lib/capi",
 					},
 				},
@@ -172,7 +172,7 @@ func (m *ContainerInstanceMachineScope) ContainerGroupSpec(ctx context.Context) 
 		},
 		Volumes: []azure.ContainerVolumeSpec{
 			{
-				Name:    "bootstrapVolume",
+				Name:    "bootstrapvolume",
 				Secrets: []azure.ContainerSecretSpec{
 					{
 						Name:  "bootstrap.yml",
@@ -230,6 +230,10 @@ func (m *ContainerInstanceMachineScope) SetFailureReason(reason capierrors.Machi
 // SetFailureMessage sets the failure message on the ACIMachine
 func (m *ContainerInstanceMachineScope) SetFailureMessage(v error) {
 	m.ACIMachine.Status.FailureMessage = to.StringPtr(v.Error())
+}
+
+func (m *ContainerInstanceMachineScope) NodeNetwork() (*infrav1.VnetSpec, *infrav1.SubnetSpec){
+	return m.ClusterScoper.Vnet(), m.ClusterScoper.NodeSubnet()
 }
 
 // getBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.

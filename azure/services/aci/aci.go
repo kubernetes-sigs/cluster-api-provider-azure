@@ -18,8 +18,10 @@ package aci
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerinstance/mgmt/2019-12-01/containerinstance"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -38,6 +40,7 @@ type (
 		ContainerGroupSpec(ctx context.Context) (azure.ContainerGroupSpec, error)
 		SetVMState(state infrav1.VMState)
 		Name() string
+		NodeSubnet() *infrav1.SubnetSpec
 	}
 
 	// Service provides operations on azure resources
@@ -65,6 +68,44 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to build container group spec")
 	}
 
+	var (
+		subnet             = s.Scope.NodeSubnet()
+		networkProfileName = fmt.Sprintf("%s-%s", s.Scope.Name(), "networkprofile")
+		networkProfile     = network.Profile{
+			ProfilePropertiesFormat: &network.ProfilePropertiesFormat{
+				ContainerNetworkInterfaces: nil,
+				ContainerNetworkInterfaceConfigurations: &[]network.ContainerNetworkInterfaceConfiguration{
+					{
+						Name: to.StringPtr(fmt.Sprintf("%s-%s", s.Scope.Name(), "netifaceconfig")),
+						ContainerNetworkInterfaceConfigurationPropertiesFormat: &network.ContainerNetworkInterfaceConfigurationPropertiesFormat{
+							IPConfigurations: &[]network.IPConfigurationProfile{
+								{
+									Name: to.StringPtr(fmt.Sprintf("%s-%s", s.Scope.Name(), "netipconfig")),
+									IPConfigurationProfilePropertiesFormat: &network.IPConfigurationProfilePropertiesFormat{
+										Subnet: &network.Subnet{
+											ID: to.StringPtr(subnet.ID),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Location: to.StringPtr(s.Scope.Location()),
+			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+				ClusterName: s.Scope.ClusterName(),
+				Lifecycle:   infrav1.ResourceLifecycleOwned,
+				Name:        to.StringPtr(networkProfileName),
+				Additional:  s.Scope.AdditionalTags(),
+			})),
+		}
+	)
+
+	if _, err := s.Client.CreateOrUpdateNetworkProfile(ctx, s.Scope.ResourceGroup(), networkProfileName, networkProfile); err != nil {
+		return errors.Wrap(err, "failed to create or update the network profile")
+	}
+
 	containerGroup := s.containerGroupSpecToContainerGroup(spec)
 	cg, err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), s.Scope.Name(), containerGroup)
 	if err != nil {
@@ -83,6 +124,11 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "aci.Service.Delete")
 	defer span.End()
 
+	networkProfileName := fmt.Sprintf("%s-%s", s.Scope.Name(), "networkprofile")
+	if err := s.Client.DeleteNetworkProfile(ctx, s.Scope.ResourceGroup(), networkProfileName); err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrap(err, "failed to delete network profile")
+	}
+
 	return s.Client.Delete(ctx, s.Scope.ResourceGroup(), s.Scope.Name())
 }
 
@@ -96,7 +142,7 @@ func (s Service) containerGroupSpecToContainerGroup(spec azure.ContainerGroupSpe
 
 		for i, envVar := range c.EnvVars {
 			envVars[i] = containerinstance.EnvironmentVariable{
-				Name:        to.StringPtr(envVar.Name),
+				Name: to.StringPtr(envVar.Name),
 			}
 
 			if envVar.Value != "" {
@@ -105,6 +151,15 @@ func (s Service) containerGroupSpecToContainerGroup(spec azure.ContainerGroupSpe
 
 			if envVar.SecureValue != "" {
 				envVars[i].SecureValue = to.StringPtr(envVar.SecureValue)
+			}
+		}
+
+		volumeMounts := make([]containerinstance.VolumeMount, len(c.VolumeMounts))
+		for i, mount := range c.VolumeMounts {
+			volumeMounts[i] = containerinstance.VolumeMount{
+				Name:      to.StringPtr(mount.Name),
+				MountPath: to.StringPtr(mount.MountPath),
+				ReadOnly:  to.BoolPtr(true),
 			}
 		}
 
@@ -120,14 +175,29 @@ func (s Service) containerGroupSpecToContainerGroup(spec azure.ContainerGroupSpe
 						CPU:        to.Float64Ptr(2),
 					},
 				},
+				VolumeMounts: &volumeMounts,
 			},
+		}
+	}
+
+	volumes := make([]containerinstance.Volume, len(spec.Volumes))
+	for i, v := range spec.Volumes {
+		secrets := make(map[string]*string, len(v.Secrets))
+		for _, secret := range v.Secrets {
+			secrets[secret.Name] = to.StringPtr(secret.Value)
+		}
+
+		volumes[i] = containerinstance.Volume{
+			Name:   to.StringPtr(v.Name),
+			Secret: secrets,
 		}
 	}
 
 	return containerinstance.ContainerGroup{
 		ContainerGroupProperties: &containerinstance.ContainerGroupProperties{
-			Containers:     &containers,
-			OsType:         containerinstance.Linux,
+			Containers: &containers,
+			OsType:     containerinstance.Linux,
+			Volumes:    &volumes,
 		},
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.Scope.ClusterName(),
