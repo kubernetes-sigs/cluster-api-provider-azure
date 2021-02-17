@@ -125,7 +125,7 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 				publicIPSvc:      publicIPMock,
 				loadBalancerSvc:  lbMock,
 				privateDNSSvc:    dnsMock,
-				skuCache:         resourceskus.NewStaticCache([]compute.ResourceSku{}),
+				skuCache:         resourceskus.NewStaticCache([]compute.ResourceSku{}, ""),
 			}
 
 			err := s.Delete(context.TODO())

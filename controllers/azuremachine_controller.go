@@ -285,13 +285,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
 	}
 
-	err = ams.Reconcile(ctx)
-	if err != nil {
-		return reconcile.Result{}, errors.Wrap(err, "failed to create AzureMachineService")
-	}
-
 	if err := ams.Reconcile(ctx); err != nil {
-
 		// This means that a VM was created and managed by this controller, but is not present anymore.
 		// In this case, we mark it as failed and leave it to MHC for remediation
 		if errors.As(err, &azure.VMDeletedError{}) {
@@ -311,6 +305,10 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 
 			if reconcileError.IsTerminal() {
 				machineScope.Error(err, "failed to reconcile AzureMachine", "name", machineScope.Name())
+				machineScope.SetFailureReason(capierrors.CreateMachineError)
+				machineScope.SetFailureMessage(err)
+				machineScope.SetNotReady()
+				machineScope.SetVMState(infrav1.VMStateFailed)
 				return reconcile.Result{}, nil
 			}
 

@@ -29,12 +29,14 @@ import (
 func TestCacheGet(t *testing.T) {
 	cases := map[string]struct {
 		sku          string
+		location     string
 		resourceType ResourceType
 		have         []compute.ResourceSku
 		err          string
 	}{
 		"should find": {
 			sku:          "foo",
+			location:     "test",
 			resourceType: "bar",
 			have: []compute.ResourceSku{
 				{
@@ -49,13 +51,14 @@ func TestCacheGet(t *testing.T) {
 		},
 		"should not find": {
 			sku:          "foo",
+			location:     "test",
 			resourceType: "bar",
 			have: []compute.ResourceSku{
 				{
 					Name: to.StringPtr("other"),
 				},
 			},
-			err: "resource sku with name 'foo' and category 'bar' not found",
+			err: "resource sku with name 'foo' and category 'bar' not found in location 'test'",
 		},
 	}
 
@@ -65,7 +68,8 @@ func TestCacheGet(t *testing.T) {
 			t.Parallel()
 
 			cache := &Cache{
-				data: tc.have,
+				data:     tc.have,
+				location: tc.location,
 			}
 
 			val, err := cache.Get(context.Background(), tc.sku, tc.resourceType)

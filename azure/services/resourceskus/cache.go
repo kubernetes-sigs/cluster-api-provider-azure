@@ -93,17 +93,11 @@ func GetCache(auth azure.Authorizer, location string) (*Cache, error) {
 	return c.(*Cache), nil
 }
 
-// NewStaticCacheFn returns a function that initializes a cache with data and no ability to refresh. Used for testing.
-func NewStaticCacheFn(data []compute.ResourceSku) NewCacheFunc {
-	return func(azure.Authorizer, string) *Cache {
-		return NewStaticCache(data)
-	}
-}
-
 // NewStaticCache initializes a cache with data and no ability to refresh. Used for testing.
-func NewStaticCache(data []compute.ResourceSku) *Cache {
+func NewStaticCache(data []compute.ResourceSku, location string) *Cache {
 	return &Cache{
-		data: data,
+		data:     data,
+		location: location,
 	}
 }
 
@@ -141,7 +135,7 @@ func (c *Cache) Get(ctx context.Context, name string, kind ResourceType) (SKU, e
 			return SKU(sku), nil
 		}
 	}
-	return SKU{}, fmt.Errorf("resource sku with name '%s' and category '%s' not found", name, string(kind))
+	return SKU{}, fmt.Errorf("resource sku with name '%s' and category '%s' not found in location '%s'", name, string(kind), c.location)
 }
 
 // Map invokes a function over all cached values.

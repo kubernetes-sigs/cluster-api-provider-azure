@@ -434,7 +434,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 							},
 						},
 					},
-				}),
+				}, ""),
 			}
 
 			err := s.Reconcile(context.TODO())
