@@ -27,7 +27,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
+	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -306,6 +308,18 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		return azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", spec.Size))
 	}
 
+	// Checking if selected availability zones are available selected VM type in location
+	azsInLocation, err := s.resourceSKUCache.GetZonesWithVMSize(ctx, spec.Size, s.Scope.Location())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get zones for VM type %s in location %s", spec.Size, s.Scope.Location())
+	}
+
+	for _, az := range spec.FailureDomains {
+		if !slice.Contains(azsInLocation, az) {
+			return azure.WithTerminalError(errors.Errorf("availability zone %s is not available for VM type %s in location %s", az, spec.Size, s.Scope.Location()))
+		}
+	}
+
 	return nil
 }
 
@@ -364,6 +378,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			Tier:     to.StringPtr("Standard"),
 			Capacity: to.Int64Ptr(vmssSpec.Capacity),
 		},
+		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,

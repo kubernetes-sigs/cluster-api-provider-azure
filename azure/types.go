@@ -165,6 +165,7 @@ type ScaleSetSpec struct {
 	UserAssignedIdentities       []infrav1.UserAssignedIdentity
 	SecurityProfile              *infrav1.SecurityProfile
 	SpotVMOptions                *infrav1.SpotVMOptions
+	FailureDomains               []string
 }
 
 // TagsSpec defines the specification for a set of tags.

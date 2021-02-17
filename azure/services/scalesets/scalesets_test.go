@@ -124,6 +124,7 @@ func TestGetExistingVMSS(t *testing.T) {
 				Identity: "",
 				Tags:     nil,
 				Capacity: int64(1),
+				Zones:    []string{"1", "3"},
 				Instances: []infrav1exp.VMSSVM{
 					{
 						ID:         "my-vm-id",
@@ -148,6 +149,7 @@ func TestGetExistingVMSS(t *testing.T) {
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 						ProvisioningState: to.StringPtr("Succeeded"),
 					},
+					Zones: &[]string{"1", "3"},
 				}, nil)
 				m.ListInstances(gomock.Any(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{
 					{
@@ -634,15 +636,16 @@ func TestDeleteVMSS(t *testing.T) {
 func getFakeSkus() []compute.ResourceSku {
 	return []compute.ResourceSku{
 		{
-			Name: to.StringPtr("VM_SIZE"),
-			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Name:         to.StringPtr("VM_SIZE"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
 					Location: to.StringPtr("test-location"),
-					Zones:    &[]string{"1"},
+					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -661,15 +664,16 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 		},
 		{
-			Name: to.StringPtr("VM_SIZE_AN"),
-			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Name:         to.StringPtr("VM_SIZE_AN"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
 					Location: to.StringPtr("test-location"),
-					Zones:    &[]string{"1"},
+					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -688,15 +692,16 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 		},
 		{
-			Name: to.StringPtr("VM_SIZE_1_CPU"),
-			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Name:         to.StringPtr("VM_SIZE_1_CPU"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
 					Location: to.StringPtr("test-location"),
-					Zones:    &[]string{"1"},
+					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -715,15 +720,16 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 		},
 		{
-			Name: to.StringPtr("VM_SIZE_1_MEM"),
-			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Name:         to.StringPtr("VM_SIZE_1_MEM"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
 					Location: to.StringPtr("test-location"),
-					Zones:    &[]string{"1"},
+					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -742,15 +748,16 @@ func getFakeSkus() []compute.ResourceSku {
 			},
 		},
 		{
-			Name: to.StringPtr("VM_SIZE_EAH"),
-			Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Name:         to.StringPtr("VM_SIZE_EAH"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
 			Locations: &[]string{
 				"test-location",
 			},
 			LocationInfo: &[]compute.ResourceSkuLocationInfo{
 				{
 					Location: to.StringPtr("test-location"),
-					Zones:    &[]string{"1"},
+					Zones:    &[]string{"1", "3"},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -817,6 +824,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		PublicLBAddressPoolName:      "backendPool",
 		AcceleratedNetworking:        nil,
 		TerminateNotificationTimeout: to.IntPtr(7),
+		FailureDomains:               []string{"1", "3"},
 	}
 }
 
@@ -839,6 +847,7 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 			Tier:     to.StringPtr("Standard"),
 			Capacity: to.Int64Ptr(2),
 		},
+		Zones: &[]string{"1", "3"},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeRolling,
@@ -1013,7 +1022,7 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 	s.ResourceGroup().AnyTimes().Return(defaultResourceGroup)
 	s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 	s.AdditionalTags()
-	s.Location().Return("test-location")
+	s.Location().AnyTimes().Return("test-location")
 	s.ClusterName().Return("my-cluster")
 	s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
 	s.GetVMImage().Return(&infrav1.Image{
