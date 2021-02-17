@@ -665,6 +665,24 @@ spec:
                             attached to a VM. The value must be between 0 and 63.
                           format: int32
                           type: integer
+                        managedDisk:
+                          description: ManagedDisk defines the managed disk options
+                            for a VM.
+                          properties:
+                            diskEncryptionSet:
+                              description: DiskEncryptionSetParameters defines disk
+                                encryption options.
+                              properties:
+                                id:
+                                  description: ID defines resourceID for diskEncryptionSet
+                                    resource. It must be in the same subscription
+                                  type: string
+                              type: object
+                            storageAccountType:
+                              type: string
+                          required:
+                          - storageAccountType
+                          type: object
                         nameSuffix:
                           description: NameSuffix is the suffix to be appended to
                             the machine name to generate the disk name. Each disk

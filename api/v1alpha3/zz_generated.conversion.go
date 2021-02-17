@@ -817,7 +817,17 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *Azur
 	if err := Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
-	out.DataDisks = *(*[]v1alpha4.DataDisk)(unsafe.Pointer(&in.DataDisks))
+	if in.DataDisks != nil {
+		in, out := &in.DataDisks, &out.DataDisks
+		*out = make([]v1alpha4.DataDisk, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.DataDisks = nil
+	}
 	out.Location = in.Location
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AdditionalTags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
@@ -843,7 +853,17 @@ func autoConvert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1al
 	if err := Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
-	out.DataDisks = *(*[]DataDisk)(unsafe.Pointer(&in.DataDisks))
+	if in.DataDisks != nil {
+		in, out := &in.DataDisks, &out.DataDisks
+		*out = make([]DataDisk, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.DataDisks = nil
+	}
 	out.Location = in.Location
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
@@ -1080,6 +1100,15 @@ func Convert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(in *v1alpha4.BuildPara
 func autoConvert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alpha4.DataDisk, s conversion.Scope) error {
 	out.NameSuffix = in.NameSuffix
 	out.DiskSizeGB = in.DiskSizeGB
+	if in.ManagedDisk != nil {
+		in, out := &in.ManagedDisk, &out.ManagedDisk
+		*out = new(v1alpha4.ManagedDisk)
+		if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ManagedDisk = nil
+	}
 	out.Lun = (*int32)(unsafe.Pointer(in.Lun))
 	out.CachingType = in.CachingType
 	return nil
@@ -1093,6 +1122,15 @@ func Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alpha4.
 func autoConvert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(in *v1alpha4.DataDisk, out *DataDisk, s conversion.Scope) error {
 	out.NameSuffix = in.NameSuffix
 	out.DiskSizeGB = in.DiskSizeGB
+	if in.ManagedDisk != nil {
+		in, out := &in.ManagedDisk, &out.ManagedDisk
+		*out = new(ManagedDisk)
+		if err := Convert_v1alpha4_ManagedDisk_To_v1alpha3_ManagedDisk(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ManagedDisk = nil
+	}
 	out.Lun = (*int32)(unsafe.Pointer(in.Lun))
 	out.CachingType = in.CachingType
 	return nil
