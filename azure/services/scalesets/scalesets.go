@@ -274,13 +274,13 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	spec := s.Scope.ScaleSetSpec()
 	sku, err := s.resourceSKUCache.Get(ctx, spec.Size, resourceskus.VirtualMachines)
 	if err != nil {
-		return azure.WithTerminalError(errors.Wrapf(err, "failed to get find SKU %s in compute api", spec.Size))
+		return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", spec.Size))
 	}
 
 	// Checking if the requested VM size has at least 2 vCPUS
 	vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
 	if err != nil {
-		return azure.WithTerminalError(errors.Wrap(err, "failed to validate the vCPU cabability"))
+		return azure.WithTerminalError(errors.Wrap(err, "failed to validate the vCPU capability"))
 	}
 
 	if !vCPUCapability {
@@ -290,7 +290,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	// Checking if the requested VM size has at least 2 Gi of memory
 	MemoryCapability, err := sku.HasCapabilityWithCapacity(resourceskus.MemoryGB, resourceskus.MinimumMemory)
 	if err != nil {
-		return azure.WithTerminalError(errors.Wrap(err, "failed to validate the memory cabability"))
+		return azure.WithTerminalError(errors.Wrap(err, "failed to validate the memory capability"))
 	}
 
 	if !MemoryCapability {
@@ -317,7 +317,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	sku, err := s.resourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
-		return result, errors.Wrapf(err, "failed to get find SKU %s in compute api", vmssSpec.Size)
+		return result, errors.Wrapf(err, "failed to get SKU %s in compute api", vmssSpec.Size)
 	}
 
 	if vmssSpec.AcceleratedNetworking == nil {

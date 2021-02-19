@@ -101,7 +101,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
 		sku, err := s.resourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get find vm sku %s in compute api", vmSpec.Size)
+			return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", vmSpec.Size))
 		}
 
 		storageProfile, err := s.generateStorageProfile(ctx, vmSpec, sku)
@@ -359,25 +359,25 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 	// Checking if the requested VM size has at least 2 vCPUS
 	vCPUCapability, err := sku.HasCapabilityWithCapacity(resourceskus.VCPUs, resourceskus.MinimumVCPUS)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to validate the vCPU cabability")
+		return nil, azure.WithTerminalError(errors.Wrap(err, "failed to validate the vCPU capability"))
 	}
 	if !vCPUCapability {
-		return nil, errors.New("vm size should be bigger or equal to at least 2 vCPUs")
+		return nil, azure.WithTerminalError(errors.New("vm size should be bigger or equal to at least 2 vCPUs"))
 	}
 
 	// Checking if the requested VM size has at least 2 Gi of memory
 	MemoryCapability, err := sku.HasCapabilityWithCapacity(resourceskus.MemoryGB, resourceskus.MinimumMemory)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to validate the memory cabability")
-	}
-	if !MemoryCapability {
-		return nil, errors.New("vm memory should be bigger or equal to at least 2Gi")
+		return nil, azure.WithTerminalError(errors.Wrap(err, "failed to validate the memory capability"))
 	}
 
+	if !MemoryCapability {
+		return nil, azure.WithTerminalError(errors.New("vm memory should be bigger or equal to at least 2Gi"))
+	}
 	// enable ephemeral OS
 	if vmSpec.OSDisk.DiffDiskSettings != nil {
 		if !sku.HasCapability(resourceskus.EphemeralOSDisk) {
-			return nil, fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmSpec.Size)
+			return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ephemeral os. select a different vm size or disable ephemeral os", vmSpec.Size))
 		}
 
 		storageProfile.OsDisk.DiffDiskSettings = &compute.DiffDiskSettings{

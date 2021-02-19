@@ -75,7 +75,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 						},
 					},
 				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus)
+				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
 
 			},
@@ -115,7 +115,7 @@ func TestReconcileAvailabilitySets(t *testing.T) {
 						},
 					},
 				}
-				resourceSkusCache := resourceskus.NewStaticCache(skus)
+				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
 
 			},

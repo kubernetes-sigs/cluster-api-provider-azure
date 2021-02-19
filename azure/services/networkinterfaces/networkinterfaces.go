@@ -114,7 +114,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				// set accelerated networking to the capability of the VMSize
 				sku, err := s.resourceSKUCache.Get(ctx, nicSpec.VMSize, resourceskus.VirtualMachines)
 				if err != nil {
-					return errors.Wrapf(err, "failed to get find vm sku %s in compute api", nicSpec.VMSize)
+					return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", nicSpec.VMSize))
 				}
 
 				accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)

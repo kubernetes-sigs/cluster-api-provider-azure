@@ -89,7 +89,7 @@ func TestNewService(t *testing.T) {
 		ClusterScope:     s,
 	})
 	g.Expect(err).ToNot(HaveOccurred())
-	actual := NewService(mps, resourceskus.NewStaticCache(nil))
+	actual := NewService(mps, resourceskus.NewStaticCache(nil, ""))
 	g.Expect(actual).ToNot(BeNil())
 }
 
@@ -492,7 +492,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "failed to get SKU",
-			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: failed to get find SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found",
+			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: failed to get SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found in location 'test-location'",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       defaultVMSSName,
@@ -531,7 +531,7 @@ func TestReconcileVMSS(t *testing.T) {
 			s := &Service{
 				Scope:            scopeMock,
 				Client:           clientMock,
-				resourceSKUCache: resourceskus.NewStaticCache(getFakeSkus()),
+				resourceSKUCache: resourceskus.NewStaticCache(getFakeSkus(), "test-location"),
 			}
 
 			err := s.Reconcile(context.TODO())
