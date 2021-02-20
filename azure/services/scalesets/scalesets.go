@@ -637,6 +637,14 @@ func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*com
 
 // base64EncodedHash transforms a VMSS into json and then creates a sha256 hash of the data encoded as a base64 encoded string
 func base64EncodedHash(vmss compute.VirtualMachineScaleSet) (string, error) {
+	// Setting Admin Password is not supported but an initial password is required for Windows
+	// Don't include it in the hash since it is generated and won't be the same each the spec is created (#1182)
+	tmpPass := vmss.VirtualMachineProfile.OsProfile.AdminPassword
+	vmss.VirtualMachineProfile.OsProfile.AdminPassword = nil
+	defer func() {
+		vmss.VirtualMachineProfile.OsProfile.AdminPassword = tmpPass
+	}()
+
 	jsonData, err := vmss.MarshalJSON()
 	if err != nil {
 		return "", errors.Wrapf(err, "failed marshaling vmss")

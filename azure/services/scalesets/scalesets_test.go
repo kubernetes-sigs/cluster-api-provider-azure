@@ -298,6 +298,23 @@ func TestReconcileVMSS(t *testing.T) {
 			},
 		},
 		{
+			name:          "Windows VMSS should not get patched",
+			expectedError: "",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				defaultSpec := newWindowsVMSSSpec()
+				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
+				createdVMSS := newDefaultWindowsVMSS()
+				instances := newDefaultInstances()
+				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, createdVMSS, instances)
+				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
+				s.SetLongRunningOperationState(nil)
+				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.NeedsK8sVersionUpdate().Return(false)
+				infraVMSS := converters.SDKToVMSS(createdVMSS, instances)
+				s.UpdateInstanceStatuses(gomockinternal.AContext(), infraVMSS.Instances).Return(nil)
+			},
+		},
+		{
 			name:          "should start creating vmss with defaulted accelerated networking when size allows",
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
@@ -820,9 +837,25 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 	}
 }
 
+func newWindowsVMSSSpec() azure.ScaleSetSpec {
+	vmss := newDefaultVMSSSpec()
+	vmss.OSDisk.OSType = azure.WindowsOS
+	return vmss
+}
+
 func newDefaultExistingVMSS() compute.VirtualMachineScaleSet {
 	vmss := newDefaultVMSS()
 	vmss.ID = to.StringPtr("vmss-id")
+	return vmss
+}
+
+func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
+	vmss := newDefaultVMSS()
+	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType = compute.Windows
+	vmss.VirtualMachineProfile.OsProfile.LinuxConfiguration = nil
+	vmss.VirtualMachineProfile.OsProfile.WindowsConfiguration = &compute.WindowsConfiguration{
+		EnableAutomaticUpdates: to.BoolPtr(false),
+	}
 	return vmss
 }
 
