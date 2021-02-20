@@ -71,8 +71,7 @@ KUSTOMIZE_VER := v3.5.4
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
 
-# Using unreleased version until https://github.com/golang/mock/pull/405 is part of a release.
-MOCKGEN_VER := 8a3d5958550701de9e6650b84b75a118771e7b49
+MOCKGEN_VER := v1.5.0
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 
