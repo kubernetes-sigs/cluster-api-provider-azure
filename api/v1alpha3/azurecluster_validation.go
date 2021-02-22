@@ -29,7 +29,7 @@ import (
 const (
 	// can't use: \/"'[]:|<>+=;,.?*@&, Can't start with underscore. Can't end with period or hyphen.
 	// not using . in the name to avoid issues when the name is part of DNS name
-	clusterNameRegex = `^[a-z][a-z0-9-]{0,44}[a-z0-9]$`
+	clusterNameRegex = `^[a-z0-9][a-z0-9-]{0,42}[a-z0-9]$`
 	// max length of 44 to allow for cluster name to be used as a prefix for VMs and other resources that
 	// have limitations as outlined here https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
 	clusterNameMaxLength = 44

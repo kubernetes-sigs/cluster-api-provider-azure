@@ -67,6 +67,11 @@ func TestClusterNameValidation(t *testing.T) {
 			wantErr:     true,
 		},
 		{
+			name:        "cluster name starting with number",
+			clusterName: "1clustername",
+			wantErr:     false,
+		},
+		{
 			name:        "cluster name with underscore",
 			clusterName: "cluster_name",
 			wantErr:     true,
