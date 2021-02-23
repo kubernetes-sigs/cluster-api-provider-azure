@@ -130,6 +130,57 @@ spec:
 
 ```
 
+### Using Virtual Machine Scale Sets
+
+You can use an `AzureMachinePool` object to deploy a Virtual Machine Scale Set which automatically distributes VM instances across the configured availability zones.
+Set the **FailureDomains** field to the list of availability zones that you want to use. Be aware that not all regions have the same availability zones. You can use `az vm list-skus -l <location> --zone -o table` to list all the available zones per vm size in that location/region.
+
+```yaml
+apiVersion: exp.cluster.x-k8s.io/v1alpha3
+kind: MachinePool
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: my-cluster
+  name: ${CLUSTER_NAME}-vmss-0
+  namespace: default
+spec:
+  clusterName: my-cluster
+  failureDomains:
+    - "1"
+    - "3"
+  replicas: 3
+  template:
+    spec:
+      clusterName: my-cluster
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-vmss-0
+      infrastructureRef:
+        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: AzureMachinePool
+        name: ${CLUSTER_NAME}-vmss-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+kind: AzureMachinePool
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: my-cluster
+  name: ${CLUSTER_NAME}-vmss-0
+  namespace: default
+spec:
+  location: westeurope
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    vmSize: Standard_D2s_v3
+```
+
 ## Availability sets when there are no failure domains
 
 Although failure domains provide protection against datacenter failures, not all azure regions support availability zones. In such cases, azure [availability sets](https://docs.microsoft.com/en-us/azure/virtual-machines/manage-availability#configure-multiple-virtual-machines-in-an-availability-set-for-redundancy) can be used to provide redundancy and high availability.
