@@ -22,9 +22,10 @@ package mock_bastionhosts
 
 import (
 	context "context"
+	reflect "reflect"
+
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // Mockclient is a mock of client interface.
@@ -48,21 +49,6 @@ func NewMockclient(ctrl *gomock.Controller) *Mockclient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
-}
-
-// Get mocks base method.
-func (m *Mockclient) Get(arg0 context.Context, arg1, arg2 string) (network.BastionHost, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
-	ret0, _ := ret[0].(network.BastionHost)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockclientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1, arg2)
 }
 
 // CreateOrUpdate mocks base method.
@@ -91,4 +77,19 @@ func (m *Mockclient) Delete(arg0 context.Context, arg1, arg2 string) error {
 func (mr *MockclientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockclient)(nil).Delete), arg0, arg1, arg2)
+}
+
+// Get mocks base method.
+func (m *Mockclient) Get(arg0 context.Context, arg1, arg2 string) (network.BastionHost, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
+	ret0, _ := ret[0].(network.BastionHost)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockclientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1, arg2)
 }

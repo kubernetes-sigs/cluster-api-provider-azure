@@ -22,9 +22,10 @@ package mock_tags
 
 import (
 	context "context"
+	reflect "reflect"
+
 	resources "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-10-01/resources"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // Mockclient is a mock of client interface.
@@ -50,21 +51,6 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
-// GetAtScope mocks base method.
-func (m *Mockclient) GetAtScope(arg0 context.Context, arg1 string) (resources.TagsResource, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAtScope", arg0, arg1)
-	ret0, _ := ret[0].(resources.TagsResource)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAtScope indicates an expected call of GetAtScope.
-func (mr *MockclientMockRecorder) GetAtScope(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtScope", reflect.TypeOf((*Mockclient)(nil).GetAtScope), arg0, arg1)
-}
-
 // CreateOrUpdateAtScope mocks base method.
 func (m *Mockclient) CreateOrUpdateAtScope(arg0 context.Context, arg1 string, arg2 resources.TagsResource) (resources.TagsResource, error) {
 	m.ctrl.T.Helper()
@@ -78,4 +64,19 @@ func (m *Mockclient) CreateOrUpdateAtScope(arg0 context.Context, arg1 string, ar
 func (mr *MockclientMockRecorder) CreateOrUpdateAtScope(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAtScope", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAtScope), arg0, arg1, arg2)
+}
+
+// GetAtScope mocks base method.
+func (m *Mockclient) GetAtScope(arg0 context.Context, arg1 string) (resources.TagsResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAtScope", arg0, arg1)
+	ret0, _ := ret[0].(resources.TagsResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAtScope indicates an expected call of GetAtScope.
+func (mr *MockclientMockRecorder) GetAtScope(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtScope", reflect.TypeOf((*Mockclient)(nil).GetAtScope), arg0, arg1)
 }

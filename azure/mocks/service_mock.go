@@ -22,9 +22,10 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
@@ -51,20 +52,6 @@ func (m *MockReconciler) EXPECT() *MockReconcilerMockRecorder {
 	return m.recorder
 }
 
-// Reconcile mocks base method.
-func (m *MockReconciler) Reconcile(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reconcile", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Reconcile indicates an expected call of Reconcile.
-func (mr *MockReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
-}
-
 // Delete mocks base method.
 func (m *MockReconciler) Delete(ctx context.Context) error {
 	m.ctrl.T.Helper()
@@ -77,6 +64,20 @@ func (m *MockReconciler) Delete(ctx context.Context) error {
 func (mr *MockReconcilerMockRecorder) Delete(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockReconciler)(nil).Delete), ctx)
+}
+
+// Reconcile mocks base method.
+func (m *MockReconciler) Reconcile(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reconcile", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Reconcile indicates an expected call of Reconcile.
+func (mr *MockReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
 }
 
 // MockOldService is a mock of OldService interface.
@@ -102,20 +103,6 @@ func (m *MockOldService) EXPECT() *MockOldServiceMockRecorder {
 	return m.recorder
 }
 
-// Reconcile mocks base method.
-func (m *MockOldService) Reconcile(ctx context.Context, spec interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reconcile", ctx, spec)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Reconcile indicates an expected call of Reconcile.
-func (mr *MockOldServiceMockRecorder) Reconcile(ctx, spec interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockOldService)(nil).Reconcile), ctx, spec)
-}
-
 // Delete mocks base method.
 func (m *MockOldService) Delete(ctx context.Context, spec interface{}) error {
 	m.ctrl.T.Helper()
@@ -128,6 +115,20 @@ func (m *MockOldService) Delete(ctx context.Context, spec interface{}) error {
 func (mr *MockOldServiceMockRecorder) Delete(ctx, spec interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOldService)(nil).Delete), ctx, spec)
+}
+
+// Reconcile mocks base method.
+func (m *MockOldService) Reconcile(ctx context.Context, spec interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reconcile", ctx, spec)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Reconcile indicates an expected call of Reconcile.
+func (mr *MockOldServiceMockRecorder) Reconcile(ctx, spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockOldService)(nil).Reconcile), ctx, spec)
 }
 
 // MockCredentialGetter is a mock of CredentialGetter interface.
@@ -151,20 +152,6 @@ func NewMockCredentialGetter(ctrl *gomock.Controller) *MockCredentialGetter {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockCredentialGetter) EXPECT() *MockCredentialGetterMockRecorder {
 	return m.recorder
-}
-
-// Reconcile mocks base method.
-func (m *MockCredentialGetter) Reconcile(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reconcile", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Reconcile indicates an expected call of Reconcile.
-func (mr *MockCredentialGetterMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockCredentialGetter)(nil).Reconcile), ctx)
 }
 
 // Delete mocks base method.
@@ -196,6 +183,20 @@ func (mr *MockCredentialGetterMockRecorder) GetCredentials(ctx, group, cluster i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*MockCredentialGetter)(nil).GetCredentials), ctx, group, cluster)
 }
 
+// Reconcile mocks base method.
+func (m *MockCredentialGetter) Reconcile(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reconcile", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Reconcile indicates an expected call of Reconcile.
+func (mr *MockCredentialGetterMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockCredentialGetter)(nil).Reconcile), ctx)
+}
+
 // MockAuthorizer is a mock of Authorizer interface.
 type MockAuthorizer struct {
 	ctrl     *gomock.Controller
@@ -219,18 +220,32 @@ func (m *MockAuthorizer) EXPECT() *MockAuthorizerMockRecorder {
 	return m.recorder
 }
 
-// SubscriptionID mocks base method.
-func (m *MockAuthorizer) SubscriptionID() string {
+// Authorizer mocks base method.
+func (m *MockAuthorizer) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret := m.ctrl.Call(m, "Authorizer")
+	ret0, _ := ret[0].(autorest.Authorizer)
+	return ret0
+}
+
+// Authorizer indicates an expected call of Authorizer.
+func (mr *MockAuthorizerMockRecorder) Authorizer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockAuthorizer)(nil).Authorizer))
+}
+
+// BaseURI mocks base method.
+func (m *MockAuthorizer) BaseURI() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BaseURI")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockAuthorizerMockRecorder) SubscriptionID() *gomock.Call {
+// BaseURI indicates an expected call of BaseURI.
+func (mr *MockAuthorizerMockRecorder) BaseURI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockAuthorizer)(nil).SubscriptionID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockAuthorizer)(nil).BaseURI))
 }
 
 // ClientID mocks base method.
@@ -275,48 +290,6 @@ func (mr *MockAuthorizerMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockAuthorizer)(nil).CloudEnvironment))
 }
 
-// TenantID mocks base method.
-func (m *MockAuthorizer) TenantID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// TenantID indicates an expected call of TenantID.
-func (mr *MockAuthorizerMockRecorder) TenantID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockAuthorizer)(nil).TenantID))
-}
-
-// BaseURI mocks base method.
-func (m *MockAuthorizer) BaseURI() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockAuthorizerMockRecorder) BaseURI() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockAuthorizer)(nil).BaseURI))
-}
-
-// Authorizer mocks base method.
-func (m *MockAuthorizer) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockAuthorizerMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockAuthorizer)(nil).Authorizer))
-}
-
 // HashKey mocks base method.
 func (m *MockAuthorizer) HashKey() string {
 	m.ctrl.T.Helper()
@@ -329,6 +302,34 @@ func (m *MockAuthorizer) HashKey() string {
 func (mr *MockAuthorizerMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockAuthorizer)(nil).HashKey))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockAuthorizer) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockAuthorizerMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockAuthorizer)(nil).SubscriptionID))
+}
+
+// TenantID mocks base method.
+func (m *MockAuthorizer) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockAuthorizerMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockAuthorizer)(nil).TenantID))
 }
 
 // MockNetworkDescriber is a mock of NetworkDescriber interface.
@@ -352,104 +353,6 @@ func NewMockNetworkDescriber(ctrl *gomock.Controller) *MockNetworkDescriber {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockNetworkDescriber) EXPECT() *MockNetworkDescriberMockRecorder {
 	return m.recorder
-}
-
-// Vnet mocks base method.
-func (m *MockNetworkDescriber) Vnet() *v1alpha3.VnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
-	return ret0
-}
-
-// Vnet indicates an expected call of Vnet.
-func (mr *MockNetworkDescriberMockRecorder) Vnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockNetworkDescriber)(nil).Vnet))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockNetworkDescriber) IsVnetManaged() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNetworkDescriber)(nil).IsVnetManaged))
-}
-
-// NodeSubnet mocks base method.
-func (m *MockNetworkDescriber) NodeSubnet() *v1alpha3.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
-	return ret0
-}
-
-// NodeSubnet indicates an expected call of NodeSubnet.
-func (mr *MockNetworkDescriberMockRecorder) NodeSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeSubnet))
-}
-
-// ControlPlaneSubnet mocks base method.
-func (m *MockNetworkDescriber) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
-	return ret0
-}
-
-// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
-func (mr *MockNetworkDescriberMockRecorder) ControlPlaneSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockNetworkDescriber)(nil).ControlPlaneSubnet))
-}
-
-// IsIPv6Enabled mocks base method.
-func (m *MockNetworkDescriber) IsIPv6Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPv6Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
-func (mr *MockNetworkDescriberMockRecorder) IsIPv6Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockNetworkDescriber)(nil).IsIPv6Enabled))
-}
-
-// NodeRouteTable mocks base method.
-func (m *MockNetworkDescriber) NodeRouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// NodeRouteTable indicates an expected call of NodeRouteTable.
-func (mr *MockNetworkDescriberMockRecorder) NodeRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeRouteTable))
-}
-
-// ControlPlaneRouteTable mocks base method.
-func (m *MockNetworkDescriber) ControlPlaneRouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
-func (mr *MockNetworkDescriberMockRecorder) ControlPlaneRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockNetworkDescriber)(nil).ControlPlaneRouteTable))
 }
 
 // APIServerLBName mocks base method.
@@ -480,6 +383,34 @@ func (mr *MockNetworkDescriberMockRecorder) APIServerLBPoolName(arg0 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).APIServerLBPoolName), arg0)
 }
 
+// ControlPlaneRouteTable mocks base method.
+func (m *MockNetworkDescriber) ControlPlaneRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
+func (mr *MockNetworkDescriberMockRecorder) ControlPlaneRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockNetworkDescriber)(nil).ControlPlaneRouteTable))
+}
+
+// ControlPlaneSubnet mocks base method.
+func (m *MockNetworkDescriber) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
+	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	return ret0
+}
+
+// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
+func (mr *MockNetworkDescriberMockRecorder) ControlPlaneSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockNetworkDescriber)(nil).ControlPlaneSubnet))
+}
+
 // IsAPIServerPrivate mocks base method.
 func (m *MockNetworkDescriber) IsAPIServerPrivate() bool {
 	m.ctrl.T.Helper()
@@ -492,6 +423,62 @@ func (m *MockNetworkDescriber) IsAPIServerPrivate() bool {
 func (mr *MockNetworkDescriberMockRecorder) IsAPIServerPrivate() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockNetworkDescriber)(nil).IsAPIServerPrivate))
+}
+
+// IsIPv6Enabled mocks base method.
+func (m *MockNetworkDescriber) IsIPv6Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsIPv6Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
+func (mr *MockNetworkDescriberMockRecorder) IsIPv6Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockNetworkDescriber)(nil).IsIPv6Enabled))
+}
+
+// IsVnetManaged mocks base method.
+func (m *MockNetworkDescriber) IsVnetManaged() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsVnetManaged indicates an expected call of IsVnetManaged.
+func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNetworkDescriber)(nil).IsVnetManaged))
+}
+
+// NodeRouteTable mocks base method.
+func (m *MockNetworkDescriber) NodeRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// NodeRouteTable indicates an expected call of NodeRouteTable.
+func (mr *MockNetworkDescriberMockRecorder) NodeRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeRouteTable))
+}
+
+// NodeSubnet mocks base method.
+func (m *MockNetworkDescriber) NodeSubnet() *v1alpha3.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnet")
+	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	return ret0
+}
+
+// NodeSubnet indicates an expected call of NodeSubnet.
+func (mr *MockNetworkDescriberMockRecorder) NodeSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeSubnet))
 }
 
 // OutboundLBName mocks base method.
@@ -522,6 +509,20 @@ func (mr *MockNetworkDescriberMockRecorder) OutboundPoolName(arg0 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).OutboundPoolName), arg0)
 }
 
+// Vnet mocks base method.
+func (m *MockNetworkDescriber) Vnet() *v1alpha3.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
+	return ret0
+}
+
+// Vnet indicates an expected call of Vnet.
+func (mr *MockNetworkDescriberMockRecorder) Vnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockNetworkDescriber)(nil).Vnet))
+}
+
 // MockClusterDescriber is a mock of ClusterDescriber interface.
 type MockClusterDescriber struct {
 	ctrl     *gomock.Controller
@@ -545,18 +546,60 @@ func (m *MockClusterDescriber) EXPECT() *MockClusterDescriberMockRecorder {
 	return m.recorder
 }
 
-// SubscriptionID mocks base method.
-func (m *MockClusterDescriber) SubscriptionID() string {
+// AdditionalTags mocks base method.
+func (m *MockClusterDescriber) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha3.Tags)
+	return ret0
+}
+
+// AdditionalTags indicates an expected call of AdditionalTags.
+func (mr *MockClusterDescriberMockRecorder) AdditionalTags() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterDescriber)(nil).AdditionalTags))
+}
+
+// Authorizer mocks base method.
+func (m *MockClusterDescriber) Authorizer() autorest.Authorizer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Authorizer")
+	ret0, _ := ret[0].(autorest.Authorizer)
+	return ret0
+}
+
+// Authorizer indicates an expected call of Authorizer.
+func (mr *MockClusterDescriberMockRecorder) Authorizer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockClusterDescriber)(nil).Authorizer))
+}
+
+// AvailabilitySetEnabled mocks base method.
+func (m *MockClusterDescriber) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockClusterDescriberMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockClusterDescriber)(nil).AvailabilitySetEnabled))
+}
+
+// BaseURI mocks base method.
+func (m *MockClusterDescriber) BaseURI() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BaseURI")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockClusterDescriberMockRecorder) SubscriptionID() *gomock.Call {
+// BaseURI indicates an expected call of BaseURI.
+func (mr *MockClusterDescriberMockRecorder) BaseURI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockClusterDescriber)(nil).SubscriptionID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockClusterDescriber)(nil).BaseURI))
 }
 
 // ClientID mocks base method.
@@ -601,46 +644,18 @@ func (mr *MockClusterDescriberMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockClusterDescriber)(nil).CloudEnvironment))
 }
 
-// TenantID mocks base method.
-func (m *MockClusterDescriber) TenantID() string {
+// ClusterName mocks base method.
+func (m *MockClusterDescriber) ClusterName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
+	ret := m.ctrl.Call(m, "ClusterName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// TenantID indicates an expected call of TenantID.
-func (mr *MockClusterDescriberMockRecorder) TenantID() *gomock.Call {
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockClusterDescriberMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterDescriber)(nil).TenantID))
-}
-
-// BaseURI mocks base method.
-func (m *MockClusterDescriber) BaseURI() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockClusterDescriberMockRecorder) BaseURI() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockClusterDescriber)(nil).BaseURI))
-}
-
-// Authorizer mocks base method.
-func (m *MockClusterDescriber) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockClusterDescriberMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockClusterDescriber)(nil).Authorizer))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockClusterDescriber)(nil).ClusterName))
 }
 
 // HashKey mocks base method.
@@ -657,34 +672,6 @@ func (mr *MockClusterDescriberMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockClusterDescriber)(nil).HashKey))
 }
 
-// ResourceGroup mocks base method.
-func (m *MockClusterDescriber) ResourceGroup() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockClusterDescriberMockRecorder) ResourceGroup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterDescriber)(nil).ResourceGroup))
-}
-
-// ClusterName mocks base method.
-func (m *MockClusterDescriber) ClusterName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClusterName indicates an expected call of ClusterName.
-func (mr *MockClusterDescriberMockRecorder) ClusterName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockClusterDescriber)(nil).ClusterName))
-}
-
 // Location mocks base method.
 func (m *MockClusterDescriber) Location() string {
 	m.ctrl.T.Helper()
@@ -699,32 +686,46 @@ func (mr *MockClusterDescriberMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterDescriber)(nil).Location))
 }
 
-// AdditionalTags mocks base method.
-func (m *MockClusterDescriber) AdditionalTags() v1alpha3.Tags {
+// ResourceGroup mocks base method.
+func (m *MockClusterDescriber) ResourceGroup() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret := m.ctrl.Call(m, "ResourceGroup")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockClusterDescriberMockRecorder) AdditionalTags() *gomock.Call {
+// ResourceGroup indicates an expected call of ResourceGroup.
+func (mr *MockClusterDescriberMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterDescriber)(nil).AdditionalTags))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterDescriber)(nil).ResourceGroup))
 }
 
-// AvailabilitySetEnabled mocks base method.
-func (m *MockClusterDescriber) AvailabilitySetEnabled() bool {
+// SubscriptionID mocks base method.
+func (m *MockClusterDescriber) SubscriptionID() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockClusterDescriberMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockClusterDescriberMockRecorder) SubscriptionID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockClusterDescriber)(nil).AvailabilitySetEnabled))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockClusterDescriber)(nil).SubscriptionID))
+}
+
+// TenantID mocks base method.
+func (m *MockClusterDescriber) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockClusterDescriberMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterDescriber)(nil).TenantID))
 }
 
 // MockClusterScoper is a mock of ClusterScoper interface.
@@ -750,18 +751,88 @@ func (m *MockClusterScoper) EXPECT() *MockClusterScoperMockRecorder {
 	return m.recorder
 }
 
-// SubscriptionID mocks base method.
-func (m *MockClusterScoper) SubscriptionID() string {
+// APIServerLBName mocks base method.
+func (m *MockClusterScoper) APIServerLBName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret := m.ctrl.Call(m, "APIServerLBName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockClusterScoperMockRecorder) SubscriptionID() *gomock.Call {
+// APIServerLBName indicates an expected call of APIServerLBName.
+func (mr *MockClusterScoperMockRecorder) APIServerLBName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockClusterScoper)(nil).SubscriptionID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBName))
+}
+
+// APIServerLBPoolName mocks base method.
+func (m *MockClusterScoper) APIServerLBPoolName(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
+func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName), arg0)
+}
+
+// AdditionalTags mocks base method.
+func (m *MockClusterScoper) AdditionalTags() v1alpha3.Tags {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha3.Tags)
+	return ret0
+}
+
+// AdditionalTags indicates an expected call of AdditionalTags.
+func (mr *MockClusterScoperMockRecorder) AdditionalTags() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterScoper)(nil).AdditionalTags))
+}
+
+// Authorizer mocks base method.
+func (m *MockClusterScoper) Authorizer() autorest.Authorizer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Authorizer")
+	ret0, _ := ret[0].(autorest.Authorizer)
+	return ret0
+}
+
+// Authorizer indicates an expected call of Authorizer.
+func (mr *MockClusterScoperMockRecorder) Authorizer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockClusterScoper)(nil).Authorizer))
+}
+
+// AvailabilitySetEnabled mocks base method.
+func (m *MockClusterScoper) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockClusterScoperMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockClusterScoper)(nil).AvailabilitySetEnabled))
+}
+
+// BaseURI mocks base method.
+func (m *MockClusterScoper) BaseURI() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BaseURI")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// BaseURI indicates an expected call of BaseURI.
+func (mr *MockClusterScoperMockRecorder) BaseURI() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockClusterScoper)(nil).BaseURI))
 }
 
 // ClientID mocks base method.
@@ -806,76 +877,6 @@ func (mr *MockClusterScoperMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockClusterScoper)(nil).CloudEnvironment))
 }
 
-// TenantID mocks base method.
-func (m *MockClusterScoper) TenantID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// TenantID indicates an expected call of TenantID.
-func (mr *MockClusterScoperMockRecorder) TenantID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterScoper)(nil).TenantID))
-}
-
-// BaseURI mocks base method.
-func (m *MockClusterScoper) BaseURI() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockClusterScoperMockRecorder) BaseURI() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockClusterScoper)(nil).BaseURI))
-}
-
-// Authorizer mocks base method.
-func (m *MockClusterScoper) Authorizer() autorest.Authorizer {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
-}
-
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockClusterScoperMockRecorder) Authorizer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockClusterScoper)(nil).Authorizer))
-}
-
-// HashKey mocks base method.
-func (m *MockClusterScoper) HashKey() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HashKey")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// HashKey indicates an expected call of HashKey.
-func (mr *MockClusterScoperMockRecorder) HashKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockClusterScoper)(nil).HashKey))
-}
-
-// ResourceGroup mocks base method.
-func (m *MockClusterScoper) ResourceGroup() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterScoper)(nil).ResourceGroup))
-}
-
 // ClusterName mocks base method.
 func (m *MockClusterScoper) ClusterName() string {
 	m.ctrl.T.Helper()
@@ -888,132 +889,6 @@ func (m *MockClusterScoper) ClusterName() string {
 func (mr *MockClusterScoperMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockClusterScoper)(nil).ClusterName))
-}
-
-// Location mocks base method.
-func (m *MockClusterScoper) Location() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Location")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Location indicates an expected call of Location.
-func (mr *MockClusterScoperMockRecorder) Location() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterScoper)(nil).Location))
-}
-
-// AdditionalTags mocks base method.
-func (m *MockClusterScoper) AdditionalTags() v1alpha3.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
-	return ret0
-}
-
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockClusterScoperMockRecorder) AdditionalTags() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockClusterScoper)(nil).AdditionalTags))
-}
-
-// AvailabilitySetEnabled mocks base method.
-func (m *MockClusterScoper) AvailabilitySetEnabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockClusterScoperMockRecorder) AvailabilitySetEnabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockClusterScoper)(nil).AvailabilitySetEnabled))
-}
-
-// Vnet mocks base method.
-func (m *MockClusterScoper) Vnet() *v1alpha3.VnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
-	return ret0
-}
-
-// Vnet indicates an expected call of Vnet.
-func (mr *MockClusterScoperMockRecorder) Vnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockClusterScoper)(nil).Vnet))
-}
-
-// IsVnetManaged mocks base method.
-func (m *MockClusterScoper) IsVnetManaged() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsVnetManaged")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsVnetManaged indicates an expected call of IsVnetManaged.
-func (mr *MockClusterScoperMockRecorder) IsVnetManaged() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockClusterScoper)(nil).IsVnetManaged))
-}
-
-// NodeSubnet mocks base method.
-func (m *MockClusterScoper) NodeSubnet() *v1alpha3.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
-	return ret0
-}
-
-// NodeSubnet indicates an expected call of NodeSubnet.
-func (mr *MockClusterScoperMockRecorder) NodeSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockClusterScoper)(nil).NodeSubnet))
-}
-
-// ControlPlaneSubnet mocks base method.
-func (m *MockClusterScoper) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
-	return ret0
-}
-
-// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
-func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
-}
-
-// IsIPv6Enabled mocks base method.
-func (m *MockClusterScoper) IsIPv6Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPv6Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
-func (mr *MockClusterScoperMockRecorder) IsIPv6Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockClusterScoper)(nil).IsIPv6Enabled))
-}
-
-// NodeRouteTable mocks base method.
-func (m *MockClusterScoper) NodeRouteTable() *v1alpha3.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
-	return ret0
-}
-
-// NodeRouteTable indicates an expected call of NodeRouteTable.
-func (mr *MockClusterScoperMockRecorder) NodeRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockClusterScoper)(nil).NodeRouteTable))
 }
 
 // ControlPlaneRouteTable mocks base method.
@@ -1030,32 +905,32 @@ func (mr *MockClusterScoperMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneRouteTable))
 }
 
-// APIServerLBName mocks base method.
-func (m *MockClusterScoper) APIServerLBName() string {
+// ControlPlaneSubnet mocks base method.
+func (m *MockClusterScoper) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBName")
+	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
+	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	return ret0
+}
+
+// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
+func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
+}
+
+// HashKey mocks base method.
+func (m *MockClusterScoper) HashKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HashKey")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// APIServerLBName indicates an expected call of APIServerLBName.
-func (mr *MockClusterScoperMockRecorder) APIServerLBName() *gomock.Call {
+// HashKey indicates an expected call of HashKey.
+func (mr *MockClusterScoperMockRecorder) HashKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBName))
-}
-
-// APIServerLBPoolName mocks base method.
-func (m *MockClusterScoper) APIServerLBPoolName(arg0 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockClusterScoperMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockClusterScoper)(nil).APIServerLBPoolName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockClusterScoper)(nil).HashKey))
 }
 
 // IsAPIServerPrivate mocks base method.
@@ -1070,6 +945,76 @@ func (m *MockClusterScoper) IsAPIServerPrivate() bool {
 func (mr *MockClusterScoperMockRecorder) IsAPIServerPrivate() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockClusterScoper)(nil).IsAPIServerPrivate))
+}
+
+// IsIPv6Enabled mocks base method.
+func (m *MockClusterScoper) IsIPv6Enabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsIPv6Enabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
+func (mr *MockClusterScoperMockRecorder) IsIPv6Enabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockClusterScoper)(nil).IsIPv6Enabled))
+}
+
+// IsVnetManaged mocks base method.
+func (m *MockClusterScoper) IsVnetManaged() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsVnetManaged")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsVnetManaged indicates an expected call of IsVnetManaged.
+func (mr *MockClusterScoperMockRecorder) IsVnetManaged() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockClusterScoper)(nil).IsVnetManaged))
+}
+
+// Location mocks base method.
+func (m *MockClusterScoper) Location() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Location")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Location indicates an expected call of Location.
+func (mr *MockClusterScoperMockRecorder) Location() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterScoper)(nil).Location))
+}
+
+// NodeRouteTable mocks base method.
+func (m *MockClusterScoper) NodeRouteTable() *v1alpha3.RouteTable {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeRouteTable")
+	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	return ret0
+}
+
+// NodeRouteTable indicates an expected call of NodeRouteTable.
+func (mr *MockClusterScoperMockRecorder) NodeRouteTable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockClusterScoper)(nil).NodeRouteTable))
+}
+
+// NodeSubnet mocks base method.
+func (m *MockClusterScoper) NodeSubnet() *v1alpha3.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnet")
+	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	return ret0
+}
+
+// NodeSubnet indicates an expected call of NodeSubnet.
+func (mr *MockClusterScoperMockRecorder) NodeSubnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockClusterScoper)(nil).NodeSubnet))
 }
 
 // OutboundLBName mocks base method.
@@ -1098,4 +1043,60 @@ func (m *MockClusterScoper) OutboundPoolName(arg0 string) string {
 func (mr *MockClusterScoperMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockClusterScoper)(nil).OutboundPoolName), arg0)
+}
+
+// ResourceGroup mocks base method.
+func (m *MockClusterScoper) ResourceGroup() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResourceGroup")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ResourceGroup indicates an expected call of ResourceGroup.
+func (mr *MockClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterScoper)(nil).ResourceGroup))
+}
+
+// SubscriptionID mocks base method.
+func (m *MockClusterScoper) SubscriptionID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockClusterScoperMockRecorder) SubscriptionID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockClusterScoper)(nil).SubscriptionID))
+}
+
+// TenantID mocks base method.
+func (m *MockClusterScoper) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockClusterScoperMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockClusterScoper)(nil).TenantID))
+}
+
+// Vnet mocks base method.
+func (m *MockClusterScoper) Vnet() *v1alpha3.VnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Vnet")
+	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
+	return ret0
+}
+
+// Vnet indicates an expected call of Vnet.
+func (mr *MockClusterScoperMockRecorder) Vnet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockClusterScoper)(nil).Vnet))
 }

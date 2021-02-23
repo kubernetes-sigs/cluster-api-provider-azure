@@ -21,8 +21,9 @@ limitations under the License.
 package mock_ttllru
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // Mockcacher is a mock of cacher interface.
@@ -48,6 +49,20 @@ func (m *Mockcacher) EXPECT() *MockcacherMockRecorder {
 	return m.recorder
 }
 
+// Add mocks base method.
+func (m *Mockcacher) Add(key, value interface{}) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Add", key, value)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Add indicates an expected call of Add.
+func (mr *MockcacherMockRecorder) Add(key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*Mockcacher)(nil).Add), key, value)
+}
+
 // Get mocks base method.
 func (m *Mockcacher) Get(key interface{}) (interface{}, bool) {
 	m.ctrl.T.Helper()
@@ -61,20 +76,6 @@ func (m *Mockcacher) Get(key interface{}) (interface{}, bool) {
 func (mr *MockcacherMockRecorder) Get(key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockcacher)(nil).Get), key)
-}
-
-// Add mocks base method.
-func (m *Mockcacher) Add(key, value interface{}) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", key, value)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Add indicates an expected call of Add.
-func (mr *MockcacherMockRecorder) Add(key, value interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*Mockcacher)(nil).Add), key, value)
 }
 
 // Remove mocks base method.

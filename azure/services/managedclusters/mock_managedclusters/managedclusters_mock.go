@@ -22,9 +22,10 @@ package mock_managedclusters
 
 import (
 	context "context"
+	reflect "reflect"
+
 	containerservice "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface.
@@ -48,6 +49,34 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
+}
+
+// CreateOrUpdate mocks base method.
+func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 containerservice.ManagedCluster) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrUpdate indicates an expected call of CreateOrUpdate.
+func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
+}
+
+// Delete mocks base method.
+func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
 }
 
 // Get mocks base method.
@@ -78,32 +107,4 @@ func (m *MockClient) GetCredentials(arg0 context.Context, arg1, arg2 string) ([]
 func (mr *MockClientMockRecorder) GetCredentials(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*MockClient)(nil).GetCredentials), arg0, arg1, arg2)
-}
-
-// CreateOrUpdate mocks base method.
-func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 containerservice.ManagedCluster) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
-}
-
-// Delete mocks base method.
-func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
 }
