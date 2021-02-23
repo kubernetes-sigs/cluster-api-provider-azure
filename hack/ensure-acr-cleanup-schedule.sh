@@ -18,7 +18,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-registry="ci-e2e/cluster-api-azure-controller-amd64"
+e2e_registry="ci-e2e/cluster-api-azure-controller-amd64"
+az acr task create --name midnight_capz_ci_e2e_purge --cmd "acr purge --filter ${e2e_registry}:.* --ago 1d --untagged" \
+  --schedule "0 0 * * *" --registry capzci --context /dev/null
 
-az acr task create --name midnight_ci_e2e_purge --cmd "acr purge --filter '${registry}:.* --ago 1d --untagged" \
+registry="cluster-api-azure-controller-amd64"
+az acr task create --name midnight_capz_purge --cmd "acr purge --filter ${registry}:.* --ago 1d --untagged" \
   --schedule "0 0 * * *" --registry capzci --context /dev/null
