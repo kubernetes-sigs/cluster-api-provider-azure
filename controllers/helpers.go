@@ -51,14 +51,14 @@ import (
 // AzureClusterToAzureMachinesMapper creates a mapping handler to transform AzureClusters into AzureMachines. The transform
 // requires AzureCluster to map to the owning Cluster, then from the Cluster, collect the Machines belonging to the cluster,
 // then finally projecting the infrastructure reference to the AzureMachine.
-func AzureClusterToAzureMachinesMapper(c client.Client, ro runtime.Object, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+func AzureClusterToAzureMachinesMapper(ctx context.Context, c client.Client, ro runtime.Object, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(ro, scheme)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GVK for AzureMachine")
 	}
 
 	return func(o client.Object) []ctrl.Request {
-		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
 		azCluster, ok := o.(*infrav1.AzureCluster)

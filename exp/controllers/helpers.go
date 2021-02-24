@@ -43,14 +43,14 @@ import (
 // AzureClusterToAzureMachinePoolsMapper creates a mapping handler to transform AzureClusters into AzureMachinePools. The transform
 // requires AzureCluster to map to the owning Cluster, then from the Cluster, collect the MachinePools belonging to the cluster,
 // then finally projecting the infrastructure reference to the AzureMachinePool.
-func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GVK for AzureMachinePool")
 	}
 
 	return func(o client.Object) []ctrl.Request {
-		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
 		azCluster, ok := o.(*infrav1.AzureCluster)
@@ -96,14 +96,14 @@ func AzureClusterToAzureMachinePoolsMapper(c client.Client, scheme *runtime.Sche
 // AzureManagedMachinePools. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the MachinePools belonging to the cluster, then finally projecting the infrastructure reference
 // to the AzureManagedMachinePools.
-func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureManagedMachinePool), scheme)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GVK for AzureManagedMachinePool")
 	}
 
 	return func(o client.Object) []ctrl.Request {
-		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
 		azCluster, ok := o.(*infrav1exp.AzureManagedCluster)
@@ -148,9 +148,9 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(c client.Client, scheme
 // AzureManagedClusterToAzureManagedControlPlaneMapper creates a mapping handler to transform AzureManagedClusters into
 // AzureManagedControlPlane. The transform requires AzureManagedCluster to map to the owning Cluster, then from the
 // Cluster, collect the control plane infrastructure reference.
-func AzureManagedClusterToAzureManagedControlPlaneMapper(c client.Client, log logr.Logger) (handler.MapFunc, error) {
+func AzureManagedClusterToAzureManagedControlPlaneMapper(ctx context.Context, c client.Client, log logr.Logger) (handler.MapFunc, error) {
 	return func(o client.Object) []ctrl.Request {
-		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
 		azCluster, ok := o.(*infrav1exp.AzureManagedCluster)
@@ -226,9 +226,9 @@ func MachinePoolToInfrastructureMapFunc(gvk schema.GroupVersionKind, log logr.Lo
 
 // AzureClusterToAzureMachinePoolsFunc is a handler.MapFunc to be used to enqueue
 // requests for reconciliation of AzureMachinePools.
-func AzureClusterToAzureMachinePoolsFunc(kClient client.Client, log logr.Logger) handler.MapFunc {
+func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, kClient client.Client, log logr.Logger) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
-		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
+		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
 		defer cancel()
 
 		c, ok := o.(*infrav1.AzureCluster)

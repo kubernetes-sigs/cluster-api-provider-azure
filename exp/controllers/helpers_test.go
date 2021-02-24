@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -54,7 +55,7 @@ func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default").Return(log)
 	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
-	mapper, err := AzureClusterToAzureMachinePoolsMapper(fakeClient, scheme, log)
+	mapper, err := AzureClusterToAzureMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	requests := mapper(&infrav1.AzureCluster{
@@ -90,7 +91,7 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default").Return(log)
 	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
-	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(fakeClient, scheme, log)
+	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	requests := mapper(&infrav1exp.AzureManagedCluster{
@@ -149,7 +150,7 @@ func TestAzureManagedClusterToAzureManagedControlPlaneMapper(t *testing.T) {
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "az-"+cluster.Name, "Namespace", "default")
 
-	mapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(fakeClient, log)
+	mapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(context.Background(), fakeClient, log)
 	g.Expect(err).NotTo(HaveOccurred())
 	requests := mapper(&infrav1exp.AzureManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -373,7 +374,7 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			log, mockctrl, kClient := c.Setup(g, t)
 			defer mockctrl.Finish()
 
-			f := AzureClusterToAzureMachinePoolsFunc(kClient, log)
+			f := AzureClusterToAzureMachinePoolsFunc(context.Background(), kClient, log)
 			reqs := f(c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})

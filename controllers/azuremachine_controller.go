@@ -79,7 +79,7 @@ func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder r
 func (r *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureMachine")
 	// create mapper to transform incoming AzureClusters into AzureMachine requests
-	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(r.Client, &infrav1.AzureMachineList{}, mgr.GetScheme(), log)
+	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(ctx, r.Client, &infrav1.AzureMachineList{}, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachines mapper")
 	}

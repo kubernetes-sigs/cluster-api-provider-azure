@@ -121,12 +121,12 @@ func redactLogs() {
 	cmd.Run()
 }
 
-func createRestConfig(tmpdir, namespace, clusterName string) *rest.Config {
+func createRestConfig(ctx context.Context, tmpdir, namespace, clusterName string) *rest.Config {
 	cluster := crclient.ObjectKey{
 		Namespace: namespace,
 		Name:      clusterName,
 	}
-	kubeConfigData, err := kubeconfig.FromSecret(context.TODO(), bootstrapClusterProxy.GetClient(), cluster)
+	kubeConfigData, err := kubeconfig.FromSecret(ctx, bootstrapClusterProxy.GetClient(), cluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	kubeConfigPath := path.Join(tmpdir, clusterName+".kubeconfig")
