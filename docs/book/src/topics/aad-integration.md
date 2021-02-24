@@ -30,6 +30,11 @@ export AZURE_SERVER_APP_ID=$(az ad app create \
 az ad app update --id ${AZURE_SERVER_APP_ID} --set groupMembershipClaims=All
 ```
 
+### Create a service principal
+```bash
+az ad sp create --id ${AZURE_SERVER_APP_ID}
+```
+
 ## Create Azure AD client component
 ```bash
 AZURE_CLIENT_APP_ID=$(az ad app create \
@@ -37,6 +42,11 @@ AZURE_CLIENT_APP_ID=$(az ad app create \
     --native-app \
     --reply-urls "https://${CLUSTER_NAME}Client" \
     --query appId -o tsv)
+```
+
+### Create a service principal
+```bash
+az ad sp create --id ${AZURE_CLIENT_APP_ID}
 ```
 
 ### Grant the application API permissions
