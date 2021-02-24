@@ -22,9 +22,10 @@ package mock_vmextensions
 
 import (
 	context "context"
+	reflect "reflect"
+
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // Mockclient is a mock of client interface.

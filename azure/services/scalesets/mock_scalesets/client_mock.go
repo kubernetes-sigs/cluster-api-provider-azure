@@ -22,11 +22,12 @@ package mock_scalesets
 
 import (
 	context "context"
+	reflect "reflect"
+
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 )
 
@@ -51,6 +52,109 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
+}
+
+// CreateOrUpdate mocks base method.
+func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrUpdate indicates an expected call of CreateOrUpdate.
+func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
+}
+
+// CreateOrUpdateAsync mocks base method.
+func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) (*v1alpha3.Future, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*v1alpha3.Future)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
+func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2, arg3)
+}
+
+// Delete mocks base method.
+func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
+}
+
+// DeleteAsync mocks base method.
+func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1alpha3.Future, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*v1alpha3.Future)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteAsync indicates an expected call of DeleteAsync.
+func (mr *MockClientMockRecorder) DeleteAsync(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*MockClient)(nil).DeleteAsync), arg0, arg1, arg2)
+}
+
+// Get mocks base method.
+func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (compute.VirtualMachineScaleSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
+	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
+}
+
+// GetPublicIPAddress mocks base method.
+func (m *MockClient) GetPublicIPAddress(arg0 context.Context, arg1, arg2 string) (network.PublicIPAddress, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPublicIPAddress", arg0, arg1, arg2)
+	ret0, _ := ret[0].(network.PublicIPAddress)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPublicIPAddress indicates an expected call of GetPublicIPAddress.
+func (mr *MockClientMockRecorder) GetPublicIPAddress(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPublicIPAddress", reflect.TypeOf((*MockClient)(nil).GetPublicIPAddress), arg0, arg1, arg2)
+}
+
+// GetResultIfDone mocks base method.
+func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1alpha3.Future) (compute.VirtualMachineScaleSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResultIfDone", ctx, future)
+	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResultIfDone indicates an expected call of GetResultIfDone.
+func (mr *MockClientMockRecorder) GetResultIfDone(ctx, future interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResultIfDone", reflect.TypeOf((*MockClient)(nil).GetResultIfDone), ctx, future)
 }
 
 // List mocks base method.
@@ -83,50 +187,6 @@ func (mr *MockClientMockRecorder) ListInstances(arg0, arg1, arg2 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstances", reflect.TypeOf((*MockClient)(nil).ListInstances), arg0, arg1, arg2)
 }
 
-// Get mocks base method.
-func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (compute.VirtualMachineScaleSet, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
-	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
-}
-
-// CreateOrUpdate mocks base method.
-func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
-}
-
-// CreateOrUpdateAsync mocks base method.
-func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSet) (*v1alpha3.Future, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v1alpha3.Future)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
-func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2, arg3)
-}
-
 // Update mocks base method.
 func (m *MockClient) Update(arg0 context.Context, arg1, arg2 string, arg3 compute.VirtualMachineScaleSetUpdate) (compute.VirtualMachineScaleSet, error) {
 	m.ctrl.T.Helper()
@@ -157,21 +217,6 @@ func (mr *MockClientMockRecorder) UpdateAsync(arg0, arg1, arg2, arg3 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAsync", reflect.TypeOf((*MockClient)(nil).UpdateAsync), arg0, arg1, arg2, arg3)
 }
 
-// GetResultIfDone mocks base method.
-func (m *MockClient) GetResultIfDone(ctx context.Context, future *v1alpha3.Future) (compute.VirtualMachineScaleSet, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResultIfDone", ctx, future)
-	ret0, _ := ret[0].(compute.VirtualMachineScaleSet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetResultIfDone indicates an expected call of GetResultIfDone.
-func (mr *MockClientMockRecorder) GetResultIfDone(ctx, future interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResultIfDone", reflect.TypeOf((*MockClient)(nil).GetResultIfDone), ctx, future)
-}
-
 // UpdateInstances mocks base method.
 func (m *MockClient) UpdateInstances(arg0 context.Context, arg1, arg2 string, arg3 []string) error {
 	m.ctrl.T.Helper()
@@ -184,50 +229,6 @@ func (m *MockClient) UpdateInstances(arg0 context.Context, arg1, arg2 string, ar
 func (mr *MockClientMockRecorder) UpdateInstances(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstances", reflect.TypeOf((*MockClient)(nil).UpdateInstances), arg0, arg1, arg2, arg3)
-}
-
-// Delete mocks base method.
-func (m *MockClient) Delete(arg0 context.Context, arg1, arg2 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockClientMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1, arg2)
-}
-
-// DeleteAsync mocks base method.
-func (m *MockClient) DeleteAsync(arg0 context.Context, arg1, arg2 string) (*v1alpha3.Future, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAsync", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v1alpha3.Future)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DeleteAsync indicates an expected call of DeleteAsync.
-func (mr *MockClientMockRecorder) DeleteAsync(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsync", reflect.TypeOf((*MockClient)(nil).DeleteAsync), arg0, arg1, arg2)
-}
-
-// GetPublicIPAddress mocks base method.
-func (m *MockClient) GetPublicIPAddress(arg0 context.Context, arg1, arg2 string) (network.PublicIPAddress, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPublicIPAddress", arg0, arg1, arg2)
-	ret0, _ := ret[0].(network.PublicIPAddress)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPublicIPAddress indicates an expected call of GetPublicIPAddress.
-func (mr *MockClientMockRecorder) GetPublicIPAddress(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPublicIPAddress", reflect.TypeOf((*MockClient)(nil).GetPublicIPAddress), arg0, arg1, arg2)
 }
 
 // MockgenericScaleSetFuture is a mock of genericScaleSetFuture interface.

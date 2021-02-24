@@ -21,10 +21,11 @@ limitations under the License.
 package mock_virtualnetworks
 
 import (
+	reflect "reflect"
+
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -52,112 +53,60 @@ func (m *MockVNetScope) EXPECT() *MockVNetScopeMockRecorder {
 	return m.recorder
 }
 
-// Info mocks base method.
-func (m *MockVNetScope) Info(msg string, keysAndValues ...interface{}) {
+// AdditionalTags mocks base method.
+func (m *MockVNetScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha3.Tags)
+	return ret0
 }
 
-// Info indicates an expected call of Info.
-func (mr *MockVNetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+// AdditionalTags indicates an expected call of AdditionalTags.
+func (mr *MockVNetScopeMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockVNetScope)(nil).Info), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockVNetScope)(nil).AdditionalTags))
 }
 
-// Enabled mocks base method.
-func (m *MockVNetScope) Enabled() bool {
+// Authorizer mocks base method.
+func (m *MockVNetScope) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
+	ret := m.ctrl.Call(m, "Authorizer")
+	ret0, _ := ret[0].(autorest.Authorizer)
+	return ret0
+}
+
+// Authorizer indicates an expected call of Authorizer.
+func (mr *MockVNetScopeMockRecorder) Authorizer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockVNetScope)(nil).Authorizer))
+}
+
+// AvailabilitySetEnabled mocks base method.
+func (m *MockVNetScope) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// Enabled indicates an expected call of Enabled.
-func (mr *MockVNetScopeMockRecorder) Enabled() *gomock.Call {
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockVNetScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockVNetScope)(nil).Enabled))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockVNetScope)(nil).AvailabilitySetEnabled))
 }
 
-// Error mocks base method.
-func (m *MockVNetScope) Error(err error, msg string, keysAndValues ...interface{}) {
+// BaseURI mocks base method.
+func (m *MockVNetScope) BaseURI() string {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockVNetScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVNetScope)(nil).Error), varargs...)
-}
-
-// V mocks base method.
-func (m *MockVNetScope) V(level int) logr.InfoLogger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockVNetScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockVNetScope)(nil).V), level)
-}
-
-// WithValues mocks base method.
-func (m *MockVNetScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockVNetScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockVNetScope)(nil).WithValues), keysAndValues...)
-}
-
-// WithName mocks base method.
-func (m *MockVNetScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockVNetScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockVNetScope)(nil).WithName), name)
-}
-
-// SubscriptionID mocks base method.
-func (m *MockVNetScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret := m.ctrl.Call(m, "BaseURI")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockVNetScopeMockRecorder) SubscriptionID() *gomock.Call {
+// BaseURI indicates an expected call of BaseURI.
+func (mr *MockVNetScopeMockRecorder) BaseURI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockVNetScope)(nil).SubscriptionID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockVNetScope)(nil).BaseURI))
 }
 
 // ClientID mocks base method.
@@ -202,46 +151,49 @@ func (mr *MockVNetScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockVNetScope)(nil).CloudEnvironment))
 }
 
-// TenantID mocks base method.
-func (m *MockVNetScope) TenantID() string {
+// ClusterName mocks base method.
+func (m *MockVNetScope) ClusterName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
+	ret := m.ctrl.Call(m, "ClusterName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// TenantID indicates an expected call of TenantID.
-func (mr *MockVNetScopeMockRecorder) TenantID() *gomock.Call {
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockVNetScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockVNetScope)(nil).TenantID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockVNetScope)(nil).ClusterName))
 }
 
-// BaseURI mocks base method.
-func (m *MockVNetScope) BaseURI() string {
+// Enabled mocks base method.
+func (m *MockVNetScope) Enabled() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockVNetScopeMockRecorder) BaseURI() *gomock.Call {
+// Enabled indicates an expected call of Enabled.
+func (mr *MockVNetScopeMockRecorder) Enabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockVNetScope)(nil).BaseURI))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockVNetScope)(nil).Enabled))
 }
 
-// Authorizer mocks base method.
-func (m *MockVNetScope) Authorizer() autorest.Authorizer {
+// Error mocks base method.
+func (m *MockVNetScope) Error(err error, msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
-	return ret0
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
 }
 
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockVNetScopeMockRecorder) Authorizer() *gomock.Call {
+// Error indicates an expected call of Error.
+func (mr *MockVNetScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockVNetScope)(nil).Authorizer))
+	varargs := append([]interface{}{err, msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVNetScope)(nil).Error), varargs...)
 }
 
 // HashKey mocks base method.
@@ -258,32 +210,21 @@ func (mr *MockVNetScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockVNetScope)(nil).HashKey))
 }
 
-// ResourceGroup mocks base method.
-func (m *MockVNetScope) ResourceGroup() string {
+// Info mocks base method.
+func (m *MockVNetScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
 }
 
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockVNetScopeMockRecorder) ResourceGroup() *gomock.Call {
+// Info indicates an expected call of Info.
+func (mr *MockVNetScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockVNetScope)(nil).ResourceGroup))
-}
-
-// ClusterName mocks base method.
-func (m *MockVNetScope) ClusterName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClusterName indicates an expected call of ClusterName.
-func (mr *MockVNetScopeMockRecorder) ClusterName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockVNetScope)(nil).ClusterName))
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockVNetScope)(nil).Info), varargs...)
 }
 
 // Location mocks base method.
@@ -300,32 +241,74 @@ func (mr *MockVNetScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockVNetScope)(nil).Location))
 }
 
-// AdditionalTags mocks base method.
-func (m *MockVNetScope) AdditionalTags() v1alpha3.Tags {
+// ResourceGroup mocks base method.
+func (m *MockVNetScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret := m.ctrl.Call(m, "ResourceGroup")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockVNetScopeMockRecorder) AdditionalTags() *gomock.Call {
+// ResourceGroup indicates an expected call of ResourceGroup.
+func (mr *MockVNetScopeMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockVNetScope)(nil).AdditionalTags))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockVNetScope)(nil).ResourceGroup))
 }
 
-// AvailabilitySetEnabled mocks base method.
-func (m *MockVNetScope) AvailabilitySetEnabled() bool {
+// SubscriptionID mocks base method.
+func (m *MockVNetScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockVNetScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockVNetScopeMockRecorder) SubscriptionID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockVNetScope)(nil).AvailabilitySetEnabled))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockVNetScope)(nil).SubscriptionID))
+}
+
+// TenantID mocks base method.
+func (m *MockVNetScope) TenantID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// TenantID indicates an expected call of TenantID.
+func (mr *MockVNetScopeMockRecorder) TenantID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockVNetScope)(nil).TenantID))
+}
+
+// V mocks base method.
+func (m *MockVNetScope) V(level int) logr.InfoLogger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.InfoLogger)
+	return ret0
+}
+
+// V indicates an expected call of V.
+func (mr *MockVNetScopeMockRecorder) V(level interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockVNetScope)(nil).V), level)
+}
+
+// VNetSpec mocks base method.
+func (m *MockVNetScope) VNetSpec() azure.VNetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VNetSpec")
+	ret0, _ := ret[0].(azure.VNetSpec)
+	return ret0
+}
+
+// VNetSpec indicates an expected call of VNetSpec.
+func (mr *MockVNetScopeMockRecorder) VNetSpec() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VNetSpec", reflect.TypeOf((*MockVNetScope)(nil).VNetSpec))
 }
 
 // Vnet mocks base method.
@@ -342,16 +325,34 @@ func (mr *MockVNetScopeMockRecorder) Vnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockVNetScope)(nil).Vnet))
 }
 
-// VNetSpec mocks base method.
-func (m *MockVNetScope) VNetSpec() azure.VNetSpec {
+// WithName mocks base method.
+func (m *MockVNetScope) WithName(name string) logr.Logger {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VNetSpec")
-	ret0, _ := ret[0].(azure.VNetSpec)
+	ret := m.ctrl.Call(m, "WithName", name)
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 
-// VNetSpec indicates an expected call of VNetSpec.
-func (mr *MockVNetScopeMockRecorder) VNetSpec() *gomock.Call {
+// WithName indicates an expected call of WithName.
+func (mr *MockVNetScopeMockRecorder) WithName(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VNetSpec", reflect.TypeOf((*MockVNetScope)(nil).VNetSpec))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockVNetScope)(nil).WithName), name)
+}
+
+// WithValues mocks base method.
+func (m *MockVNetScope) WithValues(keysAndValues ...interface{}) logr.Logger {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WithValues", varargs...)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithValues indicates an expected call of WithValues.
+func (mr *MockVNetScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockVNetScope)(nil).WithValues), keysAndValues...)
 }

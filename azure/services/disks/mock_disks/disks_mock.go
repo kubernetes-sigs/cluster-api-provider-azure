@@ -21,10 +21,11 @@ limitations under the License.
 package mock_disks
 
 import (
+	reflect "reflect"
+
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
@@ -52,112 +53,60 @@ func (m *MockDiskScope) EXPECT() *MockDiskScopeMockRecorder {
 	return m.recorder
 }
 
-// Info mocks base method.
-func (m *MockDiskScope) Info(msg string, keysAndValues ...interface{}) {
+// AdditionalTags mocks base method.
+func (m *MockDiskScope) AdditionalTags() v1alpha3.Tags {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
+	ret := m.ctrl.Call(m, "AdditionalTags")
+	ret0, _ := ret[0].(v1alpha3.Tags)
+	return ret0
 }
 
-// Info indicates an expected call of Info.
-func (mr *MockDiskScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+// AdditionalTags indicates an expected call of AdditionalTags.
+func (mr *MockDiskScopeMockRecorder) AdditionalTags() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockDiskScope)(nil).Info), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockDiskScope)(nil).AdditionalTags))
 }
 
-// Enabled mocks base method.
-func (m *MockDiskScope) Enabled() bool {
+// Authorizer mocks base method.
+func (m *MockDiskScope) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enabled")
+	ret := m.ctrl.Call(m, "Authorizer")
+	ret0, _ := ret[0].(autorest.Authorizer)
+	return ret0
+}
+
+// Authorizer indicates an expected call of Authorizer.
+func (mr *MockDiskScopeMockRecorder) Authorizer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockDiskScope)(nil).Authorizer))
+}
+
+// AvailabilitySetEnabled mocks base method.
+func (m *MockDiskScope) AvailabilitySetEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// Enabled indicates an expected call of Enabled.
-func (mr *MockDiskScopeMockRecorder) Enabled() *gomock.Call {
+// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
+func (mr *MockDiskScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockDiskScope)(nil).Enabled))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockDiskScope)(nil).AvailabilitySetEnabled))
 }
 
-// Error mocks base method.
-func (m *MockDiskScope) Error(err error, msg string, keysAndValues ...interface{}) {
+// BaseURI mocks base method.
+func (m *MockDiskScope) BaseURI() string {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{err, msg}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockDiskScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{err, msg}, keysAndValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockDiskScope)(nil).Error), varargs...)
-}
-
-// V mocks base method.
-func (m *MockDiskScope) V(level int) logr.InfoLogger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
-	return ret0
-}
-
-// V indicates an expected call of V.
-func (mr *MockDiskScopeMockRecorder) V(level interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockDiskScope)(nil).V), level)
-}
-
-// WithValues mocks base method.
-func (m *MockDiskScope) WithValues(keysAndValues ...interface{}) logr.Logger {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range keysAndValues {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "WithValues", varargs...)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithValues indicates an expected call of WithValues.
-func (mr *MockDiskScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockDiskScope)(nil).WithValues), keysAndValues...)
-}
-
-// WithName mocks base method.
-func (m *MockDiskScope) WithName(name string) logr.Logger {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithName", name)
-	ret0, _ := ret[0].(logr.Logger)
-	return ret0
-}
-
-// WithName indicates an expected call of WithName.
-func (mr *MockDiskScopeMockRecorder) WithName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockDiskScope)(nil).WithName), name)
-}
-
-// SubscriptionID mocks base method.
-func (m *MockDiskScope) SubscriptionID() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret := m.ctrl.Call(m, "BaseURI")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// SubscriptionID indicates an expected call of SubscriptionID.
-func (mr *MockDiskScopeMockRecorder) SubscriptionID() *gomock.Call {
+// BaseURI indicates an expected call of BaseURI.
+func (mr *MockDiskScopeMockRecorder) BaseURI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockDiskScope)(nil).SubscriptionID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockDiskScope)(nil).BaseURI))
 }
 
 // ClientID mocks base method.
@@ -202,46 +151,63 @@ func (mr *MockDiskScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockDiskScope)(nil).CloudEnvironment))
 }
 
-// TenantID mocks base method.
-func (m *MockDiskScope) TenantID() string {
+// ClusterName mocks base method.
+func (m *MockDiskScope) ClusterName() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TenantID")
+	ret := m.ctrl.Call(m, "ClusterName")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// TenantID indicates an expected call of TenantID.
-func (mr *MockDiskScopeMockRecorder) TenantID() *gomock.Call {
+// ClusterName indicates an expected call of ClusterName.
+func (mr *MockDiskScopeMockRecorder) ClusterName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockDiskScope)(nil).TenantID))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockDiskScope)(nil).ClusterName))
 }
 
-// BaseURI mocks base method.
-func (m *MockDiskScope) BaseURI() string {
+// DiskSpecs mocks base method.
+func (m *MockDiskScope) DiskSpecs() []azure.DiskSpec {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BaseURI")
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "DiskSpecs")
+	ret0, _ := ret[0].([]azure.DiskSpec)
 	return ret0
 }
 
-// BaseURI indicates an expected call of BaseURI.
-func (mr *MockDiskScopeMockRecorder) BaseURI() *gomock.Call {
+// DiskSpecs indicates an expected call of DiskSpecs.
+func (mr *MockDiskScopeMockRecorder) DiskSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockDiskScope)(nil).BaseURI))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiskSpecs", reflect.TypeOf((*MockDiskScope)(nil).DiskSpecs))
 }
 
-// Authorizer mocks base method.
-func (m *MockDiskScope) Authorizer() autorest.Authorizer {
+// Enabled mocks base method.
+func (m *MockDiskScope) Enabled() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorizer")
-	ret0, _ := ret[0].(autorest.Authorizer)
+	ret := m.ctrl.Call(m, "Enabled")
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// Authorizer indicates an expected call of Authorizer.
-func (mr *MockDiskScopeMockRecorder) Authorizer() *gomock.Call {
+// Enabled indicates an expected call of Enabled.
+func (mr *MockDiskScopeMockRecorder) Enabled() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockDiskScope)(nil).Authorizer))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockDiskScope)(nil).Enabled))
+}
+
+// Error mocks base method.
+func (m *MockDiskScope) Error(err error, msg string, keysAndValues ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{err, msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Error", varargs...)
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockDiskScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{err, msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockDiskScope)(nil).Error), varargs...)
 }
 
 // HashKey mocks base method.
@@ -258,32 +224,21 @@ func (mr *MockDiskScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockDiskScope)(nil).HashKey))
 }
 
-// ResourceGroup mocks base method.
-func (m *MockDiskScope) ResourceGroup() string {
+// Info mocks base method.
+func (m *MockDiskScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
+	varargs := []interface{}{msg}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Info", varargs...)
 }
 
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockDiskScopeMockRecorder) ResourceGroup() *gomock.Call {
+// Info indicates an expected call of Info.
+func (mr *MockDiskScopeMockRecorder) Info(msg interface{}, keysAndValues ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockDiskScope)(nil).ResourceGroup))
-}
-
-// ClusterName mocks base method.
-func (m *MockDiskScope) ClusterName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClusterName indicates an expected call of ClusterName.
-func (mr *MockDiskScopeMockRecorder) ClusterName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockDiskScope)(nil).ClusterName))
+	varargs := append([]interface{}{msg}, keysAndValues...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockDiskScope)(nil).Info), varargs...)
 }
 
 // Location mocks base method.
@@ -300,44 +255,90 @@ func (mr *MockDiskScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockDiskScope)(nil).Location))
 }
 
-// AdditionalTags mocks base method.
-func (m *MockDiskScope) AdditionalTags() v1alpha3.Tags {
+// ResourceGroup mocks base method.
+func (m *MockDiskScope) ResourceGroup() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret := m.ctrl.Call(m, "ResourceGroup")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockDiskScopeMockRecorder) AdditionalTags() *gomock.Call {
+// ResourceGroup indicates an expected call of ResourceGroup.
+func (mr *MockDiskScopeMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockDiskScope)(nil).AdditionalTags))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockDiskScope)(nil).ResourceGroup))
 }
 
-// AvailabilitySetEnabled mocks base method.
-func (m *MockDiskScope) AvailabilitySetEnabled() bool {
+// SubscriptionID mocks base method.
+func (m *MockDiskScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "SubscriptionID")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockDiskScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
+// SubscriptionID indicates an expected call of SubscriptionID.
+func (mr *MockDiskScopeMockRecorder) SubscriptionID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockDiskScope)(nil).AvailabilitySetEnabled))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscriptionID", reflect.TypeOf((*MockDiskScope)(nil).SubscriptionID))
 }
 
-// DiskSpecs mocks base method.
-func (m *MockDiskScope) DiskSpecs() []azure.DiskSpec {
+// TenantID mocks base method.
+func (m *MockDiskScope) TenantID() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DiskSpecs")
-	ret0, _ := ret[0].([]azure.DiskSpec)
+	ret := m.ctrl.Call(m, "TenantID")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// DiskSpecs indicates an expected call of DiskSpecs.
-func (mr *MockDiskScopeMockRecorder) DiskSpecs() *gomock.Call {
+// TenantID indicates an expected call of TenantID.
+func (mr *MockDiskScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiskSpecs", reflect.TypeOf((*MockDiskScope)(nil).DiskSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockDiskScope)(nil).TenantID))
+}
+
+// V mocks base method.
+func (m *MockDiskScope) V(level int) logr.InfoLogger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "V", level)
+	ret0, _ := ret[0].(logr.InfoLogger)
+	return ret0
+}
+
+// V indicates an expected call of V.
+func (mr *MockDiskScopeMockRecorder) V(level interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "V", reflect.TypeOf((*MockDiskScope)(nil).V), level)
+}
+
+// WithName mocks base method.
+func (m *MockDiskScope) WithName(name string) logr.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithName", name)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithName indicates an expected call of WithName.
+func (mr *MockDiskScopeMockRecorder) WithName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithName", reflect.TypeOf((*MockDiskScope)(nil).WithName), name)
+}
+
+// WithValues mocks base method.
+func (m *MockDiskScope) WithValues(keysAndValues ...interface{}) logr.Logger {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range keysAndValues {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WithValues", varargs...)
+	ret0, _ := ret[0].(logr.Logger)
+	return ret0
+}
+
+// WithValues indicates an expected call of WithValues.
+func (mr *MockDiskScopeMockRecorder) WithValues(keysAndValues ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithValues", reflect.TypeOf((*MockDiskScope)(nil).WithValues), keysAndValues...)
 }

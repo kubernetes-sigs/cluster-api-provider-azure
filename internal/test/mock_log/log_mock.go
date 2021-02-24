@@ -21,9 +21,10 @@ limitations under the License.
 package mock_log
 
 import (
+	reflect "reflect"
+
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockLogger is a mock of Logger interface.

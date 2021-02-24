@@ -22,9 +22,10 @@ package mock_availabilitysets
 
 import (
 	context "context"
+	reflect "reflect"
+
 	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface.
@@ -48,21 +49,6 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
-}
-
-// Get mocks base method.
-func (m *MockClient) Get(ctx context.Context, resourceGroup, availabilitySetsName string) (compute.AvailabilitySet, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, resourceGroup, availabilitySetsName)
-	ret0, _ := ret[0].(compute.AvailabilitySet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockClientMockRecorder) Get(ctx, resourceGroup, availabilitySetsName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), ctx, resourceGroup, availabilitySetsName)
 }
 
 // CreateOrUpdate mocks base method.
@@ -92,4 +78,19 @@ func (m *MockClient) Delete(ctx context.Context, resourceGroup, availabilitySets
 func (mr *MockClientMockRecorder) Delete(ctx, resourceGroup, availabilitySetsName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), ctx, resourceGroup, availabilitySetsName)
+}
+
+// Get mocks base method.
+func (m *MockClient) Get(ctx context.Context, resourceGroup, availabilitySetsName string) (compute.AvailabilitySet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, resourceGroup, availabilitySetsName)
+	ret0, _ := ret[0].(compute.AvailabilitySet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockClientMockRecorder) Get(ctx, resourceGroup, availabilitySetsName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), ctx, resourceGroup, availabilitySetsName)
 }

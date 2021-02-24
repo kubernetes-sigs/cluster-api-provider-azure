@@ -22,9 +22,10 @@ package mock_privatedns
 
 import (
 	context "context"
+	reflect "reflect"
+
 	privatedns "github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // Mockclient is a mock of client interface.
@@ -50,34 +51,6 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
-// CreateOrUpdateZone mocks base method.
-func (m *Mockclient) CreateOrUpdateZone(arg0 context.Context, arg1, arg2 string, arg3 privatedns.PrivateZone) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdateZone", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateOrUpdateZone indicates an expected call of CreateOrUpdateZone.
-func (mr *MockclientMockRecorder) CreateOrUpdateZone(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateZone", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateZone), arg0, arg1, arg2, arg3)
-}
-
-// DeleteZone mocks base method.
-func (m *Mockclient) DeleteZone(arg0 context.Context, arg1, arg2 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteZone", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteZone indicates an expected call of DeleteZone.
-func (mr *MockclientMockRecorder) DeleteZone(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteZone", reflect.TypeOf((*Mockclient)(nil).DeleteZone), arg0, arg1, arg2)
-}
-
 // CreateOrUpdateLink mocks base method.
 func (m *Mockclient) CreateOrUpdateLink(arg0 context.Context, arg1, arg2, arg3 string, arg4 privatedns.VirtualNetworkLink) error {
 	m.ctrl.T.Helper()
@@ -90,20 +63,6 @@ func (m *Mockclient) CreateOrUpdateLink(arg0 context.Context, arg1, arg2, arg3 s
 func (mr *MockclientMockRecorder) CreateOrUpdateLink(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateLink", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateLink), arg0, arg1, arg2, arg3, arg4)
-}
-
-// DeleteLink mocks base method.
-func (m *Mockclient) DeleteLink(arg0 context.Context, arg1, arg2, arg3 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteLink", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteLink indicates an expected call of DeleteLink.
-func (mr *MockclientMockRecorder) DeleteLink(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLink", reflect.TypeOf((*Mockclient)(nil).DeleteLink), arg0, arg1, arg2, arg3)
 }
 
 // CreateOrUpdateRecordSet mocks base method.
@@ -120,6 +79,34 @@ func (mr *MockclientMockRecorder) CreateOrUpdateRecordSet(arg0, arg1, arg2, arg3
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateRecordSet", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateRecordSet), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
+// CreateOrUpdateZone mocks base method.
+func (m *Mockclient) CreateOrUpdateZone(arg0 context.Context, arg1, arg2 string, arg3 privatedns.PrivateZone) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrUpdateZone", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateOrUpdateZone indicates an expected call of CreateOrUpdateZone.
+func (mr *MockclientMockRecorder) CreateOrUpdateZone(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateZone", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateZone), arg0, arg1, arg2, arg3)
+}
+
+// DeleteLink mocks base method.
+func (m *Mockclient) DeleteLink(arg0 context.Context, arg1, arg2, arg3 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteLink", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteLink indicates an expected call of DeleteLink.
+func (mr *MockclientMockRecorder) DeleteLink(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLink", reflect.TypeOf((*Mockclient)(nil).DeleteLink), arg0, arg1, arg2, arg3)
+}
+
 // DeleteRecordSet mocks base method.
 func (m *Mockclient) DeleteRecordSet(arg0 context.Context, arg1, arg2 string, arg3 privatedns.RecordType, arg4 string) error {
 	m.ctrl.T.Helper()
@@ -132,4 +119,18 @@ func (m *Mockclient) DeleteRecordSet(arg0 context.Context, arg1, arg2 string, ar
 func (mr *MockclientMockRecorder) DeleteRecordSet(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRecordSet", reflect.TypeOf((*Mockclient)(nil).DeleteRecordSet), arg0, arg1, arg2, arg3, arg4)
+}
+
+// DeleteZone mocks base method.
+func (m *Mockclient) DeleteZone(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteZone", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteZone indicates an expected call of DeleteZone.
+func (mr *MockclientMockRecorder) DeleteZone(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteZone", reflect.TypeOf((*Mockclient)(nil).DeleteZone), arg0, arg1, arg2)
 }
