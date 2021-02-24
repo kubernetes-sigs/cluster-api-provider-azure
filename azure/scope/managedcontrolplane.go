@@ -22,16 +22,15 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new
@@ -43,7 +42,7 @@ type ManagedControlPlaneScopeParams struct {
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	MachinePool      *expv1.MachinePool
-	PatchTarget      runtime.Object
+	PatchTarget      client.Object
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -94,7 +93,7 @@ type ManagedControlPlaneScope struct {
 	MachinePool      *expv1.MachinePool
 	ControlPlane     *infrav1exp.AzureManagedControlPlane
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
-	PatchTarget      runtime.Object
+	PatchTarget      client.Object
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -171,13 +170,13 @@ func (s *ManagedControlPlaneScope) VNetSpec() azure.VNetSpec {
 }
 
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
-func (s *ManagedControlPlaneScope) ControlPlaneRouteTable() *infrav1.RouteTable {
-	return nil
+func (s *ManagedControlPlaneScope) ControlPlaneRouteTable() infrav1.RouteTable {
+	return infrav1.RouteTable{}
 }
 
 // NodeRouteTable returns the cluster node routetable.
-func (s *ManagedControlPlaneScope) NodeRouteTable() *infrav1.RouteTable {
-	return nil
+func (s *ManagedControlPlaneScope) NodeRouteTable() infrav1.RouteTable {
+	return infrav1.RouteTable{}
 }
 
 // SubnetSpecs returns the subnets specs.
@@ -192,16 +191,16 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
 }
 
 // NodeSubnet returns the cluster node subnet.
-func (s *ManagedControlPlaneScope) NodeSubnet() *infrav1.SubnetSpec {
-	return &infrav1.SubnetSpec{
+func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
+	return infrav1.SubnetSpec{
 		Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
 	}
 }
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ManagedControlPlaneScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return nil
+func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
+	return infrav1.SubnetSpec{}
 }
 
 // IsIPv6Enabled returns true if a cluster is ipv6 enabled.

@@ -27,7 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
@@ -54,18 +54,20 @@ type AzureMachineReconciler struct {
 	Log                       logr.Logger
 	Recorder                  record.EventRecorder
 	ReconcileTimeout          time.Duration
+	WatchFilterValue          string
 	createAzureMachineService azureMachineServiceCreator
 }
 
 type azureMachineServiceCreator func(machineScope *scope.MachineScope) (*azureMachineService, error)
 
 // NewAzureMachineReconciler returns a new AzureMachineReconciler instance
-func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration) *AzureMachineReconciler {
+func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureMachineReconciler {
 	amr := &AzureMachineReconciler{
 		Client:           client,
 		Log:              log,
 		Recorder:         recorder,
 		ReconcileTimeout: reconcileTimeout,
+		WatchFilterValue: watchFilterValue,
 	}
 
 	amr.createAzureMachineService = newAzureMachineService
@@ -74,10 +76,10 @@ func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder r
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *AzureMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureMachine")
 	// create mapper to transform incoming AzureClusters into AzureMachine requests
-	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(r.Client, mgr.GetScheme(), log)
+	azureClusterToAzureMachinesMapper, err := AzureClusterToAzureMachinesMapper(r.Client, &infrav1.AzureMachineList{}, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachines mapper")
 	}
@@ -85,20 +87,16 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureMachine{}).
-		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		// watch for changes in CAPI Machine resources
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
-			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureMachine")),
-			},
+			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureMachine"))),
 		).
 		// watch for changes in AzureCluster
 		Watches(
 			&source.Kind{Type: &infrav1.AzureCluster{}},
-			&handler.EnqueueRequestsFromMapFunc{
-				ToRequests: azureClusterToAzureMachinesMapper,
-			},
+			handler.EnqueueRequestsFromMapFunc(azureClusterToAzureMachinesMapper),
 		).
 		Build(r)
 	if err != nil {
@@ -113,9 +111,7 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err := c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		&handler.EnqueueRequestsFromMapFunc{
-			ToRequests: azureMachineMapper,
-		},
+		handler.EnqueueRequestsFromMapFunc(azureMachineMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
@@ -131,8 +127,8 @@ func (r *AzureMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 
 // Reconcile idempotently gets, creates, and updates a machine.
-func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+func (r *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 

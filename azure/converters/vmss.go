@@ -20,8 +20,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.

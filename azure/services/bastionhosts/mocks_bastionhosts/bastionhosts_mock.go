@@ -26,7 +26,7 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -82,10 +82,10 @@ func (mr *MockBastionScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *g
 }
 
 // AdditionalTags mocks base method.
-func (m *MockBastionScope) AdditionalTags() v1alpha3.Tags {
+func (m *MockBastionScope) AdditionalTags() v1alpha4.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret0, _ := ret[0].(v1alpha4.Tags)
 	return ret0
 }
 
@@ -208,10 +208,10 @@ func (mr *MockBastionScopeMockRecorder) ClusterName() *gomock.Call {
 }
 
 // ControlPlaneRouteTable mocks base method.
-func (m *MockBastionScope) ControlPlaneRouteTable() *v1alpha3.RouteTable {
+func (m *MockBastionScope) ControlPlaneRouteTable() v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	ret0, _ := ret[0].(v1alpha4.RouteTable)
 	return ret0
 }
 
@@ -222,10 +222,10 @@ func (mr *MockBastionScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockBastionScope) ControlPlaneSubnet() *v1alpha3.SubnetSpec {
+func (m *MockBastionScope) ControlPlaneSubnet() v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
 	return ret0
 }
 
@@ -354,10 +354,10 @@ func (mr *MockBastionScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NodeRouteTable mocks base method.
-func (m *MockBastionScope) NodeRouteTable() *v1alpha3.RouteTable {
+func (m *MockBastionScope) NodeRouteTable() v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(*v1alpha3.RouteTable)
+	ret0, _ := ret[0].(v1alpha4.RouteTable)
 	return ret0
 }
 
@@ -368,10 +368,10 @@ func (mr *MockBastionScopeMockRecorder) NodeRouteTable() *gomock.Call {
 }
 
 // NodeSubnet mocks base method.
-func (m *MockBastionScope) NodeSubnet() *v1alpha3.SubnetSpec {
+func (m *MockBastionScope) NodeSubnet() v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(*v1alpha3.SubnetSpec)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
 	return ret0
 }
 
@@ -452,10 +452,10 @@ func (mr *MockBastionScopeMockRecorder) TenantID() *gomock.Call {
 }
 
 // V mocks base method.
-func (m *MockBastionScope) V(level int) logr.InfoLogger {
+func (m *MockBastionScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 
@@ -466,10 +466,10 @@ func (mr *MockBastionScopeMockRecorder) V(level interface{}) *gomock.Call {
 }
 
 // Vnet mocks base method.
-func (m *MockBastionScope) Vnet() *v1alpha3.VnetSpec {
+func (m *MockBastionScope) Vnet() *v1alpha4.VnetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1alpha3.VnetSpec)
+	ret0, _ := ret[0].(*v1alpha4.VnetSpec)
 	return ret0
 }
 

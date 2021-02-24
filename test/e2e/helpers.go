@@ -41,14 +41,13 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,8 +59,8 @@ type deploymentsClientAdapter struct {
 }
 
 // Get fetches the deployment named by the key and updates the provided object.
-func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	deployment, err := c.client.Get(key.Name, metav1.GetOptions{})
+func (c deploymentsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	deployment, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if deployObj, ok := obj.(*appsv1.Deployment); ok {
 		deployment.DeepCopyInto(deployObj)
 	}
@@ -91,17 +90,17 @@ func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAv
 			}
 		}
 		return false
-	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDeployment(input) })
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDeployment(ctx, input) })
 }
 
 // DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
-func DescribeFailedDeployment(input WaitForDeploymentsAvailableInput) string {
+func DescribeFailedDeployment(ctx context.Context, input WaitForDeploymentsAvailableInput) string {
 	namespace, name := input.Deployment.GetNamespace(), input.Deployment.GetName()
 	b := strings.Builder{}
 	b.WriteString(fmt.Sprintf("Deployment %s/%s failed",
 		namespace, name))
 	b.WriteString(fmt.Sprintf("\nDeployment:\n%s\n", prettyPrint(input.Deployment)))
-	b.WriteString(describeEvents(input.Clientset, namespace, name))
+	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
 	return b.String()
 }
 
@@ -111,8 +110,8 @@ type jobsClientAdapter struct {
 }
 
 // Get fetches the job named by the key and updates the provided object.
-func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	job, err := c.client.Get(key.Name, metav1.GetOptions{})
+func (c jobsClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	job, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if jobObj, ok := obj.(*batchv1.Job); ok {
 		job.DeepCopyInto(jobObj)
 	}
@@ -140,17 +139,17 @@ func WaitForJobComplete(ctx context.Context, input WaitForJobCompleteInput, inte
 			}
 		}
 		return false
-	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedJob(input) })
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedJob(ctx, input) })
 }
 
 // DescribeFailedJob returns a string with information to help debug a failed job.
-func DescribeFailedJob(input WaitForJobCompleteInput) string {
+func DescribeFailedJob(ctx context.Context, input WaitForJobCompleteInput) string {
 	namespace, name := input.Job.GetNamespace(), input.Job.GetName()
 	b := strings.Builder{}
 	b.WriteString(fmt.Sprintf("Job %s/%s failed",
 		namespace, name))
 	b.WriteString(fmt.Sprintf("\nJob:\n%s\n", prettyPrint(input.Job)))
-	b.WriteString(describeEvents(input.Clientset, namespace, name))
+	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
 	return b.String()
 }
 
@@ -160,8 +159,8 @@ type servicesClientAdapter struct {
 }
 
 // Get fetches the service named by the key and updates the provided object.
-func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	service, err := c.client.Get(key.Name, metav1.GetOptions{})
+func (c servicesClientAdapter) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	service, err := c.client.Get(ctx, key.Name, metav1.GetOptions{})
 	if serviceObj, ok := obj.(*corev1.Service); ok {
 		service.DeepCopyInto(serviceObj)
 	}
@@ -193,22 +192,22 @@ func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableI
 			}
 		}
 		return false
-	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedService(input) })
+	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedService(ctx, input) })
 }
 
 // DescribeFailedService returns a string with information to help debug a failed service.
-func DescribeFailedService(input WaitForServiceAvailableInput) string {
+func DescribeFailedService(ctx context.Context, input WaitForServiceAvailableInput) string {
 	namespace, name := input.Service.GetNamespace(), input.Service.GetName()
 	b := strings.Builder{}
 	b.WriteString(fmt.Sprintf("Service %s/%s failed",
 		namespace, name))
 	b.WriteString(fmt.Sprintf("\nService:\n%s\n", prettyPrint(input.Service)))
-	b.WriteString(describeEvents(input.Clientset, namespace, name))
+	b.WriteString(describeEvents(ctx, input.Clientset, namespace, name))
 	return b.String()
 }
 
 // describeEvents returns a string summarizing recent events involving the named object(s).
-func describeEvents(clientset *kubernetes.Clientset, namespace, name string) string {
+func describeEvents(ctx context.Context, clientset *kubernetes.Clientset, namespace, name string) string {
 	b := strings.Builder{}
 	if clientset == nil {
 		b.WriteString("clientset is nil, so skipping output of relevant events")
@@ -217,7 +216,7 @@ func describeEvents(clientset *kubernetes.Clientset, namespace, name string) str
 			FieldSelector: fmt.Sprintf("involvedObject.name=%s", name),
 			Limit:         20,
 		}
-		evts, err := clientset.CoreV1().Events(namespace).List(opts)
+		evts, err := clientset.CoreV1().Events(namespace).List(ctx, opts)
 		if err != nil {
 			b.WriteString(err.Error())
 		} else {

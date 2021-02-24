@@ -1,9 +1,9 @@
 module sigs.k8s.io/cluster-api-provider-azure
 
-go 1.13
+go 1.15
 
 require (
-	github.com/Azure/aad-pod-identity v1.6.3
+	github.com/Azure/aad-pod-identity v1.7.1
 	github.com/Azure/azure-sdk-for-go v48.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.11
 	github.com/Azure/go-autorest/autorest/adal v0.9.5
@@ -12,7 +12,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.3.0
 	github.com/golang/mock v1.4.4
 	github.com/google/go-cmp v0.5.3
 	github.com/google/gofuzz v1.2.0
@@ -30,16 +30,16 @@ require (
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.13.0
 	go.opentelemetry.io/otel/sdk v0.13.0
 	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
-	k8s.io/api v0.17.14
-	k8s.io/apimachinery v0.17.14
-	k8s.io/client-go v0.17.14
-	k8s.io/component-base v0.17.14
+	k8s.io/api v0.20.2
+	k8s.io/apimachinery v0.20.2
+	k8s.io/client-go v0.20.2
+	k8s.io/component-base v0.20.2
 	k8s.io/klog v1.0.0
-	k8s.io/kubectl v0.17.14
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
-	sigs.k8s.io/cluster-api v0.3.14
-	sigs.k8s.io/controller-runtime v0.5.14
-	sigs.k8s.io/kind v0.7.1-0.20200303021537-981bd80d3802
+	k8s.io/kubectl v0.20.2
+	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
+	sigs.k8s.io/cluster-api v0.3.11-0.20210209200458-51a6d64d171c
+	sigs.k8s.io/controller-runtime v0.8.1
+	sigs.k8s.io/kind v0.9.0
 )
 
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible

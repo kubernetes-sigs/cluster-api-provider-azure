@@ -27,9 +27,9 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1alpha30 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	v1alpha40 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 // MockScaleSetScope is a mock of ScaleSetScope interface.
@@ -56,10 +56,10 @@ func (m *MockScaleSetScope) EXPECT() *MockScaleSetScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockScaleSetScope) AdditionalTags() v1alpha3.Tags {
+func (m *MockScaleSetScope) AdditionalTags() v1alpha4.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret0, _ := ret[0].(v1alpha4.Tags)
 	return ret0
 }
 
@@ -214,10 +214,10 @@ func (mr *MockScaleSetScopeMockRecorder) GetBootstrapData(ctx interface{}) *gomo
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha3.Future {
+func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha4.Future {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLongRunningOperationState")
-	ret0, _ := ret[0].(*v1alpha3.Future)
+	ret0, _ := ret[0].(*v1alpha4.Future)
 	return ret0
 }
 
@@ -228,10 +228,10 @@ func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState() *gomock.
 }
 
 // GetVMImage mocks base method.
-func (m *MockScaleSetScope) GetVMImage() (*v1alpha3.Image, error) {
+func (m *MockScaleSetScope) GetVMImage() (*v1alpha4.Image, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVMImage")
-	ret0, _ := ret[0].(*v1alpha3.Image)
+	ret0, _ := ret[0].(*v1alpha4.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -354,7 +354,7 @@ func (mr *MockScaleSetScopeMockRecorder) SetAnnotation(arg0, arg1 interface{}) *
 }
 
 // SetLongRunningOperationState mocks base method.
-func (m *MockScaleSetScope) SetLongRunningOperationState(arg0 *v1alpha3.Future) {
+func (m *MockScaleSetScope) SetLongRunningOperationState(arg0 *v1alpha4.Future) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
@@ -378,7 +378,7 @@ func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock
 }
 
 // SetProvisioningState mocks base method.
-func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha3.VMState) {
+func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha4.VMState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetProvisioningState", arg0)
 }
@@ -418,7 +418,7 @@ func (mr *MockScaleSetScopeMockRecorder) TenantID() *gomock.Call {
 }
 
 // UpdateInstanceStatuses mocks base method.
-func (m *MockScaleSetScope) UpdateInstanceStatuses(arg0 context.Context, arg1 []v1alpha30.VMSSVM) error {
+func (m *MockScaleSetScope) UpdateInstanceStatuses(arg0 context.Context, arg1 []v1alpha40.VMSSVM) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateInstanceStatuses", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -432,10 +432,10 @@ func (mr *MockScaleSetScopeMockRecorder) UpdateInstanceStatuses(arg0, arg1 inter
 }
 
 // V mocks base method.
-func (m *MockScaleSetScope) V(level int) logr.InfoLogger {
+func (m *MockScaleSetScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 

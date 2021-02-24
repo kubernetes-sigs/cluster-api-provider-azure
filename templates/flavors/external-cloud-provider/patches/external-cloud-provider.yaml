@@ -1,6 +1,6 @@
 ---
 kind: KubeadmControlPlane
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
@@ -22,7 +22,7 @@ spec:
           cloud-provider: external
   version: "${KUBERNETES_VERSION}"
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfigTemplate
 metadata:
   name: "${CLUSTER_NAME}-md-0"

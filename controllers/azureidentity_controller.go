@@ -28,11 +28,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,15 +49,16 @@ type AzureIdentityReconciler struct {
 	Log              logr.Logger
 	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
+	WatchFilterValue string
 }
 
 // SetupWithManager initializes this controller with a manager
-func (r *AzureIdentityReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureIdentity")
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
-		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		Build(r)
 	if err != nil {
 		return errors.Wrapf(err, "error creating controller")
@@ -66,9 +67,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(mgr ctrl.Manager, options con
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		&handler.EnqueueRequestsFromMapFunc{
-			ToRequests: util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster")),
-		},
+		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1.GroupVersion.WithKind("AzureCluster"))),
 		predicates.ClusterUnpaused(log),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for ready clusters")
@@ -83,8 +82,8 @@ func (r *AzureIdentityReconciler) SetupWithManager(mgr ctrl.Manager, options con
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 
 // Reconcile reconciles the Azure identity.
-func (r *AzureIdentityReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureIdentity", req.Name)
 

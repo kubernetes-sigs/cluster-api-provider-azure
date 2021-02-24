@@ -88,7 +88,7 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 			},
 		},
 	}
-	_, err := jobsClient.Create(gpuJob)
+	_, err := jobsClient.Create(ctx, gpuJob, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	gpuJobInput := WaitForJobCompleteInput{
 		Getter:    jobsClientAdapter{client: jobsClient},

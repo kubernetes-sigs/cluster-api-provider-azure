@@ -35,15 +35,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
@@ -51,19 +51,19 @@ import (
 // AzureClusterToAzureMachinesMapper creates a mapping handler to transform AzureClusters into AzureMachines. The transform
 // requires AzureCluster to map to the owning Cluster, then from the Cluster, collect the Machines belonging to the cluster,
 // then finally projecting the infrastructure reference to the AzureMachine.
-func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.Mapper, error) {
-	gvk, err := apiutil.GVKForObject(new(infrav1.AzureMachine), scheme)
+func AzureClusterToAzureMachinesMapper(c client.Client, ro runtime.Object, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
+	gvk, err := apiutil.GVKForObject(ro, scheme)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GVK for AzureMachine")
 	}
 
-	return handler.ToRequestsFunc(func(o handler.MapObject) []ctrl.Request {
+	return func(o client.Object) []ctrl.Request {
 		ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultMappingTimeout)
 		defer cancel()
 
-		azCluster, ok := o.Object.(*infrav1.AzureCluster)
+		azCluster, ok := o.(*infrav1.AzureCluster)
 		if !ok {
-			log.Error(errors.Errorf("expected an AzureCluster, got %T instead", o.Object), "failed to map AzureCluster")
+			log.Error(errors.Errorf("expected an AzureCluster, got %T instead", o), "failed to map AzureCluster")
 			return nil
 		}
 
@@ -82,6 +82,7 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 		}
 
 		machineList := &clusterv1.MachineList{}
+		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azCluster.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
 			return nil
@@ -91,14 +92,12 @@ func AzureClusterToAzureMachinesMapper(c client.Client, scheme *runtime.Scheme, 
 		var results []ctrl.Request
 		for _, machine := range machineList.Items {
 			m := machine
-			azureMachines := mapFunc.Map(handler.MapObject{
-				Object: &m,
-			})
+			azureMachines := mapFunc(&m)
 			results = append(results, azureMachines...)
 		}
 
 		return results
-	}), nil
+	}, nil
 }
 
 // GetOwnerClusterName returns the name of the owning Cluster by finding a clusterv1.Cluster in the ownership references.

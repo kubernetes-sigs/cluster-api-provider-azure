@@ -54,19 +54,19 @@ var _ = BeforeSuite(func(done Done) {
 		Client:   testEnv,
 		Log:      testEnv.Log,
 		Recorder: testEnv.GetEventRecorderFor("azuremanagedcluster-reconciler"),
-	}).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+	}).SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	Expect((&AzureManagedControlPlaneReconciler{
 		Client:   testEnv,
 		Log:      testEnv.Log,
 		Recorder: testEnv.GetEventRecorderFor("azuremanagedcontrolplane-reconciler"),
-	}).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+	}).SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	Expect(NewAzureManagedMachinePoolReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremanagedmachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	Expect(NewAzureMachinePoolReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachinepool-reconciler"),
-		reconciler.DefaultLoopTimeout).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+		reconciler.DefaultLoopTimeout, "").SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 

@@ -23,6 +23,7 @@ KUBECTL=$REPO_ROOT/hack/tools/bin/kubectl
 
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-capz}"
+export KIND_EXPERIMENTAL_DOCKER_NETWORK="bridge"
 
 if [[ "$(kind get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
   echo "cluster already exists, moving on"

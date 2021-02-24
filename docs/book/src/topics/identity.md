@@ -55,7 +55,7 @@ Full details on how to create and manage user assigned identities using [Azure C
 
 * In Machine Deployment
 ```yaml
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -69,17 +69,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -103,7 +103,7 @@ The CAPZ controller will look for `SystemAssigned` value in `identity` field und
 
 * In Machine Pool
 ```yaml
-apiVersion: exp.cluster.x-k8s.io/v1alpha3
+apiVersion: exp.cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -115,17 +115,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfig
           name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -153,7 +153,7 @@ Alternatively, you can also use the `system-assigned-identity`, and `machinepool
 * In Machine Deployment
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -167,17 +167,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -204,7 +204,7 @@ The CAPZ controller will look for `UserAssigned` value in `identity` field under
 * In Machine Pool
 
 ```yaml
-apiVersion: exp.cluster.x-k8s.io/v1alpha3
+apiVersion: exp.cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -216,17 +216,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfig
           name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0

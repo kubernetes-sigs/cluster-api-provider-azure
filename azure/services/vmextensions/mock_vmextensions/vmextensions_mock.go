@@ -26,7 +26,7 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -54,10 +54,10 @@ func (m *MockVMExtensionScope) EXPECT() *MockVMExtensionScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockVMExtensionScope) AdditionalTags() v1alpha3.Tags {
+func (m *MockVMExtensionScope) AdditionalTags() v1alpha4.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret0, _ := ret[0].(v1alpha4.Tags)
 	return ret0
 }
 
@@ -284,10 +284,10 @@ func (mr *MockVMExtensionScopeMockRecorder) TenantID() *gomock.Call {
 }
 
 // V mocks base method.
-func (m *MockVMExtensionScope) V(level int) logr.InfoLogger {
+func (m *MockVMExtensionScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 

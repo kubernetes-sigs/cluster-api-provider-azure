@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
@@ -37,7 +37,7 @@ import (
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 func init() {

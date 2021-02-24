@@ -19,6 +19,7 @@ limitations under the License.
 package networkpolicy
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -36,7 +37,7 @@ import (
 )
 
 // CreateNetworkPolicyFromFile will create a NetworkPolicy from file with a name
-func CreateNetworkPolicyFromFile(clientset *kubernetes.Clientset, filename, namespace string) error {
+func CreateNetworkPolicyFromFile(ctx context.Context, clientset *kubernetes.Clientset, filename, namespace string) error {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -51,7 +52,7 @@ func CreateNetworkPolicyFromFile(clientset *kubernetes.Clientset, filename, name
 
 	switch o := obj.(type) {
 	case *networkingv1.NetworkPolicy:
-		return createNetworkPolicyV1(clientset, namespace, obj.(*networkingv1.NetworkPolicy))
+		return createNetworkPolicyV1(ctx, clientset, namespace, obj.(*networkingv1.NetworkPolicy))
 	default:
 		return fmt.Errorf("Error: unsupported k8s manifest type %T", o)
 	}
@@ -59,15 +60,15 @@ func CreateNetworkPolicyFromFile(clientset *kubernetes.Clientset, filename, name
 	return nil
 }
 
-func createNetworkPolicyV1(clientset *kubernetes.Clientset, namespace string, networkPolicy *networkingv1.NetworkPolicy) error {
-	_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(networkPolicy)
+func createNetworkPolicyV1(ctx context.Context, clientset *kubernetes.Clientset, namespace string, networkPolicy *networkingv1.NetworkPolicy) error {
+	_, err := clientset.NetworkingV1().NetworkPolicies(namespace).Create(ctx, networkPolicy, metav1.CreateOptions{})
 	return err
 }
 
 // DeleteNetworkPolicy will create a NetworkPolicy from file with a name
-func DeleteNetworkPolicy(clientset *kubernetes.Clientset, name, namespace string) {
-	opts := &metav1.DeleteOptions{}
-	err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(name, opts)
+func DeleteNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, name, namespace string) {
+	opts := metav1.DeleteOptions{}
+	err := clientset.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, name, opts)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -97,7 +98,7 @@ func CheckOutboundConnection(clientset *kubernetes.Clientset, config *restclient
 	return e2e_pod.Exec(clientset, config, pod, command)
 }
 
-func ApplyNetworkPolicy(clientset *kubernetes.Clientset, nwpolicyName string, namespace string, nwpolicyFileName string, policyDir string) {
-	err := CreateNetworkPolicyFromFile(clientset, filepath.Join(policyDir, nwpolicyFileName), namespace)
+func ApplyNetworkPolicy(ctx context.Context, clientset *kubernetes.Clientset, nwpolicyName string, namespace string, nwpolicyFileName string, policyDir string) {
+	err := CreateNetworkPolicyFromFile(ctx, clientset, filepath.Join(policyDir, nwpolicyFileName), namespace)
 	Expect(err).NotTo(HaveOccurred())
 }

@@ -17,7 +17,7 @@ limitations under the License.
 package azure
 
 import (
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 // PublicIPSpec defines the specification for a Public IP.
@@ -70,7 +70,7 @@ type RouteTableRole string
 // RouteTableSpec defines the specification for a Route Table.
 type RouteTableSpec struct {
 	Name   string
-	Subnet *infrav1.SubnetSpec
+	Subnet infrav1.SubnetSpec
 }
 
 // InboundNatSpec defines the specification for an inbound NAT rule.

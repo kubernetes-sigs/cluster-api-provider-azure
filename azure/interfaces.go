@@ -21,7 +21,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 // Reconciler is a generic interface used by components offering a type of service.
@@ -62,11 +62,11 @@ type Authorizer interface {
 type NetworkDescriber interface {
 	Vnet() *infrav1.VnetSpec
 	IsVnetManaged() bool
-	NodeSubnet() *infrav1.SubnetSpec
-	ControlPlaneSubnet() *infrav1.SubnetSpec
+	NodeSubnet() infrav1.SubnetSpec
+	ControlPlaneSubnet() infrav1.SubnetSpec
 	IsIPv6Enabled() bool
-	NodeRouteTable() *infrav1.RouteTable
-	ControlPlaneRouteTable() *infrav1.RouteTable
+	NodeRouteTable() infrav1.RouteTable
+	ControlPlaneRouteTable() infrav1.RouteTable
 	APIServerLBName() string
 	APIServerLBPoolName(string) string
 	IsAPIServerPrivate() bool

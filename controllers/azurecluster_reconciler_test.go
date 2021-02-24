@@ -25,7 +25,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/mocks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"

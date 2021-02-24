@@ -85,7 +85,6 @@ type AzureClusterStatus struct {
 // +kubebuilder:printcolumn:name="Location",type="string",priority=1,JSONPath=".spec.location"
 // +kubebuilder:printcolumn:name="Endpoint",type="string",priority=1,JSONPath=".spec.controlPlaneEndpoint.host",description="Control Plane Endpoint"
 // +kubebuilder:resource:path=azureclusters,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureCluster is the Schema for the azureclusters API

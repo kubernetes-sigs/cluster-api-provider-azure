@@ -28,7 +28,7 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -56,10 +56,10 @@ func (m *MockVMScope) EXPECT() *MockVMScopeMockRecorder {
 }
 
 // AdditionalTags mocks base method.
-func (m *MockVMScope) AdditionalTags() v1alpha3.Tags {
+func (m *MockVMScope) AdditionalTags() v1alpha4.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha3.Tags)
+	ret0, _ := ret[0].(v1alpha4.Tags)
 	return ret0
 }
 
@@ -229,10 +229,10 @@ func (mr *MockVMScopeMockRecorder) GetBootstrapData(ctx interface{}) *gomock.Cal
 }
 
 // GetVMImage mocks base method.
-func (m *MockVMScope) GetVMImage() (*v1alpha3.Image, error) {
+func (m *MockVMScope) GetVMImage() (*v1alpha4.Image, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVMImage")
-	ret0, _ := ret[0].(*v1alpha3.Image)
+	ret0, _ := ret[0].(*v1alpha4.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -353,7 +353,7 @@ func (mr *MockVMScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call 
 }
 
 // SetVMState mocks base method.
-func (m *MockVMScope) SetVMState(arg0 v1alpha3.VMState) {
+func (m *MockVMScope) SetVMState(arg0 v1alpha4.VMState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetVMState", arg0)
 }
@@ -393,10 +393,10 @@ func (mr *MockVMScopeMockRecorder) TenantID() *gomock.Call {
 }
 
 // V mocks base method.
-func (m *MockVMScope) V(level int) logr.InfoLogger {
+func (m *MockVMScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "V", level)
-	ret0, _ := ret[0].(logr.InfoLogger)
+	ret0, _ := ret[0].(logr.Logger)
 	return ret0
 }
 

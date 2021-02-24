@@ -64,7 +64,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 	By("creating a Kubernetes client to the workload cluster")
-	clusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(context.TODO(), input.Namespace.Name, input.ClusterName)
+	clusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	Expect(clusterProxy).NotTo(BeNil())
 	clientset = clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
@@ -80,21 +80,21 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	webDeployment.AddContainerPort("http", "http", 80, corev1.ProtocolTCP)
 
 	if input.Windows {
-		windowsVersion, err := node.GetWindowsVersion(clientset)
+		windowsVersion, err := node.GetWindowsVersion(ctx, clientset)
 		Expect(err).NotTo(HaveOccurred())
 		iisImage := windows.GetWindowsImage(windows.Httpd, windowsVersion)
 		webDeployment.SetImage(deploymentName, iisImage)
 		webDeployment.AddWindowsSelectors()
 	}
 
-	deployment, err := webDeployment.Deploy(clientset)
+	deployment, err := webDeployment.Deploy(ctx, clientset)
 	Expect(err).NotTo(HaveOccurred())
 	deployInput := WaitForDeploymentsAvailableInput{
 		Getter:     deploymentsClientAdapter{client: webDeployment.Client(clientset)},
 		Deployment: deployment,
 		Clientset:  clientset,
 	}
-	WaitForDeploymentsAvailable(context.TODO(), deployInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
+	WaitForDeploymentsAvailable(ctx, deployInput, e2eConfig.GetIntervals(specName, "wait-deployment")...)
 
 	servicesClient := clientset.CoreV1().Services(corev1.NamespaceDefault)
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
@@ -120,65 +120,65 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		By("creating an internal Load Balancer service")
 
 		ilbService := webDeployment.GetService(ports, deploymentBuilder.InternalLoadbalancer)
-		_, err = servicesClient.Create(ilbService)
+		_, err = servicesClient.Create(ctx, ilbService, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		ilbSvcInput := WaitForServiceAvailableInput{
 			Getter:    servicesClientAdapter{client: servicesClient},
 			Service:   ilbService,
 			Clientset: clientset,
 		}
-		WaitForServiceAvailable(context.TODO(), ilbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
+		WaitForServiceAvailable(ctx, ilbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
 		By("connecting to the internal LB service from a curl pod")
 
-		svc, err := servicesClient.Get(ilbService.Name, metav1.GetOptions{})
+		svc, err := servicesClient.Get(ctx, ilbService.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		ilbIP := extractServiceIp(svc)
 
 		ilbJob := job.CreateCurlJob("curl-to-ilb-job", ilbIP)
-		_, err = jobsClient.Create(ilbJob)
+		_, err = jobsClient.Create(ctx, ilbJob, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		ilbJobInput := WaitForJobCompleteInput{
 			Getter:    jobsClientAdapter{client: jobsClient},
 			Job:       ilbJob,
 			Clientset: clientset,
 		}
-		WaitForJobComplete(context.TODO(), ilbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
+		WaitForJobComplete(ctx, ilbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
 		if !input.SkipCleanup {
 			By("deleting the ilb test resources")
-			err = servicesClient.Delete(ilbService.Name, &metav1.DeleteOptions{})
+			err = servicesClient.Delete(ctx, ilbService.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = jobsClient.Delete(ilbJob.Name, &metav1.DeleteOptions{})
+			err = jobsClient.Delete(ctx, ilbJob.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
 	}
 
 	By("creating an external Load Balancer service")
 	elbService := webDeployment.GetService(ports, deploymentBuilder.ExternalLoadbalancer)
-	_, err = servicesClient.Create(elbService)
+	_, err = servicesClient.Create(ctx, elbService, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	elbSvcInput := WaitForServiceAvailableInput{
 		Getter:    servicesClientAdapter{client: servicesClient},
 		Service:   elbService,
 		Clientset: clientset,
 	}
-	WaitForServiceAvailable(context.TODO(), elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
+	WaitForServiceAvailable(ctx, elbSvcInput, e2eConfig.GetIntervals(specName, "wait-service")...)
 
 	By("connecting to the external LB service from a curl pod")
-	svc, err := servicesClient.Get(elbService.Name, metav1.GetOptions{})
+	svc, err := servicesClient.Get(ctx, elbService.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	elbIP := extractServiceIp(svc)
 	elbJob := job.CreateCurlJob("curl-to-elb-job", elbIP)
-	_, err = jobsClient.Create(elbJob)
+	_, err = jobsClient.Create(ctx, elbJob, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	elbJobInput := WaitForJobCompleteInput{
 		Getter:    jobsClientAdapter{client: jobsClient},
 		Job:       elbJob,
 		Clientset: clientset,
 	}
-	WaitForJobComplete(context.TODO(), elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
+	WaitForJobComplete(ctx, elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
 
 	// TODO: determine root issue of failures of addressing the ELB from prow and fix
 	// see https://kubernetes.slack.com/archives/CEX9HENG7/p1610547551019900
@@ -199,11 +199,11 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		return
 	}
 	By("deleting the test resources")
-	err = servicesClient.Delete(elbService.Name, &metav1.DeleteOptions{})
+	err = servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	err = webDeployment.Client(clientset).Delete(deployment.Name, &metav1.DeleteOptions{})
+	err = webDeployment.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	err = jobsClient.Delete(elbJob.Name, &metav1.DeleteOptions{})
+	err = jobsClient.Delete(ctx, elbJob.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 

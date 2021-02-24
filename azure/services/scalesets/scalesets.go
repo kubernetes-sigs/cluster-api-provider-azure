@@ -31,11 +31,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 

@@ -25,7 +25,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 

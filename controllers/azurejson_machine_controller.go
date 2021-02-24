@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -54,7 +54,7 @@ type AzureJSONMachineReconciler struct {
 }
 
 // SetupWithManager initializes this controller with a manager
-func (r *AzureJSONMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *AzureJSONMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.AzureMachine{}).
 		WithEventFilter(filterUnclonedMachinesPredicate{log: r.Log}).
@@ -73,7 +73,6 @@ func (f filterUnclonedMachinesPredicate) Create(e event.CreateEvent) bool {
 
 func (f filterUnclonedMachinesPredicate) Update(e event.UpdateEvent) bool {
 	return f.Generic(event.GenericEvent{
-		Meta:   e.MetaNew,
 		Object: e.ObjectNew,
 	})
 }
@@ -85,24 +84,19 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 		return false
 	}
 
-	if e.Meta == nil {
-		f.log.Error(nil, "Generic event has no new metadata", "event", e)
-		return false
-	}
-
 	// when watching machines, we only care about machines users created one-off
 	// outside of machinedeployments/machinesets and using AzureMachineTemplates. if a machine is part of a machineset
 	// or machinedeployment, we already created a secret for the template. All machines
 	// in the machinedeployment will share that one secret.
 	gvk := infrav1.GroupVersion.WithKind("AzureMachineTemplate")
-	isClonedFromTemplate := e.Meta.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
+	isClonedFromTemplate := e.Object.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation] == gvk.GroupKind().String()
 
 	return !isClonedFromTemplate
 }
 
 // Reconcile reconciles the azure json for a specific machine not in a machine deployment
-func (r *AzureJSONMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 

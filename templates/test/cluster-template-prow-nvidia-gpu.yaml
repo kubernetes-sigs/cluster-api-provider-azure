@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: Cluster
 metadata:
   labels:
@@ -11,15 +11,15 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
     kind: KubeadmControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -35,14 +35,14 @@ spec:
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
   infrastructureTemplate:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureMachineTemplate
     name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:
@@ -118,7 +118,7 @@ spec:
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -139,7 +139,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -153,17 +153,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
           kind: KubeadmConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachineTemplate
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -180,7 +180,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_GPU_NODE_MACHINE_TYPE:=Standard_NV6}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -334,10 +334,8 @@ spec:
       - mv /etc/containerd/nvidia-config.toml /etc/containerd/config.toml
       - systemctl restart containerd
       preKubeadmCommands:
-      - curl -sL https://nvidia.github.io/nvidia-container-runtime/gpgkey | apt-key
-        add -
-      - curl -sL https://nvidia.github.io/nvidia-container-runtime/$(. /etc/os-release;echo
-        $ID$VERSION_ID)/nvidia-container-runtime.list | tee /etc/apt/sources.list.d/nvidia-container-runtime.list
+      - curl -sL https://nvidia.github.io/nvidia-container-runtime/gpgkey | apt-key add -
+      - curl -sL https://nvidia.github.io/nvidia-container-runtime/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-container-runtime.list | tee /etc/apt/sources.list.d/nvidia-container-runtime.list
       - apt update
       - apt install ubuntu-drivers-common -y
       - ubuntu-drivers install
@@ -351,7 +349,7 @@ metadata:
   name: cni-${CLUSTER_NAME}-crs-0
   namespace: default
 ---
-apiVersion: addons.cluster.x-k8s.io/v1alpha3
+apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet
 metadata:
   name: ${CLUSTER_NAME}-crs-0

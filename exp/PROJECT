@@ -4,4 +4,4 @@ version: "2"
 resources:
 - group: exp.infrastructure
   kind: AzureMachinePool
-  version: v1alpha3
+  version: v1alpha4

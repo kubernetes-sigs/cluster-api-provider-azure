@@ -766,11 +766,7 @@ func (in IngressRules) DeepCopyInto(out *IngressRules) {
 		in := &in
 		*out = make(IngressRules, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(IngressRule)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }
@@ -835,11 +831,7 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 		in, out := &in.Subnets, &out.Subnets
 		*out = make(Subnets, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(SubnetSpec)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	in.APIServerLB.DeepCopyInto(&out.APIServerLB)
@@ -913,11 +905,7 @@ func (in *SecurityGroup) DeepCopyInto(out *SecurityGroup) {
 		in, out := &in.IngressRules, &out.IngressRules
 		*out = make(IngressRules, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(IngressRule)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.Tags != nil {
@@ -1007,11 +995,7 @@ func (in Subnets) DeepCopyInto(out *Subnets) {
 		in := &in
 		*out = make(Subnets, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(SubnetSpec)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }

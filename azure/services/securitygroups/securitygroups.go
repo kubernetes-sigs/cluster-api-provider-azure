@@ -78,9 +78,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			update := false
 			securityRules = *existingNSG.SecurityRules
 			for _, rule := range nsgSpec.IngressRules {
-				if !ruleExists(securityRules, converters.IngresstoSecurityRule(*rule)) {
+				if !ruleExists(securityRules, converters.IngresstoSecurityRule(rule)) {
 					update = true
-					securityRules = append(securityRules, converters.IngresstoSecurityRule(*rule))
+					securityRules = append(securityRules, converters.IngresstoSecurityRule(rule))
 				}
 			}
 			if !update {
@@ -91,7 +91,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		default:
 			s.Scope.V(2).Info("creating security group", "security group", nsgSpec.Name)
 			for _, rule := range nsgSpec.IngressRules {
-				securityRules = append(securityRules, converters.IngresstoSecurityRule(*rule))
+				securityRules = append(securityRules, converters.IngresstoSecurityRule(rule))
 			}
 
 		}

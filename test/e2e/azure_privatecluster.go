@@ -21,6 +21,9 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -28,9 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
-	"os"
-	"path/filepath"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -65,10 +66,10 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 	By("creating a Kubernetes client to the workload cluster")
-	publicClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(context.TODO(), input.Namespace.Name, input.ClusterName)
+	publicClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 
 	Byf("Creating a namespace for hosting the %s test spec", specName)
-	publicNamespace, publicCancelWatches = framework.CreateNamespaceAndWatchEvents(context.TODO(), framework.CreateNamespaceAndWatchEventsInput{
+	publicNamespace, publicCancelWatches = framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
 		Creator:   publicClusterProxy.GetClient(),
 		ClientSet: publicClusterProxy.GetClientSet(),
 		Name:      input.Namespace.Name,
@@ -79,7 +80,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	Expect(publicCancelWatches).NotTo(BeNil())
 
 	By("Initializing the workload cluster")
-	clusterctl.InitManagementClusterAndWatchControllerLogs(context.TODO(), clusterctl.InitManagementClusterAndWatchControllerLogsInput{
+	clusterctl.InitManagementClusterAndWatchControllerLogs(ctx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 		ClusterProxy:            publicClusterProxy,
 		ClusterctlConfigPath:    input.ClusterctlConfigPath,
 		InfrastructureProviders: input.E2EConfig.InfrastructureProviders(),
@@ -95,7 +96,8 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	By("Creating a private workload cluster")
 	clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
 	Expect(os.Setenv(AzureInternalLBIP, "10.128.0.100")).NotTo(HaveOccurred())
-	result := clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+	result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
+	clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 		ClusterProxy: publicClusterProxy,
 		ConfigCluster: clusterctl.ConfigClusterInput{
 			LogFolder:                filepath.Join(input.ArtifactFolder, "clusters", publicClusterProxy.GetName()),
@@ -112,7 +114,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
 		WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
 		WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
-	})
+	}, result)
 	cluster = result.Cluster
 
 	Expect(cluster).ToNot(BeNil())

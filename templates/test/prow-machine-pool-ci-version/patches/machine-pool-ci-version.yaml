@@ -1,4 +1,4 @@
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
@@ -92,7 +92,7 @@ spec:
           key: control-plane-azure.json
           name: ${CLUSTER_NAME}-control-plane-azure-json
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -182,7 +182,7 @@ spec:
           key: worker-node-azure.json
           name: ${CLUSTER_NAME}-mp-0-azure-json
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0

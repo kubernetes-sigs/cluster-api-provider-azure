@@ -19,7 +19,7 @@ To enable a Machine to be backed by a Spot Virtual Machine, add `spotVMOptions`
 to your `AzureMachineTemplate`:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachineTemplate
 metadata:
   name: capz-md-0
@@ -51,7 +51,7 @@ spec:
 The experimental `MachinePool` also supports using spot instances. To enable a `MachinePool` to be backed by spot instances, add `spotVMOptions` to your `AzureMachinePool` spec:
 
 ```yaml
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: capz-mp-0

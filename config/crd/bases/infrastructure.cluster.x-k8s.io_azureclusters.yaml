@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.3.0
+    controller-gen.kubebuilder.io/version: v0.4.1-0.20201002000720-57250aac17f6
   creationTimestamp: null
   name: azureclusters.infrastructure.cluster.x-k8s.io
 spec:
@@ -18,7 +18,32 @@ spec:
     singular: azurecluster
   scope: Namespaced
   versions:
-  - name: v1alpha2
+  - additionalPrinterColumns:
+    - description: Cluster to which this AzureCluster belongs
+      jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
+      name: Cluster
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - jsonPath: .spec.resourceGroup
+      name: Resource Group
+      priority: 1
+      type: string
+    - jsonPath: .spec.subscriptionID
+      name: SubscriptionID
+      priority: 1
+      type: string
+    - jsonPath: .spec.location
+      name: Location
+      priority: 1
+      type: string
+    - description: Control Plane Endpoint
+      jsonPath: .spec.controlPlaneEndpoint.host
+      name: Endpoint
+      priority: 1
+      type: string
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: AzureCluster is the Schema for the azureclusters API
@@ -45,12 +70,104 @@ spec:
                   resources managed by the Azure provider, in addition to the ones
                   added by default.
                 type: object
+              controlPlaneEndpoint:
+                description: ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane.
+                properties:
+                  host:
+                    description: The hostname on which the API server is serving.
+                    type: string
+                  port:
+                    description: The port on which the API server is serving.
+                    format: int32
+                    type: integer
+                required:
+                - host
+                - port
+                type: object
+              identityRef:
+                description: IdentityRef is a reference to a AzureIdentity to be used
+                  when reconciling this cluster
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
               location:
                 type: string
               networkSpec:
                 description: NetworkSpec encapsulates all things related to Azure
                   network.
                 properties:
+                  apiServerLB:
+                    description: APIServerLB is the configuration for the control-plane
+                      load balancer.
+                    properties:
+                      frontendIPs:
+                        items:
+                          description: FrontendIP defines a load balancer frontend
+                            IP configuration.
+                          properties:
+                            name:
+                              minLength: 1
+                              type: string
+                            privateIP:
+                              type: string
+                            publicIP:
+                              description: PublicIPSpec defines the inputs to create
+                                an Azure public IP address.
+                              properties:
+                                dnsName:
+                                  type: string
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      sku:
+                        description: SKU defines an Azure load balancer SKU.
+                        type: string
+                      type:
+                        description: LBType defines an Azure load balancer Type.
+                        type: string
+                    type: object
                   subnets:
                     description: Subnets is the configuration for the control-plane
                       subnet and the node subnet.
@@ -58,17 +175,25 @@ spec:
                       description: SubnetSpec configures an Azure subnet.
                       properties:
                         cidrBlock:
-                          description: CidrBlock is the CIDR block to be used when
-                            the provider creates a managed Vnet.
+                          description: 'CidrBlock is the CIDR block to be used when
+                            the provider creates a managed Vnet. DEPRECATED: Use CIDRBlocks
+                            instead'
                           type: string
+                        cidrBlocks:
+                          description: CIDRBlocks defines the subnet's address space,
+                            specified as one or more address prefixes in CIDR notation.
+                          items:
+                            type: string
+                          type: array
                         id:
                           description: ID defines a unique identifier to reference
                             this resource.
                           type: string
                         internalLBIPAddress:
-                          description: InternalLBIPAddress is the IP address that
+                          description: 'InternalLBIPAddress is the IP address that
                             will be used as the internal LB private IP. For the control
-                            plane subnet only.
+                            plane subnet only. Deprecated: Use LoadBalancer private
+                            IP instead'
                           type: string
                         name:
                           description: Name defines a name for the subnet resource.
@@ -76,6 +201,15 @@ spec:
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
                           type: string
+                        routeTable:
+                          description: RouteTable defines the route table that should
+                            be attached to this subnet.
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          type: object
                         securityGroup:
                           description: SecurityGroup defines the NSG (network security
                             group) that should be attached to this subnet.
@@ -104,6 +238,16 @@ spec:
                                       65535. Asterix '*' can also be used to match
                                       all ports.
                                     type: string
+                                  name:
+                                    type: string
+                                  priority:
+                                    description: Priority - A number between 100 and
+                                      4096. Each rule should have a unique value for
+                                      priority. Rules are processed in priority order,
+                                      with lower numbers processed before higher numbers.
+                                      Once traffic matches a rule, processing stops.
+                                    format: int32
+                                    type: integer
                                   protocol:
                                     description: SecurityGroupProtocol defines the
                                       protocol type for a security group rule.
@@ -123,6 +267,7 @@ spec:
                                     type: string
                                 required:
                                 - description
+                                - name
                                 - protocol
                                 type: object
                               type: array
@@ -142,9 +287,17 @@ spec:
                     description: Vnet is the configuration for the Azure virtual network.
                     properties:
                       cidrBlock:
-                        description: CidrBlock is the CIDR block to be used when the
-                          provider creates a managed virtual network.
+                        description: 'CidrBlock is the CIDR block to be used when
+                          the provider creates a managed virtual network. DEPRECATED:
+                          Use CIDRBlocks instead'
                         type: string
+                      cidrBlocks:
+                        description: CIDRBlocks defines the virtual network's address
+                          space, specified as one or more address prefixes in CIDR
+                          notation.
+                        items:
+                          type: string
+                        type: array
                       id:
                         description: ID is the identifier of the virtual network this
                           provider should use to create resources.
@@ -168,220 +321,83 @@ spec:
                 type: object
               resourceGroup:
                 type: string
+              subscriptionID:
+                type: string
             required:
             - location
-            - resourceGroup
             type: object
           status:
             description: AzureClusterStatus defines the observed state of AzureCluster
             properties:
-              apiEndpoints:
-                description: APIEndpoints represents the endpoints to communicate
-                  with the control plane.
+              conditions:
+                description: Conditions defines current service state of the AzureCluster.
                 items:
-                  description: APIEndpoint represents a reachable Kubernetes API endpoint.
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
                   properties:
-                    host:
-                      description: The hostname on which the API server is serving.
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.
+                        If that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
                       type: string
-                    port:
-                      description: The port on which the API server is serving.
-                      type: integer
+                    message:
+                      description: A human readable message indicating details about
+                        the transition. This field may be empty.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase. The specific API may choose whether or not this
+                        field is considered a guaranteed API. This field may not be
+                        empty.
+                      type: string
+                    severity:
+                      description: Severity provides an explicit classification of
+                        Reason code, so the users or machines can immediately understand
+                        the current situation and act accordingly. The Severity field
+                        MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important.
+                      type: string
                   required:
-                  - host
-                  - port
+                  - status
+                  - type
                   type: object
                 type: array
-              bastion:
-                description: VM describes an Azure virtual machine.
-                properties:
-                  addresses:
-                    description: Addresses contains the Azure instance associated
-                      addresses.
-                    items:
-                      description: NodeAddress contains information for the node's
-                        address.
-                      properties:
-                        address:
-                          description: The node address.
-                          type: string
-                        type:
-                          description: Node address type, one of Hostname, ExternalIP
-                            or InternalIP.
-                          type: string
-                      required:
-                      - address
-                      - type
+              failureDomains:
+                additionalProperties:
+                  description: FailureDomainSpec is the Schema for Cluster API failure
+                    domains. It allows controllers to understand how many failure
+                    domains a cluster can optionally span across.
+                  properties:
+                    attributes:
+                      additionalProperties:
+                        type: string
+                      description: Attributes is a free form map of attributes an
+                        infrastructure provider might use or require.
                       type: object
-                    type: array
-                  availabilityZone:
-                    type: string
-                  id:
-                    type: string
-                  identity:
-                    description: VMIdentity defines the identity of the virtual machine,
-                      if configured.
-                    type: string
-                  image:
-                    description: Storage profile
-                    properties:
-                      gallery:
-                        type: string
-                      id:
-                        type: string
-                      name:
-                        type: string
-                      offer:
-                        type: string
-                      publisher:
-                        type: string
-                      resourceGroup:
-                        type: string
-                      sku:
-                        type: string
-                      subscriptionID:
-                        type: string
-                      version:
-                        type: string
-                    type: object
-                  name:
-                    type: string
-                  osDisk:
-                    properties:
-                      diskSizeGB:
-                        format: int32
-                        type: integer
-                      managedDisk:
-                        properties:
-                          storageAccountType:
-                            type: string
-                        required:
-                        - storageAccountType
-                        type: object
-                      osType:
-                        type: string
-                    required:
-                    - diskSizeGB
-                    - managedDisk
-                    - osType
-                    type: object
-                  startupScript:
-                    type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: Tags defines a map of tags.
-                    type: object
-                  vmSize:
-                    description: Hardware profile
-                    type: string
-                  vmState:
-                    description: State - The provisioning state, which only appears
-                      in the response.
-                    type: string
-                type: object
-              network:
-                description: Network encapsulates Azure networking resources.
-                properties:
-                  apiServerIp:
-                    description: APIServerIP is the Kubernetes API server public IP
-                      address.
-                    properties:
-                      dnsName:
-                        type: string
-                      id:
-                        type: string
-                      ipAddress:
-                        type: string
-                      name:
-                        type: string
-                    type: object
-                  apiServerLb:
-                    description: APIServerLB is the Kubernetes API server load balancer.
-                    properties:
-                      backendPool:
-                        properties:
-                          id:
-                            type: string
-                          name:
-                            type: string
-                        type: object
-                      frontendIpConfig:
-                        type: object
-                      id:
-                        type: string
-                      name:
-                        type: string
-                      sku:
-                        description: LoadBalancerSKU enumerates the values for load
-                          balancer sku name.
-                        type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: Tags defines a map of tags.
-                        type: object
-                    type: object
-                  securityGroups:
-                    additionalProperties:
-                      description: SecurityGroup defines an Azure security group.
-                      properties:
-                        id:
-                          type: string
-                        ingressRule:
-                          description: IngressRules is a slice of Azure ingress rules
-                            for security groups.
-                          items:
-                            description: IngressRule defines an Azure ingress rule
-                              for security groups.
-                            properties:
-                              description:
-                                type: string
-                              destination:
-                                description: Destination - The destination address
-                                  prefix. CIDR or destination IP range. Asterix '*'
-                                  can also be used to match all source IPs. Default
-                                  tags such as 'VirtualNetwork', 'AzureLoadBalancer'
-                                  and 'Internet' can also be used.
-                                type: string
-                              destinationPorts:
-                                description: DestinationPorts - The destination port
-                                  or range. Integer or range between 0 and 65535.
-                                  Asterix '*' can also be used to match all ports.
-                                type: string
-                              protocol:
-                                description: SecurityGroupProtocol defines the protocol
-                                  type for a security group rule.
-                                type: string
-                              source:
-                                description: Source - The CIDR or source IP range.
-                                  Asterix '*' can also be used to match all source
-                                  IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer'
-                                  and 'Internet' can also be used. If this is an ingress
-                                  rule, specifies where network traffic originates
-                                  from.
-                                type: string
-                              sourcePorts:
-                                description: SourcePorts - The source port or range.
-                                  Integer or range between 0 and 65535. Asterix '*'
-                                  can also be used to match all ports.
-                                type: string
-                            required:
-                            - description
-                            - protocol
-                            type: object
-                          type: array
-                        name:
-                          type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: Tags defines a map of tags.
-                          type: object
-                      type: object
-                    description: SecurityGroups is a map from the role/kind of the
-                      security group to its unique name, if any.
-                    type: object
+                    controlPlane:
+                      description: ControlPlane determines if this failure domain
+                        is suitable for use by control plane machines.
+                      type: boolean
+                  type: object
+                description: 'FailureDomains specifies the list of unique failure
+                  domains for the location/region of the cluster. A FailureDomain
+                  maps to Availability Zone with an Azure Region (if the region support
+                  them). An Availability Zone is a separate data center within a region
+                  and they can be used to ensure the cluster is more resilient to
+                  failure. See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview
+                  This list will be used by Cluster API to try and spread the machines
+                  across the failure domains.'
                 type: object
               ready:
                 description: Ready is true when the provider resource is ready.
@@ -417,7 +433,7 @@ spec:
       name: Endpoint
       priority: 1
       type: string
-    name: v1alpha3
+    name: v1alpha4
     schema:
       openAPIV3Schema:
         description: AzureCluster is the Schema for the azureclusters API

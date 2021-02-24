@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apimachinerytypes "k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -62,7 +62,7 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 		By("Ensuring zones match CAPI failure domains")
 
 		// fetch updated cluster object to ensure Status.FailureDomains is up-to-date
-		err := input.BootstrapClusterProxy.GetClient().Get(context.TODO(), apimachinerytypes.NamespacedName{
+		err := input.BootstrapClusterProxy.GetClient().Get(ctx, apimachinerytypes.NamespacedName{
 			Namespace: input.Namespace.Name, Name: input.ClusterName}, input.Cluster)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(input.Cluster.Status.FailureDomains)).To(Equal(len(zones)))
@@ -73,8 +73,7 @@ func AzureFailureDomainsSpec(ctx context.Context, inputGetter func() AzureFailur
 		// TODO: Find alternative when the number of zones is > 1 but doesn't equal to number of control plane machines.
 		if len(input.Cluster.Status.FailureDomains) == 3 {
 			By("Ensuring control planes are spread across availability zones.")
-			key, err := client.ObjectKeyFromObject(input.Cluster)
-			Expect(err).NotTo(HaveOccurred())
+			key := client.ObjectKeyFromObject(input.Cluster)
 			failureDomainsInput := framework.AssertControlPlaneFailureDomainsInput{
 				GetLister:  input.BootstrapClusterProxy.GetClient(),
 				ClusterKey: key,

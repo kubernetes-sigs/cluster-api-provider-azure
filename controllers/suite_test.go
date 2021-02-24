@@ -50,11 +50,11 @@ var _ = BeforeSuite(func(done Done) {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
 
-	Expect(NewAzureClusterReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout).
-		SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+	Expect(NewAzureClusterReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azurecluster-reconciler"), reconciler.DefaultLoopTimeout, "").
+		SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
-	Expect(NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout).
-		SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+	Expect(NewAzureMachineReconciler(testEnv, testEnv.Log, testEnv.GetEventRecorderFor("azuremachine-reconciler"), reconciler.DefaultLoopTimeout, "").
+		SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 

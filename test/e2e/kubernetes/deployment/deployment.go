@@ -19,9 +19,11 @@ limitations under the License.
 package deployment
 
 import (
+	"context"
 	"fmt"
-	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"log"
+
+	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -112,8 +114,8 @@ func (d *deploymentBuilder) AddContainerPort(name, portName string, portNumber i
 	}
 }
 
-func (d *deploymentBuilder) Deploy(clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
-	deployment, err := d.Client(clientset).Create(d.deployment)
+func (d *deploymentBuilder) Deploy(ctx context.Context, clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
+	deployment, err := d.Client(clientset).Create(ctx, d.deployment, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("Error trying to deploy %s in namespace %s:%s\n", d.deployment.Name, d.deployment.ObjectMeta.Namespace, err.Error())
 		return nil, err
@@ -126,12 +128,12 @@ func (d *deploymentBuilder) Client(clientset *kubernetes.Clientset) typedappsv1.
 	return clientset.AppsV1().Deployments(d.deployment.ObjectMeta.Namespace)
 }
 
-func (d *deploymentBuilder) GetPodsFromDeployment(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
+func (d *deploymentBuilder) GetPodsFromDeployment(ctx context.Context, clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: labels.Set(d.deployment.Labels).String(),
 		Limit:         100,
 	}
-	pods, err := clientset.CoreV1().Pods(d.deployment.GetNamespace()).List(opts)
+	pods, err := clientset.CoreV1().Pods(d.deployment.GetNamespace()).List(ctx, opts)
 	if err != nil {
 		log.Printf("Error trying to get the pods from deployment %s:%s\n", d.deployment.GetName(), err.Error())
 		return nil, err

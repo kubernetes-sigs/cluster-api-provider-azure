@@ -8,64 +8,73 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v0.3.14
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.14/core-components.yaml
-        type: url
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-          - old: "--enable-leader-election"
-            new: "--enable-leader-election=false"
+    - name: v0.4.0
+      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/core-components.yaml
+      type: url
+      files:
+      - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+      - old: "--leader-elect"
+        new: "--leader-elect=false"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-      - name: v0.3.14
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.14/bootstrap-components.yaml
-        type: url
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-          - old: "--enable-leader-election"
-            new: "--enable-leader-election=false"
+    - name: v0.4.0
+      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/bootstrap-components.yaml
+      type: url
+      files:
+      - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+      - old: "--leader-elect"
+        new: "--leader-elect=false"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: v0.3.14
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.3.14/control-plane-components.yaml
-        type: url
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-          - old: "--enable-leader-election"
-            new: "--enable-leader-election=false"
+    - name: v0.4.0
+      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/control-plane-components.yaml
+      type: url
+      files:
+      - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+      replacements:
+      - old: "imagePullPolicy: Always"
+        new: "imagePullPolicy: IfNotPresent"
+      - old: "--leader-elect"
+        new: "--leader-elect=false"
   - name: azure
     type: InfrastructureProvider
     versions:
-      - name: v0.4.0
-        value: "${PWD}/config"
+    - name: v0.5.0
+      value: "${PWD}/config/default"
+      files:
+      - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
     files:
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow.yaml"
-        targetName: "cluster-template.yaml"
-      - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-adoption.yaml"
-        targetName: "cluster-template-kcp-adoption.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-ipv6.yaml"
-        targetName: "cluster-template-ipv6.yaml"
-      - sourcePath: "../data/infrastructure-azure/cluster-template-mhc.yaml"
-        targetName: "cluster-template-mhc.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool.yaml"
-        targetName: "cluster-template-machine-pool.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-nvidia-gpu.yaml"
-        targetName: "cluster-template-nvidia-gpu.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-private.yaml"
-        targetName: "cluster-template-private.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-ci-version.yaml"
-        targetName: "cluster-template-conformance-ci-artifacts.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-multi-tenancy.yaml"
-        targetName: "cluster-template-multi-tenancy.yaml"        
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-windows.yaml"
-        targetName: "cluster-template-windows.yaml"
-      - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool-windows.yaml"
-        targetName: "cluster-template-machine-pool-windows.yaml"
+    - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow.yaml"
+      targetName: "cluster-template.yaml"
+    - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-adoption.yaml"
+      targetName: "cluster-template-kcp-adoption.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-ipv6.yaml"
+      targetName: "cluster-template-ipv6.yaml"
+    - sourcePath: "../data/infrastructure-azure/cluster-template-mhc.yaml"
+      targetName: "cluster-template-mhc.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool.yaml"
+      targetName: "cluster-template-machine-pool.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-nvidia-gpu.yaml"
+      targetName: "cluster-template-nvidia-gpu.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-private.yaml"
+      targetName: "cluster-template-private.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-ci-version.yaml"
+      targetName: "cluster-template-conformance-ci-artifacts.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-multi-tenancy.yaml"
+      targetName: "cluster-template-multi-tenancy.yaml"        
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-windows.yaml"
+      targetName: "cluster-template-windows.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool-windows.yaml"
+      targetName: "cluster-template-machine-pool-windows.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"

@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
 	"github.com/onsi/gomega"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 var sampleSubjectFactory = []infrav1.UserAssignedIdentity{

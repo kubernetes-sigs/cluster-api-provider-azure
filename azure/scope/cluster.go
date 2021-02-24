@@ -29,12 +29,12 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/net"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
@@ -295,23 +295,27 @@ func (s *ClusterScope) Subnets() infrav1.Subnets {
 }
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ClusterScope) ControlPlaneSubnet() *infrav1.SubnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+func (s *ClusterScope) ControlPlaneSubnet() infrav1.SubnetSpec {
+	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+	return subnet
 }
 
 // NodeSubnet returns the cluster node subnet.
-func (s *ClusterScope) NodeSubnet() *infrav1.SubnetSpec {
-	return s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+func (s *ClusterScope) NodeSubnet() infrav1.SubnetSpec {
+	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+	return subnet
 }
 
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
-func (s *ClusterScope) ControlPlaneRouteTable() *infrav1.RouteTable {
-	return &s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet().RouteTable
+func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
+	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+	return subnet.RouteTable
 }
 
 // NodeRouteTable returns the cluster node routetable.
-func (s *ClusterScope) NodeRouteTable() *infrav1.RouteTable {
-	return &s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet().RouteTable
+func (s *ClusterScope) NodeRouteTable() infrav1.RouteTable {
+	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+	return subnet.RouteTable
 }
 
 // APIServerLB returns the cluster API Server load balancer.
@@ -480,8 +484,9 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 // SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
 func (s *ClusterScope) SetControlPlaneIngressRules() {
 	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
-		s.ControlPlaneSubnet().SecurityGroup.IngressRules = infrav1.IngressRules{
-			&infrav1.IngressRule{
+		subnet := s.ControlPlaneSubnet()
+		subnet.SecurityGroup.IngressRules = infrav1.IngressRules{
+			infrav1.IngressRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
 				Priority:         2200,
@@ -491,7 +496,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				Destination:      to.StringPtr("*"),
 				DestinationPorts: to.StringPtr("22"),
 			},
-			&infrav1.IngressRule{
+			infrav1.IngressRule{
 				Name:             "allow_apiserver",
 				Description:      "Allow K8s API Server",
 				Priority:         2201,
@@ -502,6 +507,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				DestinationPorts: to.StringPtr(strconv.Itoa(int(s.APIServerPort()))),
 			},
 		}
+		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
 	}
 }
 
