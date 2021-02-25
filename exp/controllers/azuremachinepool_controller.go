@@ -91,7 +91,7 @@ func NewAzureMachinePoolReconciler(client client.Client, log logr.Logger, record
 func (r *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureMachinePool")
 	// create mapper to transform incoming AzureClusters into AzureMachinePool requests
-	azureClusterMapper, err := AzureClusterToAzureMachinePoolsMapper(r.Client, mgr.GetScheme(), log)
+	azureClusterMapper, err := AzureClusterToAzureMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachinePools mapper")
 	}
@@ -141,7 +141,7 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr c
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (r *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(context.Background(), reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	logger := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 

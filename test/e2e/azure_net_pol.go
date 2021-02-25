@@ -72,7 +72,7 @@ func AzureNetPolSpec(ctx context.Context, inputGetter func() AzureNetPolSpecInpu
 	testTmpDir, err := ioutil.TempDir("/tmp", "azure-test")
 	defer os.RemoveAll(testTmpDir)
 	Expect(err).NotTo(HaveOccurred())
-	config = createRestConfig(testTmpDir, input.Namespace.Name, input.ClusterName)
+	config = createRestConfig(ctx, testTmpDir, input.Namespace.Name, input.ClusterName)
 	Expect(config).NotTo(BeNil())
 
 	nsDev, nsProd := "development", "production"

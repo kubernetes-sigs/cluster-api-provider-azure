@@ -61,7 +61,7 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 
 	log := mock_log.NewMockLogger(mockCtrl)
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default")
-	mapper, err := AzureClusterToAzureMachinesMapper(client, &infrav1.AzureMachine{}, scheme, log)
+	mapper, err := AzureClusterToAzureMachinesMapper(context.Background(), client, &infrav1.AzureMachine{}, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	requests := mapper(&infrav1.AzureCluster{

@@ -79,7 +79,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedMachinePool requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(r.Client, mgr.GetScheme(), log)
+	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureManagedMachinePools mapper")
 	}

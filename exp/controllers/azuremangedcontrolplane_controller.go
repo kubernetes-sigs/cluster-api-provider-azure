@@ -60,7 +60,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
 	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(r.Client, log)
+	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(ctx, r.Client, log)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
 	}
