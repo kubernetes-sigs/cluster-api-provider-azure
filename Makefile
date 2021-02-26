@@ -35,6 +35,9 @@ export GO111MODULE=on
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
+# curl retries
+CURL_RETRIES=3
+
 # Directories.
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TOOLS_DIR := hack/tools
@@ -246,7 +249,7 @@ $(GINKGO): ## Build ginkgo.
 $(KUBECTL): ## Build kubectl
 	mkdir -p $(TOOLS_BIN_DIR)
 	rm -f "$(KUBECTL)*"
-	curl -fsL https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VER)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
+	curl --retry $(CURL_RETRIES) -fsL https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VER)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
 	ln -sf "$(KUBECTL)" "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)"
 	chmod +x "$(TOOLS_BIN_DIR)/$(KUBECTL_BIN)" "$(KUBECTL)"
 
@@ -447,7 +450,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 
 	# Deploy CAPI
 	# Using cluster-api nightly build until 0.4.x is released.
-	curl -sSL https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
