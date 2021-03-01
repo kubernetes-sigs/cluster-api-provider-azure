@@ -16,7 +16,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "nightly_master_20210210",
+    "capi_version": "nightly_master_20210301",
     "cert_manager_version": "v0.16.1",
     "kubernetes_version": "v1.19.7",
     "aks_kubernetes_version": "v1.18.8"

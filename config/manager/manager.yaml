@@ -35,10 +35,14 @@ spec:
             httpGet:
               path: /readyz
               port: healthz
+            initialDelaySeconds: 10
+            periodSeconds: 10  
           livenessProbe:
             httpGet:
               path: /healthz
               port: healthz
+            initialDelaySeconds: 10
+            periodSeconds: 10
           env:
           - name: NODE_NAME
             valueFrom:
