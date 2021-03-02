@@ -9,7 +9,7 @@ providers:
     type: CoreProvider
     versions:
     - name: v0.4.0
-      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/core-components.yaml
+      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210301/core-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -22,7 +22,7 @@ providers:
     type: BootstrapProvider
     versions:
     - name: v0.4.0
-      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/bootstrap-components.yaml
+      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210301/bootstrap-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -35,7 +35,7 @@ providers:
     type: ControlPlaneProvider
     versions:
     - name: v0.4.0
-      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210210/control-plane-components.yaml
+      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210301/control-plane-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
