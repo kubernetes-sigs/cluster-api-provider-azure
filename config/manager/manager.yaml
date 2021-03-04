@@ -58,3 +58,4 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace      
       terminationGracePeriodSeconds: 10
+      serviceAccountName: manager

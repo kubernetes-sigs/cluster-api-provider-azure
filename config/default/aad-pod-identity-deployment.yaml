@@ -63,8 +63,8 @@ metadata:
     k8s-app: capz-aad-pod-id-nmi-binding
 subjects:
 - kind: ServiceAccount
-  name: default
-  namespace: capz-system
+  name: manager
+  namespace: system
 roleRef:
   kind: ClusterRole
   name: aad-pod-id-nmi-role
@@ -92,7 +92,7 @@ spec:
         component: nmi
         tier: node
     spec:
-      serviceAccountName: default
+      serviceAccountName: manager
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       volumes:
