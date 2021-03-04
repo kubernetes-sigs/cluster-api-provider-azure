@@ -77,6 +77,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 								},
 							},
 						},
+						FrontendPort:  443,
 						APIServerPort: 6443,
 					},
 				})
@@ -104,6 +105,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 								PrivateIPAddress: "10.0.0.10",
 							},
 						},
+						FrontendPort:  443,
 						APIServerPort: 6443,
 					},
 				})
@@ -152,12 +154,14 @@ func TestReconcileLoadBalancer(t *testing.T) {
 					{
 						Name:          "my-lb",
 						SubnetName:    "my-subnet",
+						FrontendPort:  443,
 						APIServerPort: 6443,
 						Role:          infrav1.APIServerRole,
 						Type:          infrav1.Internal,
 					},
 					{
 						Name:          "my-lb-2",
+						FrontendPort:  443,
 						APIServerPort: 6443,
 						Role:          infrav1.APIServerRole,
 						Type:          infrav1.Public,
@@ -202,6 +206,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 								},
 							},
 						},
+						FrontendPort:  443,
 						APIServerPort: 6443,
 					},
 				})
@@ -232,6 +237,7 @@ func TestReconcileLoadBalancer(t *testing.T) {
 								},
 							},
 						},
+						FrontendPort:  443,
 						APIServerPort: 6443,
 					},
 				})
@@ -433,7 +439,7 @@ func newDefaultPublicAPIServerLB() network.LoadBalancer {
 					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 						DisableOutboundSnat:  to.BoolPtr(true),
 						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         to.Int32Ptr(6443),
+						FrontendPort:         to.Int32Ptr(443),
 						BackendPort:          to.Int32Ptr(6443),
 						IdleTimeoutInMinutes: to.Int32Ptr(4),
 						EnableFloatingIP:     to.BoolPtr(false),
@@ -512,7 +518,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 					LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 						DisableOutboundSnat:  to.BoolPtr(true),
 						Protocol:             network.TransportProtocolTCP,
-						FrontendPort:         to.Int32Ptr(6443),
+						FrontendPort:         to.Int32Ptr(443),
 						BackendPort:          to.Int32Ptr(6443),
 						IdleTimeoutInMinutes: to.Int32Ptr(4),
 						EnableFloatingIP:     to.BoolPtr(false),

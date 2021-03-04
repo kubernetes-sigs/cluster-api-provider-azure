@@ -144,6 +144,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Name:              s.APIServerLB().Name,
 			SubnetName:        s.ControlPlaneSubnet().Name,
 			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
+			FrontendPort:      s.APIServerLBFrontendPort(),
 			APIServerPort:     s.APIServerPort(),
 			Type:              s.APIServerLB().Type,
 			SKU:               infrav1.SKUStandard,
@@ -455,6 +456,15 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 		tags = s.AzureCluster.Spec.AdditionalTags.DeepCopy()
 	}
 	return tags
+}
+
+// APIServerLBFrontendPort returns the frontend listen port to use when creating the load balancer.
+func (s *ClusterScope) APIServerLBFrontendPort() int32 {
+	if s.Cluster.Spec.ControlPlaneEndpoint.Port > 0 {
+		return s.Cluster.Spec.ControlPlaneEndpoint.Port
+	}
+
+	return s.APIServerPort()
 }
 
 // APIServerPort returns the APIServerPort to use when creating the load balancer.

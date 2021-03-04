@@ -61,6 +61,7 @@ type LBSpec struct {
 	SubnetName        string
 	BackendPoolName   string
 	FrontendIPConfigs []infrav1.FrontendIP
+	FrontendPort      int32
 	APIServerPort     int32
 }
 

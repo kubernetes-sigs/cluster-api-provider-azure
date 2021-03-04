@@ -259,7 +259,7 @@ func (s *Service) getLoadBalancingRules(lbSpec azure.LBSpec, frontendIDs []netwo
 				LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
 					DisableOutboundSnat:     to.BoolPtr(true),
 					Protocol:                network.TransportProtocolTCP,
-					FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
+					FrontendPort:            to.Int32Ptr(lbSpec.FrontendPort),
 					BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
 					IdleTimeoutInMinutes:    to.Int32Ptr(4),
 					EnableFloatingIP:        to.BoolPtr(false),
