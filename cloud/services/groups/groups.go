@@ -55,31 +55,34 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Reconcile")
 	defer span.End()
 
-	if _, err := s.client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
+	_, err := s.client.Get(ctx, s.Scope.ResourceGroup())
+	if err == nil {
 		// resource group already exists, skip creation
 		return nil
-	} else if azure.ResourceNotFound(err) {
-		s.Scope.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
-		group := resources.Group{
-			Location: to.StringPtr(s.Scope.Location()),
-			Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-				ClusterName: s.Scope.ClusterName(),
-				Lifecycle:   infrav1.ResourceLifecycleOwned,
-				Name:        to.StringPtr(s.Scope.ResourceGroup()),
-				Role:        to.StringPtr(infrav1.CommonRole),
-				Additional:  s.Scope.AdditionalTags(),
-			})),
-		}
+	}
 
-		_, err := s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create resource group %s", s.Scope.ResourceGroup())
-		}
-
-		s.Scope.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
-	} else {
+	if !azure.ResourceNotFound(err) {
 		return err
 	}
+
+	s.Scope.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
+	group := resources.Group{
+		Location: to.StringPtr(s.Scope.Location()),
+		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+			ClusterName: s.Scope.ClusterName(),
+			Lifecycle:   infrav1.ResourceLifecycleOwned,
+			Name:        to.StringPtr(s.Scope.ResourceGroup()),
+			Role:        to.StringPtr(infrav1.CommonRole),
+			Additional:  s.Scope.AdditionalTags(),
+		})),
+	}
+
+	_, err = s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create resource group %s", s.Scope.ResourceGroup())
+	}
+
+	s.Scope.V(2).Info("successfully created resource group", "resource group", s.Scope.ResourceGroup())
 	return nil
 }
 
