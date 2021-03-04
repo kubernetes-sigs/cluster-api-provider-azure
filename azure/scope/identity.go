@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
+	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,7 +84,7 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      identity.GetAzureIdentityName(p.AzureCluster.Name, p.AzureCluster.Namespace, p.Identity.Name),
-			Namespace: infrav1.ControllerNamespace,
+			Namespace: system.GetManagerNamespace(),
 			Annotations: map[string]string{
 				aadpodv1.BehaviorKey: "namespaced",
 			},
@@ -104,7 +105,7 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 	}
 	err = p.Client.Create(ctx, copiedIdentity)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, infrav1.ControllerNamespace, err)
+		return nil, errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
 	}
 
 	azureIdentityBinding := &aadpodv1.AzureIdentityBinding{
@@ -129,7 +130,7 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 	}
 	err = p.Client.Create(ctx, azureIdentityBinding)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, infrav1.ControllerNamespace, err)
+		return nil, errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
 	}
 
 	var spt *adal.ServicePrincipalToken

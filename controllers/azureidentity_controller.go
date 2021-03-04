@@ -31,6 +31,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
@@ -111,7 +112,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// get all the bindings
 	var bindings aadpodv1.AzureIdentityBindingList
-	if err := r.List(ctx, &bindings, client.InNamespace(infrav1.ControllerNamespace)); err != nil {
+	if err := r.List(ctx, &bindings, client.InNamespace(system.GetManagerNamespace())); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -150,7 +151,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, err
 		}
 		azureIdentity := &aadpodv1.AzureIdentity{}
-		if err := r.Client.Get(ctx, client.ObjectKey{Name: identityName, Namespace: infrav1.ControllerNamespace}, azureIdentity); err != nil {
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: identityName, Namespace: system.GetManagerNamespace()}, azureIdentity); err != nil {
 			log.Error(err, "failed to fetch AzureIdentity")
 			return ctrl.Result{}, err
 		}
