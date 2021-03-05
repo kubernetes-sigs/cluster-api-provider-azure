@@ -39,6 +39,24 @@ func TestReconcileVMExtension(t *testing.T) {
 		expect        func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder)
 	}{
 		{
+			name:          "extension already exists",
+			expectedError: "",
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+					{
+						Name:      "my-extension-1",
+						VMName:    "my-vm",
+						Publisher: "some-publisher",
+						Version:   "1.0",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1")
+			},
+		},
+		{
 			name:          "reconcile multiple extensions",
 			expectedError: "",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
@@ -59,7 +77,11 @@ func TestReconcileVMExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
 			},
 		},
@@ -84,6 +106,8 @@ func TestReconcileVMExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 
 			},

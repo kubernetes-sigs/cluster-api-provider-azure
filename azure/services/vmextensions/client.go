@@ -27,6 +27,7 @@ import (
 
 // Client wraps go-sdk
 type client interface {
+	Get(ctx context.Context, resourceGroupName, vmName, name string) (compute.VirtualMachineExtension, error)
 	CreateOrUpdate(context.Context, string, string, string, compute.VirtualMachineExtension) error
 	Delete(context.Context, string, string, string) error
 }
@@ -49,6 +50,14 @@ func newVirtualMachineExtensionsClient(subscriptionID string, baseURI string, au
 	vmextensionsClient := compute.NewVirtualMachineExtensionsClientWithBaseURI(baseURI, subscriptionID)
 	azure.SetAutoRestClientDefaults(&vmextensionsClient.Client, authorizer)
 	return vmextensionsClient
+}
+
+// Get the virtual machine extension
+func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmName, name string) (compute.VirtualMachineExtension, error) {
+	ctx, span := tele.Tracer().Start(ctx, "vmextensions.AzureClient.Get")
+	defer span.End()
+
+	return ac.vmextensions.Get(ctx, resourceGroupName, vmName, name, "")
 }
 
 // CreateOrUpdate creates or updates the virtual machine extension

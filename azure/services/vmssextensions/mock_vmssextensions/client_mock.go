@@ -78,3 +78,18 @@ func (mr *MockclientMockRecorder) Delete(arg0, arg1, arg2, arg3 interface{}) *go
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockclient)(nil).Delete), arg0, arg1, arg2, arg3)
 }
+
+// Get mocks base method.
+func (m *Mockclient) Get(arg0 context.Context, arg1, arg2, arg3 string) (compute.VirtualMachineScaleSetExtension, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(compute.VirtualMachineScaleSetExtension)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockclientMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), arg0, arg1, arg2, arg3)
+}

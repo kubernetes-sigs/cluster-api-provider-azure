@@ -44,6 +44,7 @@ type ScaleSetScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	ScaleSetSpec() azure.ScaleSetSpec
+	VMSSExtensionSpecs() []azure.VMSSExtensionSpec
 	GetBootstrapData(ctx context.Context) (string, error)
 	GetVMImage() (*infrav1.Image, error)
 	SetAnnotation(string, string)
@@ -343,6 +344,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		vmssSpec.AcceleratedNetworking = &accelNet
 	}
 
+	extensions := s.generateExtensions()
+
 	storageProfile, err := s.generateStorageProfile(vmssSpec, sku)
 	if err != nil {
 		return result, err
@@ -424,6 +427,9 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 				Priority:       priority,
 				EvictionPolicy: evictionPolicy,
 				BillingProfile: billingProfile,
+				ExtensionProfile: &compute.VirtualMachineScaleSetExtensionProfile{
+					Extensions: &extensions,
+				},
 			},
 		},
 	}
@@ -517,6 +523,23 @@ func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *i
 	}
 
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
+}
+
+func (s *Service) generateExtensions() []compute.VirtualMachineScaleSetExtension {
+	extensions := make([]compute.VirtualMachineScaleSetExtension, len(s.Scope.VMSSExtensionSpecs()))
+	for i, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
+		extensions[i] = compute.VirtualMachineScaleSetExtension{
+			Name: &extensionSpec.Name,
+			VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+				Publisher:          to.StringPtr(extensionSpec.Publisher),
+				Type:               to.StringPtr(extensionSpec.Name),
+				TypeHandlerVersion: to.StringPtr(extensionSpec.Version),
+				Settings:           nil,
+				ProtectedSettings:  nil,
+			},
+		}
+	}
+	return extensions
 }
 
 // generateStorageProfile generates a pointer to a compute.VirtualMachineScaleSetStorageProfile which can utilized for VM creation.

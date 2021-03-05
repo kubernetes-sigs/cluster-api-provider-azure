@@ -55,7 +55,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
-		s.Scope.V(2).Info("creating VM extension", "vm extension", extensionSpec.Name)
+		if _, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name); err == nil {
+			// check for the extension and don't update if already exists
+			// TODO: set conditions based on extension status
+			continue
+		}
+
+		s.Scope.V(2).Info("creating VMSS extension", "vssm extension", extensionSpec.Name)
 		err := s.client.CreateOrUpdate(
 			ctx,
 			s.Scope.ResourceGroup(),
@@ -72,14 +78,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			},
 		)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create VM extension %s on scale set %s in resource group %s", extensionSpec.Name, extensionSpec.ScaleSetName, s.Scope.ResourceGroup())
+			return errors.Wrapf(err, "failed to create VMSS extension %s on scale set %s in resource group %s", extensionSpec.Name, extensionSpec.ScaleSetName, s.Scope.ResourceGroup())
 		}
-		s.Scope.V(2).Info("successfully created VM extension", "vm extension", extensionSpec.Name)
+		s.Scope.V(2).Info("successfully created VMSS extension", "vm extension", extensionSpec.Name)
 	}
 	return nil
 }
 
 // Delete is a no-op. Extensions will be deleted as part of VMSS deletion.
-func (s *Service) Delete(ctx context.Context) error {
+func (s *Service) Delete(_ context.Context) error {
 	return nil
 }

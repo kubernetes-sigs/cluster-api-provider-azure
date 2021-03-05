@@ -39,6 +39,24 @@ func TestReconcileVMSSExtension(t *testing.T) {
 		expect        func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder)
 	}{
 		{
+			name:          "extension already exists",
+			expectedError: "",
+			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+					{
+						Name:         "my-extension-1",
+						ScaleSetName: "my-vmss",
+						Publisher:    "some-publisher",
+						Version:      "1.0",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss", "my-extension-1")
+			},
+		},
+		{
 			name:          "reconcile multiple extensions",
 			expectedError: "",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
@@ -59,13 +77,17 @@ func TestReconcileVMSSExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss", "my-extension-1").
+					Return(compute.VirtualMachineScaleSetExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSetExtension{}))
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss", "other-extension").
+					Return(compute.VirtualMachineScaleSetExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", "other-extension", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSetExtension{}))
 			},
 		},
 		{
 			name:          "error creating the extension",
-			expectedError: "failed to create VM extension my-extension-1 on scale set my-vmss in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expectedError: "failed to create VMSS extension my-extension-1 on scale set my-vmss in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
@@ -84,6 +106,8 @@ func TestReconcileVMSSExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss", "my-extension-1").
+					Return(compute.VirtualMachineScaleSetExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vmss", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineScaleSetExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 
 			},
