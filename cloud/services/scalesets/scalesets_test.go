@@ -896,6 +896,20 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 						},
 					},
 				},
+				ExtensionProfile: &compute.VirtualMachineScaleSetExtensionProfile{
+					Extensions: &[]compute.VirtualMachineScaleSetExtension{
+						{
+							Name: to.StringPtr("someExtension"),
+							VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+								Publisher:          to.StringPtr("somePublisher"),
+								Type:               to.StringPtr("someExtension"),
+								TypeHandlerVersion: to.StringPtr("someVersion"),
+								Settings:           nil,
+								ProtectedSettings:  nil,
+							},
+						},
+					},
+				},
 				ScheduledEventsProfile: &compute.ScheduledEventsProfile{
 					TerminateNotificationProfile: &compute.TerminateNotificationProfile{
 						Enable:           to.BoolPtr(true),
@@ -984,6 +998,13 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 			Version:   "1.0",
 		},
 	}, nil)
+	s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+		{
+			Name:      "someExtension",
+			Publisher: "somePublisher",
+			Version:   "someVersion",
+		},
+	}).AnyTimes()
 }
 
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {

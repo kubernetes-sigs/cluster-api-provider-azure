@@ -50,6 +50,21 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
+// Get mocks base method.
+func (m *Mockclient) Get(ctx context.Context, resourceGroupName, vmName, name string) (compute.VirtualMachineExtension, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, resourceGroupName, vmName, name)
+	ret0, _ := ret[0].(compute.VirtualMachineExtension)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockclientMockRecorder) Get(ctx, resourceGroupName, vmName, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockclient)(nil).Get), ctx, resourceGroupName, vmName, name)
+}
+
 // CreateOrUpdate mocks base method.
 func (m *Mockclient) CreateOrUpdate(arg0 context.Context, arg1, arg2, arg3 string, arg4 compute.VirtualMachineExtension) error {
 	m.ctrl.T.Helper()
