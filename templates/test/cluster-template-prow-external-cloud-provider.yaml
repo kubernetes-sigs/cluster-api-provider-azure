@@ -3,7 +3,7 @@ kind: Cluster
 metadata:
   labels:
     ccm: external
-    cni: calico
+    cni: ${CLUSTER_NAME}-crs-0
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -26,6 +26,9 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
+  additionalTags:
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -61,6 +64,7 @@ spec:
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: external
           cluster-name: ${CLUSTER_NAME}
+          v: "4"
         extraVolumes:
         - hostPath: /etc/kubernetes/azure.json
           mountPath: /etc/kubernetes/azure.json
@@ -533,3 +537,24 @@ metadata:
     type: generated
   name: cloud-node-manager-addon
   namespace: default
+---
+apiVersion: v1
+data: ${CNI_RESOURCES_IPV6}
+kind: ConfigMap
+metadata:
+  name: cni-${CLUSTER_NAME}-crs-0
+  namespace: default
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha4
+kind: ClusterResourceSet
+metadata:
+  name: ${CLUSTER_NAME}-crs-0
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      cni: ${CLUSTER_NAME}-crs-0
+  resources:
+  - kind: ConfigMap
+    name: cni-${CLUSTER_NAME}-crs-0
+  strategy: ApplyOnce

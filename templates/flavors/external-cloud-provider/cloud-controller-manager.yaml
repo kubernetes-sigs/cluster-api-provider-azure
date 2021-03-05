@@ -142,29 +142,27 @@ spec:
   hostNetwork: true
   nodeSelector:
     node-role.kubernetes.io/master: ""
+  serviceAccountName: cloud-controller-manager
   tolerations:
-    - key: node.cloudprovider.kubernetes.io/uninitialized
-      value: "true"
-      effect: NoSchedule
     - key: node-role.kubernetes.io/master
       effect: NoSchedule
-  serviceAccountName: cloud-controller-manager
   containers:
     - name: cloud-controller-manager
-      image: mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v0.5.0
+      image: ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG:=mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v0.7.2}
       imagePullPolicy: IfNotPresent
       command: ["cloud-controller-manager"]
       args:
-        - --allocate-node-cidrs=false
-        - --cloud-config=/etc/kubernetes/azure.json
-        - --cloud-provider=azure
-        - --cluster-cidr=192.168.0.0/16
-        - --configure-cloud-routes=true
-        - --controllers=*
-        - --leader-elect=true
-        - --route-reconciliation-period=10s
-        - --v=2
-        - --profiling=false
+        - "--allocate-node-cidrs=true"
+        - "--cloud-config=/etc/kubernetes/azure.json"
+        - "--cloud-provider=azure"
+        - "--cluster-cidr=10.244.0.0/16"
+        - "--cluster-name=${CLUSTER_NAME}"
+        - "--controllers=*,-cloud-node" # disable cloud-node controller
+        - "--configure-cloud-routes=true" # "false" for Azure CNI and "true" for other network plugins
+        - "--leader-elect=true"
+        - "--route-reconciliation-period=10s"
+        - "--v=2"
+        - "--port=10267"
       resources:
         requests:
           cpu: 100m
@@ -172,11 +170,21 @@ spec:
         limits:
           cpu: "4"
           memory: 2Gi
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 10267
+        initialDelaySeconds: 20
+        periodSeconds: 10
+        timeoutSeconds: 5
       volumeMounts:
         - name: etc-kubernetes
           mountPath: /etc/kubernetes
         - name: etc-ssl
           mountPath: /etc/ssl
+          readOnly: true
+        - name: msi
+          mountPath: /var/lib/waagent/ManagedIdentity-Settings
           readOnly: true
   volumes:
     - name: etc-kubernetes
@@ -185,3 +193,6 @@ spec:
     - name: etc-ssl
       hostPath:
         path: /etc/ssl
+    - name: msi
+      hostPath:
+        path: /var/lib/waagent/ManagedIdentity-Settings
