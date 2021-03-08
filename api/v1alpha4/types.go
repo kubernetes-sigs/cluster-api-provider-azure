@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	// ControllerNamespace is the namespace where controller manager will run
-	ControllerNamespace = "capz-system"
 	// ControlPlane machine label
 	ControlPlane string = "control-plane"
 	// Node machine label
