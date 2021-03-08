@@ -147,9 +147,6 @@ spec:
   selector:
     matchLabels: null
   template:
-    metadata:
-      labels:
-        nodepool: pool1
     spec:
       bootstrap:
         configRef:
@@ -204,6 +201,9 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       useExperimentalRetryJoin: true
 ---
+# MachineHealthCheck object with
+# - a selector that targets all the machines with label e2e.remediation.label=""
+# - unhealthyConditions triggering remediation after 10s the condition is set
 apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineHealthCheck
 metadata:
@@ -214,11 +214,11 @@ spec:
   maxUnhealthy: 100%
   selector:
     matchLabels:
-      nodepool: pool1
+      cluster.x-k8s.io/control-plane: ""
   unhealthyConditions:
-  - status: "True"
-    timeout: 30s
-    type: E2ENodeUnhealthy
+    - type: e2e.remediation.condition
+      status: "False"
+      timeout: 10s
 ---
 apiVersion: v1
 data: ${CNI_RESOURCES}
