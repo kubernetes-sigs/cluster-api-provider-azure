@@ -50,6 +50,18 @@ func TestReconcileGroups(t *testing.T) {
 			},
 		},
 		{
+			name:          "return error when querying a resource group",
+			expectedError: "failed to get resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("fake-location")
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				m.Get(gomockinternal.AContext(), "my-rg").Return(resources.Group{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+			},
+		},
+
+		{
 			name:          "create a resource group",
 			expectedError: "",
 			expect: func(s *mock_groups.MockGroupScopeMockRecorder, m *mock_groups.MockclientMockRecorder) {
