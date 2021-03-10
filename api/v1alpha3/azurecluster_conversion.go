@@ -24,53 +24,19 @@ import (
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	apiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1alpha4).
 func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*infrav1alpha4.AzureCluster)
-
-	if err := Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(src, dst, nil); err != nil {
-		return err
-	}
-
-	// Manually restore data.
-	restored := &infrav1alpha4.AzureCluster{}
-	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
-		return err
-	}
-
-	for _, restoredSubnet := range restored.Spec.NetworkSpec.Subnets {
-		for _, dstSubnet := range dst.Spec.NetworkSpec.Subnets {
-			if dstSubnet.Name == restoredSubnet.Name {
-				dstSubnet.RouteTable = restoredSubnet.RouteTable
-				dstSubnet.CIDRBlocks = restoredSubnet.CIDRBlocks
-				dstSubnet.SecurityGroup.IngressRules = restoredSubnet.SecurityGroup.IngressRules
-			}
-		}
-	}
-
-	dst.Spec.NetworkSpec.APIServerLB = restored.Spec.NetworkSpec.APIServerLB
-
-	return nil
+	return Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(src, dst, nil)
 }
 
 // ConvertFrom converts from the Hub version (v1alpha4) to this version.
 func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 	src := srcRaw.(*infrav1alpha4.AzureCluster)
-
-	if err := Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(src, dst, nil); err != nil {
-		return err
-	}
-
-	// Preserve Hub data on down-conversion.
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(src, dst, nil)
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1alpha4).
@@ -135,6 +101,9 @@ func Convert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(in *NetworkSpec, out *
 		}
 	}
 
+	if err := autoConvert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -152,6 +121,9 @@ func Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1alpha4.Netw
 		}
 	}
 
+	if err := autoConvert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
+		return err
+	}
 	return nil
 }
 
