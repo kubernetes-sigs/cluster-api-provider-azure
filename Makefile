@@ -450,7 +450,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 
 	# Deploy CAPI
 	# Using cluster-api nightly build until 0.4.x is released.
-	curl --retry $(CURL_RETRIES) -sSL https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210301/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210310/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
