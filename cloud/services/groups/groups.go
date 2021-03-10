@@ -58,7 +58,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	if _, err := s.client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
 		// resource group already exists, skip creation
 		return nil
+	} else if !azure.ResourceNotFound(err) {
+		return errors.Wrapf(err, "failed to get resource group %s", s.Scope.ResourceGroup())
 	}
+
 	s.Scope.V(2).Info("creating resource group", "resource group", s.Scope.ResourceGroup())
 	group := resources.Group{
 		Location: to.StringPtr(s.Scope.Location()),
