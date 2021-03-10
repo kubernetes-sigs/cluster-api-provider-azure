@@ -93,7 +93,7 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr c
 	// create mapper to transform incoming AzureClusters into AzureMachinePool requests
 	azureClusterMapper, err := AzureClusterToAzureMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create AzureCluster to AzureMachinePools mapper")
+		return errors.Wrap(err, "failed to create AzureCluster to AzureMachinePools mapper")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -112,12 +112,12 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr c
 		).
 		Build(r)
 	if err != nil {
-		return errors.Wrapf(err, "error creating controller")
+		return errors.Wrap(err, "error creating controller")
 	}
 
 	azureMachinePoolMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1exp.AzureMachinePoolList{}, mgr.GetScheme())
 	if err != nil {
-		return errors.Wrapf(err, "failed to create mapper for Cluster to AzureMachines")
+		return errors.Wrap(err, "failed to create mapper for Cluster to AzureMachines")
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
@@ -126,7 +126,7 @@ func (r *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr c
 		handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
-		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
 
 	return nil
@@ -288,7 +288,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 
-			return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile AzureMachinePool")
+			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachinePool")
 		}
 
 		return reconcile.Result{}, err
@@ -321,9 +321,9 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		// If scale set failed provisioning, delete it so it can be recreated
 		err := ams.Delete(ctx)
 		if err != nil {
-			return reconcile.Result{}, errors.Wrapf(err, "failed to delete VM in a failed state")
+			return reconcile.Result{}, errors.Wrap(err, "failed to delete VM in a failed state")
 		}
-		return reconcile.Result{}, errors.Wrapf(err, "VM deleted, retry creating in next reconcile")
+		return reconcile.Result{}, errors.Wrap(err, "VM deleted, retry creating in next reconcile")
 	default:
 		machinePoolScope.SetNotReady()
 		return reconcile.Result{}, nil

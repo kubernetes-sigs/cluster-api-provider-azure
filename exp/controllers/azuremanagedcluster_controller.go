@@ -63,7 +63,7 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mg
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		Build(r)
 	if err != nil {
-		return errors.Wrapf(err, "error creating controller")
+		return errors.Wrap(err, "error creating controller")
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause notifications.
@@ -72,7 +72,7 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mg
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedCluster"))),
 		predicates.ClusterUnpaused(log),
 	); err != nil {
-		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
 	return nil
 }

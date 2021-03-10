@@ -67,7 +67,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	asSku, err := s.resourceSKUCache.Get(ctx, string(compute.Aligned), resourceskus.AvailabilitySets)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get availability sets sku")
+		return errors.Wrap(err, "failed to get availability sets sku")
 	}
 
 	faultDomainCountStr, ok := asSku.GetCapability(resourceskus.MaximumPlatformFaultDomainCount)
@@ -77,7 +77,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	faultDomainCount, err := strconv.ParseUint(faultDomainCountStr, 10, 32)
 	if err != nil {
-		return errors.Wrapf(err, "failed to determine max fault domain count")
+		return errors.Wrap(err, "failed to determine max fault domain count")
 	}
 
 	s.Scope.V(2).Info("creating availability set", "availability set", availabilitySetName)

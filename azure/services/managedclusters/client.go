@@ -85,10 +85,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, na
 
 	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin operation")
+		return errors.Wrap(err, "failed to begin operation")
 	}
 	if err := future.WaitForCompletionRef(ctx, ac.managedclusters.Client); err != nil {
-		return errors.Wrapf(err, "failed to end operation")
+		return errors.Wrap(err, "failed to end operation")
 	}
 	_, err = future.Result(ac.managedclusters)
 	return err
@@ -101,10 +101,10 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name strin
 
 	future, err := ac.managedclusters.Delete(ctx, resourceGroupName, name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin operation")
+		return errors.Wrap(err, "failed to begin operation")
 	}
 	if err := future.WaitForCompletionRef(ctx, ac.managedclusters.Client); err != nil {
-		return errors.Wrapf(err, "failed to end operation")
+		return errors.Wrap(err, "failed to end operation")
 	}
 	_, err = future.Result(ac.managedclusters)
 	return err

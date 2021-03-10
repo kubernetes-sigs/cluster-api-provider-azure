@@ -62,7 +62,7 @@ func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to create scale set")
+		return errors.Wrap(err, "failed to create scale set")
 	}
 
 	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
@@ -82,7 +82,7 @@ func (s *azureMachinePoolService) Delete(ctx context.Context) error {
 	defer span.End()
 
 	if err := s.virtualMachinesScaleSetSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete scale set")
+		return errors.Wrap(err, "failed to delete scale set")
 	}
 	return nil
 }

@@ -216,7 +216,7 @@ func getDefaultImageSKUID(k8sVersion, os, osVersion string) (string, error) {
 func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	skuID, err := getDefaultImageSKUID(k8sVersion, "ubuntu", "1804")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get default image")
+		return nil, errors.Wrap(err, "failed to get default image")
 	}
 
 	defaultImage := &infrav1.Image{
@@ -235,7 +235,7 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 func GetDefaultWindowsImage(k8sVersion string) (*infrav1.Image, error) {
 	skuID, err := getDefaultImageSKUID(k8sVersion, "windows", "2019")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get default image")
+		return nil, errors.Wrap(err, "failed to get default image")
 	}
 
 	defaultImage := &infrav1.Image{

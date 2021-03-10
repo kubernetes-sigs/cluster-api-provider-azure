@@ -66,7 +66,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.V(2).Info("Updating tags")
 			result, err := s.client.GetAtScope(ctx, tagsSpec.Scope)
 			if err != nil {
-				return errors.Wrapf(err, "failed to get existing tags")
+				return errors.Wrap(err, "failed to get existing tags")
 			}
 			tags := make(map[string]*string)
 			if result.Properties != nil && result.Properties.Tags != nil {
@@ -81,7 +81,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 
 			if _, err := s.client.CreateOrUpdateAtScope(ctx, tagsSpec.Scope, resources.TagsResource{Properties: &resources.Tags{Tags: tags}}); err != nil {
-				return errors.Wrapf(err, "cannot update tags")
+				return errors.Wrap(err, "cannot update tags")
 			}
 
 			// We also need to update the annotation if anything changed.

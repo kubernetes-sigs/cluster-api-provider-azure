@@ -196,7 +196,7 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupNam
 
 	jsonData, err := future.MarshalJSON()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal async future")
+		return nil, errors.Wrap(err, "failed to marshal async future")
 	}
 
 	return &infrav1.Future{
@@ -249,7 +249,7 @@ func (ac *AzureClient) UpdateAsync(ctx context.Context, resourceGroupName, vmssN
 
 	jsonData, err := future.MarshalJSON()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal async future")
+		return nil, errors.Wrap(err, "failed to marshal async future")
 	}
 
 	return &infrav1.Future{
@@ -265,7 +265,7 @@ func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 	var genericFuture genericScaleSetFuture
 	futureData, err := base64.URLEncoding.DecodeString(future.FutureData)
 	if err != nil {
-		return compute.VirtualMachineScaleSet{}, errors.Wrapf(err, "failed to base64 decode future data")
+		return compute.VirtualMachineScaleSet{}, errors.Wrap(err, "failed to base64 decode future data")
 	}
 
 	switch future.Type {
@@ -298,7 +298,7 @@ func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 
 	done, err := genericFuture.DoneWithContext(ctx, ac.scalesets)
 	if err != nil {
-		return compute.VirtualMachineScaleSet{}, errors.Wrapf(err, "failed checking if the operation was complete")
+		return compute.VirtualMachineScaleSet{}, errors.Wrap(err, "failed checking if the operation was complete")
 	}
 
 	if !done {
@@ -307,7 +307,7 @@ func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 
 	vmss, err := genericFuture.Result(ac.scalesets)
 	if err != nil {
-		return vmss, errors.Wrapf(err, "failed fetching the result of operation for vmss")
+		return vmss, errors.Wrap(err, "failed fetching the result of operation for vmss")
 	}
 
 	return vmss, nil
@@ -368,7 +368,7 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssN
 
 	jsonData, err := future.MarshalJSON()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal async future")
+		return nil, errors.Wrap(err, "failed to marshal async future")
 	}
 
 	return &infrav1.Future{

@@ -85,12 +85,12 @@ func (s *Service) reconcileVM(ctx context.Context, roleSpec azure.RoleAssignment
 
 	resultVM, err := s.virtualMachinesClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
 	if err != nil {
-		return errors.Wrapf(err, "cannot get VM to assign role to system assigned identity")
+		return errors.Wrap(err, "cannot get VM to assign role to system assigned identity")
 	}
 
 	err = s.assignRole(ctx, roleSpec.Name, resultVM.Identity.PrincipalID)
 	if err != nil {
-		return errors.Wrapf(err, "cannot assign role to VM system assigned identity")
+		return errors.Wrap(err, "cannot assign role to VM system assigned identity")
 	}
 
 	s.Scope.V(2).Info("successfully created role assignment for generated Identity for VM", "virtual machine", roleSpec.MachineName)
@@ -104,12 +104,12 @@ func (s *Service) reconcileVMSS(ctx context.Context, roleSpec azure.RoleAssignme
 
 	resultVMSS, err := s.virtualMachineScaleSetClient.Get(ctx, s.Scope.ResourceGroup(), roleSpec.MachineName)
 	if err != nil {
-		return errors.Wrapf(err, "cannot get VMSS to assign role to system assigned identity")
+		return errors.Wrap(err, "cannot get VMSS to assign role to system assigned identity")
 	}
 
 	err = s.assignRole(ctx, roleSpec.Name, resultVMSS.Identity.PrincipalID)
 	if err != nil {
-		return errors.Wrapf(err, "cannot assign role to VMSS system assigned identity")
+		return errors.Wrap(err, "cannot assign role to VMSS system assigned identity")
 	}
 
 	s.Scope.V(2).Info("successfully created role assignment for generated Identity for VMSS", "virtual machine scale set", roleSpec.MachineName)
