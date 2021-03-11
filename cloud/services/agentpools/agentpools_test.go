@@ -243,6 +243,7 @@ func TestReconcile(t *testing.T) {
 						Count:               to.Int32Ptr(2),
 						OsDiskSizeGB:        to.Int32Ptr(100),
 						VMSize:              containerservice.VMSizeTypesStandardD2sV3,
+						OsType:              containerservice.Linux,
 						OrchestratorVersion: to.StringPtr("9.99.9999"),
 						ProvisioningState:   to.StringPtr("Succeeded"),
 						VnetSubnetID:        to.StringPtr(""),
