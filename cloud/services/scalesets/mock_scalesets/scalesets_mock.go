@@ -344,6 +344,20 @@ func (mr *MockScaleSetScopeMockRecorder) ScaleSetSpec() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScaleSetSpec", reflect.TypeOf((*MockScaleSetScope)(nil).ScaleSetSpec))
 }
 
+// VMSSExtensionSpecs mocks base method.
+func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VMSSExtensionSpecs")
+	ret0, _ := ret[0].([]azure.VMSSExtensionSpec)
+	return ret0
+}
+
+// VMSSExtensionSpecs indicates an expected call of VMSSExtensionSpecs.
+func (mr *MockScaleSetScopeMockRecorder) VMSSExtensionSpecs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VMSSExtensionSpecs", reflect.TypeOf((*MockScaleSetScope)(nil).VMSSExtensionSpecs))
+}
+
 // GetBootstrapData mocks base method.
 func (m *MockScaleSetScope) GetBootstrapData(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
