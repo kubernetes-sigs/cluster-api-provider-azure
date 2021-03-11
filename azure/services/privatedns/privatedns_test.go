@@ -32,7 +32,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2/klogr"
 )
 
 func TestReconcilePrivateDNS(t *testing.T) {
