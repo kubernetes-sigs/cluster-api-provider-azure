@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"sigs.k8s.io/cluster-api/util/conditions"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/api/trace"
@@ -297,12 +299,15 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	switch machinePoolScope.ProvisioningState() {
 	case infrav1.VMStateSucceeded:
 		machinePoolScope.V(2).Info("Scale Set is running", "id", machinePoolScope.ProviderID())
+		conditions.MarkTrue(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition)
 		machinePoolScope.SetReady()
 	case infrav1.VMStateCreating:
 		machinePoolScope.V(2).Info("Scale Set is creating", "id", machinePoolScope.ProviderID())
+		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetCreatingReason, clusterv1.ConditionSeverityInfo, "")
 		machinePoolScope.SetNotReady()
 	case infrav1.VMStateUpdating:
 		machinePoolScope.V(2).Info("Scale Set is updating", "id", machinePoolScope.ProviderID())
+		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetUpdatingReason, clusterv1.ConditionSeverityInfo, "")
 		machinePoolScope.SetNotReady()
 		// we may still be scaling up, so check back in a bit
 		return reconcile.Result{
@@ -311,6 +316,7 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	case infrav1.VMStateDeleting:
 		machinePoolScope.Info("Unexpected scale set deletion", "id", machinePoolScope.ProviderID())
 		r.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure scale set deletion")
+		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.VMRunningCondition, infrav1.ScaleSetDeletingReason, clusterv1.ConditionSeverityWarning, "")
 		machinePoolScope.SetNotReady()
 	case infrav1.VMStateFailed:
 		machinePoolScope.SetNotReady()
@@ -318,14 +324,16 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		r.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "FailedVMState", "Azure scale set is in failed state")
 		machinePoolScope.SetFailureReason(capierrors.UpdateMachineError)
 		machinePoolScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machinePoolScope.ProvisioningState()))
+		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetProvisionFailedReason, clusterv1.ConditionSeverityError, "")
 		// If scale set failed provisioning, delete it so it can be recreated
 		err := ams.Delete(ctx)
 		if err != nil {
-			return reconcile.Result{}, errors.Wrap(err, "failed to delete VM in a failed state")
+			return reconcile.Result{}, errors.Wrap(err, "failed to delete scale set in a failed state")
 		}
-		return reconcile.Result{}, errors.Wrap(err, "VM deleted, retry creating in next reconcile")
+		return reconcile.Result{}, errors.Wrap(err, "Scale set deleted, retry creating in next reconcile")
 	default:
 		machinePoolScope.SetNotReady()
+		conditions.MarkUnknown(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition, "", "")
 		return reconcile.Result{}, nil
 	}
 

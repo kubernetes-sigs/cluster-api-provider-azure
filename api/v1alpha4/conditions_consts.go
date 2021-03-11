@@ -21,11 +21,7 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 // AzureCluster Conditions and Reasons
 const (
 	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure
-	NetworkInfrastructureReadyCondition = "NetworkInfrastructureReady"
-	// LoadBalancerProvisioningReason API Server endpoint for the loadbalancer
-	LoadBalancerProvisioningReason = "LoadBalancerProvisioning"
-	// LoadBalancerProvisioningFailedReason used for failure during provisioning of loadbalancer.
-	LoadBalancerProvisioningFailedReason = "LoadBalancerProvisioningFailed"
+	NetworkInfrastructureReadyCondition clusterv1.ConditionType = "NetworkInfrastructureReady"
 	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
@@ -34,20 +30,36 @@ const (
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
 	VMRunningCondition clusterv1.ConditionType = "VMRunning"
-	// VMNCreatingReason used when the vm creation is in progress.
-	VMNCreatingReason = "VMCreating"
-	// VMNUpdatingReason used when the vm updating is in progress.
-	VMNUpdatingReason = "VMUpdating"
-	// VMNotFoundReason used when the vm couldn't be retrieved.
-	VMNotFoundReason = "VMNotFound"
+	// VMCreatingReason used when the vm creation is in progress.
+	VMCreatingReason = "VMCreating"
+	// VMUpdatingReason used when the vm updating is in progress.
+	VMUpdatingReason = "VMUpdating"
 	// VMDeletingReason used when the vm is in a deleting state.
-	VMDDeletingReason = "VMDeleting"
-	// VMStoppedReason vm is in a stopped state.
-	VMStoppedReason = "VMStopped"
+	VMDeletingReason = "VMDeleting"
 	// VMProvisionFailedReason used for failures during vm provisioning.
 	VMProvisionFailedReason = "VMProvisionFailed"
 	// WaitingForClusterInfrastructureReason used when machine is waiting for cluster infrastructure to be ready before proceeding.
 	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
 	// WaitingForBootstrapDataReason used when machine is waiting for bootstrap data to be ready before proceeding.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
+	// BootstrapSucceededCondition reports the result of the execution of the boostrap data on the machine.
+	BootstrapSucceededCondition = "BoostrapSucceeded"
+	// BootstrapInProgressReason is used to indicate the bootstrap data has not finished executing.
+	BootstrapInProgressReason = "BootstrapInProgress"
+	// BootstrapFailedReason is used to indicate the bootstrap process ran into an error.
+	BootstrapFailedReason = "BootstrapFailed"
+)
+
+// AzureMachinePool Conditions and Reasons
+const (
+	// ScaleSetRunningCondition reports on current status of the Azure Scale Set.
+	ScaleSetRunningCondition clusterv1.ConditionType = "ScaleSetRunning"
+	// ScaleSetCreatingReason used when the scale set creation is in progress.
+	ScaleSetCreatingReason = "ScaleSetCreating"
+	// ScaleSetUpdatingReason used when the scale set updating is in progress.
+	ScaleSetUpdatingReason = "ScaleSetUpdating"
+	// ScaleSetDeletingReason used when the scale set is in a deleting state.
+	ScaleSetDeletingReason = "ScaleSetDeleting"
+	// ScaleSetProvisionFailedReason used for failures during scale set provisioning.
+	ScaleSetProvisionFailedReason = "ScaleSetProvisionFailed"
 )

@@ -991,8 +991,9 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 								Publisher:          to.StringPtr("somePublisher"),
 								Type:               to.StringPtr("someExtension"),
 								TypeHandlerVersion: to.StringPtr("someVersion"),
-								Settings:           nil,
-								ProtectedSettings:  nil,
+								ProtectedSettings: map[string]string{
+									"commandToExecute": "echo hello",
+								},
 							},
 						},
 					},
@@ -1087,9 +1088,13 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 	}, nil)
 	s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
 		{
-			Name:      "someExtension",
-			Publisher: "somePublisher",
-			Version:   "someVersion",
+			Name:         "someExtension",
+			ScaleSetName: "my-vmss",
+			Publisher:    "somePublisher",
+			Version:      "someVersion",
+			ProtectedSettings: map[string]string{
+				"commandToExecute": "echo hello",
+			},
 		},
 	}).AnyTimes()
 }

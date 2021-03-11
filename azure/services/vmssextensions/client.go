@@ -28,8 +28,6 @@ import (
 // Client wraps go-sdk
 type client interface {
 	Get(context.Context, string, string, string) (compute.VirtualMachineScaleSetExtension, error)
-	CreateOrUpdate(context.Context, string, string, string, compute.VirtualMachineScaleSetExtension) error
-	Delete(context.Context, string, string, string) error
 }
 
 // AzureClient contains the Azure go-sdk Client
@@ -58,38 +56,4 @@ func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmssName, nam
 	defer span.End()
 
 	return ac.vmssextensions.Get(ctx, resourceGroupName, vmssName, name, "")
-}
-
-// CreateOrUpdate creates or updates the virtual machine scale set extension
-func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vmName, name string, parameters compute.VirtualMachineScaleSetExtension) error {
-	ctx, span := tele.Tracer().Start(ctx, "vmssextensions.AzureClient.CreateOrUpdate")
-	defer span.End()
-
-	future, err := ac.vmssextensions.CreateOrUpdate(ctx, resourceGroupName, vmName, name, parameters)
-	if err != nil {
-		return err
-	}
-	err = future.WaitForCompletionRef(ctx, ac.vmssextensions.Client)
-	if err != nil {
-		return err
-	}
-	_, err = future.Result(ac.vmssextensions)
-	return err
-}
-
-// Delete removes the virtual machine scale set extension.
-func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, vmName, name string) error {
-	ctx, span := tele.Tracer().Start(ctx, "vmssextensions.AzureClient.Delete")
-	defer span.End()
-
-	future, err := ac.vmssextensions.Delete(ctx, resourceGroupName, vmName, name)
-	if err != nil {
-		return err
-	}
-	err = future.WaitForCompletionRef(ctx, ac.vmssextensions.Client)
-	if err != nil {
-		return err
-	}
-	_, err = future.Result(ac.vmssextensions)
-	return err
 }

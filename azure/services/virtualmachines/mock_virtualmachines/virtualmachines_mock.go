@@ -392,6 +392,18 @@ func (mr *MockVMScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockVMScope)(nil).TenantID))
 }
 
+// UpdateStatus mocks base method.
+func (m *MockVMScope) UpdateStatus() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateStatus")
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus.
+func (mr *MockVMScopeMockRecorder) UpdateStatus() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockVMScope)(nil).UpdateStatus))
+}
+
 // V mocks base method.
 func (m *MockVMScope) V(level int) logr.Logger {
 	m.ctrl.T.Helper()

@@ -535,7 +535,7 @@ func (s *Service) generateExtensions() []compute.VirtualMachineScaleSetExtension
 				Type:               to.StringPtr(extensionSpec.Name),
 				TypeHandlerVersion: to.StringPtr(extensionSpec.Version),
 				Settings:           nil,
-				ProtectedSettings:  nil,
+				ProtectedSettings:  extensionSpec.ProtectedSettings,
 			},
 		}
 	}

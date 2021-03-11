@@ -28,6 +28,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1alpha40 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // MockVMExtensionScope is a mock of VMExtensionScope interface.
@@ -253,6 +254,18 @@ func (m *MockVMExtensionScope) ResourceGroup() string {
 func (mr *MockVMExtensionScopeMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockVMExtensionScope)(nil).ResourceGroup))
+}
+
+// SetCondition mocks base method.
+func (m *MockVMExtensionScope) SetCondition(arg0 v1alpha40.ConditionType, arg1 string, arg2 v1alpha40.ConditionSeverity, arg3 bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCondition", arg0, arg1, arg2, arg3)
+}
+
+// SetCondition indicates an expected call of SetCondition.
+func (mr *MockVMExtensionScopeMockRecorder) SetCondition(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCondition", reflect.TypeOf((*MockVMExtensionScope)(nil).SetCondition), arg0, arg1, arg2, arg3)
 }
 
 // SubscriptionID mocks base method.

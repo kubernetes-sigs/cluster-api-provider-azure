@@ -51,18 +51,18 @@ func (m *Mockclient) EXPECT() *MockclientMockRecorder {
 	return m.recorder
 }
 
-// CreateOrUpdate mocks base method.
-func (m *Mockclient) CreateOrUpdate(arg0 context.Context, arg1, arg2, arg3 string, arg4 compute.VirtualMachineExtension) error {
+// CreateOrUpdateAsync mocks base method.
+func (m *Mockclient) CreateOrUpdateAsync(arg0 context.Context, arg1, arg2, arg3 string, arg4 compute.VirtualMachineExtension) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockclientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+// CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
+func (mr *MockclientMockRecorder) CreateOrUpdateAsync(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*Mockclient)(nil).CreateOrUpdateAsync), arg0, arg1, arg2, arg3, arg4)
 }
 
 // Delete mocks base method.

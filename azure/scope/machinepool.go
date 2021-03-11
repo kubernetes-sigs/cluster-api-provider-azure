@@ -20,6 +20,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
@@ -259,6 +263,26 @@ func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 	m.AzureMachinePool.Status.FailureReason = &v
 }
 
+// SetBootstrapConditions sets the AzureMachinePool BootstrapSucceeded condition based on the extension provisioning states.
+func (m *MachinePoolScope) SetBootstrapConditions(provisioningState string, extensionName string) error {
+	switch infrav1.ProvisioningState(provisioningState) {
+	case infrav1.Succeeded:
+		m.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "scale set", m.Name())
+		conditions.MarkTrue(m.AzureMachinePool, infrav1.BootstrapSucceededCondition)
+		return nil
+	case infrav1.Creating:
+		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "scale set", m.Name())
+		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
+		return azure.WithTransientError(errors.New("extension still provisioning"), 30*time.Second)
+	case infrav1.Failed:
+		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "scale set", m.Name())
+		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
+		return azure.WithTerminalError(errors.New("extension state failed"))
+	default:
+		return nil
+	}
+}
+
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachinePool. If the same key is present in both,
 // the value from AzureMachinePool takes precedence.
 func (m *MachinePoolScope) AdditionalTags() infrav1.Tags {
@@ -368,6 +392,9 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
 				ScaleSetName: m.Name(),
 				Publisher:    publisher,
 				Version:      version,
+				ProtectedSettings: map[string]string{
+					"commandToExecute": azure.BootstrapExtensionCommand(),
+				},
 			},
 		}
 	}

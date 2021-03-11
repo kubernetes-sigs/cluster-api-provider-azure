@@ -52,6 +52,7 @@ type VMScope interface {
 	SetProviderID(string)
 	SetAddresses([]corev1.NodeAddress)
 	SetVMState(infrav1.VMState)
+	UpdateStatus()
 }
 
 // Service provides operations on azure resources
@@ -97,6 +98,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
 		s.Scope.SetAddresses(existingVM.Addresses)
 		s.Scope.SetVMState(existingVM.State)
+		s.Scope.UpdateStatus()
 	default:
 		s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
 		sku, err := s.resourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)

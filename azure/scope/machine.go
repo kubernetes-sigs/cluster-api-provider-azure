@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
@@ -241,6 +242,9 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 				VMName:    m.Name(),
 				Publisher: publisher,
 				Version:   version,
+				ProtectedSettings: map[string]string{
+					"commandToExecute": azure.BootstrapExtensionCommand(),
+				},
 			},
 		}
 	}
@@ -380,6 +384,52 @@ func (m *MachineScope) SetFailureMessage(v error) {
 // SetFailureReason sets the AzureMachine status failure reason.
 func (m *MachineScope) SetFailureReason(v capierrors.MachineStatusError) {
 	m.AzureMachine.Status.FailureReason = &v
+}
+
+// SetBootstrapConditions sets the AzureMachine BootstrapSucceeded condition based on the extension provisioning states.
+func (m *MachineScope) SetBootstrapConditions(provisioningState string, extensionName string) error {
+	switch infrav1.VMState(provisioningState) {
+	case infrav1.VMStateSucceeded:
+		m.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "virtual machine", m.Name())
+		conditions.MarkTrue(m.AzureMachine, infrav1.BootstrapSucceededCondition)
+		return nil
+	case infrav1.VMStateCreating:
+		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "virtual machine", m.Name())
+		conditions.MarkFalse(m.AzureMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
+		return azure.WithTransientError(errors.New("extension still provisioning"), 30*time.Second)
+	case infrav1.VMStateFailed:
+		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "virtual machine", m.Name())
+		conditions.MarkFalse(m.AzureMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
+		return azure.WithTerminalError(errors.New("extension state failed"))
+	default:
+		return nil
+	}
+}
+
+// UpdateStatus updates the AzureMachine status.
+func (m *MachineScope) UpdateStatus() {
+	switch m.VMState() {
+	case infrav1.VMStateSucceeded:
+		m.V(2).Info("VM is running", "id", m.GetVMID())
+		conditions.MarkTrue(m.AzureMachine, infrav1.VMRunningCondition)
+	case infrav1.VMStateCreating:
+		m.V(2).Info("VM is creating", "id", m.GetVMID())
+		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMCreatingReason, clusterv1.ConditionSeverityInfo, "")
+	case infrav1.VMStateUpdating:
+		m.V(2).Info("VM is updating", "id", m.GetVMID())
+		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMUpdatingReason, clusterv1.ConditionSeverityInfo, "")
+	case infrav1.VMStateDeleting:
+		m.Info("Unexpected VM deletion", "id", m.GetVMID())
+		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDeletingReason, clusterv1.ConditionSeverityWarning, "")
+	case infrav1.VMStateFailed:
+		m.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", m.GetVMID())
+		m.SetFailureReason(capierrors.UpdateMachineError)
+		m.SetFailureMessage(errors.Errorf("Azure VM state is %s", m.VMState()))
+		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, "")
+	default:
+		m.V(2).Info("VM state is undefined", "id", m.GetVMID())
+		conditions.MarkUnknown(m.AzureMachine, infrav1.VMRunningCondition, "", "")
+	}
 }
 
 // SetAnnotation sets a key value annotation on the AzureMachine.
