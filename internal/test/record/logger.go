@@ -163,8 +163,8 @@ func (l *Logger) Error(err error, msg string, kvs ...interface{}) {
 	l.write("Error", values)
 }
 
-// V returns an InfoLogger value for a specific verbosity level.
-func (l *Logger) V(level int) logr.InfoLogger {
+// V returns an Logger value for a specific verbosity level.
+func (l *Logger) V(level int) logr.Logger {
 	nl := l.clone()
 	nl.level = level
 	return nl

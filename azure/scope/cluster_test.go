@@ -25,13 +25,18 @@ import (
 
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestGettingIngressRules(t *testing.T) {
 	g := NewWithT(t)
+	scheme := runtime.NewScheme()
+	_ = clusterv1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -68,12 +73,16 @@ func TestGettingIngressRules(t *testing.T) {
 
 	os.Setenv("AZURE_ENVIRONMENT", "AzurePublicCloud")
 
+	initObjects := []runtime.Object{cluster, azureCluster}
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
 	clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
 		AzureClients: AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
 		},
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
+		Client:       fakeClient,
 	})
 	g.Expect(err).ToNot(HaveOccurred())
 

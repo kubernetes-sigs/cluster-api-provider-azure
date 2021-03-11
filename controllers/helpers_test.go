@@ -82,6 +82,9 @@ func TestAzureClusterToAzureMachinesMapper(t *testing.T) {
 
 func TestGetCloudProviderConfig(t *testing.T) {
 	g := NewWithT(t)
+	scheme := runtime.NewScheme()
+	_ = clusterv1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 
 	cluster := newCluster("foo")
 	cluster.Default()
@@ -135,12 +138,16 @@ func TestGetCloudProviderConfig(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			initObjects := []runtime.Object{tc.cluster, tc.azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
 			clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 				AzureClients: scope.AzureClients{
 					Authorizer: autorest.NullAuthorizer{},
 				},
 				Cluster:      tc.cluster,
 				AzureCluster: tc.azureCluster,
+				Client:       fakeClient,
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
@@ -196,18 +203,18 @@ func TestReconcileAzureSecret(t *testing.T) {
 	cluster.Default()
 	azureCluster.Default()
 
+	scheme := setupScheme(g)
+	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
+
 	clusterScope, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
 		},
 		Cluster:      cluster,
 		AzureCluster: azureCluster,
+		Client:       kubeclient,
 	})
 	g.Expect(err).NotTo(HaveOccurred())
-
-	scheme := setupScheme(g)
-
-	kubeclient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

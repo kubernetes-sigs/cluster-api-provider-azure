@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -56,10 +57,16 @@ func init() {
 }
 
 func TestNewService(t *testing.T) {
+	g := NewGomegaWithT(t)
+	scheme := runtime.NewScheme()
+	_ = clusterv1.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+	_ = infrav1exp.AddToScheme(scheme)
+
 	cluster := &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
 	}
-	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(cluster).Build()
+	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(cluster).Build()
 	s, err := scope.NewClusterScope(context.Background(), scope.ClusterScopeParams{
 		AzureClients: scope.AzureClients{
 			Authorizer: autorest.NullAuthorizer{},
@@ -77,8 +84,6 @@ func TestNewService(t *testing.T) {
 			},
 		},
 	})
-
-	g := NewGomegaWithT(t)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	mps, err := scope.NewMachinePoolScope(scope.MachinePoolScopeParams{
