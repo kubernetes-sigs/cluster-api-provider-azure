@@ -64,7 +64,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to get existing agent pool")
+		return errors.Wrap(err, "failed to get existing agent pool")
 	}
 
 	// For updates, we want to pass whatever we find in the existing

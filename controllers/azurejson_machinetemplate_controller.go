@@ -155,7 +155,7 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	)
 
 	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to create cloud provider config")
+		return ctrl.Result{}, errors.Wrap(err, "failed to create cloud provider config")
 	}
 
 	if err := reconcileAzureSecret(ctx, log, r.Client, owner, newSecret, clusterScope.ClusterName()); err != nil {

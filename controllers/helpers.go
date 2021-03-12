@@ -54,7 +54,7 @@ import (
 func AzureClusterToAzureMachinesMapper(ctx context.Context, c client.Client, ro runtime.Object, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(ro, scheme)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find GVK for AzureMachine")
+		return nil, errors.Wrap(err, "failed to find GVK for AzureMachine")
 	}
 
 	return func(o client.Object) []ctrl.Request {

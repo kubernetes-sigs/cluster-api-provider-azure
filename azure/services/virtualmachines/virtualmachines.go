@@ -127,12 +127,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 		priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmSpec.SpotVMOptions)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get Spot VM options")
+			return errors.Wrap(err, "failed to get Spot VM options")
 		}
 
 		osProfile, err := s.generateOSProfile(ctx, vmSpec)
 		if err != nil {
-			return errors.Wrapf(err, "failed to generate OS Profile")
+			return errors.Wrap(err, "failed to generate OS Profile")
 		}
 
 		virtualMachine := compute.VirtualMachine{
@@ -438,7 +438,7 @@ func getResourceNameByID(resourceID string) string {
 func (s *Service) generateOSProfile(ctx context.Context, vmSpec azure.VMSpec) (*compute.OSProfile, error) {
 	sshKey, err := base64.StdEncoding.DecodeString(vmSpec.SSHKeyData)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode ssh public key")
+		return nil, errors.Wrap(err, "failed to decode ssh public key")
 	}
 	bootstrapData, err := s.Scope.GetBootstrapData(ctx)
 	if err != nil {

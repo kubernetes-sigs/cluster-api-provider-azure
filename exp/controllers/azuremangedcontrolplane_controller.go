@@ -62,7 +62,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
 	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(ctx, r.Client, log)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
+		return errors.Wrap(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -76,7 +76,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		).
 		Build(r)
 	if err != nil {
-		return errors.Wrapf(err, "error creating controller")
+		return errors.Wrap(err, "error creating controller")
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
@@ -85,7 +85,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
-		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
 
 	return nil
@@ -144,7 +144,7 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 	}
 	defaultPool := &infrav1exp.AzureManagedMachinePool{}
 	if err := r.Client.Get(ctx, defaultPoolKey, defaultPool); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "failed to fetch default pool reference")
+		return reconcile.Result{}, errors.Wrap(err, "failed to fetch default pool reference")
 	}
 
 	log = log.WithValues("azureManagedMachinePool", defaultPoolKey.Name)

@@ -81,7 +81,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	// create mapper to transform incoming AzureManagedClusters into AzureManagedMachinePool requests
 	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create AzureManagedCluster to AzureManagedMachinePools mapper")
+		return errors.Wrap(err, "failed to create AzureManagedCluster to AzureManagedMachinePools mapper")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -100,7 +100,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 		).
 		Build(r)
 	if err != nil {
-		return errors.Wrapf(err, "error creating controller")
+		return errors.Wrap(err, "error creating controller")
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
@@ -109,7 +109,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"))),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
-		return errors.Wrapf(err, "failed adding a watch for ready clusters")
+		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
 
 	return nil

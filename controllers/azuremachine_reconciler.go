@@ -119,15 +119,15 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 	defer span.End()
 
 	if err := s.virtualMachinesSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete machine")
+		return errors.Wrap(err, "failed to delete machine")
 	}
 
 	if err := s.networkInterfacesSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete network interface")
+		return errors.Wrap(err, "failed to delete network interface")
 	}
 
 	if err := s.inboundNatRulesSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete inbound NAT rule")
+		return errors.Wrap(err, "failed to delete inbound NAT rule")
 	}
 
 	if err := s.publicIPsSvc.Delete(ctx); err != nil {
@@ -139,7 +139,7 @@ func (s *azureMachineService) Delete(ctx context.Context) error {
 	}
 
 	if err := s.availabilitySetsSvc.Delete(ctx); err != nil {
-		return errors.Wrapf(err, "failed to delete availability set")
+		return errors.Wrap(err, "failed to delete availability set")
 	}
 
 	return nil

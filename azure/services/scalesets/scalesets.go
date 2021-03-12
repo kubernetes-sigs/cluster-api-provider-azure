@@ -107,7 +107,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// HTTP(404) resource was not found, so we need to create it with a PUT
 		future, err = s.createVMSS(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "failed to start creating VMSS")
+			return errors.Wrap(err, "failed to start creating VMSS")
 		}
 	case err == nil:
 		// HTTP(200)
@@ -115,7 +115,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// we do this to avoid overwriting fields in networkProfile modified by cloud-provider
 		future, err = s.patchVMSSIfNeeded(ctx, fetchedVMSS)
 		if err != nil {
-			return errors.Wrapf(err, "failed to start updating VMSS")
+			return errors.Wrap(err, "failed to start updating VMSS")
 		}
 	default:
 		// just in case, set the provider ID if the instance exists
@@ -182,7 +182,7 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 	s.Scope.SetProvisioningState(infrav1.VMStateCreating)
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
-		return future, errors.Wrapf(err, "cannot create VMSS")
+		return future, errors.Wrap(err, "cannot create VMSS")
 	}
 
 	s.Scope.V(2).Info("starting to create VMSS", "scale set", spec.Name)
@@ -231,7 +231,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 		if azure.ResourceConflict(err) {
 			return future, azure.WithTransientError(err, 30*time.Second)
 		}
-		return future, errors.Wrapf(err, "failed updating VMSS")
+		return future, errors.Wrap(err, "failed updating VMSS")
 	}
 
 	s.Scope.SetProvisioningState(infrav1.VMStateUpdating)
@@ -358,7 +358,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmssSpec.SpotVMOptions)
 	if err != nil {
-		return result, errors.Wrapf(err, "failed to get Spot VM options")
+		return result, errors.Wrap(err, "failed to get Spot VM options")
 	}
 
 	// Get the node outbound LB backend pool ID
@@ -609,7 +609,7 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 func (s *Service) generateOSProfile(ctx context.Context, vmssSpec azure.ScaleSetSpec) (*compute.VirtualMachineScaleSetOSProfile, error) {
 	sshKey, err := base64.StdEncoding.DecodeString(vmssSpec.SSHKeyData)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode ssh public key")
+		return nil, errors.Wrap(err, "failed to decode ssh public key")
 	}
 	bootstrapData, err := s.Scope.GetBootstrapData(ctx)
 	if err != nil {
@@ -692,7 +692,7 @@ func base64EncodedHash(vmss compute.VirtualMachineScaleSet) (string, error) {
 
 	jsonData, err := vmss.MarshalJSON()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed marshaling vmss")
+		return "", errors.Wrap(err, "failed marshaling vmss")
 	}
 
 	hasher := sha256.New()

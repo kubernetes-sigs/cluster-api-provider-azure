@@ -46,7 +46,7 @@ import (
 func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find GVK for AzureMachinePool")
+		return nil, errors.Wrap(err, "failed to find GVK for AzureMachinePool")
 	}
 
 	return func(o client.Object) []ctrl.Request {
@@ -99,7 +99,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureManagedMachinePool), scheme)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find GVK for AzureManagedMachinePool")
+		return nil, errors.Wrap(err, "failed to find GVK for AzureManagedMachinePool")
 	}
 
 	return func(o client.Object) []ctrl.Request {

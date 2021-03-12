@@ -403,7 +403,7 @@ func (m *MachinePoolScope) getNodeStatusByProviderID(ctx context.Context, provid
 	nodeList := corev1.NodeList{}
 	for {
 		if err := workloadClient.List(ctx, &nodeList, client.Continue(nodeList.Continue)); err != nil {
-			return nil, errors.Wrapf(err, "failed to List nodes")
+			return nil, errors.Wrap(err, "failed to List nodes")
 		}
 
 		for _, node := range nodeList.Items {

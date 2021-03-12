@@ -79,42 +79,42 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	if err := s.setFailureDomainsForLocation(ctx); err != nil {
-		return errors.Wrapf(err, "failed to get availability zones")
+		return errors.Wrap(err, "failed to get availability zones")
 	}
 
 	s.scope.SetDNSName()
 	s.scope.SetControlPlaneIngressRules()
 
 	if err := s.groupsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile resource group")
+		return errors.Wrap(err, "failed to reconcile resource group")
 	}
 
 	if err := s.vnetSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile virtual network")
+		return errors.Wrap(err, "failed to reconcile virtual network")
 	}
 
 	if err := s.securityGroupSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile network security group")
+		return errors.Wrap(err, "failed to reconcile network security group")
 	}
 
 	if err := s.routeTableSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile route table")
+		return errors.Wrap(err, "failed to reconcile route table")
 	}
 
 	if err := s.subnetsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile subnet")
+		return errors.Wrap(err, "failed to reconcile subnet")
 	}
 
 	if err := s.publicIPSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile public IP")
+		return errors.Wrap(err, "failed to reconcile public IP")
 	}
 
 	if err := s.loadBalancerSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile load balancer")
+		return errors.Wrap(err, "failed to reconcile load balancer")
 	}
 
 	if err := s.privateDNSSvc.Reconcile(ctx); err != nil {
-		return errors.Wrapf(err, "failed to reconcile private dns")
+		return errors.Wrap(err, "failed to reconcile private dns")
 	}
 
 	return nil
@@ -128,35 +128,35 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 	if err := s.groupsSvc.Delete(ctx); err != nil {
 		if errors.Is(err, azure.ErrNotOwned) {
 			if err := s.privateDNSSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete private dns")
+				return errors.Wrap(err, "failed to delete private dns")
 			}
 
 			if err := s.loadBalancerSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete load balancer")
+				return errors.Wrap(err, "failed to delete load balancer")
 			}
 
 			if err := s.publicIPSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete public IP")
+				return errors.Wrap(err, "failed to delete public IP")
 			}
 
 			if err := s.subnetsSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete subnet")
+				return errors.Wrap(err, "failed to delete subnet")
 			}
 
 			if err := s.routeTableSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete route table")
+				return errors.Wrap(err, "failed to delete route table")
 			}
 
 			if err := s.securityGroupSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete network security group")
+				return errors.Wrap(err, "failed to delete network security group")
 			}
 
 			if err := s.vnetSvc.Delete(ctx); err != nil {
-				return errors.Wrapf(err, "failed to delete virtual network")
+				return errors.Wrap(err, "failed to delete virtual network")
 			}
 
 		} else {
-			return errors.Wrapf(err, "failed to delete resource group")
+			return errors.Wrap(err, "failed to delete resource group")
 		}
 	}
 

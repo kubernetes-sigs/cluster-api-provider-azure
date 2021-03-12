@@ -188,7 +188,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrapf(err, "failed to get existing managed cluster")
+		return errors.Wrap(err, "failed to get existing managed cluster")
 	} else if !azure.ResourceNotFound(err) {
 		ps := *existingMC.ManagedClusterProperties.ProvisioningState
 		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {

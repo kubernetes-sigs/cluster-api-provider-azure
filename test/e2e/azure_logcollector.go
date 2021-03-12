@@ -114,37 +114,37 @@ func collectBootLog(ctx context.Context, m *clusterv1.Machine, outputPath string
 	resourceId := strings.TrimPrefix(*m.Spec.ProviderID, "azure:///")
 	resource, err := azure.ParseResourceID(resourceId)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse resource id")
+		return errors.Wrap(err, "failed to parse resource id")
 	}
 
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
-		return errors.Wrapf(err, "failed to get settings from environment")
+		return errors.Wrap(err, "failed to get settings from environment")
 	}
 
 	vmClient := compute.NewVirtualMachinesClient(settings.GetSubscriptionID())
 	vmClient.Authorizer, err = settings.GetAuthorizer()
 	if err != nil {
-		return errors.Wrapf(err, "failed to get authorizer")
+		return errors.Wrap(err, "failed to get authorizer")
 	}
 
 	bootDiagnostics, err := vmClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get boot diagnostics data")
+		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
 
 	resp, err := http.Get(*bootDiagnostics.SerialConsoleLogBlobURI)
 	if err != nil || resp.StatusCode != 200 {
-		return errors.Wrapf(err, "failed to get logs from serial console uri")
+		return errors.Wrap(err, "failed to get logs from serial console uri")
 	}
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read response body")
+		return errors.Wrap(err, "failed to read response body")
 	}
 
 	if err := ioutil.WriteFile(filepath.Join(outputPath, "boot.log"), content, 0644); err != nil {
-		return errors.Wrapf(err, "failed to write response to file")
+		return errors.Wrap(err, "failed to write response to file")
 	}
 
 	return nil
