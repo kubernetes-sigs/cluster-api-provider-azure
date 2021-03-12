@@ -215,33 +215,6 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		}
 	}
 
-	// Handle backcompat for CidrBlock
-	if clusterScope.Vnet().CidrBlock != "" {
-		message := "vnet cidrBlock is deprecated, use cidrBlocks instead"
-		clusterScope.Info(message)
-		r.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
-
-		// Set CIDRBlocks if it is not set.
-		if len(clusterScope.Vnet().CIDRBlocks) == 0 {
-			clusterScope.Info("vnet cidrBlocks not set, setting with value from deprecated vnet cidrBlock", "cidrBlock", clusterScope.Vnet().CidrBlock)
-			clusterScope.Vnet().CIDRBlocks = []string{clusterScope.Vnet().CidrBlock}
-		}
-	}
-
-	for _, subnet := range clusterScope.Subnets() {
-		if subnet.CidrBlock != "" {
-			message := "subnet cidrBlock is deprecated, use cidrBlocks instead"
-			clusterScope.Info(message)
-			r.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
-
-			// Set CIDRBlocks if it is not set.
-			if len(subnet.CIDRBlocks) == 0 {
-				clusterScope.Info("subnet cidrBlocks not set, setting with value from deprecated subnet cidrBlock", "cidrBlock", subnet.CidrBlock)
-				subnet.CIDRBlocks = []string{subnet.CidrBlock}
-			}
-		}
-	}
-
 	acr, err := r.createAzureClusterService(clusterScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create a new AzureClusterReconciler")

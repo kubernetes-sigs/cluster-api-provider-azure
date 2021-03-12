@@ -34,9 +34,9 @@ func TestFuzzyConversion(t *testing.T) {
 	g.Expect(AddToScheme(scheme)).To(Succeed())
 	g.Expect(v1alpha4.AddToScheme(scheme)).To(Succeed())
 
-	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureCluster{}, &AzureCluster{}, overrideImageFuncs))
-	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureMachine{}, &AzureMachine{}, overrideImageFuncs))
-	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureMachineTemplate{}, &AzureMachineTemplate{}, overrideImageFuncs))
+	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureCluster{}, &AzureCluster{}, overrideImageFuncs, overrideDeprecatedFieldsFuncs))
+	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureMachine{}, &AzureMachine{}, overrideImageFuncs, overrideDeprecatedFieldsFuncs))
+	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureMachineTemplate{}, &AzureMachineTemplate{}, overrideImageFuncs, overrideDeprecatedFieldsFuncs))
 }
 
 func overrideImageFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
@@ -48,6 +48,20 @@ func overrideImageFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
 				SKU:       "SKU123",
 				Version:   "1.0.0",
 			}
+		},
+	}
+}
+
+func overrideDeprecatedFieldsFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
+	return []interface{}{
+		func(azureMachineSpec *AzureMachineSpec, c fuzz.Continue) {
+			azureMachineSpec.Location = ""
+		},
+		func(subnetSpec *SubnetSpec, c fuzz.Continue) {
+			subnetSpec.InternalLBIPAddress = ""
+		},
+		func(vnetSpec *VnetSpec, c fuzz.Continue) {
+			vnetSpec.CidrBlock = ""
 		},
 	}
 }

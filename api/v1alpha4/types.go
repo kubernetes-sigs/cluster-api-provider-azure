@@ -72,11 +72,6 @@ type VnetSpec struct {
 	// Name defines a name for the virtual network resource.
 	Name string `json:"name"`
 
-	// CidrBlock is the CIDR block to be used when the provider creates a managed virtual network.
-	// DEPRECATED: Use CIDRBlocks instead
-	// +optional
-	CidrBlock string `json:"cidrBlock,omitempty"`
-
 	// CIDRBlocks defines the virtual network's address space, specified as one or more address prefixes in CIDR notation.
 	// +optional
 	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
@@ -310,14 +305,6 @@ type AzureSharedGalleryImage struct {
 	Version string `json:"version"`
 }
 
-// AvailabilityZone specifies an Azure Availability Zone
-//
-// DEPRECATED: Use FailureDomain instead
-type AvailabilityZone struct {
-	ID      *string `json:"id,omitempty"`
-	Enabled *bool   `json:"enabled,omitempty"`
-}
-
 // VMIdentity defines the identity of the virtual machine, if configured.
 // +kubebuilder:validation:Enum=None;SystemAssigned;UserAssigned
 type VMIdentity string
@@ -427,20 +414,9 @@ type SubnetSpec struct {
 	// Name defines a name for the subnet resource.
 	Name string `json:"name"`
 
-	// CidrBlock is the CIDR block to be used when the provider creates a managed Vnet.
-	// DEPRECATED: Use CIDRBlocks instead
-	// +optional
-	CidrBlock string `json:"cidrBlock,omitempty"`
-
 	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
 	// +optional
 	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
-
-	// InternalLBIPAddress is the IP address that will be used as the internal LB private IP.
-	// For the control plane subnet only.
-	// +optional
-	// Deprecated: Use LoadBalancer private IP instead
-	InternalLBIPAddress string `json:"internalLBIPAddress,omitempty"`
 
 	// SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
 	// +optional

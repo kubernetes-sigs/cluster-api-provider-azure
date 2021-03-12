@@ -309,14 +309,6 @@ spec:
                       allocatePublicIP:
                         description: AllocatePublicIP allows the ability to create dynamic public ips for machines where this value is true.
                         type: boolean
-                      availabilityZone:
-                        description: 'DEPRECATED: use FailureDomain instead'
-                        properties:
-                          enabled:
-                            type: boolean
-                          id:
-                            type: string
-                        type: object
                       dataDisks:
                         description: DataDisk specifies the parameters that are used to add one or more data disks to the machine
                         items:
@@ -435,9 +427,6 @@ spec:
                             - version
                             type: object
                         type: object
-                      location:
-                        description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
-                        type: string
                       osDisk:
                         description: OSDisk specifies the parameters for the operating system disk of the machine
                         properties:
@@ -520,7 +509,6 @@ spec:
                       vmSize:
                         type: string
                     required:
-                    - location
                     - osDisk
                     - sshPublicKey
                     - vmSize

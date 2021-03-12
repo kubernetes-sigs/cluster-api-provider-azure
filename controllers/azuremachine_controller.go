@@ -264,18 +264,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		return reconcile.Result{}, nil
 	}
 
-	if machineScope.AzureMachine.Spec.AvailabilityZone.ID != nil {
-		message := "AvailabilityZone is deprecated, use FailureDomain instead"
-		machineScope.Info(message)
-		r.Recorder.Eventf(clusterScope.AzureCluster, corev1.EventTypeWarning, "DeprecatedField", message)
-
-		// Set FailureDomain if it is not set.
-		if machineScope.AzureMachine.Spec.FailureDomain == nil {
-			machineScope.V(2).Info("Failure domain not set, setting with value from AvailabilityZone.ID")
-			machineScope.AzureMachine.Spec.FailureDomain = machineScope.AzureMachine.Spec.AvailabilityZone.ID
-		}
-	}
-
 	ams, err := r.createAzureMachineService(machineScope)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")

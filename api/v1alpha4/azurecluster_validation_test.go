@@ -505,42 +505,6 @@ func TestSubnetNameInvalid(t *testing.T) {
 	})
 }
 
-func TestInternalLBIPAddressValid(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name                string
-		internalLBIPAddress string
-		cidrs               []string
-	}
-
-	testCase := test{
-		name:                "subnet name - invalid",
-		internalLBIPAddress: "1.1.1.1",
-		cidrs:               []string{"1.1.1.0/24"},
-	}
-
-	t.Run(testCase.name, func(t *testing.T) {
-		err := validateInternalLBIPAddress(testCase.internalLBIPAddress, testCase.cidrs,
-			field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("internalLBIPAddress"))
-		g.Expect(err).To(BeNil())
-	})
-}
-
-func TestInternalLBIPAddressInvalid(t *testing.T) {
-	g := NewWithT(t)
-
-	internalLBIPAddress := "1.1.1"
-	cidrs := []string{"1.1.1.0/24"}
-
-	err := validateInternalLBIPAddress(internalLBIPAddress, cidrs,
-		field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("internalLBIPAddress"))
-	g.Expect(err).NotTo(BeNil())
-	g.Expect(err.Type).To(Equal(field.ErrorTypeInvalid))
-	g.Expect(err.Field).To(Equal("spec.networkSpec.subnets[0].internalLBIPAddress"))
-	g.Expect(err.BadValue).To(BeEquivalentTo(internalLBIPAddress))
-}
-
 func TestIngressRules(t *testing.T) {
 	g := NewWithT(t)
 
