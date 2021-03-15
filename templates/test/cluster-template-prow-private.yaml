@@ -26,6 +26,7 @@ metadata:
   namespace: default
 spec:
   additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
   location: ${AZURE_LOCATION}
