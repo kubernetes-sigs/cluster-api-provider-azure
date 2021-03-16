@@ -1,0 +1,5 @@
+namespace: default
+resources:
+  - ../../../flavors/default
+patchesStrategicMerge:
+  - patches/custom-builds.yaml

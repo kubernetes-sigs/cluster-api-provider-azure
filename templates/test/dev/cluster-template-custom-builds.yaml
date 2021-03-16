@@ -1,0 +1,306 @@
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: Cluster
+metadata:
+  labels:
+    cni: calico
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+kind: KubeadmControlPlane
+metadata:
+  annotations:
+    controlplane.cluster.x-k8s.io/skip-kube-proxy: "true"
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  infrastructureTemplate:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureMachineTemplate
+    name: ${CLUSTER_NAME}-control-plane
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: "false"
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+          cluster-name: ${CLUSTER_NAME}
+        extraVolumes:
+        - hostPath: /etc/kubernetes/azure.json
+          mountPath: /etc/kubernetes/azure.json
+          name: cloud-config
+          readOnly: true
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+      kubernetesVersion: ${KUBERNETES_VERSION}
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+      - device: ephemeral0.1
+        filesystem: ext4
+        label: ephemeral0
+        replaceFS: ntfs
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+        tableType: gpt
+    files:
+    - content: |
+        #!/bin/bash
+
+        retrycmd() {
+          retries=$1; wait_sleep=$2; timeout=$3; shift && shift && shift
+          for i in $(seq 1 $retries); do
+            timeout $timeout $@ && break ||
+              if [ $i -eq $retries ]; then
+                return 1
+              else
+                sleep $wait_sleep
+              fi
+          done
+          echo Executed $i times
+        }
+        retrycmd_get_tarball() {
+          tar_retries=$1; wait_sleep=$2; tarball=$3; url=$4
+          for i in $(seq 1 $tar_retries); do
+            tar -tzf $tarball && break ||
+              if [ $i -eq $tar_retries ]; then
+                return 1
+              else
+                timeout 60 curl -fsSL $url -o $tarball
+                sleep $wait_sleep
+              fi
+          done
+        }
+
+        mkdir -p $HOME/.kube || exit 1
+        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config || exit 1
+        chown $(id -u):$(id -g) $HOME/.kube/config || exit 1
+        # wait for the cluster to come online based on the default kubeadm configuration
+        retrycmd 120 5 10 /usr/bin/kubectl 2>/dev/null cluster-info || exit 1
+        if [ -n "${KUBE_BINARY_URL}" ]; then
+          # stop the kubelet on this node so we can replace it
+          retrycmd 10 5 10 systemctl stop kubelet || exit 1
+          retrycmd_get_tarball 120 5 /tmp/kube-binary.tar.gz ${KUBE_BINARY_URL} || exit 1
+          tar -xzvf /tmp/kube-binary.tar.gz --strip-components=3 -C /usr/bin kubernetes/node/bin/kubelet || exit 1
+          tar -xzvf /tmp/kube-binary.tar.gz --strip-components=3 -C /usr/bin kubernetes/node/bin/kubectl || exit 1
+          chmod +x /usr/bin/kubelet /usr/bin/kubectl || exit 1
+          retrycmd 10 5 10 systemctl start kubelet || exit 1
+          # wait for the cluster to come back online
+          retrycmd 120 5 10 /usr/bin/kubectl 2>/dev/null cluster-info || exit 1
+        fi
+        if [ -n "${KUBE_PROXY_IMAGE_URL}" ]; then
+          retrycmd 10 5 10 kubectl -n kube-system set image daemonset/kube-proxy kube-proxy=${KUBE_PROXY_IMAGE_URL} || exit 1
+        fi
+        if [ -n "${KUBE_APISERVER_IMAGE_URL}" ] || [ -n "${KUBE_CONTROLLER_MANAGER_IMAGE_URL}" ] || [ -n "${KUBE_SCHEDULER_IMAGE_URL}" ]; then
+          retrycmd_get_tarball 120 5 /tmp/yq_linux_amd64.tar.gz https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz || exit 1
+          tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq || exit 1
+        fi
+        if [ -n "${KUBE_APISERVER_IMAGE_URL}" ]; then
+          yq e '.spec.containers[0].image = "${KUBE_APISERVER_IMAGE_URL}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml || exit 1
+        fi
+        if [ -n "${KUBE_CONTROLLER_MANAGER_IMAGE_URL}" ]; then
+          yq e '.spec.containers[0].image = "${KUBE_CONTROLLER_MANAGER_IMAGE_URL}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml || exit 1
+        fi
+        if [ -n "${KUBE_SCHEDULER_IMAGE_URL}" ]; then
+          yq e '.spec.containers[0].image = "${KUBE_SCHEDULER_IMAGE_URL}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml || exit 1
+        fi
+      owner: root:root
+      path: /tmp/replace-k8s-components.sh
+      permissions: "0744"
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-config: /etc/kubernetes/azure.json
+          cloud-provider: azure
+        name: '{{ ds.meta_data["local_hostname"] }}'
+    mounts:
+    - - LABEL=etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands:
+    - bash -c /tmp/replace-k8s-components.sh
+    useExperimentalRetryJoin: true
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataDisks:
+      - diskSizeGB: 256
+        lun: 0
+        nameSuffix: etcddisk
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
+---
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      files:
+      - content: |
+          #!/bin/bash
+
+          retrycmd() {
+            retries=$1; wait_sleep=$2; timeout=$3; shift && shift && shift
+            for i in $(seq 1 $retries); do
+              timeout $timeout $@ && break ||
+                if [ $i -eq $retries ]; then
+                  return 1
+                else
+                  sleep $wait_sleep
+                fi
+            done
+            echo Executed $i times
+          }
+          retrycmd_get_tarball() {
+            tar_retries=$1; wait_sleep=$2; tarball=$3; url=$4
+            echo "$tar_retries retries"
+            for i in $(seq 1 $tar_retries); do
+              tar -tzf $tarball && break ||
+                if [ $i -eq $tar_retries ]; then
+                  return 1
+                else
+                  timeout 60 curl -fsSL $url -o $tarball
+                  sleep $wait_sleep
+                fi
+            done
+          }
+
+          if [ -n "${KUBE_BINARY_URL}" ]; then
+            retrycmd_get_tarball 120 5 /tmp/kube-binary.tar.gz ${KUBE_BINARY_URL} || exit 1
+            # stop the kubelet on this node so we can replace it
+            retrycmd 10 5 10 systemctl stop kubelet || exit 1
+            tar -xzvf /tmp/kube-binary.tar.gz --strip-components=3 -C /usr/bin kubernetes/node/bin/kubelet || exit 1
+            chmod +x /usr/bin/kubelet || exit 1
+            retrycmd 10 5 10 systemctl start kubelet || exit 1
+          fi
+        owner: root:root
+        path: /tmp/replace-k8s-components.sh
+        permissions: "0744"
+      - contentFrom:
+          secret:
+            key: control-plane-azure.json
+            name: ${CLUSTER_NAME}-control-plane-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - bash -c /tmp/replace-k8s-components.sh

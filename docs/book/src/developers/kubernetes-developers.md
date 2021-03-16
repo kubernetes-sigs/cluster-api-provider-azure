@@ -123,3 +123,57 @@ AZURE_CLOUD_NODE_MANAGER_IMG=myrepo/my-cnm:v0.0.1 \
 CLUSTER_TEMPLATE=cluster-template-external-cloud-provider.yaml \
 make create-workload-cluster
 ```
+
+## Testing clusters built from Kubernetes source
+
+[A template is provided](../../templates/test/dev/cluster-template-custom-builds.yaml) that enables building clusters from custom built Kubernetes components. To quickly build a cluster using this template, export the following environment variables with values that declare the relevant custom-built Kubernetes component references:
+
+- `$KUBE_BINARY_URL`
+  - URL to .tar.gz file containing Kubernetes source-built artifacts
+- `$KUBE_APISERVER_IMAGE_URL`
+  - URL to source-built Kubernetes apiserver container image
+- `$KUBE_CONTROLLER_MANAGER_IMAGE_URL`
+  - URL to source-built Kubernetes controller-manager container image
+- `$KUBE_SCHEDULER_IMAGE_URL`
+  - URL to source-built Kubernetes scheduler container image
+- `$KUBE_PROXY_IMAGE_URL`
+  - URL to source-built Kubernetes kube-proxy container image
+
+In addition, ensure that [these environment variables described in the capz documentation](https://capz.sigs.k8s.io/developers/development.html#customizing-the-cluster-deployment) are also declared and exported.
+
+After that, you can run `make create-workload-cluster` from the git root of the `cluster-api-provider-azure` repository to create a new cluster running your specified custom Kubernetes build components. For example:
+
+```sh
+$ make create-workload-cluster
+# Create workload Cluster.
+/Users/jackfrancis/work/src/sigs.k8s.io/cluster-api-provider-azure/hack/tools/bin/envsubst-drone < /Users/jackfrancis/work/src/sigs.k8s.io/cluster-api-provider-azure/templates/test/dev/cluster-template-custom-builds.yaml | kubectl apply -f -
+cluster.cluster.x-k8s.io/capzcustom created
+azurecluster.infrastructure.cluster.x-k8s.io/capzcustom created
+kubeadmcontrolplane.controlplane.cluster.x-k8s.io/capzcustom-control-plane created
+azuremachinetemplate.infrastructure.cluster.x-k8s.io/capzcustom-control-plane created
+machinedeployment.cluster.x-k8s.io/capzcustom-md-0 created
+azuremachinetemplate.infrastructure.cluster.x-k8s.io/capzcustom-md-0 created
+kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/capzcustom-md-0 created
+# Wait for the kubeconfig to become available.
+timeout --foreground 300 bash -c "while ! kubectl get secrets | grep capzcustom-kubeconfig; do sleep 1; done"
+capzcustom-kubeconfig                 cluster.x-k8s.io/secret               1      1s
+# Get kubeconfig and store it locally.
+kubectl get secrets capzcustom-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
+timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
+Unable to connect to the server: dial tcp 20.190.10.231:6443: i/o timeout
+capzcustom-control-plane-gmvnc   NotReady   control-plane,master   8s    v1.20.5
+run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster
+$ echo $?
+0
+```
+
+The above `make create-workload-cluster` workflow assumes that your kubeconfig context points to your cluster-api management cluster. As the stdout reports, you'll be able to connect to your newly built cluster by referring to a newly generated kubeconfig file in the current working directory.
+
+A few notes:
+
+- The URL referenced in a `KUBE_BINARY_URL` environment variable should be a tar'd + gzip'd file that contains files at these relative filepaths in the archive:
+  - `kubernetes/node/bin/kubelet`
+  - `kubernetes/node/bin/kubectl`
+- It's not strictly required to include a reference to every component (for example, if you just want to test a custom build of kube-proxy, you may just define the `"KUBE_PROXY_IMAGE_URL"` environment variable), but we do assume that any referenced custom components passed to the cluster template are all built from the same source.
+- Specify a value of `KUBERNETES_VERSION` that shares a common minor version heritage with the source commit, if possible. If you are testing against very recent main branch upstream Kubernetes commits, the guidance is to use the most recent version of Kubernetes that your capz workflow supports. The latest stable release can always be found [here](https://storage.googleapis.com/kubernetes-release/release/stable.txt). Additionally you can use the URL template to get the latest 1.XX release:
+  - https://storage.googleapis.com/kubernetes-release/release/stable-1.XX.txt
