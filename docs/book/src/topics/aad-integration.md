@@ -114,7 +114,6 @@ kubelogin is a client-go credential (exec) plugin implementing Azure authenticat
 
 ### Set the config user context
 ```bash
-AZURE_ENVIRONMENT=AzurePublicCloud
 kubectl config set-credentials ad-user --exec-command kubelogin --exec-api-version=client.authentication.k8s.io/v1beta1 --exec-arg=get-token --exec-arg=--environment --exec-arg=$AZURE_ENVIRONMENT --exec-arg=--server-id --exec-arg=$AZURE_SERVER_APP_ID --exec-arg=--client-id --exec-arg=$AZURE_CLIENT_APP_ID --exec-arg=--tenant-id --exec-arg=$AZURE_TENANT_ID
 kubectl config set-context ${CLUSTER_NAME}-ad-user@${CLUSTER_NAME} --user ad-user --cluster ${CLUSTER_NAME}
 ```

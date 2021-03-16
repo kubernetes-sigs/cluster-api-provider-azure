@@ -27,16 +27,44 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
+const (
+	azureEnvironmentAnnotation = "azurecluster.infrastructure.cluster.x-k8s.io/azureEnvironment"
+)
+
 // ConvertTo converts this AzureCluster to the Hub version (v1alpha4).
 func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	dst := dstRaw.(*infrav1alpha4.AzureCluster)
-	return Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(src, dst, nil)
+	if err := Convert_v1alpha3_AzureCluster_To_v1alpha4_AzureCluster(src, dst, nil); err != nil {
+		return err
+	}
+
+	if azureEnvironment, ok := src.Annotations[azureEnvironmentAnnotation]; ok {
+		dst.Spec.AzureEnvironment = azureEnvironment
+		delete(dst.Annotations, azureEnvironmentAnnotation)
+		if len(dst.Annotations) == 0 {
+			dst.Annotations = nil
+		}
+	}
+
+	return nil
 }
 
 // ConvertFrom converts from the Hub version (v1alpha4) to this version.
 func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 	src := srcRaw.(*infrav1alpha4.AzureCluster)
-	return Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(src, dst, nil)
+	if err := Convert_v1alpha4_AzureCluster_To_v1alpha3_AzureCluster(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Preserve Spec.AzureEnvironment in annotation `azurecluster.infrastructure.cluster.x-k8s.io/azureEnvironment`
+	if src.Spec.AzureEnvironment != "" {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		dst.Annotations[azureEnvironmentAnnotation] = src.Spec.AzureEnvironment
+	}
+
+	return nil
 }
 
 // ConvertTo converts this AzureClusterList to the Hub version (v1alpha4).

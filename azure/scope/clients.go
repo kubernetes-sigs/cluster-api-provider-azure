@@ -21,9 +21,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
@@ -70,8 +72,8 @@ func (c *AzureClients) HashKey() string {
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 }
 
-func (c *AzureClients) setCredentials(subscriptionID string) error {
-	settings, err := auth.GetSettingsFromEnvironment()
+func (c *AzureClients) setCredentials(subscriptionID, environmentName string) error {
+	settings, err := c.getSettingsFromEnvironment(environmentName)
 	if err != nil {
 		return err
 	}
@@ -95,12 +97,12 @@ func (c *AzureClients) setCredentials(subscriptionID string) error {
 	return err
 }
 
-func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID string, credentialsProvider *AzureCredentialsProvider) error {
+func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider *AzureCredentialsProvider) error {
 	if credentialsProvider == nil {
 		return fmt.Errorf("credentials provider cannot have an empty value")
 	}
 
-	settings, err := auth.GetSettingsFromEnvironment()
+	settings, err := c.getSettingsFromEnvironment(environmentName)
 	if err != nil {
 		return err
 	}
@@ -119,4 +121,37 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 
 	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint)
 	return err
+}
+
+func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s auth.EnvironmentSettings, err error) {
+	s = auth.EnvironmentSettings{
+		Values: map[string]string{},
+	}
+	s.Values[auth.EnvironmentName] = environmentName
+	setValue(s, auth.SubscriptionID)
+	setValue(s, auth.TenantID)
+	setValue(s, auth.AuxiliaryTenantIDs)
+	setValue(s, auth.ClientID)
+	setValue(s, auth.ClientSecret)
+	setValue(s, auth.CertificatePath)
+	setValue(s, auth.CertificatePassword)
+	setValue(s, auth.Username)
+	setValue(s, auth.Password)
+	setValue(s, auth.Resource)
+	if v := s.Values[auth.EnvironmentName]; v == "" {
+		s.Environment = azure.PublicCloud
+	} else {
+		s.Environment, err = azure.EnvironmentFromName(v)
+	}
+	if s.Values[auth.Resource] == "" {
+		s.Values[auth.Resource] = s.Environment.ResourceManagerEndpoint
+	}
+	return
+}
+
+// adds the specified environment variable value to the Values map if it exists
+func setValue(settings auth.EnvironmentSettings, key string) {
+	if v := os.Getenv(key); v != "" {
+		settings.Values[key] = v
+	}
 }

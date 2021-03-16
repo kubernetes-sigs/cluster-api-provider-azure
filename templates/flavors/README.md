@@ -52,7 +52,6 @@ If you wish to override the default variables for flavor workers, you can specif
         "AZURE_TENANT_ID_B64": "****",
         "AZURE_CLIENT_SECRET_B64": "****",
         "AZURE_CLIENT_ID_B64": "****",
-        "AZURE_ENVIRONMENT": "AzureChinaCloud"
     },
     "worker-templates": {
         "flavors": {
@@ -89,7 +88,6 @@ N-series node type just for the `nvidia-gpu` flavor in `tilt-settings.json` to o
         "AZURE_TENANT_ID_B64": "****",
         "AZURE_CLIENT_SECRET_B64": "****",
         "AZURE_CLIENT_ID_B64": "****",
-        "AZURE_ENVIRONMENT": "AzurePublicCloud"
     },
     "worker-templates": {
         "flavors": {
