@@ -77,6 +77,8 @@ providers:
       targetName: "cluster-template-windows.yaml"
     - sourcePath: "${PWD}/templates/test/cluster-template-prow-machine-pool-windows.yaml"
       targetName: "cluster-template-machine-pool-windows.yaml"
+    - sourcePath: "${PWD}/templates/test/cluster-template-prow-external-cloud-provider.yaml"
+      targetName: "cluster-template-external-cloud-provider.yaml"
     replacements:
     - old: "--v=0"
       new: "--v=4"

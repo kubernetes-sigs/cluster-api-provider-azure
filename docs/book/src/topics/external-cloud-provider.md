@@ -2,18 +2,6 @@
 
 To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-external-cloud-provider.yaml).
 
-After control plane is up and running, deploy external cloud provider components (`cloud-controller-manager` and `cloud-node-manager`) using:
-
-```bash
-kubectl --kubeconfig=./${CLUSTER_NAME}.kubeconfig \
-  apply -f templates/addons/cloud-controller-manager.yaml
-```
-
-```bash
-kubectl --kubeconfig=./${CLUSTER_NAME}.kubeconfig \
-  apply -f templates/addons/cloud-node-manager.yaml
-```
-
 After components are deployed, you should see following pods in `Running` state:
 
 ```bash

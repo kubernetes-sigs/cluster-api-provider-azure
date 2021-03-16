@@ -358,6 +358,46 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	// ci-e2e.sh and Prow CI skip this test by default.
+	// To include this test, set `GINKGO_SKIP=""`.
+	Context("Creating a cluster that uses the external cloud provider", func() {
+		It("with a 3 control plane nodes and 2 worker nodes", func() {
+			result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "external-cloud-provider",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					ControlPlaneMachineCount: pointer.Int64Ptr(3),
+					WorkerMachineCount:       pointer.Int64Ptr(2),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+			}, result)
+			cluster = result.Cluster
+
+			// TODO: fix and enable
+			//Context("Creating an accessible load balancer", func() {
+			//	AzureLBSpec(ctx, func() AzureLBSpecInput {
+			//		return AzureLBSpecInput{
+			//			BootstrapClusterProxy: bootstrapClusterProxy,
+			//			Namespace:             namespace,
+			//			ClusterName:           clusterName,
+			//			SkipCleanup:           skipCleanup,
+			//			IsVMSS:                false,
+			//		}
+			//	})
+			//})
+		})
+	})
+
 	Context("Creating a cluster using a different SP identity", func() {
 		BeforeEach(func() {
 			spClientSecret := os.Getenv("AZURE_MULTI_TENANCY_SECRET")
