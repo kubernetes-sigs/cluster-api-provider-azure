@@ -6,3 +6,4 @@ spec:
   additionalTags:
     jobName: ${JOB_NAME}
     creationTimestamp: ${TIMESTAMP}
+    buildProvenance: ${BUILD_PROVENANCE}
