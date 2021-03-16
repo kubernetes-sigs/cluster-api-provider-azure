@@ -99,6 +99,7 @@ func AzureAcceleratedNetworkingSpec(ctx context.Context, inputGetter func() Azur
 		err = page.NextWithContext(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	}
+	By("verifying EnableAcceleratedNetworking for the primary NIC of each VMSS instance")
 	p, err := vmssClient.List(ctx, rgName)
 	Expect(err).NotTo(HaveOccurred())
 	for p.NotDone() {
