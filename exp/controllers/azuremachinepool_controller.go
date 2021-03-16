@@ -297,15 +297,15 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 	}
 
 	switch machinePoolScope.ProvisioningState() {
-	case infrav1.VMStateSucceeded:
+	case infrav1.Succeeded:
 		machinePoolScope.V(2).Info("Scale Set is running", "id", machinePoolScope.ProviderID())
 		conditions.MarkTrue(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition)
 		machinePoolScope.SetReady()
-	case infrav1.VMStateCreating:
+	case infrav1.Creating:
 		machinePoolScope.V(2).Info("Scale Set is creating", "id", machinePoolScope.ProviderID())
 		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetCreatingReason, clusterv1.ConditionSeverityInfo, "")
 		machinePoolScope.SetNotReady()
-	case infrav1.VMStateUpdating:
+	case infrav1.Updating:
 		machinePoolScope.V(2).Info("Scale Set is updating", "id", machinePoolScope.ProviderID())
 		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.ScaleSetRunningCondition, infrav1.ScaleSetUpdatingReason, clusterv1.ConditionSeverityInfo, "")
 		machinePoolScope.SetNotReady()
@@ -313,12 +313,12 @@ func (r *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machin
 		return reconcile.Result{
 			RequeueAfter: 30 * time.Second,
 		}, nil
-	case infrav1.VMStateDeleting:
+	case infrav1.Deleting:
 		machinePoolScope.Info("Unexpected scale set deletion", "id", machinePoolScope.ProviderID())
 		r.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure scale set deletion")
 		conditions.MarkFalse(machinePoolScope.AzureMachinePool, infrav1.VMRunningCondition, infrav1.ScaleSetDeletingReason, clusterv1.ConditionSeverityWarning, "")
 		machinePoolScope.SetNotReady()
-	case infrav1.VMStateFailed:
+	case infrav1.Failed:
 		machinePoolScope.SetNotReady()
 		machinePoolScope.Error(errors.New("Failed to create or update scale set"), "Scale Set is in failed state", "id", machinePoolScope.ProviderID())
 		r.Recorder.Eventf(machinePoolScope.AzureMachinePool, corev1.EventTypeWarning, "FailedVMState", "Azure scale set is in failed state")

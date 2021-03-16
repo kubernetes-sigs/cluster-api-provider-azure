@@ -27,7 +27,7 @@ func SDKToVM(v compute.VirtualMachine) (*infrav1.VM, error) {
 	vm := &infrav1.VM{
 		ID:    to.String(v.ID),
 		Name:  to.String(v.Name),
-		State: infrav1.VMState(to.String(v.ProvisioningState)),
+		State: infrav1.ProvisioningState(to.String(v.ProvisioningState)),
 	}
 
 	if v.VirtualMachineProperties != nil && v.VirtualMachineProperties.HardwareProfile != nil {

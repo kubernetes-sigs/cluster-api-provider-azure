@@ -1760,7 +1760,7 @@ func TestReconcileVM(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ProviderID().Times(2).Return("ExistingVM-ProviderID")
-				s.SetVMState(infrav1.VMStateDeleted)
+				s.SetVMState(infrav1.Deleted)
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},

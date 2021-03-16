@@ -302,7 +302,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 				machineScope.SetFailureReason(capierrors.CreateMachineError)
 				machineScope.SetFailureMessage(err)
 				machineScope.SetNotReady()
-				machineScope.SetVMState(infrav1.VMStateFailed)
+				machineScope.SetVMState(infrav1.Failed)
 				return reconcile.Result{}, nil
 			}
 

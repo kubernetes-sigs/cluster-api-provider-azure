@@ -327,7 +327,7 @@ func Convert_v1alpha4_AzureMachinePool_To_v1alpha3_AzureMachinePool(in *v1alpha4
 
 func autoConvert_v1alpha3_AzureMachinePoolInstanceStatus_To_v1alpha4_AzureMachinePoolInstanceStatus(in *AzureMachinePoolInstanceStatus, out *v1alpha4.AzureMachinePoolInstanceStatus, s conversion.Scope) error {
 	out.Version = in.Version
-	out.ProvisioningState = (*clusterapiproviderazureapiv1alpha4.VMState)(unsafe.Pointer(in.ProvisioningState))
+	out.ProvisioningState = (*clusterapiproviderazureapiv1alpha4.ProvisioningState)(unsafe.Pointer(in.ProvisioningState))
 	out.ProviderID = in.ProviderID
 	out.InstanceID = in.InstanceID
 	out.InstanceName = in.InstanceName
@@ -440,7 +440,7 @@ func autoConvert_v1alpha3_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolSta
 	out.Replicas = in.Replicas
 	out.Instances = *(*[]*v1alpha4.AzureMachinePoolInstanceStatus)(unsafe.Pointer(&in.Instances))
 	out.Version = in.Version
-	out.ProvisioningState = (*clusterapiproviderazureapiv1alpha4.VMState)(unsafe.Pointer(in.ProvisioningState))
+	out.ProvisioningState = (*clusterapiproviderazureapiv1alpha4.ProvisioningState)(unsafe.Pointer(in.ProvisioningState))
 	out.FailureReason = (*errors.MachineStatusError)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
 	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
@@ -958,7 +958,7 @@ func autoConvert_v1alpha3_VMSS_To_v1alpha4_VMSS(in *VMSS, out *v1alpha4.VMSS, s 
 	if err := Convert_v1alpha3_Image_To_v1alpha4_Image(&in.Image, &out.Image, s); err != nil {
 		return err
 	}
-	out.State = clusterapiproviderazureapiv1alpha4.VMState(in.State)
+	out.State = clusterapiproviderazureapiv1alpha4.ProvisioningState(in.State)
 	out.Identity = clusterapiproviderazureapiv1alpha4.VMIdentity(in.Identity)
 	out.Tags = *(*clusterapiproviderazureapiv1alpha4.Tags)(unsafe.Pointer(&in.Tags))
 	out.Instances = *(*[]v1alpha4.VMSSVM)(unsafe.Pointer(&in.Instances))
@@ -996,7 +996,7 @@ func autoConvert_v1alpha3_VMSSVM_To_v1alpha4_VMSSVM(in *VMSSVM, out *v1alpha4.VM
 	out.InstanceID = in.InstanceID
 	out.Name = in.Name
 	out.AvailabilityZone = in.AvailabilityZone
-	out.State = clusterapiproviderazureapiv1alpha4.VMState(in.State)
+	out.State = clusterapiproviderazureapiv1alpha4.ProvisioningState(in.State)
 	out.LatestModelApplied = in.LatestModelApplied
 	return nil
 }

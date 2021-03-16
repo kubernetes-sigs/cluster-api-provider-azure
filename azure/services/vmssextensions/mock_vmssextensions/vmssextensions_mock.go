@@ -28,7 +28,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1alpha40 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // MockVMSSExtensionScope is a mock of VMSSExtensionScope interface.
@@ -256,16 +255,18 @@ func (mr *MockVMSSExtensionScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockVMSSExtensionScope)(nil).ResourceGroup))
 }
 
-// SetCondition mocks base method.
-func (m *MockVMSSExtensionScope) SetCondition(arg0 v1alpha40.ConditionType, arg1 string, arg2 v1alpha40.ConditionSeverity, arg3 bool) {
+// SetBootstrapConditions mocks base method.
+func (m *MockVMSSExtensionScope) SetBootstrapConditions(arg0, arg1 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetCondition", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "SetBootstrapConditions", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// SetCondition indicates an expected call of SetCondition.
-func (mr *MockVMSSExtensionScopeMockRecorder) SetCondition(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// SetBootstrapConditions indicates an expected call of SetBootstrapConditions.
+func (mr *MockVMSSExtensionScopeMockRecorder) SetBootstrapConditions(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCondition", reflect.TypeOf((*MockVMSSExtensionScope)(nil).SetCondition), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBootstrapConditions", reflect.TypeOf((*MockVMSSExtensionScope)(nil).SetBootstrapConditions), arg0, arg1)
 }
 
 // SubscriptionID mocks base method.

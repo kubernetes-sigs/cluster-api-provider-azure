@@ -152,7 +152,7 @@ func (m *MachinePoolScope) SetProviderID(v string) {
 }
 
 // ProvisioningState returns the AzureMachinePool provisioning state.
-func (m *MachinePoolScope) ProvisioningState() infrav1.VMState {
+func (m *MachinePoolScope) ProvisioningState() infrav1.ProvisioningState {
 	if m.AzureMachinePool.Status.ProvisioningState != nil {
 		return *m.AzureMachinePool.Status.ProvisioningState
 	}
@@ -229,14 +229,14 @@ func (m *MachinePoolScope) GetLongRunningOperationState() *infrav1.Future {
 }
 
 // SetProvisioningState sets the AzureMachinePool provisioning state.
-func (m *MachinePoolScope) SetProvisioningState(v infrav1.VMState) {
+func (m *MachinePoolScope) SetProvisioningState(v infrav1.ProvisioningState) {
 	switch {
-	case v == infrav1.VMStateSucceeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
+	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
 		// vmss is provisioned with enough ready replicas
 		m.AzureMachinePool.Status.ProvisioningState = &v
-	case v == infrav1.VMStateSucceeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
+	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
 		// not enough ready or too many ready replicas we must still be scaling up or down
-		updatingState := infrav1.VMStateUpdating
+		updatingState := infrav1.Updating
 		m.AzureMachinePool.Status.ProvisioningState = &updatingState
 	default:
 		m.AzureMachinePool.Status.ProvisioningState = &v

@@ -421,7 +421,7 @@ func (in *AzureMachineStatus) DeepCopyInto(out *AzureMachineStatus) {
 	}
 	if in.VMState != nil {
 		in, out := &in.VMState, &out.VMState
-		*out = new(VMState)
+		*out = new(ProvisioningState)
 		**out = **in
 	}
 	if in.FailureReason != nil {

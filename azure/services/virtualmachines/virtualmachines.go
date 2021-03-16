@@ -51,7 +51,7 @@ type VMScope interface {
 	AvailabilitySet() (string, bool)
 	SetProviderID(string)
 	SetAddresses([]corev1.NodeAddress)
-	SetVMState(infrav1.VMState)
+	SetVMState(infrav1.ProvisioningState)
 	UpdateStatus()
 }
 
@@ -88,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	switch {
 	// VM got deleted outside of capz
 	case err != nil && azure.ResourceNotFound(err) && s.Scope.ProviderID() != "":
-		s.Scope.SetVMState(infrav1.VMStateDeleted)
+		s.Scope.SetVMState(infrav1.Deleted)
 		return azure.VMDeletedError{ProviderID: s.Scope.ProviderID()}
 	case err != nil && !azure.ResourceNotFound(err):
 		return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)

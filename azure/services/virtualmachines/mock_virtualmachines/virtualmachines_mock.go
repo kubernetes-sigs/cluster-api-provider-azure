@@ -353,7 +353,7 @@ func (mr *MockVMScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call 
 }
 
 // SetVMState mocks base method.
-func (m *MockVMScope) SetVMState(arg0 v1alpha4.VMState) {
+func (m *MockVMScope) SetVMState(arg0 v1alpha4.ProvisioningState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetVMState", arg0)
 }

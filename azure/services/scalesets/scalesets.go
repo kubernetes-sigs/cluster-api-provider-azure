@@ -52,7 +52,7 @@ type ScaleSetScope interface {
 	UpdateInstanceStatuses(context.Context, []infrav1exp.VMSSVM) error
 	NeedsK8sVersionUpdate() bool
 	SaveK8sVersion()
-	SetProvisioningState(infrav1.VMState)
+	SetProvisioningState(infrav1.ProvisioningState)
 	SetLongRunningOperationState(*infrav1.Future)
 	GetLongRunningOperationState() *infrav1.Future
 }
@@ -179,7 +179,7 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 
 	vmss := result.VMSSWithoutHash
 	vmss.Tags = converters.TagsToMap(result.Tags.AddSpecVersionHashTag(result.Hash))
-	s.Scope.SetProvisioningState(infrav1.VMStateCreating)
+	s.Scope.SetProvisioningState(infrav1.Creating)
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
 		return future, errors.Wrap(err, "cannot create VMSS")
@@ -234,7 +234,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 		return future, errors.Wrap(err, "failed updating VMSS")
 	}
 
-	s.Scope.SetProvisioningState(infrav1.VMStateUpdating)
+	s.Scope.SetProvisioningState(infrav1.Updating)
 	s.Scope.SetLongRunningOperationState(future)
 	s.Scope.V(2).Info("successfully started to update vmss", "scale set", spec.Name)
 	return future, err

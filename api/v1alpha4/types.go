@@ -203,24 +203,28 @@ type PublicIPSpec struct {
 }
 
 // VMState describes the state of an Azure virtual machine.
+// DEPRECATED: use ProvisioningState
 type VMState string
 
+// ProvisioningState describes the provisioning state of an Azure resource.
+type ProvisioningState string
+
 const (
-	// VMStateCreating ...
-	VMStateCreating VMState = "Creating"
-	// VMStateDeleting ...
-	VMStateDeleting VMState = "Deleting"
-	// VMStateFailed ...
-	VMStateFailed VMState = "Failed"
-	// VMStateMigrating ...
-	VMStateMigrating VMState = "Migrating"
-	// VMStateSucceeded ...
-	VMStateSucceeded VMState = "Succeeded"
-	// VMStateUpdating ...
-	VMStateUpdating VMState = "Updating"
-	// VMStateDeleted represents a deleted VM
-	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://docs.microsoft.com/en-us/azure/virtual-machines/states-lifecycle#provisioning-states)
-	VMStateDeleted VMState = "Deleted"
+	// Creating ...
+	Creating ProvisioningState = "Creating"
+	// Deleting ...
+	Deleting ProvisioningState = "Deleting"
+	// Failed ...
+	Failed ProvisioningState = "Failed"
+	// Migrating ...
+	Migrating ProvisioningState = "Migrating"
+	// Succeeded ...
+	Succeeded ProvisioningState = "Succeeded"
+	// Updating ...
+	Updating ProvisioningState = "Updating"
+	// Deleted represents a deleted VM
+	// NOTE: This state is specific to capz, and does not have corresponding mapping in Azure API (https://docs.microsoft.com/en-us/azure/virtual-machines/states-billing#provisioning-states)
+	Deleted ProvisioningState = "Deleted"
 )
 
 // VM describes an Azure virtual machine.
@@ -235,9 +239,9 @@ type VM struct {
 	OSDisk        OSDisk `json:"osDisk,omitempty"`
 	StartupScript string `json:"startupScript,omitempty"`
 	// State - The provisioning state, which only appears in the response.
-	State    VMState    `json:"vmState,omitempty"`
-	Identity VMIdentity `json:"identity,omitempty"`
-	Tags     Tags       `json:"tags,omitempty"`
+	State    ProvisioningState `json:"vmState,omitempty"`
+	Identity VMIdentity        `json:"identity,omitempty"`
+	Tags     Tags              `json:"tags,omitempty"`
 
 	// Addresses contains the addresses associated with the Azure VM.
 	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`

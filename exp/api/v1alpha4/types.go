@@ -23,25 +23,25 @@ import (
 type (
 	// VMSSVM defines a VM in a virtual machine scale set.
 	VMSSVM struct {
-		ID                 string          `json:"id,omitempty"`
-		InstanceID         string          `json:"instanceID,omitempty"`
-		Name               string          `json:"name,omitempty"`
-		AvailabilityZone   string          `json:"availabilityZone,omitempty"`
-		State              infrav1.VMState `json:"vmState,omitempty"`
-		LatestModelApplied bool            `json:"latestModelApplied,omitempty"`
+		ID                 string                    `json:"id,omitempty"`
+		InstanceID         string                    `json:"instanceID,omitempty"`
+		Name               string                    `json:"name,omitempty"`
+		AvailabilityZone   string                    `json:"availabilityZone,omitempty"`
+		State              infrav1.ProvisioningState `json:"vmState,omitempty"`
+		LatestModelApplied bool                      `json:"latestModelApplied,omitempty"`
 	}
 
 	// VMSS defines a virtual machine scale set.
 	VMSS struct {
-		ID        string             `json:"id,omitempty"`
-		Name      string             `json:"name,omitempty"`
-		Sku       string             `json:"sku,omitempty"`
-		Capacity  int64              `json:"capacity,omitempty"`
-		Zones     []string           `json:"zones,omitempty"`
-		Image     infrav1.Image      `json:"image,omitempty"`
-		State     infrav1.VMState    `json:"vmState,omitempty"`
-		Identity  infrav1.VMIdentity `json:"identity,omitempty"`
-		Tags      infrav1.Tags       `json:"tags,omitempty"`
-		Instances []VMSSVM           `json:"instances,omitempty"`
+		ID        string                    `json:"id,omitempty"`
+		Name      string                    `json:"name,omitempty"`
+		Sku       string                    `json:"sku,omitempty"`
+		Capacity  int64                     `json:"capacity,omitempty"`
+		Zones     []string                  `json:"zones,omitempty"`
+		Image     infrav1.Image             `json:"image,omitempty"`
+		State     infrav1.ProvisioningState `json:"vmState,omitempty"`
+		Identity  infrav1.VMIdentity        `json:"identity,omitempty"`
+		Tags      infrav1.Tags              `json:"tags,omitempty"`
+		Instances []VMSSVM                  `json:"instances,omitempty"`
 	}
 )

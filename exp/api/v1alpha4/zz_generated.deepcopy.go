@@ -59,7 +59,7 @@ func (in *AzureMachinePoolInstanceStatus) DeepCopyInto(out *AzureMachinePoolInst
 	*out = *in
 	if in.ProvisioningState != nil {
 		in, out := &in.ProvisioningState, &out.ProvisioningState
-		*out = new(apiv1alpha4.VMState)
+		*out = new(apiv1alpha4.ProvisioningState)
 		**out = **in
 	}
 }
@@ -155,7 +155,7 @@ func (in *AzureMachinePoolStatus) DeepCopyInto(out *AzureMachinePoolStatus) {
 	}
 	if in.ProvisioningState != nil {
 		in, out := &in.ProvisioningState, &out.ProvisioningState
-		*out = new(apiv1alpha4.VMState)
+		*out = new(apiv1alpha4.ProvisioningState)
 		**out = **in
 	}
 	if in.FailureReason != nil {

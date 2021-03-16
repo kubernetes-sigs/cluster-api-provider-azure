@@ -378,7 +378,7 @@ func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock
 }
 
 // SetProvisioningState mocks base method.
-func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha4.VMState) {
+func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha4.ProvisioningState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetProvisioningState", arg0)
 }
