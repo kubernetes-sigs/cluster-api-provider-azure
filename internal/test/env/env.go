@@ -37,7 +37,7 @@ import (
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"

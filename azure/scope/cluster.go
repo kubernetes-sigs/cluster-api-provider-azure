@@ -27,7 +27,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/net"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util/conditions"

@@ -24,7 +24,7 @@ import (
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets/mock_subnets"
 

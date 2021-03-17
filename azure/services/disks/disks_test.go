@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
