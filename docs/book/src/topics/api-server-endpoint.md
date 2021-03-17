@@ -13,6 +13,12 @@ A `Private` cluster will have an Azure internal load balancer load balancing tra
 
 For more information on Azure load balancing, see [Load Balancer documentation](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-overview).
 
+### Load Balancer Frontend Port
+
+By default CAPZ configures load balancer frontend port to be the same as configured API Server listen port. API Server listen port defaults to 6443 and can be configured on-demand with `Cluster` CR's `Spec.ClusterNetwork.APIServerPort` field.
+
+To configure API Server Load Balancer frontend port, set `Cluster` CR's `Spec.ControlPlaneEndpoint.Port` to desired value.
+
 <aside class="note warning">
 
 <h1> Warning </h1>
