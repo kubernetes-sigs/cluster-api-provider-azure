@@ -58,6 +58,10 @@ type NetworkSpec struct {
 	// APIServerLB is the configuration for the control-plane load balancer.
 	// +optional
 	APIServerLB LoadBalancerSpec `json:"apiServerLB,omitempty"`
+
+	// NodeOutboundLB is the configuration for the node outbound load balancer.
+	// +optional
+	NodeOutboundLB *LoadBalancerSpec `json:"nodeOutboundLB,omitempty"`
 }
 
 // VnetSpec configures an Azure virtual network.
@@ -144,11 +148,12 @@ type IngressRules []IngressRule
 
 // LoadBalancerSpec defines an Azure load balancer.
 type LoadBalancerSpec struct {
-	ID          string       `json:"id,omitempty"`
-	Name        string       `json:"name,omitempty"`
-	SKU         SKU          `json:"sku,omitempty"`
-	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
-	Type        LBType       `json:"type,omitempty"`
+	ID               string       `json:"id,omitempty"`
+	Name             string       `json:"name,omitempty"`
+	SKU              SKU          `json:"sku,omitempty"`
+	FrontendIPs      []FrontendIP `json:"frontendIPs,omitempty"`
+	Type             LBType       `json:"type,omitempty"`
+	FrontendIPsCount *int32       `json:"frontendIPsCount,omitempty"`
 }
 
 // SKU defines an Azure load balancer SKU.

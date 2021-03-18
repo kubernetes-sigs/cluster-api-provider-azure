@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/utils/pointer"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -116,6 +118,20 @@ func TestVnetDefaults(t *testing.T) {
 						},
 						APIServerLB: LoadBalancerSpec{
 							Name: "my-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "ip-config",
+									PublicIP: &PublicIPSpec{
+										Name:    "public-ip",
+										DNSName: "myfqdn.azure.com",
+									},
+								},
+							},
+							Type: Public,
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "my-node-outbound-lb",
 							SKU:  SKUStandard,
 							FrontendIPs: []FrontendIP{
 								{
@@ -696,6 +712,193 @@ func TestAzureEnviromentDefault(t *testing.T) {
 			if !reflect.DeepEqual(c.cluster, c.output) {
 				expected, _ := json.MarshalIndent(c.output, "", "\t")
 				actual, _ := json.MarshalIndent(c.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
+
+func TestNodeOutboundLBDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name: "default lb for public clusters",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{{
+								Name: "cluster-test-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							Type:             Public,
+							FrontendIPsCount: pointer.Int32Ptr(1),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "no lb for private clusters",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Internal},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Internal,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "frontendIPsCount > 1",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB:    LoadBalancerSpec{Type: Public},
+						NodeOutboundLB: &LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(2)},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-frontEnd-1",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-node-outbound-1",
+									},
+								},
+								{
+									Name: "cluster-test-frontEnd-2",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-node-outbound-2",
+									},
+								},
+							},
+							Type:             Public,
+							FrontendIPsCount: pointer.Int32Ptr(2),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "when frontend ips are configured",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						NodeOutboundLB: &LoadBalancerSpec{FrontendIPs: []FrontendIP{
+							{
+								Name: "fip-1",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-1",
+								},
+							},
+							{
+								Name: "fip-2",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-2",
+								},
+							},
+						}},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test",
+							Type: Public,
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "fip-1",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-1",
+									},
+								},
+								{
+									Name: "fip-2",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-2",
+									},
+								},
+							},
+							FrontendIPsCount: pointer.Int32Ptr(2),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setNodeOutboundLBDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
 				t.Errorf("Expected %s, got %s", string(expected), string(actual))
 			}
 		})

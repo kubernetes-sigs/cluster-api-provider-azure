@@ -154,6 +154,11 @@ func GenerateAvailabilitySetName(clusterName, nodeGroup string) string {
 	return fmt.Sprintf("%s_%s-as", clusterName, nodeGroup)
 }
 
+// WithIndex appends the index as suffix to a generated name
+func WithIndex(name string, n int) string {
+	return fmt.Sprintf("%s-%d", name, n)
+}
+
 // VMID returns the azure resource ID for a given VM.
 func VMID(subscriptionID, resourceGroup, vmName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", subscriptionID, resourceGroup, vmName)

@@ -19,6 +19,8 @@ package v1alpha4
 import (
 	"testing"
 
+	"k8s.io/utils/pointer"
+
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -758,6 +760,144 @@ func TestValidateAPIServerLB(t *testing.T) {
 	}
 }
 
+func TestValidateNodeOutboundLB(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		lb          *LoadBalancerSpec
+		old         *LoadBalancerSpec
+		apiServerLB LoadBalancerSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name:        "no lb for public clusters",
+			lb:          nil,
+			apiServerLB: LoadBalancerSpec{Type: Public},
+			wantErr:     true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB",
+				BadValue: nil,
+				Detail:   "Node outbound load balancer cannot be nil for public clusters.",
+			},
+		},
+		{
+			name:        "no lb allowed for internal clusters",
+			lb:          nil,
+			apiServerLB: LoadBalancerSpec{Type: Internal},
+			wantErr:     false,
+		},
+		{
+			name: "invalid SKU",
+			lb: &LoadBalancerSpec{
+				Name: "my-awesome-lb",
+				SKU:  "Awesome",
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-config",
+					},
+				},
+				Type: Public,
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueNotSupported",
+				Field:    "nodeOutboundLB.sku",
+				BadValue: "Awesome",
+				Detail:   "supported values: \"Standard\"",
+			},
+		},
+		{
+			name: "invalid Type",
+			lb: &LoadBalancerSpec{
+				Type: "Foo",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueNotSupported",
+				Field:    "nodeOutboundLB.type",
+				BadValue: "Foo",
+				Detail:   "supported values: \"Public\"",
+			},
+		},
+		{
+			name: "invalid Name",
+			lb: &LoadBalancerSpec{
+				Name: "***",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.name",
+				BadValue: "***",
+				Detail:   "name of load balancer doesn't match regex ^[-\\w\\._]+$",
+			},
+		},
+		{
+			name: "public LB with private IP",
+			lb: &LoadBalancerSpec{
+				Type: Public,
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+					{
+						Name:             "ip-2",
+						PrivateIPAddress: "10.0.0.4",
+					},
+				},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:   "FieldValueForbidden",
+				Field:  "nodeOutboundLB.frontendIPConfigs[1].privateIP",
+				Detail: "Public Load Balancers cannot have a Private IP",
+			},
+		},
+		{
+			name: "frontend ips count exceeds max value",
+			lb: &LoadBalancerSpec{
+				Type: Public,
+				FrontendIPs: []FrontendIP{
+					{
+						Name: "ip-1",
+					},
+				},
+				FrontendIPsCount: pointer.Int32Ptr(100),
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.frontendIPsCount",
+				BadValue: 100,
+				Detail:   "Max front end ips allowed is 16",
+			},
+		},
+	}
+
+	for _, test := range testcases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, field.NewPath("nodeOutboundLB"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == test.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
 func createValidCluster() *AzureCluster {
 	return &AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -775,8 +915,9 @@ func createValidNetworkSpec() NetworkSpec {
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
 		},
-		Subnets:     createValidSubnets(),
-		APIServerLB: createValidAPIServerLB(),
+		Subnets:        createValidSubnets(),
+		APIServerLB:    createValidAPIServerLB(),
+		NodeOutboundLB: createValidNodeOutboundLB(),
 	}
 }
 
@@ -796,6 +937,23 @@ func createValidSubnets() Subnets {
 func createValidAPIServerLB() LoadBalancerSpec {
 	return LoadBalancerSpec{
 		Name: "my-lb",
+		SKU:  SKUStandard,
+		FrontendIPs: []FrontendIP{
+			{
+				Name: "ip-config",
+				PublicIP: &PublicIPSpec{
+					Name:    "public-ip",
+					DNSName: "myfqdn.azure.com",
+				},
+			},
+		},
+		Type: Public,
+	}
+}
+
+func createValidNodeOutboundLB() *LoadBalancerSpec {
+	return &LoadBalancerSpec{
+		Name: "my-node-outbound-lb",
 		SKU:  SKUStandard,
 		FrontendIPs: []FrontendIP{
 			{

@@ -440,6 +440,49 @@ spec:
                           - name
                           type: object
                         type: array
+                      frontendIPsCount:
+                        format: int32
+                        type: integer
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      sku:
+                        description: SKU defines an Azure load balancer SKU.
+                        type: string
+                      type:
+                        description: LBType defines an Azure load balancer Type.
+                        type: string
+                    type: object
+                  nodeOutboundLB:
+                    description: NodeOutboundLB is the configuration for the node outbound load balancer.
+                    properties:
+                      frontendIPs:
+                        items:
+                          description: FrontendIP defines a load balancer frontend IP configuration.
+                          properties:
+                            name:
+                              minLength: 1
+                              type: string
+                            privateIP:
+                              type: string
+                            publicIP:
+                              description: PublicIPSpec defines the inputs to create an Azure public IP address.
+                              properties:
+                                dnsName:
+                                  type: string
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      frontendIPsCount:
+                        format: int32
+                        type: integer
                       id:
                         type: string
                       name:
