@@ -37,6 +37,8 @@ spec:
         privateIP: ${AZURE_INTERNAL_LB_IP}
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
+    nodeOutboundLB:
+      frontendIPsCount: 1
     subnets:
     - cidrBlocks:
       - ${AZURE_CP_SUBNET_CIDR}

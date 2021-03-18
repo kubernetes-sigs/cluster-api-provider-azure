@@ -7,4 +7,6 @@ spec:
     apiServerLB:
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
+    nodeOutboundLB:
+      frontendIPsCount: 1
 
