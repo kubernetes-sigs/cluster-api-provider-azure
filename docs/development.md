@@ -133,7 +133,6 @@ cat <<EOF > tilt-settings.json
       "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_ENVIRONMENT": "AzurePublicCloud"
   }
 }
 EOF
@@ -187,7 +186,6 @@ cat <<EOF > tilt-settings.json
       "AZURE_TENANT_ID_B64": "$(echo "${AZURE_TENANT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_SECRET_B64": "$(echo "${AZURE_CLIENT_SECRET}" | tr -d '\n' | base64 | tr -d '\n')",
       "AZURE_CLIENT_ID_B64": "$(echo "${AZURE_CLIENT_ID}" | tr -d '\n' | base64 | tr -d '\n')",
-      "AZURE_ENVIRONMENT": "AzurePublicCloud"
   }
 }
 EOF
@@ -272,10 +270,6 @@ Here is a list of required configuration parameters (the full list is available 
 # Cluster settings.
 export CLUSTER_NAME="capz-cluster"
 export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
-
-# Azure cloud settings
-# To use the default public cloud, otherwise set to AzureChinaCloud|AzureGermanCloud|AzureUSGovernmentCloud
-export AZURE_ENVIRONMENT="AzurePublicCloud"
 
 # Azure settings.
 export AZURE_LOCATION="southcentralus"

@@ -54,17 +54,6 @@ An Azure Service Principal is needed for deploying Azure resources. The below in
 :warning: NOTE: If your password contains single quotes (`'`), make sure to escape them. To escape a single quote, close the quoting before it, insert the single quote, and re-open the quoting.
 For example, if your password is `foo'blah$`, you should do `export AZURE_CLIENT_SECRET='foo'\''blah$'`.
 
-  7. (Optional) Set the name of the AzureCloud to be used. The default value that would be used by most users is "AzurePublicCloud", other values are:
-
- - ChinaCloud: "AzureChinaCloud"
- - GermanCloud: "AzureGermanCloud"
- - PublicCloud: "AzurePublicCloud"
- - USGovernmentCloud: "AzureUSGovernmentCloud"
-
-```bash
-export AZURE_ENVIRONMENT="AzurePublicCloud"
-```
-
 ### Building your first cluster
 
 Check out the [Cluster API Quick Start](https://cluster-api.sigs.k8s.io/user/quick-start.html) to create your first Kubernetes cluster on Azure using Cluster API. Make sure to select the "Azure" tabs.

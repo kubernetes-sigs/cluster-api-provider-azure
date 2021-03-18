@@ -18,7 +18,6 @@ package scope
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -70,8 +69,6 @@ func TestGettingIngressRules(t *testing.T) {
 		},
 	}
 	azureCluster.Default()
-
-	os.Setenv("AZURE_ENVIRONMENT", "AzurePublicCloud")
 
 	initObjects := []runtime.Object{cluster, azureCluster}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()

@@ -30,7 +30,6 @@ export REGISTRY="${REGISTRY:-registry.local/fake}"
 # Cluster settings.
 export CLUSTER_NAME="${CLUSTER_NAME:-capz-test}"
 export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
-export AZURE_ENVIRONMENT="AzurePublicCloud"
 
 # Azure settings.
 export AZURE_LOCATION="${AZURE_LOCATION:-southcentralus}"

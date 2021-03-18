@@ -65,7 +65,6 @@ fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
-export AZURE_ENVIRONMENT="AzurePublicCloud"
 export GINKGO_NODES=3
 export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
 export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"

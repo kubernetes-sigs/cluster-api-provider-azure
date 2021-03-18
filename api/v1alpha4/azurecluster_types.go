@@ -56,6 +56,15 @@ type AzureClusterSpec struct {
 	// IdentityRef is a reference to a AzureIdentity to be used when reconciling this cluster
 	// +optional
 	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
+
+	// AzureEnvironment is the name of the AzureCloud to be used.
+	// The default value that would be used by most users is "AzurePublicCloud", other values are:
+	// - ChinaCloud: "AzureChinaCloud"
+	// - GermanCloud: "AzureGermanCloud"
+	// - PublicCloud: "AzurePublicCloud"
+	// - USGovernmentCloud: "AzureUSGovernmentCloud"
+	// +optional
+	AzureEnvironment string `json:"azureEnvironment,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster

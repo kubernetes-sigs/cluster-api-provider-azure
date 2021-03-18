@@ -628,3 +628,76 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureEnviromentDefault(t *testing.T) {
+	cases := map[string]struct {
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		"default empty azure env": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					AzureEnvironment: DefaultAzureCloud,
+				},
+			},
+		},
+		"azure env set to AzurePublicCloud": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					AzureEnvironment: DefaultAzureCloud,
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					AzureEnvironment: DefaultAzureCloud,
+				},
+			},
+		},
+		"azure env set to AzureGermanCloud": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					AzureEnvironment: "AzureGermanCloud",
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					AzureEnvironment: "AzureGermanCloud",
+				},
+			},
+		},
+	}
+
+	for name := range cases {
+		c := cases[name]
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			c.cluster.setAzureEnvironmentDefault()
+			if !reflect.DeepEqual(c.cluster, c.output) {
+				expected, _ := json.MarshalIndent(c.output, "", "\t")
+				actual, _ := json.MarshalIndent(c.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}

@@ -17,7 +17,6 @@ limitations under the License.
 package scope
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -67,10 +66,8 @@ func TestGettingEnvironment(t *testing.T) {
 		}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			os.Setenv("AZURE_ENVIRONMENT", test.azureEnv)
-			defer unsetAzureEnvValue()
 			c := AzureClients{}
-			err := c.setCredentials("1234")
+			err := c.setCredentials("1234", test.azureEnv)
 			if test.expectedError {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(test.expectedErrorMessage))
@@ -81,8 +78,4 @@ func TestGettingEnvironment(t *testing.T) {
 			}
 		})
 	}
-}
-
-func unsetAzureEnvValue() {
-	os.Unsetenv("AZURE_ENVIRONMENT")
 }

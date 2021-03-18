@@ -84,6 +84,13 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "AzureEnvironment"),
+				c.Spec.ResourceGroup, "field is immutable"),
+		)
+	}
+
 	if len(allErrs) == 0 {
 		return c.validateCluster(old)
 	}

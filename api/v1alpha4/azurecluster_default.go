@@ -29,10 +29,13 @@ const (
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
+	// DefaultAzureCloud is the public cloud that will be used by most users
+	DefaultAzureCloud = "AzurePublicCloud"
 )
 
 func (c *AzureCluster) setDefaults() {
 	c.setResourceGroupDefault()
+	c.setAzureEnvironmentDefault()
 	c.setNetworkSpecDefaults()
 }
 
@@ -45,6 +48,12 @@ func (c *AzureCluster) setNetworkSpecDefaults() {
 func (c *AzureCluster) setResourceGroupDefault() {
 	if c.Spec.ResourceGroup == "" {
 		c.Spec.ResourceGroup = c.Name
+	}
+}
+
+func (c *AzureCluster) setAzureEnvironmentDefault() {
+	if c.Spec.AzureEnvironment == "" {
+		c.Spec.AzureEnvironment = DefaultAzureCloud
 	}
 }
 
