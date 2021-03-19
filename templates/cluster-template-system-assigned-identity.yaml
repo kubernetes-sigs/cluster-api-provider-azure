@@ -125,7 +125,6 @@ spec:
         lun: 0
         nameSuffix: etcddisk
       identity: SystemAssigned
-      location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -167,7 +166,6 @@ spec:
   template:
     spec:
       identity: SystemAssigned
-      location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
         managedDisk:

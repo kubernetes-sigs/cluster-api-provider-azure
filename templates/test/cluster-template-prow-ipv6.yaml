@@ -170,7 +170,6 @@ spec:
         lun: 0
         nameSuffix: etcddisk
       enableIPForwarding: true
-      location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -212,7 +211,6 @@ spec:
   template:
     spec:
       enableIPForwarding: true
-      location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 30
         managedDisk:
