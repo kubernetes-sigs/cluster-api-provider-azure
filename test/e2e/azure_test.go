@@ -301,7 +301,6 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
-						IsVMSS:                true,
 					}
 				})
 			})
@@ -534,7 +533,6 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
-						IsVMSS:                true,
 					}
 				})
 			})
@@ -547,7 +545,6 @@ var _ = Describe("Workload cluster creation", func() {
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
 						Windows:               true,
-						IsVMSS:                true,
 					}
 				})
 			})
