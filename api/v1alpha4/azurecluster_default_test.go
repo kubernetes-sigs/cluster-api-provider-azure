@@ -131,18 +131,7 @@ func TestVnetDefaults(t *testing.T) {
 							Type: Public,
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
-							Name: "my-node-outbound-lb",
-							SKU:  SKUStandard,
-							FrontendIPs: []FrontendIP{
-								{
-									Name: "ip-config",
-									PublicIP: &PublicIPSpec{
-										Name:    "public-ip",
-										DNSName: "myfqdn.azure.com",
-									},
-								},
-							},
-							Type: Public,
+							FrontendIPsCount: pointer.Int32Ptr(1),
 						},
 					},
 				},
@@ -826,63 +815,6 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								},
 							},
 							Type:             Public,
-							FrontendIPsCount: pointer.Int32Ptr(2),
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "when frontend ips are configured",
-			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
-					Name: "cluster-test",
-				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{Type: Public},
-						NodeOutboundLB: &LoadBalancerSpec{FrontendIPs: []FrontendIP{
-							{
-								Name: "fip-1",
-								PublicIP: &PublicIPSpec{
-									Name: "pip-1",
-								},
-							},
-							{
-								Name: "fip-2",
-								PublicIP: &PublicIPSpec{
-									Name: "pip-2",
-								},
-							},
-						}},
-					},
-				},
-			},
-			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
-					Name: "cluster-test",
-				},
-				Spec: AzureClusterSpec{
-					NetworkSpec: NetworkSpec{
-						APIServerLB: LoadBalancerSpec{Type: Public},
-						NodeOutboundLB: &LoadBalancerSpec{
-							Name: "cluster-test",
-							Type: Public,
-							SKU:  SKUStandard,
-							FrontendIPs: []FrontendIP{
-								{
-									Name: "fip-1",
-									PublicIP: &PublicIPSpec{
-										Name: "pip-1",
-									},
-								},
-								{
-									Name: "fip-2",
-									PublicIP: &PublicIPSpec{
-										Name: "pip-2",
-									},
-								},
-							},
 							FrontendIPsCount: pointer.Int32Ptr(2),
 						},
 					},

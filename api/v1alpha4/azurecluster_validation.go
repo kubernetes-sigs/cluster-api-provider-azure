@@ -283,36 +283,37 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 		return allErrs
 	}
 
-	// SKU should be Standard and is immutable.
-	if lb.SKU != SKUStandard {
-		allErrs = append(allErrs, field.NotSupported(fldPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
+	if old != nil && old.ID != lb.ID {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("id"), lb.ID, "Node outbound load balancer ID should not be modified after AzureCluster creation."))
 	}
-	if old != nil && old.SKU != "" && old.SKU != lb.SKU {
+
+	if old != nil && old.Name != lb.Name {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Name, "Node outbound load balancer Name should not be modified after AzureCluster creation."))
+	}
+
+	if old != nil && old.SKU != lb.SKU {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("sku"), lb.SKU, "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
 	}
 
-	// Type should be Public.
-	if lb.Type != Public {
-		allErrs = append(allErrs, field.NotSupported(fldPath.Child("type"), lb.Type, []string{string(Public)}))
-	}
-	if old != nil && old.Type != "" && old.Type != lb.Type {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), lb.Type, "Node outbound load balancer type should not be modified after AzureCluster creation."))
-	}
+	if old != nil && old.FrontendIPsCount == lb.FrontendIPsCount {
 
-	// Name should be valid.
-	if err := validateLoadBalancerName(lb.Name, fldPath.Child("name")); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if old != nil && old.Name != "" && old.Name != lb.Name {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Type, "Node outbound load balancer name should not be modified after AzureCluster creation."))
-	}
-
-	for i, frontEndIps := range lb.FrontendIPs {
-
-		if frontEndIps.PrivateIPAddress != "" {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(i).Child("privateIP"),
-				"Public Load Balancers cannot have a Private IP"))
+		if len(old.FrontendIPs) != len(lb.FrontendIPs) {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPs"), "Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation."))
 		}
+
+		if len(old.FrontendIPs) == len(lb.FrontendIPs) {
+			for i, frontEndIP := range lb.FrontendIPs {
+				oldFrontendIP := old.FrontendIPs[i]
+				if oldFrontendIP.Name != frontEndIP.Name || *oldFrontendIP.PublicIP != *frontEndIP.PublicIP {
+					allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPs").Index(i), frontEndIP,
+						"Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation."))
+				}
+			}
+		}
+	}
+
+	if old != nil && old.Type != lb.Type {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), lb.SKU, "Node outbound load balancer Type should not be modified after AzureCluster creation."))
 	}
 
 	if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {

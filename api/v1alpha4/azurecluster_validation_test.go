@@ -790,81 +790,95 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "invalid SKU",
+			name: "invalid ID update",
 			lb: &LoadBalancerSpec{
-				Name: "my-awesome-lb",
-				SKU:  "Awesome",
-				FrontendIPs: []FrontendIP{
-					{
-						Name: "ip-config",
-					},
-				},
-				Type: Public,
+				ID: "some-id",
+			},
+			old: &LoadBalancerSpec{
+				ID: "old-id",
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type:     "FieldValueNotSupported",
-				Field:    "nodeOutboundLB.sku",
-				BadValue: "Awesome",
-				Detail:   "supported values: \"Standard\"",
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.id",
+				BadValue: "some-id",
+				Detail:   "Node outbound load balancer ID should not be modified after AzureCluster creation.",
 			},
 		},
 		{
-			name: "invalid Type",
+			name: "invalid Name update",
 			lb: &LoadBalancerSpec{
-				Type: "Foo",
+				Name: "some-name",
 			},
-			wantErr: true,
-			expectedErr: field.Error{
-				Type:     "FieldValueNotSupported",
-				Field:    "nodeOutboundLB.type",
-				BadValue: "Foo",
-				Detail:   "supported values: \"Public\"",
-			},
-		},
-		{
-			name: "invalid Name",
-			lb: &LoadBalancerSpec{
-				Name: "***",
+			old: &LoadBalancerSpec{
+				Name: "old-name",
 			},
 			wantErr: true,
 			expectedErr: field.Error{
 				Type:     "FieldValueInvalid",
 				Field:    "nodeOutboundLB.name",
-				BadValue: "***",
-				Detail:   "name of load balancer doesn't match regex ^[-\\w\\._]+$",
+				BadValue: "some-name",
+				Detail:   "Node outbound load balancer Name should not be modified after AzureCluster creation.",
 			},
 		},
 		{
-			name: "public LB with private IP",
+			name: "invalid SKU update",
 			lb: &LoadBalancerSpec{
-				Type: Public,
-				FrontendIPs: []FrontendIP{
-					{
-						Name: "ip-1",
-					},
-					{
-						Name:             "ip-2",
-						PrivateIPAddress: "10.0.0.4",
-					},
-				},
+				SKU: "some-sku",
+			},
+			old: &LoadBalancerSpec{
+				SKU: "old-sku",
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type:   "FieldValueForbidden",
-				Field:  "nodeOutboundLB.frontendIPConfigs[1].privateIP",
-				Detail: "Public Load Balancers cannot have a Private IP",
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.sku",
+				BadValue: "some-sku",
+				Detail:   "Node outbound load balancer SKU should not be modified after AzureCluster creation.",
 			},
+		},
+		{
+			name: "invalid FrontendIps update",
+			lb: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "some-frontend-ip",
+				}},
+			},
+			old: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "old-frontend-ip",
+				}},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "nodeOutboundLB.frontendIPs[0]",
+				BadValue: FrontendIP{
+					Name: "some-frontend-ip",
+				},
+				Detail: "Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "FrontendIps can update when frontendIpsCount changes",
+			lb: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "some-frontend-ip-1",
+				}, {
+					Name: "some-frontend-ip-2",
+				}},
+				FrontendIPsCount: pointer.Int32Ptr(2),
+			},
+			old: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "old-frontend-ip",
+				}},
+			},
+			wantErr: false,
 		},
 		{
 			name: "frontend ips count exceeds max value",
 			lb: &LoadBalancerSpec{
-				Type: Public,
-				FrontendIPs: []FrontendIP{
-					{
-						Name: "ip-1",
-					},
-				},
 				FrontendIPsCount: pointer.Int32Ptr(100),
 			},
 			wantErr: true,
@@ -953,17 +967,6 @@ func createValidAPIServerLB() LoadBalancerSpec {
 
 func createValidNodeOutboundLB() *LoadBalancerSpec {
 	return &LoadBalancerSpec{
-		Name: "my-node-outbound-lb",
-		SKU:  SKUStandard,
-		FrontendIPs: []FrontendIP{
-			{
-				Name: "ip-config",
-				PublicIP: &PublicIPSpec{
-					Name:    "public-ip",
-					DNSName: "myfqdn.azure.com",
-				},
-			},
-		},
-		Type: Public,
+		FrontendIPsCount: pointer.Int32Ptr(1),
 	}
 }
