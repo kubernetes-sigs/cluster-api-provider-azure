@@ -129,6 +129,7 @@ type WaitForJobCompleteInput struct {
 func WaitForJobComplete(ctx context.Context, input WaitForJobCompleteInput, intervals ...interface{}) {
 	namespace, name := input.Job.GetNamespace(), input.Job.GetName()
 	Byf("waiting for job %s/%s to be complete", namespace, name)
+	Logf("waiting for job %s/%s to be complete", namespace, name)
 	Eventually(func() bool {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := input.Getter.Get(ctx, key, input.Job); err == nil {
@@ -140,6 +141,7 @@ func WaitForJobComplete(ctx context.Context, input WaitForJobCompleteInput, inte
 		}
 		return false
 	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedJob(ctx, input) })
+	Logf("job %s/%s is complete", namespace, name)
 }
 
 // DescribeFailedJob returns a string with information to help debug a failed job.
@@ -178,6 +180,7 @@ type WaitForServiceAvailableInput struct {
 func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableInput, intervals ...interface{}) {
 	namespace, name := input.Service.GetNamespace(), input.Service.GetName()
 	Byf("waiting for service %s/%s to be available", namespace, name)
+	Logf("waiting for service %s/%s to be available", namespace, name)
 	Eventually(func() bool {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := input.Getter.Get(ctx, key, input.Service); err == nil {
@@ -193,6 +196,7 @@ func WaitForServiceAvailable(ctx context.Context, input WaitForServiceAvailableI
 		}
 		return false
 	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedService(ctx, input) })
+	Logf("service %s/%s is available", namespace, name)
 }
 
 // DescribeFailedService returns a string with information to help debug a failed service.

@@ -117,6 +117,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		By("creating an internal Load Balancer service")
 
 		ilbService := webDeployment.GetService(ports, deploymentBuilder.InternalLoadbalancer)
+		Log("starting to create an internal Load Balancer service")
 		_, err = servicesClient.Create(ctx, ilbService, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		ilbSvcInput := WaitForServiceAvailableInput{
@@ -133,6 +134,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		ilbIP := extractServiceIp(svc)
 
 		ilbJob := job.CreateCurlJob("curl-to-ilb-job", ilbIP)
+		Log("starting to create a curl to ilb job")
 		_, err = jobsClient.Create(ctx, ilbJob, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		ilbJobInput := WaitForJobCompleteInput{
@@ -144,8 +146,10 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 		if !input.SkipCleanup {
 			By("deleting the ilb test resources")
+			Logf("deleting the ilb service: %s", ilbService.Name)
 			err = servicesClient.Delete(ctx, ilbService.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
+			Logf("deleting the ilb job: %s", ilbJob.Name)
 			err = jobsClient.Delete(ctx, ilbJob.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}
@@ -153,6 +157,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	By("creating an external Load Balancer service")
 	elbService := webDeployment.GetService(ports, deploymentBuilder.ExternalLoadbalancer)
+	Log("starting to create an external Load Balancer service")
 	_, err = servicesClient.Create(ctx, elbService, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	elbSvcInput := WaitForServiceAvailableInput{
@@ -167,6 +172,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	Expect(err).NotTo(HaveOccurred())
 
 	elbIP := extractServiceIp(svc)
+	Log("starting to create curl-to-elb job")
 	elbJob := job.CreateCurlJob("curl-to-elb-job", elbIP)
 	_, err = jobsClient.Create(ctx, elbJob, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
@@ -176,27 +182,31 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		Clientset: clientset,
 	}
 	WaitForJobComplete(ctx, elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
-	
+
 	if !input.IPv6 {
 		By("connecting directly to the external LB service")
 		url := fmt.Sprintf("http://%s", elbIP)
+		Log("starting attempts to connect directly to the external LB service")
 		resp, err := retryablehttp.Get(url)
 		if resp != nil {
 			defer resp.Body.Close()
 		}
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(200))
-		Expect(err).NotTo(HaveOccurred())
+		Log("successfully connected to the external LB service")
 	}
 
 	if input.SkipCleanup {
 		return
 	}
 	By("deleting the test resources")
+	Logf("starting to delete external LB service %s", elbService.Name)
 	err = servicesClient.Delete(ctx, elbService.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
+	Logf("starting to delete deployment %s", deployment.Name)
 	err = webDeployment.Client(clientset).Delete(ctx, deployment.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
+	Logf("starting to delete job %s", elbJob.Name)
 	err = jobsClient.Delete(ctx, elbJob.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
