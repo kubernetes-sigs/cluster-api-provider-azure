@@ -47,6 +47,7 @@ type AzureLBSpecInput struct {
 	SkipCleanup           bool
 	IPv6                  bool
 	Windows               bool
+	isWindowsVMSS         bool
 }
 
 // AzureLBSpec implements a test that verifies Azure internal and external load balancers can
@@ -113,7 +114,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	// TODO: fix and enable this. Internal LBs + IPv6 is currently in preview.
 	// https://docs.microsoft.com/en-us/azure/virtual-network/ipv6-dual-stack-standard-internal-load-balancer-powershell
-	if !input.IPv6 {
+	if !input.IPv6 && !input.isWindowsVMSS {
 		By("creating an internal Load Balancer service")
 
 		ilbService := webDeployment.GetService(ports, deploymentBuilder.InternalLoadbalancer)
@@ -176,7 +177,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		Clientset: clientset,
 	}
 	WaitForJobComplete(ctx, elbJobInput, e2eConfig.GetIntervals(specName, "wait-job")...)
-	
+
 	if !input.IPv6 {
 		By("connecting directly to the external LB service")
 		url := fmt.Sprintf("http://%s", elbIP)

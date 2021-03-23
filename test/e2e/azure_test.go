@@ -545,6 +545,7 @@ var _ = Describe("Workload cluster creation", func() {
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
 						Windows:               true,
+						isWindowsVMSS:         true,
 					}
 				})
 			})
