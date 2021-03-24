@@ -293,7 +293,7 @@ generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related g
 	$(CONVERSION_GEN) \
 		--input-dirs=./$(EXP_DIR)/api/v1alpha3 \
 		--output-file-base=zz_generated.conversion \
-		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt $(OUTPUT_BASE)	
+		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt $(OUTPUT_BASE)
 	go generate ./...
 
 .PHONY: generate-manifests
@@ -467,7 +467,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/
 	kubectl apply -f templates/addons/calico-resource-set.yaml
 	kubectl apply -f templates/addons/flannel-resource-set.yaml
-	
+
 	# Wait for CAPZ deployments
 	kubectl wait --for=condition=Available --timeout=5m -n capz-system deployment -l cluster.x-k8s.io/provider=infrastructure-azure
 
@@ -531,7 +531,7 @@ delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
 ## --------------------------------------
 
 .PHONY: kind-create
-kind-create: ## create capz kind cluster if needed
+kind-create: $(KUBECTL) ## create capz kind cluster if needed
 	./scripts/kind-with-registry.sh
 
 .PHONY: tilt-up
