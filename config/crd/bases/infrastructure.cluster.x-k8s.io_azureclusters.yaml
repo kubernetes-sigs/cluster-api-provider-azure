@@ -456,9 +456,6 @@ spec:
                     items:
                       description: SubnetSpec configures an Azure subnet.
                       properties:
-                        cidrBlock:
-                          description: 'CidrBlock is the CIDR block to be used when the provider creates a managed Vnet. DEPRECATED: Use CIDRBlocks instead'
-                          type: string
                         cidrBlocks:
                           description: CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
                           items:
@@ -466,9 +463,6 @@ spec:
                           type: array
                         id:
                           description: ID defines a unique identifier to reference this resource.
-                          type: string
-                        internalLBIPAddress:
-                          description: 'InternalLBIPAddress is the IP address that will be used as the internal LB private IP. For the control plane subnet only. Deprecated: Use LoadBalancer private IP instead'
                           type: string
                         name:
                           description: Name defines a name for the subnet resource.
@@ -538,9 +532,6 @@ spec:
                   vnet:
                     description: Vnet is the configuration for the Azure virtual network.
                     properties:
-                      cidrBlock:
-                        description: 'CidrBlock is the CIDR block to be used when the provider creates a managed virtual network. DEPRECATED: Use CIDRBlocks instead'
-                        type: string
                       cidrBlocks:
                         description: CIDRBlocks defines the virtual network's address space, specified as one or more address prefixes in CIDR notation.
                         items:

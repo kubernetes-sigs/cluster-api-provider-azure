@@ -129,7 +129,6 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
-      location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -170,7 +169,6 @@ metadata:
 spec:
   template:
     spec:
-      location: ${AZURE_LOCATION}
       osDisk:
         diskSizeGB: 128
         managedDisk:

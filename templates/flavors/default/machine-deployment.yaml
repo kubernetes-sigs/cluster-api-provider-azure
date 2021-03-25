@@ -29,7 +29,6 @@ metadata:
 spec:
   template:
     spec:
-      location: ${AZURE_LOCATION}
       vmSize: ${AZURE_NODE_MACHINE_TYPE}
       osDisk:
         osType: "Linux"
