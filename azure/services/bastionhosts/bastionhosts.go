@@ -75,8 +75,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.Scope.V(2).Info("successfully got subnet in vnet", "subnet", bastionSpec.SubnetName, "vNet", bastionSpec.VNetName)
 
 		s.Scope.V(2).Info("checking if public ip exist otherwise will try to create", "publicIP", bastionSpec.PublicIPName)
-		publicIP := network.PublicIPAddress{}
-		publicIP, err = s.publicIPsClient.Get(ctx, s.Scope.ResourceGroup(), bastionSpec.PublicIPName)
+		publicIP, err := s.publicIPsClient.Get(ctx, s.Scope.ResourceGroup(), bastionSpec.PublicIPName)
 		if err != nil && azure.ResourceNotFound(err) {
 			iperr := s.createBastionPublicIP(ctx, bastionSpec.PublicIPName)
 			if iperr != nil {
