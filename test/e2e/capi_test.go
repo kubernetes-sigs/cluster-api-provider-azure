@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -110,7 +111,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			return capi_e2e.KCPAdoptionSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy.(capi_e2e.ClusterProxy),
+				BootstrapClusterProxy: bootstrapClusterProxy.(framework.ClusterProxy),
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
 			}
@@ -122,7 +123,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			return capi_e2e.MachinePoolInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy.(capi_e2e.ClusterProxy),
+				BootstrapClusterProxy: bootstrapClusterProxy.(framework.ClusterProxy),
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
 			}

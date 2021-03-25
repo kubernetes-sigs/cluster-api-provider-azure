@@ -98,7 +98,7 @@ var (
 
 type (
 	AzureClusterProxy struct {
-		capi_e2e.ClusterProxy
+		framework.ClusterProxy
 	}
 	// myEventData is used to be able to Marshal insights.EventData into JSON
 	// see https://github.com/Azure/azure-sdk-for-go/issues/8224#issuecomment-614777550
@@ -106,7 +106,7 @@ type (
 )
 
 func NewAzureClusterProxy(name string, kubeconfigPath string, scheme *runtime.Scheme, options ...framework.Option) *AzureClusterProxy {
-	proxy, ok := framework.NewClusterProxy(name, kubeconfigPath, scheme, options...).(capi_e2e.ClusterProxy)
+	proxy, ok := framework.NewClusterProxy(name, kubeconfigPath, scheme, options...).(framework.ClusterProxy)
 	Expect(ok).To(BeTrue(), "framework.NewClusterProxy must implement capi_e2e.ClusterProxy")
 	return &AzureClusterProxy{
 		ClusterProxy: proxy,
