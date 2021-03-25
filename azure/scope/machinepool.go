@@ -20,6 +20,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
@@ -148,7 +152,7 @@ func (m *MachinePoolScope) SetProviderID(v string) {
 }
 
 // ProvisioningState returns the AzureMachinePool provisioning state.
-func (m *MachinePoolScope) ProvisioningState() infrav1.VMState {
+func (m *MachinePoolScope) ProvisioningState() infrav1.ProvisioningState {
 	if m.AzureMachinePool.Status.ProvisioningState != nil {
 		return *m.AzureMachinePool.Status.ProvisioningState
 	}
@@ -225,14 +229,14 @@ func (m *MachinePoolScope) GetLongRunningOperationState() *infrav1.Future {
 }
 
 // SetProvisioningState sets the AzureMachinePool provisioning state.
-func (m *MachinePoolScope) SetProvisioningState(v infrav1.VMState) {
+func (m *MachinePoolScope) SetProvisioningState(v infrav1.ProvisioningState) {
 	switch {
-	case v == infrav1.VMStateSucceeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
+	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas == m.AzureMachinePool.Status.Replicas:
 		// vmss is provisioned with enough ready replicas
 		m.AzureMachinePool.Status.ProvisioningState = &v
-	case v == infrav1.VMStateSucceeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
+	case v == infrav1.Succeeded && *m.MachinePool.Spec.Replicas != m.AzureMachinePool.Status.Replicas:
 		// not enough ready or too many ready replicas we must still be scaling up or down
-		updatingState := infrav1.VMStateUpdating
+		updatingState := infrav1.Updating
 		m.AzureMachinePool.Status.ProvisioningState = &updatingState
 	default:
 		m.AzureMachinePool.Status.ProvisioningState = &v
@@ -257,6 +261,26 @@ func (m *MachinePoolScope) SetFailureMessage(v error) {
 // SetFailureReason sets the AzureMachinePool status failure reason.
 func (m *MachinePoolScope) SetFailureReason(v capierrors.MachineStatusError) {
 	m.AzureMachinePool.Status.FailureReason = &v
+}
+
+// SetBootstrapConditions sets the AzureMachinePool BootstrapSucceeded condition based on the extension provisioning states.
+func (m *MachinePoolScope) SetBootstrapConditions(provisioningState string, extensionName string) error {
+	switch infrav1.ProvisioningState(provisioningState) {
+	case infrav1.Succeeded:
+		m.V(4).Info("extension provisioning state is succeeded", "vm extension", extensionName, "scale set", m.Name())
+		conditions.MarkTrue(m.AzureMachinePool, infrav1.BootstrapSucceededCondition)
+		return nil
+	case infrav1.Creating:
+		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "scale set", m.Name())
+		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
+		return azure.WithTransientError(errors.New("extension still provisioning"), 30*time.Second)
+	case infrav1.Failed:
+		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "scale set", m.Name())
+		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
+		return azure.WithTerminalError(errors.New("extension state failed"))
+	default:
+		return nil
+	}
 }
 
 // AdditionalTags merges AdditionalTags from the scope's AzureCluster and AzureMachinePool. If the same key is present in both,
@@ -368,6 +392,9 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
 				ScaleSetName: m.Name(),
 				Publisher:    publisher,
 				Version:      version,
+				ProtectedSettings: map[string]string{
+					"commandToExecute": azure.BootstrapExtensionCommand(),
+				},
 			},
 		}
 	}

@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions/mock_vmextensions"
@@ -39,7 +41,7 @@ func TestReconcileVMExtension(t *testing.T) {
 		expect        func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder)
 	}{
 		{
-			name:          "extension already exists",
+			name:          "extension is in succeeded state",
 			expectedError: "",
 			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -53,7 +55,70 @@ func TestReconcileVMExtension(t *testing.T) {
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("test-location")
-				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").Return(compute.VirtualMachineExtension{
+					VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+						Publisher:         to.StringPtr("some-publisher"),
+						Type:              to.StringPtr("my-extension-1"),
+						ProvisioningState: to.StringPtr(string(compute.ProvisioningStateSucceeded)),
+					},
+					ID:   to.StringPtr("fake/id"),
+					Name: to.StringPtr("my-extension-1"),
+				}, nil)
+				s.SetBootstrapConditions(string(compute.ProvisioningStateSucceeded), "my-extension-1")
+			},
+		},
+		{
+			name:          "extension is in failed state",
+			expectedError: "",
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+					{
+						Name:      "my-extension-1",
+						VMName:    "my-vm",
+						Publisher: "some-publisher",
+						Version:   "1.0",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").Return(compute.VirtualMachineExtension{
+					VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+						Publisher:         to.StringPtr("some-publisher"),
+						Type:              to.StringPtr("my-extension-1"),
+						ProvisioningState: to.StringPtr(string(compute.ProvisioningStateFailed)),
+					},
+					ID:   to.StringPtr("fake/id"),
+					Name: to.StringPtr("my-extension-1"),
+				}, nil)
+				s.SetBootstrapConditions(string(compute.ProvisioningStateFailed), "my-extension-1")
+			},
+		},
+		{
+			name:          "extension is still creating",
+			expectedError: "",
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+					{
+						Name:      "my-extension-1",
+						VMName:    "my-vm",
+						Publisher: "some-publisher",
+						Version:   "1.0",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").Return(compute.VirtualMachineExtension{
+					VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+						Publisher:         to.StringPtr("some-publisher"),
+						Type:              to.StringPtr("my-extension-1"),
+						ProvisioningState: to.StringPtr(string(compute.ProvisioningStateCreating)),
+					},
+					ID:   to.StringPtr("fake/id"),
+					Name: to.StringPtr("my-extension-1"),
+				}, nil)
+				s.SetBootstrapConditions(string(compute.ProvisioningStateCreating), "my-extension-1")
 			},
 		},
 		{
@@ -79,10 +144,36 @@ func TestReconcileVMExtension(t *testing.T) {
 				s.Location().AnyTimes().Return("test-location")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
 					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension").
 					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "other-extension", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{}))
+			},
+		},
+		{
+			name:          "error getting the extension",
+			expectedError: "failed to get vm extension my-extension-1 on vm my-vm: #: Internal Server Error: StatusCode=500",
+			expect: func(s *mock_vmextensions.MockVMExtensionScopeMockRecorder, m *mock_vmextensions.MockclientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.VMExtensionSpecs().Return([]azure.VMExtensionSpec{
+					{
+						Name:      "my-extension-1",
+						VMName:    "my-vm",
+						Publisher: "some-publisher",
+						Version:   "1.0",
+					},
+					{
+						Name:      "other-extension",
+						VMName:    "my-vm",
+						Publisher: "other-publisher",
+						Version:   "2.0",
+					},
+				})
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.Location().AnyTimes().Return("test-location")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
+					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+
 			},
 		},
 		{
@@ -108,7 +199,7 @@ func TestReconcileVMExtension(t *testing.T) {
 				s.Location().AnyTimes().Return("test-location")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
 					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 
 			},
 		},

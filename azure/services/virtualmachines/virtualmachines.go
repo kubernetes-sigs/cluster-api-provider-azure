@@ -51,7 +51,8 @@ type VMScope interface {
 	AvailabilitySet() (string, bool)
 	SetProviderID(string)
 	SetAddresses([]corev1.NodeAddress)
-	SetVMState(infrav1.VMState)
+	SetVMState(infrav1.ProvisioningState)
+	UpdateStatus()
 }
 
 // Service provides operations on azure resources
@@ -87,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	switch {
 	// VM got deleted outside of capz
 	case err != nil && azure.ResourceNotFound(err) && s.Scope.ProviderID() != "":
-		s.Scope.SetVMState(infrav1.VMStateDeleted)
+		s.Scope.SetVMState(infrav1.Deleted)
 		return azure.VMDeletedError{ProviderID: s.Scope.ProviderID()}
 	case err != nil && !azure.ResourceNotFound(err):
 		return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
@@ -97,6 +98,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
 		s.Scope.SetAddresses(existingVM.Addresses)
 		s.Scope.SetVMState(existingVM.State)
+		s.Scope.UpdateStatus()
 	default:
 		s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
 		sku, err := s.resourceSKUCache.Get(ctx, vmSpec.Size, resourceskus.VirtualMachines)

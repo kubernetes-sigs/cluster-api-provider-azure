@@ -267,7 +267,7 @@ func TestReconcileVMSS(t *testing.T) {
 				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, createdVMSS, instances)
 				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
 				s.SetLongRunningOperationState(nil)
-				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.SetProvisioningState(infrav1.Succeeded)
 				s.NeedsK8sVersionUpdate().Return(false)
 				infraVMSS := converters.SDKToVMSS(createdVMSS, instances)
 				s.UpdateInstanceStatuses(gomockinternal.AContext(), infraVMSS.Instances).Return(nil)
@@ -287,7 +287,7 @@ func TestReconcileVMSS(t *testing.T) {
 				instances := newDefaultInstances()
 				vmss = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, vmss, instances)
 				s.SetProviderID(fmt.Sprintf("azure://%s", *vmss.ID))
-				s.SetProvisioningState(infrav1.VMStateUpdating)
+				s.SetProvisioningState(infrav1.Updating)
 
 				// create a VMSS patch with an updated hash to match the spec
 				updatedVMSS := newDefaultVMSS()
@@ -315,7 +315,7 @@ func TestReconcileVMSS(t *testing.T) {
 				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, createdVMSS, instances)
 				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
 				s.SetLongRunningOperationState(nil)
-				s.SetProvisioningState(infrav1.VMStateSucceeded)
+				s.SetProvisioningState(infrav1.Succeeded)
 				s.NeedsK8sVersionUpdate().Return(false)
 				infraVMSS := converters.SDKToVMSS(createdVMSS, instances)
 				s.UpdateInstanceStatuses(gomockinternal.AContext(), infraVMSS.Instances).Return(nil)
@@ -991,8 +991,9 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 								Publisher:          to.StringPtr("somePublisher"),
 								Type:               to.StringPtr("someExtension"),
 								TypeHandlerVersion: to.StringPtr("someVersion"),
-								Settings:           nil,
-								ProtectedSettings:  nil,
+								ProtectedSettings: map[string]string{
+									"commandToExecute": "echo hello",
+								},
 							},
 						},
 					},
@@ -1041,7 +1042,7 @@ func setHashOnVMSSUpdate(g *WithT, vmss compute.VirtualMachineScaleSet, update c
 func setupDefaultVMSSInProgressOperationDoneExpectations(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, createdVMSS compute.VirtualMachineScaleSet, instances []compute.VirtualMachineScaleSetVM) compute.VirtualMachineScaleSet {
 	setHashOnVMSS(g, createdVMSS)
 	createdVMSS.ID = to.StringPtr("vmss-id")
-	createdVMSS.ProvisioningState = to.StringPtr(string(infrav1.VMStateSucceeded))
+	createdVMSS.ProvisioningState = to.StringPtr(string(infrav1.Succeeded))
 	setupDefaultVMSSExpectations(s)
 	future := &infrav1.Future{
 		Type:          PutFuture,
@@ -1060,7 +1061,7 @@ func setupDefaultVMSSStartCreatingExpectations(s *mock_scalesets.MockScaleSetSco
 	s.GetLongRunningOperationState().Return(nil)
 	m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
 		Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
-	s.SetProvisioningState(infrav1.VMStateCreating)
+	s.SetProvisioningState(infrav1.Creating)
 }
 
 func setupCreatingSucceededExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder, future *infrav1.Future) {
@@ -1087,9 +1088,13 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 	}, nil)
 	s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
 		{
-			Name:      "someExtension",
-			Publisher: "somePublisher",
-			Version:   "someVersion",
+			Name:         "someExtension",
+			ScaleSetName: "my-vmss",
+			Publisher:    "somePublisher",
+			Version:      "someVersion",
+			ProtectedSettings: map[string]string{
+				"commandToExecute": "echo hello",
+			},
 		},
 	}).AnyTimes()
 }
@@ -1097,6 +1102,6 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupDefaultVMSSExpectations(s)
 	s.SetProviderID("azure://vmss-id")
-	s.SetProvisioningState(infrav1.VMStateUpdating)
+	s.SetProvisioningState(infrav1.Updating)
 	s.GetLongRunningOperationState().Return(nil)
 }

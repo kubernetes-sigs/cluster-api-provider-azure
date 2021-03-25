@@ -841,7 +841,7 @@ func autoConvert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1al
 func autoConvert_v1alpha3_AzureMachineStatus_To_v1alpha4_AzureMachineStatus(in *AzureMachineStatus, out *v1alpha4.AzureMachineStatus, s conversion.Scope) error {
 	out.Ready = in.Ready
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
-	out.VMState = (*v1alpha4.VMState)(unsafe.Pointer(in.VMState))
+	out.VMState = (*v1alpha4.ProvisioningState)(unsafe.Pointer(in.VMState))
 	out.FailureReason = (*errors.MachineStatusError)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
 	out.Conditions = *(*apiv1alpha4.Conditions)(unsafe.Pointer(&in.Conditions))
@@ -1543,7 +1543,7 @@ func autoConvert_v1alpha3_VM_To_v1alpha4_VM(in *VM, out *v1alpha4.VM, s conversi
 		return err
 	}
 	out.StartupScript = in.StartupScript
-	out.State = v1alpha4.VMState(in.State)
+	out.State = v1alpha4.ProvisioningState(in.State)
 	out.Identity = v1alpha4.VMIdentity(in.Identity)
 	out.Tags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.Tags))
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))

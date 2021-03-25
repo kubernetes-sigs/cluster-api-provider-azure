@@ -284,61 +284,28 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		// Handle transient and terminal errors
 		var reconcileError azure.ReconcileError
 		if errors.As(err, &reconcileError) {
-			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrap(err, "failed to reconcile AzureMachine").Error())
-			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
-
 			if reconcileError.IsTerminal() {
+				r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 				machineScope.Error(err, "failed to reconcile AzureMachine", "name", machineScope.Name())
 				machineScope.SetFailureReason(capierrors.CreateMachineError)
 				machineScope.SetFailureMessage(err)
 				machineScope.SetNotReady()
-				machineScope.SetVMState(infrav1.VMStateFailed)
+				machineScope.SetVMState(infrav1.Failed)
 				return reconcile.Result{}, nil
 			}
 
 			if reconcileError.IsTransient() {
-				machineScope.Error(err, "failed to reconcile AzureMachine", "name", machineScope.Name())
+				machineScope.Error(err, "transient failure to reconcile AzureMachine, retrying", "name", machineScope.Name())
+				machineScope.SetNotReady()
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
-
-			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 		}
-
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error creating new AzureMachine", errors.Wrap(err, "failed to reconcile AzureMachine").Error())
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 	}
 
-	switch machineScope.VMState() {
-	case infrav1.VMStateSucceeded:
-		machineScope.V(2).Info("VM is running", "id", machineScope.GetVMID())
-		conditions.MarkTrue(machineScope.AzureMachine, infrav1.VMRunningCondition)
-		machineScope.SetReady()
-	case infrav1.VMStateCreating:
-		machineScope.V(2).Info("VM is creating", "id", machineScope.GetVMID())
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNCreatingReason, clusterv1.ConditionSeverityInfo, "")
-		machineScope.SetNotReady()
-	case infrav1.VMStateUpdating:
-		machineScope.V(2).Info("VM is updating", "id", machineScope.GetVMID())
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMNUpdatingReason, clusterv1.ConditionSeverityInfo, "")
-		machineScope.SetNotReady()
-	case infrav1.VMStateDeleting:
-		machineScope.Info("Unexpected VM deletion", "id", machineScope.GetVMID())
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "UnexpectedVMDeletion", "Unexpected Azure VM deletion")
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDDeletingReason, clusterv1.ConditionSeverityWarning, "")
-		machineScope.SetNotReady()
-	case infrav1.VMStateFailed:
-		machineScope.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", machineScope.GetVMID())
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "FailedVMState", "Azure VM is in failed state")
-		machineScope.SetFailureReason(capierrors.UpdateMachineError)
-		machineScope.SetFailureMessage(errors.Errorf("Azure VM state is %s", machineScope.VMState()))
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityWarning, "")
-		machineScope.SetNotReady()
-	default:
-		machineScope.V(2).Info("VM state is undefined", "id", machineScope.GetVMID())
-		conditions.MarkUnknown(machineScope.AzureMachine, infrav1.VMRunningCondition, "", "")
-		machineScope.SetNotReady()
-	}
+	machineScope.SetReady()
 
 	return reconcile.Result{}, nil
 }

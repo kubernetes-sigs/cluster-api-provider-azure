@@ -65,6 +65,17 @@ const (
 	ControlPlaneNodeGroup = "control-plane"
 )
 
+const (
+	// bootstrapExtensionRetries is the number of retries in the BootstrapExtensionCommand.
+	// NOTE: the overall timeout will be number of retries * retry sleep, in this case 240 * 5s = 1200s.
+	bootstrapExtensionRetries = 240
+	// bootstrapExtensionSleep is the duration in seconds to sleep before each retry in the BootstrapExtensionCommand.
+	bootstrapExtensionSleep = 5
+	// bootstrapSentinelFile is the file written by bootstrap provider on machines to indicate successful bootstrapping,
+	// as defined by the Cluster API Bootstrap Provider contract (https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html).
+	bootstrapSentinelFile = "/run/cluster-api/bootstrap-success.complete"
+)
+
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
 func GenerateBackendAddressPoolName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "backendPool")
@@ -260,6 +271,12 @@ func GetBootstrappingVMExtension(osType string, cloud string) (name, publisher, 
 	}
 
 	return "", "", ""
+}
+
+// BootstrapExtensionCommand is the command that runs on the Boostrap VM extension to check for bootstrap success.
+// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
+func BootstrapExtensionCommand() string {
+	return fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then return 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
 }
 
 // UserAgent specifies a string to append to the agent identifier.

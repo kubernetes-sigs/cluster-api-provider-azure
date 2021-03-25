@@ -128,7 +128,7 @@ type AzureMachineStatus struct {
 
 	// VMState is the provisioning state of the Azure virtual machine.
 	// +optional
-	VMState *VMState `json:"vmState,omitempty"`
+	VMState *ProvisioningState `json:"vmState,omitempty"`
 
 	// ErrorReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable

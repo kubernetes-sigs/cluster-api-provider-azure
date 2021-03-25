@@ -19,11 +19,9 @@ package vmssextensions
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -33,6 +31,7 @@ type VMSSExtensionScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	VMSSExtensionSpecs() []azure.VMSSExtensionSpec
+	SetBootstrapConditions(string, string) error
 }
 
 // Service provides operations on azure resources
@@ -55,32 +54,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {
-		if _, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name); err == nil {
-			// check for the extension and don't update if already exists
-			// TODO: set conditions based on extension status
-			continue
+		if existing, err := s.client.Get(ctx, s.Scope.ResourceGroup(), extensionSpec.ScaleSetName, extensionSpec.Name); err == nil {
+			// check the extension status and set the associated conditions.
+			if retErr := s.Scope.SetBootstrapConditions(to.String(existing.ProvisioningState), extensionSpec.Name); retErr != nil {
+				return retErr
+			}
+		} else if !azure.ResourceNotFound(err) {
+			return errors.Wrapf(err, "failed to get vm extension %s on scale set %s", extensionSpec.Name, extensionSpec.ScaleSetName)
 		}
-
-		s.Scope.V(2).Info("creating VMSS extension", "vssm extension", extensionSpec.Name)
-		err := s.client.CreateOrUpdate(
-			ctx,
-			s.Scope.ResourceGroup(),
-			extensionSpec.ScaleSetName,
-			extensionSpec.Name,
-			compute.VirtualMachineScaleSetExtension{
-				VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
-					Publisher:          to.StringPtr(extensionSpec.Publisher),
-					Type:               to.StringPtr(extensionSpec.Name),
-					TypeHandlerVersion: to.StringPtr(extensionSpec.Version),
-					Settings:           nil,
-					ProtectedSettings:  nil,
-				},
-			},
-		)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create VMSS extension %s on scale set %s in resource group %s", extensionSpec.Name, extensionSpec.ScaleSetName, s.Scope.ResourceGroup())
-		}
-		s.Scope.V(2).Info("successfully created VMSS extension", "vm extension", extensionSpec.Name)
+		//  Nothing else to do here, the extensions are applied to the model as part of the scale set Reconcile.
+		continue
 	}
 	return nil
 }

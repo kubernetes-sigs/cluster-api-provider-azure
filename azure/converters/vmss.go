@@ -29,7 +29,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	vmss := &infrav1exp.VMSS{
 		ID:    to.String(sdkvmss.ID),
 		Name:  to.String(sdkvmss.Name),
-		State: infrav1.VMState(to.String(sdkvmss.ProvisioningState)),
+		State: infrav1.ProvisioningState(to.String(sdkvmss.ProvisioningState)),
 	}
 
 	if sdkvmss.Sku != nil {
@@ -52,7 +52,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 				ID:         to.String(vm.ID),
 				InstanceID: to.String(vm.InstanceID),
 				Name:       to.String(vm.OsProfile.ComputerName),
-				State:      infrav1.VMState(to.String(vm.ProvisioningState)),
+				State:      infrav1.ProvisioningState(to.String(vm.ProvisioningState)),
 			}
 
 			if vm.LatestModelApplied != nil {

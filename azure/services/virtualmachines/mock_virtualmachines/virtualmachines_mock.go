@@ -353,7 +353,7 @@ func (mr *MockVMScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock.Call 
 }
 
 // SetVMState mocks base method.
-func (m *MockVMScope) SetVMState(arg0 v1alpha4.VMState) {
+func (m *MockVMScope) SetVMState(arg0 v1alpha4.ProvisioningState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetVMState", arg0)
 }
@@ -390,6 +390,18 @@ func (m *MockVMScope) TenantID() string {
 func (mr *MockVMScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockVMScope)(nil).TenantID))
+}
+
+// UpdateStatus mocks base method.
+func (m *MockVMScope) UpdateStatus() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateStatus")
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus.
+func (mr *MockVMScopeMockRecorder) UpdateStatus() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockVMScope)(nil).UpdateStatus))
 }
 
 // V mocks base method.

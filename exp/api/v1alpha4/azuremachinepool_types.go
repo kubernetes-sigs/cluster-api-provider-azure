@@ -133,7 +133,7 @@ type (
 
 		// ProvisioningState is the provisioning state of the Azure virtual machine.
 		// +optional
-		ProvisioningState *infrav1.VMState `json:"provisioningState,omitempty"`
+		ProvisioningState *infrav1.ProvisioningState `json:"provisioningState,omitempty"`
 
 		// FailureReason will be set in the event that there is a terminal problem
 		// reconciling the MachinePool and will contain a succinct value suitable
@@ -191,7 +191,7 @@ type (
 
 		// ProvisioningState is the provisioning state of the Azure virtual machine instance.
 		// +optional
-		ProvisioningState *infrav1.VMState `json:"provisioningState"`
+		ProvisioningState *infrav1.ProvisioningState `json:"provisioningState"`
 
 		// ProviderID is the provider identification of the VMSS Instance
 		// +optional

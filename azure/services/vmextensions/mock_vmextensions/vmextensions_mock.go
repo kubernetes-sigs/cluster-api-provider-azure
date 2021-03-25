@@ -255,6 +255,20 @@ func (mr *MockVMExtensionScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockVMExtensionScope)(nil).ResourceGroup))
 }
 
+// SetBootstrapConditions mocks base method.
+func (m *MockVMExtensionScope) SetBootstrapConditions(arg0, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBootstrapConditions", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBootstrapConditions indicates an expected call of SetBootstrapConditions.
+func (mr *MockVMExtensionScopeMockRecorder) SetBootstrapConditions(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBootstrapConditions", reflect.TypeOf((*MockVMExtensionScope)(nil).SetBootstrapConditions), arg0, arg1)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockVMExtensionScope) SubscriptionID() string {
 	m.ctrl.T.Helper()
