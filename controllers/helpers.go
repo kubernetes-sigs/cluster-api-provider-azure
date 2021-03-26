@@ -198,6 +198,9 @@ func systemAssignedIdentityCloudProviderConfig(d azure.ClusterScoper) (*CloudPro
 	controlPlaneConfig.AadClientID = ""
 	controlPlaneConfig.AadClientSecret = ""
 	controlPlaneConfig.UseManagedIdentityExtension = true
+	workerConfig.AadClientID = ""
+	workerConfig.AadClientSecret = ""
+	workerConfig.UseManagedIdentityExtension = true
 	return controlPlaneConfig, workerConfig
 }
 
@@ -207,6 +210,10 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID s
 	controlPlaneConfig.AadClientSecret = ""
 	controlPlaneConfig.UseManagedIdentityExtension = true
 	controlPlaneConfig.UserAssignedIdentityID = identityID
+	workerConfig.AadClientID = ""
+	workerConfig.AadClientSecret = ""
+	workerConfig.UseManagedIdentityExtension = true
+	workerConfig.UserAssignedIdentityID = identityID
 	return controlPlaneConfig, workerConfig
 }
 
@@ -233,6 +240,8 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 		},
 		&CloudProviderConfig{
 			Cloud:                        d.CloudEnvironment(),
+			AadClientID:                  d.ClientID(),
+			AadClientSecret:              d.ClientSecret(),
 			TenantID:                     d.TenantID(),
 			SubscriptionID:               d.SubscriptionID(),
 			ResourceGroup:                d.ResourceGroup(),
