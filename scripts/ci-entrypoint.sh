@@ -33,34 +33,10 @@ source "${REPO_ROOT}/hack/ensure-kind.sh"
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=../hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
+# shellcheck source=../hack/ensure-tags.sh
+source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
-
-# build Kubernetes E2E binaries
-build_k8s() {
-    # possibly enable bazel build caching before building kubernetes
-    if [[ "${BAZEL_REMOTE_CACHE_ENABLED:-false}" == "true" ]]; then
-        create_bazel_cache_rcs.sh || true
-    fi
-
-    pushd "$(go env GOPATH)/src/k8s.io/kubernetes"
-
-    # make sure we have e2e requirements
-    bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
-
-    # ensure the e2e script will find our binaries ...
-    mkdir -p "${PWD}/_output/bin/"
-    cp -f "${PWD}/bazel-bin/test/e2e/e2e.test" "${PWD}/_output/bin/e2e.test"
-
-    PATH="$(dirname "$(find "${PWD}/bazel-bin/" -name kubectl -type f)"):${PATH}"
-    export PATH
-
-    # attempt to release some memory after building
-    sync || true
-    (echo 1 > /proc/sys/vm/drop_caches) 2>/dev/null || true
-
-    popd
-}
 
 create_cluster() {
     # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
@@ -83,15 +59,12 @@ create_cluster() {
     fi
 
     export CLUSTER_NAME="capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
-    export AZURE_RESOURCE_GROUP=${CLUSTER_NAME}
+    export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
     # Need a cluster with at least 2 nodes
-    export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-1}
-    export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
-    export REGISTRY=capz
-    export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-conformance"}"
-    # timestamp is in RFC-3339 format to match kubetest
-    export TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-    export EXP_CLUSTER_RESOURCE_SET=true
+    export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
+    export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+    export REGISTRY="${REGISTRY:-capz}"
+    export EXP_CLUSTER_RESOURCE_SET="true"
     ${REPO_ROOT}/hack/create-dev-cluster.sh
 }
 
@@ -108,38 +81,10 @@ wait_for_nodes() {
     kubectl get nodes -owide
 }
 
-run_upstream_e2e_tests() {
-    # ginkgo regexes
-    SKIP="${SKIP:-}"
-    FOCUS="${FOCUS:-"\\[Conformance\\]"}"
-    # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
-    if [[ "${PARALLEL:-false}" == "true" ]]; then
-        export GINKGO_PARALLEL=y
-        if [[ -z "${SKIP}" ]]; then
-            SKIP="\\[Serial\\]"
-        else
-            SKIP="\\[Serial\\]|${SKIP}"
-        fi
-    fi
-
-    # setting this env prevents ginkgo e2e from trying to run provider setup
-    export KUBERNETES_CONFORMANCE_TEST="y"
-    # run the tests
-    (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && ./hack/ginkgo-e2e.sh \
-    '--provider=skeleton' \
-    "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
-    "--report-dir=${ARTIFACTS}" '--disable-log-dump=true')
-
-    unset KUBECONFIG
-    unset KUBERNETES_CONFORMANCE_TEST
-}
-
 # cleanup all resources we use
 cleanup() {
     timeout 1800 kubectl delete cluster "${CLUSTER_NAME}" || true
     make kind-reset || true
-    # clean up e2e.test symlink
-    (cd "$(go env GOPATH)/src/k8s.io/kubernetes" && rm -f _output/bin/e2e.test) || true
 }
 
 on_exit() {
@@ -164,12 +109,6 @@ export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
 export -f wait_for_nodes
 timeout --foreground 1800 bash -c wait_for_nodes
-
-# build k8s binaries and run upstream e2e tests
-if [[ -z "${SKIP_UPSTREAM_E2E_TESTS:-}" ]]; then
-    build_k8s
-    run_upstream_e2e_tests
-fi
 
 if [[ "${#}" -gt 0 ]]; then
     # disable error exit so we can run post-command cleanup

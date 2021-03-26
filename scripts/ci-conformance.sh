@@ -34,6 +34,8 @@ source "${REPO_ROOT}/hack/ensure-kind.sh"
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=../hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
+# shellcheck source=../hack/ensure-tags.sh
+source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
@@ -83,15 +85,6 @@ if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
     AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
 fi
 export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
-
-# timestamp is in RFC-3339 format to match kubetest
-export TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-export JOB_NAME="${JOB_NAME:-"cluster-api-provider-azure-e2e"}"
-if [ -n "${REPO_OWNER:-}" ] && [ -n "${REPO_NAME:-}" ] && [ -n "${PULL_BASE_SHA:-}" ]; then
-    export BUILD_PROVENANCE="${REPO_OWNER:-}/${REPO_NAME:-}:${PULL_BASE_SHA:-}"
-else
-    export BUILD_PROVENANCE="canary"
-fi
 
 cleanup() {
     ${REPO_ROOT}/hack/log/redact.sh || true
