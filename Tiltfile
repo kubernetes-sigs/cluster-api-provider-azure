@@ -194,10 +194,8 @@ def create_crs():
     local("kubectl delete configmaps flannel-windows-addon --ignore-not-found=true")
 
     # need to set version for kube-proxy on windows.  
-    # This file is processed then reapply \\ due to the named pipes which need to be escaped for a bug in envsubst library
-	# https://github.com/kubernetes-sigs/cluster-api/issues/4016
     os.putenv("KUBERNETES_VERSION", settings.get("kubernetes_version", {}))
-    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/ --dry-run=client -o yaml | " + envsubst_cmd + " | sed -e 's/\\\\/\\\\\\\\/' | kubectl apply -f -")
+    local("kubectl create configmap flannel-windows-addon --from-file=templates/addons/windows/ --dry-run=client -o yaml | " + envsubst_cmd + " | kubectl apply -f -")
 
     # set up crs
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")
