@@ -182,6 +182,14 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 		return reconcile.Result{}, err
 	}
 
+	// For non-system node pools, we wait for the control plane to be
+	// initialized, otherwise Azure API will return an error for node pool
+	// CreateOrUpdate request.
+	if infraPool.Name != controlPlane.Spec.DefaultPoolRef.Name && !controlPlane.Status.Initialized {
+		log.Info("AzureManagedControlPlane is not initialized")
+		return reconcile.Result{}, nil
+	}
+
 	// Create the scope.
 	mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
 		Client:           r.Client,

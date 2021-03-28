@@ -21,6 +21,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -245,6 +246,254 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			name:    "AzureManagedControlPlane with invalid version",
 			oldAMCP: createAzureManagedControlPlane(t, "", "v1.18.0", ""),
 			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "1.999.9", generateSSHPublicKey(true)),
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane SubscriptionID is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:   to.StringPtr("192.168.0.0"),
+					SubscriptionID: "212ec1q8",
+					Version:        "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:   to.StringPtr("192.168.0.0"),
+					SubscriptionID: "212ec1q9",
+					Version:        "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane ResourceGroupName is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:      to.StringPtr("192.168.0.0"),
+					ResourceGroupName: "hello-1",
+					Version:           "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:      to.StringPtr("192.168.0.0"),
+					ResourceGroupName: "hello-2",
+					Version:           "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NodeResourceGroupName is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:          to.StringPtr("192.168.0.0"),
+					NodeResourceGroupName: "hello-1",
+					Version:               "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:          to.StringPtr("192.168.0.0"),
+					NodeResourceGroupName: "hello-2",
+					Version:               "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane Location is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Location:     "westeurope",
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Location:     "eastus",
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane SSHPublicKey is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					SSHPublicKey: generateSSHPublicKey(true),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					SSHPublicKey: generateSSHPublicKey(true),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DNSServiceIP is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.1"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DNSServiceIP is immutable, unsetting is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NetworkPlugin is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:  to.StringPtr("192.168.0.0"),
+					NetworkPlugin: to.StringPtr("azure"),
+					Version:       "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:  to.StringPtr("192.168.0.0"),
+					NetworkPlugin: to.StringPtr("kubenet"),
+					Version:       "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NetworkPlugin is immutable, unsetting is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:  to.StringPtr("192.168.0.0"),
+					NetworkPlugin: to.StringPtr("azure"),
+					Version:       "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NetworkPolicy is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:  to.StringPtr("192.168.0.0"),
+					NetworkPolicy: to.StringPtr("azure"),
+					Version:       "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:  to.StringPtr("192.168.0.0"),
+					NetworkPolicy: to.StringPtr("calico"),
+					Version:       "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane NetworkPolicy is immutable, unsetting is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:  to.StringPtr("192.168.0.0"),
+					NetworkPolicy: to.StringPtr("azure"),
+					Version:       "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane LoadBalancerSKU is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:    to.StringPtr("192.168.0.0"),
+					LoadBalancerSKU: to.StringPtr("Standard"),
+					Version:         "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:    to.StringPtr("192.168.0.0"),
+					LoadBalancerSKU: to.StringPtr("Basic"),
+					Version:         "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane LoadBalancerSKU is immutable, unsetting is not allowed",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP:    to.StringPtr("192.168.0.0"),
+					LoadBalancerSKU: to.StringPtr("Standard"),
+					Version:         "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane DefaultPoolRef.Name is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DefaultPoolRef: v1.LocalObjectReference{
+						Name: "pool-1",
+					},
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DefaultPoolRef: v1.LocalObjectReference{
+						Name: "pool-2",
+					},
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
 			wantErr: true,
 		},
 	}

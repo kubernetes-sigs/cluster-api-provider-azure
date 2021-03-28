@@ -22,13 +22,15 @@ import (
 	"regexp"
 	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 // log is for logging in this package.
@@ -91,10 +93,145 @@ func (r *AzureManagedControlPlane) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *AzureManagedControlPlane) ValidateUpdate(old runtime.Object) error {
+func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 	azuremanagedcontrolplanelog.Info("validate update", "name", r.Name)
+	var allErrs field.ErrorList
+	old := oldRaw.(*AzureManagedControlPlane)
 
-	return r.Validate()
+	if r.Spec.SubscriptionID != old.Spec.SubscriptionID {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "SubscriptionID"),
+				r.Spec.SubscriptionID,
+				"field is immutable"))
+	}
+
+	if r.Spec.ResourceGroupName != old.Spec.ResourceGroupName {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "ResourceGroupName"),
+				r.Spec.ResourceGroupName,
+				"field is immutable"))
+	}
+
+	if r.Spec.NodeResourceGroupName != old.Spec.NodeResourceGroupName {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "NodeResourceGroupName"),
+				r.Spec.NodeResourceGroupName,
+				"field is immutable"))
+	}
+
+	if r.Spec.Location != old.Spec.Location {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "Location"),
+				r.Spec.Location,
+				"field is immutable"))
+	}
+
+	if old.Spec.SSHPublicKey != "" {
+		// Prevent SSH key modification if it was already set to some value
+		if r.Spec.SSHPublicKey != old.Spec.SSHPublicKey {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "SSHPublicKey"),
+					r.Spec.SSHPublicKey,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.DNSServiceIP != nil {
+		// Prevent DNSServiceIP modification if it was already set to some value
+		if r.Spec.DNSServiceIP == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "DNSServiceIP"),
+					r.Spec.DNSServiceIP,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.DNSServiceIP != *old.Spec.DNSServiceIP {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "DNSServiceIP"),
+					*r.Spec.DNSServiceIP,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.NetworkPlugin != nil {
+		// Prevent NetworkPlugin modification if it was already set to some value
+		if r.Spec.NetworkPlugin == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "NetworkPlugin"),
+					r.Spec.NetworkPlugin,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.NetworkPlugin != *old.Spec.NetworkPlugin {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "NetworkPlugin"),
+					*r.Spec.NetworkPlugin,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.NetworkPolicy != nil {
+		// Prevent NetworkPolicy modification if it was already set to some value
+		if r.Spec.NetworkPolicy == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "NetworkPolicy"),
+					r.Spec.NetworkPolicy,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.NetworkPolicy != *old.Spec.NetworkPolicy {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "NetworkPolicy"),
+					*r.Spec.NetworkPolicy,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.LoadBalancerSKU != nil {
+		// Prevent LoadBalancerSKU modification if it was already set to some value
+		if r.Spec.LoadBalancerSKU == nil {
+			// unsetting the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "LoadBalancerSKU"),
+					r.Spec.LoadBalancerSKU,
+					"field is immutable, unsetting is not allowed"))
+		} else if *r.Spec.LoadBalancerSKU != *old.Spec.LoadBalancerSKU {
+			// changing the field is not allowed
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "LoadBalancerSKU"),
+					*r.Spec.LoadBalancerSKU,
+					"field is immutable"))
+		}
+	}
+
+	if old.Spec.DefaultPoolRef.Name != "" {
+		if r.Spec.DefaultPoolRef.Name != old.Spec.DefaultPoolRef.Name {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "DefaultPoolRef", "Name"),
+					r.Spec.DefaultPoolRef.Name,
+					"field is immutable"))
+		}
+	}
+
+	if len(allErrs) == 0 {
+		return r.Validate()
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), r.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
