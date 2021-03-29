@@ -22,9 +22,10 @@ import (
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
 
+	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 )
 
@@ -34,9 +35,27 @@ func TestFuzzyConversion(t *testing.T) {
 	g.Expect(AddToScheme(scheme)).To(Succeed())
 	g.Expect(v1alpha4.AddToScheme(scheme)).To(Succeed())
 
-	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureCluster{}, &AzureCluster{}, overrideImageFuncs, overrideDeprecatedFieldsFuncs))
-	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureMachine{}, &AzureMachine{}, overrideImageFuncs, overrideDeprecatedFieldsFuncs))
-	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(scheme, &v1alpha4.AzureMachineTemplate{}, &AzureMachineTemplate{}, overrideImageFuncs, overrideDeprecatedFieldsFuncs))
+	t.Run("for AzureCluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+		Scheme:      scheme,
+		Hub:         &v1alpha4.AzureCluster{},
+		Spoke:       &AzureCluster{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideImageFuncs, overrideDeprecatedFieldsFuncs},
+	}))
+
+	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+		Scheme:      scheme,
+		Hub:         &v1alpha4.AzureMachine{},
+		Spoke:       &AzureMachine{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideImageFuncs, overrideDeprecatedFieldsFuncs},
+	}))
+
+	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+		Scheme:      scheme,
+		Hub:         &v1alpha4.AzureMachineTemplate{},
+		Spoke:       &AzureMachineTemplate{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideImageFuncs, overrideDeprecatedFieldsFuncs},
+	}))
+
 }
 
 func overrideImageFuncs(codecs runtimeserializer.CodecFactory) []interface{} {

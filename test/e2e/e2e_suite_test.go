@@ -98,7 +98,7 @@ var (
 
 type (
 	AzureClusterProxy struct {
-		capi_e2e.ClusterProxy
+		framework.ClusterProxy
 	}
 	// myEventData is used to be able to Marshal insights.EventData into JSON
 	// see https://github.com/Azure/azure-sdk-for-go/issues/8224#issuecomment-614777550
@@ -106,7 +106,7 @@ type (
 )
 
 func NewAzureClusterProxy(name string, kubeconfigPath string, scheme *runtime.Scheme, options ...framework.Option) *AzureClusterProxy {
-	proxy, ok := framework.NewClusterProxy(name, kubeconfigPath, scheme, options...).(capi_e2e.ClusterProxy)
+	proxy, ok := framework.NewClusterProxy(name, kubeconfigPath, scheme, options...).(framework.ClusterProxy)
 	Expect(ok).To(BeTrue(), "framework.NewClusterProxy must implement capi_e2e.ClusterProxy")
 	return &AzureClusterProxy{
 		ClusterProxy: proxy,
@@ -355,8 +355,6 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathIPv6, CNIResourcesIPv6)
 
 	// Read CNI_WINDOWS file and set CNI_RESOURCES_WINDOWS environmental variable
-	// This file is generated with escapes due to the named pipes which need to be escaped for a bug in envsubst library
-	// https://github.com/kubernetes-sigs/cluster-api/issues/4016
 	Expect(config.Variables).To(HaveKey(CNIPathWindows), "Missing %s variable in the config", CNIPathWindows)
 	cniPathWindows := config.GetVariable(CNIPathWindows)
 	Expect(cniPathWindows).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathWindows)

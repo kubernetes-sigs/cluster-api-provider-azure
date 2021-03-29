@@ -722,7 +722,7 @@ spec:
         image: sigwindowstools/flannel:v0.13.0-nanoserver
         name: kube-flannel
         volumeMounts:
-        - mountPath: \\\\.\pipe\rancher_wins
+        - mountPath: \\.\pipe\rancher_wins
           name: wins
         - mountPath: /host
           name: host
@@ -743,7 +743,7 @@ spec:
         operator: Exists
       volumes:
       - hostPath:
-          path: \\\\.\pipe\rancher_wins
+          path: \\.\pipe\rancher_wins
           type: null
         name: wins
       - hostPath:
@@ -828,7 +828,7 @@ spec:
         image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION}-nanoserver
         name: kube-proxy
         volumeMounts:
-        - mountPath: \\\\.\pipe\rancher_wins
+        - mountPath: \\.\pipe\rancher_wins
           name: wins
         - mountPath: /host
           name: host
@@ -845,7 +845,7 @@ spec:
       - operator: Exists
       volumes:
       - hostPath:
-          path: \\\\.\pipe\rancher_wins
+          path: \\.\pipe\rancher_wins
           type: null
         name: wins
       - configMap:

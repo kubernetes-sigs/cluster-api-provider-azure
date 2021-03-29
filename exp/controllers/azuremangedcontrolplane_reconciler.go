@@ -249,7 +249,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 		return fmt.Errorf("expected containerservice ManagedCluster object")
 	}
 
-	old := scope.ControlPlane.DeepCopyObject()
+	old := scope.ControlPlane.DeepCopy()
 
 	scope.ControlPlane.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		Host: *managedCluster.ManagedClusterProperties.Fqdn,
