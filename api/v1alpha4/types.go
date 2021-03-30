@@ -89,17 +89,6 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 // Subnets is a slice of Subnet.
 type Subnets []SubnetSpec
 
-// SecurityGroupRole defines the unique role of a security group.
-type SecurityGroupRole string
-
-const (
-	// SecurityGroupNode defines a Kubernetes workload node role
-	SecurityGroupNode = SecurityGroupRole(Node)
-
-	// SecurityGroupControlPlane defines a Kubernetes control plane node role
-	SecurityGroupControlPlane = SecurityGroupRole(ControlPlane)
-)
-
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
 	ID           string       `json:"id,omitempty"`
