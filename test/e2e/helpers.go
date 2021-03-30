@@ -80,6 +80,7 @@ type WaitForDeploymentsAvailableInput struct {
 func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAvailableInput, intervals ...interface{}) {
 	namespace, name := input.Deployment.GetNamespace(), input.Deployment.GetName()
 	Byf("waiting for deployment %s/%s to be available", namespace, name)
+	Log("starting to wait for deployment to become available")
 	Eventually(func() bool {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := input.Getter.Get(ctx, key, input.Deployment); err == nil {
@@ -91,6 +92,7 @@ func WaitForDeploymentsAvailable(ctx context.Context, input WaitForDeploymentsAv
 		}
 		return false
 	}, intervals...).Should(BeTrue(), func() string { return DescribeFailedDeployment(ctx, input) })
+	Logf("Deployment %s/%s is now available", namespace, name)
 }
 
 // DescribeFailedDeployment returns detailed output to help debug a deployment failure in e2e.
