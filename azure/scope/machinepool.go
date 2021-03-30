@@ -114,7 +114,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SSHKeyData:              m.AzureMachinePool.Spec.Template.SSHPublicKey,
 		OSDisk:                  m.AzureMachinePool.Spec.Template.OSDisk,
 		DataDisks:               m.AzureMachinePool.Spec.Template.DataDisks,
-		SubnetName:              m.NodeSubnet().Name,
+		SubnetName:              m.SubnetName(),
 		VNetName:                m.Vnet().Name,
 		VNetResourceGroup:       m.Vnet().ResourceGroup,
 		PublicLBName:            m.OutboundLBName(infrav1.Node),
@@ -135,6 +135,12 @@ func (m *MachinePoolScope) Name() string {
 		return "win-" + m.AzureMachinePool.Name[len(m.AzureMachinePool.Name)-5:]
 	}
 	return m.AzureMachinePool.Name
+}
+
+// SubnetName returns the AzureMachinePool's subnet name based on its role.
+func (m *MachinePoolScope) SubnetName() string {
+	name, _ := m.NodeSubnet()
+	return name
 }
 
 // ProviderID returns the AzureMachinePool ID by parsing Spec.ProviderID.

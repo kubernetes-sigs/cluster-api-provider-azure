@@ -80,26 +80,24 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
-						Name: "my-cp-routetable",
+						Name:       "my-cp-routetable",
+						SubnetName: "control-plane-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "control-plane-subnet",
 							Role: infrav1.SubnetControlPlane,
 						},
 					},
 					{
-						Name: "my-node-routetable",
+						Name:       "my-node-routetable",
+						SubnetName: "node-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
 							Role: infrav1.SubnetNode,
 						},
 					},
 				})
-				s.ControlPlaneRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.Location().Return("westus")
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cp-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
-				s.NodeRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-node-routetable"})
 				m.Get(gomockinternal.AContext(), "my-rg", "my-node-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.Location().Return("westus")
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-routetable", gomock.AssignableToTypeOf(network.RouteTable{}))
@@ -121,34 +119,41 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.ClusterName()
 				s.RouteTableSpecs().AnyTimes().Return([]azure.RouteTableSpec{
 					{
-						Name: "my-cp-routetable",
+						Name:       "my-cp-routetable",
+						SubnetName: "control-plane-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "control-plane-subnet",
 							Role: infrav1.SubnetControlPlane,
 						},
 					},
 					{
-						Name: "my-node-routetable",
+						Name:       "my-node-routetable",
+						SubnetName: "node-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
 							Role: infrav1.SubnetNode,
 						},
 					},
 				})
-				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{Name: "control-plane-subnet", Role: infrav1.SubnetControlPlane})
-				s.ControlPlaneRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{
 					Name: to.StringPtr("my-cp-routetable"),
 					ID:   to.StringPtr("1"),
 				}, nil)
-				s.NodeSubnet().AnyTimes().Return(infrav1.SubnetSpec{Name: "node-subnet", Role: infrav1.SubnetNode})
-				s.NodeRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-node-routetable"})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.SetSubnet("control-plane-subnet", infrav1.SubnetSpec{
+					Role: infrav1.SubnetControlPlane,
+					RouteTable: infrav1.RouteTable{
+						ID:   "1",
+						Name: "my-cp-routetable",
+					}})
 				m.Get(gomockinternal.AContext(), "my-rg", "my-node-routetable").Return(network.RouteTable{
 					Name: to.StringPtr("my-node-routetable"),
 					ID:   to.StringPtr("2"),
 				}, nil)
+				s.SetSubnet("node-subnet", infrav1.SubnetSpec{
+					Role: infrav1.SubnetNode,
+					RouteTable: infrav1.RouteTable{
+						Name: "my-node-routetable",
+						ID:   "2",
+					}})
 			},
 		},
 		{
@@ -166,18 +171,15 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
-					Name: "my-cp-routetable",
+					Name:       "my-cp-routetable",
+					SubnetName: "control-plane-subnet",
 					Subnet: infrav1.SubnetSpec{
-						Name: "control-plane-subnet",
 						Role: infrav1.SubnetControlPlane,
 					},
 				}})
-				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{})
-				s.ControlPlaneRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				m.CreateOrUpdate(gomockinternal.AContext(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.RouteTable{})).Times(0)
-				s.NodeRouteTable().Times(0)
 			},
 		},
 		{
@@ -195,14 +197,12 @@ func TestReconcileRouteTables(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
-					Name: "my-cp-routetable",
+					Name:       "my-cp-routetable",
+					SubnetName: "control-plane-subnet",
 					Subnet: infrav1.SubnetSpec{
-						Name: "control-plane-subnet",
 						Role: infrav1.SubnetControlPlane,
 					},
 				}})
-				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{})
-				s.ControlPlaneRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-cp-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-cp-routetable").Return(network.RouteTable{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				s.Location().Return("westus")
@@ -279,16 +279,16 @@ func TestDeleteRouteTable(t *testing.T) {
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
-						Name: "my-cp-routetable",
+						Name:       "my-cp-routetable",
+						SubnetName: "control-plane-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "control-plane-subnet",
 							Role: infrav1.SubnetControlPlane,
 						},
 					},
 					{
-						Name: "my-node-routetable",
+						Name:       "my-node-routetable",
+						SubnetName: "node-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
 							Role: infrav1.SubnetNode,
 						},
 					},
@@ -317,16 +317,16 @@ func TestDeleteRouteTable(t *testing.T) {
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{
 					{
-						Name: "my-cp-routetable",
+						Name:       "my-cp-routetable",
+						SubnetName: "control-plane-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "control-plane-subnet",
 							Role: infrav1.SubnetControlPlane,
 						},
 					},
 					{
-						Name: "my-node-routetable",
+						Name:       "my-node-routetable",
+						SubnetName: "node-subnet",
 						Subnet: infrav1.SubnetSpec{
-							Name: "node-subnet",
 							Role: infrav1.SubnetNode,
 						},
 					},
@@ -354,9 +354,9 @@ func TestDeleteRouteTable(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ClusterName()
 				s.RouteTableSpecs().Return([]azure.RouteTableSpec{{
-					Name: "my-cp-routetable",
+					Name:       "my-cp-routetable",
+					SubnetName: "control-plane-subnet",
 					Subnet: infrav1.SubnetSpec{
-						Name: "control-plane-subnet",
 						Role: infrav1.SubnetControlPlane,
 					},
 				}})

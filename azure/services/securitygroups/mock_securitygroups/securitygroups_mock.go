@@ -208,11 +208,12 @@ func (mr *MockNSGScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
 }
 
 // ControlPlaneSubnet mocks base method.
-func (m *MockNSGScope) ControlPlaneSubnet() v1alpha4.SubnetSpec {
+func (m *MockNSGScope) ControlPlaneSubnet() (string, v1alpha4.SubnetSpec) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(v1alpha4.SubnetSpec)
+	return ret0, ret1
 }
 
 // ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
@@ -368,11 +369,12 @@ func (mr *MockNSGScopeMockRecorder) NodeRouteTable() *gomock.Call {
 }
 
 // NodeSubnet mocks base method.
-func (m *MockNSGScope) NodeSubnet() v1alpha4.SubnetSpec {
+func (m *MockNSGScope) NodeSubnet() (string, v1alpha4.SubnetSpec) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(v1alpha4.SubnetSpec)
+	return ret0, ret1
 }
 
 // NodeSubnet indicates an expected call of NodeSubnet.
@@ -421,6 +423,32 @@ func (m *MockNSGScope) ResourceGroup() string {
 func (mr *MockNSGScopeMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockNSGScope)(nil).ResourceGroup))
+}
+
+// SetSubnet mocks base method.
+func (m *MockNSGScope) SetSubnet(arg0 string, arg1 v1alpha4.SubnetSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnet", arg0, arg1)
+}
+
+// SetSubnet indicates an expected call of SetSubnet.
+func (mr *MockNSGScopeMockRecorder) SetSubnet(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockNSGScope)(nil).SetSubnet), arg0, arg1)
+}
+
+// Subnet mocks base method.
+func (m *MockNSGScope) Subnet(arg0 string) v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subnet", arg0)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
+	return ret0
+}
+
+// Subnet indicates an expected call of Subnet.
+func (mr *MockNSGScopeMockRecorder) Subnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnet", reflect.TypeOf((*MockNSGScope)(nil).Subnet), arg0)
 }
 
 // SubscriptionID mocks base method.

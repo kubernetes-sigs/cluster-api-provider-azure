@@ -17,9 +17,9 @@ spec:
       resourceGroup: custom-vnet
       name: my-vnet
     subnets:
-      - name: control-plane-subnet
+      control-plane-subnet:
         role: control-plane
-      - name: node-subnet
+      node-subnet:
         role: node
   resourceGroup: cluster-byo-vnet
   ```
@@ -48,11 +48,11 @@ spec:
       cidrBlocks: 
         - 10.0.0.0/16
     subnets:
-      - name: my-subnet-cp
+      my-subnet-cp:
         role: control-plane
         cidrBlocks: 
           - 10.0.1.0/24
-      - name: my-subnet-node
+      my-subnet-node:
         role: node
         cidrBlocks: 
           - 10.0.2.0/24
@@ -85,7 +85,7 @@ spec:
       cidrBlocks: 
         - 10.0.0.0/16
     subnets:
-      - name: my-subnet-cp
+      my-subnet-cp:
         role: control-plane
         cidrBlocks: 
           - 10.0.1.0/24
@@ -116,7 +116,7 @@ spec:
               destinationPorts: "50000"
               source: "*"
               sourcePorts: "*"
-      - name: my-subnet-node
+      my-subnet-node:
         role: node
         cidrBlocks: 
           - 10.0.2.0/24

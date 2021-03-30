@@ -63,25 +63,16 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get subnet %s", subnetSpec.Name)
 		case err == nil:
 			// subnet already exists, update the spec and skip creation
-			var subnet infrav1.SubnetSpec
-			if subnetSpec.Role == infrav1.SubnetControlPlane {
-				subnet = s.Scope.ControlPlaneSubnet()
-			} else if subnetSpec.Role == infrav1.SubnetNode {
-				subnet = s.Scope.NodeSubnet()
-			} else {
-				continue
-			}
-
+			subnet := s.Scope.Subnet(subnetSpec.Name)
 			subnet.Role = subnetSpec.Role
-			subnet.Name = existingSubnet.Name
 			subnet.CIDRBlocks = existingSubnet.CIDRBlocks
 			subnet.ID = existingSubnet.ID
+			s.Scope.SetSubnet(subnetSpec.Name, subnet)
 
 		case !s.Scope.IsVnetManaged():
 			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
 
 		default:
-
 			subnetProperties := network.SubnetPropertiesFormat{
 				AddressPrefixes: &subnetSpec.CIDRs,
 			}
@@ -118,11 +109,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrapf(err, "failed to create subnet %s in resource group %s", subnetSpec.Name, s.Scope.Vnet().ResourceGroup)
 			}
-
 			s.Scope.V(2).Info("successfully created subnet in vnet", "subnet", subnetSpec.Name, "vnet", subnetSpec.VNetName)
-
 		}
-
 	}
 	return nil
 }
@@ -171,7 +159,6 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 
 	subnetSpec := &infrav1.SubnetSpec{
 		Role:       spec.Role,
-		Name:       to.String(subnet.Name),
 		ID:         to.String(subnet.ID),
 		CIDRBlocks: addresses,
 	}

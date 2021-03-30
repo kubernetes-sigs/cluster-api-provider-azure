@@ -41,7 +41,7 @@ var _ = Describe("Workload cluster creation", func() {
 		specName      = "create-workload-cluster"
 		namespace     *corev1.Namespace
 		cancelWatches context.CancelFunc
-		result       *clusterctl.ApplyClusterTemplateAndWaitResult
+		result        *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName   string
 		specTimes     = map[string]time.Time{}
 	)

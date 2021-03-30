@@ -70,21 +70,23 @@ func (c *AzureCluster) setVnetDefaults() {
 }
 
 func (c *AzureCluster) setSubnetDefaults() {
-	cpSubnet, err := c.Spec.NetworkSpec.GetControlPlaneSubnet()
+	if c.Spec.NetworkSpec.Subnets == nil {
+		c.Spec.NetworkSpec.Subnets = make(Subnets, 2)
+	}
+	cpSubnetName, cpSubnet, err := c.Spec.NetworkSpec.GetControlPlaneSubnet()
 	if err != nil {
 		cpSubnet = SubnetSpec{Role: SubnetControlPlane}
-		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
+		cpSubnetName = generateControlPlaneSubnetName(c.ObjectMeta.Name)
+		c.Spec.NetworkSpec.Subnets[cpSubnetName] = cpSubnet
 	}
 
-	nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
+	nodeSubnetName, nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
 	if err != nil {
 		nodeSubnet = SubnetSpec{Role: SubnetNode}
-		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
+		nodeSubnetName = generateNodeSubnetName(c.ObjectMeta.Name)
+		c.Spec.NetworkSpec.Subnets[nodeSubnetName] = nodeSubnet
 	}
 
-	if cpSubnet.Name == "" {
-		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
-	}
 	if len(cpSubnet.CIDRBlocks) == 0 {
 		cpSubnet.CIDRBlocks = []string{DefaultControlPlaneSubnetCIDR}
 	}
@@ -92,9 +94,6 @@ func (c *AzureCluster) setSubnetDefaults() {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
 	}
 
-	if nodeSubnet.Name == "" {
-		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
-	}
 	if len(nodeSubnet.CIDRBlocks) == 0 {
 		nodeSubnet.CIDRBlocks = []string{DefaultNodeSubnetCIDR}
 	}
@@ -105,8 +104,8 @@ func (c *AzureCluster) setSubnetDefaults() {
 		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 	}
 
-	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
-	c.Spec.NetworkSpec.UpdateNodeSubnet(nodeSubnet)
+	c.Spec.NetworkSpec.Subnets[cpSubnetName] = cpSubnet
+	c.Spec.NetworkSpec.Subnets[nodeSubnetName] = nodeSubnet
 }
 
 func (c *AzureCluster) setAPIServerLBDefaults() {

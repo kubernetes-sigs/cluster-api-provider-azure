@@ -86,8 +86,8 @@ func (v *VnetSpec) IsManaged(clusterName string) bool {
 	return v.ID == "" || v.Tags.HasOwned(clusterName)
 }
 
-// Subnets is a slice of Subnet.
-type Subnets []SubnetSpec
+// Subnets is a map of subnets, where the key is the name of the subnet.
+type Subnets map[string]SubnetSpec
 
 // SecurityGroupRole defines the unique role of a security group.
 type SecurityGroupRole string
@@ -415,9 +415,6 @@ type SubnetSpec struct {
 	// +optional
 	ID string `json:"id,omitempty"`
 
-	// Name defines a name for the subnet resource.
-	Name string `json:"name"`
-
 	// CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
 	// +optional
 	CIDRBlocks []string `json:"cidrBlocks,omitempty"`
@@ -432,41 +429,23 @@ type SubnetSpec struct {
 }
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.
-func (n *NetworkSpec) GetControlPlaneSubnet() (SubnetSpec, error) {
-	for _, sn := range n.Subnets {
+func (n *NetworkSpec) GetControlPlaneSubnet() (string, SubnetSpec, error) {
+	for name, sn := range n.Subnets {
 		if sn.Role == SubnetControlPlane {
-			return sn, nil
+			return name, sn, nil
 		}
 	}
-	return SubnetSpec{}, errors.Errorf("no subnet found with role %s", SubnetControlPlane)
-}
-
-// UpdateControlPlaneSubnet updates the cluster control plane subnet.
-func (n *NetworkSpec) UpdateControlPlaneSubnet(subnet SubnetSpec) {
-	for i, sn := range n.Subnets {
-		if sn.Role == SubnetControlPlane {
-			n.Subnets[i] = subnet
-		}
-	}
+	return "", SubnetSpec{}, errors.Errorf("no subnet found with role %s", SubnetControlPlane)
 }
 
 // GetNodeSubnet returns the cluster node subnet.
-func (n *NetworkSpec) GetNodeSubnet() (SubnetSpec, error) {
-	for _, sn := range n.Subnets {
+func (n *NetworkSpec) GetNodeSubnet() (string, SubnetSpec, error) {
+	for name, sn := range n.Subnets {
 		if sn.Role == SubnetNode {
-			return sn, nil
+			return name, sn, nil
 		}
 	}
-	return SubnetSpec{}, errors.Errorf("no subnet found with role %s", SubnetNode)
-}
-
-// UpdateNodeSubnet updates the cluster node subnet.
-func (n *NetworkSpec) UpdateNodeSubnet(subnet SubnetSpec) {
-	for i, sn := range n.Subnets {
-		if sn.Role == SubnetNode {
-			n.Subnets[i] = subnet
-		}
-	}
+	return "", SubnetSpec{}, errors.Errorf("no subnet found with role %s", SubnetNode)
 }
 
 // SecurityProfile specifies the Security profile settings for a

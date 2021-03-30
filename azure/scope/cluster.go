@@ -138,11 +138,12 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 
 // LBSpecs returns the load balancer specs.
 func (s *ClusterScope) LBSpecs() []azure.LBSpec {
+	cpSubnetName, _ := s.ControlPlaneSubnet()
 	specs := []azure.LBSpec{
 		{
 			// Control Plane LB
 			Name:              s.APIServerLB().Name,
-			SubnetName:        s.ControlPlaneSubnet().Name,
+			SubnetName:        cpSubnetName,
 			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
 			APIServerPort:     s.APIServerPort(),
 			Type:              s.APIServerLB().Type,
@@ -194,48 +195,54 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 
 // RouteTableSpecs returns the node route table
 func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
-	routetables := []azure.RouteTableSpec{}
+	var routetables []azure.RouteTableSpec
+	cpSubnetName, cpSubnet := s.ControlPlaneSubnet()
+	nodeSubnetName, nodeSubnet := s.NodeSubnet()
 	if s.ControlPlaneRouteTable().Name != "" {
-		routetables = append(routetables, azure.RouteTableSpec{Name: s.ControlPlaneRouteTable().Name, Subnet: s.ControlPlaneSubnet()})
+		routetables = append(routetables, azure.RouteTableSpec{Name: s.ControlPlaneRouteTable().Name, SubnetName: cpSubnetName, Subnet: cpSubnet})
 	}
 	if s.NodeRouteTable().Name != "" {
-		routetables = append(routetables, azure.RouteTableSpec{Name: s.NodeRouteTable().Name, Subnet: s.NodeSubnet()})
+		routetables = append(routetables, azure.RouteTableSpec{Name: s.NodeRouteTable().Name, SubnetName: nodeSubnetName, Subnet: nodeSubnet})
 	}
 	return routetables
 }
 
 // NSGSpecs returns the security group specs.
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
+	_, cpSubnet := s.ControlPlaneSubnet()
+	_, nodeSubnet := s.NodeSubnet()
 	return []azure.NSGSpec{
 		{
-			Name:         s.ControlPlaneSubnet().SecurityGroup.Name,
-			IngressRules: s.ControlPlaneSubnet().SecurityGroup.IngressRules,
+			Name:         cpSubnet.SecurityGroup.Name,
+			IngressRules: cpSubnet.SecurityGroup.IngressRules,
 		},
 		{
-			Name:         s.NodeSubnet().SecurityGroup.Name,
-			IngressRules: s.NodeSubnet().SecurityGroup.IngressRules,
+			Name:         nodeSubnet.SecurityGroup.Name,
+			IngressRules: nodeSubnet.SecurityGroup.IngressRules,
 		},
 	}
 }
 
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
+	cpName, cpSpec := s.ControlPlaneSubnet()
+	noName, noSpec := s.NodeSubnet()
 	return []azure.SubnetSpec{
 		{
-			Name:              s.ControlPlaneSubnet().Name,
-			CIDRs:             s.ControlPlaneSubnet().CIDRBlocks,
+			Name:              cpName,
+			CIDRs:             cpSpec.CIDRBlocks,
 			VNetName:          s.Vnet().Name,
-			SecurityGroupName: s.ControlPlaneSubnet().SecurityGroup.Name,
-			Role:              s.ControlPlaneSubnet().Role,
-			RouteTableName:    s.ControlPlaneSubnet().RouteTable.Name,
+			SecurityGroupName: cpSpec.SecurityGroup.Name,
+			Role:              cpSpec.Role,
+			RouteTableName:    cpSpec.RouteTable.Name,
 		},
 		{
-			Name:              s.NodeSubnet().Name,
-			CIDRs:             s.NodeSubnet().CIDRBlocks,
+			Name:              noName,
+			CIDRs:             noSpec.CIDRBlocks,
 			VNetName:          s.Vnet().Name,
-			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
-			RouteTableName:    s.NodeSubnet().RouteTable.Name,
-			Role:              s.NodeSubnet().Role,
+			SecurityGroupName: noSpec.SecurityGroup.Name,
+			RouteTableName:    noSpec.RouteTable.Name,
+			Role:              noSpec.Role,
 		},
 	}
 }
@@ -295,26 +302,36 @@ func (s *ClusterScope) Subnets() infrav1.Subnets {
 }
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ClusterScope) ControlPlaneSubnet() infrav1.SubnetSpec {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
-	return subnet
+func (s *ClusterScope) ControlPlaneSubnet() (string, infrav1.SubnetSpec) {
+	name, subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+	return name, subnet
 }
 
 // NodeSubnet returns the cluster node subnet.
-func (s *ClusterScope) NodeSubnet() infrav1.SubnetSpec {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-	return subnet
+func (s *ClusterScope) NodeSubnet() (string, infrav1.SubnetSpec) {
+	name, subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+	return name, subnet
+}
+
+// Subnet returns the subnet spec for the provided subnet name.
+func (s *ClusterScope) Subnet(name string) infrav1.SubnetSpec {
+	return s.AzureCluster.Spec.NetworkSpec.Subnets[name]
+}
+
+// SetSubnet sets the subnet spec for the provided subnet name.
+func (s *ClusterScope) SetSubnet(name string, spec infrav1.SubnetSpec) {
+	s.AzureCluster.Spec.NetworkSpec.Subnets[name] = spec
 }
 
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
 func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+	_, subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
 	return subnet.RouteTable
 }
 
 // NodeRouteTable returns the cluster node routetable.
 func (s *ClusterScope) NodeRouteTable() infrav1.RouteTable {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+	_, subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
 	return subnet.RouteTable
 }
 
@@ -483,8 +500,8 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 
 // SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
 func (s *ClusterScope) SetControlPlaneIngressRules() {
-	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
-		subnet := s.ControlPlaneSubnet()
+	name, subnet := s.ControlPlaneSubnet()
+	if subnet.SecurityGroup.IngressRules == nil {
 		subnet.SecurityGroup.IngressRules = infrav1.IngressRules{
 			infrav1.IngressRule{
 				Name:             "allow_ssh",
@@ -507,7 +524,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				DestinationPorts: to.StringPtr(strconv.Itoa(int(s.APIServerPort()))),
 			},
 		}
-		s.AzureCluster.Spec.NetworkSpec.UpdateControlPlaneSubnet(subnet)
+		s.AzureCluster.Spec.NetworkSpec.Subnets[name] = subnet
 	}
 }
 

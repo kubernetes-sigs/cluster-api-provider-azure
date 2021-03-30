@@ -134,8 +134,7 @@ func TestClusterWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	// invalid because it doesn't specify a controlplane subnet
-	testCase.cluster.Spec.NetworkSpec.Subnets[0] = SubnetSpec{
-		Name: "random-subnet",
+	testCase.cluster.Spec.NetworkSpec.Subnets["control-plane-subnet"] = SubnetSpec{
 		Role: "random",
 	}
 
@@ -201,8 +200,7 @@ func TestClusterSpecWithPreexistingVnetInvalid(t *testing.T) {
 	}
 
 	// invalid because it doesn't specify a controlplane subnet
-	testCase.cluster.Spec.NetworkSpec.Subnets[0] = SubnetSpec{
-		Name: "random-subnet",
+	testCase.cluster.Spec.NetworkSpec.Subnets["control-plane-subnet"] = SubnetSpec{
 		Role: "random",
 	}
 
@@ -268,7 +266,7 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 	}
 
 	// invalid because it doesn't specify a node subnet
-	testCase.networkSpec.Subnets = testCase.networkSpec.Subnets[:1]
+	delete(testCase.networkSpec.Subnets, "node-subnet")
 
 	t.Run(testCase.name, func(t *testing.T) {
 		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
@@ -400,14 +398,15 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 		subnets: createValidSubnets(),
 	}
 
-	testCase.subnets[0].Name = "invalid-subnet-name-due-to-bracket)"
+	testCase.subnets["invalid-subnet-name-due-to-bracket)"] = testCase.subnets["control-plane-subnet"]
+	delete(testCase.subnets, "control-plane-subnet")
 
 	t.Run(testCase.name, func(t *testing.T) {
 		errs := validateSubnets(testCase.subnets,
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
-		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets[0].name"))
+		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets[invalid-subnet-name-due-to-bracket)]"))
 		g.Expect(errs[0].BadValue).To(BeEquivalentTo("invalid-subnet-name-due-to-bracket)"))
 	})
 }
@@ -425,7 +424,9 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 		subnets: createValidSubnets(),
 	}
 
-	testCase.subnets[0].Role = "random-role"
+	testCase.subnets["control-plane-subnet"] = SubnetSpec{
+		Role: "random-role",
+	}
 
 	t.Run(testCase.name, func(t *testing.T) {
 		errs := validateSubnets(testCase.subnets,
@@ -434,31 +435,6 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
 		g.Expect(errs[0].Detail).To(ContainSubstring("required role control-plane not included"))
-	})
-}
-
-func TestSubnetNamesNotUnique(t *testing.T) {
-	g := NewWithT(t)
-
-	type test struct {
-		name    string
-		subnets Subnets
-	}
-
-	testCase := test{
-		name:    "subnets - names not unique",
-		subnets: createValidSubnets(),
-	}
-
-	testCase.subnets[0].Name = "subnet-name"
-	testCase.subnets[1].Name = "subnet-name"
-
-	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
-			field.NewPath("spec").Child("networkSpec").Child("subnets"))
-		g.Expect(errs).To(HaveLen(1))
-		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeDuplicate))
-		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
 	})
 }
 
@@ -782,12 +758,10 @@ func createValidNetworkSpec() NetworkSpec {
 
 func createValidSubnets() Subnets {
 	return Subnets{
-		{
-			Name: "control-plane-subnet",
+		"control-plane-subnet": {
 			Role: "control-plane",
 		},
-		{
-			Name: "node-subnet",
+		"node-subnet": {
 			Role: "node",
 		},
 	}

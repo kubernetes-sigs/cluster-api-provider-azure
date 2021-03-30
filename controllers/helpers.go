@@ -217,6 +217,7 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID s
 }
 
 func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudProviderConfig, workerConfig *CloudProviderConfig) {
+	nodeSubnetName, nodeSubnet := d.NodeSubnet()
 	return &CloudProviderConfig{
 			Cloud:                        d.CloudEnvironment(),
 			AadClientID:                  d.ClientID(),
@@ -224,13 +225,13 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			TenantID:                     d.TenantID(),
 			SubscriptionID:               d.SubscriptionID(),
 			ResourceGroup:                d.ResourceGroup(),
-			SecurityGroupName:            d.NodeSubnet().SecurityGroup.Name,
+			SecurityGroupName:            nodeSubnet.SecurityGroup.Name,
 			SecurityGroupResourceGroup:   d.Vnet().ResourceGroup,
 			Location:                     d.Location(),
 			VMType:                       "vmss",
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
-			SubnetName:                   d.NodeSubnet().Name,
+			SubnetName:                   nodeSubnetName,
 			RouteTableName:               d.NodeRouteTable().Name,
 			LoadBalancerSku:              "Standard",
 			MaximumLoadBalancerRuleCount: 250,
@@ -244,13 +245,13 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			TenantID:                     d.TenantID(),
 			SubscriptionID:               d.SubscriptionID(),
 			ResourceGroup:                d.ResourceGroup(),
-			SecurityGroupName:            d.NodeSubnet().SecurityGroup.Name,
+			SecurityGroupName:            nodeSubnet.SecurityGroup.Name,
 			SecurityGroupResourceGroup:   d.Vnet().ResourceGroup,
 			Location:                     d.Location(),
 			VMType:                       "vmss",
 			VnetName:                     d.Vnet().Name,
 			VnetResourceGroup:            d.Vnet().ResourceGroup,
-			SubnetName:                   d.NodeSubnet().Name,
+			SubnetName:                   nodeSubnetName,
 			RouteTableName:               d.NodeRouteTable().Name,
 			LoadBalancerSku:              "Standard",
 			MaximumLoadBalancerRuleCount: 250,

@@ -57,11 +57,11 @@ spec:
       cidrBlocks: 
         - 172.16.0.0/16
     subnets:
-      - name: my-subnet-cp
+      my-subnet-cp:
         role: control-plane
         cidrBlocks: 
           - 172.16.0.0/24
-      - name: my-subnet-node
+      my-subnet-node:
         role: node
         cidrBlocks: 
           - 172.16.2.0/24

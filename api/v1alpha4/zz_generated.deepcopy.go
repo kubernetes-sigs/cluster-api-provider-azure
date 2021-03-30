@@ -804,8 +804,8 @@ func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 	if in.Subnets != nil {
 		in, out := &in.Subnets, &out.Subnets
 		*out = make(Subnets, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	in.APIServerLB.DeepCopyInto(&out.APIServerLB)
@@ -968,8 +968,8 @@ func (in Subnets) DeepCopyInto(out *Subnets) {
 	{
 		in := &in
 		*out = make(Subnets, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
 		}
 	}
 }

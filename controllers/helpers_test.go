@@ -316,12 +316,10 @@ func newAzureClusterWithCustomVnet(name, location string) *infrav1.AzureCluster 
 					ResourceGroup: "custom-vnet-resource-group",
 				},
 				Subnets: infrav1.Subnets{
-					infrav1.SubnetSpec{
-						Name: "foo-controlplane-subnet",
+					"foo-controlplane-subnet": infrav1.SubnetSpec{
 						Role: infrav1.SubnetControlPlane,
 					},
-					infrav1.SubnetSpec{
-						Name: "foo-node-subnet",
+					"foo-node-subnet": infrav1.SubnetSpec{
 						Role: infrav1.SubnetNode,
 					},
 				},

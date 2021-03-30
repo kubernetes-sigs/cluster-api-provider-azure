@@ -96,6 +96,18 @@ type ManagedControlPlaneScope struct {
 	PatchTarget      client.Object
 }
 
+// Subnet returns the subnet spec.
+func (s *ManagedControlPlaneScope) Subnet(_ string) infrav1.SubnetSpec {
+	return infrav1.SubnetSpec{
+		CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+	}
+}
+
+// SetSubnet is not implemented for managed control planes.
+func (s *ManagedControlPlaneScope) SetSubnet(string, infrav1.SubnetSpec) {
+	// managed control plane does not support multiple subnets
+}
+
 // ResourceGroup returns the managed control plane's resource group.
 func (s *ManagedControlPlaneScope) ResourceGroup() string {
 	if s.ControlPlane == nil {
@@ -181,26 +193,26 @@ func (s *ManagedControlPlaneScope) NodeRouteTable() infrav1.RouteTable {
 
 // SubnetSpecs returns the subnets specs.
 func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
+	name, subnet := s.NodeSubnet()
 	return []azure.SubnetSpec{
 		{
-			Name:     s.NodeSubnet().Name,
-			CIDRs:    s.NodeSubnet().CIDRBlocks,
+			Name:     name,
+			CIDRs:    subnet.CIDRBlocks,
 			VNetName: s.Vnet().Name,
 		},
 	}
 }
 
 // NodeSubnet returns the cluster node subnet.
-func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
-	return infrav1.SubnetSpec{
-		Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+func (s *ManagedControlPlaneScope) NodeSubnet() (string, infrav1.SubnetSpec) {
+	return s.ControlPlane.Spec.VirtualNetwork.Subnet.Name, infrav1.SubnetSpec{
 		CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
 	}
 }
 
 // ControlPlaneSubnet returns the cluster control plane subnet.
-func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
-	return infrav1.SubnetSpec{}
+func (s *ManagedControlPlaneScope) ControlPlaneSubnet() (string, infrav1.SubnetSpec) {
+	return "", infrav1.SubnetSpec{}
 }
 
 // IsIPv6Enabled returns true if a cluster is ipv6 enabled.

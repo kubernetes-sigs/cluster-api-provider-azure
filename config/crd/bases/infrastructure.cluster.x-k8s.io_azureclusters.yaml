@@ -452,8 +452,7 @@ spec:
                         type: string
                     type: object
                   subnets:
-                    description: Subnets is the configuration for the control-plane subnet and the node subnet.
-                    items:
+                    additionalProperties:
                       description: SubnetSpec configures an Azure subnet.
                       properties:
                         cidrBlocks:
@@ -463,9 +462,6 @@ spec:
                           type: array
                         id:
                           description: ID defines a unique identifier to reference this resource.
-                          type: string
-                        name:
-                          description: Name defines a name for the subnet resource.
                           type: string
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
@@ -525,10 +521,9 @@ spec:
                               description: Tags defines a map of tags.
                               type: object
                           type: object
-                      required:
-                      - name
                       type: object
-                    type: array
+                    description: Subnets is the configuration for the control-plane subnet and the node subnet.
+                    type: object
                   vnet:
                     description: Vnet is the configuration for the Azure virtual network.
                     properties:

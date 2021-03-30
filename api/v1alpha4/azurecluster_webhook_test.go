@@ -50,7 +50,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - lack control plane subnet",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
+				delete(cluster.Spec.NetworkSpec.Subnets, "control-plane-subnet")
 				return cluster
 			}(),
 			wantErr: true,
@@ -59,7 +59,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - lack node subnet",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
+				delete(cluster.Spec.NetworkSpec.Subnets, "node-subnet")
 				return cluster
 			}(),
 			wantErr: true,
@@ -77,8 +77,7 @@ func TestAzureCluster_ValidateCreate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - invalid subnet name",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{Name: "invalid-subnet-name###", Role: "random-role"})
+				cluster.Spec.NetworkSpec.Subnets["invalid-subnet-name###"] = SubnetSpec{Role: "random-role"}
 				return cluster
 			}(),
 			wantErr: true,
@@ -125,7 +124,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - lack control plane subnet",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[1:]
+				delete(cluster.Spec.NetworkSpec.Subnets, "control-plane-subnet")
 				return cluster
 			}(),
 			wantErr: true,
@@ -134,7 +133,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - lack node subnet",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = cluster.Spec.NetworkSpec.Subnets[:1]
+				delete(cluster.Spec.NetworkSpec.Subnets, "node-subnet")
 				return cluster
 			}(),
 			wantErr: true,
@@ -152,8 +151,7 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			name: "azurecluster with pre-existing vnet - invalid subnet name",
 			cluster: func() *AzureCluster {
 				cluster := createValidCluster()
-				cluster.Spec.NetworkSpec.Subnets = append(cluster.Spec.NetworkSpec.Subnets,
-					SubnetSpec{Name: "invalid-name###", Role: "random-role"})
+				cluster.Spec.NetworkSpec.Subnets["invalid-subnet-name###"] = SubnetSpec{Role: "random-role"}
 				return cluster
 			}(),
 			wantErr: true,

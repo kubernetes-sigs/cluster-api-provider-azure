@@ -151,7 +151,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		MachineName:             m.Name(),
 		VNetName:                m.Vnet().Name,
 		VNetResourceGroup:       m.Vnet().ResourceGroup,
-		SubnetName:              m.Subnet().Name,
+		SubnetName:              m.SubnetName(),
 		VMSize:                  m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking:   m.AzureMachine.Spec.AcceleratedNetworking,
 		IPv6Enabled:             m.IsIPv6Enabled(),
@@ -175,7 +175,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 			MachineName:           m.Name(),
 			VNetName:              m.Vnet().Name,
 			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			SubnetName:            m.Subnet().Name,
+			SubnetName:            m.SubnetName(),
 			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
 			VMSize:                m.AzureMachine.Spec.VMSize,
 			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
@@ -211,7 +211,7 @@ func (m *MachineScope) DiskSpecs() []azure.DiskSpec {
 func (m *MachineScope) BastionSpecs() []azure.BastionSpec {
 	spec := azure.BastionSpec{
 		Name:         azure.GenerateOSDiskName(m.Name()),
-		SubnetName:   m.Subnet().Name,
+		SubnetName:   m.SubnetName(),
 		PublicIPName: azure.GenerateNodePublicIPName(azure.GenerateNICName(m.Name())),
 		VNetName:     m.Vnet().Name,
 	}
@@ -251,12 +251,15 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 	return []azure.VMExtensionSpec{}
 }
 
-// Subnet returns the machine's subnet based on its role
-func (m *MachineScope) Subnet() infrav1.SubnetSpec {
+// SubnetName returns the machine's subnet name based on its role.
+func (m *MachineScope) SubnetName() string {
+	var name string
 	if m.IsControlPlane() {
-		return m.ControlPlaneSubnet()
+		name, _ = m.ControlPlaneSubnet()
+	} else {
+		name, _ = m.NodeSubnet()
 	}
-	return m.NodeSubnet()
+	return name
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.

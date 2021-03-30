@@ -98,11 +98,12 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
 	var cidrBlocks []string
-	subnet, err := networkSpec.GetControlPlaneSubnet()
+	_, subnet, err := networkSpec.GetControlPlaneSubnet()
 	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
+	} else {
+		cidrBlocks = subnet.CIDRBlocks
 	}
-	cidrBlocks = subnet.CIDRBlocks
 
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 	if len(allErrs) == 0 {
@@ -123,29 +124,24 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 // validateSubnets validates a list of Subnets
 func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
 		"control-plane": false,
 		"node":          false,
 	}
 
-	for i, subnet := range subnets {
-		if err := validateSubnetName(subnet.Name, fldPath.Index(i).Child("name")); err != nil {
+	for name, subnet := range subnets {
+		if err := validateSubnetName(name, fldPath.Key(name)); err != nil {
 			allErrs = append(allErrs, err)
 		}
-		if _, ok := subnetNames[subnet.Name]; ok {
-			allErrs = append(allErrs, field.Duplicate(fldPath, subnet.Name))
-		}
-		subnetNames[subnet.Name] = true
 		for role := range requiredSubnetRoles {
 			if role == string(subnet.Role) {
 				requiredSubnetRoles[role] = true
 			}
 		}
-		for _, ingressRule := range subnet.SecurityGroup.IngressRules {
+		for i, ingressRule := range subnet.SecurityGroup.IngressRules {
 			if err := validateIngressRule(
 				ingressRule,
-				fldPath.Index(i).Child("securityGroup").Child("ingressRules").Index(i),
+				fldPath.Key(name).Child("securityGroup").Child("ingressRules").Index(i),
 			); err != nil {
 				allErrs = append(allErrs, err)
 			}

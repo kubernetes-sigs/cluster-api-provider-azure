@@ -25,12 +25,12 @@ spec:
         - "10.0.0.0/8"
         - "2001:1234:5678:9a00::/56"
     subnets:
-      - name: control-plane-subnet
+      control-plane-subnet:
         role: control-plane
         cidrBlocks:
           - "10.0.0.0/16"
           - "2001:1234:5678:9abc::/64"
-      - name: node-subnet
+      node-subnet:
         role: node
         cidrBlocks:
           - "10.1.0.0/16"

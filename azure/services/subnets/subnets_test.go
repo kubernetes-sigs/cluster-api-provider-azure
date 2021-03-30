@@ -209,14 +209,6 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
-				s.NodeSubnet().AnyTimes().Return(infrav1.SubnetSpec{
-					Name: "my-subnet",
-					Role: infrav1.SubnetNode,
-				})
-				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{
-					Name: "my-subnet-1",
-					Role: infrav1.SubnetControlPlane,
-				})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -236,6 +228,27 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.Subnet("my-subnet").Return(infrav1.SubnetSpec{
+					CIDRBlocks: []string{"10.0.0.0/16"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg",
+					},
+					Role: infrav1.SubnetNode,
+				})
+				s.SetSubnet("my-subnet", infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					CIDRBlocks: []string{"10.0.0.0/16"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg",
+					},
+					Role: infrav1.SubnetNode,
+				})
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet-1").
 					Return(network.Subnet{
 						ID:   to.StringPtr("subnet-id-1"),
@@ -252,6 +265,27 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.Subnet("my-subnet-1").Return(infrav1.SubnetSpec{
+					CIDRBlocks: []string{"10.2.0.0/16"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg-1",
+					},
+					Role: infrav1.SubnetControlPlane,
+				})
+				s.SetSubnet("my-subnet-1", infrav1.SubnetSpec{
+					ID:         "subnet-id-1",
+					CIDRBlocks: []string{"10.2.0.0/16"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg-1",
+					},
+					Role: infrav1.SubnetControlPlane,
+				})
 			},
 		},
 		{
@@ -278,14 +312,6 @@ func TestReconcileSubnets(t *testing.T) {
 					},
 				})
 				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
-				s.NodeSubnet().AnyTimes().Return(infrav1.SubnetSpec{
-					Name: "my-subnet",
-					Role: infrav1.SubnetNode,
-				})
-				s.ControlPlaneSubnet().AnyTimes().Return(infrav1.SubnetSpec{
-					Name: "my-subnet-1",
-					Role: infrav1.SubnetControlPlane,
-				})
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				s.IsIPv6Enabled().AnyTimes().Return(true)
 				s.SubscriptionID().AnyTimes().Return("123")
@@ -309,6 +335,27 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.Subnet("my-ipv6-subnet").Return(infrav1.SubnetSpec{
+					CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg",
+					},
+					Role: infrav1.SubnetNode,
+				})
+				s.SetSubnet("my-ipv6-subnet", infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg",
+					},
+					Role: infrav1.SubnetNode,
+				})
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-ipv6-subnet-cp").
 					Return(network.Subnet{
 						ID:   to.StringPtr("subnet-id-1"),
@@ -328,6 +375,27 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.Subnet("my-ipv6-subnet-cp").Return(infrav1.SubnetSpec{
+					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg-1",
+					},
+					Role: infrav1.SubnetControlPlane,
+				})
+				s.SetSubnet("my-ipv6-subnet-cp", infrav1.SubnetSpec{
+					ID:         "subnet-id-1",
+					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+					RouteTable: infrav1.RouteTable{
+						Name: "my-subnet_route_table",
+					},
+					SecurityGroup: infrav1.SecurityGroup{
+						Name: "my-sg-1",
+					},
+					Role: infrav1.SubnetControlPlane,
+				})
 			},
 		},
 	}

@@ -1291,17 +1291,7 @@ func autoConvert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(in *NetworkSpec, o
 	if err := Convert_v1alpha3_VnetSpec_To_v1alpha4_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
-	if in.Subnets != nil {
-		in, out := &in.Subnets, &out.Subnets
-		*out = make(v1alpha4.Subnets, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Subnets = nil
-	}
+	// WARNING: in.Subnets requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3.Subnets vs sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.Subnets)
 	if err := Convert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
@@ -1312,17 +1302,7 @@ func autoConvert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1alpha4.Netwo
 	if err := Convert_v1alpha4_VnetSpec_To_v1alpha3_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
 	}
-	if in.Subnets != nil {
-		in, out := &in.Subnets, &out.Subnets
-		*out = make(Subnets, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Subnets = nil
-	}
+	// WARNING: in.Subnets requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.Subnets vs sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3.Subnets)
 	if err := Convert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
 		return err
 	}
@@ -1484,7 +1464,7 @@ func Convert_v1alpha4_SpotVMOptions_To_v1alpha3_SpotVMOptions(in *v1alpha4.SpotV
 func autoConvert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(in *SubnetSpec, out *v1alpha4.SubnetSpec, s conversion.Scope) error {
 	out.Role = v1alpha4.SubnetRole(in.Role)
 	out.ID = in.ID
-	out.Name = in.Name
+	// WARNING: in.Name requires manual conversion: does not exist in peer-type
 	// WARNING: in.CidrBlock requires manual conversion: does not exist in peer-type
 	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	// WARNING: in.InternalLBIPAddress requires manual conversion: does not exist in peer-type
@@ -1500,7 +1480,6 @@ func autoConvert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(in *SubnetSpec, out 
 func autoConvert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(in *v1alpha4.SubnetSpec, out *SubnetSpec, s conversion.Scope) error {
 	out.Role = SubnetRole(in.Role)
 	out.ID = in.ID
-	out.Name = in.Name
 	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
 	if err := Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(&in.SecurityGroup, &out.SecurityGroup, s); err != nil {
 		return err

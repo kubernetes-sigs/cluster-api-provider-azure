@@ -60,8 +60,7 @@ func TestGettingIngressRules(t *testing.T) {
 			SubscriptionID: "123",
 			NetworkSpec: infrav1.NetworkSpec{
 				Subnets: infrav1.Subnets{
-					{
-						Name: "node",
+					"node": {
 						Role: infrav1.SubnetNode,
 					},
 				},
@@ -85,7 +84,7 @@ func TestGettingIngressRules(t *testing.T) {
 
 	clusterScope.SetControlPlaneIngressRules()
 
-	subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
+	_, subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(len(subnet.SecurityGroup.IngressRules)).To(Equal(2))
 }

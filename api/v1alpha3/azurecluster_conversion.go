@@ -122,11 +122,12 @@ func Convert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(in *NetworkSpec, out *
 	}
 
 	out.Subnets = make(infrav1alpha4.Subnets, len(in.Subnets))
-	for i := range in.Subnets {
-		out.Subnets[i] = infrav1alpha4.SubnetSpec{}
-		if err := Convert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(&in.Subnets[i], &out.Subnets[i], s); err != nil {
+	for i, sn := range in.Subnets {
+		dst := infrav1alpha4.SubnetSpec{}
+		if err := Convert_v1alpha3_SubnetSpec_To_v1alpha4_SubnetSpec(&in.Subnets[i], &dst, s); err != nil {
 			return err
 		}
+		out.Subnets[sn.Name] = dst
 	}
 
 	if err := autoConvert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
@@ -142,11 +143,15 @@ func Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *infrav1alpha4.Netw
 	}
 
 	out.Subnets = make(Subnets, len(in.Subnets))
-	for i := range in.Subnets {
+	i := 0
+	for k := range in.Subnets {
 		out.Subnets[i] = SubnetSpec{}
-		if err := Convert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(&in.Subnets[i], &out.Subnets[i], s); err != nil {
+		src := in.Subnets[k]
+		if err := Convert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(&src, &out.Subnets[i], s); err != nil {
 			return err
 		}
+		out.Subnets[i].Name = k
+		i++
 	}
 
 	if err := autoConvert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(&in.APIServerLB, &out.APIServerLB, s); err != nil {
