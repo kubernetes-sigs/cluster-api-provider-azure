@@ -1,11 +1,15 @@
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfig
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+kind: KubeadmControlPlane
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: "${CLUSTER_NAME}-control-plane"
 spec:
-  preKubeadmCommands:
+  kubeadmConfigSpec:
+    useExperimentalRetryJoin: true
+    clusterConfiguration:
+      kubernetesVersion: "ci/${CI_VERSION}"
+    preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
-  files:
+    files:
     - path: /tmp/kubeadm-bootstrap.sh
       owner: "root:root"
       permissions: "0744"
@@ -85,20 +89,21 @@ spec:
       permissions: "0644"
       contentFrom:
         secret:
-          key: worker-node-azure.json
-          name: ${CLUSTER_NAME}-mp-0-azure-json
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachinePool
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: "${CLUSTER_NAME}-control-plane"
 spec:
   template:
-    image:
-      # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
-      # 1.18.8 binaries and images will get replaced to the desired version by the script above.
-      marketplace:
-        publisher: cncf-upstream
-        offer: capi
-        sku: k8s-1dot18dot8-ubuntu-1804
-        version: "2020.08.17"
+    spec:
+      image:
+        # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.18.8 binaries and images will get replaced to the desired version by the script above.
+        marketplace:
+          publisher: cncf-upstream
+          offer: capi
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: "2020.08.17"
