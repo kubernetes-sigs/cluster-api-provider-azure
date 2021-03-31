@@ -10,3 +10,13 @@ patchesStrategicMerge:
   - ../patches/mhc.yaml
   - ../patches/cni-resource-set.yaml
   - ../patches/controller-manager.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-crs-0
+    files:
+      - resources=../../addons/calico.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated

@@ -57,7 +57,7 @@ if [[ "${LOCAL_ONLY}" == "false" ]]; then
 
   if [[ "${REGISTRY}" =~ azurecr\.io ]]; then
     # if we are using Azure Container Registry, login
-    ./hack/ensure-azcli.sh
+    ${REPO_ROOT}/hack/ensure-azcli.sh
     az account set -s "${AZURE_SUBSCRIPTION_ID}"
     az acr login --name capzci
   fi
