@@ -41,7 +41,7 @@ var _ = Describe("Workload cluster creation", func() {
 		specName      = "create-workload-cluster"
 		namespace     *corev1.Namespace
 		cancelWatches context.CancelFunc
-		result       *clusterctl.ApplyClusterTemplateAndWaitResult
+		result        *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName   string
 		specTimes     = map[string]time.Time{}
 	)
@@ -323,6 +323,11 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachinePools:          e2eConfig.GetIntervals(specName, "wait-machine-pool-nodes"),
+				// nvidia-gpu flavor creates a config map as part of a crs, that exceeds the annotations size limit when we do kubectl apply.
+				// This is because the entire config map is stored in `last-applied` annotation for tracking.
+				// The workaround is to use server side apply by passing `--server-side` flag to kubectl apply.
+				// More on server side apply here: https://kubernetes.io/docs/reference/using-api/server-side-apply/
+				Args:                         []string{"--server-side"},
 			}, result)
 
 			Context("Running a GPU-based calculation", func() {
