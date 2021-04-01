@@ -22,6 +22,7 @@ import (
 	"net"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
@@ -120,7 +121,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("expected managed cluster specification")
 	}
 
-	properties := containerservice.ManagedCluster{
+	managedCluster := containerservice.ManagedCluster{
 		Identity: &containerservice.ManagedClusterIdentity{
 			Type: containerservice.SystemAssigned,
 		},
@@ -152,12 +153,12 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	}
 
 	if managedClusterSpec.PodCIDR != "" {
-		properties.NetworkProfile.PodCidr = &managedClusterSpec.PodCIDR
+		managedCluster.NetworkProfile.PodCidr = &managedClusterSpec.PodCIDR
 	}
 
 	if managedClusterSpec.ServiceCIDR != "" {
 		if managedClusterSpec.DNSServiceIP == nil {
-			properties.NetworkProfile.ServiceCidr = &managedClusterSpec.ServiceCIDR
+			managedCluster.NetworkProfile.ServiceCidr = &managedClusterSpec.ServiceCIDR
 			ip, _, err := net.ParseCIDR(managedClusterSpec.ServiceCIDR)
 			if err != nil {
 				return fmt.Errorf("failed to parse service cidr: %w", err)
@@ -168,9 +169,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			// https://golang.org/src/net/ip.go#L48
 			ip[15] = byte(10)
 			dnsIP := ip.String()
-			properties.NetworkProfile.DNSServiceIP = &dnsIP
+			managedCluster.NetworkProfile.DNSServiceIP = &dnsIP
 		} else {
-			properties.NetworkProfile.DNSServiceIP = managedClusterSpec.DNSServiceIP
+			managedCluster.NetworkProfile.DNSServiceIP = managedClusterSpec.DNSServiceIP
 		}
 	}
 
@@ -183,23 +184,48 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Type:         containerservice.VirtualMachineScaleSets,
 			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
 		}
-		*properties.AgentPoolProfiles = append(*properties.AgentPoolProfiles, profile)
+		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 
 	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing managed cluster")
-	} else if !azure.ResourceNotFound(err) {
+	}
+
+	isCreate := azure.ResourceNotFound(err)
+	if isCreate {
+		err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
+		if err != nil {
+			return fmt.Errorf("failed to create managed cluster, %w", err)
+		}
+	} else {
 		ps := *existingMC.ManagedClusterProperties.ProvisioningState
 		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
 			klog.V(2).Infof("Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded")
 			return nil
 		}
-	}
 
-	err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, properties)
-	if err != nil {
-		return fmt.Errorf("failed to create or update managed cluster, %w", err)
+		// Normalize properties for the desired (CR spec) and existing managed
+		// cluster, so that we check only those fields that were specified in
+		// the initial CreateOrUpdate request and that can be modified.
+		// Without comparing to normalized properties, we would always get a
+		// difference in desired and existing, which would result in sending
+		// unnecessary Azure API requests.
+		propertiesNormalized := &containerservice.ManagedClusterProperties{
+			KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
+		}
+		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
+			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
+		}
+
+		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)
+		if diff != "" {
+			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
+			err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
+			if err != nil {
+				return fmt.Errorf("failed to update managed cluster, %w", err)
+			}
+		}
 	}
 
 	return nil
