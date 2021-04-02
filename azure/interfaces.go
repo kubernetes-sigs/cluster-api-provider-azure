@@ -70,6 +70,7 @@ type NetworkDescriber interface {
 	APIServerLBName() string
 	APIServerLBPoolName(string) string
 	IsAPIServerPrivate() bool
+	GetPrivateDNSZoneName() string
 	OutboundLBName(string) string
 	OutboundPoolName(string) string
 }

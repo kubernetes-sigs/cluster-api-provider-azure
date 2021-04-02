@@ -494,6 +494,9 @@ spec:
                         description: LBType defines an Azure load balancer Type.
                         type: string
                     type: object
+                  privateDNSZoneName:
+                    description: PrivateDNSZoneName defines the zone name for the Azure Private DNS.
+                    type: string
                   subnets:
                     description: Subnets is the configuration for the control-plane subnet and the node subnet.
                     items:

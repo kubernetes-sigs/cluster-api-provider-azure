@@ -91,6 +91,13 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	if !reflect.DeepEqual(c.Spec.NetworkSpec.PrivateDNSZoneName, old.Spec.NetworkSpec.PrivateDNSZoneName) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "NetworkSpec", "PrivateDNSZoneName"),
+				c.Spec.NetworkSpec.PrivateDNSZoneName, "field is immutable"),
+		)
+	}
+
 	if len(allErrs) == 0 {
 		return c.validateCluster(old)
 	}

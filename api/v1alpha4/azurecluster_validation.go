@@ -21,6 +21,7 @@ import (
 	"net"
 	"regexp"
 
+	valid "github.com/asaskevich/govalidator"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -99,6 +100,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 		}
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
 	}
+
 	var cidrBlocks []string
 	subnet, err := networkSpec.GetControlPlaneSubnet()
 	if err != nil {
@@ -109,6 +111,8 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 
 	allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
+
+	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec, fldPath)...)
 
 	if len(allErrs) == 0 {
 		return nil
@@ -319,6 +323,28 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
 			fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
+	}
+
+	return allErrs
+}
+
+// validatePrivateDNSZoneName validate the PrivateDNSZoneName.
+func validatePrivateDNSZoneName(networkSpec NetworkSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if len(networkSpec.PrivateDNSZoneName) > 0 {
+		if networkSpec.APIServerLB.Type != Internal {
+			allErrs = append(allErrs, field.Invalid(fldPath, networkSpec.APIServerLB.Type,
+				"PrivateDNSZoneName is available only if APIServerLB.Type is Internal"))
+		}
+		if !valid.IsDNSName(networkSpec.PrivateDNSZoneName) {
+			allErrs = append(allErrs, field.Invalid(fldPath, networkSpec.PrivateDNSZoneName,
+				"PrivateDNSZoneName can only contain alphanumeric characters, underscores and dashes, must end with an alphanumeric character",
+			))
+		}
+	}
+	if len(allErrs) == 0 {
+		return nil
 	}
 
 	return allErrs

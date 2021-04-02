@@ -240,3 +240,9 @@ func (s *ManagedControlPlaneScope) OutboundLBName(_ string) string {
 func (s *ManagedControlPlaneScope) OutboundPoolName(_ string) string {
 	return "aksOutboundBackendPool" // hard-coded in aks
 }
+
+// GetPrivateDNSZoneName returns the Private DNS Zone from the spec or generate it from cluster name.
+// Currently always empty as managed control planes do not currently implement private clusters.
+func (s *ManagedControlPlaneScope) GetPrivateDNSZoneName() string {
+	return ""
+}

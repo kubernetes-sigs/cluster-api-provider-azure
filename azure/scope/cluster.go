@@ -270,7 +270,7 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 	var spec *azure.PrivateDNSSpec
 	if s.IsAPIServerPrivate() {
 		spec = &azure.PrivateDNSSpec{
-			ZoneName:          azure.GeneratePrivateDNSZoneName(s.ClusterName()),
+			ZoneName:          s.GetPrivateDNSZoneName(),
 			VNetName:          s.Vnet().Name,
 			VNetResourceGroup: s.Vnet().ResourceGroup,
 			LinkName:          azure.GenerateVNetLinkName(s.Vnet().Name),
@@ -362,6 +362,14 @@ func (s *ClusterScope) APIServerPublicIP() *infrav1.PublicIPSpec {
 // APIServerPrivateIP returns the API Server private IP.
 func (s *ClusterScope) APIServerPrivateIP() string {
 	return s.APIServerLB().FrontendIPs[0].PrivateIPAddress
+}
+
+// GetPrivateDNSZoneName returns the Private DNS Zone from the spec or generate it from cluster name.
+func (s *ClusterScope) GetPrivateDNSZoneName() string {
+	if len(s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName) > 0 {
+		return s.AzureCluster.Spec.NetworkSpec.PrivateDNSZoneName
+	}
+	return azure.GeneratePrivateDNSZoneName(s.ClusterName())
 }
 
 // APIServerLBPoolName returns the API Server LB backend pool name.

@@ -759,6 +759,84 @@ func TestValidateAPIServerLB(t *testing.T) {
 		})
 	}
 }
+func TestPrivateDNSZoneName(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		network     NetworkSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name: "testInvalidPrivateDNSZoneName",
+			network: NetworkSpec{
+				PrivateDNSZoneName: "wrong@d_ns.io",
+				APIServerLB:        createValidAPIServerInternalLB(),
+			},
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.networkSpec.privateDNSZoneName",
+				BadValue: "wrong@d_ns.io",
+				Detail:   "PrivateDNSZoneName can only contain alphanumeric characters, underscores and dashes, must end with an alphanumeric character",
+			},
+			wantErr: true,
+		},
+		{
+			name: "testValidPrivateDNSZoneName",
+			network: NetworkSpec{
+				PrivateDNSZoneName: "good.dns.io",
+				APIServerLB:        createValidAPIServerInternalLB(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "testValidPrivateDNSZoneNameWithUnderscore",
+			network: NetworkSpec{
+				PrivateDNSZoneName: "_good.__dns.io",
+				APIServerLB:        createValidAPIServerInternalLB(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "testBadAPIServerLBType",
+			network: NetworkSpec{
+				PrivateDNSZoneName: "good.dns.io",
+				APIServerLB: LoadBalancerSpec{
+					Name: "my-lb",
+					Type: Public,
+				},
+			},
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.networkSpec.privateDNSZoneName",
+				BadValue: "Public",
+				Detail:   "PrivateDNSZoneName is available only if APIServerLB.Type is Internal",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range testcases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validatePrivateDNSZoneName(test.network, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == test.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
 
 func TestValidateNodeOutboundLB(t *testing.T) {
 	g := NewWithT(t)
@@ -968,5 +1046,19 @@ func createValidAPIServerLB() LoadBalancerSpec {
 func createValidNodeOutboundLB() *LoadBalancerSpec {
 	return &LoadBalancerSpec{
 		FrontendIPsCount: pointer.Int32Ptr(1),
+	}
+}
+
+func createValidAPIServerInternalLB() LoadBalancerSpec {
+	return LoadBalancerSpec{
+		Name: "my-lb",
+		SKU:  SKUStandard,
+		FrontendIPs: []FrontendIP{
+			{
+				Name:             "ip-config-private",
+				PrivateIPAddress: "10.10.1.1",
+			},
+		},
+		Type: Internal,
 	}
 }
