@@ -6,6 +6,6 @@ resources:
   - ../prow/cni-resource-set-windows.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
-  - ../patches/cni-resource-set.yaml
+  - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
 

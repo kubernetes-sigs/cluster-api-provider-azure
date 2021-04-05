@@ -8,7 +8,7 @@ resources:
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
-  - ../patches/cni-resource-set.yaml
+  - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-crs-0
