@@ -152,7 +152,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 
 	var providerIDs = make([]string, len(instances))
 	for i := 0; i < len(instances); i++ {
-		providerIDs[i] = fmt.Sprintf("azure://%s", *instances[i].ID)
+		providerIDs[i] = azure.ProviderIDPrefix + *instances[i].ID
 	}
 
 	scope.InfraMachinePool.Spec.ProviderIDList = providerIDs

@@ -19,6 +19,8 @@ package converters
 import (
 	"strings"
 
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
 	"github.com/pkg/errors"
 
@@ -59,7 +61,7 @@ func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) 
 	return userIdentitiesMap, nil
 }
 
-// sanitized removes "azure:///" prefix from the given id
+// sanitized removes "azure://" prefix from the given id
 func sanitized(id string) string {
-	return strings.TrimPrefix(id, "azure:///")
+	return strings.TrimPrefix(id, azure.ProviderIDPrefix)
 }

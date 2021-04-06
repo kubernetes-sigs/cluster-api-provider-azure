@@ -23,10 +23,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
-	"github.com/Azure/go-autorest/autorest/azure"
+	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -111,8 +112,8 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 
 // collectBootLog collects boot logs of the vm by using azure boot diagnostics
 func collectBootLog(ctx context.Context, m *clusterv1.Machine, outputPath string) error {
-	resourceId := strings.TrimPrefix(*m.Spec.ProviderID, "azure:///")
-	resource, err := azure.ParseResourceID(resourceId)
+	resourceId := strings.TrimPrefix(*m.Spec.ProviderID, azure.ProviderIDPrefix)
+	resource, err := autorest.ParseResourceID(resourceId)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
 	}

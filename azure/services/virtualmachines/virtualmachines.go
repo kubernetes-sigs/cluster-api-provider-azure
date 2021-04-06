@@ -94,7 +94,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
 	case err == nil:
 		// VM already exists, update the spec and skip creation.
-		s.Scope.SetProviderID(fmt.Sprintf("azure:///%s", existingVM.ID))
+		s.Scope.SetProviderID(azure.ProviderIDPrefix + existingVM.ID)
 		s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
 		s.Scope.SetAddresses(existingVM.Addresses)
 		s.Scope.SetVMState(existingVM.State)

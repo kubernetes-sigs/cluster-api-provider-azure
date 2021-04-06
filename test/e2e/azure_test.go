@@ -327,7 +327,7 @@ var _ = Describe("Workload cluster creation", func() {
 				// This is because the entire config map is stored in `last-applied` annotation for tracking.
 				// The workaround is to use server side apply by passing `--server-side` flag to kubectl apply.
 				// More on server side apply here: https://kubernetes.io/docs/reference/using-api/server-side-apply/
-				Args:                         []string{"--server-side"},
+				Args: []string{"--server-side"},
 			}, result)
 
 			Context("Running a GPU-based calculation", func() {

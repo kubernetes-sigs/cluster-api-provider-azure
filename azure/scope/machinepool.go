@@ -19,7 +19,6 @@ package scope
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"time"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -174,7 +173,7 @@ func (m *MachinePoolScope) UpdateInstanceStatuses(ctx context.Context, instances
 
 	providerIDs := make([]string, len(instances))
 	for i, instance := range instances {
-		providerIDs[i] = fmt.Sprintf("azure://%s", instance.ID)
+		providerIDs[i] = azure.ProviderIDPrefix + instance.ID
 	}
 
 	nodeStatusByProviderID, err := m.getNodeStatusByProviderID(ctx, providerIDs)
@@ -186,7 +185,7 @@ func (m *MachinePoolScope) UpdateInstanceStatuses(ctx context.Context, instances
 	instanceStatuses := make([]*infrav1exp.AzureMachinePoolInstanceStatus, len(instances))
 	for i, instance := range instances {
 		instanceStatuses[i] = &infrav1exp.AzureMachinePoolInstanceStatus{
-			ProviderID:        fmt.Sprintf("azure://%s", instance.ID),
+			ProviderID:        azure.ProviderIDPrefix + instance.ID,
 			InstanceID:        instance.InstanceID,
 			InstanceName:      instance.Name,
 			ProvisioningState: &instance.State,
