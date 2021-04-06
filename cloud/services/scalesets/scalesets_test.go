@@ -18,7 +18,6 @@ package scalesets
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -258,7 +257,7 @@ func TestReconcileVMSS(t *testing.T) {
 				createdVMSS := newDefaultVMSS()
 				instances := newDefaultInstances()
 				createdVMSS = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, createdVMSS, instances)
-				s.SetProviderID(fmt.Sprintf("azure://%s", *createdVMSS.ID))
+				s.SetProviderID(azure.ProviderIDPrefix + *createdVMSS.ID)
 				s.SetLongRunningOperationState(nil)
 				s.SetProvisioningState(infrav1.VMStateSucceeded)
 				s.NeedsK8sVersionUpdate().Return(false)
@@ -279,7 +278,7 @@ func TestReconcileVMSS(t *testing.T) {
 				vmss := newDefaultVMSS()
 				instances := newDefaultInstances()
 				vmss = setupDefaultVMSSInProgressOperationDoneExpectations(g, s, m, vmss, instances)
-				s.SetProviderID(fmt.Sprintf("azure://%s", *vmss.ID))
+				s.SetProviderID(azure.ProviderIDPrefix + *vmss.ID)
 				s.SetProvisioningState(infrav1.VMStateUpdating)
 
 				// create a VMSS patch with an updated hash to match the spec
@@ -387,7 +386,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.Identity = infrav1.VMIdentityUserAssigned
 				spec.UserAssignedIdentities = []infrav1.UserAssignedIdentity{
 					{
-						ProviderID: "azure:////subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1",
+						ProviderID: "azure:///subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1",
 					},
 				}
 				s.ScaleSetSpec().Return(spec).AnyTimes()
@@ -1009,7 +1008,7 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 
 func setupDefaultVMSSUpdateExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder) {
 	setupDefaultVMSSExpectations(s)
-	s.SetProviderID("azure://vmss-id")
+	s.SetProviderID(azure.ProviderIDPrefix + "vmss-id")
 	s.SetProvisioningState(infrav1.VMStateUpdating)
 	s.GetLongRunningOperationState().Return(nil)
 }

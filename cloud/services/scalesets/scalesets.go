@@ -117,7 +117,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	default:
 		// just in case, set the provider ID if the instance exists
-		s.Scope.SetProviderID(fmt.Sprintf("azure://%s", fetchedVMSS.ID))
+		s.Scope.SetProviderID(azure.ProviderIDPrefix + fetchedVMSS.ID)
 	}
 
 	// Try to get the VMSS to update status if we have created a long running operation. If the VMSS is still in a long
@@ -193,7 +193,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.patchVMSSIfNeeded")
 	defer span.End()
 
-	s.Scope.SetProviderID(fmt.Sprintf("azure://%s", infraVMSS.ID))
+	s.Scope.SetProviderID(azure.ProviderIDPrefix + infraVMSS.ID)
 
 	spec := s.Scope.ScaleSetSpec()
 	result, err := s.buildVMSSFromSpec(ctx, spec)
