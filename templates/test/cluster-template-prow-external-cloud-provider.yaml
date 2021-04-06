@@ -538,7 +538,7 @@ metadata:
   namespace: default
 ---
 apiVersion: v1
-data: ${CNI_RESOURCES_IPV6}
+data: ${CNI_RESOURCES}
 kind: ConfigMap
 metadata:
   name: cni-${CLUSTER_NAME}-crs-0
