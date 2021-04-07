@@ -282,7 +282,6 @@ def deploy_worker_templates(template, substitutions):
         value = substitutions[substitution]
         yaml = yaml.replace("${" + substitution + "}", value)
 
-    yaml = envsubst(yaml)
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
 
     local_resource(
@@ -306,15 +305,15 @@ def base64_encode_file(path_to_encode):
 def base64_decode(to_decode):
     decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True)
     return str(decode_blob)
-
-def envsubst(yaml):
-    yaml = yaml.replace('"', '\\"')
-    return str(local("echo \"{}\" | {}".format(yaml, envsubst_cmd), quiet=True))
-
 def kustomizesub(folder):
     yaml = local('hack/kustomize-sub.sh {}'.format(folder), quiet=True)
     return yaml
 
+def waitforsystem():
+    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-bootstrap-system")
+    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-control-plane-system")
+    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-system")
+    
 ##############################
 # Actual work happens here
 ##############################
@@ -331,6 +330,8 @@ if settings.get("deploy_cert_manager"):
 deploy_capi()
 
 capz()
+
+waitforsystem()
 
 create_crs()
 
