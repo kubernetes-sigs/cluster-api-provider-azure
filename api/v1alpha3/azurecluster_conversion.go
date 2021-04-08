@@ -195,10 +195,10 @@ func Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1alpha4.
 	out.ID = in.ID
 	out.Name = in.Name
 
-	out.IngressRules = make(IngressRules, len(in.IngressRules))
-	for i := range in.IngressRules {
+	out.IngressRules = make(IngressRules, len(in.SecurityRules))
+	for i := range in.SecurityRules {
 		out.IngressRules[i] = IngressRule{}
-		if err := Convert_v1alpha4_IngressRule_To_v1alpha3_IngressRule(&in.IngressRules[i], &out.IngressRules[i], s); err != nil {
+		if err := Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule(&in.SecurityRules[i], &out.IngressRules[i], s); err != nil {
 			return err
 		}
 	}
@@ -207,14 +207,14 @@ func Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1alpha4.
 	return nil
 }
 
-func Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGroup, out *infrav1alpha4.SecurityGroup, s apiconversion.Scope) error {
+func Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGroup, out *infrav1alpha4.SecurityGroup, s apiconversion.Scope) error { //nolint
 	out.ID = in.ID
 	out.Name = in.Name
 
-	out.IngressRules = make(infrav1alpha4.IngressRules, len(in.IngressRules))
+	out.SecurityRules = make(infrav1alpha4.SecurityRules, len(in.IngressRules))
 	for i := range in.IngressRules {
-		out.IngressRules[i] = infrav1alpha4.IngressRule{}
-		if err := Convert_v1alpha3_IngressRule_To_v1alpha4_IngressRule(&in.IngressRules[i], &out.IngressRules[i], s); err != nil {
+		out.SecurityRules[i] = infrav1alpha4.SecurityRule{}
+		if err := Convert_v1alpha3_IngressRule_To_v1alpha4_SecurityRule(&in.IngressRules[i], &out.SecurityRules[i], s); err != nil {
 			return err
 		}
 	}
@@ -223,14 +223,30 @@ func Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGroup,
 	return nil
 }
 
-// Convert_v1alpha3_IngressRule_To_v1alpha4_IngressRule
-func Convert_v1alpha3_IngressRule_To_v1alpha4_IngressRule(in *IngressRule, out *infrav1alpha4.IngressRule, s apiconversion.Scope) error {
-	return autoConvert_v1alpha3_IngressRule_To_v1alpha4_IngressRule(in, out, s)
+// Convert_v1alpha3_IngressRule_To_v1alpha4_SecurityRule
+func Convert_v1alpha3_IngressRule_To_v1alpha4_SecurityRule(in *IngressRule, out *infrav1alpha4.SecurityRule, _ apiconversion.Scope) error { //nolint
+	out.Name = in.Name
+	out.Description = in.Description
+	out.Protocol = v1alpha4.SecurityGroupProtocol(in.Protocol)
+	out.Priority = in.Priority
+	out.SourcePorts = in.SourcePorts
+	out.DestinationPorts = in.DestinationPorts
+	out.Source = in.Source
+	out.Destination = in.Destination
+	return nil
 }
 
-// Convert_v1alpha4_IngressRule_To_v1alpha3_IngressRule
-func Convert_v1alpha4_IngressRule_To_v1alpha3_IngressRule(in *infrav1alpha4.IngressRule, out *IngressRule, s apiconversion.Scope) error {
-	return autoConvert_v1alpha4_IngressRule_To_v1alpha3_IngressRule(in, out, s)
+// Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule
+func Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule(in *infrav1alpha4.SecurityRule, out *IngressRule, _ apiconversion.Scope) error { //nolint
+	out.Name = in.Name
+	out.Description = in.Description
+	out.Protocol = SecurityGroupProtocol(in.Protocol)
+	out.Priority = in.Priority
+	out.SourcePorts = in.SourcePorts
+	out.DestinationPorts = in.DestinationPorts
+	out.Source = in.Source
+	out.Destination = in.Destination
+	return nil
 }
 
 // Convert_v1alpha4_ManagedDisk_To_v1alpha3_ManagedDisk converts between api versions

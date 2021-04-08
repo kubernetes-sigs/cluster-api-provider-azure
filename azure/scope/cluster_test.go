@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestGettingIngressRules(t *testing.T) {
+func TestGettingSecurityRules(t *testing.T) {
 	g := NewWithT(t)
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
@@ -83,9 +83,9 @@ func TestGettingIngressRules(t *testing.T) {
 	})
 	g.Expect(err).ToNot(HaveOccurred())
 
-	clusterScope.SetControlPlaneIngressRules()
+	clusterScope.SetControlPlaneSecurityRules()
 
 	subnet, err := clusterScope.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(len(subnet.SecurityGroup.IngressRules)).To(Equal(2))
+	g.Expect(len(subnet.SecurityGroup.SecurityRules)).To(Equal(2))
 }

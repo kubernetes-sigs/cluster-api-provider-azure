@@ -507,17 +507,17 @@ func TestSubnetNameInvalid(t *testing.T) {
 	})
 }
 
-func TestIngressRules(t *testing.T) {
+func TestValidateSecurityRule(t *testing.T) {
 	g := NewWithT(t)
 
 	tests := []struct {
 		name      string
-		validRule IngressRule
+		validRule SecurityRule
 		wantErr   bool
 	}{
 		{
-			name: "ingressRule - valid priority",
-			validRule: IngressRule{
+			name: "security rule - valid priority",
+			validRule: SecurityRule{
 				Name:        "allow_apiserver",
 				Description: "Allow K8s API Server",
 				Priority:    101,
@@ -525,8 +525,8 @@ func TestIngressRules(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "ingressRule - invalid low priority",
-			validRule: IngressRule{
+			name: "security rule - invalid low priority",
+			validRule: SecurityRule{
 				Name:        "allow_apiserver",
 				Description: "Allow K8s API Server",
 				Priority:    99,
@@ -534,8 +534,8 @@ func TestIngressRules(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "ingressRule - invalid high priority",
-			validRule: IngressRule{
+			name: "security rule - invalid high priority",
+			validRule: SecurityRule{
 				Name:        "allow_apiserver",
 				Description: "Allow K8s API Server",
 				Priority:    5000,
@@ -547,9 +547,9 @@ func TestIngressRules(t *testing.T) {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateIngressRule(
+			err := validateSecurityRule(
 				testCase.validRule,
-				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("ingressRules").Index(0),
+				field.NewPath("spec").Child("networkSpec").Child("subnets").Index(0).Child("securityGroup").Child("securityRules").Index(0),
 			)
 			if testCase.wantErr {
 				g.Expect(err).To(HaveOccurred())

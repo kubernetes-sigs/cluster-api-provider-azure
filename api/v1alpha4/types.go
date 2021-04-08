@@ -99,10 +99,10 @@ type Subnets []SubnetSpec
 
 // SecurityGroup defines an Azure security group.
 type SecurityGroup struct {
-	ID           string       `json:"id,omitempty"`
-	Name         string       `json:"name,omitempty"`
-	IngressRules IngressRules `json:"ingressRule,omitempty"`
-	Tags         Tags         `json:"tags,omitempty"`
+	ID            string        `json:"id,omitempty"`
+	Name          string        `json:"name,omitempty"`
+	SecurityRules SecurityRules `json:"securityRules,omitempty"`
+	Tags          Tags          `json:"tags,omitempty"`
 }
 
 // RouteTable defines an Azure route table.
@@ -125,8 +125,8 @@ const (
 	SecurityGroupProtocolUDP = SecurityGroupProtocol("Udp")
 )
 
-// IngressRule defines an Azure ingress rule for security groups.
-type IngressRule struct {
+// SecurityRule defines an Azure ingress rule for security groups.
+type SecurityRule struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description"`
 	Protocol    SecurityGroupProtocol `json:"protocol"`
@@ -147,8 +147,8 @@ type IngressRule struct {
 	Destination *string `json:"destination,omitempty"`
 }
 
-// IngressRules is a slice of Azure ingress rules for security groups.
-type IngressRules []IngressRule
+// SecurityRules is a slice of Azure security rules for security groups.
+type SecurityRules []SecurityRule
 
 // LoadBalancerSpec defines an Azure load balancer.
 type LoadBalancerSpec struct {

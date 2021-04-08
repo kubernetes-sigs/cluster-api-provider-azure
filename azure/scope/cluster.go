@@ -224,12 +224,12 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 	return []azure.NSGSpec{
 		{
-			Name:         s.ControlPlaneSubnet().SecurityGroup.Name,
-			IngressRules: s.ControlPlaneSubnet().SecurityGroup.IngressRules,
+			Name:          s.ControlPlaneSubnet().SecurityGroup.Name,
+			SecurityRules: s.ControlPlaneSubnet().SecurityGroup.SecurityRules,
 		},
 		{
-			Name:         s.NodeSubnet().SecurityGroup.Name,
-			IngressRules: s.NodeSubnet().SecurityGroup.IngressRules,
+			Name:          s.NodeSubnet().SecurityGroup.Name,
+			SecurityRules: s.NodeSubnet().SecurityGroup.SecurityRules,
 		},
 	}
 }
@@ -510,12 +510,12 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 
-// SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
-func (s *ClusterScope) SetControlPlaneIngressRules() {
-	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
+// SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
+func (s *ClusterScope) SetControlPlaneSecurityRules() {
+	if s.ControlPlaneSubnet().SecurityGroup.SecurityRules == nil {
 		subnet := s.ControlPlaneSubnet()
-		subnet.SecurityGroup.IngressRules = infrav1.IngressRules{
-			infrav1.IngressRule{
+		subnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{
+			infrav1.SecurityRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
 				Priority:         2200,
@@ -525,7 +525,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 				Destination:      to.StringPtr("*"),
 				DestinationPorts: to.StringPtr("22"),
 			},
-			infrav1.IngressRule{
+			infrav1.SecurityRule{
 				Name:             "allow_apiserver",
 				Description:      "Allow K8s API Server",
 				Priority:         2201,

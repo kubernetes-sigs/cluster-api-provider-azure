@@ -45,7 +45,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
-						IngressRules: infrav1.IngressRules{
+						SecurityRules: infrav1.SecurityRules{
 							{
 								Name:             "first-rule",
 								Description:      "a test rule",
@@ -69,8 +69,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 						},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.IsVnetManaged().Return(true)
@@ -129,7 +129,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
-						IngressRules: infrav1.IngressRules{
+						SecurityRules: infrav1.SecurityRules{
 							{
 								Name:             "first-rule",
 								Description:      "a test rule",
@@ -143,8 +143,8 @@ func TestReconcileSecurityGroups(t *testing.T) {
 						},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.IsVnetManaged().AnyTimes().Return(true)
@@ -263,7 +263,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
-						IngressRules: infrav1.IngressRules{
+						SecurityRules: infrav1.SecurityRules{
 							{
 								Name:             "first-rule",
 								Description:      "a test rule",
@@ -277,8 +277,8 @@ func TestDeleteSecurityGroups(t *testing.T) {
 						},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -293,12 +293,12 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
-						Name:         "nsg-one",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-one",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")

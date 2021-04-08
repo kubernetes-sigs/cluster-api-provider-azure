@@ -83,7 +83,7 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	}
 
 	s.scope.SetDNSName()
-	s.scope.SetControlPlaneIngressRules()
+	s.scope.SetControlPlaneSecurityRules()
 
 	if err := s.groupsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile resource group")

@@ -91,7 +91,7 @@ spec:
           - 10.0.1.0/24
         securityGroup:
           name: my-subnet-cp-nsg
-          ingressRule:
+          securityRules:
             - name: "allow_ssh"
               description: "allow SSH"
               priority: 2200

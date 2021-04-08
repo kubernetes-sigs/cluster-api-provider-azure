@@ -118,8 +118,8 @@ const (
 
 // NSGSpec defines the specification for a Security Group.
 type NSGSpec struct {
-	Name         string
-	IngressRules infrav1.IngressRules
+	Name          string
+	SecurityRules infrav1.SecurityRules
 }
 
 // VMSpec defines the specification for a Virtual Machine.

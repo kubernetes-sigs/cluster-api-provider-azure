@@ -529,10 +529,12 @@ spec:
                           properties:
                             id:
                               type: string
-                            ingressRule:
-                              description: IngressRules is a slice of Azure ingress rules for security groups.
+                            name:
+                              type: string
+                            securityRules:
+                              description: SecurityRules is a slice of Azure security rules for security groups.
                               items:
-                                description: IngressRule defines an Azure ingress rule for security groups.
+                                description: SecurityRule defines an Azure ingress rule for security groups.
                                 properties:
                                   description:
                                     type: string
@@ -563,8 +565,6 @@ spec:
                                 - protocol
                                 type: object
                               type: array
-                            name:
-                              type: string
                             tags:
                               additionalProperties:
                                 type: string

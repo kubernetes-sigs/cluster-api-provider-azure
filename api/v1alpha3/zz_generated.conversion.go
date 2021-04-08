@@ -365,8 +365,8 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*IngressRule)(nil), (*v1alpha4.IngressRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_IngressRule_To_v1alpha4_IngressRule(a.(*IngressRule), b.(*v1alpha4.IngressRule), scope)
+	if err := s.AddConversionFunc((*IngressRule)(nil), (*v1alpha4.SecurityRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_IngressRule_To_v1alpha4_SecurityRule(a.(*IngressRule), b.(*v1alpha4.SecurityRule), scope)
 	}); err != nil {
 		return err
 	}
@@ -415,11 +415,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.IngressRule)(nil), (*IngressRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_IngressRule_To_v1alpha3_IngressRule(a.(*v1alpha4.IngressRule), b.(*IngressRule), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddConversionFunc((*v1alpha4.LoadBalancerSpec)(nil), (*LoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(a.(*v1alpha4.LoadBalancerSpec), b.(*LoadBalancerSpec), scope)
 	}); err != nil {
@@ -437,6 +432,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1alpha4.SecurityGroup)(nil), (*SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(a.(*v1alpha4.SecurityGroup), b.(*SecurityGroup), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha4.SecurityRule)(nil), (*IngressRule)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule(a.(*v1alpha4.SecurityRule), b.(*IngressRule), scope)
 	}); err != nil {
 		return err
 	}
@@ -1218,30 +1218,6 @@ func Convert_v1alpha4_Image_To_v1alpha3_Image(in *v1alpha4.Image, out *Image, s 
 	return autoConvert_v1alpha4_Image_To_v1alpha3_Image(in, out, s)
 }
 
-func autoConvert_v1alpha3_IngressRule_To_v1alpha4_IngressRule(in *IngressRule, out *v1alpha4.IngressRule, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Description = in.Description
-	out.Protocol = v1alpha4.SecurityGroupProtocol(in.Protocol)
-	out.Priority = in.Priority
-	out.SourcePorts = (*string)(unsafe.Pointer(in.SourcePorts))
-	out.DestinationPorts = (*string)(unsafe.Pointer(in.DestinationPorts))
-	out.Source = (*string)(unsafe.Pointer(in.Source))
-	out.Destination = (*string)(unsafe.Pointer(in.Destination))
-	return nil
-}
-
-func autoConvert_v1alpha4_IngressRule_To_v1alpha3_IngressRule(in *v1alpha4.IngressRule, out *IngressRule, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Description = in.Description
-	out.Protocol = SecurityGroupProtocol(in.Protocol)
-	out.Priority = in.Priority
-	out.SourcePorts = (*string)(unsafe.Pointer(in.SourcePorts))
-	out.DestinationPorts = (*string)(unsafe.Pointer(in.DestinationPorts))
-	out.Source = (*string)(unsafe.Pointer(in.Source))
-	out.Destination = (*string)(unsafe.Pointer(in.Destination))
-	return nil
-}
-
 func autoConvert_v1alpha3_LoadBalancerSpec_To_v1alpha4_LoadBalancerSpec(in *LoadBalancerSpec, out *v1alpha4.LoadBalancerSpec, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
@@ -1406,17 +1382,7 @@ func Convert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(in *v1alpha4.RouteTable,
 func autoConvert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGroup, out *v1alpha4.SecurityGroup, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
-	if in.IngressRules != nil {
-		in, out := &in.IngressRules, &out.IngressRules
-		*out = make(v1alpha4.IngressRules, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha3_IngressRule_To_v1alpha4_IngressRule(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.IngressRules = nil
-	}
+	// WARNING: in.IngressRules requires manual conversion: does not exist in peer-type
 	out.Tags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.Tags))
 	return nil
 }
@@ -1424,17 +1390,7 @@ func autoConvert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGr
 func autoConvert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(in *v1alpha4.SecurityGroup, out *SecurityGroup, s conversion.Scope) error {
 	out.ID = in.ID
 	out.Name = in.Name
-	if in.IngressRules != nil {
-		in, out := &in.IngressRules, &out.IngressRules
-		*out = make(IngressRules, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha4_IngressRule_To_v1alpha3_IngressRule(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.IngressRules = nil
-	}
+	// WARNING: in.SecurityRules requires manual conversion: does not exist in peer-type
 	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
 	return nil
 }

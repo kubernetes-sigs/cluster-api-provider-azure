@@ -22,23 +22,23 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
-// IngresstoSecurityRule converts a CAPI ingress rule to an Azure network security rule.
-func IngresstoSecurityRule(ingress infrav1.IngressRule) network.SecurityRule {
+// SecurityRuleToSDK converts a CAPZ security rule to an Azure network security rule.
+func SecurityRuleToSDK(rule infrav1.SecurityRule) network.SecurityRule {
 	secRule := network.SecurityRule{
-		Name: to.StringPtr(ingress.Name),
+		Name: to.StringPtr(rule.Name),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Description:              to.StringPtr(ingress.Description),
-			SourceAddressPrefix:      ingress.Source,
-			SourcePortRange:          ingress.SourcePorts,
-			DestinationAddressPrefix: ingress.Destination,
-			DestinationPortRange:     ingress.DestinationPorts,
+			Description:              to.StringPtr(rule.Description),
+			SourceAddressPrefix:      rule.Source,
+			SourcePortRange:          rule.SourcePorts,
+			DestinationAddressPrefix: rule.Destination,
+			DestinationPortRange:     rule.DestinationPorts,
 			Access:                   network.SecurityRuleAccessAllow,
 			Direction:                network.SecurityRuleDirectionInbound,
-			Priority:                 to.Int32Ptr(ingress.Priority),
+			Priority:                 to.Int32Ptr(rule.Priority),
 		},
 	}
 
-	switch ingress.Protocol {
+	switch rule.Protocol {
 	case infrav1.SecurityGroupProtocolAll:
 		secRule.Protocol = network.SecurityRuleProtocolAsterisk
 	case infrav1.SecurityGroupProtocolTCP:
@@ -48,28 +48,4 @@ func IngresstoSecurityRule(ingress infrav1.IngressRule) network.SecurityRule {
 	}
 
 	return secRule
-}
-
-// SecuritytoIngressRule converts an Azure network security rule to a CAPI ingress rule.
-func SecuritytoIngressRule(rule network.SecurityRule) infrav1.IngressRule {
-	ingRule := infrav1.IngressRule{
-		Name:             to.String(rule.Name),
-		Description:      to.String(rule.Description),
-		Priority:         to.Int32(rule.Priority),
-		SourcePorts:      rule.SourcePortRange,
-		DestinationPorts: rule.DestinationPortRange,
-		Source:           rule.SourceAddressPrefix,
-		Destination:      rule.DestinationAddressPrefix,
-	}
-
-	switch rule.Protocol {
-	case network.SecurityRuleProtocolAsterisk:
-		ingRule.Protocol = infrav1.SecurityGroupProtocolAll
-	case network.SecurityRuleProtocolTCP:
-		ingRule.Protocol = infrav1.SecurityGroupProtocolTCP
-	case network.SecurityRuleProtocolUDP:
-		ingRule.Protocol = infrav1.SecurityGroupProtocolUDP
-	}
-
-	return ingRule
 }
