@@ -19,6 +19,8 @@ package v1alpha4
 import (
 	"testing"
 
+	"k8s.io/utils/pointer"
+
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -758,6 +760,158 @@ func TestValidateAPIServerLB(t *testing.T) {
 	}
 }
 
+func TestValidateNodeOutboundLB(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		lb          *LoadBalancerSpec
+		old         *LoadBalancerSpec
+		apiServerLB LoadBalancerSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name:        "no lb for public clusters",
+			lb:          nil,
+			apiServerLB: LoadBalancerSpec{Type: Public},
+			wantErr:     true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB",
+				BadValue: nil,
+				Detail:   "Node outbound load balancer cannot be nil for public clusters.",
+			},
+		},
+		{
+			name:        "no lb allowed for internal clusters",
+			lb:          nil,
+			apiServerLB: LoadBalancerSpec{Type: Internal},
+			wantErr:     false,
+		},
+		{
+			name: "invalid ID update",
+			lb: &LoadBalancerSpec{
+				ID: "some-id",
+			},
+			old: &LoadBalancerSpec{
+				ID: "old-id",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.id",
+				BadValue: "some-id",
+				Detail:   "Node outbound load balancer ID should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "invalid Name update",
+			lb: &LoadBalancerSpec{
+				Name: "some-name",
+			},
+			old: &LoadBalancerSpec{
+				Name: "old-name",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.name",
+				BadValue: "some-name",
+				Detail:   "Node outbound load balancer Name should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "invalid SKU update",
+			lb: &LoadBalancerSpec{
+				SKU: "some-sku",
+			},
+			old: &LoadBalancerSpec{
+				SKU: "old-sku",
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.sku",
+				BadValue: "some-sku",
+				Detail:   "Node outbound load balancer SKU should not be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "invalid FrontendIps update",
+			lb: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "some-frontend-ip",
+				}},
+			},
+			old: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "old-frontend-ip",
+				}},
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "nodeOutboundLB.frontendIPs[0]",
+				BadValue: FrontendIP{
+					Name: "some-frontend-ip",
+				},
+				Detail: "Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation.",
+			},
+		},
+		{
+			name: "FrontendIps can update when frontendIpsCount changes",
+			lb: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "some-frontend-ip-1",
+				}, {
+					Name: "some-frontend-ip-2",
+				}},
+				FrontendIPsCount: pointer.Int32Ptr(2),
+			},
+			old: &LoadBalancerSpec{
+				FrontendIPs: []FrontendIP{{
+					Name: "old-frontend-ip",
+				}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "frontend ips count exceeds max value",
+			lb: &LoadBalancerSpec{
+				FrontendIPsCount: pointer.Int32Ptr(100),
+			},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "nodeOutboundLB.frontendIPsCount",
+				BadValue: 100,
+				Detail:   "Max front end ips allowed is 16",
+			},
+		},
+	}
+
+	for _, test := range testcases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, field.NewPath("nodeOutboundLB"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == test.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
 func createValidCluster() *AzureCluster {
 	return &AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -775,8 +929,9 @@ func createValidNetworkSpec() NetworkSpec {
 			ResourceGroup: "custom-vnet",
 			Name:          "my-vnet",
 		},
-		Subnets:     createValidSubnets(),
-		APIServerLB: createValidAPIServerLB(),
+		Subnets:        createValidSubnets(),
+		APIServerLB:    createValidAPIServerLB(),
+		NodeOutboundLB: createValidNodeOutboundLB(),
 	}
 }
 
@@ -807,5 +962,11 @@ func createValidAPIServerLB() LoadBalancerSpec {
 			},
 		},
 		Type: Public,
+	}
+}
+
+func createValidNodeOutboundLB() *LoadBalancerSpec {
+	return &LoadBalancerSpec{
+		FrontendIPsCount: pointer.Int32Ptr(1),
 	}
 }

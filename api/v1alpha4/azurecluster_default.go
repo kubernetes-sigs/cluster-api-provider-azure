@@ -18,6 +18,8 @@ package v1alpha4
 
 import (
 	"fmt"
+
+	"k8s.io/utils/pointer"
 )
 
 const (
@@ -43,6 +45,7 @@ func (c *AzureCluster) setNetworkSpecDefaults() {
 	c.setVnetDefaults()
 	c.setSubnetDefaults()
 	c.setAPIServerLBDefaults()
+	c.setNodeOutboundLBDefaults()
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -148,6 +151,49 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 	}
 }
 
+func (c *AzureCluster) setNodeOutboundLBDefaults() {
+	if c.Spec.NetworkSpec.NodeOutboundLB == nil {
+		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
+			return
+		}
+		c.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
+	}
+
+	lb := c.Spec.NetworkSpec.NodeOutboundLB
+	lb.Type = Public
+	lb.SKU = SKUStandard
+	lb.Name = c.ObjectMeta.Name
+
+	if lb.FrontendIPsCount == nil {
+		lb.FrontendIPsCount = pointer.Int32Ptr(1)
+	}
+
+	switch *lb.FrontendIPsCount {
+	case 0:
+		lb.FrontendIPs = []FrontendIP{}
+	case 1:
+		lb.FrontendIPs = []FrontendIP{
+			{
+				Name: generateFrontendIPConfigName(lb.Name),
+				PublicIP: &PublicIPSpec{
+					Name: generateNodeOutboundIPName(c.ObjectMeta.Name),
+				},
+			},
+		}
+	default:
+		lb.FrontendIPs = make([]FrontendIP, *lb.FrontendIPsCount)
+		for i := 0; i < int(*lb.FrontendIPsCount); i++ {
+			lb.FrontendIPs[i] = FrontendIP{
+				Name: withIndex(generateFrontendIPConfigName(lb.Name), i+1),
+				PublicIP: &PublicIPSpec{
+					Name: withIndex(generateNodeOutboundIPName(c.ObjectMeta.Name), i+1),
+				},
+			}
+		}
+
+	}
+}
+
 // generateVnetName generates a virtual network name, based on the cluster name.
 func generateVnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "vnet")
@@ -196,4 +242,14 @@ func generatePublicIPName(clusterName string) string {
 // generateFrontendIPConfigName generates a load balancer frontend IP config name.
 func generateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
+}
+
+// generateNodeOutboundIPName generates a public IP name, based on the cluster name.
+func generateNodeOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-node-outbound", clusterName)
+}
+
+// withIndex appends the index as suffix to a generated name.
+func withIndex(name string, n int) string {
+	return fmt.Sprintf("%s-%d", name, n)
 }

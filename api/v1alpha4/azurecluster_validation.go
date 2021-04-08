@@ -38,6 +38,8 @@ const (
 	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
 	subnetRegex       = `^[-\w\._]+$`
 	loadBalancerRegex = `^[-\w\._]+$`
+	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration
+	MaxLoadBalancerOutboundIPs = 16
 )
 
 // validateCluster validates a cluster
@@ -105,6 +107,9 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 	cidrBlocks = subnet.CIDRBlocks
 
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
+
+	allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
+
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -260,6 +265,60 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 					"Public Load Balancers cannot have a Private IP"))
 			}
 		}
+	}
+
+	return allErrs
+}
+
+func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// LB can be nil when disabled for private clusters.
+	if lb == nil && apiserverLB.Type == Internal {
+		return allErrs
+	}
+
+	if lb == nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, lb, "Node outbound load balancer cannot be nil for public clusters."))
+		return allErrs
+	}
+
+	if old != nil && old.ID != lb.ID {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("id"), lb.ID, "Node outbound load balancer ID should not be modified after AzureCluster creation."))
+	}
+
+	if old != nil && old.Name != lb.Name {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Name, "Node outbound load balancer Name should not be modified after AzureCluster creation."))
+	}
+
+	if old != nil && old.SKU != lb.SKU {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("sku"), lb.SKU, "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
+	}
+
+	if old != nil && old.FrontendIPsCount == lb.FrontendIPsCount {
+
+		if len(old.FrontendIPs) != len(lb.FrontendIPs) {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPs"), "Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation."))
+		}
+
+		if len(old.FrontendIPs) == len(lb.FrontendIPs) {
+			for i, frontEndIP := range lb.FrontendIPs {
+				oldFrontendIP := old.FrontendIPs[i]
+				if oldFrontendIP.Name != frontEndIP.Name || *oldFrontendIP.PublicIP != *frontEndIP.PublicIP {
+					allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPs").Index(i), frontEndIP,
+						"Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation."))
+				}
+			}
+		}
+	}
+
+	if old != nil && old.Type != lb.Type {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), lb.SKU, "Node outbound load balancer Type should not be modified after AzureCluster creation."))
+	}
+
+	if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
+			fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
 	}
 
 	return allErrs

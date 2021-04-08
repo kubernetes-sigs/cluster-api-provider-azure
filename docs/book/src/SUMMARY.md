@@ -18,6 +18,7 @@
     - [Machine Pools (VMSS)](./topics/machinepools.md)
     - [Managed Clusters (AKS)](./topics/managedcluster.md)
     - [Multitenancy](./topics/multitenancy.md)
+    - [Node Ooutbound Load Balancer](./topics/node-outbound-lb.md)
     - [Spot Virtual Machines](./topics/spot-vms.md)
     - [Virtual Networks](./topics/custom-vnet.md)
     - [Windows](./topics/windows.md)

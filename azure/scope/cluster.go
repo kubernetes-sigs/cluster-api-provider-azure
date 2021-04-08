@@ -115,6 +115,9 @@ func (s *ClusterScope) Authorizer() autorest.Authorizer {
 
 // PublicIPSpecs returns the public IP specs.
 func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
+	var publicIPSpecs []azure.PublicIPSpec
+
+	// Public IP specs for control plane lb
 	var controlPlaneOutboundIP azure.PublicIPSpec
 	if s.IsAPIServerPrivate() {
 		controlPlaneOutboundIP = azure.PublicIPSpec{
@@ -127,13 +130,30 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 			IsIPv6:  false, // currently azure requires a ipv4 lb rule to enable ipv6
 		}
 	}
+	publicIPSpecs = append(publicIPSpecs, controlPlaneOutboundIP)
 
-	return []azure.PublicIPSpec{
-		controlPlaneOutboundIP,
-		{
-			Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
-		},
+	// Public IP specs for node outbound lb
+	var nodeOutboundIPSpecs []azure.PublicIPSpec
+	if s.NodeOutboundLB() != nil {
+		loadBalancerNodeOutboundIPs := s.NodeOutboundLB().FrontendIPsCount
+		if loadBalancerNodeOutboundIPs == nil || *loadBalancerNodeOutboundIPs == 0 {
+			// do nothing
+		} else if *loadBalancerNodeOutboundIPs == 1 {
+			nodeOutboundIPSpecs = append(nodeOutboundIPSpecs, azure.PublicIPSpec{
+				Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
+			})
+		} else {
+			for i := 0; i < int(*loadBalancerNodeOutboundIPs); i++ {
+				publicIPSpecs = append(publicIPSpecs, azure.PublicIPSpec{
+					Name: azure.WithIndex(azure.GenerateNodeOutboundIPName(s.ClusterName()), i+1),
+				})
+			}
+		}
 	}
+
+	publicIPSpecs = append(publicIPSpecs, nodeOutboundIPSpecs...)
+
+	return publicIPSpecs
 }
 
 // LBSpecs returns the load balancer specs.
@@ -150,22 +170,18 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 			Role:              infrav1.APIServerRole,
 			BackendPoolName:   s.APIServerLBPoolName(s.APIServerLB().Name),
 		},
-		{
-			// Public Node outbound LB
-			Name: s.NodeOutboundLBName(),
-			FrontendIPConfigs: []infrav1.FrontendIP{
-				{
-					Name: azure.GenerateFrontendIPConfigName(s.NodeOutboundLBName()),
-					PublicIP: &infrav1.PublicIPSpec{
-						Name: azure.GenerateNodeOutboundIPName(s.ClusterName()),
-					},
-				},
-			},
-			Type:            infrav1.Public,
-			SKU:             infrav1.SKUStandard,
-			BackendPoolName: s.OutboundPoolName(s.NodeOutboundLBName()),
-			Role:            infrav1.NodeOutboundRole,
-		},
+	}
+
+	// Public Node outbound LB
+	if s.NodeOutboundLB() != nil {
+		specs = append(specs, azure.LBSpec{
+			Name:              s.NodeOutboundLBName(),
+			FrontendIPConfigs: s.NodeOutboundLB().FrontendIPs,
+			Type:              s.NodeOutboundLB().Type,
+			SKU:               s.NodeOutboundLB().SKU,
+			BackendPoolName:   s.OutboundPoolName(s.NodeOutboundLBName()),
+			Role:              infrav1.NodeOutboundRole,
+		})
 	}
 
 	if !s.IsAPIServerPrivate() {
@@ -321,6 +337,11 @@ func (s *ClusterScope) NodeRouteTable() infrav1.RouteTable {
 // APIServerLB returns the cluster API Server load balancer.
 func (s *ClusterScope) APIServerLB() *infrav1.LoadBalancerSpec {
 	return &s.AzureCluster.Spec.NetworkSpec.APIServerLB
+}
+
+// NodeOutboundLB returns the cluster node outbound load balancer.
+func (s *ClusterScope) NodeOutboundLB() *infrav1.LoadBalancerSpec {
+	return s.AzureCluster.Spec.NetworkSpec.NodeOutboundLB
 }
 
 // APIServerLBName returns the API Server LB name.
