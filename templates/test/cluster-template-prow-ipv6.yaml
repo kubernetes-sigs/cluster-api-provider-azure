@@ -153,7 +153,6 @@ spec:
     - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
     - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
     - systemctl restart systemd-resolved
-    useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -257,7 +256,6 @@ spec:
       - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
       - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
       - systemctl restart systemd-resolved
-      useExperimentalRetryJoin: true
 ---
 apiVersion: v1
 data: ${CNI_RESOURCES_IPV6}

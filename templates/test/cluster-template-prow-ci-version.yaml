@@ -366,7 +366,6 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       preKubeadmCommands:
       - bash -c /tmp/kubeadm-bootstrap.sh
-      useExperimentalRetryJoin: true
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineHealthCheck

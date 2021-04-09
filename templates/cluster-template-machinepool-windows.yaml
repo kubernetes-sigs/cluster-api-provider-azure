@@ -109,7 +109,6 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---

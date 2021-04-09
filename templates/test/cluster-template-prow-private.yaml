@@ -134,7 +134,6 @@ spec:
     - if [ -f /tmp/kubeadm-join-config.yaml ] || [ -f /run/kubeadm/kubeadm-join-config.yaml ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts; fi
     preKubeadmCommands:
     - if [ -f /tmp/kubeadm.yaml ] || [ -f /run/kubeadm/kubeadm.yaml ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts; fi
-    useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -220,7 +219,6 @@ spec:
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
-      useExperimentalRetryJoin: true
 ---
 apiVersion: v1
 data: ${CNI_RESOURCES}

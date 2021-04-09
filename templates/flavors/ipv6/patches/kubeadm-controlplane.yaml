@@ -4,7 +4,6 @@ metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
   kubeadmConfigSpec:
-    useExperimentalRetryJoin: true
     postKubeadmCommands:
       - sed -i '\#--listen-client-urls#s#$#,https://127.0.0.1:2379#' /etc/kubernetes/manifests/etcd.yaml
       # This frees up :53 on the host for the coredns pods

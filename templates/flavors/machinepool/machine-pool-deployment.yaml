@@ -40,7 +40,6 @@ kind: KubeadmConfig
 metadata:
   name: "${CLUSTER_NAME}-mp-0"
 spec:
-  useExperimentalRetryJoin: true
   joinConfiguration:
     nodeRegistration:
       name: '{{ ds.meta_data["local_hostname"] }}'
