@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha3
 
 import (
-	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	unsafe "unsafe"
+
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
@@ -46,12 +47,13 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 			dst.Annotations = nil
 		}
 	}
-
 	// Manually restore data.
 	restored := &infrav1alpha4.AzureCluster{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+
+	dst.Spec.NetworkSpec.PrivateDNSZoneName = restored.Spec.NetworkSpec.PrivateDNSZoneName
 
 	dst.Spec.NetworkSpec.APIServerLB.FrontendIPsCount = restored.Spec.NetworkSpec.APIServerLB.FrontendIPsCount
 	dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
@@ -72,6 +74,10 @@ func (dst *AzureCluster) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 			dst.Annotations = make(map[string]string)
 		}
 		dst.Annotations[azureEnvironmentAnnotation] = src.Spec.AzureEnvironment
+	}
+	// Preserve Hub data on down-conversion.
+	if err := utilconversion.MarshalData(src, dst); err != nil {
+		return err
 	}
 
 	// Preserve Hub data on down-conversion.

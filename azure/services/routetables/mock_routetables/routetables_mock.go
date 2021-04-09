@@ -252,6 +252,20 @@ func (mr *MockRouteTableScopeMockRecorder) Error(err, msg interface{}, keysAndVa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockRouteTableScope)(nil).Error), varargs...)
 }
 
+// GetPrivateDNSZoneName mocks base method.
+func (m *MockRouteTableScope) GetPrivateDNSZoneName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPrivateDNSZoneName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetPrivateDNSZoneName indicates an expected call of GetPrivateDNSZoneName.
+func (mr *MockRouteTableScopeMockRecorder) GetPrivateDNSZoneName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateDNSZoneName", reflect.TypeOf((*MockRouteTableScope)(nil).GetPrivateDNSZoneName))
+}
+
 // HashKey mocks base method.
 func (m *MockRouteTableScope) HashKey() string {
 	m.ctrl.T.Helper()

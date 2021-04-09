@@ -411,6 +411,20 @@ func (mr *MockNetworkDescriberMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockNetworkDescriber)(nil).ControlPlaneSubnet))
 }
 
+// GetPrivateDNSZoneName mocks base method.
+func (m *MockNetworkDescriber) GetPrivateDNSZoneName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPrivateDNSZoneName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetPrivateDNSZoneName indicates an expected call of GetPrivateDNSZoneName.
+func (mr *MockNetworkDescriberMockRecorder) GetPrivateDNSZoneName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateDNSZoneName", reflect.TypeOf((*MockNetworkDescriber)(nil).GetPrivateDNSZoneName))
+}
+
 // IsAPIServerPrivate mocks base method.
 func (m *MockNetworkDescriber) IsAPIServerPrivate() bool {
 	m.ctrl.T.Helper()
@@ -917,6 +931,20 @@ func (m *MockClusterScoper) ControlPlaneSubnet() v1alpha4.SubnetSpec {
 func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
+}
+
+// GetPrivateDNSZoneName mocks base method.
+func (m *MockClusterScoper) GetPrivateDNSZoneName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPrivateDNSZoneName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetPrivateDNSZoneName indicates an expected call of GetPrivateDNSZoneName.
+func (mr *MockClusterScoperMockRecorder) GetPrivateDNSZoneName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateDNSZoneName", reflect.TypeOf((*MockClusterScoper)(nil).GetPrivateDNSZoneName))
 }
 
 // HashKey mocks base method.

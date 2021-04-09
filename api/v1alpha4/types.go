@@ -62,6 +62,10 @@ type NetworkSpec struct {
 	// NodeOutboundLB is the configuration for the node outbound load balancer.
 	// +optional
 	NodeOutboundLB *LoadBalancerSpec `json:"nodeOutboundLB,omitempty"`
+
+	// PrivateDNSZoneName defines the zone name for the Azure Private DNS.
+	// +optional
+	PrivateDNSZoneName string `json:"privateDNSZoneName,omitempty"`
 }
 
 // VnetSpec configures an Azure virtual network.

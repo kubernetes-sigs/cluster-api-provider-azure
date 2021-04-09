@@ -21,4 +21,5 @@
     - [Node Ooutbound Load Balancer](./topics/node-outbound-lb.md)
     - [Spot Virtual Machines](./topics/spot-vms.md)
     - [Virtual Networks](./topics/custom-vnet.md)
+    - [Custom Private DNS Zone Name](./topics/custom-dns.md)
     - [Windows](./topics/windows.md)
