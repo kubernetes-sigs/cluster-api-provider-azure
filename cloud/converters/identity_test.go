@@ -38,14 +38,14 @@ var sampleSubjectFactory = []infrav1.UserAssignedIdentity{
 }
 
 var expectedVMSDKObject = map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue{
-	"foo":             {},
-	"bar":             {},
+	"/foo":            {},
+	"/bar":            {},
 	"/without/prefix": {},
 }
 
 var expectedVMSSSDKObject = map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{
-	"foo":             {},
-	"bar":             {},
+	"/foo":            {},
+	"/bar":            {},
 	"/without/prefix": {},
 }
 
