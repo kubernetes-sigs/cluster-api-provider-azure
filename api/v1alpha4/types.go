@@ -115,35 +115,48 @@ type RouteTable struct {
 type SecurityGroupProtocol string
 
 const (
-	// SecurityGroupProtocolAll is a wildcard for all IP protocols
+	// SecurityGroupProtocolAll is a wildcard for all IP protocols.
 	SecurityGroupProtocolAll = SecurityGroupProtocol("*")
-
-	// SecurityGroupProtocolTCP represents the TCP protocol in ingress rules
+	// SecurityGroupProtocolTCP represents the TCP protocol.
 	SecurityGroupProtocolTCP = SecurityGroupProtocol("Tcp")
-
-	// SecurityGroupProtocolUDP represents the UDP protocol in ingress rules
+	// SecurityGroupProtocolUDP represents the UDP protocol.
 	SecurityGroupProtocolUDP = SecurityGroupProtocol("Udp")
+	// SecurityGroupProtocolICMP represents the ICMP protocol.
+	SecurityGroupProtocolICMP = SecurityGroupProtocol("Icmp")
 )
 
-// SecurityRule defines an Azure ingress rule for security groups.
+// SecurityRuleDirection defines the direction type for a security group rule.
+type SecurityRuleDirection string
+
+const (
+	// SecurityRuleDirectionInbound defines an ingress security rule.
+	SecurityRuleDirectionInbound = SecurityRuleDirection("Inbound")
+
+	// SecurityRuleDirectionOutbound defines an egress security rule.
+	SecurityRuleDirectionOutbound = SecurityRuleDirection("Outbound")
+)
+
+// SecurityRule defines an Azure security rule for security groups.
 type SecurityRule struct {
-	Name        string                `json:"name"`
-	Description string                `json:"description"`
-	Protocol    SecurityGroupProtocol `json:"protocol"`
-
-	// Priority - A number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
+	// Name is a unique name within the network security group.
+	Name string `json:"name"`
+	// A description for this rule. Restricted to 140 chars.
+	Description string `json:"description"`
+	// Protocol specifies the protocol type. "Tcp", "Udp", "Icmp", or "*".
+	// +kubebuilder:validation:Enum=Tcp;Udp;Icmp;*
+	Protocol SecurityGroupProtocol `json:"protocol"`
+	// Direction indicates whether the rule applies to inbound, or outbound traffic. "Inbound" or "Outbound".
+	// +kubebuilder:validation:Enum=Inbound;Outbound
+	Direction SecurityRuleDirection `json:"direction"`
+	// Priority is a number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
 	Priority int32 `json:"priority,omitempty"`
-
-	// SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+	// SourcePorts specifies source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
 	SourcePorts *string `json:"sourcePorts,omitempty"`
-
-	// DestinationPorts - The destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+	// DestinationPorts specifies the destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
 	DestinationPorts *string `json:"destinationPorts,omitempty"`
-
-	// Source - The CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
+	// Source specifies the CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
 	Source *string `json:"source,omitempty"`
-
-	// Destination - The destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+	// Destination is the destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
 	Destination *string `json:"destination,omitempty"`
 }
 

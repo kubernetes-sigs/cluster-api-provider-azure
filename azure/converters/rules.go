@@ -33,7 +33,6 @@ func SecurityRuleToSDK(rule infrav1.SecurityRule) network.SecurityRule {
 			DestinationAddressPrefix: rule.Destination,
 			DestinationPortRange:     rule.DestinationPorts,
 			Access:                   network.SecurityRuleAccessAllow,
-			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 to.Int32Ptr(rule.Priority),
 		},
 	}
@@ -45,6 +44,15 @@ func SecurityRuleToSDK(rule infrav1.SecurityRule) network.SecurityRule {
 		secRule.Protocol = network.SecurityRuleProtocolTCP
 	case infrav1.SecurityGroupProtocolUDP:
 		secRule.Protocol = network.SecurityRuleProtocolUDP
+	case infrav1.SecurityGroupProtocolICMP:
+		secRule.Protocol = network.SecurityRuleProtocolIcmp
+	}
+
+	switch rule.Direction {
+	case infrav1.SecurityRuleDirectionOutbound:
+		secRule.Direction = network.SecurityRuleDirectionOutbound
+	case infrav1.SecurityRuleDirectionInbound:
+		secRule.Direction = network.SecurityRuleDirectionInbound
 	}
 
 	return secRule

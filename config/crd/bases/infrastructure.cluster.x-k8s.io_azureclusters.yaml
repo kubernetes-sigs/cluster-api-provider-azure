@@ -534,33 +534,47 @@ spec:
                             securityRules:
                               description: SecurityRules is a slice of Azure security rules for security groups.
                               items:
-                                description: SecurityRule defines an Azure ingress rule for security groups.
+                                description: SecurityRule defines an Azure security rule for security groups.
                                 properties:
                                   description:
+                                    description: A description for this rule. Restricted to 140 chars.
                                     type: string
                                   destination:
-                                    description: Destination - The destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+                                    description: Destination is the destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
                                     type: string
                                   destinationPorts:
-                                    description: DestinationPorts - The destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+                                    description: DestinationPorts specifies the destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+                                    type: string
+                                  direction:
+                                    description: Direction indicates whether the rule applies to inbound, or outbound traffic. "Inbound" or "Outbound".
+                                    enum:
+                                    - Inbound
+                                    - Outbound
                                     type: string
                                   name:
+                                    description: Name is a unique name within the network security group.
                                     type: string
                                   priority:
-                                    description: Priority - A number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
+                                    description: Priority is a number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
                                     format: int32
                                     type: integer
                                   protocol:
-                                    description: SecurityGroupProtocol defines the protocol type for a security group rule.
+                                    description: Protocol specifies the protocol type. "Tcp", "Udp", "Icmp", or "*".
+                                    enum:
+                                    - Tcp
+                                    - Udp
+                                    - Icmp
+                                    - '*'
                                     type: string
                                   source:
-                                    description: Source - The CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
+                                    description: Source specifies the CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
                                     type: string
                                   sourcePorts:
-                                    description: SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+                                    description: SourcePorts specifies source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
                                     type: string
                                 required:
                                 - description
+                                - direction
                                 - name
                                 - protocol
                                 type: object

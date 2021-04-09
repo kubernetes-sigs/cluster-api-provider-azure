@@ -41,6 +41,10 @@ const (
 	loadBalancerRegex = `^[-\w\._]+$`
 	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration
 	MaxLoadBalancerOutboundIPs = 16
+	// Network security rules should be a number between 100 and 4096.
+	// https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview#security-rules
+	minRulePriority = 100
+	maxRulePriority = 4096
 )
 
 // validateCluster validates a cluster
@@ -206,8 +210,8 @@ func validateInternalLBIPAddress(address string, cidrs []string, fldPath *field.
 
 // validateSecurityRule validates a SecurityRule
 func validateSecurityRule(rule SecurityRule, fldPath *field.Path) *field.Error {
-	if rule.Priority < 100 || rule.Priority > 4096 {
-		return field.Invalid(fldPath, rule.Priority, "security rule priorities should be between 100 and 4096")
+	if rule.Priority < minRulePriority || rule.Priority > maxRulePriority {
+		return field.Invalid(fldPath, rule.Priority, fmt.Sprintf("security rule priorities should be between %d and %d", minRulePriority, maxRulePriority))
 	}
 
 	return nil

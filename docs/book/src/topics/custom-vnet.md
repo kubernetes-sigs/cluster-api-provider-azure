@@ -63,13 +63,21 @@ If no CIDR block is provided, `10.0.0.0/8` will be used by default, with default
 
 Whenever using custom vnet and subnet names and/or a different vnet resource group, please make sure to update the `azure.json` content part of both the nodes and control planes' `kubeadmConfigSpec` accordingly before creating the cluster.
 
-### Custom Ingress Rules
+### Custom Security Rules
 
-Ingress rules can also be customized as part of the subnet specification in a custom network spec.
-Note that ingress rules for the Kubernetes API Server port (default 6443) and SSH (22) are automatically added to the controlplane subnet only if Ingress Rules aren't specified.
-It is the responsibility of the user to supply those rules themselves if using custom ingresses.
+<aside class="note">
 
-Here is an illustrative example of customizing ingresses that builds on the one above by adding an ingress rule to the control plane nodes:
+<h1> Note </h1>
+
+Security Rules were previously known as `ingressRule` in v1alpha3.
+
+</aside>
+
+Security rules can also be customized as part of the subnet specification in a custom network spec.
+Note that ingress rules for the Kubernetes API Server port (default 6443) and SSH (22) are automatically added to the controlplane subnet only if security rules aren't specified.
+It is the responsibility of the user to supply those rules themselves if using custom rules.
+
+Here is an illustrative example of customizing rules that builds on the one above by adding an egress rule to the control plane nodes:
 
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
@@ -94,6 +102,7 @@ spec:
           securityRules:
             - name: "allow_ssh"
               description: "allow SSH"
+              direction: "Inbound"
               priority: 2200
               protocol: "*"
               destination: "*"
@@ -102,6 +111,7 @@ spec:
               sourcePorts: "*"
             - name: "allow_apiserver"
               description: "Allow K8s API Server"
+              direction: "Inbound"
               priority: 2201
               protocol: "*"
               destination: "*"
@@ -110,8 +120,9 @@ spec:
               sourcePorts: "*"
             - name: "allow_port_50000"
               description: "allow port 50000"
+              direction: "Outbound"
               priority: 2202
-              protocol: "*"
+              protocol: "Tcp"
               destination: "*"
               destinationPorts: "50000"
               source: "*"

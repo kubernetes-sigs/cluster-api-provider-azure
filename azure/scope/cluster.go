@@ -511,6 +511,7 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 }
 
 // SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
+// Note that this is not done in a webhook as it requires a valid Cluster object to exist to get the API Server port.
 func (s *ClusterScope) SetControlPlaneSecurityRules() {
 	if s.ControlPlaneSubnet().SecurityGroup.SecurityRules == nil {
 		subnet := s.ControlPlaneSubnet()
@@ -520,6 +521,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Description:      "Allow SSH",
 				Priority:         2200,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
+				Direction:        infrav1.SecurityRuleDirectionInbound,
 				Source:           to.StringPtr("*"),
 				SourcePorts:      to.StringPtr("*"),
 				Destination:      to.StringPtr("*"),
@@ -530,6 +532,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 				Description:      "Allow K8s API Server",
 				Priority:         2201,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
+				Direction:        infrav1.SecurityRuleDirectionInbound,
 				Source:           to.StringPtr("*"),
 				SourcePorts:      to.StringPtr("*"),
 				Destination:      to.StringPtr("*"),
@@ -541,6 +544,7 @@ func (s *ClusterScope) SetControlPlaneSecurityRules() {
 }
 
 // SetDNSName sets the API Server public IP DNS name.
+// Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without an APIServerLB, and should be removed in the future.
 func (s *ClusterScope) SetDNSName() {
 	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
 	lb := s.APIServerLB()
@@ -564,6 +568,7 @@ func (s *ClusterScope) SetDNSName() {
 		lb.DeepCopyInto(s.APIServerLB())
 	}
 	// Generate valid FQDN if not set.
+	// Note: this function uses the AzureCluster subscription ID.
 	if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
 		s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
 	}

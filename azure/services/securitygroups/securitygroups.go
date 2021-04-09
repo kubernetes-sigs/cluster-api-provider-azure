@@ -78,9 +78,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			update := false
 			securityRules = *existingNSG.SecurityRules
 			for _, rule := range nsgSpec.SecurityRules {
-				if !ruleExists(securityRules, converters.SecurityRuleToSDK(rule)) {
+				sdkRule := converters.SecurityRuleToSDK(rule)
+				if !ruleExists(securityRules, sdkRule) {
 					update = true
-					securityRules = append(securityRules, converters.SecurityRuleToSDK(rule))
+					securityRules = append(securityRules, sdkRule)
 				}
 			}
 			if !update {

@@ -17,10 +17,9 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"testing"
-
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
+	"testing"
 
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"

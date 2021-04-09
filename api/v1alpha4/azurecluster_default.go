@@ -94,6 +94,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if cpSubnet.SecurityGroup.Name == "" {
 		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
 	}
+	setSecurityRuleDefaults(&cpSubnet.SecurityGroup)
 
 	if nodeSubnet.Name == "" {
 		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
@@ -104,12 +105,21 @@ func (c *AzureCluster) setSubnetDefaults() {
 	if nodeSubnet.SecurityGroup.Name == "" {
 		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
 	}
+	setSecurityRuleDefaults(&nodeSubnet.SecurityGroup)
 	if nodeSubnet.RouteTable.Name == "" {
 		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 	}
 
 	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
 	c.Spec.NetworkSpec.UpdateNodeSubnet(nodeSubnet)
+}
+
+func setSecurityRuleDefaults(sg *SecurityGroup) {
+	for i := range sg.SecurityRules {
+		if sg.SecurityRules[i].Direction == "" {
+			sg.SecurityRules[i].Direction = SecurityRuleDirectionInbound
+		}
+	}
 }
 
 func (c *AzureCluster) setAPIServerLBDefaults() {
