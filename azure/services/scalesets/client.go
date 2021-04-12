@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
@@ -60,6 +61,11 @@ type (
 	genericScaleSetFuture interface {
 		DoneWithContext(ctx context.Context, sender autorest.Sender) (done bool, err error)
 		Result(client compute.VirtualMachineScaleSetsClient) (vmss compute.VirtualMachineScaleSet, err error)
+	}
+
+	genericScaleSetFutureImpl struct {
+		azureautorest.FutureAPI
+		result func(client compute.VirtualMachineScaleSetsClient) (vmss compute.VirtualMachineScaleSet, err error)
 	}
 
 	deleteResultAdapter struct {
@@ -275,14 +281,20 @@ func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 			return compute.VirtualMachineScaleSet{}, errors.Wrap(err, "failed to unmarshal future data")
 		}
 
-		genericFuture = &future
+		genericFuture = &genericScaleSetFutureImpl{
+			FutureAPI: &future,
+			result:    future.Result,
+		}
 	case PutFuture:
 		var future compute.VirtualMachineScaleSetsCreateOrUpdateFuture
 		if err := json.Unmarshal(futureData, &future); err != nil {
 			return compute.VirtualMachineScaleSet{}, errors.Wrap(err, "failed to unmarshal future data")
 		}
 
-		genericFuture = &future
+		genericFuture = &genericScaleSetFutureImpl{
+			FutureAPI: &future,
+			result:    future.Result,
+		}
 	case DeleteFuture:
 		var future compute.VirtualMachineScaleSetsDeleteFuture
 		if err := json.Unmarshal(futureData, &future); err != nil {
@@ -293,7 +305,7 @@ func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 			VirtualMachineScaleSetsDeleteFuture: future,
 		}
 	default:
-		return compute.VirtualMachineScaleSet{}, errors.Errorf("unknown furture type %q", future.Type)
+		return compute.VirtualMachineScaleSet{}, errors.Errorf("unknown future type %q", future.Type)
 	}
 
 	done, err := genericFuture.DoneWithContext(ctx, ac.scalesets)
@@ -392,4 +404,9 @@ func (ac *AzureClient) GetPublicIPAddress(ctx context.Context, resourceGroupName
 func (da *deleteResultAdapter) Result(client compute.VirtualMachineScaleSetsClient) (compute.VirtualMachineScaleSet, error) {
 	_, err := da.VirtualMachineScaleSetsDeleteFuture.Result(client)
 	return compute.VirtualMachineScaleSet{}, err
+}
+
+// Result returns the Result so that we can treat it generically.
+func (g *genericScaleSetFutureImpl) Result(client compute.VirtualMachineScaleSetsClient) (compute.VirtualMachineScaleSet, error) {
+	return g.result(client)
 }
