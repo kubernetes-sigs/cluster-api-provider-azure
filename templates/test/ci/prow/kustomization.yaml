@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../flavors/default
+  - ../../../flavors/default
   - mhc.yaml
   - cni-resource-set.yaml
 patchesStrategicMerge:
@@ -13,7 +13,7 @@ patchesStrategicMerge:
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-crs-0
     files:
-      - resources=../../addons/calico.yaml
+      - resources=../../../addons/calico.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:
