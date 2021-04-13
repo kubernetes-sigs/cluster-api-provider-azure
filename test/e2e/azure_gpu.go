@@ -88,6 +88,7 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 			},
 		},
 	}
+	Log("starting to create CUDA vector calculation job")
 	_, err := jobsClient.Create(ctx, gpuJob, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	gpuJobInput := WaitForJobCompleteInput{
