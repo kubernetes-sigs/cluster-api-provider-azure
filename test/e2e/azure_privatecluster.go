@@ -69,6 +69,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	publicClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 
 	Byf("Creating a namespace for hosting the %s test spec", specName)
+	Logf("starting to create namespace for hosting the %s test spec", specName)
 	publicNamespace, publicCancelWatches = framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
 		Creator:   publicClusterProxy.GetClient(),
 		ClientSet: publicClusterProxy.GetClientSet(),
