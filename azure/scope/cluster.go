@@ -224,12 +224,12 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 	return []azure.NSGSpec{
 		{
-			Name:         s.ControlPlaneSubnet().SecurityGroup.Name,
-			IngressRules: s.ControlPlaneSubnet().SecurityGroup.IngressRules,
+			Name:          s.ControlPlaneSubnet().SecurityGroup.Name,
+			SecurityRules: s.ControlPlaneSubnet().SecurityGroup.SecurityRules,
 		},
 		{
-			Name:         s.NodeSubnet().SecurityGroup.Name,
-			IngressRules: s.NodeSubnet().SecurityGroup.IngressRules,
+			Name:          s.NodeSubnet().SecurityGroup.Name,
+			SecurityRules: s.NodeSubnet().SecurityGroup.SecurityRules,
 		},
 	}
 }
@@ -510,26 +510,29 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 
-// SetControlPlaneIngressRules will set the ingress rules or the control plane subnet
-func (s *ClusterScope) SetControlPlaneIngressRules() {
-	if s.ControlPlaneSubnet().SecurityGroup.IngressRules == nil {
+// SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
+// Note that this is not done in a webhook as it requires a valid Cluster object to exist to get the API Server port.
+func (s *ClusterScope) SetControlPlaneSecurityRules() {
+	if s.ControlPlaneSubnet().SecurityGroup.SecurityRules == nil {
 		subnet := s.ControlPlaneSubnet()
-		subnet.SecurityGroup.IngressRules = infrav1.IngressRules{
-			infrav1.IngressRule{
+		subnet.SecurityGroup.SecurityRules = infrav1.SecurityRules{
+			infrav1.SecurityRule{
 				Name:             "allow_ssh",
 				Description:      "Allow SSH",
 				Priority:         2200,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
+				Direction:        infrav1.SecurityRuleDirectionInbound,
 				Source:           to.StringPtr("*"),
 				SourcePorts:      to.StringPtr("*"),
 				Destination:      to.StringPtr("*"),
 				DestinationPorts: to.StringPtr("22"),
 			},
-			infrav1.IngressRule{
+			infrav1.SecurityRule{
 				Name:             "allow_apiserver",
 				Description:      "Allow K8s API Server",
 				Priority:         2201,
 				Protocol:         infrav1.SecurityGroupProtocolTCP,
+				Direction:        infrav1.SecurityRuleDirectionInbound,
 				Source:           to.StringPtr("*"),
 				SourcePorts:      to.StringPtr("*"),
 				Destination:      to.StringPtr("*"),
@@ -541,6 +544,7 @@ func (s *ClusterScope) SetControlPlaneIngressRules() {
 }
 
 // SetDNSName sets the API Server public IP DNS name.
+// Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without an APIServerLB, and should be removed in the future.
 func (s *ClusterScope) SetDNSName() {
 	// for back compat, set the old API Server defaults if no API Server Spec has been set by new webhooks.
 	lb := s.APIServerLB()
@@ -564,6 +568,7 @@ func (s *ClusterScope) SetDNSName() {
 		lb.DeepCopyInto(s.APIServerLB())
 	}
 	// Generate valid FQDN if not set.
+	// Note: this function uses the AzureCluster subscription ID.
 	if !s.IsAPIServerPrivate() && s.APIServerPublicIP().DNSName == "" {
 		s.APIServerPublicIP().DNSName = s.GenerateFQDN(s.APIServerPublicIP().Name)
 	}

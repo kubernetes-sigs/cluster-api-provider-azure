@@ -41,6 +41,10 @@ const (
 	loadBalancerRegex = `^[-\w\._]+$`
 	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration
 	MaxLoadBalancerOutboundIPs = 16
+	// Network security rules should be a number between 100 and 4096.
+	// https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview#security-rules
+	minRulePriority = 100
+	maxRulePriority = 4096
 )
 
 // validateCluster validates a cluster
@@ -151,10 +155,10 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				requiredSubnetRoles[role] = true
 			}
 		}
-		for _, ingressRule := range subnet.SecurityGroup.IngressRules {
-			if err := validateIngressRule(
-				ingressRule,
-				fldPath.Index(i).Child("securityGroup").Child("ingressRules").Index(i),
+		for _, rule := range subnet.SecurityGroup.SecurityRules {
+			if err := validateSecurityRule(
+				rule,
+				fldPath.Index(i).Child("securityGroup").Child("securityRules").Index(i),
 			); err != nil {
 				allErrs = append(allErrs, err)
 			}
@@ -204,10 +208,10 @@ func validateInternalLBIPAddress(address string, cidrs []string, fldPath *field.
 		fmt.Sprintf("Internal LB IP address needs to be in control plane subnet range (%s)", cidrs))
 }
 
-// validateIngressRule validates an IngressRule
-func validateIngressRule(ingressRule IngressRule, fldPath *field.Path) *field.Error {
-	if ingressRule.Priority < 100 || ingressRule.Priority > 4096 {
-		return field.Invalid(fldPath, ingressRule.Priority, "ingress priorities should be between 100 and 4096")
+// validateSecurityRule validates a SecurityRule
+func validateSecurityRule(rule SecurityRule, fldPath *field.Path) *field.Error {
+	if rule.Priority < minRulePriority || rule.Priority > maxRulePriority {
+		return field.Invalid(fldPath, rule.Priority, fmt.Sprintf("security rule priorities should be between %d and %d", minRulePriority, maxRulePriority))
 	}
 
 	return nil

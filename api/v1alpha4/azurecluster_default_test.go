@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
+
 	"k8s.io/utils/pointer"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -519,6 +521,78 @@ func TestSubnetDefaults(t *testing.T) {
 								Role:          SubnetNode,
 								Name:          "cluster-test-node-subnet",
 								CIDRBlocks:    []string{"2001:beea::1/64"},
+								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
+								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "subnets with custom security group",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Name: "cluster-test-controlplane-subnet",
+								Role: "control-plane",
+								SecurityGroup: SecurityGroup{
+									Name: "my-custom-sg",
+									SecurityRules: []SecurityRule{
+										{
+											Name:             "allow_port_50000",
+											Description:      "allow port 50000",
+											Protocol:         "*",
+											Priority:         2202,
+											SourcePorts:      to.StringPtr("*"),
+											DestinationPorts: to.StringPtr("*"),
+											Source:           to.StringPtr("*"),
+											Destination:      to.StringPtr("*"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Name:       "cluster-test-controlplane-subnet",
+								Role:       "control-plane",
+								CIDRBlocks: []string{DefaultControlPlaneSubnetCIDR},
+								SecurityGroup: SecurityGroup{
+									Name: "my-custom-sg",
+									SecurityRules: []SecurityRule{
+										{
+											Name:             "allow_port_50000",
+											Description:      "allow port 50000",
+											Protocol:         "*",
+											Priority:         2202,
+											SourcePorts:      to.StringPtr("*"),
+											DestinationPorts: to.StringPtr("*"),
+											Source:           to.StringPtr("*"),
+											Destination:      to.StringPtr("*"),
+											Direction:        SecurityRuleDirectionInbound,
+										},
+									},
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "cluster-test-node-subnet",
+								CIDRBlocks:    []string{DefaultNodeSubnetCIDR},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
 							},

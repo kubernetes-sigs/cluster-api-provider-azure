@@ -83,7 +83,7 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	}
 
 	s.scope.SetDNSName()
-	s.scope.SetControlPlaneIngressRules()
+	s.scope.SetControlPlaneSecurityRules()
 
 	if err := s.groupsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile resource group")
@@ -163,6 +163,8 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 	return nil
 }
 
+// setFailureDomainsForLocation sets the AzureCluster Status failure domains based on which Azure Availability Zones are available in the cluster location.
+// Note that this is not done in a webhook as it requires API calls to fetch the availability zones.
 func (s *azureClusterService) setFailureDomainsForLocation(ctx context.Context) error {
 	zones, err := s.skuCache.GetZones(ctx, s.scope.Location())
 	if err != nil {

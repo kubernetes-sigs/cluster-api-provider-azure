@@ -45,32 +45,34 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
-						IngressRules: infrav1.IngressRules{
+						SecurityRules: infrav1.SecurityRules{
 							{
 								Name:             "first-rule",
 								Description:      "a test rule",
-								Protocol:         "*",
+								Protocol:         infrav1.SecurityGroupProtocolAll,
 								Priority:         400,
 								SourcePorts:      to.StringPtr("*"),
 								DestinationPorts: to.StringPtr("*"),
 								Source:           to.StringPtr("*"),
 								Destination:      to.StringPtr("*"),
+								Direction:        infrav1.SecurityRuleDirectionInbound,
 							},
 							{
 								Name:             "second-rule",
 								Description:      "another test rule",
-								Protocol:         "*",
+								Protocol:         infrav1.SecurityGroupProtocolAll,
 								Priority:         450,
 								SourcePorts:      to.StringPtr("*"),
 								DestinationPorts: to.StringPtr("*"),
 								Source:           to.StringPtr("*"),
 								Destination:      to.StringPtr("*"),
+								Direction:        infrav1.SecurityRuleDirectionInbound,
 							},
 						},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.IsVnetManaged().Return(true)
@@ -129,7 +131,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
-						IngressRules: infrav1.IngressRules{
+						SecurityRules: infrav1.SecurityRules{
 							{
 								Name:             "first-rule",
 								Description:      "a test rule",
@@ -139,12 +141,13 @@ func TestReconcileSecurityGroups(t *testing.T) {
 								DestinationPorts: to.StringPtr("*"),
 								Source:           to.StringPtr("*"),
 								Destination:      to.StringPtr("*"),
+								Direction:        infrav1.SecurityRuleDirectionOutbound,
 							},
 						},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.IsVnetManaged().AnyTimes().Return(true)
@@ -200,7 +203,7 @@ func TestReconcileSecurityGroups(t *testing.T) {
 									SourceAddressPrefix:      to.StringPtr("*"),
 									DestinationAddressPrefix: to.StringPtr("*"),
 									Protocol:                 "*",
-									Direction:                "Inbound",
+									Direction:                "Outbound",
 									Access:                   "Allow",
 									Priority:                 to.Int32Ptr(400),
 								},
@@ -263,7 +266,7 @@ func TestDeleteSecurityGroups(t *testing.T) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
 						Name: "nsg-one",
-						IngressRules: infrav1.IngressRules{
+						SecurityRules: infrav1.SecurityRules{
 							{
 								Name:             "first-rule",
 								Description:      "a test rule",
@@ -273,12 +276,13 @@ func TestDeleteSecurityGroups(t *testing.T) {
 								DestinationPorts: to.StringPtr("*"),
 								Source:           to.StringPtr("*"),
 								Destination:      to.StringPtr("*"),
+								Direction:        infrav1.SecurityRuleDirectionInbound,
 							},
 						},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -293,12 +297,12 @@ func TestDeleteSecurityGroups(t *testing.T) {
 			expect: func(s *mock_securitygroups.MockNSGScopeMockRecorder, m *mock_securitygroups.MockclientMockRecorder) {
 				s.NSGSpecs().Return([]azure.NSGSpec{
 					{
-						Name:         "nsg-one",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-one",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 					{
-						Name:         "nsg-two",
-						IngressRules: infrav1.IngressRules{},
+						Name:          "nsg-two",
+						SecurityRules: infrav1.SecurityRules{},
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
