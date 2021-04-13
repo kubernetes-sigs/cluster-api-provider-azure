@@ -111,7 +111,6 @@ var _ = Describe("Conformance Tests", func() {
 					Namespace:             namespace,
 					ClusterName:           clusterName,
 					SkipCleanup:           skipCleanup,
-					IsVMSS:                true,
 				}
 			})
 		})
