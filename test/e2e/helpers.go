@@ -26,6 +26,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,6 +50,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -477,4 +479,33 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 		return nil, err
 	}
 	return ssh.PublicKeys(signer), nil
+}
+
+// resolveCIVersion resolves kubernetes version labels (e.g. latest, latest-1.xx) to the corresponding CI version numbers.
+// Go implementation of https://github.com/kubernetes-sigs/cluster-api/blob/d1dc87d5df3ab12a15ae5b63e50541a191b7fec4/scripts/ci-e2e-lib.sh#L75-L95.
+func resolveCIVersion(label string) (string, error) {
+	if strings.HasPrefix(label, "latest") {
+		if kubernetesVersion, err := latestCIVersion(label); err == nil {
+			return kubernetesVersion, nil
+		}
+	}
+
+	// default to https://dl.k8s.io/ci/latest.txt if the label can't be resolved
+	return kubernetesversions.LatestCIRelease()
+}
+
+// latestCIVersion returns the latest CI version of a given label in the form of latest-1.xx.
+func latestCIVersion(label string) (string, error) {
+	ciVersionURL := fmt.Sprintf("https://dl.k8s.io/ci/%s.txt", label)
+	resp, err := http.Get(ciVersionURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(b)), nil
 }

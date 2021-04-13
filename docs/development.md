@@ -440,3 +440,21 @@ You can also customize the configuration of the CAPZ cluster (assuming that `SKI
 [kustomizelinux]: https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md
 [gomock]: https://github.com/golang/mock
 [timeout]: http://man7.org/linux/man-pages/man1/timeout.1.html
+
+#### Conformance Testing
+
+To run the Kubernetes Conformance test suite locally, you can run
+
+```bash
+./scripts/ci-conformance.sh
+```
+
+You can also build a CAPZ cluster from the HEAD of Kubernetes main branch or release branch, and run the Conformance test suite against it:
+
+```bash
+export E2E_ARGS=-kubetest.use-ci-artifacts
+# extract Kubernetes version from https://dl.k8s.io/ci/latest.txt (main's HEAD)
+export KUBERNETES_VERSION=latest
+# extract Kubernetes version from https://dl.k8s.io/ci/latest-1.21.txt (release branch's HEAD)
+export KUBERNETES_VERSION=latest-1.21
+```

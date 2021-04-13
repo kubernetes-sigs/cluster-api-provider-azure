@@ -32,7 +32,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/test/framework/kubetest"
 	"sigs.k8s.io/cluster-api/util"
 )
@@ -72,7 +71,7 @@ var _ = Describe("Conformance Tests", func() {
 		flavor := clusterctl.DefaultFlavor
 		if useCIArtifacts {
 			flavor = "conformance-ci-artifacts"
-			kubernetesVersion, err = kubernetesversions.LatestCIRelease()
+			kubernetesVersion, err = resolveCIVersion(kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
 		}
