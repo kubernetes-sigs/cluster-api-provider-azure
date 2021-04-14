@@ -258,11 +258,15 @@ $(KUBECTL): ## Build kubectl
 ## --------------------------------------
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT) ## Lint codebase
+lint: $(GOLANGCI_LINT) lint-latest ## Lint codebase
 	$(GOLANGCI_LINT) run -v
 
 lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues
 	$(GOLANGCI_LINT) run -v --fast=false
+
+.PHONY: lint-latest
+lint-latest:
+	./hack/lint-latest.sh
 
 ## --------------------------------------
 ## Generate
