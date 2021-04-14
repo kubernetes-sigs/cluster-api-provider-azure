@@ -47,11 +47,11 @@ create_cluster() {
         else
             CI_VERSION_URL="https://dl.k8s.io/ci/latest.txt"
         fi
-        export CLUSTER_TEMPLATE="test/cluster-template-prow-ci-version.yaml"
+        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-ci-version.yaml"
         export CI_VERSION="${CI_VERSION:-$(curl -sSL ${CI_VERSION_URL})}"
         export KUBERNETES_VERSION="${CI_VERSION}"
     else
-        export CLUSTER_TEMPLATE="test/cluster-template-prow.yaml"
+        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
     fi
 
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
