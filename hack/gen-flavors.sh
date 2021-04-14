@@ -22,10 +22,10 @@ set -o pipefail
 root=$(dirname "${BASH_SOURCE[0]}")/..
 kustomize="${root}/hack/tools/bin/kustomize"
 flavors_dir="${root}/templates/flavors/"
-test_dir="${root}/templates/test/"
+ci_dir="${root}/templates/test/ci/"
 
 find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v base | xargs -I {} sh -c "${kustomize} build --reorder none ${flavors_dir}{} > ${root}/templates/cluster-template-{}.yaml"
 # move the default template to the default file expected by clusterctl
 mv "${root}/templates/cluster-template-default.yaml" "${root}/templates/cluster-template.yaml"
 
-find "${test_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load_restrictor none --reorder none ${test_dir}{} > ${test_dir}cluster-template-{}.yaml"
+find "${ci_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load_restrictor none --reorder none ${ci_dir}{} > ${ci_dir}cluster-template-{}.yaml"

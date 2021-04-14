@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../flavors/nvidia-gpu
+  - ../../../flavors/nvidia-gpu
   - cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
