@@ -31,7 +31,7 @@ If you're new to the project and want to help, but don't know where to start, we
 
 1. If you haven't already done so, sign a Contributor License Agreement (see details above).
 2. Fork the desired repo, develop and test your code changes.
-    1. See the [Development Guide](docs/development.md) for more instructions on setting up your environment and testing changes locally.
+    1. See the [Development Guide](https://capz.sigs.k8s.io/developers/development.html) for more instructions on setting up your environment and testing changes locally.
 3. Submit a pull request.
     1. All PRs should be labeled with one of the following kinds
          - `/kind feature` for PRs releated to adding new features/tests
