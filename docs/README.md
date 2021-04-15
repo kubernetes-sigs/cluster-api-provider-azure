@@ -2,7 +2,7 @@
 
 ## Quick start
 
-- [Getting started](getting-started.md)
+- [Getting started](https://capz.sigs.k8s.io/topics/getting-started.html)
 - [Cluster API quick start](https://cluster-api.sigs.k8s.io/user/quick-start.html)
 
 ## Features
@@ -15,12 +15,11 @@
 
 ## Development
 
-- [Development guide](development.md)
-- [Kubernetes developers](topics/kubernetes-developers.md)
+- [Development guide](https://capz.sigs.k8s.io/developers/development.html)
+- [Kubernetes developers](https://capz.sigs.k8s.io/developers/kubernetes-developers.html)
 - [Proposals](proposals)
-- [Releasing](releasing.md)
+- [Releasing](https://capz.sigs.k8s.io/developers/releasing.html)
 
 ## Troubleshooting
 
-- [Troubleshooting guide](troubleshooting.md)
-
+- [Troubleshooting guide](https://capz.sigs.k8s.io/topics/troubleshooting.html)
