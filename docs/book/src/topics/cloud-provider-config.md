@@ -10,7 +10,7 @@ For AzureMachineTemplate and standalone AzureMachines, the generated secret will
 
 To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-external-cloud-provider.yaml).
 
-After components are deployed, you should see following pods in `Running` state:
+After deploying the cluster, you should eventually see a set of pods like the following in a `Running` state:
 
 ```bash
 kube-system   cloud-controller-manager                                            1/1     Running   0          41s
