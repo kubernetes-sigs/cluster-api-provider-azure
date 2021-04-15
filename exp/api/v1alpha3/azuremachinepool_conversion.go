@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -34,6 +35,14 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 	restored := &expv1alpha4.AzureMachinePool{}
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
+	}
+
+	// Handle special case for conversion of ManagedDisk to pointer.
+	if restored.Spec.Template.OSDisk.ManagedDisk == nil && dst.Spec.Template.OSDisk.ManagedDisk != nil {
+		if *dst.Spec.Template.OSDisk.ManagedDisk == (infrav1alpha4.ManagedDiskParameters{}) {
+			// restore nil value if nothing has changed since conversion
+			dst.Spec.Template.OSDisk.ManagedDisk = nil
+		}
 	}
 
 	return nil

@@ -297,7 +297,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},
@@ -311,7 +311,7 @@ func TestReconcileVM(t *testing.T) {
 							NameSuffix: "myDiskWithManagedDisk",
 							DiskSizeGB: 128,
 							Lun:        to.Int32Ptr(1),
-							ManagedDisk: &infrav1.ManagedDisk{
+							ManagedDisk: &infrav1.ManagedDiskParameters{
 								StorageAccountType: "Premium_LRS",
 							},
 						},
@@ -319,7 +319,7 @@ func TestReconcileVM(t *testing.T) {
 							NameSuffix: "managedDiskWithEncryption",
 							DiskSizeGB: 128,
 							Lun:        to.Int32Ptr(2),
-							ManagedDisk: &infrav1.ManagedDisk{
+							ManagedDisk: &infrav1.ManagedDiskParameters{
 								StorageAccountType: "Premium_LRS",
 								DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
 									ID: "my_id",
@@ -710,7 +710,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Windows",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},
@@ -795,7 +795,7 @@ func TestReconcileVM(t *testing.T) {
 					Zone:       "1",
 					Identity:   "",
 					OSDisk: infrav1.OSDisk{
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 							DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
 								ID: "my-diskencryptionset-id",
@@ -948,7 +948,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},
@@ -1231,7 +1231,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},
@@ -1298,7 +1298,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},
@@ -1365,7 +1365,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 						DiffDiskSettings: &infrav1.DiffDiskSettings{
@@ -1439,7 +1439,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 						DiffDiskSettings: &infrav1.DiffDiskSettings{
@@ -1604,7 +1604,7 @@ func TestReconcileVM(t *testing.T) {
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
 						DiskSizeGB: 128,
-						ManagedDisk: infrav1.ManagedDisk{
+						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
 					},

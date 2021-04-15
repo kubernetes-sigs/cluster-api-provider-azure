@@ -109,7 +109,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				DiffDiskSettings: &DiffDiskSettings{
 					Option: string(compute.Local),
 				},
-				ManagedDisk: ManagedDisk{
+				ManagedDisk: &ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
@@ -124,7 +124,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				DiffDiskSettings: &DiffDiskSettings{
 					Option: string(compute.Local),
 				},
-				ManagedDisk: ManagedDisk{
+				ManagedDisk: &ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 					DiskEncryptionSet: &DiskEncryptionSetParameters{
 						ID: "disk-encryption-set",
@@ -172,26 +172,26 @@ func generateNegativeTestCases() []osDiskTestInput {
 		{
 			DiskSizeGB:  30,
 			OSType:      "blah",
-			ManagedDisk: ManagedDisk{},
+			ManagedDisk: &ManagedDiskParameters{},
 		},
 		{
 			DiskSizeGB: 30,
 			OSType:     "blah",
-			ManagedDisk: ManagedDisk{
+			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "",
 			},
 		},
 		{
 			DiskSizeGB: 30,
 			OSType:     "blah",
-			ManagedDisk: ManagedDisk{
+			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "invalid_type",
 			},
 		},
 		{
 			DiskSizeGB: 30,
 			OSType:     "blah",
-			ManagedDisk: ManagedDisk{
+			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
 			},
 			DiffDiskSettings: &DiffDiskSettings{
@@ -215,7 +215,7 @@ func generateValidOSDisk() OSDisk {
 	return OSDisk{
 		DiskSizeGB: 30,
 		OSType:     "Linux",
-		ManagedDisk: ManagedDisk{
+		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
 		},
 		CachingType: string(compute.PossibleCachingTypesValues()[0]),
@@ -354,7 +354,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -363,7 +363,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix: "my_disk_2",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         to.Int32Ptr(1),
@@ -378,7 +378,7 @@ func TestAzureMachine_ValidateDataDisks(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "invalid storage account",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -484,7 +484,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					NameSuffix: "my_disk",
 					DiskSizeGB: 64,
 					Lun:        to.Int32Ptr(0),
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
@@ -493,7 +493,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					NameSuffix: "my_other_disk",
 					DiskSizeGB: 64,
 					Lun:        to.Int32Ptr(1),
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
@@ -504,7 +504,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					NameSuffix: "my_disk",
 					DiskSizeGB: 64,
 					Lun:        to.Int32Ptr(0),
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
@@ -513,7 +513,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 					NameSuffix: "my_other_disk",
 					DiskSizeGB: 64,
 					Lun:        to.Int32Ptr(1),
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					CachingType: string(compute.PossibleCachingTypesValues()[0]),
@@ -527,7 +527,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -538,7 +538,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 128,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -553,7 +553,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 128,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun: to.Int32Ptr(0),
@@ -574,7 +574,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -585,7 +585,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -594,7 +594,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_2",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         to.Int32Ptr(2),
@@ -609,7 +609,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         to.Int32Ptr(0),
@@ -618,7 +618,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_2",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Premium_LRS",
 					},
 					Lun:         to.Int32Ptr(2),
@@ -629,7 +629,7 @@ func TestAzureMachine_ValidateDataDisksUpdate(t *testing.T) {
 				{
 					NameSuffix: "my_disk_1",
 					DiskSizeGB: 64,
-					ManagedDisk: &ManagedDisk{
+					ManagedDisk: &ManagedDiskParameters{
 						StorageAccountType: "Standard_LRS",
 					},
 					Lun:         to.Int32Ptr(0),

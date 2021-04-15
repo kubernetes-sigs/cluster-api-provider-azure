@@ -119,8 +119,6 @@ spec:
       osDisk:
         osType: "Linux"
         diskSizeGB: 128
-        managedDisk:
-          storageAccountType: "Premium_LRS"
       dataDisks:
         - nameSuffix: etcddisk
           diskSizeGB: 256

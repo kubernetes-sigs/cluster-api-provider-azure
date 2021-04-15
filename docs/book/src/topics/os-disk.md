@@ -1,7 +1,29 @@
-# Ephemeral OS
+# OS Disk
 
-This document describes how to use ephemeral OS for VMs provisioned in
-Azure. Ephemeral OS uses local VM storage for changes to the OS disk.
+This document describes how to configure the OS disk for VMs provisioned in Azure. 
+
+### Managed Disk Options
+
+### Storage Account Type
+
+By default, Azure will pick the supported storage account type for your AzureMachine based on the specified VM size. If you'd like to specify a specific storage type, you can do so by specifying a `storageAccountType`:
+
+```yaml
+        managedDisk:
+          storageAccountType: Premium_LRS
+```
+
+Supported values are `Premium_LRS`, `Standard_LRS`, and `StandardSSDLRS`. Note that `UltraSSD_LRS` can only be used with data disks, it cannot be used with OS Disk.
+
+Also, note that not all Azure VM sizes support Premium storage. To learn more about which sizes are premium storage-compatible, see [Sizes for virtual machines in Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes). 
+
+See [Azure documentation on disk types](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types) to learn more about the different storage types.
+
+See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview) for more information on managed disks.
+
+## Ephemeral OS
+
+Ephemeral OS uses local VM storage for changes to the OS disk.
 Storage devices local to the VM host will not be bound by normal managed
 disk SKU limits. Instead they will always be capable of saturating the
 VM level limits. This can significantly improve performance on the OS

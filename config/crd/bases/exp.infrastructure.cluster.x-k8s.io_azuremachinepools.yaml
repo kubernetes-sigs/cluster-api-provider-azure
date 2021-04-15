@@ -495,7 +495,7 @@ spec:
                           format: int32
                           type: integer
                         managedDisk:
-                          description: ManagedDisk defines the managed disk options for a VM.
+                          description: ManagedDisk specifies the Managed Disk parameters for the data disk.
                           properties:
                             diskEncryptionSet:
                               description: DiskEncryptionSetParameters defines disk encryption options.
@@ -506,8 +506,6 @@ spec:
                               type: object
                             storageAccountType:
                               type: string
-                          required:
-                          - storageAccountType
                           type: object
                         nameSuffix:
                           description: NameSuffix is the suffix to be appended to the machine name to generate the disk name. Each disk name will be in format <machineName>_<nameSuffix>.
@@ -603,7 +601,7 @@ spec:
                         format: int32
                         type: integer
                       managedDisk:
-                        description: ManagedDisk defines the managed disk options for a VM.
+                        description: ManagedDisk specifies the Managed Disk parameters for the OS disk.
                         properties:
                           diskEncryptionSet:
                             description: DiskEncryptionSetParameters defines disk encryption options.
@@ -614,14 +612,11 @@ spec:
                             type: object
                           storageAccountType:
                             type: string
-                        required:
-                        - storageAccountType
                         type: object
                       osType:
                         type: string
                     required:
                     - diskSizeGB
-                    - managedDisk
                     - osType
                     type: object
                   securityProfile:
