@@ -17,14 +17,11 @@ limitations under the License.
 package v1alpha3
 
 import (
-	unsafe "unsafe"
-
-	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
-
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	apiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -213,16 +210,17 @@ func Convert_v1alpha4_SecurityGroup_To_v1alpha3_SecurityGroup(in *infrav1alpha4.
 	out.Name = in.Name
 
 	out.IngressRules = make(IngressRules, 0)
-	for i, rule := range in.SecurityRules {
+	for _, rule := range in.SecurityRules {
 		if rule.Direction == infrav1alpha4.SecurityRuleDirectionInbound { // only inbound rules are supported in v1alpha3.
-			out.IngressRules[i] = IngressRule{}
-			if err := Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule(&in.SecurityRules[i], &out.IngressRules[i], s); err != nil {
+			ingressRule := IngressRule{}
+			if err := Convert_v1alpha4_SecurityRule_To_v1alpha3_IngressRule(&rule, &ingressRule, s); err != nil {
 				return err
 			}
+			out.IngressRules = append(out.IngressRules, ingressRule)
 		}
 	}
 
-	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
+	out.Tags = *(*Tags)(&in.Tags)
 	return nil
 }
 
@@ -238,7 +236,7 @@ func Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(in *SecurityGroup,
 		}
 	}
 
-	out.Tags = *(*infrav1alpha4.Tags)(unsafe.Pointer(&in.Tags))
+	out.Tags = *(*infrav1alpha4.Tags)(&in.Tags)
 	return nil
 }
 
