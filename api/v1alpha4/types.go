@@ -370,6 +370,7 @@ type OSDisk struct {
 	DiffDiskSettings *DiffDiskSettings      `json:"diffDiskSettings,omitempty"`
 	// CachingType specifies the caching requirements.
 	// +optional
+	// +kubebuilder:validation:Enum=None;ReadOnly;ReadWrite
 	CachingType string `json:"cachingType,omitempty"`
 }
 
@@ -386,7 +387,9 @@ type DataDisk struct {
 	// Lun Specifies the logical unit number of the data disk. This value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
 	// The value must be between 0 and 63.
 	Lun *int32 `json:"lun,omitempty"`
+	// CachingType specifies the caching requirements.
 	// +optional
+	// +kubebuilder:validation:Enum=None;ReadOnly;ReadWrite
 	CachingType string `json:"cachingType,omitempty"`
 }
 

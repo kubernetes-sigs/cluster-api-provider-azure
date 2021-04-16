@@ -485,6 +485,11 @@ spec:
                       description: DataDisk specifies the parameters that are used to add one or more data disks to the machine.
                       properties:
                         cachingType:
+                          description: CachingType specifies the caching requirements.
+                          enum:
+                          - None
+                          - ReadOnly
+                          - ReadWrite
                           type: string
                         diskSizeGB:
                           description: DiskSizeGB is the size in GB to assign to the data disk.
@@ -585,6 +590,11 @@ spec:
                     description: OSDisk contains the operating system disk information for a Virtual Machine
                     properties:
                       cachingType:
+                        description: CachingType specifies the caching requirements.
+                        enum:
+                        - None
+                        - ReadOnly
+                        - ReadWrite
                         type: string
                       diffDiskSettings:
                         description: DiffDiskSettings describe ephemeral disk settings for the os disk.

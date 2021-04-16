@@ -315,6 +315,11 @@ spec:
                           description: DataDisk specifies the parameters that are used to add one or more data disks to the machine.
                           properties:
                             cachingType:
+                              description: CachingType specifies the caching requirements.
+                              enum:
+                              - None
+                              - ReadOnly
+                              - ReadWrite
                               type: string
                             diskSizeGB:
                               description: DiskSizeGB is the size in GB to assign to the data disk.
@@ -429,6 +434,11 @@ spec:
                         description: OSDisk specifies the parameters for the operating system disk of the machine
                         properties:
                           cachingType:
+                            description: CachingType specifies the caching requirements.
+                            enum:
+                            - None
+                            - ReadOnly
+                            - ReadWrite
                             type: string
                           diffDiskSettings:
                             description: DiffDiskSettings describe ephemeral disk settings for the os disk.
