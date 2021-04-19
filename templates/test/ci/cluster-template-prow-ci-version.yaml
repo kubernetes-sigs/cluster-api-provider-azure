@@ -191,6 +191,7 @@ spec:
     preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
     useExperimentalRetryJoin: true
+    verbosity: "4"
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
