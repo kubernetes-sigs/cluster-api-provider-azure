@@ -4,4 +4,4 @@ metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
   kubeadmConfigSpec:
-    verbosity: "4"
+    verbosity: 4

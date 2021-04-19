@@ -113,7 +113,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    verbosity: "4"
+    verbosity: 4
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
