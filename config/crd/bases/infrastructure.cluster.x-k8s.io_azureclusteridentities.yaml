@@ -124,10 +124,46 @@ spec:
             description: AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity
             properties:
               allowedNamespaces:
-                description: "AllowedNamespaces is an array of namespaces that AzureClusters can use this Identity from. \n An empty list (default) indicates that AzureClusters can use this Identity from any namespace. This field is intentionally not a pointer because the nil behavior (no namespaces) is undesirable here."
-                items:
-                  type: string
-                type: array
+                description: AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from. Namespaces can be selected either using an array of namespaces or with label selector. An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace. If this object is nil, no namespaces will be allowed (default behaviour, if this field is not provided) A namespace should be either in the NamespaceList or match with Selector to use the identity.
+                nullable: true
+                properties:
+                  list:
+                    description: A nil or empty list indicates that AzureCluster cannot use the identity from any namespace.
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  selector:
+                    description: "Selector is a selector of namespaces that AzureCluster can use this Identity from. This is a standard Kubernetes LabelSelector, a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. \n A nil or empty selector indicates that AzureCluster cannot use this AzureClusterIdentity from any namespace."
+                    properties:
+                      matchExpressions:
+                        description: matchExpressions is a list of label selector requirements. The requirements are ANDed.
+                        items:
+                          description: A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+                          properties:
+                            key:
+                              description: key is the label key that the selector applies to.
+                              type: string
+                            operator:
+                              description: operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                              type: string
+                            values:
+                              description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - key
+                          - operator
+                          type: object
+                        type: array
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+                        type: object
+                    type: object
+                type: object
               clientID:
                 description: Both User Assigned MSI and SP can use this field.
                 type: string

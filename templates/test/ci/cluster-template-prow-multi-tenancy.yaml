@@ -206,6 +206,7 @@ metadata:
   name: ${CLUSTER_IDENTITY_NAME}
   namespace: default
 spec:
+  allowedNamespaces: {}
   clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
   clientSecret:
     name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}

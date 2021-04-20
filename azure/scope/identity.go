@@ -19,6 +19,7 @@ package scope
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -31,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -160,4 +162,46 @@ func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.Iden
 
 	return 0, errors.New("AzureIdentity does not have a vaild type")
 
+}
+
+// IsClusterNamespaceAllowed indicates if the cluster namespace is allowed
+func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, allowedNamespaces *infrav1.AllowedNamespaces, namespace string) bool {
+	if allowedNamespaces == nil {
+		return false
+	}
+
+	// empty value matches with all namespaces
+	if reflect.DeepEqual(*allowedNamespaces, infrav1.AllowedNamespaces{}) {
+		return true
+	}
+
+	for _, v := range allowedNamespaces.NamespaceList {
+		if v == namespace {
+			return true
+		}
+	}
+
+	// Check if clusterNamespace is in the namespaces selected by the identity's allowedNamespaces selector.
+	namespaces := &corev1.NamespaceList{}
+	selector, err := metav1.LabelSelectorAsSelector(allowedNamespaces.Selector)
+	if err != nil {
+		return false
+	}
+
+	// If a Selector has a nil or empty selector, it should match nothing.
+	if selector.Empty() {
+		return false
+	}
+
+	if err := k8sClient.List(ctx, namespaces, client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		return false
+	}
+
+	for _, n := range namespaces.Items {
+		if n.Name == namespace {
+			return true
+		}
+	}
+
+	return false
 }
