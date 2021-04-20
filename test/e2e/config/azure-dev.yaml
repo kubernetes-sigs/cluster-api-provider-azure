@@ -110,7 +110,7 @@ intervals:
   default/wait-delete-cluster: ["30m", "10s"]
   default/wait-machine-upgrade: ["60m", "10s"]
   default/wait-machine-remediation: ["30m", "10s"]
-  default/wait-deployment: ["8m", "10s"]
+  default/wait-deployment: ["15m", "10s"]
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["5m", "10s"]
   default/wait-machine-pool-nodes: ["20m", "10s"]
