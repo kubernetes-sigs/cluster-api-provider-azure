@@ -490,17 +490,6 @@ create-workload-cluster: $(ENVSUBST)
 	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > ./kubeconfig
 	timeout --foreground 600 bash -c "while ! kubectl --kubeconfig=./kubeconfig get nodes | grep master; do sleep 1; done"
 
-	@if [[ "${CLUSTER_TEMPLATE}" == *prow* ]]; then \
-		if [[ "${CLUSTER_TEMPLATE}" == *ipv6* ]]; then \
-			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico-ipv6.yaml; \
-		elif [[ "${CLUSTER_TEMPLATE}" == *windows* ]]; then \
-			echo "windows being applied" \
-			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/windows; \
-		else \
-			kubectl --kubeconfig=./kubeconfig apply -f templates/addons/calico.yaml; \
-		fi \
-	fi
-
 	@echo 'run "kubectl --kubeconfig=./kubeconfig ..." to work with the new target cluster'
 
 .PHONY: create-aks-cluster
