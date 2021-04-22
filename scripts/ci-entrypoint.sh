@@ -38,6 +38,11 @@ source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
+get_random_region() {
+    local REGIONS=("northcentralus" "centralus" "canadacentral" "eastus" "eastus2" "westus2" "westeurope" "uksouth" "northeurope" "francecentral")
+    echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
+}
+
 create_cluster() {
     # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
     if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
@@ -60,6 +65,7 @@ create_cluster() {
 
     export CLUSTER_NAME="capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
     export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
+    export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
