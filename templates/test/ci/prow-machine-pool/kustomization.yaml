@@ -3,13 +3,13 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/machinepool
-  - cni-resource-set.yaml
+  - ../prow/cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
 configMapGenerator:
-  - name: cni-${CLUSTER_NAME}-crs-0
+  - name: cni-${CLUSTER_NAME}-calico
     files:
       - resources=../../../addons/calico.yaml
 generatorOptions:

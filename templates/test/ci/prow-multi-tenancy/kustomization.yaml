@@ -3,8 +3,18 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/multi-tenancy
-  - cni-resource-set.yaml
+  - ../prow/cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-cni.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-calico
+    files:
+      - resources=../../../addons/calico.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated

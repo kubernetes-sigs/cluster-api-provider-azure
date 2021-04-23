@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1alpha4
 kind: Cluster
 metadata:
   labels:
-    cni: ${CLUSTER_NAME}-crs-0
+    cni: ${CLUSTER_NAME}-calico
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
@@ -198,15 +198,15 @@ spec:
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet
 metadata:
-  name: ${CLUSTER_NAME}-crs-0
+  name: ${CLUSTER_NAME}-calico
   namespace: default
 spec:
   clusterSelector:
     matchLabels:
-      cni: ${CLUSTER_NAME}-crs-0
+      cni: ${CLUSTER_NAME}-calico
   resources:
   - kind: ConfigMap
-    name: cni-${CLUSTER_NAME}-crs-0
+    name: cni-${CLUSTER_NAME}-calico
   strategy: ApplyOnce
 ---
 apiVersion: v1
@@ -4101,5 +4101,5 @@ metadata:
     note: generated
   labels:
     type: generated
-  name: cni-${CLUSTER_NAME}-crs-0
+  name: cni-${CLUSTER_NAME}-calico
   namespace: default

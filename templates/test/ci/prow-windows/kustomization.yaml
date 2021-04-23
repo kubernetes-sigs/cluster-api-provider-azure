@@ -3,8 +3,18 @@ kind: Kustomization
 namespace: default
 resources:
   - ../../../flavors/windows
-  - ../prow/cni-resource-set-windows.yaml
+  - cni-resource-set-windows.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
-  - ../patches/cluster-cni.yaml
+  - ../patches/cluster-cni-windows.yaml
   - ../patches/controller-manager.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-flannel
+    files:
+      - resources=../../../addons/windows/flannel.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated
