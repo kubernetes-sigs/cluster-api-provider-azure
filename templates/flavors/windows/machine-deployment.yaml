@@ -44,6 +44,14 @@ metadata:
 spec:
   template:
     spec:
+      postKubeadmCommands:
+        # Azures vnet MTU is 1400. 
+        # When using Flannel VXLAN to avoid packet fragmentation 
+        # that results dropped packets on Windows we need to match.
+        # Flannel will automatically choose eth0 - 50
+        - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
+        - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
+        - netplan apply 
       useExperimentalRetryJoin: true
       joinConfiguration:
         nodeRegistration:
@@ -59,3 +67,16 @@ spec:
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"
+      - path: /etc/netplan/60-eth0.yaml
+        permissions: "0644"
+        owner: root:root
+        content: |
+          network:
+            version: 2
+            ethernets:
+              eth0:
+                mtu: 1400
+                match:
+                  macaddress: MACADDRESS
+                set-name: eth0
+      

@@ -99,13 +99,13 @@ ssh -t -i .sshkey -o 'ProxyCommand ssh -i .sshkey -W %h:%p capi@<api-server-ip>'
 
 > There is also a [CAPZ kubectl plugin](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/hack/debugging/Readme.md) that automates the ssh connection using the Management cluster
 
-To RDP:
+To RDP you can proxy through the api server:
 
 ```
 ssh -L 5555:10.1.0.4:3389 capi@20.69.66.232
 ```
 
-And then open an RDP client to `localhost:5555`
+And then open an RDP client on your local machine to `localhost:5555`
 
 ### Image creation
 The images are built using [image-builder](https://github.com/kubernetes-sigs/image-builder) and published the the Azure Market place. They use [Cloudbase-init](https://cloudbase-init.readthedocs.io/en/latest/) to bootstrap the machines via Kubeadm.  
@@ -125,9 +125,13 @@ If you would like customize your images please refer to the documentation on bui
 
 ### Kube-proxy and CNIs
 
-Kube-proxy and Windows CNIs are deployed via Cluster Resource Sets.  Windows doesn't not have a kube-proxy image due 
+Kube-proxy and Windows CNIs are deployed via Cluster Resource Sets.  Windows does not have a kube-proxy image due 
 to not having Privileged containers which would provide access to the host.  The current solution is using wins.exe as 
 demonstrated in the [Kubeadm support for Windows](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/adding-windows-nodes/).    
 
-Windows Privileged Container support is in [KEP](https://github.com/kubernetes/enhancements/pull/2037) form with plans to 
-implement in 1.21.  Kube-proxy and other CNI will then be replaced with the Privileged containers. 
+Windows HostProcess Container support is in [KEP](https://github.com/kubernetes/enhancements/pull/2037) form with plans to 
+[implement in 1.22](https://github.com/kubernetes/kubernetes/pull/99576).  Kube-proxy and other CNI's will then be replaced with the HostProcess containers.
+
+Flannel is being used as the default CNI.  An important note for Flannel vxlan deployments is that the MTU for the linux nodes must be set to 1400.  
+This is because [Azure's VNET MTU is 1400](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-tcpip-performance-tuning#azure-and-vm-mtu) which can cause fragmentation on packets sent from the Linux node to Windows node resulting in dropped packets. 
+To mitigate this we set the Linux eth0 port match 1400 and Flannel will automatically pick this up and [subtract 50](https://github.com/flannel-io/flannel/issues/1011) for the flannel network created.
