@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The Kubernetes Authors.
+# Copyright 2021 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-repos=$(az acr repository list -o tsv --name capzci)
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+cd "${REPO_ROOT}" || exit 1
 
-for repo in $repos
-do
-  filters+="--filter $repo:.* "
-done
-
-PURGE_CMD="acr purge $filters --ago 1d --untagged"
-
-az acr task create --name midnight_capz_purge --cmd "${PURGE_CMD}" \
-  --schedule "0 0 * * *" --registry capzci --context /dev/null
+if [[ "${REGISTRY:-}" =~ capzci\.azurecr\.io ]]; then
+    # if we are using the prow Azure Container Registry, login.
+    ${REPO_ROOT}/hack/ensure-azcli.sh
+    : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
+    az account set -s "${AZURE_SUBSCRIPTION_ID}"
+    az acr login --name capzci
+fi

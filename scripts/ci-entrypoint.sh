@@ -44,6 +44,9 @@ get_random_region() {
 }
 
 create_cluster() {
+    # setup REGISTRY for custom images.
+    : "${REGISTRY:?Environment variable empty or not defined.}"
+    ${REPO_ROOT}/hack/ensure-acr-login.sh
     # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
     if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
         KUBERNETES_BRANCH="$(cd $(go env GOPATH)/src/k8s.io/kubernetes && git rev-parse --abbrev-ref HEAD)"
@@ -69,7 +72,6 @@ create_cluster() {
     # Need a cluster with at least 2 nodes
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
-    export REGISTRY="${REGISTRY:-capz}"
     export EXP_CLUSTER_RESOURCE_SET="true"
     ${REPO_ROOT}/hack/create-dev-cluster.sh
 }
