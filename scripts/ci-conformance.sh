@@ -55,15 +55,8 @@ export LOCAL_ONLY=${LOCAL_ONLY:-"false"}
 if [[ "${LOCAL_ONLY}" == "true" ]]; then
   export REGISTRY="localhost:5000/ci-e2e"
 else
-  export REGISTRY=${REGISTRY:-"capzci.azurecr.io/ci-e2e"}
-
-  if [[ "${REGISTRY}" =~ azurecr\.io ]]; then
-    # if we are using Azure Container Registry, login
-    ${REPO_ROOT}/hack/ensure-azcli.sh
-    az account set -s "${AZURE_SUBSCRIPTION_ID}"
-    az acr login --name capzci
-  fi
-fi
+  : "${REGISTRY:?Environment variable empty or not defined.}"
+  ${REPO_ROOT}/hack/ensure-acr-login.sh
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"

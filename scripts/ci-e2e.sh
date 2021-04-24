@@ -53,14 +53,8 @@ get_random_region() {
 export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 
 if [[ "${LOCAL_ONLY}" == "false" ]]; then
-  export REGISTRY=${REGISTRY:-"capzci.azurecr.io/ci-e2e"}
-
-  if [[ "${REGISTRY}" =~ azurecr\.io ]]; then
-    # if we are using Azure Container Registry, login
-    ${REPO_ROOT}/hack/ensure-azcli.sh
-    az account set -s "${AZURE_SUBSCRIPTION_ID}"
-    az acr login --name capzci
-  fi
+  : "${REGISTRY:?Environment variable empty or not defined.}"
+  ${REPO_ROOT}/hack/ensure-acr-login.sh
 else
   export REGISTRY="localhost:5000/ci-e2e"
 fi
