@@ -57,6 +57,7 @@ if [[ "${LOCAL_ONLY}" == "true" ]]; then
 else
   : "${REGISTRY:?Environment variable empty or not defined.}"
   ${REPO_ROOT}/hack/ensure-acr-login.sh
+fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
