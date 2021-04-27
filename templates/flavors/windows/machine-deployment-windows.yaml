@@ -44,9 +44,13 @@ metadata:
 spec:
   template:
     spec:
+      users:
+      - name: capi
+        groups: Administrators
+        sshAuthorizedKeys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
       preKubeadmCommands:
         - powershell c:/create-external-network.ps1
-        - powershell c:/configure-ssh.ps1
       joinConfiguration:
         nodeRegistration:
           name: '{{ ds.meta_data["local_hostname"] }}'
@@ -70,12 +74,3 @@ spec:
           # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
           ipmo C:\k\debug\hns.psm1;
           New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
-      - path: C:/configure-ssh.ps1
-        permissions: "0744"
-        content: |
-          [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${AZURE_SSH_PUBLIC_KEY_B64:=''}")) | Add-Content C:/ProgramData/ssh/administrators_authorized_keys
-          icacls C:/ProgramData/ssh/administrators_authorized_keys /remove "NT AUTHORITY\Authenticated Users"
-          icacls C:/ProgramData/ssh/administrators_authorized_keys /inheritance:r
-          icacls C:/ProgramData/ssh/administrators_authorized_keys /grant SYSTEM:F
-          icacls C:/ProgramData/ssh/administrators_authorized_keys /grant BUILTIN\Administrators:F
-          restart-service sshd

@@ -213,13 +213,20 @@ def flavors():
         if key[-4:] == "_B64":
             substitutions[key[:-4]] = base64_decode(substitutions[key])
 
-    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY_B64"
-    ssh_pub_key_path = "~/.ssh/id_rsa.pub"
+    ssh_pub_key_B64 = "AZURE_SSH_PUBLIC_KEY_B64"
+    ssh_pub_key_path = "$HOME/.ssh/id_rsa.pub"
+    if substitutions.get(ssh_pub_key_B64):
+        os.environ.update({ssh_pub_key_B64: substitutions.get(ssh_pub_key_B64)})
+    else:
+        print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
+        os.environ.update({ssh_pub_key_B64: base64_encode_file(ssh_pub_key_path)})
+    
+    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
     if substitutions.get(ssh_pub_key):
         os.environ.update({ssh_pub_key: substitutions.get(ssh_pub_key)})
     else:
-        print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key, ssh_pub_key_path))
-        os.environ.update({ssh_pub_key: base64_encode_file(ssh_pub_key_path)})
+        print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
+        os.environ.update({ssh_pub_key: read_file_from_path(ssh_pub_key_path)})
 
     templatelist = [ item for item in listdir("./templates") ]
     for template in templatelist:
@@ -301,10 +308,14 @@ def base64_encode_file(path_to_encode):
     encode_blob = local("cat {} | tr -d '\n' | base64 - | tr -d '\n'".format(path_to_encode), quiet=True)
     return str(encode_blob)
 
+def read_file_from_path(path_to_read):
+    str_blob = local("cat {} | tr -d '\n'".format(path_to_read), quiet=True)
+    return str(str_blob)
 
 def base64_decode(to_decode):
     decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True)
     return str(decode_blob)
+
 def kustomizesub(folder):
     yaml = local('hack/kustomize-sub.sh {}'.format(folder), quiet=True)
     return yaml

@@ -21,19 +21,20 @@
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
     - [Deploying a workload cluster](#deploying-a-workload-cluster)
     - [Viewing Telemetry](#viewing-telemetry)
-  - [Instrumenting Telemetry](#instrumenting-telemetry)
-    - [Distributed Tracing](#distributed-tracing)
-    - [Metrics](#metrics)
   - [Manual Testing](#manual-testing)
     - [Creating a dev cluster](#creating-a-dev-cluster)
       - [Building and pushing dev images](#building-and-pushing-dev-images)
       - [Customizing the cluster deployment](#customizing-the-cluster-deployment)
       - [Creating the cluster](#creating-the-cluster)
+  - [Instrumenting Telemetry](#instrumenting-telemetry)
+    - [Distributed Tracing](#distributed-tracing)
+    - [Metrics](#metrics)
   - [Submitting PRs and testing](#submitting-prs-and-testing)
     - [Executing unit tests](#executing-unit-tests)
   - [Automated Testing](#automated-testing)
     - [Mocks](#mocks)
     - [E2E Testing](#e2e-testing)
+    - [Running custom test suites on CAPZ clusters](#running-custom-test-suites-on-capz-clusters)
     - [Conformance Testing](#conformance-testing)
 
 <!-- /TOC -->
@@ -292,7 +293,10 @@ SSH_KEY_FILE=.sshkey
 rm -f "${SSH_KEY_FILE}" 2>/dev/null
 ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
 echo "Machine SSH key generated in ${SSH_KEY_FILE}"
+# For Linux the ssh key needs to be b64 encoded because we use the azure api to set it
+# Windows doesn't support setting ssh keys so we use cloudbase-int to set which doesn't require base64 
 export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY=$(cat "${SSH_KEY_FILE}.pub" | tr -d '\r\n')
 ```
 
 ⚠️ Please note the generated templates include default values and therefore require the use of `clusterctl` to create the cluster
