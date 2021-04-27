@@ -102,7 +102,10 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 			fldPath.Child("vnet").Child("resourceGroup")); err != nil {
 			allErrs = append(allErrs, err)
 		}
-		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, fldPath.Child("subnets"))...)
+
+		allErrs = append(allErrs, validateVnetCIDR(networkSpec.Vnet.CIDRBlocks, fldPath.Child("cidrBlocks"))...)
+
+		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, networkSpec.Vnet, fldPath.Child("subnets"))...)
 	}
 
 	var cidrBlocks []string
@@ -134,7 +137,7 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 }
 
 // validateSubnets validates a list of Subnets
-func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
+func validateSubnets(subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	subnetNames := make(map[string]bool, len(subnets))
 	requiredSubnetRoles := map[string]bool{
@@ -163,6 +166,7 @@ func validateSubnets(subnets Subnets, fldPath *field.Path) field.ErrorList {
 				allErrs = append(allErrs, err)
 			}
 		}
+		allErrs = append(allErrs, validateSubnetCIDR(subnet.CIDRBlocks, vnet.CIDRBlocks, fldPath.Index(i).Child("cidrBlocks"))...)
 	}
 	for k, v := range requiredSubnetRoles {
 		if !v {
@@ -180,6 +184,50 @@ func validateSubnetName(name string, fldPath *field.Path) *field.Error {
 			fmt.Sprintf("name of subnet doesn't match regex %s", subnetRegex))
 	}
 	return nil
+}
+
+// validateSubnetCIDR validates the CIDR blocks of a Subnet.
+func validateSubnetCIDR(subnetCidrBlocks []string, vnetCidrBlocks []string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	var vnetNws []*net.IPNet
+
+	for _, vnetCidr := range vnetCidrBlocks {
+		if _, vnetNw, err := net.ParseCIDR(vnetCidr); err == nil {
+			vnetNws = append(vnetNws, vnetNw)
+		}
+	}
+
+	for _, subnetCidr := range subnetCidrBlocks {
+		subnetCidrIP, _, err := net.ParseCIDR(subnetCidr)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, subnetCidr, "invalid CIDR format"))
+		}
+
+		var found bool
+		for _, vnetNw := range vnetNws {
+			if vnetNw.Contains(subnetCidrIP) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			allErrs = append(allErrs, field.Invalid(fldPath, subnetCidr, "subnet CIDR not in vnet CIDR range"))
+		}
+	}
+
+	return allErrs
+}
+
+// validateVnetCIDR validates the CIDR blocks of a Vnet.
+func validateVnetCIDR(vnetCIDRBlocks []string, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	for _, vnetCidr := range vnetCIDRBlocks {
+		if _, _, err := net.ParseCIDR(vnetCidr); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, vnetCidr, "invalid CIDR format"))
+		}
+	}
+	return allErrs
 }
 
 // validateLoadBalancerName validates the Name of a Load Balancer.
