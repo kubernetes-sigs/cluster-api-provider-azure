@@ -8,7 +8,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: ["192.168.0.0/16"]
+      cidrBlocks: [ "192.168.0.0/16" ]
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureCluster
@@ -47,12 +47,14 @@ spec:
         kubeletExtraArgs:
           cloud-provider: azure
           cloud-config: /etc/kubernetes/azure.json
+          azure-container-registry-config: /etc/kubernetes/azure.json
     joinConfiguration:
       nodeRegistration:
         name: '{{ ds.meta_data["local_hostname"] }}'
         kubeletExtraArgs:
           cloud-provider: azure
           cloud-config: /etc/kubernetes/azure.json
+          azure-container-registry-config: /etc/kubernetes/azure.json
     clusterConfiguration:
       apiServer:
         timeoutForControlPlane: 20m
@@ -79,13 +81,13 @@ spec:
         local:
           dataDir: "/var/lib/etcddisk/etcd"
     files:
-    - contentFrom:
-        secret:
-          name: ${CLUSTER_NAME}-control-plane-azure-json
-          key: control-plane-azure.json
-      owner: root:root
-      path: /etc/kubernetes/azure.json
-      permissions: "0644"
+      - contentFrom:
+          secret:
+            name: ${CLUSTER_NAME}-control-plane-azure-json
+            key: control-plane-azure.json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
     diskSetup:
       partitions:
         - device: /dev/disk/azure/scsi1/lun0
