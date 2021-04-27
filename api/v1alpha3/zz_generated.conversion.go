@@ -265,21 +265,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*ManagedDisk)(nil), (*v1alpha4.ManagedDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(a.(*ManagedDisk), b.(*v1alpha4.ManagedDisk), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*OSDisk)(nil), (*v1alpha4.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(a.(*OSDisk), b.(*v1alpha4.OSDisk), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.OSDisk)(nil), (*OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(a.(*v1alpha4.OSDisk), b.(*OSDisk), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*PublicIPSpec)(nil), (*v1alpha4.PublicIPSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(a.(*PublicIPSpec), b.(*v1alpha4.PublicIPSpec), scope)
 	}); err != nil {
@@ -375,6 +360,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*OSDisk)(nil), (*v1alpha4.OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(a.(*OSDisk), b.(*v1alpha4.OSDisk), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*SecurityGroup)(nil), (*v1alpha4.SecurityGroup)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_SecurityGroup_To_v1alpha4_SecurityGroup(a.(*SecurityGroup), b.(*v1alpha4.SecurityGroup), scope)
 	}); err != nil {
@@ -420,13 +410,13 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.ManagedDisk)(nil), (*ManagedDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_ManagedDisk_To_v1alpha3_ManagedDisk(a.(*v1alpha4.ManagedDisk), b.(*ManagedDisk), scope)
+	if err := s.AddConversionFunc((*v1alpha4.NetworkSpec)(nil), (*NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(a.(*v1alpha4.NetworkSpec), b.(*NetworkSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1alpha4.NetworkSpec)(nil), (*NetworkSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(a.(*v1alpha4.NetworkSpec), b.(*NetworkSpec), scope)
+	if err := s.AddConversionFunc((*v1alpha4.OSDisk)(nil), (*OSDisk)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(a.(*v1alpha4.OSDisk), b.(*OSDisk), scope)
 	}); err != nil {
 		return err
 	}
@@ -784,17 +774,7 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha4_AzureMachineSpec(in *Azur
 	if err := Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
-	if in.DataDisks != nil {
-		in, out := &in.DataDisks, &out.DataDisks
-		*out = make([]v1alpha4.DataDisk, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.DataDisks = nil
-	}
+	out.DataDisks = *(*[]v1alpha4.DataDisk)(unsafe.Pointer(&in.DataDisks))
 	// WARNING: in.Location requires manual conversion: does not exist in peer-type
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AdditionalTags = *(*v1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
@@ -817,17 +797,7 @@ func autoConvert_v1alpha4_AzureMachineSpec_To_v1alpha3_AzureMachineSpec(in *v1al
 	if err := Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(&in.OSDisk, &out.OSDisk, s); err != nil {
 		return err
 	}
-	if in.DataDisks != nil {
-		in, out := &in.DataDisks, &out.DataDisks
-		*out = make([]DataDisk, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.DataDisks = nil
-	}
+	out.DataDisks = *(*[]DataDisk)(unsafe.Pointer(&in.DataDisks))
 	out.SSHPublicKey = in.SSHPublicKey
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.AllocatePublicIP = in.AllocatePublicIP
@@ -1063,15 +1033,7 @@ func Convert_v1alpha4_BuildParams_To_v1alpha3_BuildParams(in *v1alpha4.BuildPara
 func autoConvert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alpha4.DataDisk, s conversion.Scope) error {
 	out.NameSuffix = in.NameSuffix
 	out.DiskSizeGB = in.DiskSizeGB
-	if in.ManagedDisk != nil {
-		in, out := &in.ManagedDisk, &out.ManagedDisk
-		*out = new(v1alpha4.ManagedDisk)
-		if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ManagedDisk = nil
-	}
+	out.ManagedDisk = (*v1alpha4.ManagedDiskParameters)(unsafe.Pointer(in.ManagedDisk))
 	out.Lun = (*int32)(unsafe.Pointer(in.Lun))
 	out.CachingType = in.CachingType
 	return nil
@@ -1085,15 +1047,7 @@ func Convert_v1alpha3_DataDisk_To_v1alpha4_DataDisk(in *DataDisk, out *v1alpha4.
 func autoConvert_v1alpha4_DataDisk_To_v1alpha3_DataDisk(in *v1alpha4.DataDisk, out *DataDisk, s conversion.Scope) error {
 	out.NameSuffix = in.NameSuffix
 	out.DiskSizeGB = in.DiskSizeGB
-	if in.ManagedDisk != nil {
-		in, out := &in.ManagedDisk, &out.ManagedDisk
-		*out = new(ManagedDisk)
-		if err := Convert_v1alpha4_ManagedDisk_To_v1alpha3_ManagedDisk(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ManagedDisk = nil
-	}
+	out.ManagedDisk = (*ManagedDisk)(unsafe.Pointer(in.ManagedDisk))
 	out.Lun = (*int32)(unsafe.Pointer(in.Lun))
 	out.CachingType = in.CachingType
 	return nil
@@ -1242,23 +1196,6 @@ func autoConvert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1al
 	return nil
 }
 
-func autoConvert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(in *ManagedDisk, out *v1alpha4.ManagedDisk, s conversion.Scope) error {
-	out.StorageAccountType = in.StorageAccountType
-	out.DiskEncryptionSet = (*v1alpha4.DiskEncryptionSetParameters)(unsafe.Pointer(in.DiskEncryptionSet))
-	return nil
-}
-
-// Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk is an autogenerated conversion function.
-func Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(in *ManagedDisk, out *v1alpha4.ManagedDisk, s conversion.Scope) error {
-	return autoConvert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(in, out, s)
-}
-
-func autoConvert_v1alpha4_ManagedDisk_To_v1alpha3_ManagedDisk(in *v1alpha4.ManagedDisk, out *ManagedDisk, s conversion.Scope) error {
-	out.StorageAccountType = in.StorageAccountType
-	out.DiskEncryptionSet = (*DiskEncryptionSetParameters)(unsafe.Pointer(in.DiskEncryptionSet))
-	return nil
-}
-
 func autoConvert_v1alpha3_NetworkSpec_To_v1alpha4_NetworkSpec(in *NetworkSpec, out *v1alpha4.NetworkSpec, s conversion.Scope) error {
 	if err := Convert_v1alpha3_VnetSpec_To_v1alpha4_VnetSpec(&in.Vnet, &out.Vnet, s); err != nil {
 		return err
@@ -1306,33 +1243,19 @@ func autoConvert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1alpha4.Netwo
 func autoConvert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk, s conversion.Scope) error {
 	out.OSType = in.OSType
 	out.DiskSizeGB = in.DiskSizeGB
-	if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDisk(&in.ManagedDisk, &out.ManagedDisk, s); err != nil {
-		return err
-	}
+	// WARNING: in.ManagedDisk requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3.ManagedDisk vs *sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.ManagedDiskParameters)
 	out.DiffDiskSettings = (*v1alpha4.DiffDiskSettings)(unsafe.Pointer(in.DiffDiskSettings))
 	out.CachingType = in.CachingType
 	return nil
 }
 
-// Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk is an autogenerated conversion function.
-func Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk, s conversion.Scope) error {
-	return autoConvert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in, out, s)
-}
-
 func autoConvert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk, s conversion.Scope) error {
 	out.OSType = in.OSType
 	out.DiskSizeGB = in.DiskSizeGB
-	if err := Convert_v1alpha4_ManagedDisk_To_v1alpha3_ManagedDisk(&in.ManagedDisk, &out.ManagedDisk, s); err != nil {
-		return err
-	}
+	// WARNING: in.ManagedDisk requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.ManagedDiskParameters vs sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3.ManagedDisk)
 	out.DiffDiskSettings = (*DiffDiskSettings)(unsafe.Pointer(in.DiffDiskSettings))
 	out.CachingType = in.CachingType
 	return nil
-}
-
-// Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk is an autogenerated conversion function.
-func Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk, s conversion.Scope) error {
-	return autoConvert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in, out, s)
 }
 
 func autoConvert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *PublicIPSpec, out *v1alpha4.PublicIPSpec, s conversion.Scope) error {

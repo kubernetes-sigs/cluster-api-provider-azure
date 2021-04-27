@@ -109,7 +109,11 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 		allErrs = append(allErrs, errs...)
 	}
 
-	if errs := ValidateManagedDisk(old.Spec.OSDisk.ManagedDisk, m.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk")); len(errs) > 0 {
+	if errs := validateManagedDisksUpdate(old.Spec.OSDisk.ManagedDisk, old.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := validateManagedDisk(m.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk"), true); len(errs) > 0 {
 		allErrs = append(allErrs, errs...)
 	}
 

@@ -315,6 +315,11 @@ spec:
                           description: DataDisk specifies the parameters that are used to add one or more data disks to the machine.
                           properties:
                             cachingType:
+                              description: CachingType specifies the caching requirements.
+                              enum:
+                              - None
+                              - ReadOnly
+                              - ReadWrite
                               type: string
                             diskSizeGB:
                               description: DiskSizeGB is the size in GB to assign to the data disk.
@@ -325,7 +330,7 @@ spec:
                               format: int32
                               type: integer
                             managedDisk:
-                              description: ManagedDisk defines the managed disk options for a VM.
+                              description: ManagedDisk specifies the Managed Disk parameters for the data disk.
                               properties:
                                 diskEncryptionSet:
                                   description: DiskEncryptionSetParameters defines disk encryption options.
@@ -336,8 +341,6 @@ spec:
                                   type: object
                                 storageAccountType:
                                   type: string
-                              required:
-                              - storageAccountType
                               type: object
                             nameSuffix:
                               description: NameSuffix is the suffix to be appended to the machine name to generate the disk name. Each disk name will be in format <machineName>_<nameSuffix>.
@@ -431,6 +434,11 @@ spec:
                         description: OSDisk specifies the parameters for the operating system disk of the machine
                         properties:
                           cachingType:
+                            description: CachingType specifies the caching requirements.
+                            enum:
+                            - None
+                            - ReadOnly
+                            - ReadWrite
                             type: string
                           diffDiskSettings:
                             description: DiffDiskSettings describe ephemeral disk settings for the os disk.
@@ -447,7 +455,7 @@ spec:
                             format: int32
                             type: integer
                           managedDisk:
-                            description: ManagedDisk defines the managed disk options for a VM.
+                            description: ManagedDisk specifies the Managed Disk parameters for the OS disk.
                             properties:
                               diskEncryptionSet:
                                 description: DiskEncryptionSetParameters defines disk encryption options.
@@ -458,14 +466,11 @@ spec:
                                 type: object
                               storageAccountType:
                                 type: string
-                            required:
-                            - storageAccountType
                             type: object
                           osType:
                             type: string
                         required:
                         - diskSizeGB
-                        - managedDisk
                         - osType
                         type: object
                       providerID:

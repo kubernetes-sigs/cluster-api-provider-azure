@@ -362,11 +362,15 @@ const (
 
 // OSDisk defines the operating system disk for a VM.
 type OSDisk struct {
-	OSType           string            `json:"osType"`
-	DiskSizeGB       int32             `json:"diskSizeGB"`
-	ManagedDisk      ManagedDisk       `json:"managedDisk"`
-	DiffDiskSettings *DiffDiskSettings `json:"diffDiskSettings,omitempty"`
+	OSType     string `json:"osType"`
+	DiskSizeGB int32  `json:"diskSizeGB"`
+	// ManagedDisk specifies the Managed Disk parameters for the OS disk.
 	// +optional
+	ManagedDisk      *ManagedDiskParameters `json:"managedDisk,omitempty"`
+	DiffDiskSettings *DiffDiskSettings      `json:"diffDiskSettings,omitempty"`
+	// CachingType specifies the caching requirements.
+	// +optional
+	// +kubebuilder:validation:Enum=None;ReadOnly;ReadWrite
 	CachingType string `json:"cachingType,omitempty"`
 }
 
@@ -377,19 +381,24 @@ type DataDisk struct {
 	NameSuffix string `json:"nameSuffix"`
 	// DiskSizeGB is the size in GB to assign to the data disk.
 	DiskSizeGB int32 `json:"diskSizeGB"`
+	// ManagedDisk specifies the Managed Disk parameters for the data disk.
 	// +optional
-	ManagedDisk *ManagedDisk `json:"managedDisk,omitempty"`
+	ManagedDisk *ManagedDiskParameters `json:"managedDisk,omitempty"`
 	// Lun Specifies the logical unit number of the data disk. This value is used to identify data disks within the VM and therefore must be unique for each data disk attached to a VM.
 	// The value must be between 0 and 63.
 	Lun *int32 `json:"lun,omitempty"`
+	// CachingType specifies the caching requirements.
 	// +optional
+	// +kubebuilder:validation:Enum=None;ReadOnly;ReadWrite
 	CachingType string `json:"cachingType,omitempty"`
 }
 
-// ManagedDisk defines the managed disk options for a VM.
-type ManagedDisk struct {
-	StorageAccountType string                       `json:"storageAccountType"`
-	DiskEncryptionSet  *DiskEncryptionSetParameters `json:"diskEncryptionSet,omitempty"`
+// ManagedDiskParameters defines the parameters of a managed disk.
+type ManagedDiskParameters struct {
+	// +optional
+	StorageAccountType string `json:"storageAccountType,omitempty"`
+	// +optional
+	DiskEncryptionSet *DiskEncryptionSetParameters `json:"diskEncryptionSet,omitempty"`
 }
 
 // DiskEncryptionSetParameters defines disk encryption options.

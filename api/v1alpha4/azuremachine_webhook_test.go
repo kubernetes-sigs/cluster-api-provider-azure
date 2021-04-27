@@ -303,7 +303,7 @@ func createDataDisk(t *testing.T, diskSizeGB int32, lun int32, name string, stor
 		NameSuffix: name,
 		DiskSizeGB: diskSizeGB,
 		Lun:        to.Int32Ptr(lun),
-		ManagedDisk: &ManagedDisk{
+		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: storageAccountType,
 		},
 		CachingType: cacheType,

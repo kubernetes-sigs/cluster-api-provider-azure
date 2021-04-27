@@ -175,8 +175,6 @@ spec:
   template:
     osDisk:
       diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
       osType: Linux
     vmSize: Standard_D2s_v3
 ```

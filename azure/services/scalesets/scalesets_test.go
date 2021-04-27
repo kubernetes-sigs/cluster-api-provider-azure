@@ -808,7 +808,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		OSDisk: infrav1.OSDisk{
 			OSType:     "Linux",
 			DiskSizeGB: 120,
-			ManagedDisk: infrav1.ManagedDisk{
+			ManagedDisk: &infrav1.ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
 			},
 		},
@@ -822,7 +822,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 				NameSuffix: "my_disk_with_managed_disk",
 				DiskSizeGB: 128,
 				Lun:        to.Int32Ptr(1),
-				ManagedDisk: &infrav1.ManagedDisk{
+				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 				},
 			},
@@ -830,7 +830,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 				NameSuffix: "managed_disk_with_encryption",
 				DiskSizeGB: 128,
 				Lun:        to.Int32Ptr(2),
-				ManagedDisk: &infrav1.ManagedDisk{
+				ManagedDisk: &infrav1.ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
 					DiskEncryptionSet: &infrav1.DiskEncryptionSetParameters{
 						ID: "encryption_id",

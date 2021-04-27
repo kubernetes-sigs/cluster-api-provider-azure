@@ -10,7 +10,7 @@ Azure Machines support optionally specifying a list of data disks to be attached
  - `managedDisk` - (optional) the managed disk for a VM (see below)
  - `lun` - the logical unit number (see below)
 
-### Managed Disk
+### Managed Disk Options
 
 See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview) for more information.
  

@@ -96,9 +96,7 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 
 		// validate optional managed disk option
 		if disk.ManagedDisk != nil {
-			allErrs = append(allErrs, validateStorageAccountType(disk.ManagedDisk.StorageAccountType, fieldPath)...)
-
-			if errs := ValidateManagedDisk(*disk.ManagedDisk, *disk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
+			if errs := validateManagedDisk(disk.ManagedDisk, fieldPath.Child("managedDisk"), false); len(errs) > 0 {
 				allErrs = append(allErrs, errs...)
 			}
 		}
@@ -132,27 +130,15 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 		allErrs = append(allErrs, field.Required(fieldPath.Child("OSType"), "the OS type cannot be empty"))
 	}
 
-	allErrs = append(allErrs, validateStorageAccountType(osDisk.ManagedDisk.StorageAccountType, fieldPath)...)
-
 	allErrs = append(allErrs, validateCachingType(osDisk.CachingType, fieldPath)...)
 
-	if errs := ValidateManagedDisk(osDisk.ManagedDisk, osDisk.ManagedDisk, fieldPath.Child("managedDisk")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if osDisk.ManagedDisk != nil {
+		if errs := validateManagedDisk(osDisk.ManagedDisk, fieldPath.Child("managedDisk"), true); len(errs) > 0 {
+			allErrs = append(allErrs, errs...)
+		}
 	}
 
-	if err := validateDiffDiskSetings(osDisk.DiffDiskSettings, fieldPath.Child("diffDiskSettings")); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if osDisk.DiffDiskSettings != nil && osDisk.DiffDiskSettings.Option == string(compute.Local) && osDisk.ManagedDisk.StorageAccountType != "Standard_LRS" {
-		allErrs = append(allErrs, field.Invalid(
-			fieldPath.Child("managedDisks").Child("storageAccountType"),
-			osDisk.ManagedDisk.StorageAccountType,
-			"storageAccountType must be Standard_LRS when diffDiskSettings.option is 'Local'",
-		))
-	}
-
-	if osDisk.DiffDiskSettings != nil && osDisk.DiffDiskSettings.Option == string(compute.Local) && osDisk.ManagedDisk.DiskEncryptionSet != nil {
+	if osDisk.DiffDiskSettings != nil && osDisk.ManagedDisk != nil && osDisk.ManagedDisk.DiskEncryptionSet != nil {
 		allErrs = append(allErrs, field.Invalid(
 			fieldPath.Child("managedDisks").Child("diskEncryptionSet"),
 			osDisk.ManagedDisk.DiskEncryptionSet.ID,
@@ -163,12 +149,12 @@ func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 	return allErrs
 }
 
-// ValidateManagedDisk validates updates to the ManagedDisk field.
-func ValidateManagedDisk(old, new ManagedDisk, fieldPath *field.Path) field.ErrorList {
+// validateManagedDisk validates updates to the ManagedDiskParameters field.
+func validateManagedDisk(m *ManagedDiskParameters, fieldPath *field.Path, isOSDisk bool) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if old.StorageAccountType != new.StorageAccountType {
-		allErrs = append(allErrs, field.Invalid(fieldPath.Child("storageAccountType"), new, "changing storage account type after machine creation is not allowed"))
+	if m != nil {
+		allErrs = append(allErrs, validateStorageAccountType(m.StorageAccountType, fieldPath.Child("StorageAccountType"), isOSDisk)...)
 	}
 
 	return allErrs
@@ -198,11 +184,7 @@ func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *f
 				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("diskSizeGB"), newDataDisks, fieldErrMsg))
 			}
 
-			if newDisk.ManagedDisk != nil && oldDisk.ManagedDisk != nil {
-				allErrs = append(allErrs, ValidateManagedDisk(*oldDisk.ManagedDisk, *newDisk.ManagedDisk, fieldPath.Index(i).Child("managedDisk"))...)
-			} else if (newDisk.ManagedDisk != nil && oldDisk.ManagedDisk == nil) || (newDisk.ManagedDisk == nil && oldDisk.ManagedDisk != nil) {
-				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("managedDisk"), newDataDisks, fieldErrMsg))
-			}
+			allErrs = append(allErrs, validateManagedDisksUpdate(oldDisk.ManagedDisk, newDisk.ManagedDisk, fieldPath.Index(i).Child("managedDisk"))...)
 
 			if (newDisk.Lun != nil && oldDisk.Lun != nil) && (*newDisk.Lun != *oldDisk.Lun) {
 				allErrs = append(allErrs, field.Invalid(fieldPath.Index(i).Child("lun"), newDataDisks, fieldErrMsg))
@@ -219,16 +201,6 @@ func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *f
 	}
 
 	return allErrs
-}
-
-func validateDiffDiskSetings(d *DiffDiskSettings, fldPath *field.Path) *field.Error {
-	if d != nil {
-		if d.Option != string(compute.Local) {
-			msg := "changing ephemeral os settings after machine creation is not allowed"
-			return field.Invalid(fldPath.Child("option"), d, msg)
-		}
-	}
-	return nil
 }
 
 func validateDiffDiskSettingsUpdate(old, new *DiffDiskSettings, fieldPath *field.Path) field.ErrorList {
@@ -254,12 +226,37 @@ func validateDiffDiskSettingsUpdate(old, new *DiffDiskSettings, fieldPath *field
 	return allErrs
 }
 
-func validateStorageAccountType(storageAccountType string, fieldPath *field.Path) field.ErrorList {
+func validateManagedDisksUpdate(old, new *ManagedDiskParameters, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-	storageAccTypeChildPath := fieldPath.Child("ManagedDisk").Child("StorageAccountType")
+	fieldErrMsg := "changing managed disk options after machine creation is not allowed"
+
+	if new != nil && old != nil {
+		if new.StorageAccountType != old.StorageAccountType {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Child("storageAccountType"), new, fieldErrMsg))
+		}
+		if new.DiskEncryptionSet != nil && old.DiskEncryptionSet != nil {
+			if new.DiskEncryptionSet.ID != old.DiskEncryptionSet.ID {
+				allErrs = append(allErrs, field.Invalid(fieldPath.Child("diskEncryptionSet").Child("ID"), new, fieldErrMsg))
+			}
+		} else if (new.DiskEncryptionSet != nil && old.DiskEncryptionSet == nil) || (new.DiskEncryptionSet == nil && old.DiskEncryptionSet != nil) {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Child("diskEncryptionSet"), new, fieldErrMsg))
+		}
+	} else if (new != nil && old == nil) || (new == nil && old != nil) {
+		allErrs = append(allErrs, field.Invalid(fieldPath, new, fieldErrMsg))
+	}
+
+	return allErrs
+}
+
+func validateStorageAccountType(storageAccountType string, fieldPath *field.Path, isOSDisk bool) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if isOSDisk && storageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
+		allErrs = append(allErrs, field.Invalid(fieldPath.Child("managedDisks").Child("storageAccountType"), storageAccountType, "UltraSSD_LRS can only be used with data disks, it cannot be used with OS Disks"))
+	}
 
 	if storageAccountType == "" {
-		allErrs = append(allErrs, field.Required(storageAccTypeChildPath, "the Storage Account Type for Managed Disk cannot be empty"))
+		allErrs = append(allErrs, field.Required(fieldPath, "the Storage Account Type for Managed Disk cannot be empty"))
 		return allErrs
 	}
 
@@ -268,7 +265,7 @@ func validateStorageAccountType(storageAccountType string, fieldPath *field.Path
 			return allErrs
 		}
 	}
-	allErrs = append(allErrs, field.Invalid(storageAccTypeChildPath, "", fmt.Sprintf("allowed values are %v", compute.PossibleDiskStorageAccountTypesValues())))
+	allErrs = append(allErrs, field.Invalid(fieldPath, "", fmt.Sprintf("allowed values are %v", compute.PossibleDiskStorageAccountTypesValues())))
 	return allErrs
 }
 

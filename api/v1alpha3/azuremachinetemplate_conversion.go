@@ -36,6 +36,14 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 		return err
 	}
 
+	// Handle special case for conversion of ManagedDisk to pointer.
+	if restored.Spec.Template.Spec.OSDisk.ManagedDisk == nil && dst.Spec.Template.Spec.OSDisk.ManagedDisk != nil {
+		if *dst.Spec.Template.Spec.OSDisk.ManagedDisk == (infrav1alpha4.ManagedDiskParameters{}) {
+			// restore nil value if nothing has changed since conversion
+			dst.Spec.Template.Spec.OSDisk.ManagedDisk = nil
+		}
+	}
+
 	return nil
 }
 
