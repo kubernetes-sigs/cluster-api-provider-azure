@@ -254,7 +254,6 @@ spec:
             required:
             - defaultPoolRef
             - location
-            - nodeResourceGroupName
             - resourceGroupName
             - sshPublicKey
             - version

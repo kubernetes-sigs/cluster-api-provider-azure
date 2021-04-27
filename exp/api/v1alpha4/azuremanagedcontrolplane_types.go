@@ -36,12 +36,13 @@ type AzureManagedControlPlaneSpec struct {
 	// NodeResourceGroupName is the name of the resource group
 	// containining cluster IaaS resources. Will be populated to default
 	// in webhook.
-	NodeResourceGroupName string `json:"nodeResourceGroupName"`
+	// +optional
+	NodeResourceGroupName string `json:"nodeResourceGroupName,omitempty"`
 
 	// VirtualNetwork describes the vnet for the AKS cluster. Will be created if it does not exist.
 	VirtualNetwork ManagedControlPlaneVirtualNetwork `json:"virtualNetwork,omitempty"`
 
-	// SubscriotionID is the GUID of the Azure subscription to hold this cluster.
+	// SubscriptionID is the GUID of the Azure subscription to hold this cluster.
 	SubscriptionID string `json:"subscriptionID,omitempty"`
 
 	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
