@@ -76,7 +76,7 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 					Containers: []corev1.Container{
 						{
 							Name:  jobName,
-							Image: "k8s.gcr.io/cuda-vector-add:v0.1",
+							Image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.1-ubuntu18.04",
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									"nvidia.com/gpu": resource.MustParse("1"),
