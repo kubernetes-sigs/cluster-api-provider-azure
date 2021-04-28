@@ -223,7 +223,7 @@ spec:
                 description: SSHPublicKey is a string literal containing an ssh public key base64 encoded.
                 type: string
               subscriptionID:
-                description: SubscriotionID is the GUID of the Azure subscription to hold this cluster.
+                description: SubscriptionID is the GUID of the Azure subscription to hold this cluster.
                 type: string
               version:
                 description: Version defines the desired Kubernetes version.
