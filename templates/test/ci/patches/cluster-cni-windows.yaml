@@ -5,4 +5,4 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
   labels:
-    cni: "${CLUSTER_NAME}-calico"
+    cni: "${CLUSTER_NAME}-flannel"

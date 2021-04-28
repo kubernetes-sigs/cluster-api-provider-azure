@@ -50,7 +50,7 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-export LOCAL_ONLY=${LOCAL_ONLY:-"false"}
+export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 
 if [[ "${LOCAL_ONLY}" == "true" ]]; then
   export REGISTRY="localhost:5000/ci-e2e"
