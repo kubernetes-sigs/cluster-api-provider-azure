@@ -369,6 +369,51 @@ func TestResourceGroupInvalid(t *testing.T) {
 	})
 }
 
+func TestValidateVnetCIDR(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name           string
+		vnetCidrBlocks []string
+		wantErr        bool
+		expectedErr    field.Error
+	}{
+		{
+			name:           "valid subnet cidr",
+			vnetCidrBlocks: []string{"10.0.0.0/8"},
+			wantErr:        false,
+		},
+		{
+			name:           "invalid subnet cidr not in the right format",
+			vnetCidrBlocks: []string{"10.0.0.0/8", "foo/bar"},
+			wantErr:        true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "vnet.cidrBlocks",
+				BadValue: "foo/bar",
+				Detail:   "invalid CIDR format",
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateVnetCIDR(testCase.vnetCidrBlocks, field.NewPath("vnet.cidrBlocks"))
+			if testCase.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == testCase.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
 func TestSubnetsValid(t *testing.T) {
 	g := NewWithT(t)
 
@@ -383,7 +428,7 @@ func TestSubnetsValid(t *testing.T) {
 	}
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
+		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(BeNil())
 	})
@@ -405,7 +450,7 @@ func TestSubnetsInvalidSubnetName(t *testing.T) {
 	testCase.subnets[0].Name = "invalid-subnet-name-due-to-bracket)"
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
+		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeInvalid))
@@ -430,7 +475,7 @@ func TestSubnetsInvalidLackRequiredSubnet(t *testing.T) {
 	testCase.subnets[0].Role = "random-role"
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
+		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
@@ -456,7 +501,7 @@ func TestSubnetNamesNotUnique(t *testing.T) {
 	testCase.subnets[1].Name = "subnet-name"
 
 	t.Run(testCase.name, func(t *testing.T) {
-		errs := validateSubnets(testCase.subnets,
+		errs := validateSubnets(testCase.subnets, createValidVnet(),
 			field.NewPath("spec").Child("networkSpec").Child("subnets"))
 		g.Expect(errs).To(HaveLen(1))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeDuplicate))
@@ -505,6 +550,72 @@ func TestSubnetNameInvalid(t *testing.T) {
 		g.Expect(err.Field).To(Equal("spec.networkSpec.subnets[0].name"))
 		g.Expect(err.BadValue).To(BeEquivalentTo(testCase.subnetName))
 	})
+}
+
+func TestValidateSubnetCIDR(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name             string
+		vnetCidrBlocks   []string
+		subnetCidrBlocks []string
+		wantErr          bool
+		expectedErr      field.Error
+	}{
+		{
+			name:             "valid subnet cidr",
+			vnetCidrBlocks:   []string{"10.0.0.0/8"},
+			subnetCidrBlocks: []string{"10.1.0.0/16", "10.0.0.0/16"},
+			wantErr:          false,
+		},
+		{
+			name:             "invalid subnet cidr not in the right format",
+			vnetCidrBlocks:   []string{"10.0.0.0/8"},
+			subnetCidrBlocks: []string{"10.1.0.0/16", "10.0.0.0/16", "foo/bar"},
+			wantErr:          true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "subnets.cidrBlocks",
+				BadValue: "foo/bar",
+				Detail:   "invalid CIDR format",
+			},
+		},
+		{
+			name:             "subnet cidr not in vnet range",
+			vnetCidrBlocks:   []string{"10.0.0.0/8"},
+			subnetCidrBlocks: []string{"10.1.0.0/16", "10.0.0.0/16", "11.1.0.0/16"},
+			wantErr:          true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "subnets.cidrBlocks",
+				BadValue: "11.1.0.0/16",
+				Detail:   "subnet CIDR not in vnet CIDR range",
+			},
+		},
+		{
+			name:             "subnet cidr in atleast one vnet's range in case of multiple vnet cidr blocks",
+			vnetCidrBlocks:   []string{"10.0.0.0/8", "11.0.0.0/8"},
+			subnetCidrBlocks: []string{"10.1.0.0/16", "10.0.0.0/16", "11.1.0.0/16"},
+			wantErr:          false,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateSubnetCIDR(testCase.subnetCidrBlocks, testCase.vnetCidrBlocks, field.NewPath("subnets.cidrBlocks"))
+			if testCase.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == testCase.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
 }
 
 func TestValidateSecurityRule(t *testing.T) {
@@ -1023,6 +1134,14 @@ func createValidSubnets() Subnets {
 			Name: "node-subnet",
 			Role: "node",
 		},
+	}
+}
+
+func createValidVnet() VnetSpec {
+	return VnetSpec{
+		ResourceGroup: "custom-vnet",
+		Name:          "my-vnet",
+		CIDRBlocks:    []string{DefaultVnetCIDR},
 	}
 }
 
