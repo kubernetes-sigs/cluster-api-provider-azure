@@ -103,7 +103,7 @@ spec:
       containers:
       - name: nmi
         image: "mcr.microsoft.com/oss/azure/aad-pod-identity/nmi:v1.6.3"
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         args:
           - "--node=$(NODE_NAME)"
           - "--forceNamespaced"          
