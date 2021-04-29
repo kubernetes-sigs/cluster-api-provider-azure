@@ -78,12 +78,15 @@ export KIND_EXPERIMENTAL_DOCKER_NETWORK="bridge"
 # Generate SSH key.
 AZURE_SSH_PUBLIC_KEY_FILE=${AZURE_SSH_PUBLIC_KEY_FILE:-""}
 if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
+    echo "generating sshkey for e2e"
     SSH_KEY_FILE=.sshkey
     rm -f "${SSH_KEY_FILE}" 2>/dev/null
     ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
     AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
 fi
 export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
+# Windows sets the public key via cloudbase-init which take the raw text as input
+export AZURE_SSH_PUBLIC_KEY=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
 
 cleanup() {
     ${REPO_ROOT}/hack/log/redact.sh || true
