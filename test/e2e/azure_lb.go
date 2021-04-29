@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"net"
 
+	"sigs.k8s.io/cluster-api/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	k8snet "k8s.io/utils/net"
@@ -69,10 +71,10 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	Expect(clientset).NotTo(BeNil())
 
 	By("creating an HTTP deployment")
-	deploymentName := "web"
+	deploymentName := "web" + util.RandomString(6)
 	// if case of input.SkipCleanup we need a unique name for windows
 	if input.Windows {
-		deploymentName = "web-windows"
+		deploymentName = "web-windows" + util.RandomString(6)
 	}
 
 	webDeployment := deploymentBuilder.CreateDeployment("httpd", deploymentName, corev1.NamespaceDefault)
@@ -173,7 +175,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 
 	elbIP := extractServiceIp(svc)
 	Log("starting to create curl-to-elb job")
-	elbJob := job.CreateCurlJob("curl-to-elb-job", elbIP)
+	elbJob := job.CreateCurlJob("curl-to-elb-job"+util.RandomString(6), elbIP)
 	_, err = jobsClient.Create(ctx, elbJob, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	elbJobInput := WaitForJobCompleteInput{

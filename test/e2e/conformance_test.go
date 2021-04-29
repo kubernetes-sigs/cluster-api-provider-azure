@@ -56,10 +56,17 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
 
-		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
+		clusterName = os.Getenv("CLUSTER_NAME")
+		if clusterName == "" {
+			clusterName = fmt.Sprintf("capz-conf-%s", util.RandomString(6))
+		}
+		fmt.Fprintf(GinkgoWriter, "INFO: Cluster name is %s\n", clusterName)
 
-		clusterName = fmt.Sprintf("capz-conf-%s", util.RandomString(6))
+		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
+		var err error
+		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterName, bootstrapClusterProxy, artifactFolder)
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 	})
