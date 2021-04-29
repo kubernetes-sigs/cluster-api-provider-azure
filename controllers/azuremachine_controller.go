@@ -321,25 +321,30 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 		return reconcile.Result{}, err
 	}
 
+	defer func() {
+		if reterr == nil {
+			machineScope.Info("Removing finalizer from AzureMachine")
+			controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
+		}
+	}()
+
 	if ShouldDeleteIndividualResources(ctx, clusterScope) {
 		machineScope.Info("Deleting AzureMachine")
 		ams, err := r.createAzureMachineService(machineScope)
 		if err != nil {
-			return reconcile.Result{}, errors.Wrap(err, "failed to create azure machine service")
+			reterr = errors.Wrap(err, "failed to create azure machine service")
+			return
 		}
 
 		if err := ams.Delete(ctx); err != nil {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
-			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+			reterr = errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+			return
 		}
+	} else {
+		machineScope.Info("Skipping AzureMachine Deletion; will delete whole resource group.")
 	}
-	defer func() {
-		if reterr == nil {
-			// VM is deleted so remove the finalizer.
-			controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
-		}
-	}()
 
-	return reconcile.Result{}, nil
+	return reconcile.Result{}, reterr
 }
