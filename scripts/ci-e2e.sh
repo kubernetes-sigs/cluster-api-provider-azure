@@ -55,6 +55,10 @@ export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 if [[ "${LOCAL_ONLY}" == "false" ]]; then
   : "${REGISTRY:?Environment variable empty or not defined.}"
   ${REPO_ROOT}/hack/ensure-acr-login.sh
+  if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
+    export E2E_ARGS="-kubetest.use-pr-artifacts"
+    source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
+  fi
 else
   export REGISTRY="localhost:5000/ci-e2e"
 fi

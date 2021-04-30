@@ -484,6 +484,9 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 // resolveCIVersion resolves kubernetes version labels (e.g. latest, latest-1.xx) to the corresponding CI version numbers.
 // Go implementation of https://github.com/kubernetes-sigs/cluster-api/blob/d1dc87d5df3ab12a15ae5b63e50541a191b7fec4/scripts/ci-e2e-lib.sh#L75-L95.
 func resolveCIVersion(label string) (string, error) {
+	if ciVersion, ok := os.LookupEnv("CI_VERSION"); ok {
+		return ciVersion, nil
+	}
 	if strings.HasPrefix(label, "latest") {
 		if kubernetesVersion, err := latestCIVersion(label); err == nil {
 			return kubernetesVersion, nil

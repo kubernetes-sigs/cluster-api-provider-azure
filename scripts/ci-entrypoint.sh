@@ -37,6 +37,8 @@ source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
+# shellcheck source=../hack/util.sh
+source "${REPO_ROOT}/hack/util.sh"
 
 get_random_region() {
     local REGIONS=("northcentralus" "centralus" "canadacentral" "eastus" "eastus2" "westus2" "westeurope" "uksouth" "northeurope" "francecentral")
@@ -47,8 +49,11 @@ create_cluster() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
     ${REPO_ROOT}/hack/ensure-acr-login.sh
-    # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
-    if [[ -n ${CI_VERSION:-} || -n ${USE_CI_ARTIFACTS:-} ]]; then
+    if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
+        source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
+        export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds.yaml"
+    elif [[ -n "${CI_VERSION:-}" ]] || [[ -n "${USE_CI_ARTIFACTS:-}" ]]; then
+        # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
         KUBERNETES_BRANCH="$(cd $(go env GOPATH)/src/k8s.io/kubernetes && git rev-parse --abbrev-ref HEAD)"
         if [[ "${KUBERNETES_BRANCH:-}" =~ "release-" ]]; then
             CI_VERSION_URL="https://dl.k8s.io/ci/latest-${KUBERNETES_BRANCH/release-}.txt"

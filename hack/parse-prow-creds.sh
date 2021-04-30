@@ -31,4 +31,6 @@ if [[ -n "${AZURE_CREDENTIALS:-}" ]]; then
     export AZURE_CLIENT_SECRET="$(cat ${AZURE_CREDENTIALS} | parse_cred ClientSecret)"
     export AZURE_MULTI_TENANCY_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred MultiTenancyClientID)"
     export AZURE_MULTI_TENANCY_SECRET="$(cat ${AZURE_CREDENTIALS} | parse_cred MultiTenancyClientSecret)"
+    export AZURE_STORAGE_ACCOUNT="$(cat ${AZURE_CREDENTIALS} | parse_cred StorageAccountName)"
+    export AZURE_STORAGE_KEY="$(cat ${AZURE_CREDENTIALS} | parse_cred StorageAccountKey)"
 fi

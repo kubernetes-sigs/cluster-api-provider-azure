@@ -1,5 +1,5 @@
 namespace: default
 resources:
-  - ../../../flavors/default
+  - ../../../test/ci/prow
 patchesStrategicMerge:
   - patches/custom-builds.yaml
