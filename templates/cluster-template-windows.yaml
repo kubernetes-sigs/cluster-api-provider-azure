@@ -87,6 +87,18 @@ spec:
         overwrite: false
         tableType: gpt
     files:
+    - content: |
+        network:
+          version: 2
+          ethernets:
+            eth0:
+              mtu: 1400
+              match:
+                macaddress: MACADDRESS
+              set-name: eth0
+      owner: root:root
+      path: /etc/netplan/60-eth0.yaml
+      permissions: "0644"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -109,6 +121,10 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    postKubeadmCommands:
+    - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
+    - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
+    - netplan apply
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -186,12 +202,28 @@ spec:
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"
+      - content: |
+          network:
+            version: 2
+            ethernets:
+              eth0:
+                mtu: 1400
+                match:
+                  macaddress: MACADDRESS
+                set-name: eth0
+        owner: root:root
+        path: /etc/netplan/60-eth0.yaml
+        permissions: "0644"
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
+      - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
+      - netplan apply
       useExperimentalRetryJoin: true
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
