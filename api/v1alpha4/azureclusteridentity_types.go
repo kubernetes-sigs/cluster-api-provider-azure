@@ -22,6 +22,25 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
+// AllowedNamespaces defines the namespaces the clusters are allowed to use the identity from
+// NamespaceList takes precedence over the Selector
+type AllowedNamespaces struct {
+	// A nil or empty list indicates that AzureCluster cannot use the identity from any namespace.
+	//
+	// +optional
+	// +nullable
+	NamespaceList []string `json:"list"`
+	// Selector is a selector of namespaces that AzureCluster can
+	// use this Identity from. This is a standard Kubernetes LabelSelector,
+	// a label query over a set of resources. The result of matchLabels and
+	// matchExpressions are ANDed.
+	//
+	// A nil or empty selector indicates that AzureCluster cannot use this
+	// AzureClusterIdentity from any namespace.
+	// +optional
+	Selector *metav1.LabelSelector `json:"selector"`
+}
+
 // AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity
 type AzureClusterIdentitySpec struct {
 	// UserAssignedMSI or Service Principal
@@ -36,14 +55,15 @@ type AzureClusterIdentitySpec struct {
 	ClientSecret corev1.SecretReference `json:"clientSecret,omitempty"`
 	// Service principal primary tenant id.
 	TenantID string `json:"tenantID"`
-	// AllowedNamespaces is an array of namespaces that AzureClusters can
-	// use this Identity from.
+	// AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from.
+	// Namespaces can be selected either using an array of namespaces or with label selector.
+	// An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace.
+	// If this object is nil, no namespaces will be allowed (default behaviour, if this field is not provided)
+	// A namespace should be either in the NamespaceList or match with Selector to use the identity.
 	//
-	// An empty list (default) indicates that AzureClusters can use this
-	// Identity from any namespace. This field is intentionally not a
-	// pointer because the nil behavior (no namespaces) is undesirable here.
 	// +optional
-	AllowedNamespaces []string `json:"allowedNamespaces"`
+	// +nullable
+	AllowedNamespaces *AllowedNamespaces `json:"allowedNamespaces"`
 }
 
 // AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity
@@ -84,20 +104,6 @@ func (c *AzureClusterIdentity) GetConditions() clusterv1.Conditions {
 // SetConditions will set the given conditions on an AzureClusterIdentity object
 func (c *AzureClusterIdentity) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
-}
-
-// ClusterNamespaceAllowed indicates if the cluster namespace is allowed
-func (c *AzureClusterIdentity) ClusterNamespaceAllowed(namespace string) bool {
-	if len(c.Spec.AllowedNamespaces) == 0 {
-		return true
-	}
-	for _, v := range c.Spec.AllowedNamespaces {
-		if v == namespace {
-			return true
-		}
-	}
-
-	return false
 }
 
 func init() {

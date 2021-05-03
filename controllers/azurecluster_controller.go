@@ -199,7 +199,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		if !identity.ClusterNamespaceAllowed(azureCluster.Namespace) {
+		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
 			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 		}

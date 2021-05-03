@@ -5,6 +5,7 @@ metadata:
   name: "${CLUSTER_IDENTITY_NAME}"
 spec:
   type: ServicePrincipal
+  allowedNamespaces: {}
   tenantID: "${AZURE_TENANT_ID}"
   clientID: "${AZURE_CLUSTER_IDENTITY_CLIENT_ID}"
   clientSecret: {"name":"${AZURE_CLUSTER_IDENTITY_SECRET_NAME}","namespace":"${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}"}
