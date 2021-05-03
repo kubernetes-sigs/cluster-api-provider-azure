@@ -157,6 +157,9 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			if diff := cmp.Diff(tc.expectedWorkerNodeConfig, string(cloudConfig.Data["worker-node-azure.json"])); diff != "" {
 				t.Errorf(diff)
 			}
+			if diff := cmp.Diff(tc.expectedControlPlaneConfig, string(cloudConfig.Data["azure.json"])); diff != "" {
+				t.Errorf(diff)
+			}
 		})
 	}
 }

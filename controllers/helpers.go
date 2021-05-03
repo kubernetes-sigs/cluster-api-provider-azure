@@ -188,6 +188,8 @@ func GetCloudProviderSecret(d azure.ClusterScoper, namespace, name string, owner
 	secret.Data = map[string][]byte{
 		"control-plane-azure.json": controlPlaneData,
 		"worker-node-azure.json":   workerNodeData,
+		// added for backwards compatibility
+		"azure.json": controlPlaneData,
 	}
 
 	return secret, nil
