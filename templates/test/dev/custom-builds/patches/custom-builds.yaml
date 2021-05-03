@@ -8,73 +8,61 @@ spec:
   kubeadmConfigSpec:
     useExperimentalRetryJoin: true
     clusterConfiguration:
-      kubernetesVersion: "${KUBERNETES_VERSION}"
+      kubernetesVersion: "ci/${CI_VERSION}"
+    preKubeadmCommands:
+    - bash -c /tmp/replace-k8s-binaries.sh
     postKubeadmCommands:
     - bash -c /tmp/replace-k8s-components.sh
     files:
+    - path: /tmp/replace-k8s-binaries.sh
+      owner: "root:root"
+      permissions: "0744"
+      content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        systemctl stop kubelet
+        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+        for BINARY in "$${BINARIES[@]}"; do
+          echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+        done
+        systemctl restart kubelet
+
+        # prepull images from gcr.io/k8s-staging-ci-images and retag it to
+        # k8s.gcr.io so kubeadm can fetch correct images no matter what
+        declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        for IMAGE in "$${IMAGES[@]}"; do
+          $${SUDO} ctr -n k8s.io images pull "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}"
+          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "k8s.gcr.io/$${IMAGE}:${CI_VERSION/+/_}"
+        done
+
+        echo "kubeadm version: $(kubeadm version -o=short)"
+        echo "kubectl version: $(kubectl version --client=true --short=true)"
+        echo "kubelet version: $(kubelet --version)"
     - path: /tmp/replace-k8s-components.sh
       owner: "root:root"
       permissions: "0744"
       content: |
         #!/bin/bash
 
-        retrycmd() {
-          retries=$1; wait_sleep=$2; timeout=$3; shift && shift && shift
-          for i in $(seq 1 $retries); do
-            timeout $timeout $@ && break ||
-              if [ $i -eq $retries ]; then
-                return 1
-              else
-                sleep $wait_sleep
-              fi
-          done
-          echo Executed $i times
-        }
-        retrycmd_get_tarball() {
-          tar_retries=$1; wait_sleep=$2; tarball=$3; url=$4
-          for i in $(seq 1 $tar_retries); do
-            tar -tzf $tarball && break ||
-              if [ $i -eq $tar_retries ]; then
-                return 1
-              else
-                timeout 60 curl -fsSL $url -o $tarball
-                sleep $wait_sleep
-              fi
-          done
-        }
+        set -o nounset
+        set -o pipefail
+        set -o errexit
 
-        mkdir -p $HOME/.kube || exit 1
-        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config || exit 1
-        chown $(id -u):$(id -g) $HOME/.kube/config || exit 1
-        # wait for the cluster to come online based on the default kubeadm configuration
-        retrycmd 120 5 10 /usr/bin/kubectl 2>/dev/null cluster-info || exit 1
-        if [ -n "${KUBE_BINARY_URL}" ]; then
-          # stop the kubelet on this node so we can replace it
-          retrycmd 10 5 10 systemctl stop kubelet || exit 1
-          retrycmd_get_tarball 120 5 /tmp/kube-binary.tar.gz ${KUBE_BINARY_URL} || exit 1
-          tar -xzvf /tmp/kube-binary.tar.gz --strip-components=3 -C /usr/bin kubernetes/node/bin/kubelet || exit 1
-          tar -xzvf /tmp/kube-binary.tar.gz --strip-components=3 -C /usr/bin kubernetes/node/bin/kubectl || exit 1
-          chmod +x /usr/bin/kubelet /usr/bin/kubectl || exit 1
-          retrycmd 10 5 10 systemctl start kubelet || exit 1
-          # wait for the cluster to come back online
-          retrycmd 120 5 10 /usr/bin/kubectl 2>/dev/null cluster-info || exit 1
-        fi
-        if [ -n "${KUBE_PROXY_IMAGE_URL}" ]; then
-          retrycmd 10 5 10 kubectl -n kube-system set image daemonset/kube-proxy kube-proxy=${KUBE_PROXY_IMAGE_URL} || exit 1
-        fi
-        if [ -n "${KUBE_APISERVER_IMAGE_URL}" ] || [ -n "${KUBE_CONTROLLER_MANAGER_IMAGE_URL}" ] || [ -n "${KUBE_SCHEDULER_IMAGE_URL}" ]; then
-          retrycmd_get_tarball 120 5 /tmp/yq_linux_amd64.tar.gz https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz || exit 1
-          tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq || exit 1
-        fi
-        if [ -n "${KUBE_APISERVER_IMAGE_URL}" ]; then
-          yq e '.spec.containers[0].image = "${KUBE_APISERVER_IMAGE_URL}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml || exit 1
-        fi
-        if [ -n "${KUBE_CONTROLLER_MANAGER_IMAGE_URL}" ]; then
-          yq e '.spec.containers[0].image = "${KUBE_CONTROLLER_MANAGER_IMAGE_URL}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml || exit 1
-        fi
-        if [ -n "${KUBE_SCHEDULER_IMAGE_URL}" ]; then
-          yq e '.spec.containers[0].image = "${KUBE_SCHEDULER_IMAGE_URL}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml || exit 1
-        fi
+        curl -L --retry 10 --retry-delay 5 https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz --output /tmp/yq_linux_amd64.tar.gz
+        tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq
+        rm /tmp/yq_linux_amd64.tar.gz
+
+        export KUBECONFIG=/etc/kubernetes/admin.conf
+        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${IMAGE_TAG}"
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
     - path: /etc/kubernetes/azure.json
       owner: "root:root"
       permissions: "0644"
@@ -90,53 +78,66 @@ metadata:
 spec:
   template:
     spec:
-      postKubeadmCommands:
-        - bash -c /tmp/replace-k8s-components.sh
+      preKubeadmCommands:
+      - bash -c /tmp/replace-k8s-binaries.sh
       files:
-        - path: /tmp/replace-k8s-components.sh
-          owner: "root:root"
-          permissions: "0744"
-          content: |
-            #!/bin/bash
+      - path: /tmp/replace-k8s-binaries.sh
+        owner: "root:root"
+        permissions: "0744"
+        content: |
+          #!/bin/bash
 
-            retrycmd() {
-              retries=$1; wait_sleep=$2; timeout=$3; shift && shift && shift
-              for i in $(seq 1 $retries); do
-                timeout $timeout $@ && break ||
-                  if [ $i -eq $retries ]; then
-                    return 1
-                  else
-                    sleep $wait_sleep
-                  fi
-              done
-              echo Executed $i times
-            }
-            retrycmd_get_tarball() {
-              tar_retries=$1; wait_sleep=$2; tarball=$3; url=$4
-              echo "$tar_retries retries"
-              for i in $(seq 1 $tar_retries); do
-                tar -tzf $tarball && break ||
-                  if [ $i -eq $tar_retries ]; then
-                    return 1
-                  else
-                    timeout 60 curl -fsSL $url -o $tarball
-                    sleep $wait_sleep
-                  fi
-              done
-            }
+          set -o nounset
+          set -o pipefail
+          set -o errexit
 
-            if [ -n "${KUBE_BINARY_URL}" ]; then
-              retrycmd_get_tarball 120 5 /tmp/kube-binary.tar.gz ${KUBE_BINARY_URL} || exit 1
-              # stop the kubelet on this node so we can replace it
-              retrycmd 10 5 10 systemctl stop kubelet || exit 1
-              tar -xzvf /tmp/kube-binary.tar.gz --strip-components=3 -C /usr/bin kubernetes/node/bin/kubelet || exit 1
-              chmod +x /usr/bin/kubelet || exit 1
-              retrycmd 10 5 10 systemctl start kubelet || exit 1
-            fi
-        - path: /etc/kubernetes/azure.json
-          owner: "root:root"
-          permissions: "0644"
-          contentFrom:
-            secret:
-              key: control-plane-azure.json
-              name: ${CLUSTER_NAME}-control-plane-azure-json
+          systemctl stop kubelet
+          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+          for BINARY in "$${BINARIES[@]}"; do
+            echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+            curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+          done
+          systemctl restart kubelet
+
+          echo "kubeadm version: $(kubeadm version -o=short)"
+          echo "kubectl version: $(kubectl version --client=true --short=true)"
+          echo "kubelet version: $(kubelet --version)"
+      - path: /etc/kubernetes/azure.json
+        owner: "root:root"
+        permissions: "0644"
+        contentFrom:
+          secret:
+            key: control-plane-azure.json
+            name: ${CLUSTER_NAME}-control-plane-azure-json
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      image:
+        # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.18.8 binaries and images will get replaced to the desired version by the script above.
+        marketplace:
+          publisher: cncf-upstream
+          offer: capi
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: "2020.08.17"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      image:
+        # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.18.8 binaries and images will get replaced to the desired version by the script above.
+        marketplace:
+          publisher: cncf-upstream
+          offer: capi
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: "2020.08.17"

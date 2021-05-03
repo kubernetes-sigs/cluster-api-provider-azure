@@ -38,6 +38,8 @@ source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 source "${REPO_ROOT}/hack/ensure-tags.sh"
 # shellcheck source=../hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
+# shellcheck source=../hack/util.sh
+source "${REPO_ROOT}/hack/util.sh"
 
 # Verify the required Environment Variables are present.
 : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
@@ -57,11 +59,16 @@ if [[ "${LOCAL_ONLY}" == "true" ]]; then
 else
   : "${REGISTRY:?Environment variable empty or not defined.}"
   ${REPO_ROOT}/hack/ensure-acr-login.sh
+  if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
+    export E2E_ARGS="-kubetest.use-pr-artifacts"
+    export KUBE_BUILD_CONFORMANCE="y"
+    source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
+  fi
 fi
 
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
-export GINKGO_NODES=3
+export GINKGO_NODES=1
 export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
 export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
 export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"

@@ -69,11 +69,17 @@ var _ = Describe("Conformance Tests", func() {
 
 		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
 		flavor := clusterctl.DefaultFlavor
-		if useCIArtifacts {
-			flavor = "conformance-ci-artifacts"
+		// clusters with CI artifacts or PR artifacts are based on a known CI version
+		// PR artifacts will replace the CI artifacts during kubeadm init
+		if useCIArtifacts || usePRArtifacts {
 			kubernetesVersion, err = resolveCIVersion(kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+		}
+		if useCIArtifacts {
+			flavor = "conformance-ci-artifacts"
+		} else if usePRArtifacts {
+			flavor = "conformance-presubmit-artifacts"
 		}
 		workerMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_WORKER_MACHINE_COUNT"), 10, 64)
 		Expect(err).NotTo(HaveOccurred())
@@ -105,12 +111,18 @@ var _ = Describe("Conformance Tests", func() {
 
 		b.RecordValue("cluster creation", runtime.Seconds())
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
+
+		ginkgoNodes, err := strconv.Atoi(e2eConfig.GetVariable("CONFORMANCE_NODES"))
+		Expect(err).NotTo(HaveOccurred())
+
 		runtime = b.Time("conformance suite", func() {
 			kubetest.Run(context.Background(),
 				kubetest.RunInput{
-					ClusterProxy:   workloadProxy,
-					NumberOfNodes:  int(workerMachineCount),
-					ConfigFilePath: kubetestConfigFilePath,
+					ClusterProxy:     workloadProxy,
+					NumberOfNodes:    int(workerMachineCount),
+					ConfigFilePath:   kubetestConfigFilePath,
+					ConformanceImage: e2eConfig.GetVariable("CONFORMANCE_IMAGE"),
+					GinkgoNodes:      ginkgoNodes,
 				},
 			)
 		})
