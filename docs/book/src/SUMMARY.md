@@ -25,6 +25,7 @@
     - [Spot Virtual Machines](./topics/spot-vms.md)
     - [Virtual Networks](./topics/custom-vnet.md)
     - [Windows](./topics/windows.md)
+    - [SSH Access to nodes](./topics/ssh-access.md)
 - [Development](./developers/development.md)
     - [Kubernetes Developers](./developers/kubernetes-developers.md)
     - [Releasing](./developers/releasing.md)

@@ -370,6 +370,115 @@ spec:
               azureEnvironment:
                 description: 'AzureEnvironment is the name of the AzureCloud to be used. The default value that would be used by most users is "AzurePublicCloud", other values are: - ChinaCloud: "AzureChinaCloud" - GermanCloud: "AzureGermanCloud" - PublicCloud: "AzurePublicCloud" - USGovernmentCloud: "AzureUSGovernmentCloud"'
                 type: string
+              bastionSpec:
+                description: BastionSpec encapsulates all things related to the Bastions in the cluster.
+                properties:
+                  azureBastion:
+                    description: AzureBastion specifies how the Azure Bastion cloud component should be configured.
+                    properties:
+                      name:
+                        type: string
+                      publicIP:
+                        description: PublicIPSpec defines the inputs to create an Azure public IP address.
+                        properties:
+                          dnsName:
+                            type: string
+                          name:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      subnet:
+                        description: SubnetSpec configures an Azure subnet.
+                        properties:
+                          cidrBlocks:
+                            description: CIDRBlocks defines the subnet's address space, specified as one or more address prefixes in CIDR notation.
+                            items:
+                              type: string
+                            type: array
+                          id:
+                            description: ID defines a unique identifier to reference this resource.
+                            type: string
+                          name:
+                            description: Name defines a name for the subnet resource.
+                            type: string
+                          role:
+                            description: Role defines the subnet role (eg. Node, ControlPlane)
+                            type: string
+                          routeTable:
+                            description: RouteTable defines the route table that should be attached to this subnet.
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            type: object
+                          securityGroup:
+                            description: SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                              securityRules:
+                                description: SecurityRules is a slice of Azure security rules for security groups.
+                                items:
+                                  description: SecurityRule defines an Azure security rule for security groups.
+                                  properties:
+                                    description:
+                                      description: A description for this rule. Restricted to 140 chars.
+                                      type: string
+                                    destination:
+                                      description: Destination is the destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+                                      type: string
+                                    destinationPorts:
+                                      description: DestinationPorts specifies the destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+                                      type: string
+                                    direction:
+                                      description: Direction indicates whether the rule applies to inbound, or outbound traffic. "Inbound" or "Outbound".
+                                      enum:
+                                      - Inbound
+                                      - Outbound
+                                      type: string
+                                    name:
+                                      description: Name is a unique name within the network security group.
+                                      type: string
+                                    priority:
+                                      description: Priority is a number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
+                                      format: int32
+                                      type: integer
+                                    protocol:
+                                      description: Protocol specifies the protocol type. "Tcp", "Udp", "Icmp", or "*".
+                                      enum:
+                                      - Tcp
+                                      - Udp
+                                      - Icmp
+                                      - '*'
+                                      type: string
+                                    source:
+                                      description: Source specifies the CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
+                                      type: string
+                                    sourcePorts:
+                                      description: SourcePorts specifies source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
+                                      type: string
+                                  required:
+                                  - description
+                                  - direction
+                                  - name
+                                  - protocol
+                                  type: object
+                                type: array
+                              tags:
+                                additionalProperties:
+                                  type: string
+                                description: Tags defines a map of tags.
+                                type: object
+                            type: object
+                        required:
+                        - name
+                        type: object
+                    type: object
+                type: object
               cloudProviderConfigOverrides:
                 description: 'CloudProviderConfigOverrides is an optional set of configuration values that can be overridden in azure cloud provider config. This is only a subset of options that are available in azure cloud provider config. Some values for the cloud provider config are inferred from other parts of cluster api provider azure spec, and may not be available for overrides. See: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs Note: All cloud provider config values can be customized by creating the secret beforehand. CloudProviderConfigOverrides is only used when the secret is managed by the Azure Provider.'
                 properties:

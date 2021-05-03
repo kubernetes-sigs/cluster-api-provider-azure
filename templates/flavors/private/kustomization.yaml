@@ -4,4 +4,5 @@ resources:
 patchesStrategicMerge:
   - patches/private-lb.yaml
   - patches/apiserver-host-dns.yaml
+  - patches/azure-bastion.yaml
 

@@ -138,10 +138,15 @@ type VMSpec struct {
 	SecurityProfile        *infrav1.SecurityProfile
 }
 
-// BastionSpec defines the specification for bastion host.
+// BastionSpec defines the specification for the generic bastion feature.
 type BastionSpec struct {
+	AzureBastion *AzureBastionSpec
+}
+
+// AzureBastionSpec defines the specification for azure bastion feature.
+type AzureBastionSpec struct { //nolint
 	Name         string
-	SubnetName   string
+	SubnetSpec   infrav1.SubnetSpec
 	PublicIPName string
 	VNetName     string
 }

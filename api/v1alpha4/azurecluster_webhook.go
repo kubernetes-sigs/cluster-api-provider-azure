@@ -98,6 +98,14 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	// Allow enabling azure bastion but avoid disabling it.
+	if old.Spec.BastionSpec.AzureBastion != nil && !reflect.DeepEqual(old.Spec.BastionSpec.AzureBastion, c.Spec.BastionSpec.AzureBastion) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "BastionSpec", "AzureBastion"),
+				c.Spec.BastionSpec.AzureBastion, "azure bastion cannot be removed from a cluster"),
+		)
+	}
+
 	if len(allErrs) == 0 {
 		return c.validateCluster(old)
 	}

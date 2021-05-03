@@ -691,6 +691,7 @@ func autoConvert_v1alpha4_AzureClusterSpec_To_v1alpha3_AzureClusterSpec(in *v1al
 	out.AdditionalTags = *(*Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.IdentityRef = (*v1.ObjectReference)(unsafe.Pointer(in.IdentityRef))
 	// WARNING: in.AzureEnvironment requires manual conversion: does not exist in peer-type
+	// WARNING: in.BastionSpec requires manual conversion: does not exist in peer-type
 	// WARNING: in.CloudProviderConfigOverrides requires manual conversion: does not exist in peer-type
 	return nil
 }

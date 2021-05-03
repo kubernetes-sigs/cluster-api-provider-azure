@@ -205,29 +205,6 @@ func ValidateDataDisksUpdate(oldDataDisks, newDataDisks []DataDisk, fieldPath *f
 	return allErrs
 }
 
-func validateDiffDiskSettingsUpdate(old, new *DiffDiskSettings, fieldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	fldPath := fieldPath.Child("diffDiskSettings")
-
-	if old == nil && new != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, new, "enabling ephemeral os after machine creation is not allowed"))
-		return allErrs
-	}
-	if old != nil && new == nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, new, "disabling ephemeral os after machine creation is not allowed"))
-		return allErrs
-	}
-
-	if old != nil && new != nil {
-		if old.Option != new.Option {
-			msg := "changing ephemeral os settings after machine creation is not allowed"
-			return append(allErrs, field.Invalid(fldPath.Child("option"), new, msg))
-		}
-	}
-
-	return allErrs
-}
-
 func validateManagedDisksUpdate(old, new *ManagedDiskParameters, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	fieldErrMsg := "changing managed disk options after machine creation is not allowed"

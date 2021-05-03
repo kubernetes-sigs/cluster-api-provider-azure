@@ -137,18 +137,18 @@ func (mr *MockBastionScopeMockRecorder) BaseURI() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaseURI", reflect.TypeOf((*MockBastionScope)(nil).BaseURI))
 }
 
-// BastionSpecs mocks base method.
-func (m *MockBastionScope) BastionSpecs() []azure.BastionSpec {
+// BastionSpec mocks base method.
+func (m *MockBastionScope) BastionSpec() azure.BastionSpec {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BastionSpecs")
-	ret0, _ := ret[0].([]azure.BastionSpec)
+	ret := m.ctrl.Call(m, "BastionSpec")
+	ret0, _ := ret[0].(azure.BastionSpec)
 	return ret0
 }
 
-// BastionSpecs indicates an expected call of BastionSpecs.
-func (mr *MockBastionScopeMockRecorder) BastionSpecs() *gomock.Call {
+// BastionSpec indicates an expected call of BastionSpec.
+func (mr *MockBastionScopeMockRecorder) BastionSpec() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BastionSpecs", reflect.TypeOf((*MockBastionScope)(nil).BastionSpecs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BastionSpec", reflect.TypeOf((*MockBastionScope)(nil).BastionSpec))
 }
 
 // ClientID mocks base method.

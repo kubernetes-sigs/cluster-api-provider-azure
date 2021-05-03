@@ -24,6 +24,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
@@ -47,6 +48,7 @@ type azureClusterService struct {
 	publicIPSvc      azure.Reconciler
 	loadBalancerSvc  azure.Reconciler
 	privateDNSSvc    azure.Reconciler
+	bastionSvc       azure.Reconciler
 	skuCache         *resourceskus.Cache
 }
 
@@ -67,6 +69,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 		publicIPSvc:      publicips.New(scope),
 		loadBalancerSvc:  loadbalancers.New(scope),
 		privateDNSSvc:    privatedns.New(scope),
+		bastionSvc:       bastionhosts.New(scope),
 		skuCache:         skuCache,
 	}, nil
 }
@@ -117,6 +120,10 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to reconcile private dns")
 	}
 
+	if err := s.bastionSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "failed to reconcile bastion")
+	}
+
 	return nil
 }
 
@@ -153,6 +160,10 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 
 			if err := s.vnetSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete virtual network")
+			}
+
+			if err := s.bastionSvc.Delete(ctx); err != nil {
+				return errors.Wrap(err, "failed to delete bastion")
 			}
 
 		} else {

@@ -910,3 +910,206 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestBastionDefault(t *testing.T) {
+	cases := map[string]struct {
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		"no bastion set": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{},
+			},
+		},
+		"azure bastion enabled with no settings": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Name: "foo-azure-bastion",
+							Subnet: SubnetSpec{
+								Name:       "AzureBastionSubnet",
+								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+							},
+							PublicIP: PublicIPSpec{
+								Name: "foo-azure-bastion-pip",
+							},
+						},
+					},
+				},
+			},
+		},
+		"azure bastion enabled with name set": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Name: "my-fancy-name",
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Name: "my-fancy-name",
+							Subnet: SubnetSpec{
+								Name:       "AzureBastionSubnet",
+								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+							},
+							PublicIP: PublicIPSpec{
+								Name: "foo-azure-bastion-pip",
+							},
+						},
+					},
+				},
+			},
+		},
+		"azure bastion enabled with subnet partially set": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Subnet: SubnetSpec{},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Name: "foo-azure-bastion",
+							Subnet: SubnetSpec{
+								Name:       "AzureBastionSubnet",
+								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+							},
+							PublicIP: PublicIPSpec{
+								Name: "foo-azure-bastion-pip",
+							},
+						},
+					},
+				},
+			},
+		},
+		"azure bastion enabled with subnet fully set": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Subnet: SubnetSpec{
+								Name:       "my-superfancy-name",
+								CIDRBlocks: []string{"10.10.0.0/16"},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Name: "foo-azure-bastion",
+							Subnet: SubnetSpec{
+								Name:       "my-superfancy-name",
+								CIDRBlocks: []string{"10.10.0.0/16"},
+							},
+							PublicIP: PublicIPSpec{
+								Name: "foo-azure-bastion-pip",
+							},
+						},
+					},
+				},
+			},
+		},
+		"azure bastion enabled with public IP name set": {
+			cluster: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							PublicIP: PublicIPSpec{
+								Name: "my-ultrafancy-pip-name",
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: AzureClusterSpec{
+					BastionSpec: BastionSpec{
+						AzureBastion: &AzureBastion{
+							Name: "foo-azure-bastion",
+							Subnet: SubnetSpec{
+								Name:       "AzureBastionSubnet",
+								CIDRBlocks: []string{DefaultAzureBastionSubnetCIDR},
+							},
+							PublicIP: PublicIPSpec{
+								Name: "my-ultrafancy-pip-name",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for name := range cases {
+		c := cases[name]
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			c.cluster.setBastionDefaults()
+			if !reflect.DeepEqual(c.cluster, c.output) {
+				expected, _ := json.MarshalIndent(c.output, "", "\t")
+				actual, _ := json.MarshalIndent(c.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
