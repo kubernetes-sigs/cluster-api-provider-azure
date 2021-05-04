@@ -7,23 +7,13 @@ spec:
     vnet:
       name: ${AZURE_VNET_NAME}
     subnets:
-      - name: private-cp-subnet
+      - name: ${CLUSTER_NAME}-controlplane-subnet
         role: control-plane
         securityGroup: 
           name: control-plane-nsg
-        cidrBlocks:
-          - ${AZURE_CP_SUBNET_CIDR}
-      - name: private-node-subnet
+      - name: ${CLUSTER_NAME}-node-subnet
         role: node
         securityGroup: 
           name: node-nsg
         routeTable: 
           name: node-routetable
-        cidrBlocks:
-          - ${AZURE_NODE_SUBNET_CIDR}
-    apiServerLB:
-      name: ${CLUSTER_NAME}-internal-lb
-      type: Internal
-      frontendIPs:
-        - name: ${CLUSTER_NAME}-internal-lb-frontend
-          privateIP: ${AZURE_INTERNAL_LB_IP}

@@ -88,7 +88,7 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 
 	// Add aadpodidentity v1 to the scheme.
-	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.CRDGroup, Version: aadpodv1.CRDVersion}
+	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.GroupName, Version: "v1"}
 	scheme.AddKnownTypes(aadPodIdentityGroupVersion,
 		&aadpodv1.AzureIdentity{},
 		&aadpodv1.AzureIdentityList{},

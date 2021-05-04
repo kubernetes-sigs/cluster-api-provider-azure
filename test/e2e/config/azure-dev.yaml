@@ -90,6 +90,8 @@ providers:
       targetName: "cluster-template-external-cloud-provider.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-multi-tenancy.yaml"
       targetName: "cluster-template-aks-multi-tenancy.yaml"
+    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
+      targetName: "cluster-template-custom-vnet.yaml"      
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"
@@ -110,6 +112,7 @@ variables:
   CONFORMANCE_NODES: "${CONFORMANCE_NODES:-1}"
   IP_FAMILY: "IPv4" # this is used by the CAPI quickstart spec
   MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
+  CLUSTER_IDENTITY_NAME: "cluster-identity"
   NODE_DRAIN_TIMEOUT: "60s"
 
 intervals:

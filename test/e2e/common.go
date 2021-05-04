@@ -51,6 +51,7 @@ const (
 	AzureCPSubnetCidr           = "AZURE_CP_SUBNET_CIDR"
 	AzureNodeSubnetCidr         = "AZURE_NODE_SUBNET_CIDR"
 	MultiTenancyIdentityName    = "MULTI_TENANCY_IDENTITY_NAME"
+	ClusterIdentityName         = "CLUSTER_IDENTITY_NAME"
 	JobName                     = "JOB_NAME"
 	Timestamp                   = "TIMESTAMP"
 	AKSKubernetesVersion        = "AKS_KUBERNETES_VERSION"

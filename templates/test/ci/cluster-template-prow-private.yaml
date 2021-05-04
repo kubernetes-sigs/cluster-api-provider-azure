@@ -48,10 +48,16 @@ spec:
       - ${AZURE_CP_SUBNET_CIDR}
       name: private-cp-subnet
       role: control-plane
+      securityGroup:
+        name: control-plane-nsg
     - cidrBlocks:
       - ${AZURE_NODE_SUBNET_CIDR}
       name: private-node-subnet
       role: node
+      routeTable:
+        name: node-routetable
+      securityGroup:
+        name: node-nsg
     vnet:
       name: ${AZURE_VNET_NAME}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}

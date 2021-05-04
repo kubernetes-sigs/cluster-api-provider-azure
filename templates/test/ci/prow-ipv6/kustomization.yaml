@@ -4,10 +4,12 @@ namespace: default
 resources:
   - ../../../flavors/ipv6
   - ../prow/cni-resource-set.yaml
+  - ../prow/azure-cluster-identity.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-cni.yaml
+  - ../patches/azurecluster-identity-ref.yaml  
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:

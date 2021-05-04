@@ -73,6 +73,26 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
+
+		spClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster-identity-secret",
+				Namespace: namespace.Name,
+			},
+			Type: corev1.SecretTypeOpaque,
+			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+		}
+		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
+		Expect(err).ToNot(HaveOccurred())
+
+		spClientID := os.Getenv("AZURE_CLIENT_ID")
+		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
+		os.Setenv("CLUSTER_IDENTITY_NAMESPACE", namespace.Name)
+		os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
+		os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret")
+		os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", namespace.Name)
 	})
 
 	AfterEach(func() {
@@ -109,7 +129,7 @@ var _ = Describe("Workload cluster creation", func() {
 						ClusterctlConfigPath:     clusterctlConfigPath,
 						KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 						InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-						Flavor:                   clusterctl.DefaultFlavor,
+						Flavor:                   "custom-vnet",
 						Namespace:                namespace.Name,
 						ClusterName:              clusterName,
 						KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
