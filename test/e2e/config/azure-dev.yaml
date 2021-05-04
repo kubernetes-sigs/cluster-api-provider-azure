@@ -51,6 +51,9 @@ providers:
       value: "${PWD}/config/default"
       files:
       - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
+      replacements:
+      - old: "--v=0"
+        new: "--v=4"
     files:
     - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"
@@ -83,9 +86,6 @@ providers:
       targetName: "cluster-template-machine-pool-windows.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-cloud-provider.yaml"
       targetName: "cluster-template-external-cloud-provider.yaml"
-    replacements:
-    - old: "--v=0"
-      new: "--v=4"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"

@@ -22,8 +22,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
@@ -42,6 +44,7 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
+		thirtySeconds = 30*time.Second
 	)
 
 	input = inputGetter()
@@ -50,40 +53,47 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 	namespace, name := input.Namespace.Name, input.ClusterName
 	managementClusterClient := input.BootstrapClusterProxy.GetClient()
 
-	sshInfo, err := getClusterSSHInfo(ctx, managementClusterClient, namespace, name)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(len(sshInfo)).To(BeNumerically(">", 0))
-
-	testfuncs := []func() error{}
-	for _, s := range sshInfo {
-		Byf("checking that time synchronization is healthy on %s", s.Hostname)
-
-		execToStringFn := func(expected, command string, args ...string) func() error {
-			// don't assert in this test func, just return errors
-			return func() error {
-				f := &strings.Builder{}
-				if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
-					return err
-				}
-				if !strings.Contains(f.String(), expected) {
-					return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
-				}
-				return nil
-			}
+	Eventually(func() error {
+		sshInfo, err := getClusterSSHInfo(ctx, managementClusterClient, namespace, name)
+		if err != nil {
+			return err
 		}
 
-		testfuncs = append(testfuncs,
-			execToStringFn(
-				"✓ chronyd is active",
-				"systemctl", "is-active", "chronyd", "&&",
-				"echo", "✓ chronyd is active",
-			),
-			execToStringFn(
-				"Reference ID",
-				"chronyc", "tracking",
-			),
-		)
-	}
+		if len(sshInfo) <= 0 {
+			return errors.New("sshInfo did not contain any machines")
+		}
 
-	Expect(kinderrors.AggregateConcurrent(testfuncs)).To(Succeed())
+		var testFuncs []func() error
+		for _, s := range sshInfo {
+			Byf("checking that time synchronization is healthy on %s", s.Hostname)
+
+			execToStringFn := func(expected, command string, args ...string) func() error {
+				// don't assert in this test func, just return errors
+				return func() error {
+					f := &strings.Builder{}
+					if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
+						return err
+					}
+					if !strings.Contains(f.String(), expected) {
+						return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
+					}
+					return nil
+				}
+			}
+
+			testFuncs = append(testFuncs,
+				execToStringFn(
+					"✓ chronyd is active",
+					"systemctl", "is-active", "chronyd", "&&",
+					"echo", "✓ chronyd is active",
+				),
+				execToStringFn(
+					"Reference ID",
+					"chronyc", "tracking",
+				),
+			)
+		}
+
+		return kinderrors.AggregateConcurrent(testFuncs)
+	}, thirtySeconds, thirtySeconds).Should(Succeed())
 }
