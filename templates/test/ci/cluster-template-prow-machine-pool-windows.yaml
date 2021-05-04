@@ -294,6 +294,8 @@ spec:
         cloud-provider: azure
         pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
       name: '{{ ds.meta_data["local_hostname"] }}'
+  postKubeadmCommands:
+  - nssm set kubelet start SERVICE_AUTO_START
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
   users:
