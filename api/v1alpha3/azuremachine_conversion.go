@@ -117,7 +117,7 @@ func Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk
 	}
 
 	out.ManagedDisk = &v1alpha4.ManagedDiskParameters{}
-	if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskOptions(&in.ManagedDisk, out.ManagedDisk, s); err != nil {
+	if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters(&in.ManagedDisk, out.ManagedDisk, s); err != nil {
 		return err
 	}
 
@@ -132,7 +132,7 @@ func Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk
 
 	if in.ManagedDisk != nil {
 		out.ManagedDisk = ManagedDisk{}
-		if err := Convert_v1alpha4_ManagedDiskOptions_To_v1alpha3_ManagedDisk(in.ManagedDisk, &out.ManagedDisk, s); err != nil {
+		if err := Convert_v1alpha4_ManagedDiskParameters_To_v1alpha3_ManagedDisk(in.ManagedDisk, &out.ManagedDisk, s); err != nil {
 			return err
 		}
 	}
@@ -140,15 +140,15 @@ func Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk
 	return nil
 }
 
-// Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskOptions converts this ManagedDisk to the Hub version (v1alpha4).
-func Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskOptions(in *ManagedDisk, out *v1alpha4.ManagedDiskParameters, s apiconversion.Scope) error { // nolint
+// Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters converts this ManagedDisk to the Hub version (v1alpha4).
+func Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters(in *ManagedDisk, out *v1alpha4.ManagedDiskParameters, s apiconversion.Scope) error { // nolint
 	out.StorageAccountType = in.StorageAccountType
 	out.DiskEncryptionSet = (*v1alpha4.DiskEncryptionSetParameters)(in.DiskEncryptionSet)
 	return nil
 }
 
-// Convert_v1alpha4_ManagedDiskOptions_To_v1alpha3_ManagedDisk converts from the Hub version (v1alpha4) of the ManagedDiskParameters to this version.
-func Convert_v1alpha4_ManagedDiskOptions_To_v1alpha3_ManagedDisk(in *v1alpha4.ManagedDiskParameters, out *ManagedDisk, s apiconversion.Scope) error { // nolint
+// Convert_v1alpha4_ManagedDiskParameters_To_v1alpha3_ManagedDisk converts from the Hub version (v1alpha4) of the ManagedDiskParameters to this version.
+func Convert_v1alpha4_ManagedDiskParameters_To_v1alpha3_ManagedDisk(in *v1alpha4.ManagedDiskParameters, out *ManagedDisk, s apiconversion.Scope) error { // nolint
 	out.StorageAccountType = in.StorageAccountType
 	out.DiskEncryptionSet = (*DiskEncryptionSetParameters)(in.DiskEncryptionSet)
 	return nil
