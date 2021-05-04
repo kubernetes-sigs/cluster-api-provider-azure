@@ -26,6 +26,12 @@ metadata:
   name: "${CLUSTER_NAME}-mp-0"
 spec:
   location: ${AZURE_LOCATION}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 1
+      deletePolicy: Oldest
   template:
     vmSize: ${AZURE_NODE_MACHINE_TYPE}
     osDisk:
