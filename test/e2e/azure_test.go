@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"sigs.k8s.io/cluster-api/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +34,6 @@ import (
 	"k8s.io/utils/pointer"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
-	"sigs.k8s.io/cluster-api/util"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -58,10 +59,17 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
 
-		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
+		clusterName = os.Getenv("CLUSTER_NAME")
+		if clusterName == "" {
+			clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
+		}
+		fmt.Fprintf(GinkgoWriter, "INFO: Cluster name is %s\n", clusterName)
 
-		clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
+		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
+		var err error
+		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterName, bootstrapClusterProxy, artifactFolder)
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
