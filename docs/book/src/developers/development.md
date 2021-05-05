@@ -416,12 +416,13 @@ You can optionally set the following variables:
 | Variable                       | Description                                                                                                   |
 |--------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `AZURE_SSH_PUBLIC_KEY_FILE`    | Use your own SSH key.                                                                                         |
-| `SKIP_CREATE_WORKLOAD_CLUSTER` | Skip workload cluster creation.                                                                               |
 | `SKIP_CLEANUP`                 | Skip deleting the cluster after the tests finish running.                                                      |
 | `KUBECONFIG`                   | Provide your existing cluster kubeconfig filepath. If no kubeconfig is provided, `./kubeconfig` will be used.     |
 | `USE_CI_ARTIFACTS`             | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)         |
 | `CI_VERSION`                   | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                 |
+| `TEST_CCM`                     | Build a cluster that uses custom versions of the Azure cloud-provider cloud-controller-manager and node-controller-manager images              |
 | `EXP_MACHINE_POOL`             | Use [Machine Pool](topics/machinepools.md) for worker machines.                                               |
+| `REGISTRY`                     | Registry to push any custom k8s images or cloud provider images built.                                            |
 
 You can also customize the configuration of the CAPZ cluster (assuming that `SKIP_CREATE_WORKLOAD_CLUSTER` is not set). See [Customizing the cluster deployment](#customizing-the-cluster-deployment) for more details.
 

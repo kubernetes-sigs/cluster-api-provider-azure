@@ -45,7 +45,7 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-create_cluster() {
+setup() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
     ${REPO_ROOT}/hack/ensure-acr-login.sh
@@ -67,6 +67,12 @@ create_cluster() {
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow.yaml"
     fi
 
+    if [[ -n "${TEST_CCM:-}" ]]; then
+        export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
+        source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
+        echo "Using CCM image ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG} and CNM image ${AZURE_CLOUD_NODE_MANAGER_IMG} to build external cloud provider cluster"
+    fi
+
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
         export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
     fi
@@ -78,6 +84,9 @@ create_cluster() {
     export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
     export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
     export EXP_CLUSTER_RESOURCE_SET="true"
+}
+
+create_cluster() {
     ${REPO_ROOT}/hack/create-dev-cluster.sh
 }
 
@@ -109,13 +118,14 @@ on_exit() {
     fi
 }
 
+# setup all required variables and images
+setup
+
 trap on_exit EXIT
 export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 
 # create cluster
-if [[ -z "${SKIP_CREATE_WORKLOAD_CLUSTER:-}" ]]; then
-    create_cluster
-fi
+create_cluster
 
 # export the target cluster KUBECONFIG if not already set
 export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"

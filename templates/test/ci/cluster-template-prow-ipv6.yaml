@@ -128,6 +128,7 @@ spec:
         bindPort: 6443
       nodeRegistration:
         kubeletExtraArgs:
+          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
           cluster-dns: fd00::10
@@ -140,6 +141,7 @@ spec:
           bindPort: 6443
       nodeRegistration:
         kubeletExtraArgs:
+          azure-container-registry-config: /etc/kubernetes/azure.json
           cloud-config: /etc/kubernetes/azure.json
           cloud-provider: azure
           cluster-dns: fd00::10
@@ -245,6 +247,7 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: azure
             cluster-dns: '[fd00::10]'
