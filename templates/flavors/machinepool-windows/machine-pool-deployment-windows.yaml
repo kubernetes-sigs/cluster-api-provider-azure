@@ -47,6 +47,8 @@ spec:
     - ${AZURE_SSH_PUBLIC_KEY:=""}
   preKubeadmCommands:
     - powershell c:/create-external-network.ps1
+  postKubeadmCommands:
+    - nssm set kubelet start SERVICE_AUTO_START
   joinConfiguration:
     nodeRegistration:
       name: '{{ ds.meta_data["local_hostname"] }}'
