@@ -1296,24 +1296,6 @@ func autoConvert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1alpha4.Netwo
 	return nil
 }
 
-func autoConvert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk, s conversion.Scope) error {
-	out.OSType = in.OSType
-	out.DiskSizeGB = in.DiskSizeGB
-	// WARNING: in.ManagedDisk requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3.ManagedDisk vs *sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.ManagedDiskParameters)
-	out.DiffDiskSettings = (*v1alpha4.DiffDiskSettings)(unsafe.Pointer(in.DiffDiskSettings))
-	out.CachingType = in.CachingType
-	return nil
-}
-
-func autoConvert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk, s conversion.Scope) error {
-	out.OSType = in.OSType
-	out.DiskSizeGB = in.DiskSizeGB
-	// WARNING: in.ManagedDisk requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4.ManagedDiskParameters vs sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3.ManagedDisk)
-	out.DiffDiskSettings = (*DiffDiskSettings)(unsafe.Pointer(in.DiffDiskSettings))
-	out.CachingType = in.CachingType
-	return nil
-}
-
 func autoConvert_v1alpha3_PublicIPSpec_To_v1alpha4_PublicIPSpec(in *PublicIPSpec, out *v1alpha4.PublicIPSpec, s conversion.Scope) error {
 	out.Name = in.Name
 	out.DNSName = in.DNSName
