@@ -91,6 +91,12 @@ wait_for_nodes() {
     done
 
     kubectl wait --for=condition=Ready node --all --timeout=5m
+    if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
+        echo "Waiting for nodes overprovisioned by the MachinePool to be removed"
+        while kubectl get nodes | grep 'NotReady' > /dev/null; do
+            sleep 10
+        done
+    fi
     kubectl get nodes -owide
 }
 
