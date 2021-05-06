@@ -4,6 +4,7 @@
 [Roadmap](./roadmap.md)
 - [Topics](./topics/topics.md)
     - [Getting Started](./topics/getting-started.md)
+    - [Troubleshooting](./topics/troubleshooting.md)
     - [AAD Integration](./topics/aad-integration.md)
     - [API Server Endpoint](./topics/api-server-endpoint.md)
     - [Cloud Provider Config](./topics/cloud-provider-config.md)
