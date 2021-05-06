@@ -18,7 +18,7 @@ package v1alpha3
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -112,11 +112,12 @@ func Convert_v1alpha4_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in *v1al
 
 // Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk converts this OSDisk to the Hub version (v1alpha4).
 func Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in, out, s); err != nil {
-		return err
-	}
-
+	out.OSType = in.OSType
+	out.DiskSizeGB = in.DiskSizeGB
+	out.DiffDiskSettings = (*v1alpha4.DiffDiskSettings)(in.DiffDiskSettings)
+	out.CachingType = in.CachingType
 	out.ManagedDisk = &v1alpha4.ManagedDiskParameters{}
+
 	if err := Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters(&in.ManagedDisk, out.ManagedDisk, s); err != nil {
 		return err
 	}
@@ -126,9 +127,10 @@ func Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk
 
 // Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk converts from the Hub version (v1alpha4) of the AzureMachineStatus to this version.
 func Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk, s apiconversion.Scope) error { // nolint
-	if err := autoConvert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in, out, s); err != nil {
-		return err
-	}
+	out.OSType = in.OSType
+	out.DiskSizeGB = in.DiskSizeGB
+	out.DiffDiskSettings = (*DiffDiskSettings)(in.DiffDiskSettings)
+	out.CachingType = in.CachingType
 
 	if in.ManagedDisk != nil {
 		out.ManagedDisk = ManagedDisk{}

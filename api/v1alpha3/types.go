@@ -358,6 +358,11 @@ const (
 )
 
 // OSDisk defines the operating system disk for a VM.
+//
+// WARNING: this requires any updates to ManagedDisk to be manually converted. This is due to the odd issue with
+// conversion-gen where the warning message generated uses a relative directory import rather than the fully
+// qualified import when generating outside of the GOPATH.
+// +k8s:conversion-gen=false
 type OSDisk struct {
 	OSType           string            `json:"osType"`
 	DiskSizeGB       int32             `json:"diskSizeGB"`
