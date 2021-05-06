@@ -57,7 +57,6 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
 
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
-		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
 
 		clusterName = os.Getenv("CLUSTER_NAME")
 		if clusterName == "" {

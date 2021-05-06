@@ -54,7 +54,6 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
 
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
-		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
 
 		clusterName = os.Getenv("CLUSTER_NAME")
 		if clusterName == "" {

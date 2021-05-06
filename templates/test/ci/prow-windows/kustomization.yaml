@@ -11,7 +11,8 @@ patchesStrategicMerge:
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-flannel
     files:
-      - resources=../../../addons/windows/flannel.yaml
+      - cni=../../../addons/windows/flannel.yaml
+      - proxy=../../../addons/windows/kube-proxy-windows.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:
