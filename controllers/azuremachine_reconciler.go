@@ -78,36 +78,26 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Reconcile")
 	defer span.End()
 
-	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to create public IP")
+	ar := newAsyncReconciler()
+
+	ar.submit(ctx, s.publicIPsSvc)
+	ar.submit(ctx, s.inboundNatRulesSvc)
+	ar.submit(ctx, s.networkInterfacesSvc)
+	ar.submit(ctx, s.availabilitySetsSvc)
+	if err := ar.wait(); err != nil {
+		return err
 	}
 
-	if err := s.inboundNatRulesSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to create inbound NAT rule")
+	ar.submit(ctx, s.virtualMachinesSvc)
+	if err := ar.wait(); err != nil {
+		return err
 	}
 
-	if err := s.networkInterfacesSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to create network interface")
-	}
-
-	if err := s.availabilitySetsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to create availability set")
-	}
-
-	if err := s.virtualMachinesSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to create virtual machine")
-	}
-
-	if err := s.roleAssignmentsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "unable to create role assignment")
-	}
-
-	if err := s.vmExtensionsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "unable to create vm extension")
-	}
-
-	if err := s.tagsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "unable to update tags")
+	ar.submit(ctx, s.roleAssignmentsSvc)
+	ar.submit(ctx, s.vmExtensionsSvc)
+	ar.submit(ctx, s.tagsSvc)
+	if err := ar.wait(); err != nil {
+		return err
 	}
 
 	return nil
