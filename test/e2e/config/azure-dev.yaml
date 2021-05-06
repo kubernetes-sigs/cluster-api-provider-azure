@@ -91,7 +91,7 @@ variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"
   ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
   COREDNS_VERSION_UPGRADE_TO: "1.6.7"
-  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.19.7}"
+  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.19.11}"
   KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.18.15}"
   CNI: "${PWD}/templates/addons/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
@@ -117,4 +117,4 @@ intervals:
   default/wait-deployment: ["15m", "10s"]
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["5m", "10s"]
-  default/wait-machine-pool-nodes: ["20m", "10s"]
+  default/wait-machine-pool-nodes: ["30m", "10s"]

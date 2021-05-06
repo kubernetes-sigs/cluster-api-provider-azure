@@ -47,16 +47,13 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
 	"sigs.k8s.io/cluster-api/util"
-	utilkubeconfig "sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -315,16 +312,20 @@ type nodeSSHInfo struct {
 
 // getClusterSSHInfo returns the information needed to establish a SSH connection through a
 // control plane endpoint to each node in the cluster.
-func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name string) ([]nodeSSHInfo, error) {
-	var sshInfo []nodeSSHInfo
+func getClusterSSHInfo(ctx context.Context, mgmtClusterProxy framework.ClusterProxy, namespace, clusterName string) ([]nodeSSHInfo, error) {
+	var (
+		sshInfo               []nodeSSHInfo
+		mgmtClusterClient     = mgmtClusterProxy.GetClient()
+		workloadClusterClient = mgmtClusterProxy.GetWorkloadCluster(ctx, namespace, clusterName).GetClient()
+	)
 	// Collect the info for each VM / Machine.
-	machines, err := getMachinesInCluster(ctx, c, namespace, name)
+	machines, err := getMachinesInCluster(ctx, mgmtClusterClient, namespace, clusterName)
 	if err != nil {
 		return sshInfo, errors.Wrap(err, "failed to get machines in the cluster")
 	}
 	for i := range machines.Items {
 		m := &machines.Items[i]
-		cluster, err := util.GetClusterFromMetadata(ctx, c, m.ObjectMeta)
+		cluster, err := util.GetClusterFromMetadata(ctx, mgmtClusterClient, m.ObjectMeta)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get cluster from metadata")
 		}
@@ -336,25 +337,19 @@ func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name str
 	}
 
 	// Collect the info for each instance in a VMSS / MachinePool.
-	machinePools, err := getMachinePoolsInCluster(ctx, c, namespace, name)
+	machinePools, err := getMachinePoolsInCluster(ctx, mgmtClusterClient, namespace, clusterName)
 	if err != nil {
 		return sshInfo, errors.Wrap(err, "failed to find machine pools in cluster")
 	}
 
-	// make a workload client to access the workload cluster
-	workloadClient, err := getWorkloadClient(ctx, c, namespace, name)
-	if err != nil {
-		return sshInfo, errors.Wrap(err, "failed to get workload client")
-	}
-
 	for i := range machinePools.Items {
 		p := &machinePools.Items[i]
-		cluster, err := util.GetClusterFromMetadata(ctx, c, p.ObjectMeta)
+		cluster, err := util.GetClusterFromMetadata(ctx, mgmtClusterClient, p.ObjectMeta)
 		if err != nil {
 			return sshInfo, errors.Wrap(err, "failed to get cluster from metadata")
 		}
 
-		nodes, err := getReadyNodes(ctx, workloadClient, p.Status.NodeRefs)
+		nodes, err := getReadyNodes(ctx, workloadClusterClient, p.Status.NodeRefs)
 		if err != nil {
 			return sshInfo, errors.Wrap(err, "failed to get ready nodes")
 		}
@@ -402,32 +397,6 @@ func getReadyNodes(ctx context.Context, c client.Client, refs []corev1.ObjectRef
 	}
 
 	return nodes, nil
-}
-
-func getWorkloadClient(ctx context.Context, c client.Client, namespace, clusterName string) (client.Client, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getWorkloadClient")
-	defer span.End()
-
-	obj := client.ObjectKey{
-		Namespace: namespace,
-		Name:      clusterName,
-	}
-	dataBytes, err := utilkubeconfig.FromSecret(ctx, c, obj)
-	if err != nil {
-		return nil, errors.Wrapf(err, "\"%s-kubeconfig\" not found in namespace %q", obj.Name, obj.Namespace)
-	}
-
-	cfg, err := clientcmd.Load(dataBytes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load \"%s-kubeconfig\" in namespace %q", obj.Name, obj.Namespace)
-	}
-
-	restConfig, err := clientcmd.NewDefaultClientConfig(*cfg, &clientcmd.ConfigOverrides{}).ClientConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed transform config \"%s-kubeconfig\" in namespace %q", obj.Name, obj.Namespace)
-	}
-
-	return client.New(restConfig, client.Options{})
 }
 
 // getMachinesInCluster returns a list of all machines in the given cluster.

@@ -58,6 +58,7 @@ func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureCluster", "my-cluster", "Namespace", "default").Return(log)
+	log.EXPECT().V(4).Return(log)
 	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
 	mapper, err := AzureClusterToAzureMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -93,6 +94,7 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureManagedCluster", "my-cluster", "Namespace", "default").Return(log)
+	log.EXPECT().V(4).Return(log)
 	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
 	mapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -155,6 +157,7 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
 	log.EXPECT().WithValues("AzureManagedControlPlane", cpName, "Namespace", cluster.Namespace).Return(log)
+	log.EXPECT().V(4).Return(log)
 	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
 	mapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -433,6 +436,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 			},
 			Setup: func(logMock *mock_log.MockLogger) {
 				ampGK := infrav1exp.GroupVersion.WithKind("AzureMachinePool").GroupKind()
+				logMock.EXPECT().V(4).Return(logMock)
 				logMock.EXPECT().Info("gk does not match", "gk", ampGK, "infraGK", gomock.Any())
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
@@ -445,6 +449,7 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 				return newCluster("azureCluster")
 			},
 			Setup: func(logMock *mock_log.MockLogger) {
+				logMock.EXPECT().V(4).Return(logMock)
 				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1alpha4.Cluster")
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
@@ -505,10 +510,10 @@ func Test_azureClusterToAzureMachinePoolsFunc(t *testing.T) {
 			Setup: func(g *GomegaWithT, t *testing.T) (*mock_log.MockLogger, *gomock.Controller, client.Client) {
 				mockCtrl := gomock.NewController(t)
 				log := mock_log.NewMockLogger(mockCtrl)
-				logWithValues := mock_log.NewMockLogger(mockCtrl)
 				kClient := fake.NewClientBuilder().WithScheme(newScheme(g)).Build()
-				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(logWithValues)
-				logWithValues.EXPECT().Info("owning cluster not found")
+				log.EXPECT().WithValues("AzureCluster", "azurefoo", "Namespace", "default").Return(log)
+				log.EXPECT().V(4).Return(log)
+				log.EXPECT().Info("owning cluster not found")
 				return log, mockCtrl, kClient
 			},
 			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {

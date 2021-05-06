@@ -295,7 +295,7 @@ func (m *MachineScope) Role() string {
 	return infrav1.Node
 }
 
-// GetVMID returns the AzureMachine instance id by parsing Spec.ProviderID.
+// GetVMID returns the AzureMachine instance id by parsing Spec.FakeProviderID.
 func (m *MachineScope) GetVMID() string {
 	parsed, err := noderefutil.NewProviderID(m.ProviderID())
 	if err != nil {

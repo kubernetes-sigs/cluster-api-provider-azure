@@ -600,3 +600,8 @@ type AzureBastion struct {
 	// +optional
 	PublicIP PublicIPSpec `json:"publicIP,omitempty"`
 }
+
+// IsTerminalProvisioningState returns true if the ProvisioningState is a terminal state for an Azure resource
+func IsTerminalProvisioningState(state ProvisioningState) bool {
+	return state == Failed || state == Succeeded
+}

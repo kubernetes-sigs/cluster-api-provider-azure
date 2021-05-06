@@ -29,7 +29,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1alpha40 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 // MockScaleSetScope is a mock of ScaleSetScope interface.
@@ -301,18 +300,19 @@ func (mr *MockScaleSetScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockScaleSetScope)(nil).Location))
 }
 
-// NeedsK8sVersionUpdate mocks base method.
-func (m *MockScaleSetScope) NeedsK8sVersionUpdate() bool {
+// MaxSurge mocks base method.
+func (m *MockScaleSetScope) MaxSurge() (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NeedsK8sVersionUpdate")
-	ret0, _ := ret[0].(bool)
-	return ret0
+	ret := m.ctrl.Call(m, "MaxSurge")
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// NeedsK8sVersionUpdate indicates an expected call of NeedsK8sVersionUpdate.
-func (mr *MockScaleSetScopeMockRecorder) NeedsK8sVersionUpdate() *gomock.Call {
+// MaxSurge indicates an expected call of MaxSurge.
+func (mr *MockScaleSetScopeMockRecorder) MaxSurge() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeedsK8sVersionUpdate", reflect.TypeOf((*MockScaleSetScope)(nil).NeedsK8sVersionUpdate))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxSurge", reflect.TypeOf((*MockScaleSetScope)(nil).MaxSurge))
 }
 
 // ResourceGroup mocks base method.
@@ -329,16 +329,16 @@ func (mr *MockScaleSetScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockScaleSetScope)(nil).ResourceGroup))
 }
 
-// SaveK8sVersion mocks base method.
-func (m *MockScaleSetScope) SaveK8sVersion() {
+// SaveVMImageToStatus mocks base method.
+func (m *MockScaleSetScope) SaveVMImageToStatus(arg0 *v1alpha4.Image) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SaveK8sVersion")
+	m.ctrl.Call(m, "SaveVMImageToStatus", arg0)
 }
 
-// SaveK8sVersion indicates an expected call of SaveK8sVersion.
-func (mr *MockScaleSetScopeMockRecorder) SaveK8sVersion() *gomock.Call {
+// SaveVMImageToStatus indicates an expected call of SaveVMImageToStatus.
+func (mr *MockScaleSetScopeMockRecorder) SaveVMImageToStatus(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveK8sVersion", reflect.TypeOf((*MockScaleSetScope)(nil).SaveK8sVersion))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveVMImageToStatus", reflect.TypeOf((*MockScaleSetScope)(nil).SaveVMImageToStatus), arg0)
 }
 
 // ScaleSetSpec mocks base method.
@@ -391,16 +391,16 @@ func (mr *MockScaleSetScopeMockRecorder) SetProviderID(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProviderID", reflect.TypeOf((*MockScaleSetScope)(nil).SetProviderID), arg0)
 }
 
-// SetProvisioningState mocks base method.
-func (m *MockScaleSetScope) SetProvisioningState(arg0 v1alpha4.ProvisioningState) {
+// SetVMSSState mocks base method.
+func (m *MockScaleSetScope) SetVMSSState(arg0 *azure.VMSS) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetProvisioningState", arg0)
+	m.ctrl.Call(m, "SetVMSSState", arg0)
 }
 
-// SetProvisioningState indicates an expected call of SetProvisioningState.
-func (mr *MockScaleSetScopeMockRecorder) SetProvisioningState(arg0 interface{}) *gomock.Call {
+// SetVMSSState indicates an expected call of SetVMSSState.
+func (mr *MockScaleSetScopeMockRecorder) SetVMSSState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProvisioningState", reflect.TypeOf((*MockScaleSetScope)(nil).SetProvisioningState), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVMSSState", reflect.TypeOf((*MockScaleSetScope)(nil).SetVMSSState), arg0)
 }
 
 // SubscriptionID mocks base method.
@@ -429,20 +429,6 @@ func (m *MockScaleSetScope) TenantID() string {
 func (mr *MockScaleSetScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockScaleSetScope)(nil).TenantID))
-}
-
-// UpdateInstanceStatuses mocks base method.
-func (m *MockScaleSetScope) UpdateInstanceStatuses(arg0 context.Context, arg1 []v1alpha40.VMSSVM) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateInstanceStatuses", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateInstanceStatuses indicates an expected call of UpdateInstanceStatuses.
-func (mr *MockScaleSetScopeMockRecorder) UpdateInstanceStatuses(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstanceStatuses", reflect.TypeOf((*MockScaleSetScope)(nil).UpdateInstanceStatuses), arg0, arg1)
 }
 
 // V mocks base method.

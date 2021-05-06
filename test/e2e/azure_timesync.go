@@ -44,17 +44,14 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		thirtySeconds = 30*time.Second
+		thirty   = 30 * time.Second
 	)
 
 	input = inputGetter()
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-
-	namespace, name := input.Namespace.Name, input.ClusterName
-	managementClusterClient := input.BootstrapClusterProxy.GetClient()
-
+	namespace, clusterName := input.Namespace.Name, input.ClusterName
 	Eventually(func() error {
-		sshInfo, err := getClusterSSHInfo(ctx, managementClusterClient, namespace, name)
+		sshInfo, err := getClusterSSHInfo(ctx, input.BootstrapClusterProxy, namespace, clusterName)
 		if err != nil {
 			return err
 		}
@@ -95,5 +92,5 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 		}
 
 		return kinderrors.AggregateConcurrent(testFuncs)
-	}, thirtySeconds, thirtySeconds).Should(Succeed())
+	}, thirty, thirty).Should(Succeed())
 }

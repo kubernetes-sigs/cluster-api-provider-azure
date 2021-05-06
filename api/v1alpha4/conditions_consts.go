@@ -62,4 +62,16 @@ const (
 	ScaleSetDeletingReason = "ScaleSetDeleting"
 	// ScaleSetProvisionFailedReason used for failures during scale set provisioning.
 	ScaleSetProvisionFailedReason = "ScaleSetProvisionFailed"
+
+	// ScaleSetDesiredReplicasCondition reports on the scaling state of the machine pool
+	ScaleSetDesiredReplicasCondition clusterv1.ConditionType = "ScaleSetDesiredReplicas"
+	// ScaleSetScaleUpReason describes the machine pool scaling up
+	ScaleSetScaleUpReason = "ScaleSetScalingUp"
+	// ScaleSetScaleDownReason describes the machine pool scaling down
+	ScaleSetScaleDownReason = "ScaleSetScalingDown"
+
+	// ScaleSetModelUpdatedCondition reports on the model state of the pool
+	ScaleSetModelUpdatedCondition clusterv1.ConditionType = "ScaleSetModelUpdated"
+	// ScaleSetModelOutOfDateReason describes the machine pool model being out of date
+	ScaleSetModelOutOfDateReason = "ScaleSetModelOutOfDate"
 )

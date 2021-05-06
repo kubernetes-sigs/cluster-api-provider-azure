@@ -21,10 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
-	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -35,17 +31,30 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+)
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+type (
+	// Options are controller options extended
+	Options struct {
+		controller.Options
+		Cache *coalescing.ReconcileCache
+	}
 )
 
 // AzureClusterToAzureMachinesMapper creates a mapping handler to transform AzureClusters into AzureMachines. The transform
@@ -429,7 +438,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 	tag, exists := old.Labels[clusterName]
 
 	if exists && tag != string(infrav1.ResourceLifecycleOwned) {
-		log.Info("returning early from json reconcile, user provided secret already exists")
+		log.V(2).Info("returning early from json reconcile, user provided secret already exists")
 		return nil
 	}
 
@@ -445,7 +454,7 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 	hasData := equality.Semantic.DeepEqual(old.Data, new.Data)
 	if hasData && hasOwner {
 		// no update required
-		log.Info("returning early from json reconcile, no update needed")
+		log.V(2).Info("returning early from json reconcile, no update needed")
 		return nil
 	}
 
@@ -457,12 +466,12 @@ func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient clien
 		old.Data = new.Data
 	}
 
-	log.Info("updating azure json")
+	log.V(2).Info("updating azure json")
 	if err := kubeclient.Update(ctx, old); err != nil {
 		return errors.Wrap(err, "failed to update cluster azure json when diff was required")
 	}
 
-	log.Info("done updating azure json")
+	log.V(2).Info("done updating azure json")
 
 	return nil
 }
@@ -488,12 +497,47 @@ func GetOwnerMachinePool(ctx context.Context, c client.Client, obj metav1.Object
 	return nil, nil
 }
 
-// GetMachinePoolByName finds and return a Machine object using the specified params.
+// GetOwnerAzureMachinePool returns the AzureMachinePool object owning the current resource.
+func GetOwnerAzureMachinePool(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*infrav1exp.AzureMachinePool, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.GetOwnerAzureMachinePool")
+	defer span.End()
+
+	for _, ref := range obj.OwnerReferences {
+		if ref.Kind != "AzureMachinePool" {
+			continue
+		}
+
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		if gv.Group == infrav1exp.GroupVersion.Group {
+			return GetAzureMachinePoolByName(ctx, c, obj.Namespace, ref.Name)
+		}
+	}
+	return nil, nil
+}
+
+// GetMachinePoolByName finds and return a MachinePool object using the specified params.
 func GetMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*capiv1exp.MachinePool, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.GetMachinePoolByName")
 	defer span.End()
 
 	m := &capiv1exp.MachinePool{}
+	key := client.ObjectKey{Name: name, Namespace: namespace}
+	if err := c.Get(ctx, key, m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// GetAzureMachinePoolByName finds and return an AzureMachinePool object using the specified params.
+func GetAzureMachinePoolByName(ctx context.Context, c client.Client, namespace, name string) (*infrav1exp.AzureMachinePool, error) {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.GetAzureMachinePoolByName")
+	defer span.End()
+
+	m := &infrav1exp.AzureMachinePool{}
 	key := client.ObjectKey{Name: name, Namespace: namespace}
 	if err := c.Get(ctx, key, m); err != nil {
 		return nil, err

@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"sigs.k8s.io/cluster-api/util"
 
@@ -81,8 +82,12 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 	webDeployment.AddContainerPort("http", "http", 80, corev1.ProtocolTCP)
 
 	if input.Windows {
-		windowsVersion, err := node.GetWindowsVersion(ctx, clientset)
-		Expect(err).NotTo(HaveOccurred())
+		var windowsVersion windows.OSVersion
+		Eventually(func() error {
+			version, err := node.GetWindowsVersion(ctx, clientset)
+			windowsVersion = version
+			return err
+		}, 300*time.Second, 5*time.Second).Should(Succeed())
 		iisImage := windows.GetWindowsImage(windows.Httpd, windowsVersion)
 		webDeployment.SetImage(deploymentName, iisImage)
 		webDeployment.AddWindowsSelectors()

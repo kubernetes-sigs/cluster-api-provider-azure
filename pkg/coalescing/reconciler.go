@@ -53,7 +53,7 @@ type (
 	}
 )
 
-// NewRequestCache creates a new instance of a ReconcileCache given a specified window of expiration
+// NewRequestCache creates a new instance of a ReconcileCache given a specified window of expiration.
 func NewRequestCache(window time.Duration) (*ReconcileCache, error) {
 	cache, err := ttllru.New(1024, window)
 	if err != nil {

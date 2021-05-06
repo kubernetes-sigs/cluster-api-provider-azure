@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-
 	"k8s.io/apimachinery/pkg/runtime"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
+
+	"sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 func TestFuzzyConversion(t *testing.T) {
