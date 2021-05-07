@@ -46,7 +46,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -345,24 +344,6 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 		E2EConfig:        config,
 		RepositoryFolder: repositoryFolder,
 	}
-
-	// Ensuring a CNI file is defined in the config and register a FileTransformation to inject the referenced file as in place of the CNI_RESOURCES envSubst variable.
-	Expect(config.Variables).To(HaveKey(capi_e2e.CNIPath), "Missing %s variable in the config", capi_e2e.CNIPath)
-	cniPath := config.GetVariable(capi_e2e.CNIPath)
-	Expect(cniPath).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", capi_e2e.CNIPath)
-	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPath, capi_e2e.CNIResources)
-
-	// Do the same for CNI_RESOURCES_IPV6.
-	Expect(config.Variables).To(HaveKey(CNIPathIPv6), "Missing %s variable in the config", CNIPathIPv6)
-	cniPathIPv6 := config.GetVariable(CNIPathIPv6)
-	Expect(cniPathIPv6).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathIPv6)
-	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathIPv6, CNIResourcesIPv6)
-
-	// Read CNI_WINDOWS file and set CNI_RESOURCES_WINDOWS environmental variable
-	Expect(config.Variables).To(HaveKey(CNIPathWindows), "Missing %s variable in the config", CNIPathWindows)
-	cniPathWindows := config.GetVariable(CNIPathWindows)
-	Expect(cniPathWindows).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPathWindows)
-	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPathWindows, CNIResourcesWindows)
 
 	clusterctlConfig := clusterctl.CreateRepository(context.TODO(), createRepositoryInput)
 	Expect(clusterctlConfig).To(BeAnExistingFile(), "The clusterctl config file does not exists in the local repository %s", repositoryFolder)
