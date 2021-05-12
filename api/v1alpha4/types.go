@@ -521,6 +521,8 @@ type CloudProviderConfigOverrides struct {
 // We cannot use CloudProviderRateLimitConfig directly because floating point values are not supported in controller-tools.
 // See: https://github.com/kubernetes-sigs/controller-tools/issues/245
 type RateLimitSpec struct {
+	// Name is the name of the rate limit spec.
+	// +kubebuilder:validation:Enum=defaultRateLimit;routeRateLimit;subnetsRateLimit;interfaceRateLimit;routeTableRateLimit;loadBalancerRateLimit;publicIPAddressRateLimit;securityGroupRateLimit;virtualMachineRateLimit;storageAccountRateLimit;diskRateLimit;snapshotRateLimit;virtualMachineScaleSetRateLimit;virtualMachineSizesRateLimit;availabilitySetRateLimit
 	Name   string          `json:"name,omitempty"`
 	Config RateLimitConfig `json:"config,omitempty"`
 }

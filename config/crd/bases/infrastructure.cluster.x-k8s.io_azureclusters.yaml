@@ -400,6 +400,23 @@ spec:
                               x-kubernetes-int-or-string: true
                           type: object
                         name:
+                          description: Name is the name of the rate limit spec.
+                          enum:
+                          - defaultRateLimit
+                          - routeRateLimit
+                          - subnetsRateLimit
+                          - interfaceRateLimit
+                          - routeTableRateLimit
+                          - loadBalancerRateLimit
+                          - publicIPAddressRateLimit
+                          - securityGroupRateLimit
+                          - virtualMachineRateLimit
+                          - storageAccountRateLimit
+                          - diskRateLimit
+                          - snapshotRateLimit
+                          - virtualMachineScaleSetRateLimit
+                          - virtualMachineSizesRateLimit
+                          - availabilitySetRateLimit
                           type: string
                       type: object
                     type: array

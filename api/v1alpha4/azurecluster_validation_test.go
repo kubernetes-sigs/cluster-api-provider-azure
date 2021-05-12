@@ -1101,6 +1101,104 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 	}
 }
 
+func TestValidateCloudProviderConfigOverrides(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name        string
+		oldConfig   *CloudProviderConfigOverrides
+		newConfig   *CloudProviderConfigOverrides
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name:    "both old and new config nil",
+			wantErr: false,
+		},
+		{
+			name: "both old and new config are same",
+			oldConfig: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+				Name:   "foo",
+				Config: RateLimitConfig{CloudProviderRateLimitBucket: 10, CloudProviderRateLimit: true},
+			}}},
+			newConfig: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+				Name:   "foo",
+				Config: RateLimitConfig{CloudProviderRateLimitBucket: 10, CloudProviderRateLimit: true},
+			}}},
+			wantErr: false,
+		},
+		{
+			name: "old and new config are not same",
+			oldConfig: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+				Name:   "foo",
+				Config: RateLimitConfig{CloudProviderRateLimitBucket: 10, CloudProviderRateLimit: true},
+			}}},
+			newConfig: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+				Name:   "foo",
+				Config: RateLimitConfig{CloudProviderRateLimitBucket: 11, CloudProviderRateLimit: true},
+			}}},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "spec.cloudProviderConfigOverrides",
+				BadValue: CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+					Name:   "foo",
+					Config: RateLimitConfig{CloudProviderRateLimitBucket: 11, CloudProviderRateLimit: true},
+				}}},
+				Detail: "cannot change cloudProviderConfigOverrides cluster creation",
+			},
+		},
+		{
+			name: "new config is nil",
+			oldConfig: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+				Name:   "foo",
+				Config: RateLimitConfig{CloudProviderRateLimitBucket: 10, CloudProviderRateLimit: true},
+			}}},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.cloudProviderConfigOverrides",
+				BadValue: nil,
+				Detail:   "cannot change cloudProviderConfigOverrides cluster creation",
+			},
+		},
+		{
+			name: "old config is nil",
+			newConfig: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+				Name:   "foo",
+				Config: RateLimitConfig{CloudProviderRateLimitBucket: 10, CloudProviderRateLimit: true},
+			}}},
+			wantErr: true,
+			expectedErr: field.Error{
+				Type:  "FieldValueInvalid",
+				Field: "spec.cloudProviderConfigOverrides",
+				BadValue: &CloudProviderConfigOverrides{RateLimits: []RateLimitSpec{{
+					Name:   "foo",
+					Config: RateLimitConfig{CloudProviderRateLimitBucket: 10, CloudProviderRateLimit: true},
+				}}},
+				Detail: "cannot change cloudProviderConfigOverrides cluster creation",
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateCloudProviderConfigOverrides(testCase.oldConfig, testCase.newConfig, field.NewPath("spec.cloudProviderConfigOverrides"))
+			if testCase.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == testCase.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
 func createValidCluster() *AzureCluster {
 	return &AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
