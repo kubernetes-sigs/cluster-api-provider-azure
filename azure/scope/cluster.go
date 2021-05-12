@@ -423,6 +423,11 @@ func (s *ClusterScope) AvailabilitySetEnabled() bool {
 	return len(s.AzureCluster.Status.FailureDomains) == 0
 }
 
+// CloudProviderConfigOverrides returns the cloud provider config overrides for the cluster.
+func (s *ClusterScope) CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides {
+	return s.AzureCluster.Spec.CloudProviderConfigOverrides
+}
+
 // GenerateFQDN generates a fully qualified domain name, based on a hash, cluster name and cluster location.
 func (s *ClusterScope) GenerateFQDN(ipName string) string {
 	h := fnv.New32a()

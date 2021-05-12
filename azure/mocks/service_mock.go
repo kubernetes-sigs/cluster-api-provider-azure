@@ -658,6 +658,20 @@ func (mr *MockClusterDescriberMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockClusterDescriber)(nil).CloudEnvironment))
 }
 
+// CloudProviderConfigOverrides mocks base method.
+func (m *MockClusterDescriber) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
+	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	return ret0
+}
+
+// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
+func (mr *MockClusterDescriberMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockClusterDescriber)(nil).CloudProviderConfigOverrides))
+}
+
 // ClusterName mocks base method.
 func (m *MockClusterDescriber) ClusterName() string {
 	m.ctrl.T.Helper()
@@ -889,6 +903,20 @@ func (m *MockClusterScoper) CloudEnvironment() string {
 func (mr *MockClusterScoperMockRecorder) CloudEnvironment() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockClusterScoper)(nil).CloudEnvironment))
+}
+
+// CloudProviderConfigOverrides mocks base method.
+func (m *MockClusterScoper) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
+	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	return ret0
+}
+
+// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
+func (mr *MockClusterScoperMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockClusterScoper)(nil).CloudProviderConfigOverrides))
 }
 
 // ClusterName mocks base method.

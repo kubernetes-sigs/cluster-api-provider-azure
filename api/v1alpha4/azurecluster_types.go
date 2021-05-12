@@ -65,6 +65,14 @@ type AzureClusterSpec struct {
 	// - USGovernmentCloud: "AzureUSGovernmentCloud"
 	// +optional
 	AzureEnvironment string `json:"azureEnvironment,omitempty"`
+
+	// CloudProviderConfigOverrides is an optional set of configuration values that can be overridden in azure cloud provider config.
+	// This is only a subset of options that are available in azure cloud provider config.
+	// Some values for the cloud provider config are inferred from other parts of cluster api provider azure spec, and may not be available for overrides.
+	// See: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs
+	// Note: All cloud provider config values can be customized by creating the secret beforehand. CloudProviderConfigOverrides is only used when the secret is managed by the Azure Provider.
+	// +optional
+	CloudProviderConfigOverrides *CloudProviderConfigOverrides `json:"cloudProviderConfigOverrides,omitempty"`
 }
 
 // AzureClusterStatus defines the observed state of AzureCluster

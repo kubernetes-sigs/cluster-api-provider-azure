@@ -246,3 +246,8 @@ func (s *ManagedControlPlaneScope) OutboundPoolName(_ string) string {
 func (s *ManagedControlPlaneScope) GetPrivateDNSZoneName() string {
 	return ""
 }
+
+// CloudProviderConfigOverrides returns the cloud provider config overrides for the cluster.
+func (s *ManagedControlPlaneScope) CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides {
+	return nil
+}
