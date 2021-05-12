@@ -53,6 +53,7 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	dst.Spec.NetworkSpec.APIServerLB.FrontendIPsCount = restored.Spec.NetworkSpec.APIServerLB.FrontendIPsCount
 	dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
+	dst.Spec.CloudProviderConfigOverrides = restored.Spec.CloudProviderConfigOverrides
 
 	// Here we manually restore outbound security rules. Since v1alpha3 only supports ingress ("Inbound") rules, all v1alpha4 outbound rules are dropped when an AzureCluster
 	// is converted to v1alpha3. We loop through all security group rules. For all previously existing outbound rules we restore the full rule.
