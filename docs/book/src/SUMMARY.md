@@ -13,6 +13,7 @@
     - [Data Disks](./topics/data-disks.md)
     - [OS Disk](./topics/os-disk.md)
     - [Failure Domains](./topics/failure-domains.md)
+    - [Flannel](./topics/flannel.md)
     - [GPU-enabled Clusters](./topics/gpu.md)
     - [Identity](./topics/identity.md)
     - [Identity use cases](./topics/identities-use-cases.md)
