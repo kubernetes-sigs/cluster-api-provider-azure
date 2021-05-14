@@ -211,7 +211,6 @@ func main() {
 	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
 	if webhookPort == 0 {
-		log.Info("In main method")
 		if err = (&controllers.AzureMachineReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureMachine"),
@@ -220,8 +219,6 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureMachine")
 			os.Exit(1)
-		} else {
-			log.Info("In AzureMachineReconciler")
 		}
 		if err = (&controllers.AzureClusterReconciler{
 			Client:           mgr.GetClient(),
@@ -231,10 +228,7 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureCluster")
 			os.Exit(1)
-		} else {
-			log.Info("In AzureClusterReconciler")
 		}
-
 		if err = (&controllers.AzureJSONTemplateReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
@@ -243,10 +237,7 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONTemplate")
 			os.Exit(1)
-		} else {
-			log.Info("In AzureJSONTemplateReconciler")
 		}
-
 		if err = (&controllers.AzureJSONMachineReconciler{
 			Client:           mgr.GetClient(),
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachine"),
@@ -255,9 +246,8 @@ func main() {
 		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
 			os.Exit(1)
-		} else {
-			log.Info("In AzureJSONMachineReconciler")
 		}
+		
 		// just use CAPI MachinePool feature flag rather than create a new one
 		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 		if feature.Gates.Enabled(capifeature.MachinePool) {
@@ -269,8 +259,6 @@ func main() {
 			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureMachinePool")
 				os.Exit(1)
-			} else {
-				log.Info("In feature.Gates.Enabled")
 			}
 
 			if err = (&controllers.AzureJSONMachinePoolReconciler{
@@ -281,12 +269,9 @@ func main() {
 			}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachinePool")
 				os.Exit(1)
-			} else {
-				log.Info("In &controllers.AzureJSONMachinePoolReconciler")
 			}
 
 			if feature.Gates.Enabled(feature.AKS) {
-				log.Info("Inside feature.AKS")
 				/*if err = (&infrav1controllersexp.AzureManagedMachinePoolReconciler{
 					Client:           mgr.GetClient(),
 					Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedMachinePool"),
