@@ -146,7 +146,8 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	log := klogr.New()
 	specs := []azure.NICSpec{}
 	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
-		log.Info("networkInterface name is","networkInterface name",networkInterface.Name)
+		log.Info("Machine name: %s",m.Name())
+		log.Info("Network Interface name: %s",networkInterface.Name)
 		spec := azure.NICSpec{
 			Name: 				   networkInterface.Name,
 			MachineName:		   m.Name(),

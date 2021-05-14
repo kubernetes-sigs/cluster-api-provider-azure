@@ -166,15 +166,8 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
-
-	/*if azureCluster.Status.Network.APIServerIP.DNSName == "" {
-		clusterScope.Info("Waiting for Load Balancer to exist")
-		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.LoadBalancerProvisioningReason, clusterv1.ConditionSeverityWarning, err.Error())
-		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
-	}*/
 	log := klogr.New()
-	/*log.Info(azureCluster.Status.Network.APIServerIP.DNSName)*/
-	log.Info("Setting the control plane endpoint and Port")
+	log.Info("Setting the ControlPlaneEndpointIP as %s and APIServerPort as %s",azureCluster.Spec.ControlPlaneEndpointIP,clusterScope.APIServerPort())
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		//Host: azureCluster.Status.Network.APIServerIP.DNSName,
