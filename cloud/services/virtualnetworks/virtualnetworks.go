@@ -31,7 +31,7 @@ import (
 // getExisting provides information about an existing virtual network.
 func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
 	log := klogr.New()
-	log.Info("In getExistingVnet function")
+	log.Info("Fetching existing virtual network")
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
@@ -46,7 +46,7 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 			cidr = prefixes[0]
 		}
 	}
-	log.Info(cidr)
+	log.Info("Virtual Network CIDR: %s",cidr)
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
@@ -67,7 +67,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//    * Node NSG
 	//    * Node Route Table
 	log := klogr.New()
-	log.Info("In reconcile vnet")
 	for _, vnetSpec := range s.Scope.VNetSpecs() {
 		existingVnet, err := s.getExisting(ctx, vnetSpec)
 
