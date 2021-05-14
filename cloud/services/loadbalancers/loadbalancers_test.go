@@ -22,19 +22,19 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest/to"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/virtualnetworks/mock_virtualnetworks"
+	gomockinternal "github.com/niachary/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	"k8s.io/klog/klogr"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/loadbalancers/mock_loadbalancers"
 )
 
 func TestReconcileLoadBalancer(t *testing.T) {

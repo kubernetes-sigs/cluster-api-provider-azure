@@ -17,7 +17,7 @@ limitations under the License.
 package publicips
 
 import (
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
 	"github.com/go-logr/logr"
 )

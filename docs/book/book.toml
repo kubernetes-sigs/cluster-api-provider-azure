@@ -7,7 +7,7 @@ title = "The Cluster API Provider Azure Book"
 
 [output.html]
 curly-quotes = true
-git-repository-url = "https://sigs.k8s.io/cluster-api-provider-azure"
+git-repository-url = "https://github.com/niachary/cluster-api-provider-azure"
 
 [preprocessor.tabulate]
 command = "./util-tabulate.sh"

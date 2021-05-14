@@ -19,7 +19,7 @@ package converters
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 )
 
 func IngresstoSecurityRule(ingress infrav1.IngressRule) network.SecurityRule {

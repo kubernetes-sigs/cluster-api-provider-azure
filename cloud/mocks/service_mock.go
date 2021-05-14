@@ -25,7 +25,7 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 )
 
 // MockService is a mock of Service interface.

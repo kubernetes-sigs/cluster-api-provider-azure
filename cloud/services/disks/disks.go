@@ -19,7 +19,7 @@ package disks
 import (
 	"context"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
 	"github.com/pkg/errors"
 )

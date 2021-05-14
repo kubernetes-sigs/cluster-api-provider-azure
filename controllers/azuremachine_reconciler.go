@@ -20,12 +20,12 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/disks"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/publicips"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/virtualmachines"
 )
 
 // azureMachineService is the group of services called by the AzureMachine controller.

@@ -25,8 +25,8 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
 	"net/http"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/tags/mock_tags"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/tags/mock_tags"
 	"testing"
 )
 

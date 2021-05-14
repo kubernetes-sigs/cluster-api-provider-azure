@@ -21,11 +21,11 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
-	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/networkinterfaces"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/publicips"
+	//"github.com/niachary/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 // VMScope defines the scope interface for a virtual machines service.

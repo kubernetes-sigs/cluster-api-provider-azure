@@ -17,7 +17,7 @@ limitations under the License.
 package logentries
 
 import (
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomega"
+	"github.com/niachary/cluster-api-provider-azure/internal/test/matchers/gomega"
 )
 
 type (

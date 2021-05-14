@@ -123,7 +123,7 @@ const (
 	// which tracks the AdditionalTags in the Machine Provider Config.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 	// for annotation formatting rules.
-	VMTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-vm"
+	VMTagsLastAppliedAnnotation = "github.com/niachary/cluster-api-provider-azure-last-applied-tags-vm"
 )
 
 // ClusterTagKey generates the key for resources associated with a cluster.

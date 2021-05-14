@@ -18,7 +18,7 @@ package virtualnetworks
 
 import (
 	"github.com/go-logr/logr"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
 // VNetScope defines the scope interface for a virtual network service.

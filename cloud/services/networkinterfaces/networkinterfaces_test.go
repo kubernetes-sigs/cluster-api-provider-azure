@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"testing"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	gomockinternal "github.com/niachary/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
@@ -33,8 +33,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/resourceskus"
 )
 
 func TestReconcileNetworkInterface(t *testing.T) {

@@ -16,4 +16,4 @@ limitations under the License.
 
 package v1alpha2
 
-// +k8s:conversion-gen=sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3
+// +k8s:conversion-gen=github.com/niachary/cluster-api-provider-azure/api/v1alpha3

@@ -23,9 +23,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/converters"
 )
 
 // getExisting provides information about an existing virtual network.
@@ -66,7 +66,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//    * Control Plane NSG
 	//    * Node NSG
 	//    * Node Route Table
-	log := klogr.New()
 	for _, vnetSpec := range s.Scope.VNetSpecs() {
 		existingVnet, err := s.getExisting(ctx, vnetSpec)
 

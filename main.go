@@ -35,13 +35,13 @@ import (
 
 	capifeature "sigs.k8s.io/cluster-api/feature"
 
-	infrav1alpha2 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha2"
-	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1alpha3exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	infrav1controllersexp "sigs.k8s.io/cluster-api-provider-azure/exp/controllers"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
-	version "sigs.k8s.io/cluster-api-provider-azure/version"
+	infrav1alpha2 "github.com/niachary/cluster-api-provider-azure/api/v1alpha2"
+	infrav1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/controllers"
+	infrav1alpha3exp "github.com/niachary/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1controllersexp "github.com/niachary/cluster-api-provider-azure/exp/controllers"
+	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
+	version "github.com/niachary/cluster-api-provider-azure/version"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
@@ -50,7 +50,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
-	"sigs.k8s.io/cluster-api-provider-azure/feature"
+	"github.com/niachary/cluster-api-provider-azure/feature"
 )
 
 var (
@@ -166,7 +166,6 @@ func InitFlags(fs *pflag.FlagSet) {
 }
 
 func main() {
-	log := klogr.New()
 	InitFlags(pflag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()

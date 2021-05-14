@@ -33,10 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
+	expv1 "github.com/niachary/cluster-api-provider-azure/exp/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
 )
 
 // AzureJSONMachinePoolReconciler reconciles azure json secrets for AzureMachinePool objects

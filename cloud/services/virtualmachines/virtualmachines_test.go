@@ -24,16 +24,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/klogr"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	gomockinternal "github.com/niachary/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	. "github.com/onsi/gomega"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/networkinterfaces/mock_networkinterfaces"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/resourceskus"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/virtualmachines/mock_virtualmachines"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"

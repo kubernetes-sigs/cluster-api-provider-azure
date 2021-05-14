@@ -17,10 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"strconv"
-
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog/klogr"
 )
 
 const (

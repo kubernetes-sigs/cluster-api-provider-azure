@@ -18,7 +18,7 @@ package v1alpha2
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
-	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )

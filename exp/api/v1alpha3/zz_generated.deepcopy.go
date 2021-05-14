@@ -22,7 +22,7 @@ package v1alpha3
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
-	apiv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	apiv1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/errors"
 )
 
