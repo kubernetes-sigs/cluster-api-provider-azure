@@ -58,7 +58,6 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, er
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
 	log := klogr.New()
-	log.Info("In reconcile virtual machine")
 	for _, vmSpec := range s.Scope.VMSpecs() {
 		existingVM, err := s.getExisting(ctx, vmSpec.Name)
 		switch {
@@ -72,7 +71,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.SetVMState(existingVM.State)
 		default:
 			s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
-
+			log.Info("Creating VM: %s",vmSpec.Name)
 			storageProfile, err := s.generateStorageProfile(ctx, vmSpec)
 			if err != nil {
 				return err
