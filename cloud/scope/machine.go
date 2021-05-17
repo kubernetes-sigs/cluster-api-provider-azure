@@ -417,17 +417,11 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 // Pick image from the machine configuration, or use a default one.
 func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
-	log := klogr.New()
 	if m.AzureMachine.Spec.Image != nil {
-		log.Info("m.AzureMachine.Spec.Image")
-		//log.Info(m.AzureMachine.Spec.Image)
 		return m.AzureMachine.Spec.Image, nil
 	}
 
 	m.Info("No image specified for machine, using default", "machine", m.AzureMachine.GetName())
 	imageID := m.AzureMachine.Spec.ImageID
-	log.Info("Printing image ID")
-	log.Info(imageID)
-	//return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 	return azure.GetDefaultUbuntuImage(imageID)
 }

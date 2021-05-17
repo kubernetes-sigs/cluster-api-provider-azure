@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"fmt"
 )
 
 // Reconcile gets/creates/updates a network interface.
@@ -48,10 +49,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			//commenting out to test api server IP, uncomment this later on. LoadBalancer should return IP address
 			nicConfig.PrivateIPAllocationMethod = network.Dynamic
 			if nicSpec.StaticIPAddress != "" {
-				log.Info("I am using the IP address from nicSpec")
-				log.Info(nicSpec.StaticIPAddress)
+				log.Info(fmt.Sprintf("Reconciling network interface with name %s and static IP %s", nicSpec.Name, nicSpec.StaticIPAddress))
 				nicConfig.PrivateIPAllocationMethod = network.Static
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
+			}else
+			{
+				log.Info(fmt.Sprintf("Reconciling network interface with name %s and dynamic IP", nicSpec.Name))
 			}
 
 			backendAddressPools := []network.BackendAddressPool{}
@@ -75,20 +78,18 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 			if nicSpec.InternalLBName != "" && nicSpec.InternalLBAddressPoolName != "" {
-				log.Info(nicSpec.InternalLBName)
-				log.Info(nicSpec.InternalLBAddressPoolName)
+				log.Info(fmt.Sprintf("Internal Load Balancer name: %s",nicSpec.InternalLBName))
+				log.Info(fmt.Sprintf("Internal Load Balancer Address Pool name: %s",nicSpec.InternalLBAddressPoolName))
 				// only control planes have an attached internal LB
 				backendAddressPools = append(backendAddressPools,
 					network.BackendAddressPool{
 						ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.InternalLBName, nicSpec.InternalLBAddressPoolName)),
 					})
 			}
-			log.Info("AddressPoolID using InternalLBName and InternalLBAddress")
 			//nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
 
 			if nicSpec.PublicIPName != "" {
-				log.Info("Inside publicIPName not equal to null")
-				log.Info(nicSpec.PublicIPName)
+				log.Info(fmt.Sprintf("PublicIPName: %s",nicSpec.PublicIPName))
 				nicConfig.PublicIPAddress = &network.PublicIPAddress{
 					ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), nicSpec.PublicIPName)),
 				}

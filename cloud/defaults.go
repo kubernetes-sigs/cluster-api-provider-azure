@@ -178,8 +178,7 @@ func GetDefaultUbuntuImage(imageID string) (*infrav1.Image, error) {
 		},
 	}*/
 	log := klogr.New()
-	log.Info("Printing image ID in getDefaultUbuntuImage")
-	log.Info(imageID)
+	log.Info("ImageID for machine: %s",imageID)
 	defaultImage := &infrav1.Image{
 		ID: to.StringPtr(imageID)}
 	return defaultImage, nil
