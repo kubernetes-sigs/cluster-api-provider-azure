@@ -60,6 +60,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	log := klogr.New()
 	for _, vmSpec := range s.Scope.VMSpecs() {
 		existingVM, err := s.getExisting(ctx, vmSpec.Name)
+		log.Info(fmt.Sprintf("Reconciling VM: %s",vmSpec.Name))
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
 			return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
@@ -71,7 +72,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.SetVMState(existingVM.State)
 		default:
 			s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
-			log.Info("Creating VM: %s",vmSpec.Name)
+			log.Info(fmt.Sprintf("Creating VM: %s",vmSpec.Name))
 			storageProfile, err := s.generateStorageProfile(ctx, vmSpec)
 			if err != nil {
 				return err
