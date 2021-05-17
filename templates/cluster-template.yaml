@@ -122,55 +122,6 @@ spec:
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
       imageID: ${AZURE_IMAGE_ID}
 ---
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineDeployment
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: null
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
-kind: AzureMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  template:
-    spec:
-      location: ${AZURE_LOCATION}
-      networkInterfaces:
-      - name: ${AZURE_NODE_MACHINE_NIC_NAME}
-        vnetName:  ${AZURE_NODE_MACHINE_VNET_NAME}
-        subnetName: ${AZURE_NODE_MACHINE_SUBNET_NAME}
-        vnetResourceGroup: ${AZURE_NODE_MACHINE_VNET_RESOURCE_GROUP}
-        isPrimary: ${IS_NIC_PRIMARY}
-        staticIPAddress: ${AZURE_NODE_MACHINE_STATIC_IP_ADDRESS:=""}
-      osDisk:
-        diskSizeGB: ${AZURE_NODE_OSDISK_SIZE:=128}
-        managedDisk:
-          storageAccountType: Standard_LRS
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
-      imageID: ${AZURE_IMAGE_ID}
----
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: KubeadmConfigTemplate
 metadata:
