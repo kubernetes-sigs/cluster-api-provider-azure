@@ -2356,7 +2356,7 @@ spec:
         - --metrics-addr=127.0.0.1:8080
         - --webhook-port=9443
         - --feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false}
-        image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:dev
+        image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:master
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -2462,7 +2462,7 @@ spec:
             secretKeyRef:
               key: arm-endpoint
               name: capz-manager-bootstrap-credentials
-        image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:dev
+        image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:master
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
