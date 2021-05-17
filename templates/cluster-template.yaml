@@ -102,7 +102,7 @@ spec:
   template:
     spec:
       networkInterfaces:
-      - name: ${AZURE_CONTROL_PLANE_NIC_NAME}
+      - name: ${AZURE_CONTROL_PLANE_NIC_NAME:=""}
         vnetName: ${AZURE_CONTROL_PLANE_VNET_NAME} 
         subnetName: ${AZURE_CONTROL_PLANE_SUBNET_NAME}
         vnetResourceGroup: ${AZURE_CONTROL_PLANE_VNET_RESOURCE_GROUP}
