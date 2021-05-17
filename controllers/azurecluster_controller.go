@@ -38,9 +38,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
+	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
+	"fmt"
 )
 
 // AzureClusterReconciler reconciles a AzureCluster object
@@ -166,15 +167,8 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
-
-	/*if azureCluster.Status.Network.APIServerIP.DNSName == "" {
-		clusterScope.Info("Waiting for Load Balancer to exist")
-		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.LoadBalancerProvisioningReason, clusterv1.ConditionSeverityWarning, err.Error())
-		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
-	}*/
 	log := klogr.New()
-	/*log.Info(azureCluster.Status.Network.APIServerIP.DNSName)*/
-	log.Info("Setting the control plane endpoint and Port")
+	log.Info(fmt.Sprintf("Setting the ControlPlaneEndpointIP as %s and APIServerPort as %d",azureCluster.Spec.ControlPlaneEndpointIP,clusterScope.APIServerPort()))
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		//Host: azureCluster.Status.Network.APIServerIP.DNSName,

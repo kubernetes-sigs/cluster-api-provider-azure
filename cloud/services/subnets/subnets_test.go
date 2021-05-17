@@ -21,12 +21,12 @@ import (
 	"net/http"
 	"testing"
 
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	gomockinternal "github.com/niachary/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/subnets/mock_subnets"
 
 	"github.com/golang/mock/gomock"
 
@@ -34,7 +34,7 @@ import (
 	//"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 )
 
 func TestReconcileSubnets(t *testing.T) {

@@ -21,8 +21,8 @@ import (
 
 	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/agentpools"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
+	//"github.com/niachary/cluster-api-provider-azure/cloud/services/agentpools"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

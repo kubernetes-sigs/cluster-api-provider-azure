@@ -17,7 +17,7 @@ limitations under the License.
 package controllers
 
 import (
-	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
+	gomockinternal "github.com/niachary/cluster-api-provider-azure/internal/test/matchers/gomock"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -33,9 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/mock_log"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	infrav1exp "github.com/niachary/cluster-api-provider-azure/exp/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/internal/test/mock_log"
 )
 
 func TestAzureClusterToAzureMachinePoolsMapper(t *testing.T) {

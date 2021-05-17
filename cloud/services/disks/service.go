@@ -18,7 +18,7 @@ package disks
 
 import (
 	"github.com/go-logr/logr"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
 // DiskScope defines the scope interface for a disk service.

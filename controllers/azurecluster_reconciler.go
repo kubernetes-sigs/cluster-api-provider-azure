@@ -23,16 +23,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/loadbalancers"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/groups"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/loadbalancers"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/publicips"
 
-	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/routetables"
-	//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/securitygroups"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/subnets"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
+	//"github.com/niachary/cluster-api-provider-azure/cloud/services/routetables"
+	//"github.com/niachary/cluster-api-provider-azure/cloud/services/securitygroups"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/subnets"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/virtualnetworks"
 )
 
 // azureClusterReconciler is the reconciler called by the AzureCluster controller

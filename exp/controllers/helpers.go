@@ -35,10 +35,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/controllers"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/controllers"
+	infrav1exp "github.com/niachary/cluster-api-provider-azure/exp/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
 )
 
 // AzureClusterToAzureMachinePoolsMapper creates a mapping handler to transform AzureClusters into AzureMachinePools. The transform

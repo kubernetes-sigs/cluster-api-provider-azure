@@ -23,7 +23,7 @@ import (
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
 
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
+	"github.com/niachary/cluster-api-provider-azure/internal/test/record"
 )
 
 type (

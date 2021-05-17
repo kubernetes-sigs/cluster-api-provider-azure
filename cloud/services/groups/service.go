@@ -18,8 +18,8 @@ package groups
 
 import (
 	"github.com/go-logr/logr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
 // Service provides operations on azure resources

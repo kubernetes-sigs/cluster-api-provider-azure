@@ -21,10 +21,10 @@ import (
 	"net/http"
 	"testing"
 
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/publicips/mock_publicips"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/golang/mock/gomock"

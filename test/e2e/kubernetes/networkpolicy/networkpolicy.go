@@ -25,7 +25,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	e2e_pod "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pod"
+	e2e_pod "github.com/niachary/cluster-api-provider-azure/test/e2e/kubernetes/pod"
 
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"

@@ -28,9 +28,9 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/converters"
 )
 
 // getExisting provides information about a virtual machine.
@@ -58,9 +58,9 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, er
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
 	log := klogr.New()
-	log.Info("In reconcile virtual machine")
 	for _, vmSpec := range s.Scope.VMSpecs() {
 		existingVM, err := s.getExisting(ctx, vmSpec.Name)
+		log.Info(fmt.Sprintf("Reconciling VM: %s",vmSpec.Name))
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
 			return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
@@ -72,7 +72,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			s.Scope.SetVMState(existingVM.State)
 		default:
 			s.Scope.V(2).Info("creating VM", "vm", vmSpec.Name)
-
+			log.Info(fmt.Sprintf("Creating VM: %s",vmSpec.Name))
 			storageProfile, err := s.generateStorageProfile(ctx, vmSpec)
 			if err != nil {
 				return err

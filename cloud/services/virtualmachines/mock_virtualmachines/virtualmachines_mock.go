@@ -27,8 +27,8 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	reflect "reflect"
-	v1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
 // MockVMScope is a mock of VMScope interface.

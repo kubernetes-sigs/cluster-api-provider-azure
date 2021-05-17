@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/env"
+	"github.com/niachary/cluster-api-provider-azure/internal/test/env"
 	// +kubebuilder:scaffold:imports
 )
 

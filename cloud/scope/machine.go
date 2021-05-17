@@ -27,14 +27,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"fmt"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -146,7 +147,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	log := klogr.New()
 	specs := []azure.NICSpec{}
 	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
-		log.Info("networkInterface name is","networkInterface name",networkInterface.Name)
+		log.Info(fmt.Sprintf("Creating spec for Network Interface: %s",networkInterface.Name))
 		spec := azure.NICSpec{
 			Name: 				   networkInterface.Name,
 			MachineName:		   m.Name(),
@@ -416,17 +417,11 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 // Pick image from the machine configuration, or use a default one.
 func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
-	log := klogr.New()
 	if m.AzureMachine.Spec.Image != nil {
-		log.Info("m.AzureMachine.Spec.Image")
-		//log.Info(m.AzureMachine.Spec.Image)
 		return m.AzureMachine.Spec.Image, nil
 	}
 
 	m.Info("No image specified for machine, using default", "machine", m.AzureMachine.GetName())
 	imageID := m.AzureMachine.Spec.ImageID
-	log.Info("Printing image ID")
-	log.Info(imageID)
-	//return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
 	return azure.GetDefaultUbuntuImage(imageID)
 }

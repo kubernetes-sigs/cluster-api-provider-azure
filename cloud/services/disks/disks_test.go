@@ -23,8 +23,8 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/disks/mock_disks"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/disks/mock_disks"
 
 	"github.com/golang/mock/gomock"
 

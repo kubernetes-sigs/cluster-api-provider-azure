@@ -42,7 +42,7 @@ EXP_DIR := exp
 GO_INSTALL = ./scripts/go_install.sh
 
 # set --output-base used for conversion-gen which needs to be different for in GOPATH and outside GOPATH dev
-ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure)
+ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/github.com/niachary/cluster-api-provider-azure)
   OUTPUT_BASE := --output-base=$(ROOT_DIR)
 endif
 

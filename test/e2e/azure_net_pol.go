@@ -29,9 +29,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	e2e_deployment "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
-	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
-	e2e_networkpolicy "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/networkpolicy"
+	e2e_deployment "github.com/niachary/cluster-api-provider-azure/test/e2e/kubernetes/deployment"
+	e2e_namespace "github.com/niachary/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
+	e2e_networkpolicy "github.com/niachary/cluster-api-provider-azure/test/e2e/kubernetes/networkpolicy"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

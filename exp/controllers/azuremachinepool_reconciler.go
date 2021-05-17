@@ -19,7 +19,7 @@ package controllers
 import (
 	"context"
 
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
 )
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.

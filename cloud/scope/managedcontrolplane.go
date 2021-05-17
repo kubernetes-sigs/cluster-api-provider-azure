@@ -27,8 +27,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	infrav1exp "github.com/niachary/cluster-api-provider-azure/exp/api/v1alpha3"
 
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"

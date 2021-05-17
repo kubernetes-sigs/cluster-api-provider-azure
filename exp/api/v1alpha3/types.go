@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 )
 
 type (

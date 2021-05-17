@@ -23,9 +23,9 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups/mock_groups"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/cloud/converters"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/groups/mock_groups"
 
 	"github.com/golang/mock/gomock"
 

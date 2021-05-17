@@ -26,10 +26,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/logentries"
-	"sigs.k8s.io/cluster-api-provider-azure/internal/test/record"
+	infrav1exp "github.com/niachary/cluster-api-provider-azure/exp/api/v1alpha3"
+	"github.com/niachary/cluster-api-provider-azure/internal/test"
+	"github.com/niachary/cluster-api-provider-azure/internal/test/logentries"
+	"github.com/niachary/cluster-api-provider-azure/internal/test/record"
 )
 
 var (

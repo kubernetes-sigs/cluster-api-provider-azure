@@ -17,13 +17,13 @@ limitations under the License.
 package controllers
 
 import (
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/groups"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/groups"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//"sigs.k8s.io/cluster-api-provider-azure/cloud/services/managedclusters"
+//"github.com/niachary/cluster-api-provider-azure/cloud/services/managedclusters"
 
 // azureManagedControlPlaneReconciler are list of services required by cluster controller
 type azureManagedControlPlaneReconciler struct {

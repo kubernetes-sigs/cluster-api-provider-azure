@@ -1,6 +1,6 @@
 version: "2"
 domain: x-k8s.io
-repo: sigs.k8s.io/cluster-api-provider-azure
+repo: github.com/niachary/cluster-api-provider-azure
 resources:
 - group: infrastructure
   version: v1alpha2

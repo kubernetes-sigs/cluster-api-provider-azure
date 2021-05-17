@@ -1,5 +1,5 @@
 domain: exp.infrastructure.x-k8s.io
-repo: sigs.k8s.io/cluster-api-provider-azure/exp
+repo: github.com/niachary/cluster-api-provider-azure/exp
 version: "2"
 resources:
 - group: exp.infrastructure

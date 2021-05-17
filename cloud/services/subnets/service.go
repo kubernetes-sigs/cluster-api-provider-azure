@@ -18,7 +18,7 @@ package subnets
 
 import (
 	"github.com/go-logr/logr"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
 // SubnetScope defines the scope interface for a subnet service.

@@ -18,20 +18,20 @@ package virtualnetworks
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog/klogr"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/converters"
+	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/converters"
 )
 
 // getExisting provides information about an existing virtual network.
 func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
 	log := klogr.New()
-	log.Info("In getExistingVnet function")
+	log.Info("Getting existing virtual network")
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
@@ -46,7 +46,7 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 			cidr = prefixes[0]
 		}
 	}
-	log.Info(cidr)
+	log.Info(fmt.Sprintf("Virtual Network CIDR: %s",cidr))
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
@@ -66,8 +66,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//    * Control Plane NSG
 	//    * Node NSG
 	//    * Node Route Table
-	log := klogr.New()
-	log.Info("In reconcile vnet")
 	for _, vnetSpec := range s.Scope.VNetSpecs() {
 		existingVnet, err := s.getExisting(ctx, vnetSpec)
 

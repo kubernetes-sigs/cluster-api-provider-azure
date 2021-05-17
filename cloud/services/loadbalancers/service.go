@@ -18,8 +18,8 @@ package loadbalancers
 
 import (
 	"github.com/go-logr/logr"
-	azure "sigs.k8s.io/cluster-api-provider-azure/cloud"
-	"sigs.k8s.io/cluster-api-provider-azure/cloud/services/virtualnetworks"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"github.com/niachary/cluster-api-provider-azure/cloud/services/virtualnetworks"
 )
 
 // LBScope defines the scope interface for a load balancer service.
