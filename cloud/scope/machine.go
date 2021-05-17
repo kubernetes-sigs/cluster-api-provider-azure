@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"fmt"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -146,8 +147,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	log := klogr.New()
 	specs := []azure.NICSpec{}
 	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
-		log.Info("Machine name: %s",m.Name())
-		log.Info("Network Interface name: %s",networkInterface.Name)
+		log.Info(fmt.Sprintf("Creating spec for Network Interface: %s",networkInterface.Name))
 		spec := azure.NICSpec{
 			Name: 				   networkInterface.Name,
 			MachineName:		   m.Name(),

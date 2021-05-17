@@ -18,7 +18,7 @@ package virtualnetworks
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -31,7 +31,7 @@ import (
 // getExisting provides information about an existing virtual network.
 func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav1.VnetSpec, error) {
 	log := klogr.New()
-	log.Info("Fetching existing virtual network")
+	log.Info("Getting existing virtual network")
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
@@ -46,7 +46,7 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 			cidr = prefixes[0]
 		}
 	}
-	log.Info("Virtual Network CIDR: %s",cidr)
+	log.Info(fmt.Sprintf("Virtual Network CIDR: %s",cidr))
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),

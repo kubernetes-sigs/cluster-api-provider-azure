@@ -41,6 +41,7 @@ import (
 	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
 	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
+	"fmt"
 )
 
 // AzureClusterReconciler reconciles a AzureCluster object
@@ -167,7 +168,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile cluster services")
 	}
 	log := klogr.New()
-	log.Info("Setting the ControlPlaneEndpointIP as %s and APIServerPort as %s",azureCluster.Spec.ControlPlaneEndpointIP,clusterScope.APIServerPort())
+	log.Info(fmt.Sprintf("Setting the ControlPlaneEndpointIP as %s and APIServerPort as %s",azureCluster.Spec.ControlPlaneEndpointIP,clusterScope.APIServerPort()))
 	// Set APIEndpoints so the Cluster API Cluster Controller can pull them
 	azureCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		//Host: azureCluster.Status.Network.APIServerIP.DNSName,
