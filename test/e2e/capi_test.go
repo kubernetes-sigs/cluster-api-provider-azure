@@ -33,6 +33,7 @@ import (
 
 var _ = Describe("Running the Cluster API E2E tests", func() {
 	BeforeEach(func() {
+		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
 		rgName := fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
 		Expect(os.Setenv(AzureResourceGroup, rgName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", rgName))).NotTo(HaveOccurred())
