@@ -45,11 +45,16 @@ type AzureLogCollector struct{}
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
 	var errors []error
 
-	if err := collectLogsFromNode(ctx, managementClusterClient, m, outputPath); err != nil {
+	am, err := getAzureMachine(ctx, managementClusterClient, m)
+	if err != nil {
+		return err
+	}
+
+	if err := collectLogsFromNode(ctx, managementClusterClient, m, am, outputPath); err != nil {
 		errors = append(errors, err)
 	}
 
-	if err := collectBootLog(ctx, m, outputPath); err != nil {
+	if err := collectBootLog(ctx, am, outputPath); err != nil {
 		errors = append(errors, err)
 	}
 
@@ -58,17 +63,14 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 }
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
-func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
+func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, am *v1alpha4.AzureMachine, outputPath string) error {
 	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
 	if err != nil {
 		return err
 	}
 
 	Logf("INFO: Collecting logs for machine %s in cluster %s in namespace %s\n", m.GetName(), cluster.Name, cluster.Namespace)
-	isWindows, err := isNodeWindows(ctx, managementClusterClient, m)
-	if err != nil {
-		return err
-	}
+	isWindows := isNodeWindows(am)
 
 	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
 	hostname := m.Spec.InfrastructureRef.Name
@@ -108,18 +110,19 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 	return kinderrors.AggregateConcurrent(linuxLogs(execToPathFn))
 }
 
-func isNodeWindows(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (bool, error) {
+func isNodeWindows(am *v1alpha4.AzureMachine) bool {
+	return am.Spec.OSDisk.OSType == azure.WindowsOS
+}
+
+func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1alpha4.AzureMachine, error) {
 	key := client.ObjectKey{
 		Namespace: m.Spec.InfrastructureRef.Namespace,
 		Name:      m.Spec.InfrastructureRef.Name,
 	}
 
 	azMachine := &v1alpha4.AzureMachine{}
-	if err := managementClusterClient.Get(ctx, key, azMachine); err != nil {
-		return false, err
-	}
-
-	return azMachine.Spec.OSDisk.OSType == azure.WindowsOS, nil
+	err := managementClusterClient.Get(ctx, key, azMachine)
+	return azMachine, err
 }
 
 func linuxLogs(execToPathFn func(outputFileName string, command string, args ...string) func() error) []func() error {
@@ -251,8 +254,10 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 }
 
 // collectBootLog collects boot logs of the vm by using azure boot diagnostics
-func collectBootLog(ctx context.Context, m *clusterv1.Machine, outputPath string) error {
-	resourceId := strings.TrimPrefix(*m.Spec.ProviderID, azure.ProviderIDPrefix)
+func collectBootLog(ctx context.Context, am *v1alpha4.AzureMachine, outputPath string) error {
+	Logf("INFO: Collecting boot logs for AzureMachine %s\n", am.GetName())
+
+	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
 	resource, err := autorest.ParseResourceID(resourceId)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")

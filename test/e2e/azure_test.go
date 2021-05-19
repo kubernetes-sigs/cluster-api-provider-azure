@@ -31,6 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -75,6 +76,10 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	AfterEach(func() {
+		if result.Cluster == nil {
+			// this means the cluster failed to come up. We make an attempt to find the cluster to be able to fetch logs for the failed bootstrapping.
+			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
+		}
 		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, result.Cluster, e2eConfig.GetIntervals, skipCleanup)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
