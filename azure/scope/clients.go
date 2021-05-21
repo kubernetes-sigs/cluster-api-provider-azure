@@ -99,7 +99,7 @@ func (c *AzureClients) setCredentials(subscriptionID, environmentName string) er
 	return err
 }
 
-func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider *AzureCredentialsProvider) error {
+func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider CredentialsProvider) error {
 	if credentialsProvider == nil {
 		return fmt.Errorf("credentials provider cannot have an empty value")
 	}
