@@ -29,10 +29,6 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
-  identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-    kind: AzureClusterIdentity
-    name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -46,6 +42,10 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
+  infrastructureTemplate:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureMachineTemplate
+    name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
@@ -74,6 +74,7 @@ spec:
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
+      kubernetesVersion: ci/${CI_VERSION}
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -93,17 +94,79 @@ spec:
         tableType: gpt
     files:
     - content: |
-        network:
-          version: 2
-          ethernets:
-            eth0:
-              mtu: 1400
-              match:
-                macaddress: MACADDRESS
-              set-name: eth0
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        GSUTIL=gsutil
+        if ! command -v $${GSUTIL} > /dev/null; then
+          curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=~/gcloud --disable-prompts > /dev/null 2>&1
+          GSUTIL=~/gcloud/google-cloud-sdk/bin/gsutil
+          # For faster downloads
+          pip install --no-cache-dir -U crcmod
+        fi
+        $${GSUTIL} version
+        # This test installs release packages or binaries that are a result of the CI and release builds.
+        # It runs '... --version' commands to verify that the binaries are correctly installed
+        # and finally uninstalls the packages.
+        # For the release packages it tests all versions in the support skew.
+        LINE_SEPARATOR="*************************************************"
+        echo "$$LINE_SEPARATOR"
+        CI_VERSION=${CI_VERSION}
+        if [[ "$${CI_VERSION}" != "" ]]; then
+          CI_DIR=/tmp/k8s-ci
+          mkdir -p $$CI_DIR
+          declare -a PACKAGES_TO_TEST=("kubectl" "kubelet" "kubeadm")
+          declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
+          CONTAINER_EXT="tar"
+          echo "* testing CI version $$CI_VERSION"
+          # Check for semver
+          if [[ "$${CI_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            CI_URL="gs://kubernetes-release/release/$$CI_VERSION/bin/linux/amd64"
+            VERSION_WITHOUT_PREFIX="${CI_VERSION#v}"
+            DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl
+            curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+            echo 'deb https://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
+            apt-get update
+            # replace . with \.
+            VERSION_REGEX="${VERSION_WITHOUT_PREFIX//./\\.}"
+            PACKAGE_VERSION="$(apt-cache madison kubelet|grep $${VERSION_REGEX}- | head -n1 | cut -d '|' -f 2 | tr -d '[:space:]')"
+            for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
+              echo "* installing package: $$CI_PACKAGE $${PACKAGE_VERSION}"
+              DEBIAN_FRONTEND=noninteractive apt-get install -y $$CI_PACKAGE=$$PACKAGE_VERSION
+            done
+          else
+            CI_URL="gs://kubernetes-release-dev/ci-periodic/$$CI_VERSION/bin/linux/amd64"
+            if ! $${GSUTIL} ls "$${CI_URL}" > /dev/null; then
+              CI_URL="gs://kubernetes-release-dev/ci/$$CI_VERSION/bin/linux/amd64"
+            fi
+            for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
+              echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
+              $${GSUTIL} cp "$$CI_URL/$$CI_PACKAGE" "$$CI_DIR/$$CI_PACKAGE"
+              chmod +x "$$CI_DIR/$$CI_PACKAGE"
+              mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
+            done
+            systemctl restart kubelet
+          fi
+          for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
+            echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
+            $${GSUTIL} cp "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
+            $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
+            $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+            $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/kubernetes-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+          done
+        fi
+        echo "* checking binary versions"
+        echo "ctr version: " $(ctr version)
+        echo "kubeadm version: " $(kubeadm version -o=short)
+        echo "kubectl version: " $(kubectl version --client=true --short=true)
+        echo "kubelet version: " $(kubelet --version)
+        echo "$$LINE_SEPARATOR"
       owner: root:root
-      path: /etc/netplan/60-eth0.yaml
-      permissions: "0644"
+      path: /tmp/kubeadm-bootstrap.sh
+      permissions: "0744"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -132,11 +195,9 @@ spec:
     - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
     - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
     - netplan apply
-  machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-      kind: AzureMachineTemplate
-      name: ${CLUSTER_NAME}-control-plane
+    preKubeadmCommands:
+    - bash -c /tmp/kubeadm-bootstrap.sh
+    useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -152,188 +213,288 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: 2020.08.17
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureClusterIdentity
-metadata:
-  labels:
-    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID}
-  clientSecret:
-    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
-    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
----
 apiVersion: cluster.x-k8s.io/v1alpha4
-kind: MachinePool
+kind: MachineDeployment
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
   template:
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-0
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-0
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachinePool
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
-  location: ${AZURE_LOCATION}
   template:
-    osDisk:
-      diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Linux
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    spec:
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: 2020.08.17
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfig
+kind: KubeadmConfigTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
-  files:
-  - contentFrom:
-      secret:
-        key: worker-node-azure.json
-        name: ${CLUSTER_NAME}-mp-0-azure-json
-    owner: root:root
-    path: /etc/kubernetes/azure.json
-    permissions: "0644"
-  - content: |
-      network:
-        version: 2
-        ethernets:
-          eth0:
-            mtu: 1400
-            match:
-              macaddress: MACADDRESS
-            set-name: eth0
-    owner: root:root
-    path: /etc/netplan/60-eth0.yaml
-    permissions: "0644"
-  joinConfiguration:
-    nodeRegistration:
-      kubeletExtraArgs:
-        azure-container-registry-config: /etc/kubernetes/azure.json
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
-      name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
-  - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
-  - netplan apply
-  useExperimentalRetryJoin: true
+  template:
+    spec:
+      files:
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+          [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+          GSUTIL=gsutil
+          if ! command -v $${GSUTIL} > /dev/null; then
+            curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=~/gcloud --disable-prompts > /dev/null 2>&1
+            GSUTIL=~/gcloud/google-cloud-sdk/bin/gsutil
+            # For faster downloads
+            pip install --no-cache-dir -U crcmod
+          fi
+          $${GSUTIL} version
+          # This test installs release packages or binaries that are a result of the CI and release builds.
+          # It runs '... --version' commands to verify that the binaries are correctly installed
+          # and finally uninstalls the packages.
+          # For the release packages it tests all versions in the support skew.
+          LINE_SEPARATOR="*************************************************"
+          echo "$$LINE_SEPARATOR"
+          CI_VERSION=${CI_VERSION}
+          if [[ "$${CI_VERSION}" != "" ]]; then
+            CI_DIR=/tmp/k8s-ci
+            mkdir -p $$CI_DIR
+            declare -a PACKAGES_TO_TEST=("kubectl" "kubelet" "kubeadm")
+            declare -a CONTAINERS_TO_TEST=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
+            CONTAINER_EXT="tar"
+            echo "* testing CI version $$CI_VERSION"
+            # Check for semver
+            if [[ "$${CI_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              CI_URL="gs://kubernetes-release/release/$$CI_VERSION/bin/linux/amd64"
+              VERSION_WITHOUT_PREFIX="${CI_VERSION#v}"
+              DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https curl
+              curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+              echo 'deb https://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
+              apt-get update
+              # replace . with \.
+              VERSION_REGEX="${VERSION_WITHOUT_PREFIX//./\\.}"
+              PACKAGE_VERSION="$(apt-cache madison kubelet|grep $${VERSION_REGEX}- | head -n1 | cut -d '|' -f 2 | tr -d '[:space:]')"
+              for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
+                echo "* installing package: $$CI_PACKAGE $${PACKAGE_VERSION}"
+                DEBIAN_FRONTEND=noninteractive apt-get install -y $$CI_PACKAGE=$$PACKAGE_VERSION
+              done
+            else
+              CI_URL="gs://kubernetes-release-dev/ci-periodic/$$CI_VERSION/bin/linux/amd64"
+              if ! $${GSUTIL} ls "$${CI_URL}" > /dev/null; then
+                CI_URL="gs://kubernetes-release-dev/ci/$$CI_VERSION/bin/linux/amd64"
+              fi
+              for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
+                echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
+                $${GSUTIL} cp "$$CI_URL/$$CI_PACKAGE" "$$CI_DIR/$$CI_PACKAGE"
+                chmod +x "$$CI_DIR/$$CI_PACKAGE"
+                mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
+              done
+              systemctl restart kubelet
+            fi
+            for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
+              echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
+              $${GSUTIL} cp "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
+              $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
+              $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+              $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/kubernetes-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+            done
+          fi
+          echo "* checking binary versions"
+          echo "ctr version: " $(ctr version)
+          echo "kubeadm version: " $(kubeadm version -o=short)
+          echo "kubectl version: " $(kubectl version --client=true --short=true)
+          echo "kubelet version: " $(kubelet --version)
+          echo "$$LINE_SEPARATOR"
+        owner: root:root
+        path: /tmp/kubeadm-bootstrap.sh
+        permissions: "0744"
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
+      - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
+      - netplan apply
+      preKubeadmCommands:
+      - bash -c /tmp/kubeadm-bootstrap.sh
+      useExperimentalRetryJoin: true
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
-kind: MachinePool
+kind: MachineDeployment
 metadata:
-  name: ${CLUSTER_NAME}-mp-win
+  name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
   template:
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-win
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-win
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-win
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-win
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachinePool
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-win
+  name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
-  location: ${AZURE_LOCATION}
   template:
-    osDisk:
-      diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Windows
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    spec:
+      image:
+        marketplace:
+          offer: capi-windows
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot19-windows-2019
+          version: 2021.05.17
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Windows
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfig
+kind: KubeadmConfigTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-win
+  name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
-  files:
-  - contentFrom:
-      secret:
-        key: worker-node-azure.json
-        name: ${CLUSTER_NAME}-mp-win-azure-json
-    owner: root:root
-    path: c:/k/azure.json
-    permissions: "0644"
-  - content: |-
-      # required as a work around for Flannel and Wins bugs
-      # https://github.com/coreos/flannel/issues/1359
-      # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
-      ipmo C:\k\debug\hns.psm1;
-      New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
-    path: C:/create-external-network.ps1
-    permissions: "0744"
-  - content: |
-      # /tmp is assumed created and required for upstream e2e tests to pass
-      New-Item -ItemType Directory -Force -Path C:\tmp\
-    path: C:/create-temp-folder.ps1
-    permissions: "0744"
-  joinConfiguration:
-    nodeRegistration:
-      kubeletExtraArgs:
-        azure-container-registry-config: c:/k/azure.json
-        cloud-config: c:/k/azure.json
-        cloud-provider: azure
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
-      name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - nssm set kubelet start SERVICE_AUTO_START
-  preKubeadmCommands:
-  - powershell c:/create-external-network.ps1
-  - powershell C:/create-temp-folder.ps1
-  users:
-  - groups: Administrators
-    name: capi
-    sshAuthorizedKeys:
-    - ${AZURE_SSH_PUBLIC_KEY:=""}
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-win-azure-json
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - content: |
+          # required as a work around for Flannel and Wins bugs
+          # https://github.com/coreos/flannel/issues/1359
+          # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
+          ipmo C:\k\debug\hns.psm1;
+          New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
+        path: C:/create-external-network.ps1
+        permissions: "0744"
+      - content: |
+          # /tmp is assumed created and required for upstream e2e tests to pass
+          New-Item -ItemType Directory -Force -Path C:\tmp\
+        path: C:/create-temp-folder.ps1
+        permissions: "0744"
+      - content: |
+          Stop-Service kubelet -Force
+
+          $$CI_VERSION="${CI_VERSION}"
+          if($$CI_VERSION -ne "")
+          {
+            $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+            $$ci_url="https://storage.googleapis.com/kubernetes-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
+            foreach ( $$binary in $$binaries )
+            {
+              echo "downloading binary: $$ci_url/$$binary.exe"
+              curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+            }
+          }
+
+          # We are using a VHD that maps to v1.18.19 so the kubeproxy image is already pulled. (pull it just in case)
+          # Tag it to the ci version.  The image knows how to use the copy locally.
+          docker pull sigwindowstools/kube-proxy:v1.18.19-nanoserver
+          docker tag sigwindowstools/kube-proxy:v1.18.19-nanoserver "sigwindowstools/kube-proxy:${CI_VERSION/+/_}-nanoserver"
+
+          kubeadm.exe version -o=short
+          kubectl.exe version --client=true --short=true
+          kubelet.exe --version
+        path: C:/replace-k8s-binaries.ps1
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: c:/k/azure.json
+            cloud-config: c:/k/azure.json
+            cloud-provider: azure
+            pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - nssm set kubelet start SERVICE_AUTO_START
+      preKubeadmCommands:
+      - powershell c:/create-external-network.ps1
+      - powershell C:/create-temp-folder.ps1
+      - powershell C:/replace-k8s-binaries.ps1
+      users:
+      - groups: Administrators
+        name: capi
+        sshAuthorizedKeys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet

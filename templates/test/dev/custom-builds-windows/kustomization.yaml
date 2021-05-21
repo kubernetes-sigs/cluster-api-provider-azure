@@ -1,0 +1,14 @@
+namespace: default
+resources:
+  - ../../../test/ci/prow-windows
+patchesStrategicMerge:
+  - ../custom-builds/patches/custom-builds.yaml
+  - patches/windows-image-update.yaml
+patchesJson6902:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: patches/custom-builds-windows.yaml

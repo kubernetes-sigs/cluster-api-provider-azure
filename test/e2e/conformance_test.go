@@ -103,6 +103,8 @@ var _ = Describe("Conformance Tests", func() {
 		flavor := clusterctl.DefaultFlavor
 		if isWindows(kubetestConfigFilePath) {
 			flavor = "windows"
+			// conformance for windows doesn't require any linux worker machines.
+			Expect(os.Setenv("LINUX_WORKER_MACHINE_COUNT", "0")).To(Succeed())
 		}
 
 		// clusters with CI artifacts or PR artifacts are based on a known CI version

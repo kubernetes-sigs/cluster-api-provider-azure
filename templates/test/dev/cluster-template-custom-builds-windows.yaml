@@ -29,10 +29,6 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
-  identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-    kind: AzureClusterIdentity
-    name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -43,9 +39,15 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
+  annotations:
+    controlplane.cluster.x-k8s.io/skip-kube-proxy: "true"
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
+  infrastructureTemplate:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureMachineTemplate
+    name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
@@ -74,6 +76,7 @@ spec:
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
+      kubernetesVersion: ci/${CI_VERSION}
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -93,17 +96,54 @@ spec:
         tableType: gpt
     files:
     - content: |
-        network:
-          version: 2
-          ethernets:
-            eth0:
-              mtu: 1400
-              match:
-                macaddress: MACADDRESS
-              set-name: eth0
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        systemctl stop kubelet
+        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+        for BINARY in "$${BINARIES[@]}"; do
+          echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+        done
+        systemctl restart kubelet
+
+        # prepull images from gcr.io/k8s-staging-ci-images and retag it to
+        # k8s.gcr.io so kubeadm can fetch correct images no matter what
+        declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
+        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
+        for IMAGE in "$${IMAGES[@]}"; do
+          $${SUDO} ctr -n k8s.io images pull "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}"
+          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "k8s.gcr.io/$${IMAGE}:${CI_VERSION/+/_}"
+        done
+
+        echo "kubeadm version: $(kubeadm version -o=short)"
+        echo "kubectl version: $(kubectl version --client=true --short=true)"
+        echo "kubelet version: $(kubelet --version)"
       owner: root:root
-      path: /etc/netplan/60-eth0.yaml
-      permissions: "0644"
+      path: /tmp/replace-k8s-binaries.sh
+      permissions: "0744"
+    - content: |
+        #!/bin/bash
+
+        set -o nounset
+        set -o pipefail
+        set -o errexit
+
+        curl -L --retry 10 --retry-delay 5 https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz --output /tmp/yq_linux_amd64.tar.gz
+        tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq
+        rm /tmp/yq_linux_amd64.tar.gz
+
+        export KUBECONFIG=/etc/kubernetes/admin.conf
+        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${IMAGE_TAG}"
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
+        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
+      owner: root:root
+      path: /tmp/replace-k8s-components.sh
+      permissions: "0744"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -129,14 +169,10 @@ spec:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands:
-    - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
-    - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
-    - netplan apply
-  machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-      kind: AzureMachineTemplate
-      name: ${CLUSTER_NAME}-control-plane
+    - bash -c /tmp/replace-k8s-components.sh
+    preKubeadmCommands:
+    - bash -c /tmp/replace-k8s-binaries.sh
+    useExperimentalRetryJoin: true
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -152,188 +188,230 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: 2020.08.17
       osDisk:
         diskSizeGB: 128
         osType: Linux
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureClusterIdentity
-metadata:
-  labels:
-    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID}
-  clientSecret:
-    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
-    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
----
 apiVersion: cluster.x-k8s.io/v1alpha4
-kind: MachinePool
+kind: MachineDeployment
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
+  replicas: 0
+  selector: {}
   template:
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-0
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-0
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachinePool
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
-  location: ${AZURE_LOCATION}
   template:
-    osDisk:
-      diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Linux
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    spec:
+      image:
+        marketplace:
+          offer: capi
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: 2020.08.17
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfig
+kind: KubeadmConfigTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
-  files:
-  - contentFrom:
-      secret:
-        key: worker-node-azure.json
-        name: ${CLUSTER_NAME}-mp-0-azure-json
-    owner: root:root
-    path: /etc/kubernetes/azure.json
-    permissions: "0644"
-  - content: |
-      network:
-        version: 2
-        ethernets:
-          eth0:
-            mtu: 1400
-            match:
-              macaddress: MACADDRESS
-            set-name: eth0
-    owner: root:root
-    path: /etc/netplan/60-eth0.yaml
-    permissions: "0644"
-  joinConfiguration:
-    nodeRegistration:
-      kubeletExtraArgs:
-        azure-container-registry-config: /etc/kubernetes/azure.json
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
-      name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
-  - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
-  - netplan apply
-  useExperimentalRetryJoin: true
+  template:
+    spec:
+      files:
+      - content: |
+          #!/bin/bash
+
+          set -o nounset
+          set -o pipefail
+          set -o errexit
+
+          systemctl stop kubelet
+          declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+          for BINARY in "$${BINARIES[@]}"; do
+            echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
+            curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
+          done
+          systemctl restart kubelet
+
+          echo "kubeadm version: $(kubeadm version -o=short)"
+          echo "kubectl version: $(kubectl version --client=true --short=true)"
+          echo "kubelet version: $(kubelet --version)"
+        owner: root:root
+        path: /tmp/replace-k8s-binaries.sh
+        permissions: "0744"
+      - contentFrom:
+          secret:
+            key: control-plane-azure.json
+            name: ${CLUSTER_NAME}-control-plane-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
+      - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
+      - netplan apply
+      preKubeadmCommands:
+      - bash -c /tmp/replace-k8s-binaries.sh
+      useExperimentalRetryJoin: true
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
-kind: MachinePool
+kind: MachineDeployment
 metadata:
-  name: ${CLUSTER_NAME}-mp-win
+  name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels: null
   template:
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-win
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-win
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-win
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-win
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachinePool
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-win
+  name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
-  location: ${AZURE_LOCATION}
   template:
-    osDisk:
-      diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Windows
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    spec:
+      image:
+        marketplace:
+          offer: capi-windows
+          publisher: cncf-upstream
+          sku: k8s-1dot18dot19-windows-2019
+          version: 2021.05.17
+      osDisk:
+        diskSizeGB: 128
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Windows
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfig
+kind: KubeadmConfigTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-win
+  name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
-  files:
-  - contentFrom:
-      secret:
-        key: worker-node-azure.json
-        name: ${CLUSTER_NAME}-mp-win-azure-json
-    owner: root:root
-    path: c:/k/azure.json
-    permissions: "0644"
-  - content: |-
-      # required as a work around for Flannel and Wins bugs
-      # https://github.com/coreos/flannel/issues/1359
-      # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
-      ipmo C:\k\debug\hns.psm1;
-      New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
-    path: C:/create-external-network.ps1
-    permissions: "0744"
-  - content: |
-      # /tmp is assumed created and required for upstream e2e tests to pass
-      New-Item -ItemType Directory -Force -Path C:\tmp\
-    path: C:/create-temp-folder.ps1
-    permissions: "0744"
-  joinConfiguration:
-    nodeRegistration:
-      kubeletExtraArgs:
-        azure-container-registry-config: c:/k/azure.json
-        cloud-config: c:/k/azure.json
-        cloud-provider: azure
-        pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
-      name: '{{ ds.meta_data["local_hostname"] }}'
-  postKubeadmCommands:
-  - nssm set kubelet start SERVICE_AUTO_START
-  preKubeadmCommands:
-  - powershell c:/create-external-network.ps1
-  - powershell C:/create-temp-folder.ps1
-  users:
-  - groups: Administrators
-    name: capi
-    sshAuthorizedKeys:
-    - ${AZURE_SSH_PUBLIC_KEY:=""}
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-win-azure-json
+        owner: root:root
+        path: c:/k/azure.json
+        permissions: "0644"
+      - content: |
+          # required as a work around for Flannel and Wins bugs
+          # https://github.com/coreos/flannel/issues/1359
+          # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828
+          ipmo C:\k\debug\hns.psm1;
+          New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
+        path: C:/create-external-network.ps1
+        permissions: "0744"
+      - content: |
+          # /tmp is assumed created and required for upstream e2e tests to pass
+          New-Item -ItemType Directory -Force -Path C:\tmp\
+        path: C:/create-temp-folder.ps1
+        permissions: "0744"
+      - content: |
+          Stop-Service kubelet -Force
+
+          $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+          $$ci_url="https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/windows/amd64"
+          foreach ( $$binary in $$binaries )
+          {
+            echo "installing package: $$binary ${KUBE_GIT_VERSION}"
+            curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+          }
+
+          # We are using a VHD that maps to v1.18.19 so the kubeproxy image is already pulled. (pull it just in case)
+          # Tag it to the ci version.  The image knows how to use the copy locally.
+          docker pull sigwindowstools/kube-proxy:v1.18.19-nanoserver
+          docker tag sigwindowstools/kube-proxy:v1.18.19-nanoserver "sigwindowstools/kube-proxy:${KUBE_GIT_VERSION/+/_}-nanoserver"
+
+          kubeadm.exe version -o=short
+          kubectl.exe version --client=true --short=true
+          kubelet.exe --version
+        path: C:/replace-k8s-binaries.ps1
+        permissions: "0744"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: c:/k/azure.json
+            cloud-config: c:/k/azure.json
+            cloud-provider: azure
+            pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:1.4.1
+          name: '{{ ds.meta_data["local_hostname"] }}'
+      postKubeadmCommands:
+      - nssm set kubelet start SERVICE_AUTO_START
+      preKubeadmCommands:
+      - powershell c:/create-external-network.ps1
+      - powershell C:/create-temp-folder.ps1
+      - powershell C:/replace-k8s-binaries.ps1
+      users:
+      - groups: Administrators
+        name: capi
+        sshAuthorizedKeys:
+        - ${AZURE_SSH_PUBLIC_KEY:=""}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet
