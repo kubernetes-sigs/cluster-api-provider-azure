@@ -401,7 +401,7 @@ data:
         rule: 'RunAsAny'
     ---
     kind: ClusterRole
-    apiVersion: rbac.authorization.k8s.io/v1beta1
+    apiVersion: rbac.authorization.k8s.io/v1
     metadata:
       name: flannel
     rules:
@@ -430,7 +430,7 @@ data:
           - patch
     ---
     kind: ClusterRoleBinding
-    apiVersion: rbac.authorization.k8s.io/v1beta1
+    apiVersion: rbac.authorization.k8s.io/v1
     metadata:
       name: flannel
     roleRef:
