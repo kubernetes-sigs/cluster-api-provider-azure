@@ -103,7 +103,7 @@ The CAPZ controller will look for `SystemAssigned` value in `identity` field und
 
 * In Machine Pool
 ```yaml
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -120,12 +120,12 @@ spec:
           name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -204,7 +204,7 @@ The CAPZ controller will look for `UserAssigned` value in `identity` field under
 * In Machine Pool
 
 ```yaml
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -221,12 +221,12 @@ spec:
           name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0

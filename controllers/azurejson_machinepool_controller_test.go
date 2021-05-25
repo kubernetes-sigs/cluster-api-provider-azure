@@ -105,7 +105,7 @@ func TestAzureJSONPoolReconciler(t *testing.T) {
 					Name:       "my-cluster",
 				},
 				{
-					APIVersion: "exp.cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1alpha4",
 					Kind:       "MachinePool",
 					Name:       "my-machine-pool",
 				},

@@ -220,7 +220,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -237,12 +237,12 @@ spec:
           name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
