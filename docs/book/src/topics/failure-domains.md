@@ -136,7 +136,7 @@ You can use an `AzureMachinePool` object to deploy a Virtual Machine Scale Set w
 Set the **FailureDomains** field to the list of availability zones that you want to use. Be aware that not all regions have the same availability zones. You can use `az vm list-skus -l <location> --zone -o table` to list all the available zones per vm size in that location/region.
 
 ```yaml
-apiVersion: exp.cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1alpha3
 kind: MachinePool
 metadata:
   labels:
@@ -158,12 +158,12 @@ spec:
           kind: KubeadmConfigTemplate
           name: ${CLUSTER_NAME}-vmss-0
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-vmss-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha3
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: AzureMachinePool
 metadata:
   labels:

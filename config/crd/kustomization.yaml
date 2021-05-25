@@ -9,10 +9,10 @@ resources:
   - bases/infrastructure.cluster.x-k8s.io_azureclusters.yaml
   - bases/infrastructure.cluster.x-k8s.io_azuremachinetemplates.yaml
   - bases/infrastructure.cluster.x-k8s.io_azureclusteridentities.yaml
-  - bases/exp.infrastructure.cluster.x-k8s.io_azuremachinepools.yaml
-  - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedmachinepools.yaml
-  - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedclusters.yaml
-  - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedcontrolplanes.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azuremachinepools.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azuremanagedmachinepools.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azuremanagedclusters.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azuremanagedcontrolplanes.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 

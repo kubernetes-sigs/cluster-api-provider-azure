@@ -189,7 +189,7 @@ func TestReconcileAzureSecret(t *testing.T) {
 		},
 		"azuremachinepool should reconcile secret successfully": {
 			kind:       "AzureMachinePool",
-			apiVersion: "exp.infrastructure.cluster.x-k8s.io/v1alpha4",
+			apiVersion: "infrastructure.cluster.x-k8s.io/v1alpha4",
 			ownerName:  "azureMachinePoolName",
 		},
 		"azuremachinetemplate should reconcile secret successfully": {
