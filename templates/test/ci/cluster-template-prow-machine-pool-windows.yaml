@@ -290,6 +290,11 @@ spec:
       New-HnsNetwork -Type Overlay -AddressPrefix "192.168.255.0/30" -Gateway "192.168.255.1" -Name "External" -AdapterName "Ethernet 2" -SubnetPolicies @(@{Type = "VSID"; VSID = 9999; })
     path: C:/create-external-network.ps1
     permissions: "0744"
+  - content: |
+      # /tmp is assumed created and required for upstream e2e tests to pass
+      New-Item -ItemType Directory -Force -Path C:\tmp\
+    path: C:/create-temp-folder.ps1
+    permissions: "0744"
   joinConfiguration:
     nodeRegistration:
       kubeletExtraArgs:
@@ -302,6 +307,7 @@ spec:
   - nssm set kubelet start SERVICE_AUTO_START
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
+  - powershell C:/create-temp-folder.ps1
   users:
   - groups: Administrators
     name: capi

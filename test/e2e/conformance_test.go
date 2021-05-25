@@ -24,6 +24,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+
+	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -75,18 +80,28 @@ var _ = Describe("Conformance Tests", func() {
 
 		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
 		flavor := clusterctl.DefaultFlavor
+		if isWindows(kubetestConfigFilePath) {
+			flavor = "windows"
+		}
+
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
 		// PR artifacts will replace the CI artifacts during kubeadm init
 		if useCIArtifacts || usePRArtifacts {
 			kubernetesVersion, err = resolveCIVersion(kubernetesVersion)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(os.Setenv("CI_VERSION", kubernetesVersion)).To(Succeed())
+
+			if useCIArtifacts {
+				flavor = "conformance-ci-artifacts"
+			} else if usePRArtifacts {
+				flavor = "conformance-presubmit-artifacts"
+			}
+
+			if isWindows(kubetestConfigFilePath) {
+				flavor = flavor + "-windows"
+			}
 		}
-		if useCIArtifacts {
-			flavor = "conformance-ci-artifacts"
-		} else if usePRArtifacts {
-			flavor = "conformance-presubmit-artifacts"
-		}
+
 		workerMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_WORKER_MACHINE_COUNT"), 10, 64)
 		Expect(err).NotTo(HaveOccurred())
 		controlPlaneMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT"), 10, 64)
@@ -118,19 +133,37 @@ var _ = Describe("Conformance Tests", func() {
 		b.RecordValue("cluster creation", runtime.Seconds())
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
 
+		// Windows requires a taint on control nodes nodes since not all conformance tests have ability to run
+		if isWindows(kubetestConfigFilePath) {
+			options := v1.ListOptions{
+				LabelSelector: "kubernetes.io/os=linux",
+			}
+
+			noScheduleTaint := &corev1.Taint{
+				Key:    "node-role.kubernetes.io/master",
+				Value:  "",
+				Effect: "NoSchedule",
+			}
+
+			err := node.TaintNode(workloadProxy.GetClientSet(), options, noScheduleTaint)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		ginkgoNodes, err := strconv.Atoi(e2eConfig.GetVariable("CONFORMANCE_NODES"))
 		Expect(err).NotTo(HaveOccurred())
 
 		runtime = b.Time("conformance suite", func() {
-			kubetest.Run(context.Background(),
+			err := kubetest.Run(context.Background(),
 				kubetest.RunInput{
-					ClusterProxy:     workloadProxy,
-					NumberOfNodes:    int(workerMachineCount),
-					ConfigFilePath:   kubetestConfigFilePath,
-					ConformanceImage: e2eConfig.GetVariable("CONFORMANCE_IMAGE"),
-					GinkgoNodes:      ginkgoNodes,
+					ClusterProxy:         workloadProxy,
+					NumberOfNodes:        int(workerMachineCount),
+					ConfigFilePath:       kubetestConfigFilePath,
+					KubeTestRepoListPath: kubetestRepoListPath,
+					ConformanceImage:     e2eConfig.GetVariable("CONFORMANCE_IMAGE"),
+					GinkgoNodes:          ginkgoNodes,
 				},
 			)
+			Expect(err).NotTo(HaveOccurred())
 		})
 		b.RecordValue("conformance suite run time", runtime.Seconds())
 	}, 1)
@@ -144,3 +177,7 @@ var _ = Describe("Conformance Tests", func() {
 	})
 
 })
+
+func isWindows(kubetestConfigFilePath string) bool {
+	return strings.Contains(kubetestConfigFilePath, "windows")
+}
