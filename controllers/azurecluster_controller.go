@@ -151,6 +151,27 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	if azureCluster.Spec.IdentityRef != nil {
+		identity, err := GetClusterIdentityFromRef(ctx, r.Client, azureCluster.Namespace, azureCluster.Spec.IdentityRef)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
+			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
+		}
+		if identity.Namespace == azureCluster.Namespace {
+			patchhelper, err := patch.NewHelper(identity, r.Client)
+			if err != nil {
+				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
+			}
+			identity.ObjectMeta.OwnerReferences = azureCluster.GetOwnerReferences()
+			if err := patchhelper.Patch(ctx, identity); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
 	// Create the scope.
 	clusterScope, err := scope.NewClusterScope(ctx, scope.ClusterScopeParams{
 		Client:       r.Client,
@@ -192,27 +213,6 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 	// Register the finalizer immediately to avoid orphaning Azure resources on delete
 	if err := clusterScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
-	}
-
-	if azureCluster.Spec.IdentityRef != nil {
-		identity, err := GetClusterIdentityFromRef(ctx, clusterScope.Client, azureCluster.Namespace, azureCluster.Spec.IdentityRef)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
-			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
-			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
-		}
-		if identity.Namespace == azureCluster.Namespace {
-			patchhelper, err := patch.NewHelper(identity, r.Client)
-			if err != nil {
-				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
-			}
-			identity.ObjectMeta.OwnerReferences = azureCluster.GetOwnerReferences()
-			if err := patchhelper.Patch(ctx, identity); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
 	}
 
 	acr, err := r.createAzureClusterService(clusterScope)
