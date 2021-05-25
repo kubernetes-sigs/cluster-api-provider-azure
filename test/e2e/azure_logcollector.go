@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"strings"
 
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
@@ -50,41 +52,61 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 		return err
 	}
 
-	if err := collectLogsFromNode(ctx, managementClusterClient, m, am, outputPath); err != nil {
-		errors = append(errors, err)
-	}
-
-	if err := collectBootLog(ctx, am, outputPath); err != nil {
-		errors = append(errors, err)
-	}
-
-	return kinderrors.NewAggregate(errors)
-
-}
-
-// collectLogsFromNode collects logs from various sources by ssh'ing into the node
-func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, am *v1alpha4.AzureMachine, outputPath string) error {
 	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, m.ObjectMeta)
 	if err != nil {
 		return err
 	}
 
-	Logf("INFO: Collecting logs for machine %s in cluster %s in namespace %s\n", m.GetName(), cluster.Name, cluster.Namespace)
-	isWindows := isNodeWindows(am)
+	hostname := getHostname(m, isAzureMachineWindows(am))
 
-	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
-	hostname := m.Spec.InfrastructureRef.Name
-	if isWindows {
-		// Windows host name ends up being different than the infra machine name
-		// due to Windows name limitations in Azure so use ipaddress instead
-		if len(m.Status.Addresses) > 0 {
-			hostname = m.Status.Addresses[0].Address
-		} else {
-			Logf("INFO: Unable to collect logs as node doesn't have addresses")
+	if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isAzureMachineWindows(am), outputPath); err != nil {
+		errors = append(errors, err)
+	}
+
+	if err := collectVMBootLog(ctx, am, outputPath); err != nil {
+		errors = append(errors, err)
+	}
+
+	return kinderrors.NewAggregate(errors)
+}
+
+// CollectMachinePoolLog collects logs from a machine pool.
+func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
+	var errors []error
+
+	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
+	if err != nil {
+		return err
+	}
+
+	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
+	if err != nil {
+		return err
+	}
+
+	isWindows := isAzureMachinePoolWindows(am)
+
+	for i, instance := range mp.Spec.ProviderIDList {
+		hostname := mp.Status.NodeRefs[i].Name
+
+		if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
+			errors = append(errors, err)
+		}
+
+		if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
+			errors = append(errors, err)
 		}
 	}
 
-	port := e2eConfig.GetVariable(VMSSHPort)
+	return kinderrors.NewAggregate(errors)
+}
+
+// collectLogsFromNode collects logs from various sources by ssh'ing into the node
+func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
+	Logf("INFO: Collecting logs for node %s in cluster %s in namespace %s\n", hostname, cluster.Name, cluster.Namespace)
+
+	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
+
 	execToPathFn := func(outputFileName, command string, args ...string) func() error {
 		return func() error {
 			f, err := fileOnHost(filepath.Join(outputPath, outputFileName))
@@ -93,7 +115,7 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 			}
 			defer f.Close()
 			return retryWithExponentialBackOff(func() error {
-				return execOnHost(controlPlaneEndpoint, hostname, port, f, command, args...)
+				return execOnHost(controlPlaneEndpoint, hostname, sshPort, f, command, args...)
 			})
 		}
 	}
@@ -110,8 +132,26 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 	return kinderrors.AggregateConcurrent(linuxLogs(execToPathFn))
 }
 
-func isNodeWindows(am *v1alpha4.AzureMachine) bool {
+func isAzureMachineWindows(am *v1alpha4.AzureMachine) bool {
 	return am.Spec.OSDisk.OSType == azure.WindowsOS
+}
+
+func isAzureMachinePoolWindows(amp *expv1alpha4.AzureMachinePool) bool {
+	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
+}
+
+func getHostname(m *clusterv1.Machine, isWindows bool) string {
+	hostname := m.Spec.InfrastructureRef.Name
+	if isWindows {
+		// Windows host name ends up being different than the infra machine name
+		// due to Windows name limitations in Azure so use ip address instead.
+		if len(m.Status.Addresses) > 0 {
+			hostname = m.Status.Addresses[0].Address
+		} else {
+			Logf("INFO: Unable to collect logs as node doesn't have addresses")
+		}
+	}
+	return hostname
 }
 
 func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1alpha4.AzureMachine, error) {
@@ -123,6 +163,17 @@ func getAzureMachine(ctx context.Context, managementClusterClient client.Client,
 	azMachine := &v1alpha4.AzureMachine{}
 	err := managementClusterClient.Get(ctx, key, azMachine)
 	return azMachine, err
+}
+
+func getAzureMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*expv1alpha4.AzureMachinePool, error) {
+	key := client.ObjectKey{
+		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+	}
+
+	azMachinePool := &expv1alpha4.AzureMachinePool{}
+	err := managementClusterClient.Get(ctx, key, azMachinePool)
+	return azMachinePool, err
 }
 
 func linuxLogs(execToPathFn func(outputFileName string, command string, args ...string) func() error) []func() error {
@@ -253,8 +304,8 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 	}
 }
 
-// collectBootLog collects boot logs of the vm by using azure boot diagnostics
-func collectBootLog(ctx context.Context, am *v1alpha4.AzureMachine, outputPath string) error {
+// collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
+func collectVMBootLog(ctx context.Context, am *v1alpha4.AzureMachine, outputPath string) error {
 	Logf("INFO: Collecting boot logs for AzureMachine %s\n", am.GetName())
 
 	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
@@ -279,6 +330,43 @@ func collectBootLog(ctx context.Context, am *v1alpha4.AzureMachine, outputPath s
 		return errors.Wrap(err, "failed to get boot diagnostics data")
 	}
 
+	return writeBootLog(bootDiagnostics, outputPath)
+}
+
+// collectVMSSBootLog collects boot logs of the scale set by using azure boot diagnostics.
+func collectVMSSBootLog(ctx context.Context, providerID string, outputPath string) error {
+	resourceId := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
+	v := strings.Split(resourceId, "/")
+	instanceId := v[len(v)-1]
+	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/" + instanceId)
+	resource, err := autorest.ParseResourceID(resourceId)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse resource id")
+	}
+
+	Logf("INFO: Collecting boot logs for VMSS instance %s of scale set %s\n", instanceId, resource.ResourceName)
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return errors.Wrap(err, "failed to get settings from environment")
+	}
+
+	vmssClient := compute.NewVirtualMachineScaleSetVMsClient(settings.GetSubscriptionID())
+	vmssClient.Authorizer, err = settings.GetAuthorizer()
+	if err != nil {
+		return errors.Wrap(err, "failed to get authorizer")
+	}
+
+	bootDiagnostics, err := vmssClient.RetrieveBootDiagnosticsData(ctx, resource.ResourceGroup, resource.ResourceName, instanceId, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to get boot diagnostics data")
+	}
+
+	return writeBootLog(bootDiagnostics, outputPath)
+}
+
+func writeBootLog(bootDiagnostics compute.RetrieveBootDiagnosticsDataResult, outputPath string) error {
+	var err error
 	resp, err := http.Get(*bootDiagnostics.SerialConsoleLogBlobURI)
 	if err != nil || resp.StatusCode != 200 {
 		return errors.Wrap(err, "failed to get logs from serial console uri")

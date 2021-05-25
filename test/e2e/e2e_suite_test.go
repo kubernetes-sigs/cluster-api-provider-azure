@@ -28,6 +28,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"strings"
 	"testing"
 	"time"
@@ -320,6 +321,7 @@ func initScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(scheme)
 	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	Expect(expv1.AddToScheme(scheme)).To(Succeed())
 	// Add aadpodidentity v1 to the scheme.
 	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.CRDGroup, Version: aadpodv1.CRDVersion}
 	scheme.AddKnownTypes(aadPodIdentityGroupVersion,

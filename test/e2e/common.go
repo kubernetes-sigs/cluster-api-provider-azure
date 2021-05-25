@@ -51,7 +51,6 @@ const (
 	AzureCPSubnetCidr        = "AZURE_CP_SUBNET_CIDR"
 	AzureNodeSubnetCidr      = "AZURE_NODE_SUBNET_CIDR"
 	MultiTenancyIdentityName = "MULTI_TENANCY_IDENTITY_NAME"
-	VMSSHPort                = "VM_SSH_PORT"
 	JobName                  = "JOB_NAME"
 	Timestamp                = "TIMESTAMP"
 )
@@ -106,7 +105,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		By("Unable to dump workload cluster logs as the cluster is nil")
 	} else {
 		Byf("Dumping logs from the %q workload cluster", cluster.Name)
-		clusterProxy.CollectWorkloadClusterLogs(ctx, cluster.Namespace, cluster.Name, filepath.Join(artifactFolder, "clusters", cluster.Name, "machines"))
+		clusterProxy.CollectWorkloadClusterLogs(ctx, cluster.Namespace, cluster.Name, filepath.Join(artifactFolder, "clusters", cluster.Name))
 	}
 
 	Byf("Dumping all the Cluster API resources in the %q namespace", namespace.Name)

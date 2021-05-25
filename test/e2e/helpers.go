@@ -55,6 +55,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	sshPort = "22"
+)
+
 // deploymentsClientAdapter adapts a Deployment to work with WaitForDeploymentsAvailable.
 type deploymentsClientAdapter struct {
 	client typedappsv1.DeploymentInterface
@@ -323,7 +327,7 @@ func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name str
 		sshInfo = append(sshInfo, nodeSSHInfo{
 			Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
 			Hostname: m.Spec.InfrastructureRef.Name,
-			Port:     e2eConfig.GetVariable(VMSSHPort),
+			Port:     sshPort,
 		})
 	}
 
@@ -343,7 +347,7 @@ func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name str
 			sshInfo = append(sshInfo, nodeSSHInfo{
 				Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
 				Hostname: n.Name,
-				Port:     e2eConfig.GetVariable(VMSSHPort),
+				Port:     sshPort,
 			})
 		}
 
