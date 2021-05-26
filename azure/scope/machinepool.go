@@ -312,15 +312,6 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
 }
 
-// AzureMachineTemplate gets the Azure machine template in this scope.
-func (m *MachinePoolScope) AzureMachineTemplate(ctx context.Context) (*infrav1.AzureMachineTemplate, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.AzureMachineTemplate")
-	defer span.End()
-
-	ref := m.MachinePool.Spec.Template.Spec.InfrastructureRef
-	return getAzureMachineTemplate(ctx, m.client, ref.Name, ref.Namespace)
-}
-
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.Close")
@@ -398,18 +389,6 @@ func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
 		}
 	}
 	return []azure.VMSSExtensionSpec{}
-}
-
-func getAzureMachineTemplate(ctx context.Context, c client.Client, name, namespace string) (*infrav1.AzureMachineTemplate, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.getAzureMachineTemplate")
-	defer span.End()
-
-	m := &infrav1.AzureMachineTemplate{}
-	key := client.ObjectKey{Name: name, Namespace: namespace}
-	if err := c.Get(ctx, key, m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func (m *MachinePoolScope) getNodeStatusByProviderID(ctx context.Context, providerIDList []string) (map[string]*NodeStatus, error) {
