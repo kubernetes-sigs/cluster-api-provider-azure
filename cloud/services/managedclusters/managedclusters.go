@@ -22,6 +22,7 @@ import (
 	"net"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -125,6 +126,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Type: containerservice.SystemAssigned,
 		},
 		Location: &managedClusterSpec.Location,
+		Tags:     *to.StringMapPtr(managedClusterSpec.Tags),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &managedClusterSpec.NodeResourceGroupName,
 			DNSPrefix:         &managedClusterSpec.Name,
