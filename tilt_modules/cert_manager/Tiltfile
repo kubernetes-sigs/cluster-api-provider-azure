@@ -26,13 +26,13 @@ spec:
 """
 
 # Deploys cert manager to your environment
-def deploy_cert_manager(registry="quay.io/jetstack", version="v1.1.0", load_to_kind=False, kind_cluster_name="kind"):
+def deploy_cert_manager(registry="quay.io/jetstack", version="v1.3.1", load_to_kind=False, kind_cluster_name="kind"):
     silent=True
-
     if version.startswith('v0'):
-        cert_manager_test_resources_versioned = cert_manager_test_resources.format(cert_manager_api_version='v1alpha2')
+      cert_manager_test_resources_versioned = cert_manager_test_resources.format(cert_manager_api_version='v1alpha2')
     else:
-        cert_manager_test_resources_versioned = cert_manager_test_resources.format(cert_manager_api_version='v1')
+      cert_manager_test_resources_versioned = cert_manager_test_resources.format(cert_manager_api_version='v1')
+
     if load_to_kind == True:
         print("Loading images to kind")
         # Prepull all the cert-manager images to your local environment and then load them directly into kind. This speeds up
@@ -44,6 +44,7 @@ def deploy_cert_manager(registry="quay.io/jetstack", version="v1.1.0", load_to_k
             local("kind load docker-image --name {} {}/{}:{}".format(kind_cluster_name, registry, image, version), quiet=silent, echo_off=silent)
 
     # apply the cert-manager manifest
+    # NOTE!
     # Applying the same manifest twice to same cluster kubectl get stuck with older versions of kubernetes/cert-manager.
     # https://github.com/jetstack/cert-manager/issues/3121
     print("Installing cert-manager")
@@ -58,6 +59,7 @@ def deploy_cert_manager(registry="quay.io/jetstack", version="v1.1.0", load_to_k
 
     # 2. create a test certificate
     print("Testing cert-manager")
-    local("cat << EOF | kubectl apply -f - " + cert_manager_test_resources_versioned + "EOF", quiet=silent, echo_off=silent)
+    # The webhook may refuse connections initially (despite the deployment being Available), so try several times.
+    local("for i in 1 2 3 4 5 6; do (kubectl apply -f - <<EOF" + cert_manager_test_resources_versioned + "EOF\n) && break || sleep 15; done", quiet=silent, echo_off=silent)
     local("kubectl wait --for=condition=Ready --timeout=300s -n cert-manager-test certificate/selfsigned-cert ", quiet=silent, echo_off=silent)
-    local("cat << EOF | kubectl delete -f - " + cert_manager_test_resources_versioned + "EOF", quiet=silent, echo_off=silent)
+    local("kubectl delete -f - <<EOF" + cert_manager_test_resources_versioned + "EOF", quiet=silent, echo_off=silent)
