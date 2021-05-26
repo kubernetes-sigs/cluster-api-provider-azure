@@ -84,7 +84,7 @@ func createMachinePoolWithSSHPublicKey(t *testing.T, sshPublicKey string) *Azure
 func hardcodedAzureMachinePoolWithSSHKey(sshPublicKey string) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			Template: AzureMachineTemplate{
+			Template: AzureMachinePoolMachineTemplate{
 				SSHPublicKey: sshPublicKey,
 			},
 		},

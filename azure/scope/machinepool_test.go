@@ -54,7 +54,7 @@ func TestMachinePoolScope_Name(t *testing.T) {
 						Name: "machine-90123456",
 					},
 					Spec: infrav1exp.AzureMachinePoolSpec{
-						Template: infrav1exp.AzureMachineTemplate{
+						Template: infrav1exp.AzureMachinePoolMachineTemplate{
 							OSDisk: infrav1.OSDisk{
 								OSType: "Windows",
 							},

@@ -25,8 +25,8 @@ import (
 )
 
 type (
-	// AzureMachineTemplate defines the template for an AzureMachine.
-	AzureMachineTemplate struct {
+	// AzureMachinePoolMachineTemplate defines the template for an AzureMachinePool machine.
+	AzureMachinePoolMachineTemplate struct {
 		// VMSize is the size of the Virtual Machine to build.
 		// See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
 		VMSize string `json:"vmSize"`
@@ -73,8 +73,8 @@ type (
 		// Location is the Azure region location e.g. westus2
 		Location string `json:"location"`
 
-		// Template contains the details used to build a replica virtual machine within the Machine Pool
-		Template AzureMachineTemplate `json:"template"`
+		// Template contains the details used to build a replica virtual machine within the Machine Pool.
+		Template AzureMachinePoolMachineTemplate `json:"template"`
 
 		// AdditionalTags is an optional set of tags to add to an instance, in addition to the ones added by default by the
 		// Azure provider. If both the AzureCluster and the AzureMachine specify the same tag name with different values, the

@@ -46,7 +46,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: exp.AzureMachinePoolMachineTemplate{
 							Image: &infrav1.Image{
 								SharedGallery: &infrav1.AzureSharedGalleryImage{
 									SubscriptionID: "foo",
@@ -69,7 +69,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: exp.AzureMachinePoolMachineTemplate{
 							Image: new(infrav1.Image),
 						},
 					},
@@ -85,7 +85,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: exp.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: to.IntPtr(7),
 						},
 					},
@@ -100,7 +100,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: exp.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: to.IntPtr(20),
 						},
 					},
@@ -116,7 +116,7 @@ func TestAzureMachinePool_Validate(t *testing.T) {
 			Factory: func(_ *gomega.GomegaWithT) *exp.AzureMachinePool {
 				return &exp.AzureMachinePool{
 					Spec: exp.AzureMachinePoolSpec{
-						Template: exp.AzureMachineTemplate{
+						Template: exp.AzureMachinePoolMachineTemplate{
 							TerminateNotificationTimeout: to.IntPtr(3),
 						},
 					},
