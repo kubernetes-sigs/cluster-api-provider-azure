@@ -83,6 +83,7 @@ type ClusterDescriber interface {
 	Location() string
 	AdditionalTags() infrav1.Tags
 	AvailabilitySetEnabled() bool
+	CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides
 }
 
 // ClusterScoper combines the ClusterDescriber and NetworkDescriber interfaces.

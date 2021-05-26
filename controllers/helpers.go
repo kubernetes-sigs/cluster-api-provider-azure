@@ -217,7 +217,7 @@ func userAssignedIdentityCloudProviderConfig(d azure.ClusterScoper, identityID s
 }
 
 func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudProviderConfig, workerConfig *CloudProviderConfig) {
-	return &CloudProviderConfig{
+	return (&CloudProviderConfig{
 			Cloud:                        d.CloudEnvironment(),
 			AadClientID:                  d.ClientID(),
 			AadClientSecret:              d.ClientSecret(),
@@ -236,8 +236,8 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			MaximumLoadBalancerRuleCount: 250,
 			UseManagedIdentityExtension:  false,
 			UseInstanceMetadata:          true,
-		},
-		&CloudProviderConfig{
+		}).overrideFromSpec(d),
+		(&CloudProviderConfig{
 			Cloud:                        d.CloudEnvironment(),
 			AadClientID:                  d.ClientID(),
 			AadClientSecret:              d.ClientSecret(),
@@ -256,7 +256,65 @@ func newCloudProviderConfig(d azure.ClusterScoper) (controlPlaneConfig *CloudPro
 			MaximumLoadBalancerRuleCount: 250,
 			UseManagedIdentityExtension:  false,
 			UseInstanceMetadata:          true,
+		}).overrideFromSpec(d)
+}
+
+// overrideFromSpec overrides cloud provider config with the values provided in cluster spec.
+func (cpc *CloudProviderConfig) overrideFromSpec(d azure.ClusterScoper) *CloudProviderConfig {
+	if d.CloudProviderConfigOverrides() == nil {
+		return cpc
+	}
+
+	for _, rateLimit := range d.CloudProviderConfigOverrides().RateLimits {
+		switch rateLimit.Name {
+		case infrav1.DefaultRateLimit:
+			cpc.RateLimitConfig = *toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.RouteRateLimit:
+			cpc.RouteRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.SubnetsRateLimit:
+			cpc.SubnetsRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.InterfaceRateLimit:
+			cpc.InterfaceRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.RouteTableRateLimit:
+			cpc.RouteTableRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.LoadBalancerRateLimit:
+			cpc.LoadBalancerRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.PublicIPAddressRateLimit:
+			cpc.PublicIPAddressRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.SecurityGroupRateLimit:
+			cpc.SecurityGroupRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.VirtualMachineRateLimit:
+			cpc.VirtualMachineRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.StorageAccountRateLimit:
+			cpc.StorageAccountRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.DiskRateLimit:
+			cpc.DiskRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.SnapshotRateLimit:
+			cpc.SnapshotRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.VirtualMachineScaleSetRateLimit:
+			cpc.VirtualMachineScaleSetRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.VirtualMachineSizesRateLimit:
+			cpc.VirtualMachineSizeRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
+		case infrav1.AvailabilitySetRateLimit:
+			cpc.AvailabilitySetRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
 		}
+	}
+	return cpc
+}
+
+// toCloudProviderRateLimitConfig returns converts infrav1.RateLimitConfig to RateLimitConfig that is required with the cloud provider.
+func toCloudProviderRateLimitConfig(source infrav1.RateLimitConfig) *RateLimitConfig {
+	rateLimitConfig := RateLimitConfig{}
+	rateLimitConfig.CloudProviderRateLimit = source.CloudProviderRateLimit
+	if source.CloudProviderRateLimitQPS != nil {
+		rateLimitConfig.CloudProviderRateLimitQPS = float32(source.CloudProviderRateLimitQPS.AsApproximateFloat64())
+	}
+	rateLimitConfig.CloudProviderRateLimitBucket = source.CloudProviderRateLimitBucket
+	if source.CloudProviderRateLimitQPSWrite != nil {
+		rateLimitConfig.CloudProviderRateLimitQPSWrite = float32(source.CloudProviderRateLimitQPSWrite.AsApproximateFloat64())
+	}
+	rateLimitConfig.CloudProviderRateLimitBucketWrite = source.CloudProviderRateLimitBucketWrite
+	return &rateLimitConfig
 }
 
 // CloudProviderConfig is an abbreviated version of the same struct in k/k
@@ -280,6 +338,39 @@ type CloudProviderConfig struct {
 	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"`
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityId,omitempty"`
+	CloudProviderRateLimitConfig
+}
+
+// CloudProviderRateLimitConfig represents the rate limiting configurations in azure cloud provider config.
+// See: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/#per-client-rate-limiting.
+// This is a copy of the struct used in cloud-provider-azure: https://github.com/kubernetes-sigs/cloud-provider-azure/blob/d585c2031925b39c925624302f22f8856e29e352/pkg/provider/azure_ratelimit.go#L25
+type CloudProviderRateLimitConfig struct {
+	RateLimitConfig
+
+	RouteRateLimit                  *RateLimitConfig `json:"routeRateLimit,omitempty"`
+	SubnetsRateLimit                *RateLimitConfig `json:"subnetsRateLimit,omitempty"`
+	InterfaceRateLimit              *RateLimitConfig `json:"interfaceRateLimit,omitempty"`
+	RouteTableRateLimit             *RateLimitConfig `json:"routeTableRateLimit,omitempty"`
+	LoadBalancerRateLimit           *RateLimitConfig `json:"loadBalancerRateLimit,omitempty"`
+	PublicIPAddressRateLimit        *RateLimitConfig `json:"publicIPAddressRateLimit,omitempty"`
+	SecurityGroupRateLimit          *RateLimitConfig `json:"securityGroupRateLimit,omitempty"`
+	VirtualMachineRateLimit         *RateLimitConfig `json:"virtualMachineRateLimit,omitempty"`
+	StorageAccountRateLimit         *RateLimitConfig `json:"storageAccountRateLimit,omitempty"`
+	DiskRateLimit                   *RateLimitConfig `json:"diskRateLimit,omitempty"`
+	SnapshotRateLimit               *RateLimitConfig `json:"snapshotRateLimit,omitempty"`
+	VirtualMachineScaleSetRateLimit *RateLimitConfig `json:"virtualMachineScaleSetRateLimit,omitempty"`
+	VirtualMachineSizeRateLimit     *RateLimitConfig `json:"virtualMachineSizesRateLimit,omitempty"`
+	AvailabilitySetRateLimit        *RateLimitConfig `json:"availabilitySetRateLimit,omitempty"`
+}
+
+// RateLimitConfig indicates the rate limit config options.
+// This is a copy of the struct used in cloud-provider-azure: https://github.com/kubernetes-sigs/cloud-provider-azure/blob/d585c2031925b39c925624302f22f8856e29e352/pkg/azureclients/azure_client_config.go#L48
+type RateLimitConfig struct {
+	CloudProviderRateLimit            bool    `json:"cloudProviderRateLimit,omitempty"`
+	CloudProviderRateLimitQPS         float32 `json:"cloudProviderRateLimitQPS,omitempty"`
+	CloudProviderRateLimitBucket      int     `json:"cloudProviderRateLimitBucket,omitempty"`
+	CloudProviderRateLimitQPSWrite    float32 `json:"cloudProviderRateLimitQPSWrite,omitempty"`
+	CloudProviderRateLimitBucketWrite int     `json:"cloudProviderRateLimitBucketWrite,omitempty"`
 }
 
 func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient client.Client, owner metav1.OwnerReference, new *corev1.Secret, clusterName string) error {

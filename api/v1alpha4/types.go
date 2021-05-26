@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 const (
@@ -507,3 +508,63 @@ type AddressRecord struct {
 	Hostname string
 	IP       string
 }
+
+// CloudProviderConfigOverrides represents the fields that can be overridden in azure cloud provider config.
+type CloudProviderConfigOverrides struct {
+	RateLimits []RateLimitSpec `json:"rateLimits,omitempty"`
+}
+
+// RateLimitSpec represents the rate limit configuration for a particular kind of resource.
+// Eg. loadBalancerRateLimit is used to configure rate limits for load balancers.
+// This eventually gets converted to CloudProviderRateLimitConfig that cloud-provider-azure expects.
+// See: https://github.com/kubernetes-sigs/cloud-provider-azure/blob/d585c2031925b39c925624302f22f8856e29e352/pkg/provider/azure_ratelimit.go#L25
+// We cannot use CloudProviderRateLimitConfig directly because floating point values are not supported in controller-tools.
+// See: https://github.com/kubernetes-sigs/controller-tools/issues/245
+type RateLimitSpec struct {
+	// Name is the name of the rate limit spec.
+	// +kubebuilder:validation:Enum=defaultRateLimit;routeRateLimit;subnetsRateLimit;interfaceRateLimit;routeTableRateLimit;loadBalancerRateLimit;publicIPAddressRateLimit;securityGroupRateLimit;virtualMachineRateLimit;storageAccountRateLimit;diskRateLimit;snapshotRateLimit;virtualMachineScaleSetRateLimit;virtualMachineSizesRateLimit;availabilitySetRateLimit
+	Name   string          `json:"name,omitempty"`
+	Config RateLimitConfig `json:"config,omitempty"`
+}
+
+// RateLimitConfig indicates the rate limit config options.
+type RateLimitConfig struct {
+	CloudProviderRateLimit            bool               `json:"cloudProviderRateLimit,omitempty"`
+	CloudProviderRateLimitQPS         *resource.Quantity `json:"cloudProviderRateLimitQPS,omitempty"`
+	CloudProviderRateLimitBucket      int                `json:"cloudProviderRateLimitBucket,omitempty"`
+	CloudProviderRateLimitQPSWrite    *resource.Quantity `json:"cloudProviderRateLimitQPSWrite,omitempty"`
+	CloudProviderRateLimitBucketWrite int                `json:"cloudProviderRateLimitBucketWrite,omitempty"`
+}
+
+const (
+	// DefaultRateLimit ...
+	DefaultRateLimit = "defaultRateLimit"
+	// RouteRateLimit ...
+	RouteRateLimit = "routeRateLimit"
+	// SubnetsRateLimit ...
+	SubnetsRateLimit = "subnetsRateLimit"
+	// InterfaceRateLimit ...
+	InterfaceRateLimit = "interfaceRateLimit"
+	// RouteTableRateLimit ...
+	RouteTableRateLimit = "routeTableRateLimit"
+	// LoadBalancerRateLimit ...
+	LoadBalancerRateLimit = "loadBalancerRateLimit"
+	// PublicIPAddressRateLimit ...
+	PublicIPAddressRateLimit = "publicIPAddressRateLimit"
+	// SecurityGroupRateLimit ...
+	SecurityGroupRateLimit = "securityGroupRateLimit"
+	// VirtualMachineRateLimit ...
+	VirtualMachineRateLimit = "virtualMachineRateLimit"
+	// StorageAccountRateLimit ...
+	StorageAccountRateLimit = "storageAccountRateLimit"
+	// DiskRateLimit ...
+	DiskRateLimit = "diskRateLimit"
+	// SnapshotRateLimit ...
+	SnapshotRateLimit = "snapshotRateLimit"
+	// VirtualMachineScaleSetRateLimit ...
+	VirtualMachineScaleSetRateLimit = "virtualMachineScaleSetRateLimit"
+	// VirtualMachineSizesRateLimit ...
+	VirtualMachineSizesRateLimit = "virtualMachineSizesRateLimit"
+	// AvailabilitySetRateLimit ...
+	AvailabilitySetRateLimit = "availabilitySetRateLimit"
+)

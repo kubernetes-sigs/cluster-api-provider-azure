@@ -151,6 +151,20 @@ func (mr *MockDiskScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockDiskScope)(nil).CloudEnvironment))
 }
 
+// CloudProviderConfigOverrides mocks base method.
+func (m *MockDiskScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
+	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	return ret0
+}
+
+// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
+func (mr *MockDiskScopeMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockDiskScope)(nil).CloudProviderConfigOverrides))
+}
+
 // ClusterName mocks base method.
 func (m *MockDiskScope) ClusterName() string {
 	m.ctrl.T.Helper()

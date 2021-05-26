@@ -22,6 +22,8 @@ import (
 	"os"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/go-cmp/cmp"
@@ -129,6 +131,13 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			identityType:               infrav1.VMIdentityNone,
 			expectedControlPlaneConfig: spCustomVnetControlPlaneCloudConfig,
 			expectedWorkerNodeConfig:   spCustomVnetWorkerNodeCloudConfig,
+		},
+		"with rate limits": {
+			cluster:                    cluster,
+			azureCluster:               withRateLimits(*azureCluster),
+			identityType:               infrav1.VMIdentityNone,
+			expectedControlPlaneConfig: rateLimitsControlPlaneCloudConfig,
+			expectedWorkerNodeConfig:   rateLimitsWorkerNodeCloudConfig,
 		},
 	}
 
@@ -300,6 +309,27 @@ func newAzureCluster(name, location string) *infrav1.AzureCluster {
 			SubscriptionID: "baz",
 		},
 	}
+}
+
+func withRateLimits(ac infrav1.AzureCluster) *infrav1.AzureCluster {
+	cloudProviderRateLimitQPS := resource.MustParse("1.2")
+	rateLimits := []infrav1.RateLimitSpec{
+		{
+			Name: "defaultRateLimit",
+			Config: infrav1.RateLimitConfig{
+				CloudProviderRateLimit:    true,
+				CloudProviderRateLimitQPS: &cloudProviderRateLimitQPS,
+			},
+		},
+		{
+			Name: "loadBalancerRateLimit",
+			Config: infrav1.RateLimitConfig{
+				CloudProviderRateLimitBucket: 10,
+			},
+		},
+	}
+	ac.Spec.CloudProviderConfigOverrides = &infrav1.CloudProviderConfigOverrides{RateLimits: rateLimits}
+	return &ac
 }
 
 func newAzureClusterWithCustomVnet(name, location string) *infrav1.AzureCluster {
@@ -488,5 +518,55 @@ const (
     "maximumLoadBalancerRuleCount": 250,
     "useManagedIdentityExtension": false,
     "useInstanceMetadata": true
+}`
+	rateLimitsControlPlaneCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "aadClientId": "fooClient",
+    "aadClientSecret": "fooSecret",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true,
+    "cloudProviderRateLimit": true,
+    "cloudProviderRateLimitQPS": 1.2,
+    "loadBalancerRateLimit": {
+        "cloudProviderRateLimitBucket": 10
+    }
+}`
+	rateLimitsWorkerNodeCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "aadClientId": "fooClient",
+    "aadClientSecret": "fooSecret",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true,
+    "cloudProviderRateLimit": true,
+    "cloudProviderRateLimitQPS": 1.2,
+    "loadBalancerRateLimit": {
+        "cloudProviderRateLimitBucket": 10
+    }
 }`
 )

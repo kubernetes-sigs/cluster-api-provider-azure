@@ -6,6 +6,58 @@ CAPZ automatically generates this file based on user-provided values in AzureMac
 
 For AzureMachineTemplate and standalone AzureMachines, the generated secret will have the name "${RESOURCE}-azure-json", where "${RESOURCE}" is the name of either the AzureMachineTemplate or AzureMachine. The secret will have one data field, `azure.json`, with the raw content for that file. When the secret `${RESOURCE}-azure-json` already exists in the same namespace as an AzureCluster and does not have the label `"${CLUSTER_NAME}": "owned"`, CAPZ will not generate the default described above. Instead it will directly use whatever the user provides in that secret.
 
+### Overriding Cloud Provider Config
+
+While many of the cloud provider config values are inferred from the capz infrastructure spec, there are other configuration parameters that cannot be inferred, and hence default to the values set by the azure cloud provider. In order to provider custom values to such configuration options through capz, you must use the `spec.cloudProviderConfigOverrides` in `AzureCluster`. The following example overrides the load balancer rate limit configuration:
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  location: eastus
+  networkSpec:
+    vnet:
+      name: ${CLUSTER_NAME}-vnet
+  resourceGroup: cherry
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  cloudProviderConfigOverrides:
+    rateLimits:
+      - name: "defaultRateLimit"
+        config:
+          cloudProviderRateLimit: true
+          cloudProviderRateLimitBucket: 1
+          cloudProviderRateLimitBucketWrite: 1
+          cloudProviderRateLimitQPS: 1,
+          cloudProviderRateLimitQPSWrite: 1,
+      - name: "loadBalancerRateLimit"
+        config:
+          cloudProviderRateLimit: true
+          cloudProviderRateLimitBucket: 2,
+          CloudProviderRateLimitBucketWrite: 2,
+          cloudProviderRateLimitQPS: 0,
+          CloudProviderRateLimitQPSWrite: 0
+```
+
+<aside class="note warning">
+
+<h1> Warning </h1>
+
+Presently, only rate limit configuration is supported for overrides, and this works only on clusters running Kubernetes versions above `v1.18.0`.
+See [per client rate limiting](https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/#per-client-rate-limiting) for more info.
+
+</aside>
+
+<aside class="note warning">
+
+<h1> Warning </h1>
+
+All cloud provider config values can be customized by creating the `${RESOURCE}-azure-json` secret beforehand. `cloudProviderConfigOverrides` is only applicable when the secret is managed by the Azure Provider.
+
+</aside>
+
+
 # External Cloud Provider
 
 To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-external-cloud-provider.yaml).

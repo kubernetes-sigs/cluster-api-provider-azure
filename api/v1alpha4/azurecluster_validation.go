@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"regexp"
 
 	valid "github.com/asaskevich/govalidator"
@@ -63,14 +64,21 @@ func (c *AzureCluster) validateCluster(old *AzureCluster) error {
 
 // validateClusterSpec validates a ClusterSpec
 func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
+	var allErrs field.ErrorList
 	var oldNetworkSpec NetworkSpec
 	if old != nil {
 		oldNetworkSpec = old.Spec.NetworkSpec
 	}
-	return validateNetworkSpec(
-		c.Spec.NetworkSpec,
-		oldNetworkSpec,
-		field.NewPath("spec").Child("networkSpec"))
+	allErrs = append(allErrs, validateNetworkSpec(c.Spec.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
+
+	var oldCloudProviderConfigOverrides *CloudProviderConfigOverrides
+	if old != nil {
+		oldCloudProviderConfigOverrides = old.Spec.CloudProviderConfigOverrides
+	}
+	allErrs = append(allErrs, validateCloudProviderConfigOverrides(c.Spec.CloudProviderConfigOverrides, oldCloudProviderConfigOverrides,
+		field.NewPath("spec").Child("cloudProviderConfigOverrides"))...)
+
+	return allErrs
 }
 
 // validateClusterName validates ClusterName
@@ -399,5 +407,14 @@ func validatePrivateDNSZoneName(networkSpec NetworkSpec, fldPath *field.Path) fi
 		return nil
 	}
 
+	return allErrs
+}
+
+// validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides
+func validateCloudProviderConfigOverrides(old, new *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if !reflect.DeepEqual(old, new) {
+		allErrs = append(allErrs, field.Invalid(fldPath, new, "cannot change cloudProviderConfigOverrides cluster creation"))
+	}
 	return allErrs
 }
