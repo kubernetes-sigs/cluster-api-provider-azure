@@ -63,6 +63,8 @@ providers:
       targetName: "cluster-template-md-remediation.yaml"
     - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-remediation.yaml"
       targetName: "cluster-template-kcp-remediation.yaml"
+    - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-scale-in.yaml"
+      targetName: "cluster-template-kcp-scale-in.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool.yaml"
       targetName: "cluster-template-machine-pool.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-nvidia-gpu.yaml"
