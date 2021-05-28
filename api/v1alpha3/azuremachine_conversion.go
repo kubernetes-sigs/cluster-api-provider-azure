@@ -113,7 +113,9 @@ func Convert_v1alpha4_AzureMachineStatus_To_v1alpha3_AzureMachineStatus(in *v1al
 // Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk converts this OSDisk to the Hub version (v1alpha4).
 func Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk, s apiconversion.Scope) error { // nolint
 	out.OSType = in.OSType
-	out.DiskSizeGB = in.DiskSizeGB
+	if in.DiskSizeGB != 0 {
+		out.DiskSizeGB = &in.DiskSizeGB
+	}
 	out.DiffDiskSettings = (*v1alpha4.DiffDiskSettings)(in.DiffDiskSettings)
 	out.CachingType = in.CachingType
 	out.ManagedDisk = &v1alpha4.ManagedDiskParameters{}
@@ -128,7 +130,9 @@ func Convert_v1alpha3_OSDisk_To_v1alpha4_OSDisk(in *OSDisk, out *v1alpha4.OSDisk
 // Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk converts from the Hub version (v1alpha4) of the AzureMachineStatus to this version.
 func Convert_v1alpha4_OSDisk_To_v1alpha3_OSDisk(in *v1alpha4.OSDisk, out *OSDisk, s apiconversion.Scope) error { // nolint
 	out.OSType = in.OSType
-	out.DiskSizeGB = in.DiskSizeGB
+	if in.DiskSizeGB != nil {
+		out.DiskSizeGB = *in.DiskSizeGB
+	}
 	out.DiffDiskSettings = (*DiffDiskSettings)(in.DiffDiskSettings)
 	out.CachingType = in.CachingType
 

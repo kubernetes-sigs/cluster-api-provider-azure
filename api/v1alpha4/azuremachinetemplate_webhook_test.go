@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -43,7 +44,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: 11,
+								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "",
@@ -59,7 +60,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: 11,
+								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "",
@@ -79,7 +80,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: 11,
+								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "",
@@ -98,7 +99,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 							FailureDomain: &failureDomain,
 							OSDisk: OSDisk{
 								OSType:     "type",
-								DiskSizeGB: 11,
+								DiskSizeGB: to.Int32Ptr(11),
 							},
 							DataDisks:    []DataDisk{},
 							SSHPublicKey: "",

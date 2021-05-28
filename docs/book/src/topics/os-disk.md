@@ -21,6 +21,8 @@ See [Azure documentation on disk types](https://docs.microsoft.com/en-us/azure/v
 
 See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview) for more information on managed disks.
 
+If the optional field `diskSizeGB` is not provided, it will default to 30GB.
+
 ## Ephemeral OS
 
 Ephemeral OS uses local VM storage for changes to the OS disk.

@@ -103,7 +103,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			name:    "valid ephemeral os disk spec",
 			wantErr: false,
 			osDisk: OSDisk{
-				DiskSizeGB:  30,
+				DiskSizeGB:  to.Int32Ptr(30),
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
@@ -118,7 +118,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 			name:    "byoc encryption with ephemeral os disk spec",
 			wantErr: true,
 			osDisk: OSDisk{
-				DiskSizeGB:  30,
+				DiskSizeGB:  to.Int32Ptr(30),
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
@@ -154,42 +154,42 @@ func generateNegativeTestCases() []osDiskTestInput {
 	invalidDiskSpecs := []OSDisk{
 		{},
 		{
-			DiskSizeGB: 0,
+			DiskSizeGB: to.Int32Ptr(0),
 			OSType:     "blah",
 		},
 		{
-			DiskSizeGB: -10,
+			DiskSizeGB: to.Int32Ptr(-10),
 			OSType:     "blah",
 		},
 		{
-			DiskSizeGB: 2050,
+			DiskSizeGB: to.Int32Ptr(2050),
 			OSType:     "blah",
 		},
 		{
-			DiskSizeGB: 20,
+			DiskSizeGB: to.Int32Ptr(20),
 			OSType:     "",
 		},
 		{
-			DiskSizeGB:  30,
+			DiskSizeGB:  to.Int32Ptr(30),
 			OSType:      "blah",
 			ManagedDisk: &ManagedDiskParameters{},
 		},
 		{
-			DiskSizeGB: 30,
+			DiskSizeGB: to.Int32Ptr(30),
 			OSType:     "blah",
 			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "",
 			},
 		},
 		{
-			DiskSizeGB: 30,
+			DiskSizeGB: to.Int32Ptr(30),
 			OSType:     "blah",
 			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "invalid_type",
 			},
 		},
 		{
-			DiskSizeGB: 30,
+			DiskSizeGB: to.Int32Ptr(30),
 			OSType:     "blah",
 			ManagedDisk: &ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
@@ -213,7 +213,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 
 func generateValidOSDisk() OSDisk {
 	return OSDisk{
-		DiskSizeGB: 30,
+		DiskSizeGB: to.Int32Ptr(30),
 		OSType:     "Linux",
 		ManagedDisk: &ManagedDiskParameters{
 			StorageAccountType: "Premium_LRS",
