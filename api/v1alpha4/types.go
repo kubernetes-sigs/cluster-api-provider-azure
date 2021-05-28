@@ -367,8 +367,11 @@ const (
 // conversion-gen where the warning message generated uses a relative directory import rather than the fully
 // qualified import when generating outside of the GOPATH.
 type OSDisk struct {
-	OSType     string `json:"osType"`
-	DiskSizeGB int32  `json:"diskSizeGB"`
+	OSType string `json:"osType"`
+	// DiskSizeGB is the size in GB to assign to the OS disk.
+	// Will have a default of 30GB if not provided
+	// +optional
+	DiskSizeGB *int32 `json:"diskSizeGB,omitempty"`
 	// ManagedDisk specifies the Managed Disk parameters for the OS disk.
 	// +optional
 	ManagedDisk      *ManagedDiskParameters `json:"managedDisk,omitempty"`

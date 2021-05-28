@@ -122,8 +122,10 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if osDisk.DiskSizeGB <= 0 || osDisk.DiskSizeGB > 2048 {
-		allErrs = append(allErrs, field.Invalid(fieldPath.Child("DiskSizeGB"), "", "the Disk size should be a value between 1 and 2048"))
+	if osDisk.DiskSizeGB != nil {
+		if *osDisk.DiskSizeGB <= 0 || *osDisk.DiskSizeGB > 2048 {
+			allErrs = append(allErrs, field.Invalid(fieldPath.Child("DiskSizeGB"), "", "the Disk size should be a value between 1 and 2048"))
+		}
 	}
 
 	if osDisk.OSType == "" {

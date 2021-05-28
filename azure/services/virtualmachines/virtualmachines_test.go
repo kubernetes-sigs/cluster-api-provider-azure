@@ -296,7 +296,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -709,7 +709,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Windows",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -947,7 +947,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -1230,7 +1230,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -1297,7 +1297,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -1364,7 +1364,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -1438,7 +1438,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},
@@ -1603,7 +1603,7 @@ func TestReconcileVM(t *testing.T) {
 					Identity:   infrav1.VMIdentityNone,
 					OSDisk: infrav1.OSDisk{
 						OSType:     "Linux",
-						DiskSizeGB: 128,
+						DiskSizeGB: to.Int32Ptr(128),
 						ManagedDisk: &infrav1.ManagedDiskParameters{
 							StorageAccountType: "Premium_LRS",
 						},

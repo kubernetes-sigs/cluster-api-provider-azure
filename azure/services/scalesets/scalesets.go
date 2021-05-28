@@ -548,7 +548,7 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 		OsDisk: &compute.VirtualMachineScaleSetOSDisk{
 			OsType:       compute.OperatingSystemTypes(vmssSpec.OSDisk.OSType),
 			CreateOption: compute.DiskCreateOptionTypesFromImage,
-			DiskSizeGB:   to.Int32Ptr(vmssSpec.OSDisk.DiskSizeGB),
+			DiskSizeGB:   vmssSpec.OSDisk.DiskSizeGB,
 		},
 	}
 

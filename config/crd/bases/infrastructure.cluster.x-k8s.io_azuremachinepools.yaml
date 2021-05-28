@@ -608,6 +608,7 @@ spec:
                         - option
                         type: object
                       diskSizeGB:
+                        description: DiskSizeGB is the size in GB to assign to the OS disk. Will have a default of 30GB if not provided
                         format: int32
                         type: integer
                       managedDisk:
@@ -626,7 +627,6 @@ spec:
                       osType:
                         type: string
                     required:
-                    - diskSizeGB
                     - osType
                     type: object
                   securityProfile:

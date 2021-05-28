@@ -807,7 +807,7 @@ func newDefaultVMSSSpec() azure.ScaleSetSpec {
 		SSHKeyData: "ZmFrZXNzaGtleQo=",
 		OSDisk: infrav1.OSDisk{
 			OSType:     "Linux",
-			DiskSizeGB: 120,
+			DiskSizeGB: to.Int32Ptr(120),
 			ManagedDisk: &infrav1.ManagedDiskParameters{
 				StorageAccountType: "Premium_LRS",
 			},
