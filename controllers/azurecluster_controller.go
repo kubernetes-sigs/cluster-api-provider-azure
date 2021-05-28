@@ -82,6 +82,7 @@ func (r *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.
 		WithOptions(options).
 		For(&infrav1.AzureCluster{}).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(ctx))).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")

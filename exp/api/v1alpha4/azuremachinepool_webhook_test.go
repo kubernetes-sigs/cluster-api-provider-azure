@@ -197,7 +197,7 @@ func createMachinePoolWithtMarketPlaceImage(t *testing.T, publisher, offer, sku,
 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			Template: AzureMachineTemplate{
+			Template: AzureMachinePoolMachineTemplate{
 				Image:                        image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
@@ -219,7 +219,7 @@ func createMachinePoolWithSharedImage(t *testing.T, subscriptionID, resourceGrou
 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			Template: AzureMachineTemplate{
+			Template: AzureMachinePoolMachineTemplate{
 				Image:                        image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
@@ -235,7 +235,7 @@ func createMachinePoolWithImageByID(t *testing.T, imageID string, terminateNotif
 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
-			Template: AzureMachineTemplate{
+			Template: AzureMachinePoolMachineTemplate{
 				Image:                        image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,

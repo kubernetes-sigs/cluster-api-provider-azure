@@ -42,10 +42,6 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
-  infrastructureTemplate:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-    kind: AzureMachineTemplate
-    name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
@@ -115,6 +111,11 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+      kind: AzureMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---

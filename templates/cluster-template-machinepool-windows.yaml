@@ -38,10 +38,6 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
-  infrastructureTemplate:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-    kind: AzureMachineTemplate
-    name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:
     clusterConfiguration:
       apiServer:
@@ -127,6 +123,11 @@ spec:
     - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
     - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
     - netplan apply
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+      kind: AzureMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -148,7 +149,7 @@ spec:
       sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -165,12 +166,12 @@ spec:
           name: ${CLUSTER_NAME}-mp-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -225,7 +226,7 @@ spec:
   - netplan apply
   useExperimentalRetryJoin: true
 ---
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-win
@@ -242,12 +243,12 @@ spec:
           name: ${CLUSTER_NAME}-mp-win
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: ${CLUSTER_NAME}-mp-win
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-win

@@ -82,15 +82,15 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureManagedControlPlane
     name: my-cluster-control-plane
   infrastructureRef:
-    apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureManagedCluster
     name: my-cluster
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureManagedControlPlane
 metadata:
   name: my-cluster-control-plane
@@ -105,14 +105,14 @@ spec:
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureManagedCluster
 metadata:
   name: my-cluster
 spec:
   subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
 ---
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: agentpool0
@@ -123,13 +123,13 @@ spec:
     spec:
       clusterName: my-cluster
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
       version: v1.19.6
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureManagedMachinePool
 metadata:
   name: agentpool0

@@ -16,7 +16,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "nightly_master_20210326",
+    "capi_version": "nightly_master_20210526",
     "cert_manager_version": "v1.1.0",
     "kubernetes_version": "v1.19.7",
     "aks_kubernetes_version": "v1.18.8"
@@ -52,7 +52,6 @@ def deploy_capi():
             if core_extra_args:
                 for namespace in ["capi-system", "capi-webhook-system"]:
                     patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)
-                patch_capi_manager_role_with_exp_infra_rbac()
         if extra_args.get("kubeadm-bootstrap"):
             kb_extra_args = extra_args.get("kubeadm-bootstrap")
             if kb_extra_args:
@@ -71,21 +70,6 @@ def patch_args_with_extra_args(namespace, name, extra_args):
             "value": args,
         }]
         local("kubectl patch deployment {} -n {} --type json -p='{}'".format(name, namespace, str(encode_json(patch)).replace("\n", "")))
-
-
-# patch the CAPI manager role to also provide access to experimental infrastructure
-def patch_capi_manager_role_with_exp_infra_rbac():
-    api_groups_str = str(local('kubectl get clusterrole capi-manager-role -o jsonpath={.rules[1].apiGroups}'))
-    exp_infra_group = "exp.infrastructure.cluster.x-k8s.io"
-    if exp_infra_group not in api_groups_str:
-        groups = api_groups_str[1:-1].split() # "[arg1 arg2 ...]" trim off the first and last, then split
-        groups.append(exp_infra_group)
-        patch = [{
-            "op": "replace",
-            "path": "/rules/1/apiGroups",
-            "value": groups,
-        }]
-        local("kubectl patch clusterrole capi-manager-role --type json -p='{}'".format(str(encode_json(patch)).replace("\n", "")))
 
 
 # Users may define their own Tilt customizations in tilt.d. This directory is excluded from git and these files will

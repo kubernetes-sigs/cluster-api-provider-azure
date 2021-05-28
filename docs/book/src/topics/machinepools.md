@@ -56,7 +56,7 @@ Below is an example of the resources needed to create a pool of Virtual Machines
 a Virtual Machine Scale Set.
 ```yaml
 ---
-apiVersion: exp.cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool
 metadata:
   name: capz-mp-0
@@ -72,12 +72,12 @@ spec:
           name: capz-mp-0
       clusterName: capz
       infrastructureRef:
-        apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: capz-mp-0
       version: v1.19.7
 ---
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: capz-mp-0

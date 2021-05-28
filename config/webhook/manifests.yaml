@@ -54,12 +54,12 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-exp-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinepool
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinepool
   failurePolicy: Fail
-  name: azuremachinepool.kb.io
+  name: default.azuremachinepool.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
-    - exp.infrastructure.cluster.x-k8s.io
+    - infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1alpha4
     operations:
@@ -74,12 +74,12 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-exp-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedcontrolplane
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedcontrolplane
   failurePolicy: Fail
-  name: azuremanagedcontrolplane.kb.io
+  name: default.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
-    - exp.infrastructure.cluster.x-k8s.io
+    - infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1alpha4
     operations:
@@ -164,12 +164,12 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-exp-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinepool
+      path: /validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinepool
   failurePolicy: Fail
-  name: azuremachinepool.kb.io
+  name: validation.azuremachinepool.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
-    - exp.infrastructure.cluster.x-k8s.io
+    - infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1alpha4
     operations:
@@ -184,12 +184,12 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-exp-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedcontrolplane
+      path: /validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedcontrolplane
   failurePolicy: Fail
-  name: azuremanagedcontrolplane.kb.io
+  name: validation.azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io
   rules:
   - apiGroups:
-    - exp.infrastructure.cluster.x-k8s.io
+    - infrastructure.cluster.x-k8s.io
     apiVersions:
     - v1alpha4
     operations:

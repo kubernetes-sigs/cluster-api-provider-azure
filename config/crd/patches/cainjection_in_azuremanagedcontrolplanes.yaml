@@ -5,4 +5,4 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
-  name: azuremanagedcontrolplanes.exp.infrastructure.cluster.x-k8s.io
+  name: azuremanagedcontrolplanes.infrastructure.cluster.x-k8s.io

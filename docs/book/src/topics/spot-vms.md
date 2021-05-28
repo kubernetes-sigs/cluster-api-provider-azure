@@ -51,7 +51,7 @@ spec:
 The experimental `MachinePool` also supports using spot instances. To enable a `MachinePool` to be backed by spot instances, add `spotVMOptions` to your `AzureMachinePool` spec:
 
 ```yaml
-apiVersion: exp.infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
 metadata:
   name: capz-mp-0

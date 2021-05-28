@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.5.0
   creationTimestamp: null
-  name: azuremachinepools.exp.infrastructure.cluster.x-k8s.io
+  name: azuremachinepools.infrastructure.cluster.x-k8s.io
 spec:
-  group: exp.infrastructure.cluster.x-k8s.io
+  group: infrastructure.cluster.x-k8s.io
   names:
     categories:
     - cluster-api
@@ -97,7 +97,7 @@ spec:
                 description: RoleAssignmentName is the name of the role assignment to create for a system assigned identity. It can be any valid GUID. If not specified, a random GUID will be generated.
                 type: string
               template:
-                description: Template contains the details used to build a replica virtual machine within the Machine Pool
+                description: Template contains the details used to build a replica virtual machine within the Machine Pool.
                 properties:
                   acceleratedNetworking:
                     description: AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on whether the requested VMSize supports accelerated networking. If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
