@@ -78,10 +78,10 @@ func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger,
 func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
-	// create mapper to transform incoming AzureManagedClusters into AzureManagedMachinePool requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
+	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedMachinePool requests
+	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
 	if err != nil {
-		return errors.Wrap(err, "failed to create AzureManagedCluster to AzureManagedMachinePools mapper")
+		return errors.Wrap(err, "failed to create AzureManagedControlPlane to AzureManagedMachinePools mapper")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -93,10 +93,10 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"))),
 		).
-		// watch for changes in AzureManagedClusters
+		// watch for changes in AzureManagedControlPlanes
 		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},
-			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
+			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
+			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
 		).
 		Build(r)
 	if err != nil {
@@ -255,12 +255,17 @@ func (r *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context,
 
 	scope.Logger.Info("Reconciling AzureManagedMachinePool delete")
 
-	if err := r.createAzureManagedMachinePoolService(scope).Delete(ctx, scope); err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
+	if !scope.Cluster.DeletionTimestamp.IsZero() {
+		// Cluster was deleted, skip machine pool deletion and let AKS delete the whole cluster.
+		// So, remove the finalizer.
+		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
+	} else {
+		if err := r.createAzureManagedMachinePoolService(scope).Delete(ctx, scope); err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
+		}
+		// Machine pool successfully deleted, remove the finalizer.
+		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 	}
-
-	// Cluster is deleted so remove the finalizer.
-	controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 
 	if err := scope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
