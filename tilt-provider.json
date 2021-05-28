@@ -7,7 +7,7 @@
       "go.mod",
       "go.sum",
       "api",
-      "cloud",
+      "azure",
       "controllers",
       "pkg",
       "exp"

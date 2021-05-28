@@ -22,12 +22,22 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 // ErrNotOwned is returned when a resource can't be deleted because it isn't owned.
 var ErrNotOwned = errors.New("resource is not managed and cannot be deleted")
+
+const codeResourceGroupNotFound = "ResourceGroupNotFound"
+
+// ResourceGroupNotFound parses the error to check if it's a resource group not found error.
+func ResourceGroupNotFound(err error) bool {
+	derr := autorest.DetailedError{}
+	serr := &azure.ServiceError{}
+	return errors.As(err, &derr) && errors.As(derr.Original, &serr) && serr.Code == codeResourceGroupNotFound
+}
 
 // ResourceNotFound parses the error to check if it's a resource not found error.
 func ResourceNotFound(err error) bool {

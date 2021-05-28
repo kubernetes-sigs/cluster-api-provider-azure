@@ -120,9 +120,10 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	s.Scope.V(2).Info("deleting VNet", "VNet", vnetSpec.Name)
 	err := s.Client.Delete(ctx, vnetSpec.ResourceGroup, vnetSpec.Name)
-	if err != nil && azure.ResourceNotFound(err) {
-		// already deleted
-		return nil
+	if err != nil {
+		if azure.ResourceGroupNotFound(err) || azure.ResourceNotFound(err) {
+			return nil
+		}
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete VNet %s in resource group %s", vnetSpec.Name, vnetSpec.ResourceGroup)
