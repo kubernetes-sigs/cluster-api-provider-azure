@@ -109,8 +109,7 @@ Makefile targets and scripts are offered to work with go modules:
 
 ### Setting up the environment
 
-Your environment must have the Azure credentials as outlined in the [getting
-started prerequisites](./getting-started.md#Prerequisites) section.
+Your environment must have the Azure credentials as outlined in the [getting started prerequisites](https://capz.sigs.k8s.io/topics/getting-started.html) section.
 
 ### Using Tilt
 
