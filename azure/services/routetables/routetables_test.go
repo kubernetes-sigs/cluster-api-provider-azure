@@ -142,6 +142,14 @@ func TestReconcileRouteTables(t *testing.T) {
 					Name: to.StringPtr("my-cp-routetable"),
 					ID:   to.StringPtr("1"),
 				}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					Name: "control-plane-subnet",
+					Role: infrav1.SubnetControlPlane,
+					RouteTable: infrav1.RouteTable{
+						ID:   "1",
+						Name: "my-cp-routetable",
+					},
+				}).Times(1)
 				s.NodeSubnet().AnyTimes().Return(infrav1.SubnetSpec{Name: "node-subnet", Role: infrav1.SubnetNode})
 				s.NodeRouteTable().AnyTimes().Return(infrav1.RouteTable{Name: "my-node-routetable"})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -149,6 +157,14 @@ func TestReconcileRouteTables(t *testing.T) {
 					Name: to.StringPtr("my-node-routetable"),
 					ID:   to.StringPtr("2"),
 				}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					Name: "node-subnet",
+					Role: infrav1.SubnetNode,
+					RouteTable: infrav1.RouteTable{
+						ID:   "2",
+						Name: "my-node-routetable",
+					},
+				}).Times(1)
 			},
 		},
 		{

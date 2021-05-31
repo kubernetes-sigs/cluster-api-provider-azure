@@ -198,6 +198,12 @@ func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 	}
 }
 
+// SetSubnet sets the passed subnet spec into the scope.
+// This is not used when using a managed control plane.
+func (s *ManagedControlPlaneScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
+	// no-op
+}
+
 // ControlPlaneSubnet returns the cluster control plane subnet.
 func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{}

@@ -451,6 +451,18 @@ func (mr *MockBastionScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockBastionScope)(nil).ResourceGroup))
 }
 
+// SetSubnet mocks base method.
+func (m *MockBastionScope) SetSubnet(arg0 v1alpha4.SubnetSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnet", arg0)
+}
+
+// SetSubnet indicates an expected call of SetSubnet.
+func (mr *MockBastionScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockBastionScope)(nil).SetSubnet), arg0)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockBastionScope) SubscriptionID() string {
 	m.ctrl.T.Helper()

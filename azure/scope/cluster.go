@@ -322,6 +322,16 @@ func (s *ClusterScope) NodeSubnet() infrav1.SubnetSpec {
 	return subnet
 }
 
+// SetSubnet sets the subnet spec for the subnet with the same role.
+func (s *ClusterScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
+	for i, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		if sn.Role == subnetSpec.Role {
+			s.AzureCluster.Spec.NetworkSpec.Subnets[i] = subnetSpec
+			return
+		}
+	}
+}
+
 // ControlPlaneRouteTable returns the cluster controlplane routetable.
 func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()

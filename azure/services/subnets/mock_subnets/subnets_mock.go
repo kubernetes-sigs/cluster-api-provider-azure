@@ -437,6 +437,18 @@ func (mr *MockSubnetScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockSubnetScope)(nil).ResourceGroup))
 }
 
+// SetSubnet mocks base method.
+func (m *MockSubnetScope) SetSubnet(arg0 v1alpha4.SubnetSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnet", arg0)
+}
+
+// SetSubnet indicates an expected call of SetSubnet.
+func (mr *MockSubnetScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockSubnetScope)(nil).SetSubnet), arg0)
+}
+
 // SubnetSpecs mocks base method.
 func (m *MockSubnetScope) SubnetSpecs() []azure.SubnetSpec {
 	m.ctrl.T.Helper()

@@ -72,10 +72,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				continue
 			}
 
-			subnet.Role = subnetSpec.Role
-			subnet.Name = existingSubnet.Name
-			subnet.CIDRBlocks = existingSubnet.CIDRBlocks
 			subnet.ID = existingSubnet.ID
+			subnet.CIDRBlocks = existingSubnet.CIDRBlocks
+
+			s.Scope.SetSubnet(subnet)
 
 		case !s.Scope.IsVnetManaged():
 			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)

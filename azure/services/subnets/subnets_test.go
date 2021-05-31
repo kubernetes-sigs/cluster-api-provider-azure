@@ -236,6 +236,12 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16"},
+				}).Times(1)
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet-1").
 					Return(network.Subnet{
 						ID:   to.StringPtr("subnet-id-1"),
@@ -252,6 +258,12 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					ID:         "subnet-id-1",
+					Name:       "my-subnet-1",
+					Role:       infrav1.SubnetControlPlane,
+					CIDRBlocks: []string{"10.2.0.0/16"},
+				}).Times(1)
 			},
 		},
 		{
@@ -309,6 +321,12 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+				}).Times(1)
 				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-ipv6-subnet-cp").
 					Return(network.Subnet{
 						ID:   to.StringPtr("subnet-id-1"),
@@ -328,6 +346,12 @@ func TestReconcileSubnets(t *testing.T) {
 							},
 						},
 					}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					ID:         "subnet-id-1",
+					Name:       "my-subnet-1",
+					Role:       infrav1.SubnetControlPlane,
+					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+				}).Times(1)
 			},
 		},
 	}
