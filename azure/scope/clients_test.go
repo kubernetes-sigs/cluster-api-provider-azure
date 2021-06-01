@@ -19,6 +19,8 @@ package scope
 import (
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest"
+
 	. "github.com/onsi/gomega"
 )
 
@@ -66,7 +68,9 @@ func TestGettingEnvironment(t *testing.T) {
 		}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			c := AzureClients{}
+			c := AzureClients{
+				Authorizer: autorest.NullAuthorizer{},
+			}
 			err := c.setCredentials("1234", test.azureEnv)
 			if test.expectedError {
 				g.Expect(err).To(HaveOccurred())
