@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/kubernetes-sigs/cluster-api-provider-azure)](https://goreportcard.com/report/kubernetes-sigs/cluster-api-provider-azure)
 
-<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100">
+<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"><a href="https://azure.microsoft.com/en-us/overview/open-source/"><img width="105" hspace="20px" src="https://avatars.githubusercontent.com/u/6844498?s=200&v=4" alt="Powered by Azure"></a>
 
 ------
 
