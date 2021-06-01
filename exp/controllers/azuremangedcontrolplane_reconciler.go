@@ -147,6 +147,11 @@ func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *
 		return errors.Wrapf(err, "failed to delete managed cluster %s", scope.ControlPlane.Name)
 	}
 
+	scope.V(2).Info("Deleting virtual network")
+	if err := r.vnetSvc.Delete(ctx); err != nil {
+		return errors.Wrap(err, "failed to delete virtual network")
+	}
+
 	scope.V(2).Info("Deleting managed cluster resource group")
 	if err := r.groupsSvc.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to delete managed cluster resource group")

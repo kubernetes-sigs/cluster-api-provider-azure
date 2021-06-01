@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -65,6 +66,9 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		return errors.Wrap(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
 	}
 
+	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
+	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, r.Client, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(azManagedControlPlane).
@@ -73,6 +77,11 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		Watches(
 			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},
 			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
+		).
+		// watch MachinePool resources
+		Watches(
+			&source.Kind{Type: &clusterv1exp.MachinePool{}},
+			handler.EnqueueRequestsFromMapFunc(azureManagedMachinePoolMapper),
 		).
 		Build(r)
 	if err != nil {
@@ -137,6 +146,28 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 		return ctrl.Result{}, nil
 	}
 
+	// Handle deleted clusters
+	// needs to happen before trying to fetch the default pool to avoid circular deletion dependencies
+	if !azureControlPlane.DeletionTimestamp.IsZero() {
+		// Create the scope.
+		mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
+			Client:       r.Client,
+			Logger:       log,
+			Cluster:      cluster,
+			ControlPlane: azureControlPlane,
+			PatchTarget:  azureControlPlane,
+		})
+		if err != nil {
+			return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		}
+		defer func() {
+			if err := mcpScope.PatchObject(ctx); err != nil && reterr == nil {
+				reterr = err
+			}
+		}()
+		return r.reconcileDelete(ctx, mcpScope)
+	}
+
 	// fetch default pool
 	defaultPoolKey := client.ObjectKey{
 		Name:      azureControlPlane.Spec.DefaultPoolRef.Name,
@@ -181,11 +212,6 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 			reterr = err
 		}
 	}()
-
-	// Handle deleted clusters
-	if !azureControlPlane.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, mcpScope)
-	}
 
 	// Handle non-deleted clusters
 	return r.reconcileNormal(ctx, mcpScope)

@@ -57,10 +57,22 @@ type AzureManagedClusterReconciler struct {
 func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedCluster")
 	azManagedCluster := &infrav1exp.AzureManagedCluster{}
+
+	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedCluster requests
+	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(ctx, r.Client, log)
+	if err != nil {
+		return errors.Wrap(err, "failed to create AzureManagedControlPlane to AzureManagedClusters mapper")
+	}
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(azManagedCluster).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		// watch AzureManagedControlPlane resources
+		Watches(
+			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
+			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
+		).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")
@@ -141,9 +153,9 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 		return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	// Match whatever the control plane says. We should also enqueue
-	// requests from control plane to infra cluster to keep this accurate
-	aksCluster.Status.Ready = controlPlane.Status.Ready
+	// Infrastructure must be ready before control plane. We should also enqueue
+	// requests from control plane to infra cluster to keep control plane endpoint accurate.
+	aksCluster.Status.Ready = true
 	aksCluster.Spec.ControlPlaneEndpoint = controlPlane.Spec.ControlPlaneEndpoint
 
 	if err := patchhelper.Patch(ctx, aksCluster); err != nil {

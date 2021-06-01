@@ -19,7 +19,7 @@ settings = {
     "capi_version": "nightly_master_20210526",
     "cert_manager_version": "v1.1.0",
     "kubernetes_version": "v1.19.7",
-    "aks_kubernetes_version": "v1.18.8"
+    "aks_kubernetes_version": "v1.20.5"
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
@@ -96,7 +96,7 @@ def fixup_yaml_empty_arrays(yaml_str):
 
 def validate_auth():
     substitutions = settings.get("kustomize_substitutions", {})
-    missing = [k for k in keys if k not in substitutions]
+    missing = [k for k in keys if k not in substitutions and not os.environ.get(k)]
     if missing:
         fail("missing kustomize_substitutions keys {} in tilt-setting.json".format(missing))
 
@@ -195,7 +195,7 @@ def flavors():
     substitutions = settings.get("kustomize_substitutions", {})
     for key in keys:
         if key[-4:] == "_B64":
-            substitutions[key[:-4]] = base64_decode(substitutions[key])
+            os.environ[key[:-4]] = base64_decode(os.environ[key])
 
     ssh_pub_key_B64 = "AZURE_SSH_PUBLIC_KEY_B64"
     ssh_pub_key_path = "$HOME/.ssh/id_rsa.pub"
