@@ -93,7 +93,9 @@ func (c *AzureClients) setCredentials(subscriptionID, environmentName string) er
 	c.Values[auth.SubscriptionID] = strings.TrimSuffix(subscriptionID, "\n")
 	c.Values[auth.TenantID] = strings.TrimSuffix(c.Values[auth.TenantID], "\n")
 
-	c.Authorizer, err = c.GetAuthorizer()
+	if c.Authorizer == nil {
+		c.Authorizer, err = c.GetAuthorizer()
+	}
 	return err
 }
 
