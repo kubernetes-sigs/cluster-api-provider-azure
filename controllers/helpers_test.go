@@ -202,10 +202,6 @@ func TestReconcileAzureSecret(t *testing.T) {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	testLog := ctrl.Log.WithName("reconcileAzureSecret")
 
-	os.Setenv(auth.ClientID, "fooClient")
-	os.Setenv(auth.ClientSecret, "fooSecret")
-	os.Setenv(auth.TenantID, "fooTenant")
-
 	cluster := newCluster("foo")
 	azureCluster := newAzureCluster("foo", "bar")
 

@@ -18,7 +18,10 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"testing"
+
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -165,6 +168,10 @@ func TestAzureJSONMachineReconciler(t *testing.T) {
 			err:  "azureclusters.infrastructure.cluster.x-k8s.io \"my-azure-cluster\" not found",
 		},
 	}
+
+	os.Setenv(auth.ClientID, "fooClient")
+	os.Setenv(auth.ClientSecret, "fooSecret")
+	os.Setenv(auth.TenantID, "fooTenant")
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
