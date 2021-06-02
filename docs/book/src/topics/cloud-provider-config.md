@@ -4,7 +4,16 @@ The [Azure cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azu
 
 CAPZ automatically generates this file based on user-provided values in AzureMachineTemplate and AzureMachine. All AzureMachines in the same MachineDeployment or control plane will all share a single cloud provider secret, while AzureMachines created inidividually will have their own secret.
 
-For AzureMachineTemplate and standalone AzureMachines, the generated secret will have the name "${RESOURCE}-azure-json", where "${RESOURCE}" is the name of either the AzureMachineTemplate or AzureMachine. The secret will have one data field, `azure.json`, with the raw content for that file. When the secret `${RESOURCE}-azure-json` already exists in the same namespace as an AzureCluster and does not have the label `"${CLUSTER_NAME}": "owned"`, CAPZ will not generate the default described above. Instead it will directly use whatever the user provides in that secret.
+For AzureMachineTemplate and standalone AzureMachines, the generated secret will have the name "${RESOURCE}-azure-json", where "${RESOURCE}" is the name of either the AzureMachineTemplate or AzureMachine. The secret will have two data fields: `control-plane-azure.json` and `worker-node-azure.json`, with the raw content for that file containing the control plane and worker node data respectively. When the secret `${RESOURCE}-azure-json` already exists in the same namespace as an AzureCluster and does not have the label `"${CLUSTER_NAME}": "owned"`, CAPZ will not generate the default described above. Instead it will directly use whatever the user provides in that secret.
+
+<aside class="note warning">
+
+<h1> Warning </h1>
+
+For backwards compatibility, the generated secret will also have the `azure.json` field with the control plane data.
+But, this is deprecated and will be removed in capz `v0.6.x`. It is recommended to use the `control-plane-azure.json` and `worker-node-azure.json` fields instead.
+
+</aside>
 
 ### Overriding Cloud Provider Config
 
