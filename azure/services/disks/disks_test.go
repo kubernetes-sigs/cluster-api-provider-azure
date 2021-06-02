@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -210,7 +211,7 @@ func TestDiskSpecs(t *testing.T) {
 				},
 				Spec: infrav1.AzureMachineSpec{
 					OSDisk: infrav1.OSDisk{
-						DiskSizeGB: 30,
+						DiskSizeGB: to.Int32Ptr(30),
 						OSType:     "Linux",
 					},
 				},

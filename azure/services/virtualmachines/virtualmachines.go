@@ -350,7 +350,7 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 			Name:         to.StringPtr(azure.GenerateOSDiskName(vmSpec.Name)),
 			OsType:       compute.OperatingSystemTypes(vmSpec.OSDisk.OSType),
 			CreateOption: compute.DiskCreateOptionTypesFromImage,
-			DiskSizeGB:   to.Int32Ptr(vmSpec.OSDisk.DiskSizeGB),
+			DiskSizeGB:   vmSpec.OSDisk.DiskSizeGB,
 			Caching:      compute.CachingTypes(vmSpec.OSDisk.CachingType),
 		},
 	}
