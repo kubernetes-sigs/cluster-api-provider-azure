@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha4
 
 import (
+	"reflect"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -81,44 +83,88 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureMachine)
 
-	if errs := ValidateImage(m.Spec.Image, field.NewPath("image")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.Image, old.Spec.Image) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "image"),
+				m.Spec.Image, "field is immutable"),
+		)
 	}
 
-	if errs := ValidateOSDisk(m.Spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.Identity, old.Spec.Identity) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "identity"),
+				m.Spec.Identity, "field is immutable"),
+		)
 	}
 
-	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.UserAssignedIdentities, old.Spec.UserAssignedIdentities) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "userAssignedIdentities"),
+				m.Spec.UserAssignedIdentities, "field is immutable"),
+		)
 	}
 
-	if errs := ValidateSystemAssignedIdentity(m.Spec.Identity, old.Spec.RoleAssignmentName, m.Spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.RoleAssignmentName, old.Spec.RoleAssignmentName) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "roleAssignmentName"),
+				m.Spec.RoleAssignmentName, "field is immutable"),
+		)
 	}
 
-	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.OSDisk, old.Spec.OSDisk) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "osDisk"),
+				m.Spec.OSDisk, "field is immutable"),
+		)
 	}
 
-	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.DataDisks, old.Spec.DataDisks) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "dataDisks"),
+				m.Spec.DataDisks, "field is immutable"),
+		)
 	}
 
-	if errs := ValidateDataDisksUpdate(old.Spec.DataDisks, m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.SSHPublicKey, old.Spec.SSHPublicKey) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "sshPublicKey"),
+				m.Spec.SSHPublicKey, "field is immutable"),
+		)
 	}
 
-	if errs := validateManagedDisksUpdate(old.Spec.OSDisk.ManagedDisk, old.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.AllocatePublicIP, old.Spec.AllocatePublicIP) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "allocatePublicIP"),
+				m.Spec.AllocatePublicIP, "field is immutable"),
+		)
 	}
 
-	if errs := validateManagedDisk(m.Spec.OSDisk.ManagedDisk, field.NewPath("osDisk").Child("managedDisk"), true); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.EnableIPForwarding, old.Spec.EnableIPForwarding) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "enableIPForwarding"),
+				m.Spec.EnableIPForwarding, "field is immutable"),
+		)
 	}
 
-	if errs := validateDiffDiskSettingsUpdate(old.Spec.OSDisk.DiffDiskSettings, m.Spec.OSDisk.DiffDiskSettings, field.NewPath("osDisk").Child("diffDiskSettings")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if !reflect.DeepEqual(m.Spec.AcceleratedNetworking, old.Spec.AcceleratedNetworking) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "acceleratedNetworking"),
+				m.Spec.AcceleratedNetworking, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(m.Spec.SpotVMOptions, old.Spec.SpotVMOptions) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "spotVMOptions"),
+				m.Spec.SpotVMOptions, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(m.Spec.SecurityProfile, old.Spec.SecurityProfile) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "securityProfile"),
+				m.Spec.SecurityProfile, "field is immutable"),
+		)
 	}
 
 	if len(allErrs) == 0 {
