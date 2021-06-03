@@ -451,6 +451,18 @@ func (mr *MockRouteTableScopeMockRecorder) RouteTableSpecs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTableSpecs", reflect.TypeOf((*MockRouteTableScope)(nil).RouteTableSpecs))
 }
 
+// SetSubnet mocks base method.
+func (m *MockRouteTableScope) SetSubnet(arg0 v1alpha4.SubnetSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnet", arg0)
+}
+
+// SetSubnet indicates an expected call of SetSubnet.
+func (mr *MockRouteTableScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockRouteTableScope)(nil).SetSubnet), arg0)
+}
+
 // SubscriptionID mocks base method.
 func (m *MockRouteTableScope) SubscriptionID() string {
 	m.ctrl.T.Helper()

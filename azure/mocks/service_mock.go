@@ -523,6 +523,18 @@ func (mr *MockNetworkDescriberMockRecorder) OutboundPoolName(arg0 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockNetworkDescriber)(nil).OutboundPoolName), arg0)
 }
 
+// SetSubnet mocks base method.
+func (m *MockNetworkDescriber) SetSubnet(arg0 v1alpha4.SubnetSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnet", arg0)
+}
+
+// SetSubnet indicates an expected call of SetSubnet.
+func (mr *MockNetworkDescriberMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockNetworkDescriber)(nil).SetSubnet), arg0)
+}
+
 // Vnet mocks base method.
 func (m *MockNetworkDescriber) Vnet() *v1alpha4.VnetSpec {
 	m.ctrl.T.Helper()
@@ -1113,6 +1125,18 @@ func (m *MockClusterScoper) ResourceGroup() string {
 func (mr *MockClusterScoperMockRecorder) ResourceGroup() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockClusterScoper)(nil).ResourceGroup))
+}
+
+// SetSubnet mocks base method.
+func (m *MockClusterScoper) SetSubnet(arg0 v1alpha4.SubnetSpec) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubnet", arg0)
+}
+
+// SetSubnet indicates an expected call of SetSubnet.
+func (mr *MockClusterScoperMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockClusterScoper)(nil).SetSubnet), arg0)
 }
 
 // SubscriptionID mocks base method.

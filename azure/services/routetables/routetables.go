@@ -72,6 +72,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			// currently don't support specifying your own routes via spec
 			routeTableSpec.Subnet.RouteTable.Name = to.String(existingRouteTable.Name)
 			routeTableSpec.Subnet.RouteTable.ID = to.String(existingRouteTable.ID)
+			s.Scope.SetSubnet(routeTableSpec.Subnet)
 
 			continue
 		}
