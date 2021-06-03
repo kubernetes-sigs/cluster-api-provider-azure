@@ -571,3 +571,19 @@ const (
 	// AvailabilitySetRateLimit ...
 	AvailabilitySetRateLimit = "availabilitySetRateLimit"
 )
+
+// BastionSpec specifies how the Bastion feature should be set up for the cluster.
+type BastionSpec struct {
+	// +optional
+	AzureBastion *AzureBastion `json:"azureBastion,omitempty"`
+}
+
+// AzureBastion specifies how the Azure Bastion cloud component should be configured.
+type AzureBastion struct {
+	// +optional
+	Name string `json:"name,omitempty"`
+	// +optional
+	Subnet SubnetSpec `json:"subnet,omitempty"`
+	// +optional
+	PublicIP PublicIPSpec `json:"publicIP,omitempty"`
+}
