@@ -19,8 +19,10 @@ package v1alpha4
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/pointer"
+
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 )
 
@@ -121,67 +123,397 @@ func TestAzureMachine_ValidateUpdate(t *testing.T) {
 	tests := []struct {
 		name       string
 		oldMachine *AzureMachine
-		machine    *AzureMachine
+		newMachine *AzureMachine
 		wantErr    bool
 	}{
 		{
-			name:       "azuremachine with valid SSHPublicKey",
-			oldMachine: createMachineWithSSHPublicKey(t, ""),
-			machine:    createMachineWithSSHPublicKey(t, validSSHPublicKey),
-			wantErr:    false,
+			name: "invalidTest: azuremachine.spec.image is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Image: &Image{
+						ID: pointer.String("imageID-1"),
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Image: &Image{
+						ID: pointer.String("imageID-2"),
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name:       "azuremachine without SSHPublicKey",
-			oldMachine: createMachineWithSSHPublicKey(t, ""),
-			machine:    createMachineWithSSHPublicKey(t, ""),
-			wantErr:    true,
+			name: "validTest: azuremachine.spec.image is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Image: &Image{
+						ID: pointer.String("imageID-1"),
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Image: &Image{
+						ID: pointer.String("imageID-1"),
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name:       "azuremachine with invalid SSHPublicKey",
-			oldMachine: createMachineWithSSHPublicKey(t, ""),
-			machine:    createMachineWithSSHPublicKey(t, "invalid ssh key"),
-			wantErr:    true,
+			name: "invalidTest: azuremachine.spec.Identity is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Identity: VMIdentityUserAssigned,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Identity: VMIdentityNone,
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name:       "azuremachine with user assigned identities",
-			oldMachine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:///123"}}),
-			machine:    createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:///123"}, {ProviderID: "azure:///456"}}),
-			wantErr:    false,
+			name: "validTest: azuremachine.spec.Identity is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Identity: VMIdentityNone,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					Identity: VMIdentityNone,
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name:       "azuremachine with empty user assigned identities",
-			oldMachine: createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:///123"}}),
-			machine:    createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{}),
-			wantErr:    true,
+			name: "invalidTest: azuremachine.spec.UserAssignedIdentities is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					UserAssignedIdentities: []UserAssignedIdentity{
+						{ProviderID: "providerID-1"},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					UserAssignedIdentities: []UserAssignedIdentity{
+						{ProviderID: "providerID-2"},
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name:       "azuremachine with valid osDisk cache type",
-			oldMachine: createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[0])),
-			machine:    createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[1])),
-			wantErr:    false,
+			name: "validTest: azuremachine.spec.UserAssignedIdentities is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					UserAssignedIdentities: []UserAssignedIdentity{
+						{ProviderID: "providerID-1"},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					UserAssignedIdentities: []UserAssignedIdentity{
+						{ProviderID: "providerID-1"},
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name:       "azuremachine with invalid osDisk cache type",
-			oldMachine: createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[0])),
-			machine:    createMachineWithOsDiskCacheType(t, "invalid_cache_type"),
-			wantErr:    true,
+			name: "invalidTest: azuremachine.spec.RoleAssignmentName is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					RoleAssignmentName: "role",
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					RoleAssignmentName: "not-role",
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name:       "azuremachine with invalid data disk's managed disk's storage account type",
-			oldMachine: createMachineWithDataDiskManagedDisk(t, "Premium_LRS"),
-			machine:    createMachineWithDataDiskManagedDisk(t, "invalid_storage_account"),
-			wantErr:    true,
+			name: "validTest: azuremachine.spec.RoleAssignmentName is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					RoleAssignmentName: "role",
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					RoleAssignmentName: "role",
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name:       "azuremachine with invalid data disk's managed disk update",
-			oldMachine: createMachineWithDataDiskManagedDisk(t, "Premium_LRS"),
-			machine:    createMachineWithDataDiskManagedDisk(t, "Standard_LRS"),
-			wantErr:    true,
+			name: "invalidTest: azuremachine.spec.OSDisk is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					OSDisk: OSDisk{
+						OSType: "osType-0",
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					OSDisk: OSDisk{
+						OSType: "osType-1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.OSDisk is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					OSDisk: OSDisk{
+						OSType: "osType-1",
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					OSDisk: OSDisk{
+						OSType: "osType-1",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.DataDisks is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DataDisks: []DataDisk{
+						{
+							DiskSizeGB: 128,
+						},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DataDisks: []DataDisk{
+						{
+							DiskSizeGB: 64,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.DataDisks is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DataDisks: []DataDisk{
+						{
+							DiskSizeGB: 128,
+						},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					DataDisks: []DataDisk{
+						{
+							DiskSizeGB: 128,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.SSHPublicKey is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SSHPublicKey: "validKey",
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SSHPublicKey: "invalidKey",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.SSHPublicKey is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SSHPublicKey: "validKey",
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SSHPublicKey: "validKey",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.AllocatePublicIP is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AllocatePublicIP: true,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AllocatePublicIP: false,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.AllocatePublicIP is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AllocatePublicIP: true,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AllocatePublicIP: true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.EnableIPForwarding is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					EnableIPForwarding: true,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					EnableIPForwarding: false,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.EnableIPForwarding is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					EnableIPForwarding: true,
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					EnableIPForwarding: true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.AcceleratedNetworking is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.AcceleratedNetworking is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(true),
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					AcceleratedNetworking: pointer.Bool(true),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.SpotVMOptions is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SpotVMOptions: &SpotVMOptions{
+						MaxPrice: &resource.Quantity{Format: "vmoptions-0"},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SpotVMOptions: &SpotVMOptions{
+						MaxPrice: &resource.Quantity{Format: "vmoptions-1"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.SpotVMOptions is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SpotVMOptions: &SpotVMOptions{
+						MaxPrice: &resource.Quantity{Format: "vmoptions-1"},
+					},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SpotVMOptions: &SpotVMOptions{
+						MaxPrice: &resource.Quantity{Format: "vmoptions-1"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalidTest: azuremachine.spec.SecurityProfile is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(false)},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "validTest: azuremachine.spec.SecurityProfile is immutable",
+			oldMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+				},
+			},
+			newMachine: &AzureMachine{
+				Spec: AzureMachineSpec{
+					SecurityProfile: &SecurityProfile{EncryptionAtHost: pointer.Bool(true)},
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.machine.ValidateUpdate(tc.oldMachine)
+			err := tc.newMachine.ValidateUpdate(tc.oldMachine)
 			if tc.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -282,30 +614,4 @@ func createMachineWithOsDiskCacheType(t *testing.T, cacheType string) *AzureMach
 	}
 	machine.Spec.OSDisk.CachingType = cacheType
 	return machine
-}
-
-func createMachineWithDataDiskManagedDisk(t *testing.T, storageAccountType string) *AzureMachine {
-	machine := &AzureMachine{
-		Spec: AzureMachineSpec{
-			SSHPublicKey: validSSHPublicKey,
-			OSDisk:       validOSDisk,
-			DataDisks: []DataDisk{
-				createDataDisk(t, 16, 0, "disk_one", storageAccountType, "None"),
-			},
-		},
-	}
-
-	return machine
-}
-
-func createDataDisk(t *testing.T, diskSizeGB int32, lun int32, name string, storageAccountType string, cacheType string) DataDisk {
-	return DataDisk{
-		NameSuffix: name,
-		DiskSizeGB: diskSizeGB,
-		Lun:        to.Int32Ptr(lun),
-		ManagedDisk: &ManagedDiskParameters{
-			StorageAccountType: storageAccountType,
-		},
-		CachingType: cacheType,
-	}
 }
