@@ -267,14 +267,12 @@ func (m *MachineScope) AvailabilityZone() string {
 
 // Name returns the AzureMachine name.
 func (m *MachineScope) Name() string {
+	if id := m.GetVMID(); id != "" {
+		return id
+	}
 	// Windows Machine names cannot be longer than 15 chars
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS && len(m.AzureMachine.Name) > 15 {
-		clustername := m.ClusterName()
-		if len(m.ClusterName()) > 9 {
-			clustername = strings.TrimSuffix(clustername[0:9], "-")
-		}
-
-		return clustername + "-" + m.AzureMachine.Name[len(m.AzureMachine.Name)-5:]
+		return strings.TrimSuffix(m.AzureMachine.Name[0:9], "-") + "-" + m.AzureMachine.Name[len(m.AzureMachine.Name)-5:]
 	}
 	return m.AzureMachine.Name
 }
@@ -312,7 +310,7 @@ func (m *MachineScope) ProviderID() string {
 	if err != nil {
 		return ""
 	}
-	return parsed.ID()
+	return parsed.String()
 }
 
 // AvailabilitySet returns the availability set for this machine if available
