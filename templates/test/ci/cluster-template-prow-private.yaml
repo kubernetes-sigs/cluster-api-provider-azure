@@ -29,6 +29,8 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
+  bastionSpec:
+    azureBastion: {}
   location: ${AZURE_LOCATION}
   networkSpec:
     apiServerLB:

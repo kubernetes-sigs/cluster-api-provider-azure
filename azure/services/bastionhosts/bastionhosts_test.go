@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	mock_bastionhosts "sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts/mocks_bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
@@ -58,11 +60,13 @@ func TestReconcileBastionHosts(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -79,11 +83,13 @@ func TestReconcileBastionHosts(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -102,11 +108,13 @@ func TestReconcileBastionHosts(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -127,11 +135,13 @@ func TestReconcileBastionHosts(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -151,11 +161,13 @@ func TestReconcileBastionHosts(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -179,11 +191,13 @@ func TestReconcileBastionHosts(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -199,17 +213,19 @@ func TestReconcileBastionHosts(t *testing.T) {
 		},
 		{
 			name:          "fail to create a bastion",
-			expectedError: "cannot create bastion host: #: Internal Server Error: StatusCode=500",
+			expectedError: "error creating Azure Bastion: cannot create Azure Bastion: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastion",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastion",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -217,8 +233,8 @@ func TestReconcileBastionHosts(t *testing.T) {
 				s.Location().AnyTimes().Return("fake-location")
 				s.ClusterName().AnyTimes().Return("fake-cluster")
 				gomock.InOrder(
-					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					mPublicIP.Get(gomockinternal.AContext(), "my-rg", "my-publicip").Return(network.PublicIPAddress{}, nil),
+					mSubnet.Get(gomockinternal.AContext(), "my-rg", "my-vnet", "my-subnet").Return(network.Subnet{}, nil),
 					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-bastion", gomock.AssignableToTypeOf(network.BastionHost{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error")),
 				)
 			},
@@ -276,23 +292,18 @@ func TestDeleteBastionHost(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastionhost",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
-						PublicIPName: "my-publicip",
-					},
-					{
-						Name:         "my-bastionhost1",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastionhost",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost")
-				m.Delete(gomockinternal.AContext(), "my-rg", "my-bastionhost1")
 			},
 		},
 		{
@@ -303,17 +314,13 @@ func TestDeleteBastionHost(t *testing.T) {
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastionhost",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
-						PublicIPName: "my-publicip",
-					},
-					{
-						Name:         "my-bastionhost1",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastionhost",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})
@@ -325,17 +332,19 @@ func TestDeleteBastionHost(t *testing.T) {
 		},
 		{
 			name:          "bastion host deletion fails",
-			expectedError: "failed to delete Bastion Host my-bastionhost in resource group my-rg: #: Internal Server Error: StatusCode=500",
+			expectedError: "error deleting Azure Bastion: failed to delete Azure Bastion my-bastionhost in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_bastionhosts.MockBastionScopeMockRecorder,
 				m *mock_bastionhosts.MockclientMockRecorder,
 				mSubnet *mock_subnets.MockClientMockRecorder,
 				mPublicIP *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.BastionSpecs().Return([]azure.BastionSpec{
-					{
-						Name:         "my-bastionhost",
-						VNetName:     "my-vnet",
-						SubnetName:   "my-subnet",
+				s.BastionSpec().Return(azure.BastionSpec{
+					AzureBastion: &azure.AzureBastionSpec{
+						Name:     "my-bastionhost",
+						VNetName: "my-vnet",
+						SubnetSpec: v1alpha4.SubnetSpec{
+							Name: "my-subnet",
+						},
 						PublicIPName: "my-publicip",
 					},
 				})

@@ -153,6 +153,15 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 
 	publicIPSpecs = append(publicIPSpecs, nodeOutboundIPSpecs...)
 
+	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+		// public IP for Azure Bastion.
+		azureBastionPublicIP := azure.PublicIPSpec{
+			Name:    s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.Name,
+			DNSName: s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.DNSName,
+		}
+		publicIPSpecs = append(publicIPSpecs, azureBastionPublicIP)
+	}
+
 	return publicIPSpecs
 }
 
@@ -236,7 +245,7 @@ func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
 
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
-	return []azure.SubnetSpec{
+	subnetSpecs := []azure.SubnetSpec{
 		{
 			Name:              s.ControlPlaneSubnet().Name,
 			CIDRs:             s.ControlPlaneSubnet().CIDRBlocks,
@@ -254,6 +263,20 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 			Role:              s.NodeSubnet().Role,
 		},
 	}
+
+	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+		azureBastionSubnet := s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet
+		subnetSpecs = append(subnetSpecs, azure.SubnetSpec{
+			Name:              azureBastionSubnet.Name,
+			CIDRs:             azureBastionSubnet.CIDRBlocks,
+			VNetName:          s.Vnet().Name,
+			SecurityGroupName: azureBastionSubnet.SecurityGroup.Name,
+			RouteTableName:    azureBastionSubnet.RouteTable.Name,
+			Role:              azureBastionSubnet.Role,
+		})
+	}
+
+	return subnetSpecs
 }
 
 // VNetSpec returns the virtual network spec.
@@ -283,6 +306,21 @@ func (s *ClusterScope) PrivateDNSSpec() *azure.PrivateDNSSpec {
 		}
 	}
 	return spec
+}
+
+// BastionSpec returns the bastion spec.
+func (s *ClusterScope) BastionSpec() azure.BastionSpec {
+	var ret azure.BastionSpec
+	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
+		ret.AzureBastion = &azure.AzureBastionSpec{
+			Name:         s.AzureCluster.Spec.BastionSpec.AzureBastion.Name,
+			SubnetSpec:   s.AzureCluster.Spec.BastionSpec.AzureBastion.Subnet,
+			PublicIPName: s.AzureCluster.Spec.BastionSpec.AzureBastion.PublicIP.Name,
+			VNetName:     s.Vnet().Name,
+		}
+	}
+
+	return ret
 }
 
 // Vnet returns the cluster Vnet.

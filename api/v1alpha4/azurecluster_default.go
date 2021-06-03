@@ -29,6 +29,10 @@ const (
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
+	// DefaultAzureBastionSubnetCIDR is the default Subnet CIDR for AzureBastion
+	DefaultAzureBastionSubnetCIDR = "10.255.255.224/27"
+	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion
+	DefaultAzureBastionSubnetName = "AzureBastionSubnet"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultAzureCloud is the public cloud that will be used by most users
@@ -43,6 +47,7 @@ func (c *AzureCluster) setDefaults() {
 
 func (c *AzureCluster) setNetworkSpecDefaults() {
 	c.setVnetDefaults()
+	c.setBastionDefaults()
 	c.setSubnetDefaults()
 	c.setAPIServerLBDefaults()
 	c.setNodeOutboundLBDefaults()
@@ -204,6 +209,29 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 	}
 }
 
+func (c *AzureCluster) setBastionDefaults() {
+	if c.Spec.BastionSpec.AzureBastion != nil {
+		if c.Spec.BastionSpec.AzureBastion.Name == "" {
+			c.Spec.BastionSpec.AzureBastion.Name = generateAzureBastionName(c.ObjectMeta.Name)
+		}
+		// Ensure defaults for the Subnet settings.
+		{
+			if c.Spec.BastionSpec.AzureBastion.Subnet.Name == "" {
+				c.Spec.BastionSpec.AzureBastion.Subnet.Name = DefaultAzureBastionSubnetName
+			}
+			if len(c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
+				c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks = []string{DefaultAzureBastionSubnetCIDR}
+			}
+		}
+		// Ensure defaults for the PublicIP settings.
+		{
+			if c.Spec.BastionSpec.AzureBastion.PublicIP.Name == "" {
+				c.Spec.BastionSpec.AzureBastion.PublicIP.Name = generateAzureBastionPublicIPName(c.ObjectMeta.Name)
+			}
+		}
+	}
+}
+
 // generateVnetName generates a virtual network name, based on the cluster name.
 func generateVnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "vnet")
@@ -217,6 +245,16 @@ func generateControlPlaneSubnetName(clusterName string) string {
 // generateNodeSubnetName generates a node subnet name, based on the cluster name.
 func generateNodeSubnetName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "node-subnet")
+}
+
+// generateAzureBastionName generates an azure bastion name.
+func generateAzureBastionName(clusterName string) string {
+	return fmt.Sprintf("%s-azure-bastion", clusterName)
+}
+
+// generateAzureBastionPublicIPName generates an azure bastion public ip name.
+func generateAzureBastionPublicIPName(clusterName string) string {
+	return fmt.Sprintf("%s-azure-bastion-pip", clusterName)
 }
 
 // generateControlPlaneSecurityGroupName generates a control plane security group name, based on the cluster name.
