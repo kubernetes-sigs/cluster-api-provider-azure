@@ -49,6 +49,20 @@ setup() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
     ${REPO_ROOT}/hack/ensure-acr-login.sh
+    if [[ -z "${CLUSTER_TEMPLATE:-}" ]]; then
+        select_cluster_template
+    fi
+
+    export CLUSTER_NAME="${CLUSTER_NAME:-capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')}"
+    export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
+    export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
+    # Need a cluster with at least 2 nodes
+    export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
+    export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
+    export EXP_CLUSTER_RESOURCE_SET="true"
+}
+
+select_cluster_template() {
     if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
         source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
         export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds.yaml"
@@ -76,14 +90,6 @@ setup() {
     if [[ "${EXP_MACHINE_POOL:-}" == "true" ]]; then
         export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE/prow/prow-machine-pool}"
     fi
-
-    export CLUSTER_NAME="capz-$(head /dev/urandom | LC_ALL=C tr -dc a-z0-9 | head -c 6 ; echo '')"
-    export AZURE_RESOURCE_GROUP="${CLUSTER_NAME}"
-    export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
-    # Need a cluster with at least 2 nodes
-    export CONTROL_PLANE_MACHINE_COUNT="${CONTROL_PLANE_MACHINE_COUNT:-1}"
-    export WORKER_MACHINE_COUNT="${WORKER_MACHINE_COUNT:-2}"
-    export EXP_CLUSTER_RESOURCE_SET="true"
 }
 
 create_cluster() {
