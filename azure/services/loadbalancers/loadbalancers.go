@@ -235,7 +235,7 @@ func (s *Service) getOutboundRules(lbSpec azure.LBSpec, frontendIDs []network.Su
 			Name: to.StringPtr(outboundNAT),
 			OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
 				Protocol:                 network.LoadBalancerOutboundRuleProtocolAll,
-				IdleTimeoutInMinutes:     to.Int32Ptr(4),
+				IdleTimeoutInMinutes:     lbSpec.IdleTimeoutInMinutes,
 				FrontendIPConfigurations: &frontendIDs,
 				BackendAddressPool: &network.SubResource{
 					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
@@ -261,7 +261,7 @@ func (s *Service) getLoadBalancingRules(lbSpec azure.LBSpec, frontendIDs []netwo
 					Protocol:                network.TransportProtocolTCP,
 					FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
 					BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
-					IdleTimeoutInMinutes:    to.Int32Ptr(4),
+					IdleTimeoutInMinutes:    lbSpec.IdleTimeoutInMinutes,
 					EnableFloatingIP:        to.BoolPtr(false),
 					LoadDistribution:        network.LoadDistributionDefault,
 					FrontendIPConfiguration: &frontendIPConfig,

@@ -170,26 +170,28 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	specs := []azure.LBSpec{
 		{
 			// Control Plane LB
-			Name:              s.APIServerLB().Name,
-			SubnetName:        s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
-			APIServerPort:     s.APIServerPort(),
-			Type:              s.APIServerLB().Type,
-			SKU:               infrav1.SKUStandard,
-			Role:              infrav1.APIServerRole,
-			BackendPoolName:   s.APIServerLBPoolName(s.APIServerLB().Name),
+			Name:                 s.APIServerLB().Name,
+			SubnetName:           s.ControlPlaneSubnet().Name,
+			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
+			APIServerPort:        s.APIServerPort(),
+			Type:                 s.APIServerLB().Type,
+			SKU:                  infrav1.SKUStandard,
+			Role:                 infrav1.APIServerRole,
+			BackendPoolName:      s.APIServerLBPoolName(s.APIServerLB().Name),
+			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 		},
 	}
 
 	// Public Node outbound LB
 	if s.NodeOutboundLB() != nil {
 		specs = append(specs, azure.LBSpec{
-			Name:              s.NodeOutboundLBName(),
-			FrontendIPConfigs: s.NodeOutboundLB().FrontendIPs,
-			Type:              s.NodeOutboundLB().Type,
-			SKU:               s.NodeOutboundLB().SKU,
-			BackendPoolName:   s.OutboundPoolName(s.NodeOutboundLBName()),
-			Role:              infrav1.NodeOutboundRole,
+			Name:                 s.NodeOutboundLBName(),
+			FrontendIPConfigs:    s.NodeOutboundLB().FrontendIPs,
+			Type:                 s.NodeOutboundLB().Type,
+			SKU:                  s.NodeOutboundLB().SKU,
+			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLBName()),
+			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
+			Role:                 infrav1.NodeOutboundRole,
 		})
 	}
 
@@ -208,10 +210,11 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 				},
 			},
 		},
-		Type:            infrav1.Public,
-		SKU:             infrav1.SKUStandard,
-		BackendPoolName: s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
-		Role:            infrav1.ControlPlaneOutboundRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		BackendPoolName:      s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+		Role:                 infrav1.ControlPlaneOutboundRole,
+		IdleTimeoutInMinutes: to.Int32Ptr(4),
 	})
 
 	return specs

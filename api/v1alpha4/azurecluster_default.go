@@ -35,6 +35,8 @@ const (
 	DefaultAzureBastionSubnetName = "AzureBastionSubnet"
 	// DefaultInternalLBIPAddress is the default internal load balancer ip address
 	DefaultInternalLBIPAddress = "10.0.0.100"
+	// DefaultOutboundRuleIdleTimeoutInMinutes is the default for IdleTimeoutInMinutes for the load balancer.
+	DefaultOutboundRuleIdleTimeoutInMinutes = 4
 	// DefaultAzureCloud is the public cloud that will be used by most users
 	DefaultAzureCloud = "AzurePublicCloud"
 )
@@ -135,6 +137,9 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 	if lb.SKU == "" {
 		lb.SKU = SKUStandard
 	}
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
 
 	if lb.Type == Public {
 		if lb.Name == "" {
@@ -178,6 +183,10 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 	lb.Type = Public
 	lb.SKU = SKUStandard
 	lb.Name = c.ObjectMeta.Name
+
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
 
 	if lb.FrontendIPsCount == nil {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
