@@ -23,8 +23,17 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
+  additionalTags:
+    buildProvenance: ${BUILD_PROVENANCE}
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
   defaultPoolRef:
     name: agentpool0
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
+    namespace: ${CLUSTER_IDENTITY_NAMESPACE}
   location: ${AZURE_LOCATION}
   resourceGroupName: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
@@ -94,3 +103,17 @@ metadata:
 spec:
   osDiskSizeGB: 1024
   sku: ${AZURE_NODE_MACHINE_TYPE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureClusterIdentity
+metadata:
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
