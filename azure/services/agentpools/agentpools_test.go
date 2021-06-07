@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-03-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -217,7 +217,7 @@ func TestReconcile(t *testing.T) {
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(3),
 						OsDiskSizeGB:        to.Int32Ptr(20),
-						VMSize:              containerservice.VMSizeTypesStandardA1,
+						VMSize:              to.StringPtr(string(containerservice.StandardA1)),
 						OrchestratorVersion: to.StringPtr("9.99.9999"),
 						ProvisioningState:   to.StringPtr("Failed"),
 					},
@@ -242,7 +242,7 @@ func TestReconcile(t *testing.T) {
 					ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 						Count:               to.Int32Ptr(2),
 						OsDiskSizeGB:        to.Int32Ptr(100),
-						VMSize:              containerservice.VMSizeTypesStandardD2sV3,
+						VMSize:              to.StringPtr(string(containerservice.StandardD2sV3)),
 						OsType:              containerservice.Linux,
 						OrchestratorVersion: to.StringPtr("9.99.9999"),
 						ProvisioningState:   to.StringPtr("Succeeded"),
