@@ -301,6 +301,8 @@ func (cpc *CloudProviderConfig) overrideFromSpec(d azure.ClusterScoper) *CloudPr
 			cpc.AvailabilitySetRateLimit = toCloudProviderRateLimitConfig(rateLimit.Config)
 		}
 	}
+
+	cpc.BackOffConfig = toCloudProviderBackOffConfig(d.CloudProviderConfigOverrides().BackOffs)
 	return cpc
 }
 
@@ -341,6 +343,7 @@ type CloudProviderConfig struct {
 	UseInstanceMetadata          bool   `json:"useInstanceMetadata"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityId,omitempty"`
 	CloudProviderRateLimitConfig
+	BackOffConfig
 }
 
 // CloudProviderRateLimitConfig represents the rate limiting configurations in azure cloud provider config.
@@ -373,6 +376,31 @@ type RateLimitConfig struct {
 	CloudProviderRateLimitBucket      int     `json:"cloudProviderRateLimitBucket,omitempty"`
 	CloudProviderRateLimitQPSWrite    float32 `json:"cloudProviderRateLimitQPSWrite,omitempty"`
 	CloudProviderRateLimitBucketWrite int     `json:"cloudProviderRateLimitBucketWrite,omitempty"`
+}
+
+// BackOffConfig indicates the back-off config options.
+// This is a copy of the struct used in cloud-provider-azure: https://github.com/kubernetes-sigs/cloud-provider-azure/blob/d585c2031925b39c925624302f22f8856e29e352/pkg/azureclients/azure_client_config.go#L48
+type BackOffConfig struct {
+	CloudProviderBackoff         bool    `json:"cloudProviderBackoff,omitempty"`
+	CloudProviderBackoffRetries  int     `json:"cloudProviderBackoffRetries,omitempty"`
+	CloudProviderBackoffExponent float64 `json:"cloudProviderBackoffExponent,omitempty"`
+	CloudProviderBackoffDuration int     `json:"cloudProviderBackoffDuration,omitempty"`
+	CloudProviderBackoffJitter   float64 `json:"cloudProviderBackoffJitter,omitempty"`
+}
+
+// toCloudProviderBackOffConfig returns converts infrav1.BackOffConfig to BackOffConfig that is required with the cloud provider.
+func toCloudProviderBackOffConfig(source infrav1.BackOffConfig) BackOffConfig {
+	backOffConfig := BackOffConfig{}
+	backOffConfig.CloudProviderBackoff = source.CloudProviderBackoff
+	if source.CloudProviderBackoffExponent != nil {
+		backOffConfig.CloudProviderBackoffExponent = source.CloudProviderBackoffExponent.AsApproximateFloat64()
+	}
+	backOffConfig.CloudProviderBackoffRetries = source.CloudProviderBackoffRetries
+	if source.CloudProviderBackoffJitter != nil {
+		backOffConfig.CloudProviderBackoffJitter = source.CloudProviderBackoffJitter.AsApproximateFloat64()
+	}
+	backOffConfig.CloudProviderBackoffDuration = source.CloudProviderBackoffDuration
+	return backOffConfig
 }
 
 func reconcileAzureSecret(ctx context.Context, log logr.Logger, kubeclient client.Client, owner metav1.OwnerReference, new *corev1.Secret, clusterName string) error {

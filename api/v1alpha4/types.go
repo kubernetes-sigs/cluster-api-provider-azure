@@ -515,6 +515,16 @@ type AddressRecord struct {
 // CloudProviderConfigOverrides represents the fields that can be overridden in azure cloud provider config.
 type CloudProviderConfigOverrides struct {
 	RateLimits []RateLimitSpec `json:"rateLimits,omitempty"`
+	BackOffs   BackOffConfig   `json:"backOffs,omitempty"`
+}
+
+// BackOffConfig indicates the back-off config options.
+type BackOffConfig struct {
+	CloudProviderBackoff         bool               `json:"cloudProviderBackoff,omitempty"`
+	CloudProviderBackoffRetries  int                `json:"cloudProviderBackoffRetries,omitempty"`
+	CloudProviderBackoffExponent *resource.Quantity `json:"cloudProviderBackoffExponent,omitempty"`
+	CloudProviderBackoffDuration int                `json:"cloudProviderBackoffDuration,omitempty"`
+	CloudProviderBackoffJitter   *resource.Quantity `json:"cloudProviderBackoffJitter,omitempty"`
 }
 
 // RateLimitSpec represents the rate limit configuration for a particular kind of resource.
