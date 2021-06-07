@@ -23,9 +23,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
+
 	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
-	"strings"
+	"sigs.k8s.io/cluster-api/test/framework"
 
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -42,6 +44,8 @@ import (
 
 // AzureLogCollector collects logs from a CAPZ workload cluster.
 type AzureLogCollector struct{}
+
+var _ framework.ClusterLogCollector = &AzureLogCollector{}
 
 // CollectMachineLog collects logs from a machine.
 func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine, outputPath string) error {
@@ -338,7 +342,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 	resourceId := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
 	v := strings.Split(resourceId, "/")
 	instanceId := v[len(v)-1]
-	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/" + instanceId)
+	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/"+instanceId)
 	resource, err := autorest.ParseResourceID(resourceId)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
