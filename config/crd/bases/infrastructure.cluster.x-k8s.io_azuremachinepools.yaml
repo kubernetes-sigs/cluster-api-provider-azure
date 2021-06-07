@@ -523,6 +523,12 @@ spec:
                   image:
                     description: Image is used to provide details of an image to use during Virtual Machine creation. If image details are omitted the image will default the Azure Marketplace "capi" offer, which is based on Ubuntu.
                     properties:
+                      hyperVGeneration:
+                        description: 'HyperVGeneration specifies the HyperVGeneration Type associated with an image. Possible values include: ''HyperVGenerationTypeV1'', ''HyperVGenerationTypeV2'''
+                        enum:
+                        - V1
+                        - V2
+                        type: string
                       id:
                         description: ID specifies an image to use by ID
                         type: string

@@ -518,6 +518,9 @@ func (m *MachineScope) GetBootstrapData(ctx context.Context) (string, error) {
 func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	// Use custom Marketplace image, Image ID or a Shared Image Gallery image if provided
 	if m.AzureMachine.Spec.Image != nil {
+		if m.AzureMachine.Spec.Image.HyperVGeneration == "" {
+			m.AzureMachine.Spec.Image.HyperVGeneration = azure.DefaultHyperVGeneration
+		}
 		return m.AzureMachine.Spec.Image, nil
 	}
 

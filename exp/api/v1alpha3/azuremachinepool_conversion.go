@@ -45,6 +45,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	if restored.Spec.Template.Image != nil {
+		dst.Spec.Template.Image.HyperVGeneration = restored.Spec.Template.Image.HyperVGeneration
+	}
+
 	return nil
 }
 

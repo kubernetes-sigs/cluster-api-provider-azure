@@ -43,6 +43,8 @@ const (
 	DefaultImagePublisherID = "cncf-upstream"
 	// LatestVersion is the image version latest
 	LatestVersion = "latest"
+	// DefaultHyperVGeneration is the default generation for VM Image
+	DefaultHyperVGeneration = infrav1.HyperVGenerationTypeV1
 )
 
 const (
@@ -242,6 +244,7 @@ func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
 	}
 
 	defaultImage := &infrav1.Image{
+		HyperVGeneration: DefaultHyperVGeneration,
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			Publisher: DefaultImagePublisherID,
 			Offer:     DefaultImageOfferID,
@@ -261,6 +264,7 @@ func GetDefaultWindowsImage(k8sVersion string) (*infrav1.Image, error) {
 	}
 
 	defaultImage := &infrav1.Image{
+		HyperVGeneration: DefaultHyperVGeneration,
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			Publisher: DefaultImagePublisherID,
 			Offer:     DefaultWindowsImageOfferID,

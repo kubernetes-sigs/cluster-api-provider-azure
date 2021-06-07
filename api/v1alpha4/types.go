@@ -254,6 +254,16 @@ type VM struct {
 	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
 }
 
+// HyperVGenerationType enumerates the values for hyper v generation type.
+type HyperVGenerationType string
+
+const (
+	// HyperVGenerationTypeV1 ...
+	HyperVGenerationTypeV1 HyperVGenerationType = "V1"
+	// HyperVGenerationTypeV2 ...
+	HyperVGenerationTypeV2 HyperVGenerationType = "V2"
+)
+
 // Image defines information about the image to use for VM creation.
 // There are three ways to specify an image: by ID, Marketplace Image or SharedImageGallery
 // One of ID, SharedImage or Marketplace should be set.
@@ -261,6 +271,12 @@ type Image struct {
 	// ID specifies an image to use by ID
 	// +optional
 	ID *string `json:"id,omitempty"`
+
+	// HyperVGeneration specifies the HyperVGeneration Type associated with an image.
+	// Possible values include: 'HyperVGenerationTypeV1', 'HyperVGenerationTypeV2'
+	// +optional
+	// +kubebuilder:validation:Enum=V1;V2
+	HyperVGeneration HyperVGenerationType `json:"hyperVGeneration,omitempty"`
 
 	// SharedGallery specifies an image to use from an Azure Shared Image Gallery
 	// +optional

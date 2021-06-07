@@ -45,6 +45,8 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	dst.Spec.Image.HyperVGeneration = restored.Spec.Image.HyperVGeneration
+
 	return nil
 }
 
@@ -157,5 +159,14 @@ func Convert_v1alpha3_ManagedDisk_To_v1alpha4_ManagedDiskParameters(in *ManagedD
 func Convert_v1alpha4_ManagedDiskParameters_To_v1alpha3_ManagedDisk(in *v1alpha4.ManagedDiskParameters, out *ManagedDisk, s apiconversion.Scope) error { // nolint
 	out.StorageAccountType = in.StorageAccountType
 	out.DiskEncryptionSet = (*DiskEncryptionSetParameters)(in.DiskEncryptionSet)
+	return nil
+}
+
+// Convert_v1alpha4_Image_To_v1alpha3_Image converts from the Hub version (v1alpha4) of the Image to this version.
+func Convert_v1alpha4_Image_To_v1alpha3_Image(in *v1alpha4.Image, out *Image, s apiconversion.Scope) error {
+	if err := autoConvert_v1alpha4_Image_To_v1alpha3_Image(in, out, s); err != nil {
+		return err
+	}
+
 	return nil
 }

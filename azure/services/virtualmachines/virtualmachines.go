@@ -137,6 +137,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrap(err, "failed to generate OS Profile")
 		}
 
+		vmImage, err := s.Scope.GetVMImage()
+		if err != nil {
+			return errors.Wrap(err, "failed to get VM Image")
+		}
+
 		virtualMachine := compute.VirtualMachine{
 			Plan:     s.generateImagePlan(),
 			Location: to.StringPtr(s.Scope.Location()),
@@ -164,6 +169,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					BootDiagnostics: &compute.BootDiagnostics{
 						Enabled: to.BoolPtr(true),
 					},
+				},
+				InstanceView: &compute.VirtualMachineInstanceView{
+					HyperVGeneration: compute.HyperVGenerationType(string(vmImage.HyperVGeneration)),
 				},
 			},
 		}
