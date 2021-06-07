@@ -338,7 +338,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 	resourceId := strings.TrimPrefix(providerID, azure.ProviderIDPrefix)
 	v := strings.Split(resourceId, "/")
 	instanceId := v[len(v)-1]
-	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/" + instanceId)
+	resourceId = strings.TrimSuffix(resourceId, "/virtualMachines/"+instanceId)
 	resource, err := autorest.ParseResourceID(resourceId)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse resource id")
