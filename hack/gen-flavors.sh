@@ -29,5 +29,5 @@ find "${flavors_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} 
 # move the default template to the default file expected by clusterctl
 mv "${root}/templates/cluster-template-default.yaml" "${root}/templates/cluster-template.yaml"
 
-find "${ci_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load_restrictor none --reorder none ${ci_dir}{} > ${ci_dir}cluster-template-{}.yaml"
-find "${dev_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load_restrictor none --reorder none ${dev_dir}{} > ${dev_dir}cluster-template-{}.yaml"
+find "${ci_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load-restrictor LoadRestrictionsNone --reorder none ${ci_dir}{} > ${ci_dir}cluster-template-{}.yaml"
+find "${dev_dir}"* -maxdepth 0 -type d -print0 | xargs -0 -I {} basename {} | grep -v patches | xargs -I {} sh -c "${kustomize} build --load-restrictor LoadRestrictionsNone --reorder none ${dev_dir}{} > ${dev_dir}cluster-template-{}.yaml"
