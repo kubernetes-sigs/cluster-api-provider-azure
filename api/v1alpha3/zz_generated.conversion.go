@@ -1251,6 +1251,7 @@ func autoConvert_v1alpha4_LoadBalancerSpec_To_v1alpha3_LoadBalancerSpec(in *v1al
 	out.FrontendIPs = *(*[]FrontendIP)(unsafe.Pointer(&in.FrontendIPs))
 	out.Type = LBType(in.Type)
 	// WARNING: in.FrontendIPsCount requires manual conversion: does not exist in peer-type
+	// WARNING: in.IdleTimeoutInMinutes requires manual conversion: does not exist in peer-type
 	return nil
 }
 

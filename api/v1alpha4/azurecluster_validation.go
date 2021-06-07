@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"regexp"
 
+	"k8s.io/utils/pointer"
+
 	valid "github.com/asaskevich/govalidator"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,6 +44,10 @@ const (
 	loadBalancerRegex = `^[-\w\._]+$`
 	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration
 	MaxLoadBalancerOutboundIPs = 16
+	// MinLBIdleTimeoutInMinutes is the minimum number of minutes for the LB idle timeout.
+	MinLBIdleTimeoutInMinutes = 4
+	// MaxLBIdleTimeoutInMinutes is the maximum number of minutes for the LB idle timeout.
+	MaxLBIdleTimeoutInMinutes = 30
 	// Network security rules should be a number between 100 and 4096.
 	// https://docs.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview#security-rules
 	minRulePriority = 100
@@ -280,7 +286,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 		allErrs = append(allErrs, field.NotSupported(fldPath.Child("sku"), lb.SKU, []string{string(SKUStandard)}))
 	}
 	if old.SKU != "" && old.SKU != lb.SKU {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("sku"), lb.SKU, "API Server load balancer SKU should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("sku"), "API Server load balancer SKU should not be modified after AzureCluster creation."))
 	}
 
 	// Type should be Public or Internal.
@@ -289,7 +295,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 			[]string{string(Public), string(Internal)}))
 	}
 	if old.Type != "" && old.Type != lb.Type {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), lb.Type, "API Server load balancer type should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("type"), "API Server load balancer type should not be modified after AzureCluster creation."))
 	}
 
 	// Name should be valid.
@@ -297,13 +303,17 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 		allErrs = append(allErrs, err)
 	}
 	if old.Name != "" && old.Name != lb.Name {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Type, "API Server load balancer name should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer name should not be modified after AzureCluster creation."))
+	}
+
+	if old.IdleTimeoutInMinutes != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("idleTimeoutInMinutes"), "API Server load balancer idle timeout cannot be modified after AzureCluster creation."))
 	}
 
 	// There should only be one IP config.
-	if len(lb.FrontendIPs) != 1 {
+	if len(lb.FrontendIPs) != 1 || pointer.Int32Deref(lb.FrontendIPsCount, 1) != 1 {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPConfigs"), lb.FrontendIPs,
-			"API Server Load balancer should have 1 Frontend IP configuration"))
+			"API Server Load balancer should have 1 Frontend IP"))
 	} else {
 		// if Internal, IP config should not have a public IP.
 		if lb.Type == Internal {
@@ -317,7 +327,7 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 					allErrs = append(allErrs, err)
 				}
 				if len(old.FrontendIPs) != 0 && old.FrontendIPs[0].PrivateIPAddress != lb.FrontendIPs[0].PrivateIPAddress {
-					allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Type, "API Server load balancer private IP should not be modified after AzureCluster creation."))
+					allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "API Server load balancer private IP should not be modified after AzureCluster creation."))
 				}
 			}
 		}
@@ -328,6 +338,11 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 				allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPConfigs").Index(0).Child("privateIP"),
 					"Public Load Balancers cannot have a Private IP"))
 			}
+		}
+
+		if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
+				fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
 		}
 	}
 
@@ -343,46 +358,54 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	}
 
 	if lb == nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, lb, "Node outbound load balancer cannot be nil for public clusters."))
+		allErrs = append(allErrs, field.Required(fldPath, "Node outbound load balancer cannot be nil for public clusters."))
 		return allErrs
 	}
 
 	if old != nil && old.ID != lb.ID {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("id"), lb.ID, "Node outbound load balancer ID should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("id"), "Node outbound load balancer ID should not be modified after AzureCluster creation."))
 	}
 
 	if old != nil && old.Name != lb.Name {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), lb.Name, "Node outbound load balancer Name should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("name"), "Node outbound load balancer Name should not be modified after AzureCluster creation."))
 	}
 
 	if old != nil && old.SKU != lb.SKU {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("sku"), lb.SKU, "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("sku"), "Node outbound load balancer SKU should not be modified after AzureCluster creation."))
+	}
+
+	if old != nil && old.Type != lb.Type {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("type"), "Node outbound load balancer Type cannot be modified after AzureCluster creation."))
+	}
+
+	if old != nil && !pointer.Int32Equal(old.IdleTimeoutInMinutes, lb.IdleTimeoutInMinutes) {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("idleTimeoutInMinutes"), "Node outbound load balancer idle timeout cannot be modified after AzureCluster creation."))
 	}
 
 	if old != nil && old.FrontendIPsCount == lb.FrontendIPsCount {
-
 		if len(old.FrontendIPs) != len(lb.FrontendIPs) {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPs"), "Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation."))
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPs"), "Node outbound load balancer FrontendIPs cannot be modified after AzureCluster creation."))
 		}
 
 		if len(old.FrontendIPs) == len(lb.FrontendIPs) {
 			for i, frontEndIP := range lb.FrontendIPs {
 				oldFrontendIP := old.FrontendIPs[i]
 				if oldFrontendIP.Name != frontEndIP.Name || *oldFrontendIP.PublicIP != *frontEndIP.PublicIP {
-					allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPs").Index(i), frontEndIP,
-						"Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation."))
+					allErrs = append(allErrs, field.Forbidden(fldPath.Child("frontendIPs").Index(i),
+						"Node outbound load balancer FrontendIPs cannot be modified after AzureCluster creation."))
 				}
 			}
 		}
 	}
 
-	if old != nil && old.Type != lb.Type {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), lb.SKU, "Node outbound load balancer Type should not be modified after AzureCluster creation."))
-	}
-
 	if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
 			fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
+	}
+
+	if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
+			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
 	}
 
 	return allErrs

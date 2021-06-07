@@ -601,10 +601,15 @@ spec:
                           type: object
                         type: array
                       frontendIPsCount:
+                        description: FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
                         format: int32
                         type: integer
                       id:
                         type: string
+                      idleTimeoutInMinutes:
+                        description: IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
+                        format: int32
+                        type: integer
                       name:
                         type: string
                       sku:
@@ -641,10 +646,15 @@ spec:
                           type: object
                         type: array
                       frontendIPsCount:
+                        description: FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
                         format: int32
                         type: integer
                       id:
                         type: string
+                      idleTimeoutInMinutes:
+                        description: IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
+                        format: int32
+                        type: integer
                       name:
                         type: string
                       sku:

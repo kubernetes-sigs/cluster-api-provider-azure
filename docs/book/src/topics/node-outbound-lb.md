@@ -6,7 +6,9 @@ This document describes how to configure your clusters' node outbound load balan
 
 For public clusters ie. clusters with api server load balancer type set to `Public`, CAPZ automatically configures a node outbound load balancer with the default settings.
 
-To provide custom settings for the node outbound load balacer, use the `nodeOutboundLB` section in cluster configuration.
+To provide custom settings for the node outbound load balancer, use the `nodeOutboundLB` section in cluster configuration.
+
+The `idleTimeoutInMinutes` specifies the number of minutes to keep a TCP connection open for the outbound rule (defaults to 4). See [here](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-tcp-reset#configurable-tcp-idle-timeout) for more details.
 
 Here is an example of a node outbound load balancer with `frontendIPsCount` set to 3. CAPZ will read this value and create 3 front end ips for this load balancer.
 
@@ -32,13 +34,14 @@ spec:
       type: Public
     nodeOutboundLB:
       frontendIPsCount: 3
+      idleTimeoutInMinutes: 4
 ```
 
 <aside class="note warning">
 
 <h1> Warning </h1>
 
-Only `frontendIPsCount` is allowed to be configured for any node outbound load balancer. Trying to modify any other value will result in a validation error.
+Only `frontendIPsCount` and `idleTimeoutInMinutes` can be configured for any node outbound load balancer. Trying to modify any other value will result in a validation error.
 
 </aside>
 
@@ -53,7 +56,7 @@ Here is an example of configuring a node outbound load balancer with 1 front end
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureCluster
 metadata:
-  name: my-public-cluster
+  name: my-private-cluster
   namespace: default
 spec:
   location: eastus

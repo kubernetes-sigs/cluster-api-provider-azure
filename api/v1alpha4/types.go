@@ -166,12 +166,15 @@ type SecurityRules []SecurityRule
 
 // LoadBalancerSpec defines an Azure load balancer.
 type LoadBalancerSpec struct {
-	ID               string       `json:"id,omitempty"`
-	Name             string       `json:"name,omitempty"`
-	SKU              SKU          `json:"sku,omitempty"`
-	FrontendIPs      []FrontendIP `json:"frontendIPs,omitempty"`
-	Type             LBType       `json:"type,omitempty"`
-	FrontendIPsCount *int32       `json:"frontendIPsCount,omitempty"`
+	ID          string       `json:"id,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	SKU         SKU          `json:"sku,omitempty"`
+	FrontendIPs []FrontendIP `json:"frontendIPs,omitempty"`
+	Type        LBType       `json:"type,omitempty"`
+	// FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
+	FrontendIPsCount *int32 `json:"frontendIPsCount,omitempty"`
+	// IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
+	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
 }
 
 // SKU defines an Azure load balancer SKU.

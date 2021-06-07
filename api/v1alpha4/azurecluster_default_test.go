@@ -23,8 +23,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"k8s.io/utils/pointer"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -133,7 +131,7 @@ func TestVnetDefaults(t *testing.T) {
 							Type: Public,
 						},
 						NodeOutboundLB: &LoadBalancerSpec{
-							FrontendIPsCount: pointer.Int32Ptr(1),
+							FrontendIPsCount: to.Int32Ptr(1),
 						},
 					},
 				},
@@ -651,7 +649,8 @@ func TestAPIServerLBDefaults(t *testing.T) {
 									},
 								},
 							},
-							Type: Public,
+							Type:                 Public,
+							IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 						},
 					},
 				},
@@ -686,7 +685,8 @@ func TestAPIServerLBDefaults(t *testing.T) {
 									PrivateIPAddress: DefaultInternalLBIPAddress,
 								},
 							},
-							Type: Internal,
+							Type:                 Internal,
+							IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 						},
 					},
 				},
@@ -817,8 +817,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 									Name: "pip-cluster-test-node-outbound",
 								},
 							}},
-							Type:             Public,
-							FrontendIPsCount: pointer.Int32Ptr(1),
+							Type:                 Public,
+							FrontendIPsCount:     to.Int32Ptr(1),
+							IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
 						},
 					},
 				},
@@ -857,8 +858,11 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
-						APIServerLB:    LoadBalancerSpec{Type: Public},
-						NodeOutboundLB: &LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(2)},
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						NodeOutboundLB: &LoadBalancerSpec{
+							FrontendIPsCount:     to.Int32Ptr(2),
+							IdleTimeoutInMinutes: to.Int32Ptr(15),
+						},
 					},
 				},
 			},
@@ -888,8 +892,9 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 									},
 								},
 							},
-							Type:             Public,
-							FrontendIPsCount: pointer.Int32Ptr(2),
+							Type:                 Public,
+							FrontendIPsCount:     to.Int32Ptr(2),
+							IdleTimeoutInMinutes: to.Int32Ptr(15),
 						},
 					},
 				},
