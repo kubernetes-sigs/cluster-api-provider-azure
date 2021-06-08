@@ -20,7 +20,8 @@ set -o pipefail
 
 echo "================ REDACTING LOGS ================"
 
-log_files=( $(find "${ARTIFACTS:-${PWD}/_artifacts}" -type f) )
+log_files=()
+while IFS='' read -r line; do log_files+=("$line"); done < <(find "${ARTIFACTS:-${PWD}/_artifacts}" -type f)
 redact_vars=(
     "${AZURE_CLIENT_ID:-}"
     "${AZURE_CLIENT_SECRET:-}"

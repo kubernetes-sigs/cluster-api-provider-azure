@@ -23,9 +23,9 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
 
-# shellcheck source=../hack/ensure-go.sh
+# shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=../hack/parse-prow-creds.sh
+# shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
 : "${REGISTRY:?Environment variable empty or not defined.}"
@@ -34,13 +34,14 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 declare CCM_IMAGE_NAME=azure-cloud-controller-manager
 # cloud node manager image
 declare CNM_IMAGE_NAME=azure-cloud-node-manager
-declare -a IMAGES=(${CCM_IMAGE_NAME} ${CNM_IMAGE_NAME})
+declare -a IMAGES=("${CCM_IMAGE_NAME}" "${CNM_IMAGE_NAME}")
 
 setup() {
-    export AZURE_CLOUD_PROVIDER_ROOT="$(go env GOPATH)/src/sigs.k8s.io/cloud-provider-azure"
+    AZURE_CLOUD_PROVIDER_ROOT="$(go env GOPATH)/src/sigs.k8s.io/cloud-provider-azure"
+    export AZURE_CLOUD_PROVIDER_ROOT
     # the azure-cloud-provider repo expects IMAGE_REGISTRY.
     export IMAGE_REGISTRY=${REGISTRY}
-    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && export IMAGE_TAG=$(git rev-parse --short=7 HEAD) && popd
+    pushd "${AZURE_CLOUD_PROVIDER_ROOT}" && IMAGE_TAG=$(git rev-parse --short=7 HEAD) && export IMAGE_TAG && popd
     echo "Image Tag is ${IMAGE_TAG}"
     export AZURE_CLOUD_CONTROLLER_MANAGER_IMG=${IMAGE_REGISTRY}/${CCM_IMAGE_NAME}:${IMAGE_TAG}
     export AZURE_CLOUD_NODE_MANAGER_IMG=${IMAGE_REGISTRY}/${CNM_IMAGE_NAME}:${IMAGE_TAG}

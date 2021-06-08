@@ -31,7 +31,6 @@ if [[ "$(kind get clusters)" =~ .*"${KIND_CLUSTER_NAME}".* ]]; then
 fi
 
 # create registry container unless it already exists
-kind_version=$(kind version)
 kind_network='kind'
 reg_name='kind-registry'
 reg_port='5000'
