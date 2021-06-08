@@ -64,7 +64,7 @@ maintainers and community, would love your suggestions, contributions, and help!
 Also, the maintainers can be contacted at any time to learn more about how to get
 involved.
 
-To set up your environment checkout the [development guide](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/docs/development.md).
+To set up your environment checkout the [development guide](https://capz.sigs.k8s.io/developers/development.html).
 
 In the interest of getting more new people involved, we tag issues with
 [`good first issue`][good_first_issue].
