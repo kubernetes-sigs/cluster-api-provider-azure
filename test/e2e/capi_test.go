@@ -144,4 +144,28 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			}
 		})
 	})
+
+	Context("Should successfully scale out and scale in a MachineDeployment", func() {
+		capi_e2e.MachineDeploymentScaleSpec(context.TODO(), func() capi_e2e.MachineDeploymentScaleSpecInput {
+			return capi_e2e.MachineDeploymentScaleSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy.(framework.ClusterProxy),
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
+
+	Context("Should successfully set and use node drain timeout", func() {
+		capi_e2e.NodeDrainTimeoutSpec(context.TODO(), func() capi_e2e.NodeDrainTimeoutSpecInput {
+			return capi_e2e.NodeDrainTimeoutSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy.(framework.ClusterProxy),
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 })
