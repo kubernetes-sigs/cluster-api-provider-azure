@@ -8,13 +8,13 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
-patchesJson6902:
+patches:
 - path: patches/node-storage-type.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
     version: v1alpha4
     kind: AzureMachineTemplate
-    name: "${CLUSTER_NAME}-md-0"
+    name: ".*-md-0"
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
