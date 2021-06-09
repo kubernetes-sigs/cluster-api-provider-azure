@@ -139,6 +139,13 @@ func TestGetCloudProviderConfig(t *testing.T) {
 			expectedControlPlaneConfig: rateLimitsControlPlaneCloudConfig,
 			expectedWorkerNodeConfig:   rateLimitsWorkerNodeCloudConfig,
 		},
+		"with back-off config": {
+			cluster:                    cluster,
+			azureCluster:               withbackOffConfig(*azureCluster),
+			identityType:               infrav1.VMIdentityNone,
+			expectedControlPlaneConfig: backOffCloudConfig,
+			expectedWorkerNodeConfig:   backOffCloudConfig,
+		},
 	}
 
 	os.Setenv(auth.ClientID, "fooClient")
@@ -328,6 +335,19 @@ func withRateLimits(ac infrav1.AzureCluster) *infrav1.AzureCluster {
 		},
 	}
 	ac.Spec.CloudProviderConfigOverrides = &infrav1.CloudProviderConfigOverrides{RateLimits: rateLimits}
+	return &ac
+}
+
+func withbackOffConfig(ac infrav1.AzureCluster) *infrav1.AzureCluster {
+	cloudProviderBackOffExponent := resource.MustParse("1.2")
+	backOff := infrav1.BackOffConfig{
+		CloudProviderBackoff:         true,
+		CloudProviderBackoffRetries:  1,
+		CloudProviderBackoffExponent: &cloudProviderBackOffExponent,
+		CloudProviderBackoffDuration: 60,
+		CloudProviderBackoffJitter:   &cloudProviderBackOffExponent,
+	}
+	ac.Spec.CloudProviderConfigOverrides = &infrav1.CloudProviderConfigOverrides{BackOffs: backOff}
 	return &ac
 }
 
@@ -567,5 +587,30 @@ const (
     "loadBalancerRateLimit": {
         "cloudProviderRateLimitBucket": 10
     }
+}`
+	backOffCloudConfig = `{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "fooTenant",
+    "subscriptionId": "baz",
+    "aadClientId": "fooClient",
+    "aadClientSecret": "fooSecret",
+    "resourceGroup": "bar",
+    "securityGroupName": "foo-node-nsg",
+    "securityGroupResourceGroup": "bar",
+    "location": "bar",
+    "vmType": "vmss",
+    "vnetName": "foo-vnet",
+    "vnetResourceGroup": "bar",
+    "subnetName": "foo-node-subnet",
+    "routeTableName": "foo-node-routetable",
+    "loadBalancerSku": "Standard",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true,
+    "cloudProviderBackoff": true,
+    "cloudProviderBackoffRetries": 1,
+    "cloudProviderBackoffExponent": 1.2000000000000002,
+    "cloudProviderBackoffDuration": 60,
+    "cloudProviderBackoffJitter": 1.2000000000000002
 }`
 )
