@@ -461,8 +461,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
 
 	# Deploy CAPI
-	# Using cluster-api nightly build until 0.4.x is released.
-	curl --retry $(CURL_RETRIES) -sSL https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210607/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.0/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
