@@ -15,7 +15,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.4.0
 	github.com/golang/mock v1.4.4
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.6
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-retryablehttp v0.6.8
@@ -38,10 +38,10 @@ require (
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.21.1
 	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
-	sigs.k8s.io/cluster-api v0.0.0-20210608170333-19d791f38b29
-	sigs.k8s.io/cluster-api/test v0.0.0-20210608170333-19d791f38b29
+	sigs.k8s.io/cluster-api v0.4.0-beta.0
+	sigs.k8s.io/cluster-api/test v0.4.0-beta.0
 	sigs.k8s.io/controller-runtime v0.9.0
 	sigs.k8s.io/kind v0.11.1
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.0.0-20210608170333-19d791f38b29
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0-beta.0
