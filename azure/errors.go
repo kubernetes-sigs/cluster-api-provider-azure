@@ -109,6 +109,11 @@ func (t ReconcileError) IsTerminal() bool {
 	return t.errorType == TerminalErrorType
 }
 
+// Is returns true if the target is a ReconcileError
+func (t ReconcileError) Is(target error) bool {
+	return errors.As(target, &ReconcileError{})
+}
+
 // RequeueAfter returns requestAfter value
 func (t ReconcileError) RequeueAfter() time.Duration {
 	return t.requestAfter

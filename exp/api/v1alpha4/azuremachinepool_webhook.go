@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -84,6 +85,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 		amp.ValidateTerminateNotificationTimeout,
 		amp.ValidateSSHKey,
 		amp.ValidateUserAssignedIdentity,
+		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
 	}
 
@@ -149,6 +151,23 @@ func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	}
 
 	return nil
+}
+
+// ValidateStrategy validates the strategy
+func (amp *AzureMachinePool) ValidateStrategy() func() error {
+	return func() error {
+		if amp.Spec.Strategy.Type == RollingUpdateAzureMachinePoolDeploymentStrategyType && amp.Spec.Strategy.RollingUpdate != nil {
+			rollingUpdateStrategy := amp.Spec.Strategy.RollingUpdate
+			maxSurge := rollingUpdateStrategy.MaxSurge
+			maxUnavailable := rollingUpdateStrategy.MaxUnavailable
+			if maxSurge.Type == intstr.Int && maxSurge.IntVal == 0 &&
+				maxUnavailable.Type == intstr.Int && maxUnavailable.IntVal == 0 {
+				return errors.New("rolling update strategy MaxUnavailable must not be 0 if MaxSurge is 0")
+			}
+		}
+
+		return nil
+	}
 }
 
 // ValidateSystemAssignedIdentity validates system-assigned identity role

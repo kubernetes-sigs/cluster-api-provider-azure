@@ -51,7 +51,7 @@ type Cache struct {
 // Cacher describes the ability to get and to add items to cache
 type Cacher interface {
 	Get(key interface{}) (value interface{}, ok bool)
-	Add(key interface{}, value interface{})
+	Add(key interface{}, value interface{}) bool
 }
 
 // NewCacheFunc allows for mocking out the underlying client
@@ -89,7 +89,7 @@ func GetCache(auth azure.Authorizer, location string) (*Cache, error) {
 	}
 
 	c = newCache(auth, location)
-	clientCache.Add(key, c)
+	_ = clientCache.Add(key, c)
 	return c.(*Cache), nil
 }
 

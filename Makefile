@@ -586,5 +586,5 @@ verify-modules: modules
 .PHONY: verify-gen
 verify-gen: generate
 	@if !(git diff --quiet HEAD); then \
-		echo "generated files are out of date, run make generate"; exit 1; \
+		git diff; echo "generated files are out of date, run make generate"; exit 1; \
 	fi

@@ -23,16 +23,15 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/onsi/gomega"
-
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
 func Test_SDKToVMSS(t *testing.T) {
 	cases := []struct {
 		Name           string
 		SubjectFactory func(*gomega.GomegaWithT) (compute.VirtualMachineScaleSet, []compute.VirtualMachineScaleSetVM)
-		Expect         func(*gomega.GomegaWithT, *infrav1exp.VMSS)
+		Expect         func(*gomega.GomegaWithT, *azure.VMSS)
 	}{
 		{
 			Name: "ShouldPopulateWithData",
@@ -83,8 +82,8 @@ func Test_SDKToVMSS(t *testing.T) {
 						},
 					}
 			},
-			Expect: func(g *gomega.GomegaWithT, actual *infrav1exp.VMSS) {
-				expected := infrav1exp.VMSS{
+			Expect: func(g *gomega.GomegaWithT, actual *azure.VMSS) {
+				expected := azure.VMSS{
 					ID:       "vmssID",
 					Name:     "vmssName",
 					Sku:      "skuName",
@@ -94,11 +93,11 @@ func Test_SDKToVMSS(t *testing.T) {
 					Tags: map[string]string{
 						"foo": "bazz",
 					},
-					Instances: make([]infrav1exp.VMSSVM, 2),
+					Instances: make([]azure.VMSSVM, 2),
 				}
 
 				for i := 0; i < 2; i++ {
-					expected.Instances[i] = infrav1exp.VMSSVM{
+					expected.Instances[i] = azure.VMSSVM{
 						ID:               fmt.Sprintf("vm/%d", i),
 						InstanceID:       fmt.Sprintf("%d", i),
 						Name:             fmt.Sprintf("instance-00000%d", i),
