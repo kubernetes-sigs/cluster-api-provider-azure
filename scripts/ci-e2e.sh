@@ -46,7 +46,7 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
 get_random_region() {
-    local REGIONS=("northcentralus" "centralus" "canadacentral" "eastus" "eastus2" "westus2" "westeurope" "uksouth" "northeurope" "francecentral")
+    local REGIONS=("northcentralus" "westus" "westus2" "westus3" "canadacentral" "eastus" "eastus2" "westeurope" "uksouth" "northeurope" "francecentral")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
