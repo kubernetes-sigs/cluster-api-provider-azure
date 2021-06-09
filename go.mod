@@ -15,15 +15,15 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.4.0
 	github.com/golang/mock v1.4.4
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.6
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/onsi/ginkgo v1.16.1
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.13.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/pflag v1.0.5
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
 	go.opentelemetry.io/otel v0.13.0
@@ -35,10 +35,13 @@ require (
 	k8s.io/apimachinery v0.21.1
 	k8s.io/client-go v0.21.1
 	k8s.io/component-base v0.21.1
-	k8s.io/klog/v2 v2.8.0
+	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.21.1
-	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10
-	sigs.k8s.io/cluster-api v0.0.0-20210526191338-0e1629b75111
-	sigs.k8s.io/controller-runtime v0.9.0-beta.5
-	sigs.k8s.io/kind v0.11.0
+	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
+	sigs.k8s.io/cluster-api v0.4.0-beta.0
+	sigs.k8s.io/cluster-api/test v0.4.0-beta.0
+	sigs.k8s.io/controller-runtime v0.9.0
+	sigs.k8s.io/kind v0.11.1
 )
+
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0-beta.0
