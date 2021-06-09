@@ -1,0 +1,15 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      image:
+        # we use the 1.18.8 image as a workaround there is no published marketplace image for k8s CI versions.
+        # 1.18.8 binaries and images will get replaced to the desired version by the script above.
+        marketplace:
+          publisher: cncf-upstream
+          offer: capi
+          sku: k8s-1dot18dot8-ubuntu-1804
+          version: "2020.08.17"

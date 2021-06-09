@@ -112,6 +112,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
@@ -199,6 +200,7 @@ spec:
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: azure
           name: '{{ ds.meta_data["local_hostname"] }}'
+      preKubeadmCommands: []
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureClusterIdentity
@@ -215,3 +217,4 @@ spec:
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
+

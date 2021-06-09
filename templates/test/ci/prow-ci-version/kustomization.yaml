@@ -4,15 +4,20 @@ namespace: default
 resources:
   - ../prow
 patchesStrategicMerge:
-  - ../patches/control-plane-ci-version.yaml
+  - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
   - patches/machine-deployment-ci-version.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: default
-resources:
-  - ../prow
-patchesStrategicMerge:
-  - ../patches/control-plane-ci-version.yaml
-  - ../patches/controller-manager.yaml
-  - patches/machine-deployment-ci-version.yaml
+patches:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+  path: patches/kubeadm-bootstrap.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+  path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml

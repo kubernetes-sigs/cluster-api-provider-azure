@@ -5,9 +5,9 @@ resources:
   - ../prow-windows
 patchesStrategicMerge:
   - patches/windows-image-update.yaml
-  - ../patches/control-plane-ci-version.yaml
+  - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
-  - ../prow-ci-version/patches/machine-deployment-ci-version.yaml
+  - ../prow-ci-version/patches/machine-image-ci-version.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
@@ -16,3 +16,17 @@ patches:
     name: .*-md-win
     namespace: default
   path: patches/machine-deployment-ci-version.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+  path: ../prow-ci-version/patches/kubeadm-bootstrap.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    namespace: default
+  path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml

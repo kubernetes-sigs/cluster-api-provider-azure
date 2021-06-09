@@ -44,6 +44,7 @@ metadata:
 spec:
   template:
     spec:
+      preKubeadmCommands: []
       postKubeadmCommands:
         # Azures vnet MTU is 1400. 
         # When using Flannel VXLAN to avoid packet fragmentation 

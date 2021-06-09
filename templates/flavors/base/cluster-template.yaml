@@ -109,6 +109,7 @@ spec:
     mounts:
       - - LABEL=etcd_disk
         - /var/lib/etcddisk
+    preKubeadmCommands: []
   version: "${KUBERNETES_VERSION}"
 ---
 kind: AzureMachineTemplate
