@@ -20,9 +20,15 @@ package e2e
 
 import (
 	"context"
-
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
+	"errors"
+	"fmt"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"golang.org/x/mod/semver"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -64,16 +70,16 @@ type DiscoverAndWaitForControlPlaneMachinesInput struct {
 // DiscoverAndWaitForControlPlaneInitialized gets the azure managed control plane associated with the cluster,
 // and waits for atleast one control plane machine to be up.
 func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
-	gomega.Expect(ctx).NotTo(gomega.BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneInitialized")
-	gomega.Expect(input.Lister).ToNot(gomega.BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
-	gomega.Expect(input.Cluster).ToNot(gomega.BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
+	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneInitialized")
+	Expect(input.Lister).ToNot(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
+	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneInitialized")
 
 	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
 		Lister:      input.Lister,
 		ClusterName: input.Cluster.Name,
 		Namespace:   input.Cluster.Namespace,
 	})
-	gomega.Expect(controlPlane).ToNot(gomega.BeNil())
+	Expect(controlPlane).ToNot(BeNil())
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAtLeastOneControlPlaneAndMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
@@ -87,16 +93,16 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 // DiscoverAndWaitForControlPlaneReady gets the azure managed control plane associated with the cluster,
 // and waits for all the control plane machines to be up.
 func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndWaitForControlPlaneMachinesInput, intervals ...interface{}) {
-	gomega.Expect(ctx).NotTo(gomega.BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneReady")
-	gomega.Expect(input.Lister).ToNot(gomega.BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneReady")
-	gomega.Expect(input.Cluster).ToNot(gomega.BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneReady")
+	Expect(ctx).NotTo(BeNil(), "ctx is required for DiscoverAndWaitForControlPlaneReady")
+	Expect(input.Lister).ToNot(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoverAndWaitForControlPlaneReady")
+	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoverAndWaitForControlPlaneReady")
 
 	controlPlane := GetAzureManagedControlPlaneByCluster(ctx, GetAzureManagedControlPlaneByClusterInput{
 		Lister:      input.Lister,
 		ClusterName: input.Cluster.Name,
 		Namespace:   input.Cluster.Namespace,
 	})
-	gomega.Expect(controlPlane).ToNot(gomega.BeNil())
+	Expect(controlPlane).ToNot(BeNil())
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
@@ -119,8 +125,8 @@ type GetAzureManagedControlPlaneByClusterInput struct {
 // it is necessary to ensure this is already happened before calling it.
 func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureManagedControlPlaneByClusterInput) *infraexpv1.AzureManagedControlPlane {
 	controlPlaneList := &infraexpv1.AzureManagedControlPlaneList{}
-	gomega.Expect(input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(gomega.Succeed(), "Failed to list AzureManagedControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
-	gomega.Expect(len(controlPlaneList.Items)).ToNot(gomega.BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 AzureManagedControlPlane object", input.Namespace, input.ClusterName)
+	Expect(input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(Succeed(), "Failed to list AzureManagedControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
+	Expect(len(controlPlaneList.Items)).ToNot(BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 AzureManagedControlPlane object", input.Namespace, input.ClusterName)
 	if len(controlPlaneList.Items) == 1 {
 		return &controlPlaneList.Items[0]
 	}
@@ -137,13 +143,13 @@ type WaitForControlPlaneAndMachinesReadyInput struct {
 
 // WaitForAtLeastOneControlPlaneAndMachineToExist waits for atleast one control plane machine to be provisioned.
 func WaitForAtLeastOneControlPlaneAndMachineToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
-	ginkgo.By("Waiting for atleast one control plane node to exist")
+	By("Waiting for atleast one control plane node to exist")
 	WaitForControlPlaneMachinesToExist(ctx, input, atLeastOne, intervals...)
 }
 
 // WaitForAllControlPlaneAndMachinesToExist waits for all control plane machines to be provisioned.
 func WaitForAllControlPlaneAndMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, intervals ...interface{}) {
-	ginkgo.By("Waiting for all control plane nodes to exist")
+	By("Waiting for all control plane nodes to exist")
 	WaitForControlPlaneMachinesToExist(ctx, input, all, intervals...)
 }
 
@@ -168,7 +174,7 @@ func (r controlPlaneReplicas) value(mp *clusterv1exp.MachinePool) int {
 
 // WaitForControlPlaneMachinesToExist waits for a certain number of control plane machines to be provisioned represented.
 func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, minReplicas controlPlaneReplicas, intervals ...interface{}) {
-	gomega.Eventually(func() (bool, error) {
+	Eventually(func() (bool, error) {
 		controlPlaneMachinePool := &clusterv1exp.MachinePool{}
 		if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.ControlPlane.Spec.DefaultPoolRef.Name},
 			controlPlaneMachinePool); err != nil {
@@ -177,7 +183,50 @@ func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForContro
 		}
 		return len(controlPlaneMachinePool.Status.NodeRefs) >= minReplicas.value(controlPlaneMachinePool), nil
 
-	}, intervals...).Should(gomega.Equal(true))
+	}, intervals...).Should(Equal(true))
+}
+
+// GetAKSKubernetesVersion gets the kubernetes version for AKS clusters.
+func GetAKSKubernetesVersion(ctx context.Context, e2eConfig *clusterctl.E2EConfig) (string, error) {
+	e2eAKSVersion := e2eConfig.GetVariable(AKSKubernetesVersion)
+
+	location := e2eConfig.GetVariable(AzureLocation)
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	authorizer, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+	containerServiceClient := containerservice.NewContainerServicesClient(subscriptionID)
+	containerServiceClient.Authorizer = authorizer
+
+	result, err := containerServiceClient.ListOrchestrators(ctx, location, ManagedClustersResourceType)
+	if err != nil {
+		return "", err
+	}
+
+	// For 1.19 release this will be 1.19.0
+	baseVersion := fmt.Sprintf("%s.0", semver.MajorMinor(e2eAKSVersion))
+	maxVersion := fmt.Sprintf("%s.0", semver.MajorMinor(e2eAKSVersion))
+	for _, o := range *result.Orchestrators {
+		orchVersion := fmt.Sprintf("v%s", *o.OrchestratorVersion)
+		// test k8s version matches with one of  the supported aks versions.
+		if orchVersion == e2eAKSVersion {
+			return e2eAKSVersion, nil
+		}
+
+		// find the highest aks version for a given major.minor
+		if semver.MajorMinor(orchVersion) == semver.MajorMinor(maxVersion) && semver.Compare(orchVersion, maxVersion) > 0 {
+			maxVersion = orchVersion
+		}
+	}
+
+	// This means there is no version supported by AKS for this major.minor
+	if semver.Compare(maxVersion, baseVersion) == 0 {
+		return "", errors.New(fmt.Sprintf("No AKS versions found for %s", semver.MajorMinor(baseVersion)))
+	}
+
+	return maxVersion, nil
 }
 
 // byClusterOptions returns a set of ListOptions that allows to identify all the objects belonging to a Cluster.
@@ -188,4 +237,40 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 			clusterv1.ClusterLabelName: name,
 		},
 	}
+}
+
+// AKSResourcesValidationSpecInput is the input for AKSResourcesValidationSpec
+type AKSResourcesValidationSpecInput struct {
+	BootstrapClusterProxy framework.ClusterProxy
+	Namespace             *corev1.Namespace
+	ClusterName           string
+}
+
+// AKSResourcesValidationSpec implements a test that verifies the resources created by an AKS cluster.
+func AKSResourcesValidationSpec(ctx context.Context, inputGetter func() AKSResourcesValidationSpecInput) {
+	var (
+		specName = "aks-resources-validation"
+		input    AKSResourcesValidationSpecInput
+	)
+
+	input = inputGetter()
+	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
+
+	By("creating Azure clients with the workload cluster's subscription, and querying for vmss")
+	var controlPlane = &infraexpv1.AzureManagedControlPlane{}
+	Expect(input.BootstrapClusterProxy.GetClient().Get(ctx,
+		types.NamespacedName{input.Namespace.Name, input.ClusterName}, controlPlane)).To(Succeed())
+
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	authorizer, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+	vmssClient := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
+	vmssClient.Authorizer = authorizer
+
+	rgName := controlPlane.Spec.NodeResourceGroupName
+	scalesets, err := vmssClient.List(ctx, rgName)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(len(scalesets.Values())).To(BeNumerically(">", 0))
 }
