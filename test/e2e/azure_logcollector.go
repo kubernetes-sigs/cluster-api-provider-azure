@@ -231,6 +231,10 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 			"cloud-init-output.log",
 			"cat", "/var/log/cloud-init-output.log",
 		),
+		execToPathFn(
+			"sentinel-file-dir.txt",
+			"ls", "/run/cluster-api/",
+		),
 	}
 }
 

@@ -4,3 +4,5 @@ commonLabels:
 bases:
   - ../../bases/cluster-with-kcp.yaml
 
+patchesStrategicMerge:
+  - ./cluster-with-kcp.yaml

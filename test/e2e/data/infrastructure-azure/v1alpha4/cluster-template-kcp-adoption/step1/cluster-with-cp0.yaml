@@ -11,8 +11,8 @@ spec:
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
-      name: ${CLUSTER_NAME}-vnet
-  resourceGroup: ${CLUSTER_NAME}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---
 # Cluster object with

@@ -120,7 +120,7 @@ spec:
       - contentFrom:
           secret:
             key: control-plane-azure.json
-            name: ${CLUSTER_NAME}-control-plane-0-azure-json
+            name: ${CLUSTER_NAME}-control-plane-azure-json
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: "0644"

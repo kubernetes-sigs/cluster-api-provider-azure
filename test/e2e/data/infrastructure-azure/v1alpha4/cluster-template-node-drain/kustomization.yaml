@@ -1,7 +1,7 @@
 bases:
-- ../bases/crs.yaml
-- ../bases/md.yaml
 - ../bases/cluster-with-kcp.yaml
+- ../bases/md.yaml
+- ../bases/crs.yaml
 
 patchesStrategicMerge:
 - ./md.yaml
