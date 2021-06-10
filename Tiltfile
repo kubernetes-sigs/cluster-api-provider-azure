@@ -42,7 +42,7 @@ if "default_registry" in settings:
 # deploy CAPI
 def deploy_capi():
     version = settings.get("capi_version")
-    capi_uri = "https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/{}/cluster-api-components.yaml".format(version)
+    capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
     cmd = "curl -sSL {} | {} | kubectl apply -f -".format(capi_uri, envsubst_cmd)
     local(cmd, quiet=True)
     if settings.get("extra_args"):
