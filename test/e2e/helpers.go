@@ -33,6 +33,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
@@ -575,4 +576,37 @@ func latestCIVersion(label string) (string, error) {
 	}
 
 	return strings.TrimSpace(string(b)), nil
+}
+
+// resolveKubetestRepoListPath will set the correct repo list for Windows:
+// - if WIN_REPO_URL is set use the custom file downloaded via makefile
+// - if CI version is "latest" will use repo-list.yaml
+// - if CI version is  "latest-1.xx" will compare values and use correct repoList
+// - if standard version will compare values and use correct repoList
+// - if unable to determine version falls back to using latest
+func resolveKubetestRepoListPath(version string, path string) (string, error) {
+	if _, ok := os.LookupEnv("WIN_REPO_URL"); ok {
+		return filepath.Join(path, "custom-repo-list.yaml"), nil
+	}
+
+	if version == "latest" {
+		return filepath.Join(path, "repo-list.yaml"), nil
+	}
+
+	version = strings.TrimPrefix(version, "latest-")
+	currentVersion, err := semver.ParseTolerant(version)
+	if err != nil {
+		return "", err
+	}
+
+	versionCutoff, err := semver.Make("1.21.0")
+	if err != nil {
+		return "", err
+	}
+
+	if currentVersion.LT(versionCutoff) {
+		return filepath.Join(path, "repo-list-k8sprow.yaml"), nil
+	}
+
+	return filepath.Join(path, "repo-list.yaml"), nil
 }

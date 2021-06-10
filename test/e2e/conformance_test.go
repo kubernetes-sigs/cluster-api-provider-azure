@@ -50,6 +50,7 @@ var _ = Describe("Conformance Tests", func() {
 		clusterName   string
 		namespace     *corev1.Namespace
 		specName      = "conformance-tests"
+		repoList      = ""
 	)
 
 	BeforeEach(func() {
@@ -154,8 +155,8 @@ var _ = Describe("Conformance Tests", func() {
 		b.RecordValue("cluster creation", runtime.Seconds())
 		workloadProxy := bootstrapClusterProxy.GetWorkloadCluster(ctx, namespace.Name, clusterName)
 
-		// Windows requires a taint on control nodes nodes since not all conformance tests have ability to run
 		if isWindows(kubetestConfigFilePath) {
+			// Windows requires a taint on control nodes nodes since not all conformance tests have ability to run
 			options := v1.ListOptions{
 				LabelSelector: "kubernetes.io/os=linux",
 			}
@@ -168,6 +169,11 @@ var _ = Describe("Conformance Tests", func() {
 
 			err := node.TaintNode(workloadProxy.GetClientSet(), options, noScheduleTaint)
 			Expect(err).NotTo(HaveOccurred())
+
+			// Windows requires a repo-list because some images are not in k8s gcr
+			repoList, err = resolveKubetestRepoListPath(kubernetesVersion, kubetestRepoListPath)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Fprintf(GinkgoWriter, "INFO: Using repo-list %s for version %s\n", repoList, kubernetesVersion)
 		}
 
 		ginkgoNodes, err := strconv.Atoi(e2eConfig.GetVariable("CONFORMANCE_NODES"))
@@ -179,7 +185,7 @@ var _ = Describe("Conformance Tests", func() {
 					ClusterProxy:         workloadProxy,
 					NumberOfNodes:        int(workerMachineCount),
 					ConfigFilePath:       kubetestConfigFilePath,
-					KubeTestRepoListPath: kubetestRepoListPath,
+					KubeTestRepoListPath: repoList,
 					ConformanceImage:     e2eConfig.GetVariable("CONFORMANCE_IMAGE"),
 					GinkgoNodes:          ginkgoNodes,
 				},

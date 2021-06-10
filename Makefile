@@ -49,7 +49,7 @@ GO_INSTALL = ./scripts/go_install.sh
 E2E_DATA_DIR ?= $(ROOT_DIR)/test/e2e/data
 KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
 KUBETEST_WINDOWS_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/upstream-windows.yaml)
-KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/repo-list.yaml)
+KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/)
 AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
 
 # set --output-base used for conversion-gen which needs to be different for in GOPATH and outside GOPATH dev
@@ -130,7 +130,7 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
-WIN_REPO_LIST ?= https://raw.githubusercontent.com/kubernetes-sigs/windows-testing/master/images/image-repo-list
+WIN_REPO_URL ?=
 
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
@@ -202,8 +202,10 @@ test-conformance-fast: ## Run conformance test on workload cluster using a subse
 
 .PHONY: test-windows-upstream
 test-windows-upstream: ## Run windows upstream tests on workload cluster.
-	curl --retry $(CURL_RETRIES) $(WIN_REPO_LIST) -o $(KUBETEST_REPO_LIST_PATH)
-	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_WINDOWS_CONF_PATH) -kubetest.repo-list-file=$(KUBETEST_REPO_LIST_PATH) $(E2E_ARGS)"
+ifneq ($(WIN_REPO_URL), )
+	curl --retry $(CURL_RETRIES) $(WIN_REPO_URL) -o $(KUBETEST_REPO_LIST_PATH)/custom-repo-list.yaml
+endif
+	$(MAKE) test-conformance CONFORMANCE_E2E_ARGS="-kubetest.config-file=$(KUBETEST_WINDOWS_CONF_PATH) -kubetest.repo-list-path=$(KUBETEST_REPO_LIST_PATH) $(E2E_ARGS)"
 
 $(KUBE_APISERVER) $(ETCD): ## install test asset kubectl, kube-apiserver, etcd
 	source ./scripts/fetch_ext_bins.sh && fetch_tools
