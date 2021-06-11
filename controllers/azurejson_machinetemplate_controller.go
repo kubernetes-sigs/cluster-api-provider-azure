@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,9 +67,9 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureJSONTemplateReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureMachineTemplate"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureMachineTemplate"),
 		))
 	defer span.End()
 

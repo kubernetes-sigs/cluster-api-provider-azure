@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -92,8 +92,8 @@ func NewReconciler(upstream reconcile.Reconciler, cache ReconcileCacher, log log
 func (rc *reconciler) Reconcile(ctx context.Context, r reconcile.Request) (reconcile.Result, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.reconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", r.Namespace),
-			label.String("name", r.Name),
+			attribute.String("namespace", r.Namespace),
+			attribute.String("name", r.Name),
 		))
 	defer span.End()
 
