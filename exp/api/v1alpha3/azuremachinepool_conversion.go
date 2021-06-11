@@ -56,6 +56,10 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		dst.Spec.Strategy.RollingUpdate.DeletePolicy = restored.Spec.Strategy.RollingUpdate.DeletePolicy
 	}
 
+	if restored.Spec.NodeDrainTimeout != nil {
+		dst.Spec.NodeDrainTimeout = restored.Spec.NodeDrainTimeout
+	}
+
 	if restored.Status.Image != nil {
 		dst.Status.Image = restored.Status.Image
 	}

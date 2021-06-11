@@ -462,6 +462,9 @@ spec:
               location:
                 description: Location is the Azure region location e.g. westus2
                 type: string
+              nodeDrainTimeout:
+                description: 'NodeDrainTimeout is the total amount of time that the controller will spend on draining a node. The default value is 0, meaning that the node can be drained without any time limitations. NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`'
+                type: string
               providerID:
                 description: ProviderID is the identification ID of the Virtual Machine Scale Set
                 type: string

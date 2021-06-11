@@ -24,6 +24,7 @@ import (
 	"log"
 
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,20 +35,23 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type deploymentBuilder struct {
-	deployment *appsv1.Deployment
-}
-
-type LoadbalancerType string
-
 const (
 	ExternalLoadbalancer = LoadbalancerType("external")
 	InternalLoadbalancer = LoadbalancerType("internal")
 )
 
-// CreateDeployment will create a deployment for a given image with a name in a namespace
-func CreateDeployment(image, name, namespace string) *deploymentBuilder {
-	e2eDeployment := &deploymentBuilder{
+type (
+	// Builder provides a helper interface for building Kubernetes deployments within this test suite
+	Builder struct {
+		deployment *appsv1.Deployment
+	}
+
+	LoadbalancerType string
+)
+
+// Create will create a deployment for a given image with a name in a namespace
+func Create(image, name, namespace string) *Builder {
+	e2eDeployment := &Builder{
 		deployment: &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -92,7 +96,7 @@ func CreateDeployment(image, name, namespace string) *deploymentBuilder {
 	return e2eDeployment
 }
 
-func (d *deploymentBuilder) AddLabels(labels map[string]string) {
+func (d *Builder) AddLabels(labels map[string]string) {
 	for k, v := range labels {
 		d.deployment.ObjectMeta.Labels[k] = v
 		d.deployment.Spec.Selector.MatchLabels[k] = v
@@ -100,7 +104,16 @@ func (d *deploymentBuilder) AddLabels(labels map[string]string) {
 	}
 }
 
-func (d *deploymentBuilder) AddContainerPort(name, portName string, portNumber int32, protocol corev1.Protocol) {
+func (d *Builder) GetName() string {
+	return d.deployment.Name
+}
+
+func (d *Builder) SetReplicas(replicas int32) *Builder {
+	d.deployment.Spec.Replicas = &replicas
+	return d
+}
+
+func (d *Builder) AddContainerPort(name, portName string, portNumber int32, protocol corev1.Protocol) {
 	for _, c := range d.deployment.Spec.Template.Spec.Containers {
 		if c.Name == name {
 			c.Ports = []corev1.ContainerPort{
@@ -114,7 +127,7 @@ func (d *deploymentBuilder) AddContainerPort(name, portName string, portNumber i
 	}
 }
 
-func (d *deploymentBuilder) Deploy(ctx context.Context, clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
+func (d *Builder) Deploy(ctx context.Context, clientset *kubernetes.Clientset) (*appsv1.Deployment, error) {
 	deployment, err := d.Client(clientset).Create(ctx, d.deployment, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("Error trying to deploy %s in namespace %s:%s\n", d.deployment.Name, d.deployment.ObjectMeta.Namespace, err.Error())
@@ -124,11 +137,11 @@ func (d *deploymentBuilder) Deploy(ctx context.Context, clientset *kubernetes.Cl
 	return deployment, nil
 }
 
-func (d *deploymentBuilder) Client(clientset *kubernetes.Clientset) typedappsv1.DeploymentInterface {
+func (d *Builder) Client(clientset *kubernetes.Clientset) typedappsv1.DeploymentInterface {
 	return clientset.AppsV1().Deployments(d.deployment.ObjectMeta.Namespace)
 }
 
-func (d *deploymentBuilder) GetPodsFromDeployment(ctx context.Context, clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
+func (d *Builder) GetPodsFromDeployment(ctx context.Context, clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: labels.Set(d.deployment.Labels).String(),
 		Limit:         100,
@@ -141,7 +154,7 @@ func (d *deploymentBuilder) GetPodsFromDeployment(ctx context.Context, clientset
 	return pods.Items, nil
 }
 
-func (d *deploymentBuilder) GetService(ports []corev1.ServicePort, lbtype LoadbalancerType) *corev1.Service {
+func (d *Builder) GetService(ports []corev1.ServicePort, lbtype LoadbalancerType) *corev1.Service {
 	suffix := "elb"
 	annotations := map[string]string{}
 	if lbtype == InternalLoadbalancer {
@@ -165,7 +178,7 @@ func (d *deploymentBuilder) GetService(ports []corev1.ServicePort, lbtype Loadba
 	}
 }
 
-func (d *deploymentBuilder) SetImage(name, image string) {
+func (d *Builder) SetImage(name, image string) {
 	for i, c := range d.deployment.Spec.Template.Spec.Containers {
 		if c.Name == name {
 			c.Image = image
@@ -174,10 +187,31 @@ func (d *deploymentBuilder) SetImage(name, image string) {
 	}
 }
 
-func (d *deploymentBuilder) AddWindowsSelectors() {
+func (d *Builder) AddWindowsSelectors() *Builder {
 	if d.deployment.Spec.Template.Spec.NodeSelector == nil {
 		d.deployment.Spec.Template.Spec.NodeSelector = map[string]string{}
 	}
 
 	d.deployment.Spec.Template.Spec.NodeSelector["kubernetes.io/os"] = "windows"
+	return d
+}
+
+// AddMachinePoolSelectors will add node selectors which will ensure the workload runs on a specific MachinePool
+func (d *Builder) AddMachinePoolSelectors(machinePoolName string) *Builder {
+	if d.deployment.Spec.Template.Spec.NodeSelector == nil {
+		d.deployment.Spec.Template.Spec.NodeSelector = map[string]string{}
+	}
+
+	d.deployment.Spec.Template.Spec.NodeSelector[clusterv1.OwnerKindAnnotation] = "MachinePool"
+	d.deployment.Spec.Template.Spec.NodeSelector[clusterv1.OwnerNameAnnotation] = machinePoolName
+	return d
+}
+
+func (d *Builder) AddPodAntiAffinity(affinity corev1.PodAntiAffinity) *Builder {
+	if d.deployment.Spec.Template.Spec.Affinity == nil {
+		d.deployment.Spec.Template.Spec.Affinity = &corev1.Affinity{}
+	}
+
+	d.deployment.Spec.Template.Spec.Affinity.PodAntiAffinity = &affinity
+	return d
 }

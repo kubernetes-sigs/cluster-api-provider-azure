@@ -464,6 +464,7 @@ func autoConvert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(
 	out.UserAssignedIdentities = *(*[]clusterapiproviderazureapiv1alpha3.UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
 	// WARNING: in.Strategy requires manual conversion: does not exist in peer-type
+	// WARNING: in.NodeDrainTimeout requires manual conversion: does not exist in peer-type
 	return nil
 }
 
