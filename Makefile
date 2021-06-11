@@ -455,10 +455,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	$(MAKE) kind-create
 
 	# Install cert manager and wait for availability
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.yaml
-	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager
-	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
-	kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
+	./hack/install-cert-manager.sh
 
 	# Deploy CAPI
 	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.0/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
