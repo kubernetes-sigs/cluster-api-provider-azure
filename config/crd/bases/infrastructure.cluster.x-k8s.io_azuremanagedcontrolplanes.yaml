@@ -42,6 +42,36 @@ spec:
             description: AzureManagedControlPlaneSpec defines the desired state of
               AzureManagedControlPlane.
             properties:
+              aadProfile:
+                description: AadProfile is Azure Active Directory configuration to
+                  integrate with AKS for aad authentication.
+                properties:
+                  adminGroupObjectIDs:
+                    description: AdminGroupObjectIDs - AAD group object IDs that will
+                      have admin role of the cluster.
+                    items:
+                      type: string
+                    type: array
+                  clientAppID:
+                    description: 'DEPRECATED: use AADConfig instead ClientAppID -
+                      The client AAD application ID.'
+                    type: string
+                  managed:
+                    description: Managed - Whether to enable managed AAD.
+                    type: boolean
+                  serverAppID:
+                    description: 'DEPRECATED: use AADConfig instead ServerAppID -
+                      The server AAD application ID.'
+                    type: string
+                  serverAppSecret:
+                    description: 'DEPRECATED: use AADConfig instead ServerAppSecret
+                      - The server AAD application secret.'
+                    type: string
+                  tenantID:
+                    description: 'DEPRECATED: use AADConfig instead TenantID - The
+                      AAD tenant ID to use for authentication.'
+                    type: string
+                type: object
               additionalTags:
                 additionalProperties:
                   type: string
@@ -195,6 +225,36 @@ spec:
             description: AzureManagedControlPlaneSpec defines the desired state of
               AzureManagedControlPlane.
             properties:
+              aadProfile:
+                description: AadProfile is Azure Active Directory configuration to
+                  integrate with AKS for aad authentication.
+                properties:
+                  adminGroupObjectIDs:
+                    description: AdminGroupObjectIDs - AAD group object IDs that will
+                      have admin role of the cluster.
+                    items:
+                      type: string
+                    type: array
+                  clientAppID:
+                    description: 'DEPRECATED: use AADConfig instead ClientAppID -
+                      The client AAD application ID.'
+                    type: string
+                  managed:
+                    description: Managed - Whether to enable managed AAD.
+                    type: boolean
+                  serverAppID:
+                    description: 'DEPRECATED: use AADConfig instead ServerAppID -
+                      The server AAD application ID.'
+                    type: string
+                  serverAppSecret:
+                    description: 'DEPRECATED: use AADConfig instead ServerAppSecret
+                      - The server AAD application secret.'
+                    type: string
+                  tenantID:
+                    description: 'DEPRECATED: use AADConfig instead TenantID - The
+                      AAD tenant ID to use for authentication.'
+                    type: string
+                type: object
               additionalTags:
                 additionalProperties:
                   type: string

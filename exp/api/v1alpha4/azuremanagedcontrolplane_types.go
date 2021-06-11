@@ -86,6 +86,34 @@ type AzureManagedControlPlaneSpec struct {
 	// IdentityRef is a reference to a AzureClusterIdentity to be used when reconciling this cluster
 	// +optional
 	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
+	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+	// +optional
+	AADProfile *ManagedClusterAADProfile `json:"aadProfile,omitempty"`
+}
+
+// ManagedClusterAADProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+type ManagedClusterAADProfile struct {
+	// Managed - Whether to enable managed AAD.
+	Managed *bool `json:"managed,omitempty"`
+
+	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
+	AdminGroupObjectIDs *[]string `json:"adminGroupObjectIDs,omitempty"`
+
+	// DEPRECATED: use AADConfig instead
+	// ClientAppID - The client AAD application ID.
+	ClientAppID *string `json:"clientAppID,omitempty"`
+
+	// DEPRECATED: use AADConfig instead
+	// ServerAppID - The server AAD application ID.
+	ServerAppID *string `json:"serverAppID,omitempty"`
+
+	// DEPRECATED: use AADConfig instead
+	// ServerAppSecret - The server AAD application secret.
+	ServerAppSecret *string `json:"serverAppSecret,omitempty"`
+
+	// DEPRECATED: use AADConfig instead
+	// TenantID - The AAD tenant ID to use for authentication.
+	TenantID *string `json:"tenantID,omitempty"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
