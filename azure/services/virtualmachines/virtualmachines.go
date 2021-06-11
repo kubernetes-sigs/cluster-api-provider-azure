@@ -39,6 +39,34 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const (
+	// winAutoLogonFormatString is the format string used to create the AutoLogon
+	// AdditionalUnattendContent configuration for Windows machines.
+	winAutoLogonFormatString = `<AutoLogon>
+			<Username>%s</Username>
+			<Password>
+				<Value>%s</Value>
+			</Password>
+			<Enabled>true</Enabled>
+			<LogonCount>1</LogonCount>
+		</AutoLogon>`
+
+	// winFirstLogonCommandsString is the string used to create the FirstLogonCommands
+	// AdditionalUnattendContent configuration for Windows machines.
+	winFirstLogonCommandsString = `<FirstLogonCommands>
+			<SynchronousCommand>
+				<Description>Copy user data secret contents to init script</Description>
+				<CommandLine>cmd /c "copy C:\AzureData\CustomData.bin C:\init.ps1"</CommandLine>
+				<Order>11</Order>
+			</SynchronousCommand>
+			<SynchronousCommand>
+				<Description>Launch init script</Description>
+				<CommandLine>powershell.exe -NonInteractive -ExecutionPolicy Bypass -File C:\init.ps1</CommandLine>
+				<Order>12</Order>
+			</SynchronousCommand>
+		</FirstLogonCommands>`
+)
+
 // VMScope defines the scope interface for a virtual machines service.
 type VMScope interface {
 	logr.Logger
@@ -468,6 +496,20 @@ func (s *Service) generateOSProfile(ctx context.Context, vmSpec azure.VMSpec) (*
 		osProfile.AdminPassword = to.StringPtr(generators.SudoRandomPassword(123))
 		osProfile.WindowsConfiguration = &compute.WindowsConfiguration{
 			EnableAutomaticUpdates: to.BoolPtr(false),
+			AdditionalUnattendContent: &[]compute.AdditionalUnattendContent{
+				{
+					PassName:      "OobeSystem",
+					ComponentName: "Microsoft-Windows-Shell-Setup",
+					SettingName:   "AutoLogon",
+					Content:       to.StringPtr(fmt.Sprintf(winAutoLogonFormatString, azure.DefaultUserName, *osProfile.AdminPassword)),
+				},
+				{
+					PassName:      "OobeSystem",
+					ComponentName: "Microsoft-Windows-Shell-Setup",
+					SettingName:   "FirstLogonCommands",
+					Content:       to.StringPtr(winFirstLogonCommandsString),
+				},
+			},
 		}
 	default:
 		osProfile.LinuxConfiguration = &compute.LinuxConfiguration{
