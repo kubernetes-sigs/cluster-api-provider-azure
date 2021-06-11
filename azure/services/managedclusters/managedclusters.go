@@ -185,6 +185,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Count:        &pool.Replicas,
 			Type:         containerservice.VirtualMachineScaleSets,
 			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
+			Mode:         containerservice.System,
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
