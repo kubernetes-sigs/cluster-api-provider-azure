@@ -1,0 +1,33 @@
+config:
+  exporters:
+    azuremonitor: {}
+  service:
+    pipelines:
+      traces:
+        exporters:
+        - logging
+        - azuremonitor
+image:
+  repository: otel/opentelemetry-collector-contrib
+  pullPolicy: IfNotPresent
+  tag: 0.28.0
+command:
+  name: otelcontribcol
+agentCollector:
+  enabled: true
+  resources:
+    limits:
+      cpu: 256m
+      memory: 512Mi
+    requests:
+      cpu: 128m
+      memory: 256Mi
+standaloneCollector:
+  enabled: true
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 128m
+      memory: 256Mi

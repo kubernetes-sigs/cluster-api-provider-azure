@@ -236,7 +236,7 @@ func InitFlags(fs *pflag.FlagSet) {
 		&enableTracing,
 		"enable-tracing",
 		false,
-		"Enable Jaeger tracing to an agent running as a sidecar to the controller.",
+		"Enable tracing to the opentelemetry-collector service in the same namespace.",
 	)
 
 	feature.MutableGates.AddFlag(fs)
@@ -288,23 +288,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := initPrometheusMetrics(); err != nil {
-		setupLog.Error(err, "failed to init Prometheus metrics")
-		os.Exit(1)
-	}
-
 	// Initialize event recorder.
 	record.InitFromRecorder(mgr.GetEventRecorderFor("azure-controller"))
 
 	// Setup the context that's going to be used in controllers and for the manager.
 	ctx := ctrl.SetupSignalHandler()
-	registerControllers(ctx, mgr)
-	// +kubebuilder:scaffold:builder
 
 	if err := registerTracing(ctx); err != nil {
 		setupLog.Error(err, "unable to initialize tracing")
 		os.Exit(1)
 	}
+
+	if err := initPrometheusMetrics(); err != nil {
+		setupLog.Error(err, "failed to init Prometheus metrics")
+		os.Exit(1)
+	}
+
+	registerControllers(ctx, mgr)
+	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to create ready check")
@@ -327,7 +328,7 @@ func registerTracing(ctx context.Context) error {
 	if !enableTracing {
 		return nil
 	}
-	tp, err := jaegerTracerProvider("http://localhost:5778/api/traces")
+	tp, err := jaegerTracerProvider("http://opentelemetry-collector:14268/api/traces")
 	if err != nil {
 		return err
 	}
@@ -544,9 +545,7 @@ func jaegerTracerProvider(url string) (*tracesdk.TracerProvider, error) {
 		return nil, err
 	}
 	tp := tracesdk.NewTracerProvider(
-		// Always be sure to batch in production.
 		tracesdk.WithBatcher(exp),
-		// Record information about this application in an Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.ServiceNameKey.String("capz"),
 			attribute.String("exporter", "jaeger"),
