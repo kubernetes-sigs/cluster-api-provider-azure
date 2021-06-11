@@ -9,8 +9,8 @@
       "api",
       "azure",
       "controllers",
-      "pkg",
-      "exp"
+      "exp",
+      "pkg"
     ]
   }
 }
