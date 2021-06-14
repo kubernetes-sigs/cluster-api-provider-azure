@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -128,9 +128,9 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureManagedMachinePool"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureManagedMachinePool"),
 		))
 	defer span.End()
 

@@ -339,9 +339,9 @@ Here is an example of staring a span in the beginning of a controller reconcile.
 ```go
 ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
     trace.WithAttributes(
-        label.String("namespace", req.Namespace),
-        label.String("name", req.Name),
-        label.String("kind", "AzureMachine"),
+        attribute.String("namespace", req.Namespace),
+        attribute.String("name", req.Name),
+        attribute.String("kind", "AzureMachine"),
     ))
 defer span.End()
 ```

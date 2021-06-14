@@ -30,9 +30,13 @@ import (
 	"github.com/Azure/go-autorest/tracing"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/pflag"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelProm "go.opentelemetry.io/otel/exporters/metric/prometheus"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
-	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -256,19 +260,6 @@ func main() {
 
 	ctrl.SetLogger(klogr.New())
 
-	if enableTracing {
-		flush, err := initJaegerTracing()
-		if err != nil {
-			setupLog.Error(err, "failed to init Jaeger tracing")
-			os.Exit(1)
-		}
-
-		tracing.Register(ot.NewOpenTelemetryAutorestTracer(tele.Tracer()))
-
-		// try to flush all traces before exiting
-		defer flush()
-	}
-
 	// Machine and cluster operations can create enough events to trigger the event recorder spam filter
 	// Setting the burst size higher ensures all events will be recorded and submitted to the API
 	broadcaster := cgrecord.NewBroadcasterWithCorrelatorOptions(cgrecord.CorrelatorOptions{
@@ -310,6 +301,11 @@ func main() {
 	registerControllers(ctx, mgr)
 	// +kubebuilder:scaffold:builder
 
+	if err := registerTracing(ctx); err != nil {
+		setupLog.Error(err, "unable to initialize tracing")
+		os.Exit(1)
+	}
+
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to create ready check")
 		os.Exit(1)
@@ -321,10 +317,32 @@ func main() {
 	}
 
 	setupLog.Info("starting manager", "version", version.Get().String())
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func registerTracing(ctx context.Context) error {
+	if !enableTracing {
+		return nil
+	}
+	tp, err := jaegerTracerProvider("http://localhost:5778/api/traces")
+	if err != nil {
+		return err
+	}
+	otel.SetTracerProvider(tp)
+	tracing.Register(ot.NewOpenTelemetryAutorestTracer(tele.Tracer()))
+	go func() {
+		<-ctx.Done()
+		// Allow five seconds for tracing componentry to shut down.
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tp.Shutdown(ctx); err != nil {
+			setupLog.Error(err, "failed to shut down tracing")
+		}
+	}()
+	return nil
 }
 
 func registerControllers(ctx context.Context, mgr manager.Manager) {
@@ -519,16 +537,20 @@ func initPrometheusMetrics() error {
 	return err
 }
 
-// initJaegerTracing creates and injects a jaeger tracing pipeline into the global.TraceProvider which will write
-// tracing events to a sidecar agent running on localhost:6831.
-func initJaegerTracing() (func(), error) {
-	return jaeger.InstallNewPipeline(
-		jaeger.WithAgentEndpoint("localhost:6831"),
-		jaeger.WithProcess(jaeger.Process{
-			ServiceName: "capz",
-		}),
-		jaeger.WithSDK(&trace.Config{
-			DefaultSampler: trace.AlwaysSample(),
-		}),
+// jaegerTracerProvider creates a jaeger tracing provider.
+func jaegerTracerProvider(url string) (*tracesdk.TracerProvider, error) {
+	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+	if err != nil {
+		return nil, err
+	}
+	tp := tracesdk.NewTracerProvider(
+		// Always be sure to batch in production.
+		tracesdk.WithBatcher(exp),
+		// Record information about this application in an Resource.
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.ServiceNameKey.String("capz"),
+			attribute.String("exporter", "jaeger"),
+		)),
 	)
+	return tp, nil
 }

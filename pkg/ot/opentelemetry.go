@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/go-autorest/tracing"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type (

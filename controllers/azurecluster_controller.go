@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
@@ -114,9 +114,9 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureCluster"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureCluster"),
 		))
 	defer span.End()
 
