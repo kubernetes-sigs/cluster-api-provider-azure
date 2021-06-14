@@ -227,6 +227,63 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 		}
 	}
 
+	if old.Spec.AADProfile != nil && r.Spec.AADProfile == nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("Spec", "AADProfile"),
+				r.Spec.AADProfile,
+				"field cannot be nil, cannot disable AADProfile"))
+	}
+
+	if old.Spec.AADProfile != nil && r.Spec.AADProfile != nil {
+		if old.Spec.AADProfile.Managed != nil && (r.Spec.AADProfile.Managed == nil || !*r.Spec.AADProfile.Managed) {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "AADProfile", "Managed"),
+					r.Spec.AADProfile.Managed,
+					"field cannot be set to false, Managed AADManagedProfile cannot be disabled or migrated to Legacy"))
+		}
+
+		if old.Spec.AADProfile.AdminGroupObjectIDs != nil && (r.Spec.AADProfile.AdminGroupObjectIDs == nil || len(*r.Spec.AADProfile.AdminGroupObjectIDs) == 0) {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "AADProfile", "AdminGroupObjectIDs"),
+					r.Spec.AADProfile.Managed,
+					"need atleast one AdminGroupObjectID"))
+		}
+
+		if r.Spec.AADProfile.Managed == nil {
+			if old.Spec.AADProfile.ClientAppID != nil && r.Spec.AADProfile.ClientAppID != old.Spec.AADProfile.ClientAppID {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile", "ClientAppID"),
+						r.Spec.AADProfile.Managed,
+						"field is immutable"))
+			}
+			if old.Spec.AADProfile.ServerAppID != nil && r.Spec.AADProfile.ServerAppID != old.Spec.AADProfile.ServerAppID {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile", "ServerAppID"),
+						r.Spec.AADProfile.Managed,
+						"field is immutable"))
+			}
+			if old.Spec.AADProfile.ServerAppSecret != nil && r.Spec.AADProfile.ServerAppSecret != old.Spec.AADProfile.ServerAppSecret {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile", "ServerAppSecret"),
+						r.Spec.AADProfile.Managed,
+						"field is immutable"))
+			}
+			if old.Spec.AADProfile.TenantID != nil && r.Spec.AADProfile.TenantID != old.Spec.AADProfile.TenantID {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile", "TenantID"),
+						r.Spec.AADProfile.Managed,
+						"field is immutable"))
+			}
+		}
+	}
+
 	if len(allErrs) == 0 {
 		return r.Validate()
 	}
@@ -247,6 +304,7 @@ func (r *AzureManagedControlPlane) Validate() error {
 		r.validateVersion,
 		r.validateDNSServiceIP,
 		r.validateSSHKey,
+		r.validateAadProfile,
 	}
 
 	var errs []error
@@ -290,4 +348,54 @@ func (r *AzureManagedControlPlane) validateSSHKey() error {
 	}
 
 	return nil
+}
+
+func (r *AzureManagedControlPlane) validateAadProfile() error {
+	if r.Spec.AADProfile != nil {
+		managedAad, err := r.validateManagedAadProfile()
+		if err != nil {
+			return err
+		}
+		legacyAad, err := r.validateLegacyAadProfile()
+		if err != nil {
+			return err
+		}
+		if managedAad && legacyAad {
+			return errors.New("conflicting values provided in AADProfile.")
+		}
+	}
+	return nil
+}
+
+func (r *AzureManagedControlPlane) validateManagedAadProfile() (bool, error) {
+	if r.Spec.AADProfile.Managed != nil && *r.Spec.AADProfile.Managed && (r.Spec.AADProfile.AdminGroupObjectIDs == nil || len(*r.Spec.AADProfile.AdminGroupObjectIDs) == 0) {
+		return false, errors.New("AdminGroupObjectIDs fields missing in AADProfile")
+	}
+
+	if r.Spec.AADProfile.Managed == nil && r.Spec.AADProfile.AdminGroupObjectIDs != nil && len(*r.Spec.AADProfile.AdminGroupObjectIDs) != 0 {
+		return false, errors.New("Managed field missing in AADProfile")
+	}
+	return r.Spec.AADProfile.Managed != nil && *r.Spec.AADProfile.Managed, nil
+}
+
+func (r *AzureManagedControlPlane) validateLegacyAadProfile() (bool, error) {
+	err := ""
+	if r.Spec.AADProfile.ClientAppID != nil || r.Spec.AADProfile.ServerAppID != nil || r.Spec.AADProfile.ServerAppSecret != nil || r.Spec.AADProfile.TenantID != nil {
+		if r.Spec.AADProfile.ClientAppID == nil {
+			err = err + "missing ClientAppID in AADProfile. "
+		}
+		if r.Spec.AADProfile.ServerAppID == nil {
+			err = err + "missing ServerAppID in AADProfile. "
+		}
+		if r.Spec.AADProfile.ServerAppSecret == nil {
+			err = err + "missing ServerAppSecret in AADProfile. "
+		}
+		if r.Spec.AADProfile.TenantID == nil {
+			err = err + "missing TenantID in AADProfile. "
+		}
+	}
+	if err != "" {
+		return false, errors.New(err)
+	}
+	return r.Spec.AADProfile.ClientAppID != nil, nil
 }
