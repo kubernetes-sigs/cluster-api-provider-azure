@@ -32,17 +32,17 @@ import (
 
 const (
 	// can't use: \/"'[]:|<>+=;,.?*@&, Can't start with underscore. Can't end with period or hyphen.
-	// not using . in the name to avoid issues when the name is part of DNS name
+	// not using . in the name to avoid issues when the name is part of DNS name.
 	clusterNameRegex = `^[a-z0-9][a-z0-9-]{0,42}[a-z0-9]$`
 	// max length of 44 to allow for cluster name to be used as a prefix for VMs and other resources that
-	// have limitations as outlined here https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
+	// have limitations as outlined here https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules.
 	clusterNameMaxLength = 44
-	// obtained from https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups/createorupdate#uri-parameters
+	// obtained from https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups/createorupdate#uri-parameters.
 	resourceGroupRegex = `^[-\w\._\(\)]+$`
-	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
+	// described in https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules.
 	subnetRegex       = `^[-\w\._]+$`
 	loadBalancerRegex = `^[-\w\._]+$`
-	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration
+	// MaxLoadBalancerOutboundIPs is the maximum number of outbound IPs in a Standard LoadBalancer frontend configuration.
 	MaxLoadBalancerOutboundIPs = 16
 	// MinLBIdleTimeoutInMinutes is the minimum number of minutes for the LB idle timeout.
 	MinLBIdleTimeoutInMinutes = 4
@@ -54,7 +54,7 @@ const (
 	maxRulePriority = 4096
 )
 
-// validateCluster validates a cluster
+// validateCluster validates a cluster.
 func (c *AzureCluster) validateCluster(old *AzureCluster) error {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, c.validateClusterName()...)
@@ -68,7 +68,7 @@ func (c *AzureCluster) validateCluster(old *AzureCluster) error {
 		c.Name, allErrs)
 }
 
-// validateClusterSpec validates a ClusterSpec
+// validateClusterSpec validates a ClusterSpec.
 func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 	var allErrs field.ErrorList
 	var oldNetworkSpec NetworkSpec
@@ -87,7 +87,7 @@ func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
 	return allErrs
 }
 
-// validateClusterName validates ClusterName
+// validateClusterName validates ClusterName.
 func (c *AzureCluster) validateClusterName() field.ErrorList {
 	var allErrs field.ErrorList
 	if len(c.Name) > clusterNameMaxLength {
@@ -105,7 +105,7 @@ func (c *AzureCluster) validateClusterName() field.ErrorList {
 	return allErrs
 }
 
-// validateNetworkSpec validates a NetworkSpec
+// validateNetworkSpec validates a NetworkSpec.
 func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	// If the user specifies a resourceGroup for vnet, it means
@@ -141,7 +141,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 	return allErrs
 }
 
-// validateResourceGroup validates a ResourceGroup
+// validateResourceGroup validates a ResourceGroup.
 func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Error {
 	if success, _ := regexp.MatchString(resourceGroupRegex, resourceGroup); !success {
 		return field.Invalid(fldPath, resourceGroup,
@@ -150,7 +150,7 @@ func validateResourceGroup(resourceGroup string, fldPath *field.Path) *field.Err
 	return nil
 }
 
-// validateSubnets validates a list of Subnets
+// validateSubnets validates a list of Subnets.
 func validateSubnets(subnets Subnets, vnet VnetSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	subnetNames := make(map[string]bool, len(subnets))
@@ -270,7 +270,7 @@ func validateInternalLBIPAddress(address string, cidrs []string, fldPath *field.
 		fmt.Sprintf("Internal LB IP address needs to be in control plane subnet range (%s)", cidrs))
 }
 
-// validateSecurityRule validates a SecurityRule
+// validateSecurityRule validates a SecurityRule.
 func validateSecurityRule(rule SecurityRule, fldPath *field.Path) *field.Error {
 	if rule.Priority < minRulePriority || rule.Priority > maxRulePriority {
 		return field.Invalid(fldPath, rule.Priority, fmt.Sprintf("security rule priorities should be between %d and %d", minRulePriority, maxRulePriority))
@@ -433,7 +433,7 @@ func validatePrivateDNSZoneName(networkSpec NetworkSpec, fldPath *field.Path) fi
 	return allErrs
 }
 
-// validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides
+// validateCloudProviderConfigOverrides validates CloudProviderConfigOverrides.
 func validateCloudProviderConfigOverrides(old, new *CloudProviderConfigOverrides, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if !reflect.DeepEqual(old, new) {

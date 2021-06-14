@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk
+// client wraps go-sdk.
 type client interface {
 	Get(context.Context, string, string, string) (compute.VirtualMachineScaleSetVM, error)
 	GetResultIfDone(ctx context.Context, future *infrav1.Future) (compute.VirtualMachineScaleSetVM, error)
@@ -39,7 +39,7 @@ type client interface {
 }
 
 type (
-	// azureClient contains the Azure go-sdk Client
+	// azureClient contains the Azure go-sdk Client.
 	azureClient struct {
 		scalesetvms compute.VirtualMachineScaleSetVMsClient
 	}
@@ -55,7 +55,7 @@ type (
 )
 
 const (
-	// DeleteFuture is a future that was derived from a DELETE request to VMSS
+	// DeleteFuture is a future that was derived from a DELETE request to VMSS.
 	DeleteFuture string = "DELETE"
 )
 
@@ -77,7 +77,7 @@ func newVirtualMachineScaleSetVMsClient(subscriptionID string, baseURI string, a
 	return c
 }
 
-// Get retrieves the Virtual Machine Scale Set Virtual Machine
+// Get retrieves the Virtual Machine Scale Set Virtual Machine.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmssName, instanceID string) (compute.VirtualMachineScaleSetVM, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.azureClient.Get")
 	defer span.End()
@@ -85,7 +85,7 @@ func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmssName, ins
 	return ac.scalesetvms.Get(ctx, resourceGroupName, vmssName, instanceID, "")
 }
 
-// GetResultIfDone fetches the result of a long running operation future if it is done
+// GetResultIfDone fetches the result of a long-running operation future if it is done.
 func (ac *azureClient) GetResultIfDone(ctx context.Context, future *infrav1.Future) (compute.VirtualMachineScaleSetVM, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.azureClient.GetResultIfDone")
 	defer span.End()

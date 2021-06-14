@@ -48,7 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureClusterReconciler reconciles a AzureCluster object
+// AzureClusterReconciler reconciles an AzureCluster object.
 type AzureClusterReconciler struct {
 	client.Client
 	Log                       logr.Logger
@@ -60,7 +60,7 @@ type AzureClusterReconciler struct {
 
 type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
 
-// NewAzureClusterReconciler returns a new AzureClusterReconciler instance
+// NewAzureClusterReconciler returns a new AzureClusterReconciler instance.
 func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureClusterReconciler {
 	acr := &AzureClusterReconciler{
 		Client:           client,

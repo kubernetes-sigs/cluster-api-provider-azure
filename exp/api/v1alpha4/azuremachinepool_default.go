@@ -26,7 +26,7 @@ import (
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
-// SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachinePool
+// SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachinePool.
 func (amp *AzureMachinePool) SetDefaultSSHPublicKey() error {
 	sshKeyData := amp.Spec.Template.SSHPublicKey
 	if sshKeyData == "" {

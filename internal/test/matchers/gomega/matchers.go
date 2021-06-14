@@ -46,7 +46,7 @@ type (
 	}
 )
 
-// DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp
+// DiffEq will verify cmp.Diff(expected, actual) == "" using github.com/google/go-cmp/cmp.
 func DiffEq(x interface{}) types.GomegaMatcher {
 	return &cmpMatcher{
 		x: x,

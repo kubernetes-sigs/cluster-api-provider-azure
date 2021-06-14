@@ -42,7 +42,7 @@ func (m *AzureMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &AzureMachine{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateCreate() error {
 	machinelog.Info("validate create", "name", m.Name)
 	var allErrs field.ErrorList
@@ -77,7 +77,7 @@ func (m *AzureMachine) ValidateCreate() error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	machinelog.Info("validate update", "name", m.Name)
 	var allErrs field.ErrorList
@@ -173,14 +173,14 @@ func (m *AzureMachine) ValidateUpdate(oldRaw runtime.Object) error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateDelete() error {
 	machinelog.Info("validate delete", "name", m.Name)
 
 	return nil
 }
 
-// Default implements webhookutil.defaulter so a webhook will be registered for the type
+// Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (m *AzureMachine) Default() {
 	machinelog.Info("default", "name", m.Name)
 

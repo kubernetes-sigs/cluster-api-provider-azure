@@ -48,7 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureMachineReconciler reconciles a AzureMachine object
+// AzureMachineReconciler reconciles an AzureMachine object.
 type AzureMachineReconciler struct {
 	client.Client
 	Log                       logr.Logger
@@ -60,7 +60,7 @@ type AzureMachineReconciler struct {
 
 type azureMachineServiceCreator func(machineScope *scope.MachineScope) (*azureMachineService, error)
 
-// NewAzureMachineReconciler returns a new AzureMachineReconciler instance
+// NewAzureMachineReconciler returns a new AzureMachineReconciler instance.
 func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureMachineReconciler {
 	amr := &AzureMachineReconciler{
 		Client:           client,

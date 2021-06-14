@@ -36,7 +36,7 @@ type InboundNatScope interface {
 	InboundNatSpecs() []azure.InboundNatSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope InboundNatScope
 	client

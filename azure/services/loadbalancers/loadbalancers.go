@@ -45,7 +45,7 @@ type LBScope interface {
 	LBSpecs() []azure.LBSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope LBScope
 	Client

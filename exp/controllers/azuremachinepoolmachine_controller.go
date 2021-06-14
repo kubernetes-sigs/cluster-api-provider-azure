@@ -54,7 +54,7 @@ import (
 type (
 	azureMachinePoolMachineReconcilerFactory func(*scope.MachinePoolMachineScope) azure.Reconciler
 
-	// AzureMachinePoolMachineController handles Kubernetes change events for a AzureMachinePoolMachine resources
+	// AzureMachinePoolMachineController handles Kubernetes change events for AzureMachinePoolMachine resources.
 	AzureMachinePoolMachineController struct {
 		client.Client
 		Log               logr.Logger
@@ -350,7 +350,7 @@ func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) 
 	}
 }
 
-// Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM
+// Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM.
 func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Reconcile")
 	defer span.End()
@@ -366,7 +366,7 @@ func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error
 	return nil
 }
 
-// Delete will attempt to drain and delete the Azure VMSS VM
+// Delete will attempt to drain and delete the Azure VMSS VM.
 func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Delete")
 	defer span.End()

@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureJSONTemplateReconciler reconciles azure json secrets for AzureMachineTemplate objects
+// AzureJSONTemplateReconciler reconciles Azure json secrets for AzureMachineTemplate objects.
 type AzureJSONTemplateReconciler struct {
 	client.Client
 	Log              logr.Logger
@@ -59,7 +59,7 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 		Complete(r)
 }
 
-// Reconcile reconciles azure json secrets for azure machine templates
+// Reconcile reconciles Azure json secrets for Azure machine templates.
 func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()

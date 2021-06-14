@@ -39,13 +39,13 @@ type (
 	}
 
 	// ReconcileCacher describes an interface for determining if a request should be reconciled through a call to
-	// ShouldProcess and if ok, reset the cool down through a call to Reconciled
+	// ShouldProcess and if ok, reset the cool down through a call to Reconciled.
 	ReconcileCacher interface {
 		ShouldProcess(key string) (expiration time.Time, ok bool)
 		Reconciled(key string)
 	}
 
-	// reconciler is the caching reconciler middleware that uses the cache or
+	// reconciler is the caching reconciler middleware that uses the cache.
 	reconciler struct {
 		upstream reconcile.Reconciler
 		cache    ReconcileCacher
@@ -72,14 +72,14 @@ func (cache *ReconcileCache) ShouldProcess(key string) (time.Time, bool) {
 	return expiration, !ok
 }
 
-// Reconciled updates the cache expiry for a given key
+// Reconciled updates the cache expiry for a given key.
 func (cache *ReconcileCache) Reconciled(key string) {
 	cache.lastSuccessfulReconciliationCache.Add(key, nil)
 }
 
 // NewReconciler returns a reconcile wrapper that will delay new reconcile.Requests
 // after the cache expiry of the request string key.
-// A successful reconciliation is defined as as one where no error is returned
+// A successful reconciliation is defined as as one where no error is returned.
 func NewReconciler(upstream reconcile.Reconciler, cache ReconcileCacher, log logr.Logger) reconcile.Reconciler {
 	return &reconciler{
 		upstream: upstream,
@@ -88,7 +88,7 @@ func NewReconciler(upstream reconcile.Reconciler, cache ReconcileCacher, log log
 	}
 }
 
-// Reconcile sends a request to the upstream reconciler if the request is outside of the debounce window
+// Reconcile sends a request to the upstream reconciler if the request is outside of the debounce window.
 func (rc *reconciler) Reconcile(ctx context.Context, r reconcile.Request) (reconcile.Result, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.reconciler.Reconcile",
 		trace.WithAttributes(

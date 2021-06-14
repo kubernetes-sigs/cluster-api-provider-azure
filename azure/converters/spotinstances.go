@@ -24,7 +24,7 @@ import (
 )
 
 // GetSpotVMOptions takes the spot vm options
-// and returns the individual vm priority, eviction policy and billing profile
+// and returns the individual vm priority, eviction policy and billing profile.
 func GetSpotVMOptions(spotVMOptions *infrav1.SpotVMOptions) (compute.VirtualMachinePriorityTypes, compute.VirtualMachineEvictionPolicyTypes, *compute.BillingProfile, error) {
 	// Spot VM not requested, return zero values to apply defaults
 	if spotVMOptions == nil {

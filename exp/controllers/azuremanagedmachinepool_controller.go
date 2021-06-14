@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureManagedMachinePoolReconciler reconciles a AzureManagedMachinePool object
+// AzureManagedMachinePoolReconciler reconciles an AzureManagedMachinePool object.
 type AzureManagedMachinePoolReconciler struct {
 	client.Client
 	Log                                  logr.Logger
@@ -59,7 +59,7 @@ type AzureManagedMachinePoolReconciler struct {
 
 type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService
 
-// NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance
+// NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance.
 func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureManagedMachinePoolReconciler {
 	ampr := &AzureManagedMachinePoolReconciler{
 		Client:           client,

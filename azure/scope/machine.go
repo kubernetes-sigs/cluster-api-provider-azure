@@ -185,7 +185,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	return specs
 }
 
-// NICNames returns the NIC names
+// NICNames returns the NIC names.
 func (m *MachineScope) NICNames() []string {
 	nicNames := make([]string, len(m.NICSpecs()))
 	for i, nic := range m.NICSpecs() {
@@ -240,7 +240,7 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 	return []azure.VMExtensionSpec{}
 }
 
-// Subnet returns the machine's subnet based on its role
+// Subnet returns the machine's subnet based on its role.
 func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 	if m.IsControlPlane() {
 		return m.ControlPlaneSubnet()
@@ -313,7 +313,7 @@ func (m *MachineScope) ProviderID() string {
 	return parsed.String()
 }
 
-// AvailabilitySet returns the availability set for this machine if available
+// AvailabilitySet returns the availability set for this machine if available.
 func (m *MachineScope) AvailabilitySet() (string, bool) {
 	if !m.AvailabilitySetEnabled() {
 		return "", false

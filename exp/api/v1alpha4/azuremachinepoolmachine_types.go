@@ -32,7 +32,7 @@ const (
 
 type (
 
-	// AzureMachinePoolMachineSpec defines the desired state of AzureMachinePoolMachine
+	// AzureMachinePoolMachineSpec defines the desired state of AzureMachinePoolMachine.
 	AzureMachinePoolMachineSpec struct {
 		// ProviderID is the identification ID of the Virtual Machine Scale Set
 		ProviderID string `json:"providerID"`
@@ -41,7 +41,7 @@ type (
 		InstanceID string `json:"instanceID"`
 	}
 
-	// AzureMachinePoolMachineStatus defines the observed state of AzureMachinePoolMachine
+	// AzureMachinePoolMachineStatus defines the observed state of AzureMachinePoolMachine.
 	AzureMachinePoolMachineStatus struct {
 		// NodeRef will point to the corresponding Node if it exists.
 		// +optional
@@ -107,7 +107,7 @@ type (
 	// +kubebuilder:printcolumn:name="Cluster",type="string",priority=1,JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AzureMachinePoolMachine belongs"
 	// +kubebuilder:printcolumn:name="VMSS VM ID",type="string",priority=1,JSONPath=".spec.providerID",description="Azure VMSS VM ID"
 
-	// AzureMachinePoolMachine is the Schema for the azuremachinepoolmachines API
+	// AzureMachinePoolMachine is the Schema for the azuremachinepoolmachines API.
 	AzureMachinePoolMachine struct {
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -118,7 +118,7 @@ type (
 
 	// +kubebuilder:object:root=true
 
-	// AzureMachinePoolMachineList contains a list of AzureMachinePoolMachine
+	// AzureMachinePoolMachineList contains a list of AzureMachinePoolMachines.
 	AzureMachinePoolMachineList struct {
 		metav1.TypeMeta `json:",inline"`
 		metav1.ListMeta `json:"metadata,omitempty"`
@@ -131,7 +131,7 @@ func (ampm *AzureMachinePoolMachine) GetConditions() clusterv1.Conditions {
 	return ampm.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureMachinePool object
+// SetConditions will set the given conditions on an AzureMachinePool object.
 func (ampm *AzureMachinePoolMachine) SetConditions(conditions clusterv1.Conditions) {
 	ampm.Status.Conditions = conditions
 }

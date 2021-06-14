@@ -44,12 +44,12 @@ func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &AzureMachineTemplate{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateCreate() error {
 	return nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 	clusterlog.Info("validate update", "name", r.Name)
 	var allErrs field.ErrorList
@@ -68,7 +68,7 @@ func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateDelete() error {
 	return nil
 }

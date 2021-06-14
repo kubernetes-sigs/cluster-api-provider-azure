@@ -108,7 +108,7 @@ type RoleAssignmentSpec struct {
 }
 
 // ResourceType defines the type azure resource being reconciled.
-// Eg. Virtual Machine, Virtual Machine Scale Sets
+// Eg. Virtual Machine, Virtual Machine Scale Sets.
 type ResourceType string
 
 const (
@@ -252,7 +252,7 @@ func (vmss VMSS) HasModelChanges(other VMSS) bool {
 	return !equal
 }
 
-// InstancesByProviderID returns VMSSVMs by ID
+// InstancesByProviderID returns VMSSVMs by ID.
 func (vmss VMSS) InstancesByProviderID() map[string]VMSSVM {
 	instancesByProviderID := make(map[string]VMSSVM, len(vmss.Instances))
 	for _, instance := range vmss.Instances {
@@ -262,12 +262,12 @@ func (vmss VMSS) InstancesByProviderID() map[string]VMSSVM {
 	return instancesByProviderID
 }
 
-// ProviderID returns the K8s provider ID for the VMSS instance
+// ProviderID returns the K8s provider ID for the VMSS instance.
 func (vm VMSSVM) ProviderID() string {
 	return ProviderIDPrefix + vm.ID
 }
 
-// HasLatestModelAppliedToAll returns true if all VMSS instance have the latest model applied
+// HasLatestModelAppliedToAll returns true if all VMSS instance have the latest model applied.
 func (vmss VMSS) HasLatestModelAppliedToAll() bool {
 	for _, instance := range vmss.Instances {
 		if !vmss.HasLatestModelApplied(instance) {
@@ -278,7 +278,7 @@ func (vmss VMSS) HasLatestModelAppliedToAll() bool {
 	return true
 }
 
-// HasEnoughLatestModelOrNotMixedModel returns true if VMSS instance have the latest model applied to all or equal to the capacity
+// HasEnoughLatestModelOrNotMixedModel returns true if VMSS instance have the latest model applied to all or equal to the capacity.
 func (vmss VMSS) HasEnoughLatestModelOrNotMixedModel() bool {
 	if vmss.HasLatestModelAppliedToAll() {
 		return true
@@ -294,7 +294,7 @@ func (vmss VMSS) HasEnoughLatestModelOrNotMixedModel() bool {
 	return counter == vmss.Capacity
 }
 
-// HasLatestModelApplied returns true if the VMSS instance matches the VMSS image reference
+// HasLatestModelApplied returns true if the VMSS instance matches the VMSS image reference.
 func (vmss VMSS) HasLatestModelApplied(vm VMSSVM) bool {
 	// if the images match, then the VM is of the same model
 	return reflect.DeepEqual(vm.Image, vmss.Image)

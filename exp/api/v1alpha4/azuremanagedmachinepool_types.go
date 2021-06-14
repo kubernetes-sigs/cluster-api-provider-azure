@@ -21,7 +21,7 @@ import (
 	capierrors "sigs.k8s.io/cluster-api/errors"
 )
 
-// AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool
+// AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
 	// SKU is the size of the VMs in the node pool.
 	SKU string `json:"sku"`
@@ -35,7 +35,7 @@ type AzureManagedMachinePoolSpec struct {
 	ProviderIDList []string `json:"providerIDList,omitempty"`
 }
 
-// AzureManagedMachinePoolStatus defines the observed state of AzureManagedMachinePool
+// AzureManagedMachinePoolStatus defines the observed state of AzureManagedMachinePool.
 type AzureManagedMachinePoolStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
@@ -63,7 +63,7 @@ type AzureManagedMachinePoolStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureManagedMachinePool is the Schema for the azuremanagedmachinepools API
+// AzureManagedMachinePool is the Schema for the azuremanagedmachinepools API.
 type AzureManagedMachinePool struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -74,7 +74,7 @@ type AzureManagedMachinePool struct {
 
 // +kubebuilder:object:root=true
 
-// AzureManagedMachinePoolList contains a list of AzureManagedMachinePool
+// AzureManagedMachinePoolList contains a list of AzureManagedMachinePools.
 type AzureManagedMachinePoolList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

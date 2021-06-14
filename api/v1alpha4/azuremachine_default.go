@@ -25,7 +25,7 @@ import (
 	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
-// SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachine
+// SetDefaultSSHPublicKey sets the default SSHPublicKey for an AzureMachine.
 func (m *AzureMachine) SetDefaultSSHPublicKey() error {
 	sshKeyData := m.Spec.SSHPublicKey
 	if sshKeyData == "" {
@@ -40,7 +40,7 @@ func (m *AzureMachine) SetDefaultSSHPublicKey() error {
 	return nil
 }
 
-// SetDefaultCachingType sets the default cache type for an AzureMachine
+// SetDefaultCachingType sets the default cache type for an AzureMachine.
 func (m *AzureMachine) SetDefaultCachingType() error {
 	if m.Spec.OSDisk.CachingType == "" {
 		m.Spec.OSDisk.CachingType = "None"
@@ -48,7 +48,7 @@ func (m *AzureMachine) SetDefaultCachingType() error {
 	return nil
 }
 
-// SetDataDisksDefaults sets the data disk defaults for an AzureMachine
+// SetDataDisksDefaults sets the data disk defaults for an AzureMachine.
 func (m *AzureMachine) SetDataDisksDefaults() {
 	set := make(map[int32]struct{})
 	// populate all the existing values in the set

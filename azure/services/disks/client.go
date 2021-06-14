@@ -25,12 +25,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type client interface {
 	Delete(context.Context, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	disks compute.DisksClient
 }
@@ -50,7 +50,7 @@ func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.A
 	return disksClient
 }
 
-// Delete removes the disk client
+// Delete removes the disk client.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
 	ctx, span := tele.Tracer().Start(ctx, "disks.AzureClient.Delete")
 	defer span.End()

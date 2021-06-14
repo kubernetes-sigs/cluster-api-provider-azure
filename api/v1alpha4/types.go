@@ -23,13 +23,13 @@ import (
 )
 
 const (
-	// ControlPlane machine label
+	// ControlPlane machine label.
 	ControlPlane string = "control-plane"
-	// Node machine label
+	// Node machine label.
 	Node string = "node"
 )
 
-// Future contains the data needed for an Azure long running operation to continue across reconcile loops
+// Future contains the data needed for an Azure long-running operation to continue across reconcile loops.
 type Future struct {
 	// Type describes the type of future, update, create, delete, etc
 	Type string `json:"type"`
@@ -213,7 +213,7 @@ type PublicIPSpec struct {
 }
 
 // VMState describes the state of an Azure virtual machine.
-// DEPRECATED: use ProvisioningState
+// DEPRECATED: use ProvisioningState.
 type VMState string
 
 // ProvisioningState describes the provisioning state of an Azure resource.
@@ -274,7 +274,7 @@ type Image struct {
 	Marketplace *AzureMarketplaceImage `json:"marketplace,omitempty"`
 }
 
-// AzureMarketplaceImage defines an image in the Azure Marketplace to use for VM creation
+// AzureMarketplaceImage defines an image in the Azure Marketplace to use for VM creation.
 type AzureMarketplaceImage struct {
 	// Publisher is the name of the organization that created the image
 	// +kubebuilder:validation:MinLength=1
@@ -301,7 +301,7 @@ type AzureMarketplaceImage struct {
 	ThirdPartyImage bool `json:"thirdPartyImage"`
 }
 
-// AzureSharedGalleryImage defines an image in a Shared Image Gallery to use for VM creation
+// AzureSharedGalleryImage defines an image in a Shared Image Gallery to use for VM creation.
 type AzureSharedGalleryImage struct {
 	// SubscriptionID is the identifier of the subscription that contains the shared image gallery
 	// +kubebuilder:validation:MinLength=1
@@ -430,10 +430,10 @@ type DiffDiskSettings struct {
 type SubnetRole string
 
 const (
-	// SubnetNode defines a Kubernetes workload node role
+	// SubnetNode defines a Kubernetes workload node role.
 	SubnetNode = SubnetRole(Node)
 
-	// SubnetControlPlane defines a Kubernetes control plane node role
+	// SubnetControlPlane defines a Kubernetes control plane node role.
 	SubnetControlPlane = SubnetRole(ControlPlane)
 )
 
@@ -601,7 +601,7 @@ type AzureBastion struct {
 	PublicIP PublicIPSpec `json:"publicIP,omitempty"`
 }
 
-// IsTerminalProvisioningState returns true if the ProvisioningState is a terminal state for an Azure resource
+// IsTerminalProvisioningState returns true if the ProvisioningState is a terminal state for an Azure resource.
 func IsTerminalProvisioningState(state ProvisioningState) bool {
 	return state == Failed || state == Succeeded
 }

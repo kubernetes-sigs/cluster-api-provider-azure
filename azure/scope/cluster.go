@@ -220,7 +220,7 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	return specs
 }
 
-// RouteTableSpecs returns the node route table
+// RouteTableSpecs returns the node route table.
 func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	routetables := []azure.RouteTableSpec{}
 	if s.ControlPlaneRouteTable().Name != "" {
@@ -558,7 +558,7 @@ func (s *ClusterScope) APIServerHost() string {
 	return s.APIServerPublicIP().DNSName
 }
 
-// SetFailureDomain will set the spec for a for a given key
+// SetFailureDomain will set the spec for a for a given key.
 func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)

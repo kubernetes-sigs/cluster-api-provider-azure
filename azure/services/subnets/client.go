@@ -26,14 +26,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type Client interface {
 	Get(context.Context, string, string, string) (network.Subnet, error)
 	CreateOrUpdate(context.Context, string, string, string, network.Subnet) error
 	Delete(context.Context, string, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	subnets network.SubnetsClient
 }

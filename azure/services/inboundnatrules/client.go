@@ -26,14 +26,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk
+// client wraps go-sdk.
 type client interface {
 	Get(context.Context, string, string, string) (network.InboundNatRule, error)
 	CreateOrUpdate(context.Context, string, string, string, network.InboundNatRule) error
 	Delete(context.Context, string, string, string) error
 }
 
-// azureClient contains the Azure go-sdk Client
+// azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	inboundnatrules network.InboundNatRulesClient
 }

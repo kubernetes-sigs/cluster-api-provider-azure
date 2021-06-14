@@ -45,7 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureJSONMachineReconciler reconciles azure json secrets for AzureMachine objects
+// AzureJSONMachineReconciler reconciles Azure json secrets for AzureMachine objects.
 type AzureJSONMachineReconciler struct {
 	client.Client
 	Log              logr.Logger
@@ -53,7 +53,7 @@ type AzureJSONMachineReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
-// SetupWithManager initializes this controller with a manager
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureJSONMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.AzureMachine{}).
@@ -77,7 +77,7 @@ func (f filterUnclonedMachinesPredicate) Update(e event.UpdateEvent) bool {
 	})
 }
 
-// Generic implements default GenericEvent filter
+// Generic implements a default GenericEvent filter.
 func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	if e.Object == nil {
 		f.log.Error(nil, "Generic event has no old metadata", "event", e)
@@ -94,7 +94,7 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	return !isClonedFromTemplate
 }
 
-// Reconcile reconciles the azure json for a specific machine not in a machine deployment
+// Reconcile reconciles the Azure json for a specific machine not in a machine deployment.
 func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()

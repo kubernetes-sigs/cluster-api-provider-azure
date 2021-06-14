@@ -55,7 +55,7 @@ type (
 		SetVMSSState(*azure.VMSS)
 	}
 
-	// Service provides operations on azure resources
+	// Service provides operations on Azure resources.
 	Service struct {
 		Scope ScaleSetScope
 		Client
@@ -112,7 +112,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 
 	switch {
 	case err != nil && !azure.ResourceNotFound(err):
-		// There was an error and it was not an HTTP 404 not found. This is either a transient error, like long running operation not done, or a Azure service error.
+		// There was an error and it was not an HTTP 404 not found. This is either a transient error, like long running operation not done, or an Azure service error.
 		return errors.Wrapf(err, "failed to get VMSS %s", s.Scope.ScaleSetSpec().Name)
 	case err != nil && azure.ResourceNotFound(err):
 		// HTTP(404) resource was not found, so we need to create it with a PUT
@@ -462,7 +462,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	return vmss, nil
 }
 
-// getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances
+// getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
 func (s *Service) getVirtualMachineScaleSet(ctx context.Context) (*azure.VMSS, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSet")
 	defer span.End()
@@ -481,7 +481,7 @@ func (s *Service) getVirtualMachineScaleSet(ctx context.Context) (*azure.VMSS, e
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
 }
 
-// getVirtualMachineScaleSetIfDone gets a Virtual Machine Scale Set and its instances from Azure if the future is completed
+// getVirtualMachineScaleSetIfDone gets a Virtual Machine Scale Set and its instances from Azure if the future is completed.
 func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *infrav1.Future) (*azure.VMSS, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSetIfDone")
 	defer span.End()

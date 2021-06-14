@@ -25,14 +25,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type Client interface {
 	Get(ctx context.Context, resourceGroup, availabilitySetsName string) (compute.AvailabilitySet, error)
 	CreateOrUpdate(ctx context.Context, resourceGroup, availabilitySetsName string, params compute.AvailabilitySet) (compute.AvailabilitySet, error)
 	Delete(ctx context.Context, resourceGroup, availabilitySetsName string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	availabilitySets compute.AvailabilitySetsClient
 }
@@ -53,7 +53,7 @@ func newAvailabilitySetsClient(subscriptionID string, baseURI string, authorizer
 	return asClient
 }
 
-// Get gets an availability set
+// Get gets an availability set.
 func (a *AzureClient) Get(ctx context.Context, resourceGroup, availabilitySetsName string) (compute.AvailabilitySet, error) {
 	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.Get")
 	defer span.End()
@@ -61,7 +61,7 @@ func (a *AzureClient) Get(ctx context.Context, resourceGroup, availabilitySetsNa
 	return a.availabilitySets.Get(ctx, resourceGroup, availabilitySetsName)
 }
 
-// CreateOrUpdate creates or updates an availability set
+// CreateOrUpdate creates or updates an availability set.
 func (a *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroup string, availabilitySetsName string,
 	params compute.AvailabilitySet) (compute.AvailabilitySet, error) {
 	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.CreateOrUpdate")
@@ -70,7 +70,7 @@ func (a *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroup string, 
 	return a.availabilitySets.CreateOrUpdate(ctx, resourceGroup, availabilitySetsName, params)
 }
 
-// Delete deletes an availability set
+// Delete deletes an availability set.
 func (a *AzureClient) Delete(ctx context.Context, resourceGroup, availabilitySetsName string) error {
 	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.Delete")
 	defer span.End()

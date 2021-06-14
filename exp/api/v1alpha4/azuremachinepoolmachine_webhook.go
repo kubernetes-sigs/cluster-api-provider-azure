@@ -38,13 +38,13 @@ func (ampm *AzureMachinePoolMachine) SetupWebhookWithManager(mgr ctrl.Manager) e
 
 var _ webhook.Validator = &AzureMachinePoolMachine{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (ampm *AzureMachinePoolMachine) ValidateCreate() error {
 	azuremachinepoolmachinelog.Info("validate create", "name", ampm.Name)
 	return nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) error {
 	azuremachinepoolmachinelog.Info("validate update", "name", ampm.Name)
 	oldMachine, ok := old.(*AzureMachinePoolMachine)
@@ -59,7 +59,7 @@ func (ampm *AzureMachinePoolMachine) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (ampm *AzureMachinePoolMachine) ValidateDelete() error {
 	azuremachinepoolmachinelog.Info("validate delete", "name", ampm.Name)
 	return nil

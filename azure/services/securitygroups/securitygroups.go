@@ -38,7 +38,7 @@ type NSGScope interface {
 	NSGSpecs() []azure.NSGSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope NSGScope
 	client
