@@ -1456,6 +1456,7 @@ func autoConvert_v1alpha4_SubnetSpec_To_v1alpha3_SubnetSpec(in *v1alpha4.SubnetS
 	if err := Convert_v1alpha4_RouteTable_To_v1alpha3_RouteTable(&in.RouteTable, &out.RouteTable, s); err != nil {
 		return err
 	}
+	// WARNING: in.NatGateway requires manual conversion: does not exist in peer-type
 	return nil
 }
 

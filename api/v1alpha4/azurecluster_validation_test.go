@@ -273,10 +273,13 @@ func TestNetworkSpecWithPreexistingVnetLackRequiredSubnets(t *testing.T) {
 
 	t.Run(testCase.name, func(t *testing.T) {
 		errs := validateNetworkSpec(testCase.networkSpec, NetworkSpec{}, field.NewPath("spec").Child("networkSpec"))
-		g.Expect(errs).To(HaveLen(1))
+		g.Expect(errs).To(HaveLen(2))
 		g.Expect(errs[0].Type).To(Equal(field.ErrorTypeRequired))
 		g.Expect(errs[0].Field).To(Equal("spec.networkSpec.subnets"))
 		g.Expect(errs[0].Error()).To(ContainSubstring("required role node not included"))
+		g.Expect(errs[1].Type).To(Equal(field.ErrorTypeInvalid))
+		g.Expect(errs[1].Field).To(Equal("spec.networkSpec.subnets"))
+		g.Expect(errs[1].Error()).To(ContainSubstring("NodeSubnet invalid"))
 	})
 }
 
@@ -956,6 +959,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 		lb          *LoadBalancerSpec
 		old         *LoadBalancerSpec
 		apiServerLB LoadBalancerSpec
+		nodeSubnet  SubnetSpec
 		wantErr     bool
 		expectedErr field.Error
 	}{
@@ -963,6 +967,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			name:        "no lb for public clusters",
 			lb:          nil,
 			apiServerLB: LoadBalancerSpec{Type: Public},
+			nodeSubnet:  createValidNodeSubnet(),
 			wantErr:     true,
 			expectedErr: field.Error{
 				Type:     "FieldValueRequired",
@@ -985,7 +990,8 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			old: &LoadBalancerSpec{
 				ID: "old-id",
 			},
-			wantErr: true,
+			nodeSubnet: createValidNodeSubnet(),
+			wantErr:    true,
 			expectedErr: field.Error{
 				Type:     "FieldValueForbidden",
 				Field:    "nodeOutboundLB.id",
@@ -1001,7 +1007,8 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			old: &LoadBalancerSpec{
 				Name: "old-name",
 			},
-			wantErr: true,
+			nodeSubnet: createValidNodeSubnet(),
+			wantErr:    true,
 			expectedErr: field.Error{
 				Type:     "FieldValueForbidden",
 				Field:    "nodeOutboundLB.name",
@@ -1017,7 +1024,8 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			old: &LoadBalancerSpec{
 				SKU: "old-sku",
 			},
-			wantErr: true,
+			nodeSubnet: createValidNodeSubnet(),
+			wantErr:    true,
 			expectedErr: field.Error{
 				Type:     "FieldValueForbidden",
 				Field:    "nodeOutboundLB.sku",
@@ -1037,7 +1045,8 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 					Name: "old-frontend-ip",
 				}},
 			},
-			wantErr: true,
+			nodeSubnet: createValidNodeSubnet(),
+			wantErr:    true,
 			expectedErr: field.Error{
 				Type:  "FieldValueForbidden",
 				Field: "nodeOutboundLB.frontendIPs[0]",
@@ -1062,14 +1071,16 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 					Name: "old-frontend-ip",
 				}},
 			},
-			wantErr: false,
+			nodeSubnet: createValidNodeSubnet(),
+			wantErr:    false,
 		},
 		{
 			name: "frontend ips count exceeds max value",
 			lb: &LoadBalancerSpec{
 				FrontendIPsCount: pointer.Int32Ptr(100),
 			},
-			wantErr: true,
+			nodeSubnet: createValidNodeSubnet(),
+			wantErr:    true,
 			expectedErr: field.Error{
 				Type:     "FieldValueInvalid",
 				Field:    "nodeOutboundLB.frontendIPsCount",
@@ -1077,13 +1088,20 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 				Detail:   "Max front end ips allowed is 16",
 			},
 		},
+		{
+			name:        "no lb when using nat gateway",
+			lb:          nil,
+			apiServerLB: LoadBalancerSpec{Type: Public},
+			nodeSubnet:  createValidNodeSubnetWithNatGateway(),
+			wantErr:     false,
+		},
 	}
 
 	for _, test := range testcases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, field.NewPath("nodeOutboundLB"))
+			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, test.nodeSubnet, field.NewPath("nodeOutboundLB"))
 			if test.wantErr {
 				g.Expect(err).NotTo(HaveLen(0))
 				found := false
@@ -1231,6 +1249,21 @@ func createValidSubnets() Subnets {
 			Name: "node-subnet",
 			Role: "node",
 		},
+	}
+}
+
+func createValidNodeSubnetWithNatGateway() SubnetSpec {
+	return SubnetSpec{
+		Role:       "node",
+		Name:       "node-subnet",
+		NatGateway: NatGateway{Name: "node-natgateway"},
+	}
+}
+
+func createValidNodeSubnet() SubnetSpec {
+	return SubnetSpec{
+		Role: "node",
+		Name: "node-subnet",
 	}
 }
 

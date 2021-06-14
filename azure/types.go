@@ -77,6 +77,13 @@ type RouteTableSpec struct {
 	Subnet infrav1.SubnetSpec
 }
 
+// NatGatewaySpec defines the specification for a Nat Gateway.
+type NatGatewaySpec struct {
+	NatGatewayIP infrav1.PublicIPSpec
+	Name         string
+	Subnet       infrav1.SubnetSpec
+}
+
 // InboundNatSpec defines the specification for an inbound NAT rule.
 type InboundNatSpec struct {
 	Name             string
@@ -91,6 +98,7 @@ type SubnetSpec struct {
 	RouteTableName    string
 	SecurityGroupName string
 	Role              infrav1.SubnetRole
+	NatGatewayName    string
 }
 
 // VNetSpec defines the specification for a Virtual Network.
