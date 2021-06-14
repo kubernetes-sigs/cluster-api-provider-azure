@@ -153,7 +153,7 @@ func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *
 	}
 
 	scope.V(2).Info("Deleting managed cluster resource group")
-	if err := r.groupsSvc.Delete(ctx); err != nil {
+	if err := r.groupsSvc.Delete(ctx); err != nil && err != azure.ErrNotOwned {
 		return errors.Wrap(err, "failed to delete managed cluster resource group")
 	}
 
