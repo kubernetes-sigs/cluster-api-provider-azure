@@ -248,7 +248,7 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 			allErrs = append(allErrs,
 				field.Invalid(
 					field.NewPath("Spec", "AADProfile", "AdminGroupObjectIDs"),
-					r.Spec.AADProfile.Managed,
+					r.Spec.AADProfile.AdminGroupObjectIDs,
 					"need atleast one AdminGroupObjectID"))
 		}
 
@@ -257,28 +257,28 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("Spec", "AADProfile", "ClientAppID"),
-						r.Spec.AADProfile.Managed,
+						r.Spec.AADProfile.ClientAppID,
 						"field is immutable"))
 			}
 			if old.Spec.AADProfile.ServerAppID != nil && r.Spec.AADProfile.ServerAppID != old.Spec.AADProfile.ServerAppID {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("Spec", "AADProfile", "ServerAppID"),
-						r.Spec.AADProfile.Managed,
+						r.Spec.AADProfile.ServerAppID,
 						"field is immutable"))
 			}
 			if old.Spec.AADProfile.ServerAppSecret != nil && r.Spec.AADProfile.ServerAppSecret != old.Spec.AADProfile.ServerAppSecret {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("Spec", "AADProfile", "ServerAppSecret"),
-						r.Spec.AADProfile.Managed,
+						r.Spec.AADProfile.ServerAppSecret,
 						"field is immutable"))
 			}
 			if old.Spec.AADProfile.TenantID != nil && r.Spec.AADProfile.TenantID != old.Spec.AADProfile.TenantID {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("Spec", "AADProfile", "TenantID"),
-						r.Spec.AADProfile.Managed,
+						r.Spec.AADProfile.TenantID,
 						"field is immutable"))
 			}
 		}
