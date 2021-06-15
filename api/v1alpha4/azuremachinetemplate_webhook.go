@@ -65,7 +65,6 @@ func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 		return nil
 	}
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachineTemplate").GroupKind(), r.Name, allErrs)
-
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.

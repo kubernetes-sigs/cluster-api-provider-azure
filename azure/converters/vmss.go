@@ -54,7 +54,6 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	if sdkvmss.VirtualMachineProfile != nil &&
 		sdkvmss.VirtualMachineProfile.StorageProfile != nil &&
 		sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference != nil {
-
 		imageRef := sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference
 		vmss.Image = SDKImageToImage(imageRef, sdkvmss.Plan != nil)
 	}

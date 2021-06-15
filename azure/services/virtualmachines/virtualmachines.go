@@ -279,7 +279,6 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 		return addresses, nil
 	}
 	for _, nicRef := range *vm.NetworkProfile.NetworkInterfaces {
-
 		// The full ID includes the name at the very end. Split the string and pull the last element
 		// Ex: /subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME
 		// We'll check to see if ID is nil and bail early if we don't have it

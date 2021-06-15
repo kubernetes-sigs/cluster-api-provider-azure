@@ -140,5 +140,4 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 			}
 		})
 	}
-
 }

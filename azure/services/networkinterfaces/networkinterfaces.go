@@ -58,7 +58,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, nicSpec := range s.Scope.NICSpecs() {
-
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):

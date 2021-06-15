@@ -94,7 +94,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			for _, rule := range nsgSpec.SecurityRules {
 				securityRules = append(securityRules, converters.SecurityRuleToSDK(rule))
 			}
-
 		}
 		sg := network.SecurityGroup{
 			Location: to.StringPtr(s.Scope.Location()),

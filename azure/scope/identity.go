@@ -161,7 +161,6 @@ func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.Iden
 	}
 
 	return 0, errors.New("AzureIdentity does not have a vaild type")
-
 }
 
 // IsClusterNamespaceAllowed indicates if the cluster namespace is allowed.

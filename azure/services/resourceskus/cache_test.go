@@ -98,7 +98,6 @@ func TestCacheGet(t *testing.T) {
 					t.Fatalf("expected kind to be %s, but was %s", tc.resourceType, *val.ResourceType)
 				}
 			}
-
 		})
 	}
 }

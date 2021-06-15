@@ -155,7 +155,6 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 				},
 			}
 		}
-
 	} else if lb.Type == Internal {
 		if lb.Name == "" {
 			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
@@ -214,7 +213,6 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 				},
 			}
 		}
-
 	}
 }
 

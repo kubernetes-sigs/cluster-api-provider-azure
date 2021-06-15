@@ -190,7 +190,6 @@ func TestConditions(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func conditionsMatch(i, j clusterv1.Condition) bool {
