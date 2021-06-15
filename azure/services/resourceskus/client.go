@@ -27,12 +27,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type Client interface {
 	List(context.Context, string) ([]compute.ResourceSku, error)
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	skus compute.ResourceSkusClient
 }

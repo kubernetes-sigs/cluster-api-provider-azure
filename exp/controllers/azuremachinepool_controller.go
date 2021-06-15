@@ -51,7 +51,7 @@ import (
 )
 
 type (
-	// AzureMachinePoolReconciler reconciles a AzureMachinePool object
+	// AzureMachinePoolReconciler reconciles an AzureMachinePool object.
 	AzureMachinePoolReconciler struct {
 		client.Client
 		Log                           logr.Logger
@@ -62,7 +62,7 @@ type (
 		createAzureMachinePoolService azureMachinePoolServiceCreator
 	}
 
-	// annotationReaderWriter provides an interface to read and write annotations
+	// annotationReaderWriter provides an interface to read and write annotations.
 	annotationReaderWriter interface {
 		GetAnnotations() map[string]string
 		SetAnnotations(annotations map[string]string)
@@ -71,7 +71,7 @@ type (
 
 type azureMachinePoolServiceCreator func(machinePoolScope *scope.MachinePoolScope) (*azureMachinePoolService, error)
 
-// NewAzureMachinePoolReconciler returns a new AzureMachinePoolReconciler instance
+// NewAzureMachinePoolReconciler returns a new AzureMachinePoolReconciler instance.
 func NewAzureMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureMachinePoolReconciler {
 	ampr := &AzureMachinePoolReconciler{
 		Client:           client,

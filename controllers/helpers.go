@@ -50,7 +50,7 @@ import (
 )
 
 type (
-	// Options are controller options extended
+	// Options are controller options extended.
 	Options struct {
 		controller.Options
 		Cache *coalescing.ReconcileCache
@@ -142,7 +142,7 @@ func GetObjectsToRequestsByNamespaceAndClusterName(ctx context.Context, c client
 	return results
 }
 
-// Returns true if a and b point to the same object
+// referSameObject returns true if a and b point to the same object.
 func referSameObject(a, b metav1.OwnerReference) bool {
 	aGV, err := schema.ParseGroupVersion(a.APIVersion)
 	if err != nil {
@@ -330,7 +330,7 @@ func toCloudProviderRateLimitConfig(source infrav1.RateLimitConfig) *RateLimitCo
 	return &rateLimitConfig
 }
 
-// CloudProviderConfig is an abbreviated version of the same struct in k/k
+// CloudProviderConfig is an abbreviated version of the same struct in k/k.
 type CloudProviderConfig struct {
 	Cloud                        string `json:"cloud"`
 	TenantID                     string `json:"tenantId"`

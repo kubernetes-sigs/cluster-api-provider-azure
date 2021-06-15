@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-// AzureIdentityReconciler reconciles azure identity objects
+// AzureIdentityReconciler reconciles Azure identity objects.
 type AzureIdentityReconciler struct {
 	client.Client
 	Log              logr.Logger
@@ -53,7 +53,7 @@ type AzureIdentityReconciler struct {
 	WatchFilterValue string
 }
 
-// SetupWithManager initializes this controller with a manager
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureIdentity")
 	c, err := ctrl.NewControllerManagedBy(mgr).

@@ -23,21 +23,21 @@ import (
 )
 
 const (
-	// DefaultVnetCIDR is the default Vnet CIDR
+	// DefaultVnetCIDR is the default Vnet CIDR.
 	DefaultVnetCIDR = "10.0.0.0/8"
-	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
+	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR.
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
-	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
+	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR.
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
-	// DefaultAzureBastionSubnetCIDR is the default Subnet CIDR for AzureBastion
+	// DefaultAzureBastionSubnetCIDR is the default Subnet CIDR for AzureBastion.
 	DefaultAzureBastionSubnetCIDR = "10.255.255.224/27"
-	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion
+	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion.
 	DefaultAzureBastionSubnetName = "AzureBastionSubnet"
-	// DefaultInternalLBIPAddress is the default internal load balancer ip address
+	// DefaultInternalLBIPAddress is the default internal load balancer ip address.
 	DefaultInternalLBIPAddress = "10.0.0.100"
 	// DefaultOutboundRuleIdleTimeoutInMinutes is the default for IdleTimeoutInMinutes for the load balancer.
 	DefaultOutboundRuleIdleTimeoutInMinutes = 4
-	// DefaultAzureCloud is the public cloud that will be used by most users
+	// DefaultAzureCloud is the public cloud that will be used by most users.
 	DefaultAzureCloud = "AzurePublicCloud"
 )
 

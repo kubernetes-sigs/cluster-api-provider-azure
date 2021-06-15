@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureManagedControlPlaneReconciler reconciles a AzureManagedControlPlane object
+// AzureManagedControlPlaneReconciler reconciles an AzureManagedControlPlane object.
 type AzureManagedControlPlaneReconciler struct {
 	client.Client
 	Log              logr.Logger

@@ -24,7 +24,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// GenerateSSHKey generates a private and public ssh key
+// GenerateSSHKey generates a private and public ssh key.
 func GenerateSSHKey() (*rsa.PrivateKey, ssh.PublicKey, error) {
 	privateKey, perr := rsa.GenerateKey(rand.Reader, 2048)
 	if perr != nil {

@@ -26,14 +26,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type Client interface {
 	Get(context.Context, string, string) (network.PublicIPAddress, error)
 	CreateOrUpdate(context.Context, string, string, network.PublicIPAddress) error
 	Delete(context.Context, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	publicips network.PublicIPAddressesClient
 }

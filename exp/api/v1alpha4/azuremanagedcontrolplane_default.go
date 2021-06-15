@@ -26,13 +26,13 @@ import (
 )
 
 const (
-	// defaultAKSVnetCIDR is the default Vnet CIDR
+	// defaultAKSVnetCIDR is the default Vnet CIDR.
 	defaultAKSVnetCIDR = "10.0.0.0/8"
-	// defaultAKSNodeSubnetCIDR is the default Node Subnet CIDR
+	// defaultAKSNodeSubnetCIDR is the default Node Subnet CIDR.
 	defaultAKSNodeSubnetCIDR = "10.240.0.0/16"
 )
 
-// setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane
+// setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
 func (r *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
 	sshKeyData := r.Spec.SSHPublicKey
 	if sshKeyData == "" {
@@ -47,14 +47,14 @@ func (r *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
 	return nil
 }
 
-// setDefaultNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane
+// setDefaultNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane.
 func (r *AzureManagedControlPlane) setDefaultNodeResourceGroupName() {
 	if r.Spec.NodeResourceGroupName == "" {
 		r.Spec.NodeResourceGroupName = fmt.Sprintf("MC_%s_%s_%s", r.Spec.ResourceGroupName, r.Name, r.Spec.Location)
 	}
 }
 
-// setDefaultVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlane
+// setDefaultVirtualNetwork sets the default VirtualNetwork for an AzureManagedControlPlane.
 func (r *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 	if r.Spec.VirtualNetwork.Name == "" {
 		r.Spec.VirtualNetwork.Name = r.Name
@@ -64,7 +64,7 @@ func (r *AzureManagedControlPlane) setDefaultVirtualNetwork() {
 	}
 }
 
-// setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane
+// setDefaultSubnet sets the default Subnet for an AzureManagedControlPlane.
 func (r *AzureManagedControlPlane) setDefaultSubnet() {
 	if r.Spec.VirtualNetwork.Subnet.Name == "" {
 		r.Spec.VirtualNetwork.Subnet.Name = r.Name

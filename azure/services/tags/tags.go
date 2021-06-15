@@ -37,7 +37,7 @@ type TagScope interface {
 	UpdateAnnotationJSON(string, map[string]interface{}) error
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope TagScope
 	client

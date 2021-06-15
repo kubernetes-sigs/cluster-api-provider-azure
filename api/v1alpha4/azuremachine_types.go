@@ -30,7 +30,7 @@ const (
 	MachineFinalizer = "azuremachine.infrastructure.cluster.x-k8s.io"
 )
 
-// AzureMachineSpec defines the desired state of AzureMachine
+// AzureMachineSpec defines the desired state of AzureMachine.
 type AzureMachineSpec struct {
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
@@ -110,14 +110,14 @@ type AzureMachineSpec struct {
 	SecurityProfile *SecurityProfile `json:"securityProfile,omitempty"`
 }
 
-// SpotVMOptions defines the options relevant to running the Machine on Spot VMs
+// SpotVMOptions defines the options relevant to running the Machine on Spot VMs.
 type SpotVMOptions struct {
 	// MaxPrice defines the maximum price the user is willing to pay for Spot VM instances
 	// +optional
 	MaxPrice *resource.Quantity `json:"maxPrice,omitempty"`
 }
 
-// AzureMachineStatus defines the observed state of AzureMachine
+// AzureMachineStatus defines the observed state of AzureMachine.
 type AzureMachineStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
@@ -184,7 +184,7 @@ type AzureMachineStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureMachine is the Schema for the azuremachines API
+// AzureMachine is the Schema for the azuremachines API.
 type AzureMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -195,7 +195,7 @@ type AzureMachine struct {
 
 // +kubebuilder:object:root=true
 
-// AzureMachineList contains a list of AzureMachine
+// AzureMachineList contains a list of AzureMachine.
 type AzureMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -207,7 +207,7 @@ func (m *AzureMachine) GetConditions() clusterv1.Conditions {
 	return m.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureMachine object
+// SetConditions will set the given conditions on an AzureMachine object.
 func (m *AzureMachine) SetConditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
 }

@@ -49,7 +49,7 @@ func (r *AzureManagedControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) err
 
 var _ webhook.Defaulter = &AzureManagedControlPlane{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) Default() {
 	azuremanagedcontrolplanelog.Info("default", "name", r.Name)
 
@@ -85,14 +85,14 @@ func (r *AzureManagedControlPlane) Default() {
 
 var _ webhook.Validator = &AzureManagedControlPlane{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) ValidateCreate() error {
 	azuremanagedcontrolplanelog.Info("validate create", "name", r.Name)
 
 	return r.Validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 	azuremanagedcontrolplanelog.Info("validate update", "name", r.Name)
 	var allErrs field.ErrorList
@@ -234,14 +234,14 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureManagedControlPlane").GroupKind(), r.Name, allErrs)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureManagedControlPlane) ValidateDelete() error {
 	azuremanagedcontrolplanelog.Info("validate delete", "name", r.Name)
 
 	return nil
 }
 
-// Validate the Azure Machine Pool and return an aggregate error
+// Validate the Azure Machine Pool and return an aggregate error.
 func (r *AzureManagedControlPlane) Validate() error {
 	validators := []func() error{
 		r.validateVersion,
@@ -259,7 +259,7 @@ func (r *AzureManagedControlPlane) Validate() error {
 	return kerrors.NewAggregate(errs)
 }
 
-// validate DNSServiceIP
+// validate DNSServiceIP.
 func (r *AzureManagedControlPlane) validateDNSServiceIP() error {
 	if r.Spec.DNSServiceIP != nil {
 		if net.ParseIP(*r.Spec.DNSServiceIP) == nil {
@@ -278,7 +278,7 @@ func (r *AzureManagedControlPlane) validateVersion() error {
 	return nil
 }
 
-// ValidateSSHKey validates an SSHKey
+// ValidateSSHKey validates an SSHKey.
 func (r *AzureManagedControlPlane) validateSSHKey() error {
 	if r.Spec.SSHPublicKey != "" {
 		sshKey := r.Spec.SSHPublicKey

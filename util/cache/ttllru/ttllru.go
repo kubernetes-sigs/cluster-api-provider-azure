@@ -26,21 +26,21 @@ import (
 
 type (
 	// Cache is a TTL LRU cache which caches items with a max time to live and with
-	// bounded length
+	// bounded length.
 	Cache struct {
 		Cacher
 		TimeToLive time.Duration
 		mu         sync.Mutex
 	}
 
-	// Cacher describes a basic cache
+	// Cacher describes a basic cache.
 	Cacher interface {
 		Get(key interface{}) (value interface{}, ok bool)
 		Add(key interface{}, value interface{}) (evicted bool)
 		Remove(key interface{}) (ok bool)
 	}
 
-	// PeekingCacher describes a basic cache with the ability to peek
+	// PeekingCacher describes a basic cache with the ability to peek.
 	PeekingCacher interface {
 		Cacher
 		Peek(key interface{}) (value interface{}, expiration time.Time, ok bool)
@@ -53,7 +53,7 @@ type (
 )
 
 // New creates a new TTL LRU cache which caches items with a max time to live and with
-// bounded length
+// bounded length.
 func New(size int, timeToLive time.Duration) (PeekingCacher, error) {
 	c, err := lru.New(size)
 	if err != nil {
@@ -70,7 +70,7 @@ func newCache(timeToLive time.Duration, cache Cacher) (PeekingCacher, error) {
 	}, nil
 }
 
-// Get returns a value and a bool indicating the value was found for a given key
+// Get returns a value and a bool indicating the value was found for a given key.
 func (ttlCache *Cache) Get(key interface{}) (value interface{}, ok bool) {
 	ttlItem, ok := ttlCache.peekItem(key)
 	if !ok {
@@ -81,7 +81,7 @@ func (ttlCache *Cache) Get(key interface{}) (value interface{}, ok bool) {
 	return ttlItem.Value, true
 }
 
-// Add will add a value for a given key
+// Add will add a value for a given key.
 func (ttlCache *Cache) Add(key interface{}, val interface{}) bool {
 	ttlCache.mu.Lock()
 	defer ttlCache.mu.Unlock()
@@ -92,7 +92,7 @@ func (ttlCache *Cache) Add(key interface{}, val interface{}) bool {
 	})
 }
 
-// Peek will fetch an item from the cache, but will not update the expiration time
+// Peek will fetch an item from the cache, but will not update the expiration time.
 func (ttlCache *Cache) Peek(key interface{}) (value interface{}, expiration time.Time, ok bool) {
 	ttlItem, ok := ttlCache.peekItem(key)
 	if !ok {

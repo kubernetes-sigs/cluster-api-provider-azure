@@ -27,7 +27,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
-// ErrUserAssignedIdentitiesNotFound is the error thrown when user assigned identities is not passed with the identity type being UserAssigned
+// ErrUserAssignedIdentitiesNotFound is the error thrown when user assigned identities is not passed with the identity type being UserAssigned.
 var ErrUserAssignedIdentitiesNotFound = errors.New("the user-assigned identity provider ids must not be null or empty for 'UserAssigned' identity type")
 
 // UserAssignedIdentitiesToVMSDK converts CAPZ user assigned identities associated with the Virtual Machine to Azure SDK identities
@@ -47,7 +47,7 @@ func UserAssignedIdentitiesToVMSDK(identities []infrav1.UserAssignedIdentity) (m
 }
 
 // UserAssignedIdentitiesToVMSSSDK converts CAPZ user assigned identities associated with the Virtual Machine Scale Set to Azure SDK identities
-// Similar to UserAssignedIdentitiesToVMSDK
+// Similar to UserAssignedIdentitiesToVMSDK.
 func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) (map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue, error) {
 	if len(identities) == 0 {
 		return nil, ErrUserAssignedIdentitiesNotFound
@@ -61,7 +61,7 @@ func UserAssignedIdentitiesToVMSSSDK(identities []infrav1.UserAssignedIdentity) 
 	return userIdentitiesMap, nil
 }
 
-// sanitized removes "azure://" prefix from the given id
+// sanitized removes "azure://" prefix from the given id.
 func sanitized(id string) string {
 	return strings.TrimPrefix(id, azure.ProviderIDPrefix)
 }

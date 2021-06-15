@@ -62,7 +62,7 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	return vmss
 }
 
-// SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM
+// SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM.
 func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 	instance := azure.VMSSVM{
 		ID:         to.String(sdkInstance.ID),
@@ -95,7 +95,7 @@ func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
 	return &instance
 }
 
-// SDKImageToImage converts a SDK image reference to infrav1.Image
+// SDKImageToImage converts a SDK image reference to infrav1.Image.
 func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
 	return infrav1.Image{
 		ID: sdkImageRef.ID,

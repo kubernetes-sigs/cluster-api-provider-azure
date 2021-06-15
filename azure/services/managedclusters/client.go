@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type Client interface {
 	Get(context.Context, string, string) (containerservice.ManagedCluster, error)
 	GetCredentials(context.Context, string, string) ([]byte, error)
@@ -35,7 +35,7 @@ type Client interface {
 	Delete(context.Context, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type AzureClient struct {
 	managedclusters containerservice.ManagedClustersClient
 }

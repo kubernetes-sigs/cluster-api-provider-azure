@@ -37,7 +37,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AzureCredentialsProvider provides
+// AzureCredentialsProvider provides credentials for an AzureCluster.
 type AzureCredentialsProvider struct {
 	Client       client.Client
 	AzureCluster *infrav1.AzureCluster
@@ -73,7 +73,7 @@ func NewAzureCredentialsProvider(ctx context.Context, kubeClient client.Client, 
 	}, nil
 }
 
-// GetAuthorizer returns an Azure authorizer based on the provided azure identity
+// GetAuthorizer returns an Azure authorizer based on the provided Azure identity.
 func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
 	azureIdentityType, err := getAzureIdentityType(p.Identity)
 	if err != nil {
@@ -164,13 +164,13 @@ func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.Iden
 
 }
 
-// IsClusterNamespaceAllowed indicates if the cluster namespace is allowed
+// IsClusterNamespaceAllowed indicates if the cluster namespace is allowed.
 func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, allowedNamespaces *infrav1.AllowedNamespaces, namespace string) bool {
 	if allowedNamespaces == nil {
 		return false
 	}
 
-	// empty value matches with all namespaces
+	// empty value matches with all namespaces.
 	if reflect.DeepEqual(*allowedNamespaces, infrav1.AllowedNamespaces{}) {
 		return true
 	}

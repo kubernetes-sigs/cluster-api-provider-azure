@@ -34,7 +34,7 @@ type VMSSExtensionScope interface {
 	SetBootstrapConditions(string, string) error
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope VMSSExtensionScope
 	client

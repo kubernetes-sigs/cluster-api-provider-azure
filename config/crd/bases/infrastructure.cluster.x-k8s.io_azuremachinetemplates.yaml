@@ -21,7 +21,7 @@ spec:
   - name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: AzureMachineTemplate is the Schema for the azuremachinetemplates API
+        description: AzureMachineTemplate is the Schema for the azuremachinetemplates API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -32,10 +32,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate
+            description: AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate.
             properties:
               template:
-                description: AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template
+                description: AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template.
                 properties:
                   spec:
                     description: Spec is the specification of the desired behavior of the machine.
@@ -235,7 +235,7 @@ spec:
                             type: boolean
                         type: object
                       spotVMOptions:
-                        description: SpotVMOptions allows the ability to specify the Machine should use a Spot VM
+                        description: SpotVMOptions allows the ability to specify the Machine should use a Spot VM.
                         properties:
                           maxPrice:
                             anyOf:
@@ -279,7 +279,7 @@ spec:
   - name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: AzureMachineTemplate is the Schema for the azuremachinetemplates API
+        description: AzureMachineTemplate is the Schema for the azuremachinetemplates API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -290,10 +290,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate
+            description: AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate.
             properties:
               template:
-                description: AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template
+                description: AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template.
                 properties:
                   spec:
                     description: Spec is the specification of the desired behavior of the machine.

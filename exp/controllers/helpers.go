@@ -97,7 +97,7 @@ func AzureClusterToAzureMachinePoolsMapper(ctx context.Context, c client.Client,
 	}, nil
 }
 
-// AzureMachinePoolMachineMapper creates a mapping handler to transform AzureMachinePoolMachine to AzureMachinePools
+// AzureMachinePoolMachineMapper creates a mapping handler to transform AzureMachinePoolMachine to AzureMachinePools.
 func AzureMachinePoolMachineMapper(scheme *runtime.Scheme, log logr.Logger) handler.MapFunc {
 	return func(o client.Object) []ctrl.Request {
 		gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureMachinePool), scheme)
@@ -503,8 +503,8 @@ func AzureClusterToAzureMachinePoolsFunc(ctx context.Context, kClient client.Cli
 	}
 }
 
-// AzureMachinePoolToAzureMachinePoolMachines maps an AzureMachinePool to it's child AzureMachinePoolMachines through
-// Cluster and MachinePool labels
+// AzureMachinePoolToAzureMachinePoolMachines maps an AzureMachinePool to its child AzureMachinePoolMachines through
+// Cluster and MachinePool labels.
 func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, kClient client.Client, log logr.Logger) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultMappingTimeout)
@@ -542,7 +542,7 @@ func AzureMachinePoolToAzureMachinePoolMachines(ctx context.Context, kClient cli
 	}
 }
 
-// MachinePoolModelHasChanged predicates any events based on changes to the AzureMachinePool model
+// MachinePoolModelHasChanged predicates any events based on changes to the AzureMachinePool model.
 func MachinePoolModelHasChanged(logger logr.Logger) predicate.Funcs {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
@@ -576,7 +576,7 @@ func MachinePoolModelHasChanged(logger logr.Logger) predicate.Funcs {
 }
 
 // MachinePoolMachineHasStateOrVersionChange predicates any events based on changes to the AzureMachinePoolMachine status
-// relevant for the AzureMachinePool controller
+// relevant for the AzureMachinePool controller.
 func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Funcs {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {

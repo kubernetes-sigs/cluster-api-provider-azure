@@ -46,7 +46,7 @@ spec:
     name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: AzureMachinePoolMachine is the Schema for the azuremachinepoolmachines API
+        description: AzureMachinePoolMachine is the Schema for the azuremachinepoolmachines API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -57,7 +57,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachinePoolMachineSpec defines the desired state of AzureMachinePoolMachine
+            description: AzureMachinePoolMachineSpec defines the desired state of AzureMachinePoolMachine.
             properties:
               instanceID:
                 description: InstanceID is the identification of the Machine Instance within the VMSS
@@ -70,7 +70,7 @@ spec:
             - providerID
             type: object
           status:
-            description: AzureMachinePoolMachineStatus defines the observed state of AzureMachinePoolMachine
+            description: AzureMachinePoolMachineStatus defines the observed state of AzureMachinePoolMachine.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureMachinePool.

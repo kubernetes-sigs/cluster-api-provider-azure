@@ -33,7 +33,8 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
-// ManagedControlPlaneScopeParams defines the input parameters used to create a new
+// ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
+// control plane.
 type ManagedControlPlaneScopeParams struct {
 	AzureClients
 	Client           client.Client
@@ -117,7 +118,7 @@ func (s *ManagedControlPlaneScope) Location() string {
 	return s.ControlPlane.Spec.Location
 }
 
-// AvailabilitySetEnabled is always false for a managed control plane
+// AvailabilitySetEnabled is always false for a managed control plane.
 func (s *ManagedControlPlaneScope) AvailabilitySetEnabled() bool {
 	return false // not applicable for a managed control plane
 }

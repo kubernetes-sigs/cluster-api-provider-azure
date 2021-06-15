@@ -147,32 +147,32 @@ func NewMachinePoolMachineScope(params MachinePoolMachineScopeParams) (*MachineP
 	}, nil
 }
 
-// Name is the name of the Machine Pool Machine
+// Name is the name of the Machine Pool Machine.
 func (s *MachinePoolMachineScope) Name() string {
 	return s.AzureMachinePoolMachine.Name
 }
 
-// InstanceID is the unique ID of the machine within the Machine Pool
+// InstanceID is the unique ID of the machine within the Machine Pool.
 func (s *MachinePoolMachineScope) InstanceID() string {
 	return s.AzureMachinePoolMachine.Spec.InstanceID
 }
 
-// ScaleSetName is the name of the VMSS
+// ScaleSetName is the name of the VMSS.
 func (s *MachinePoolMachineScope) ScaleSetName() string {
 	return s.MachinePoolScope.Name()
 }
 
-// GetLongRunningOperationState gets a future representing the current state of a long running operation if one exists
+// GetLongRunningOperationState gets a future representing the current state of a long-running operation if one exists.
 func (s *MachinePoolMachineScope) GetLongRunningOperationState() *infrav1.Future {
 	return s.AzureMachinePoolMachine.Status.LongRunningOperationState
 }
 
-// SetLongRunningOperationState sets a future representing the current state of a long running operation
+// SetLongRunningOperationState sets a future representing the current state of a long-running operation.
 func (s *MachinePoolMachineScope) SetLongRunningOperationState(future *infrav1.Future) {
 	s.AzureMachinePoolMachine.Status.LongRunningOperationState = future
 }
 
-// SetVMSSVM update the scope with the current state of the VMSS VM
+// SetVMSSVM update the scope with the current state of the VMSS VM.
 func (s *MachinePoolMachineScope) SetVMSSVM(instance *azure.VMSSVM) {
 	s.instance = instance
 }
@@ -185,7 +185,7 @@ func (s *MachinePoolMachineScope) ProvisioningState() infrav1.ProvisioningState 
 	return ""
 }
 
-// IsReady indicates the machine has successfully provisioned and has a node ref associated
+// IsReady indicates the machine has successfully provisioned and has a node ref associated.
 func (s *MachinePoolMachineScope) IsReady() bool {
 	state := s.AzureMachinePoolMachine.Status.ProvisioningState
 	return s.AzureMachinePoolMachine.Status.Ready && state != nil && *state == infrav1.Succeeded
@@ -206,7 +206,7 @@ func (s *MachinePoolMachineScope) ProviderID() string {
 	return s.AzureMachinePoolMachine.Spec.ProviderID
 }
 
-// Close updates the state of MachinePoolMachine
+// Close updates the state of MachinePoolMachine.
 func (s *MachinePoolMachineScope) Close(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.Close")
 	defer span.End()

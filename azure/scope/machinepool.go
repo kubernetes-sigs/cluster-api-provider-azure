@@ -66,7 +66,7 @@ type (
 		vmssState        *azure.VMSS
 	}
 
-	// NodeStatus represents the status of a Kubernetes node
+	// NodeStatus represents the status of a Kubernetes node.
 	NodeStatus struct {
 		Ready   bool
 		Version string
@@ -554,7 +554,7 @@ func (m *MachinePoolScope) GetVMImage() (*infrav1.Image, error) {
 	return defaultImage, nil
 }
 
-// SaveVMImageToStatus persists the AzureMachinePool image to the status
+// SaveVMImageToStatus persists the AzureMachinePool image to the status.
 func (m *MachinePoolScope) SaveVMImageToStatus(image *infrav1.Image) {
 	m.AzureMachinePool.Status.Image = image
 }

@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureManagedClusterReconciler reconciles a AzureManagedCluster object
+// AzureManagedClusterReconciler reconciles an AzureManagedCluster object.
 type AzureManagedClusterReconciler struct {
 	client.Client
 	Log              logr.Logger

@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	// MachinePoolNameLabel indicates the AzureMachinePool name the AzureMachinePoolMachine belongs
+	// MachinePoolNameLabel indicates the AzureMachinePool name the AzureMachinePoolMachine belongs.
 	MachinePoolNameLabel = "azuremachinepool.infrastructure.cluster.x-k8s.io/machine-pool"
 
 	// RollingUpdateAzureMachinePoolDeploymentStrategyType replaces AzureMachinePoolMachines with older models with
@@ -34,11 +34,11 @@ const (
 	// i.e. gradually scale down the old AzureMachinePoolMachines and scale up the new ones.
 	RollingUpdateAzureMachinePoolDeploymentStrategyType AzureMachinePoolDeploymentStrategyType = "RollingUpdate"
 
-	// OldestDeletePolicyType will delete machines with the oldest creation date first
+	// OldestDeletePolicyType will delete machines with the oldest creation date first.
 	OldestDeletePolicyType AzureMachinePoolDeletePolicyType = "Oldest"
-	// NewestDeletePolicyType will delete machines with the newest creation date first
+	// NewestDeletePolicyType will delete machines with the newest creation date first.
 	NewestDeletePolicyType AzureMachinePoolDeletePolicyType = "Newest"
-	// RandomDeletePolicyType will delete machines in random order
+	// RandomDeletePolicyType will delete machines in random order.
 	RandomDeletePolicyType AzureMachinePoolDeletePolicyType = "Random"
 )
 
@@ -86,7 +86,7 @@ type (
 		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
 	}
 
-	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
+	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.
 	AzureMachinePoolSpec struct {
 		// Location is the Azure region location e.g. westus2
 		Location string `json:"location"`
@@ -137,7 +137,7 @@ type (
 	}
 
 	// AzureMachinePoolDeploymentStrategyType is the type of deployment strategy employed to rollout a new version of
-	// the AzureMachinePool
+	// the AzureMachinePool.
 	AzureMachinePoolDeploymentStrategyType string
 
 	// AzureMachinePoolDeploymentStrategy describes how to replace existing machines with new ones.
@@ -156,7 +156,7 @@ type (
 	}
 
 	// AzureMachinePoolDeletePolicyType is the type of DeletePolicy employed to select machines to be deleted during an
-	// upgrade
+	// upgrade.
 	AzureMachinePoolDeletePolicyType string
 
 	// MachineRollingUpdateDeployment is used to control the desired behavior of rolling update.
@@ -203,7 +203,7 @@ type (
 		DeletePolicy AzureMachinePoolDeletePolicyType `json:"deletePolicy,omitempty"`
 	}
 
-	// AzureMachinePoolStatus defines the observed state of AzureMachinePool
+	// AzureMachinePoolStatus defines the observed state of AzureMachinePool.
 	AzureMachinePoolStatus struct {
 		// Ready is true when the provider resource is ready.
 		// +optional
@@ -272,13 +272,13 @@ type (
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-		// LongRunningOperationState saves the state for an Azure long running operations so it can be continued on the
+		// LongRunningOperationState saves the state for an Azure long-running operations so it can be continued on the
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
 	}
 
-	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
+	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
 	AzureMachinePoolInstanceStatus struct {
 		// Version defines the Kubernetes version for the VM Instance
 		// +optional
@@ -318,7 +318,7 @@ type (
 	// +kubebuilder:printcolumn:name="VMSS ID",type="string",priority=1,JSONPath=".spec.providerID",description="Azure VMSS ID"
 	// +kubebuilder:printcolumn:name="VM Size",type="string",priority=1,JSONPath=".spec.template.vmSize",description="Azure VM Size"
 
-	// AzureMachinePool is the Schema for the azuremachinepools API
+	// AzureMachinePool is the Schema for the azuremachinepools API.
 	AzureMachinePool struct {
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -329,7 +329,7 @@ type (
 
 	// +kubebuilder:object:root=true
 
-	// AzureMachinePoolList contains a list of AzureMachinePool
+	// AzureMachinePoolList contains a list of AzureMachinePools.
 	AzureMachinePoolList struct {
 		metav1.TypeMeta `json:",inline"`
 		metav1.ListMeta `json:"metadata,omitempty"`
@@ -342,7 +342,7 @@ func (amp *AzureMachinePool) GetConditions() clusterv1.Conditions {
 	return amp.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureMachinePool object
+// SetConditions will set the given conditions on an AzureMachinePool object.
 func (amp *AzureMachinePool) SetConditions(conditions clusterv1.Conditions) {
 	amp.Status.Conditions = conditions
 }

@@ -36,7 +36,7 @@ type (
 		Surge(desiredReplicaCount int) (int, error)
 	}
 
-	// DeleteSelector is the ability to select nodes to be delete with respect to a desired number of replicas
+	// DeleteSelector is the ability to select nodes to be delete with respect to a desired number of replicas.
 	DeleteSelector interface {
 		SelectMachinesToDelete(ctx context.Context, desiredReplicas int32, machinesByProviderID map[string]infrav1exp.AzureMachinePoolMachine) ([]infrav1exp.AzureMachinePoolMachine, error)
 	}
@@ -74,12 +74,12 @@ func NewMachinePoolDeploymentStrategy(strategy infrav1exp.AzureMachinePoolDeploy
 	}
 }
 
-// Type is the AzureMachinePoolDeploymentStrategyType for the strategy
+// Type is the AzureMachinePoolDeploymentStrategyType for the strategy.
 func (rollingUpdateStrategy *rollingUpdateStrategy) Type() infrav1exp.AzureMachinePoolDeploymentStrategyType {
 	return infrav1exp.RollingUpdateAzureMachinePoolDeploymentStrategyType
 }
 
-// Surge calculates the number of replicas that can be added during an upgrade operation
+// Surge calculates the number of replicas that can be added during an upgrade operation.
 func (rollingUpdateStrategy *rollingUpdateStrategy) Surge(desiredReplicaCount int) (int, error) {
 	if rollingUpdateStrategy.MaxSurge == nil {
 		return 1, nil

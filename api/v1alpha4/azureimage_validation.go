@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-// ValidateImage validates an image
+// ValidateImage validates an image.
 func ValidateImage(image *Image, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 

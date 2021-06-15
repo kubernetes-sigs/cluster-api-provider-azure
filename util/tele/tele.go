@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Tracer returns the default opentelemetry tracer
+// Tracer returns the default opentelemetry tracer.
 func Tracer() trace.Tracer {
 	return otel.Tracer("capz")
 }

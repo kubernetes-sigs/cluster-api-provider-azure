@@ -56,7 +56,7 @@ spec:
     name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: AzureMachinePool is the Schema for the azuremachinepools API
+        description: AzureMachinePool is the Schema for the azuremachinepools API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -67,7 +67,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachinePoolSpec defines the desired state of AzureMachinePool
+            description: AzureMachinePoolSpec defines the desired state of AzureMachinePool.
             properties:
               additionalTags:
                 additionalProperties:
@@ -296,7 +296,7 @@ spec:
             - template
             type: object
           status:
-            description: AzureMachinePoolStatus defines the observed state of AzureMachinePool
+            description: AzureMachinePoolStatus defines the observed state of AzureMachinePool.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureMachinePool.
@@ -336,7 +336,7 @@ spec:
               instances:
                 description: Instances is the VM instance status for each VM in the VMSS
                 items:
-                  description: AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
+                  description: AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
                   properties:
                     instanceID:
                       description: InstanceID is the identification of the Machine Instance within the VMSS
@@ -364,16 +364,16 @@ spec:
                 description: LongRunningOperationState saves the state for an Azure long running operations so it can be continued on the next reconciliation loop.
                 properties:
                   futureData:
-                    description: FutureData is the base64 url encoded json Azure AutoRest Future
+                    description: FutureData is the base64 url encoded json Azure AutoRest Future.
                     type: string
                   name:
-                    description: Name is the name of the Azure resource
+                    description: Name is the name of the Azure resource.
                     type: string
                   resourceGroup:
-                    description: ResourceGroup is the Azure resource group for the resource
+                    description: ResourceGroup is the Azure resource group for the resource.
                     type: string
                   type:
-                    description: Type describes the type of future, update, create, delete, etc
+                    description: Type describes the type of future, update, create, delete, etc.
                     type: string
                 required:
                 - type
@@ -433,7 +433,7 @@ spec:
     name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: AzureMachinePool is the Schema for the azuremachinepools API
+        description: AzureMachinePool is the Schema for the azuremachinepools API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -444,7 +444,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachinePoolSpec defines the desired state of AzureMachinePool
+            description: AzureMachinePoolSpec defines the desired state of AzureMachinePool.
             properties:
               additionalTags:
                 additionalProperties:
@@ -720,7 +720,7 @@ spec:
             - template
             type: object
           status:
-            description: AzureMachinePoolStatus defines the observed state of AzureMachinePool
+            description: AzureMachinePoolStatus defines the observed state of AzureMachinePool.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureMachinePool.
@@ -826,7 +826,7 @@ spec:
               instances:
                 description: Instances is the VM instance status for each VM in the VMSS
                 items:
-                  description: AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
+                  description: AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
                   properties:
                     instanceID:
                       description: InstanceID is the identification of the Machine Instance within the VMSS
@@ -851,7 +851,7 @@ spec:
                   type: object
                 type: array
               longRunningOperationState:
-                description: LongRunningOperationState saves the state for an Azure long running operations so it can be continued on the next reconciliation loop.
+                description: LongRunningOperationState saves the state for an Azure long-running operations so it can be continued on the next reconciliation loop.
                 properties:
                   futureData:
                     description: FutureData is the base64 url encoded json Azure AutoRest Future

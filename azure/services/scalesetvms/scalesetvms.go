@@ -41,7 +41,7 @@ type (
 		SetLongRunningOperationState(future *infrav1.Future)
 	}
 
-	// Service provides operations on azure resources
+	// Service provides operations on Azure resources.
 	Service struct {
 		Client client
 		Scope  ScaleSetVMScope
@@ -80,7 +80,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-// Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long running operation.
+// Delete deletes a scaleset instance asynchronously returning a future which encapsulates the long-running operation.
 func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.Service.Delete")
 	defer span.End()

@@ -42,7 +42,7 @@ type LogEntry struct {
 	Values []interface{}
 }
 
-// Option is a configuration option supplied to NewLogger
+// Option is a configuration option supplied to NewLogger.
 type Option func(*Logger)
 
 // WithThreshold implements a New Option that allows to set the threshold level for a new logger.
@@ -53,7 +53,7 @@ func WithThreshold(threshold *int) Option {
 	}
 }
 
-// WithWriter configures the logger to write to the io.Writer
+// WithWriter configures the logger to write to the io.Writer.
 func WithWriter(wr io.Writer) Option {
 	return func(c *Logger) {
 		c.writer = wr
@@ -74,7 +74,7 @@ func NewLogger(options ...Option) *Logger {
 var _ logr.Logger = (*Logger)(nil)
 
 type (
-	// Logger defines a test friendly logr.Logger
+	// Logger defines a test friendly logr.Logger.
 	Logger struct {
 		threshold  *int
 		level      int
@@ -142,7 +142,7 @@ func (l *Logger) removeListener(id string) {
 	delete(l.listeners, id)
 }
 
-// Enabled is always enabled
+// Enabled is always enabled.
 func (l *Logger) Enabled() bool {
 	return true
 }

@@ -68,7 +68,7 @@ type (
 		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
 	}
 
-	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
+	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.
 	AzureMachinePoolSpec struct {
 		// Location is the Azure region location e.g. westus2
 		Location string `json:"location"`
@@ -113,7 +113,7 @@ type (
 		RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
 	}
 
-	// AzureMachinePoolStatus defines the observed state of AzureMachinePool
+	// AzureMachinePoolStatus defines the observed state of AzureMachinePool.
 	AzureMachinePoolStatus struct {
 		// Ready is true when the provider resource is ready.
 		// +optional
@@ -183,7 +183,7 @@ type (
 		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
 	}
 
-	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
+	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
 	AzureMachinePoolInstanceStatus struct {
 		// Version defines the Kubernetes version for the VM Instance
 		// +optional
@@ -222,7 +222,7 @@ type (
 	// +kubebuilder:printcolumn:name="VMSS ID",type="string",priority=1,JSONPath=".spec.providerID",description="Azure VMSS ID"
 	// +kubebuilder:printcolumn:name="VM Size",type="string",priority=1,JSONPath=".spec.template.vmSize",description="Azure VM Size"
 
-	// AzureMachinePool is the Schema for the azuremachinepools API
+	// AzureMachinePool is the Schema for the azuremachinepools API.
 	AzureMachinePool struct {
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -233,7 +233,7 @@ type (
 
 	// +kubebuilder:object:root=true
 
-	// AzureMachinePoolList contains a list of AzureMachinePool
+	// AzureMachinePoolList contains a list of AzureMachinePools.
 	AzureMachinePoolList struct {
 		metav1.TypeMeta `json:",inline"`
 		metav1.ListMeta `json:"metadata,omitempty"`
@@ -246,7 +246,7 @@ func (amp *AzureMachinePool) GetConditions() clusterv1.Conditions {
 	return amp.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureMachinePool object
+// SetConditions will set the given conditions on an AzureMachinePool object.
 func (amp *AzureMachinePool) SetConditions(conditions clusterv1.Conditions) {
 	amp.Status.Conditions = conditions
 }
