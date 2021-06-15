@@ -53,7 +53,7 @@ providers:
       - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
       replacements:
       - old: "--v=0"
-        new: "--v=4"
+        new: "--v=2"
     files:
     - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"
