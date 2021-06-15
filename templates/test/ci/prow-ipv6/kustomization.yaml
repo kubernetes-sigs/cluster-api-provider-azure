@@ -9,7 +9,7 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-cni.yaml
-  - ../patches/azurecluster-identity-ref.yaml  
+  - ../patches/azurecluster-identity-ref.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
