@@ -116,7 +116,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				return string(infrav1.Creating), "bazz"
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).To(MatchError("reconcile error occurred that can be recovered. Object will be requeued after 30s The actual error is: extension still provisioning"))
+				g.Expect(err).To(MatchError("transient reconcile error occurred: extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM. Object will be requeued after 30s"))
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapInProgressReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
@@ -130,7 +130,7 @@ func TestMachinePoolScope_SetBootstrapConditions(t *testing.T) {
 				return string(infrav1.Failed), "buzz"
 			},
 			Verify: func(g *WithT, amp *infrav1exp.AzureMachinePool, err error) {
-				g.Expect(err).To(MatchError("reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: extension state failed"))
+				g.Expect(err).To(MatchError("reconcile error that cannot be recovered occurred: extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more. Object will not be requeued"))
 				g.Expect(conditions.IsFalse(amp, infrav1.BootstrapSucceededCondition))
 				g.Expect(conditions.GetReason(amp, infrav1.BootstrapSucceededCondition)).To(Equal(infrav1.BootstrapFailedReason))
 				severity := conditions.GetSeverity(amp, infrav1.BootstrapSucceededCondition)
