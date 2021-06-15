@@ -155,10 +155,10 @@ ssh -J capi@${apiserver} capi@${node}
 
 ## Automated log collection
 
-As part of [CI](../../../../scripts/ci-e2e.sh) there is a [log collection script](hack/../../hack/log/log-dump.sh) which you can also leverage to pull all the logs for machines which will dump logs to `${PWD}/_artifacts}` by default:
+As part of [CI](../../../../scripts/ci-e2e.sh) there is a [log collection script](../../../../hack/log/log-dump.sh) which you can also leverage to pull all the logs for machines which will dump logs to `${PWD}/_artifacts}` by default:
 
 ```bash
 ./hack/log/log-dump.sh
 ```
 
-There are also some [provided scripts](/hack/debugging/Readme.md) that can help automate a few common tasks.
+There are also some [provided scripts](../../../../hack/debugging/Readme.md) that can help automate a few common tasks.

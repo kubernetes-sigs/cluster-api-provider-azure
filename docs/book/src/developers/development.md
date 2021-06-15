@@ -163,7 +163,7 @@ If you want to develop in both CAPI and CAPZ at the same time, then this is the 
 
 To use [Tilt](https://tilt.dev/) for a simplified development workflow, follow the [instructions](https://cluster-api.sigs.k8s.io/developer/tilt.html) in the cluster-api repo.  The instructions will walk you through cloning the Cluster API (CAPI) repository and configuring Tilt to use `kind` to deploy the cluster api management components.
 
-> you may wish to checkout out the correct version of CAPI to match the [version used in CAPZ](go.mod)
+> you may wish to checkout out the correct version of CAPI to match the [version used in CAPZ][go.mod]
 
 Note that `tilt up` will be run from the `cluster-api repository` directory and the `tilt-settings.json` file will point back to the `cluster-api-provider-azure` repository directory.  Any changes you make to the source code in `cluster-api` or `cluster-api-provider-azure` repositories will automatically redeployed to the `kind` cluster.
 
@@ -460,7 +460,7 @@ You can optionally set the following variables:
 | `USE_CI_ARTIFACTS`          | Use a CI version of Kubernetes, ie. not a released version (eg. `v1.19.0-alpha.1.426+0926c9c47677e9`)                                      |
 | `CI_VERSION`                | Provide a custom CI version of Kubernetes. By default, the latest master commit will be used.                                              |
 | `TEST_CCM`                  | Build a cluster that uses custom versions of the Azure cloud-provider cloud-controller-manager and node-controller-manager images          |
-| `EXP_MACHINE_POOL`          | Use [Machine Pool](topics/machinepools.md) for worker machines.                                                                            |
+| `EXP_MACHINE_POOL`          | Use [Machine Pool](../topics/machinepools.md) for worker machines.                                                                            |
 | `REGISTRY`                  | Registry to push any custom k8s images or cloud provider images built.                                                                     |
 | `CLUSTER_TEMPLATE`          | Use a custom cluster template. By default, the script will choose the appropriate cluster template based on existing environment variabes. |
 
