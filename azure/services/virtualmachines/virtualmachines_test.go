@@ -1107,7 +1107,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: encryption at host is not supported for VM type Standard_D2v3",
+			ExpectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported for VM type Standard_D2v3. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1241,7 +1241,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm size should be bigger or equal to at least 2 vCPUs",
+			ExpectedError: "reconcile error that cannot be recovered occurred: vm size should be bigger or equal to at least 2 vCPUs. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1307,7 +1307,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm memory should be bigger or equal to at least 2Gi",
+			ExpectedError: "reconcile error that cannot be recovered occurred: vm memory should be bigger or equal to at least 2Gi. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1376,7 +1376,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm size Standard_D2v3 does not support ephemeral os. select a different vm size or disable ephemeral os",
+			ExpectedError: "reconcile error that cannot be recovered occurred: vm size Standard_D2v3 does not support ephemeral os. select a different vm size or disable ephemeral os. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{

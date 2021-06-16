@@ -402,7 +402,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "creating a vmss with encryption at host enabled for unsupported VM type fails",
-			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: encryption at host is not supported for VM type VM_SIZE",
+			expectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported for VM type VM_SIZE. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:            defaultVMSSName,
@@ -444,7 +444,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "less than 2 vCPUs",
-			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm size should be bigger or equal to at least 2 vCPUs",
+			expectedError: "reconcile error that cannot be recovered occurred: vm size should be bigger or equal to at least 2 vCPUs. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       defaultVMSSName,
@@ -456,7 +456,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "Memory is less than 2Gi",
-			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm memory should be bigger or equal to at least 2Gi",
+			expectedError: "reconcile error that cannot be recovered occurred: vm memory should be bigger or equal to at least 2Gi. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       defaultVMSSName,
@@ -468,7 +468,7 @@ func TestReconcileVMSS(t *testing.T) {
 		},
 		{
 			name:          "failed to get SKU",
-			expectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: failed to get SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found in location 'test-location'",
+			expectedError: "reconcile error that cannot be recovered occurred: failed to get SKU INVALID_VM_SIZE in compute api: resource sku with name 'INVALID_VM_SIZE' and category 'virtualMachines' not found in location 'test-location'. Object will not be requeued",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
 					Name:       defaultVMSSName,

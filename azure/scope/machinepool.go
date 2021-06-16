@@ -447,11 +447,11 @@ func (m *MachinePoolScope) SetBootstrapConditions(provisioningState string, exte
 	case infrav1.Creating:
 		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "scale set", m.Name())
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
-		return azure.WithTransientError(errors.New("extension still provisioning"), 30*time.Second)
+		return azure.WithTransientError(errors.New("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM"), 30*time.Second)
 	case infrav1.Failed:
 		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "scale set", m.Name())
 		conditions.MarkFalse(m.AzureMachinePool, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
-		return azure.WithTerminalError(errors.New("extension state failed"))
+		return azure.WithTerminalError(errors.New("extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more"))
 	default:
 		return nil
 	}
