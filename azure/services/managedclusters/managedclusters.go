@@ -254,25 +254,31 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// unnecessary Azure API requests.
 		propertiesNormalized := &containerservice.ManagedClusterProperties{
 			KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
-			AadProfile: &containerservice.ManagedClusterAADProfile{
+		}
+		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
+			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
+		}
+
+		if managedCluster.AadProfile != nil {
+			propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
 				Managed:             managedCluster.AadProfile.Managed,
 				EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
 				AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
 				ClientAppID:         managedCluster.AadProfile.ClientAppID,
 				ServerAppID:         managedCluster.AadProfile.ServerAppID,
 				ServerAppSecret:     managedCluster.AadProfile.ServerAppSecret,
-			},
+			}
 		}
-		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
-			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
-			AadProfile: &containerservice.ManagedClusterAADProfile{
+
+		if existingMC.AadProfile != nil {
+			existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
 				Managed:             existingMC.AadProfile.Managed,
 				EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
 				AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
 				ClientAppID:         existingMC.AadProfile.ClientAppID,
 				ServerAppID:         existingMC.AadProfile.ServerAppID,
 				ServerAppSecret:     existingMC.AadProfile.ServerAppSecret,
-			},
+			}
 		}
 
 		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)

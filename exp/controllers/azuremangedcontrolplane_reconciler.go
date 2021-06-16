@@ -99,6 +99,18 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 		managedClusterSpec.LoadBalancerSKU = *scope.ControlPlane.Spec.LoadBalancerSKU
 	}
 
+	if scope.ControlPlane.Spec.AADProfile != nil {
+		managedClusterSpec.AADProfile = &managedclusters.ManagedClusterAADProfile{
+			Managed:             scope.ControlPlane.Spec.AADProfile.Managed,
+			EnableAzureRBAC:     scope.ControlPlane.Spec.AADProfile.Managed,
+			AdminGroupObjectIDs: scope.ControlPlane.Spec.AADProfile.AdminGroupObjectIDs,
+			ClientAppID:         scope.ControlPlane.Spec.AADProfile.ClientAppID,
+			ServerAppID:         scope.ControlPlane.Spec.AADProfile.ServerAppID,
+			ServerAppSecret:     scope.ControlPlane.Spec.AADProfile.ServerAppSecret,
+			TenantID:            scope.ControlPlane.Spec.AADProfile.TenantID,
+		}
+	}
+
 	scope.V(2).Info("Reconciling managed cluster resource group")
 	if err := r.groupsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile managed cluster resource group")
@@ -202,7 +214,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 		}
 	}
 
-	managedClusterResult, err := r.managedClustersSvc.Get(ctx, managedClusterSpec)
+	_, err := r.managedClustersSvc.Get(ctx, managedClusterSpec)
 	// Transient or other failure not due to 404
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to fetch existing managed cluster")
@@ -231,14 +243,6 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 		// Add to cluster spec
 		managedClusterSpec.AgentPools = []managedclusters.PoolSpec{defaultPoolSpec}
 	}
-
-	mangedCluster := managedClusterResult.(containerservice.ManagedCluster)
-	if err := r.reconcileManagedClustersAAD(mangedCluster, managedClusterSpec, scope); err != nil {
-		return errors.Wrapf(err, "failed to reconcile aad %s", scope.ControlPlane.Name)
-	}
-
-	fmt.Println("hello")
-
 	// Send to Azure for create/update.
 	if err := r.managedClustersSvc.Reconcile(ctx, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile managed cluster %s", scope.ControlPlane.Name)
@@ -308,106 +312,4 @@ func makeKubeconfig(cluster *clusterv1.Cluster, controlPlane *infrav1exp.AzureMa
 			},
 		},
 	}
-}
-
-func (r *azureManagedControlPlaneReconciler) reconcileManagedClustersAAD(existingManagedCluster containerservice.ManagedCluster, desiredManagedClusterSpec *managedclusters.Spec, scope *scope.ManagedControlPlaneScope) error {
-
-	if scope.ControlPlane.Spec.AADProfile == nil && (existingManagedCluster.ManagedClusterProperties == nil || existingManagedCluster.ManagedClusterProperties.AadProfile == nil) {
-		return nil
-	}
-
-	desiredAksManaged, desiredLegacy, existingAksManagedAAD, existingLegacyAAD := false, false, false, false
-
-	if scope.ControlPlane.Spec.AADProfile != nil {
-		var err error
-		if desiredAksManaged, err = validateDesiredAksManagedAAd(scope.ControlPlane.Spec.AADProfile); err != nil {
-			return err
-		}
-		if desiredLegacy, err = validateDesiredLegacyAAd(scope.ControlPlane.Spec.AADProfile); err != nil {
-			return err
-		}
-	}
-
-	if desiredLegacy && desiredAksManaged {
-		return errors.New("conflicting values provided in AADProfile. ")
-	}
-
-	if existingManagedCluster.ManagedClusterProperties != nil && existingManagedCluster.AadProfile != nil {
-		existingAksManagedAAD = checkExistingAksManagedAAD(existingManagedCluster.AadProfile)
-		existingLegacyAAD = checkExistingLegacyAAD(existingManagedCluster.AadProfile)
-	}
-
-	if existingAksManagedAAD && desiredLegacy {
-		return errors.New("cannot migrate from aks managed to legacy")
-	}
-
-	if existingAksManagedAAD && !desiredAksManaged || existingLegacyAAD && !desiredLegacy {
-		return errors.New("cannot disable aad integration")
-	}
-
-	desiredManagedClusterSpec.AADProfile = &managedclusters.ManagedClusterAADProfile{}
-
-	if desiredAksManaged {
-		desiredManagedClusterSpec.AADProfile.Managed = scope.ControlPlane.Spec.AADProfile.Managed
-		desiredManagedClusterSpec.AADProfile.EnableAzureRBAC = scope.ControlPlane.Spec.AADProfile.Managed
-		desiredManagedClusterSpec.AADProfile.AdminGroupObjectIDs = scope.ControlPlane.Spec.AADProfile.AdminGroupObjectIDs
-	}
-
-	if desiredLegacy {
-		desiredManagedClusterSpec.AADProfile.ClientAppID = scope.ControlPlane.Spec.AADProfile.ClientAppID
-		desiredManagedClusterSpec.AADProfile.ServerAppID = scope.ControlPlane.Spec.AADProfile.ServerAppID
-		desiredManagedClusterSpec.AADProfile.ServerAppSecret = scope.ControlPlane.Spec.AADProfile.ServerAppSecret
-		desiredManagedClusterSpec.AADProfile.TenantID = scope.ControlPlane.Spec.AADProfile.TenantID
-	}
-
-	return nil
-}
-
-func validateDesiredAksManagedAAd(aadProfile *infrav1exp.ManagedClusterAADProfile) (bool, error) {
-
-	if aadProfile.Managed == nil && aadProfile.AdminGroupObjectIDs == nil {
-		return false, nil
-	}
-
-	if aadProfile.Managed != nil && *aadProfile.Managed && aadProfile.AdminGroupObjectIDs == nil {
-		return false, errors.New("aadProfile.AdminGroupObjectIDs fields missinng in AADProfile")
-	}
-
-	if aadProfile.Managed == nil && aadProfile.AdminGroupObjectIDs != nil && len(*aadProfile.AdminGroupObjectIDs) != 0 {
-		return false, errors.New("aadProfile.Managed field missinng in AADProfile")
-	}
-
-	return *aadProfile.Managed && len(*aadProfile.AdminGroupObjectIDs) != 0, nil
-}
-
-func validateDesiredLegacyAAd(aadProfile *infrav1exp.ManagedClusterAADProfile) (bool, error) {
-
-	err := ""
-	if aadProfile.ClientAppID != nil || aadProfile.ServerAppID != nil || aadProfile.ServerAppSecret != nil || aadProfile.TenantID != nil {
-		if aadProfile.ClientAppID == nil {
-			err = err + "missing aadProfile.ClientAppID in AADProfile. "
-		}
-		if aadProfile.ServerAppID == nil {
-			err = err + "missing aadProfile.ServerAppID in AADProfile. "
-		}
-		if aadProfile.ServerAppSecret == nil {
-			err = err + "missing aadProfile.ServerAppSecret in AADProfile. "
-		}
-		if aadProfile.TenantID == nil {
-			err = err + "missing aadProfile.TenantID in AADProfile. "
-		}
-	}
-	if err != "" {
-		return false, errors.New(err)
-	}
-
-	return (aadProfile.ClientAppID != nil && aadProfile.ServerAppID != nil && aadProfile.ServerAppSecret != nil && aadProfile.TenantID != nil), nil
-}
-
-func checkExistingAksManagedAAD(aadProfile *containerservice.ManagedClusterAADProfile) bool {
-	return aadProfile.Managed != nil && *aadProfile.Managed
-}
-
-func checkExistingLegacyAAD(aadProfile *containerservice.ManagedClusterAADProfile) bool {
-	return aadProfile != nil && aadProfile.ClientAppID != nil && aadProfile.ServerAppID != nil && aadProfile.ServerAppSecret != nil && aadProfile.TenantID != nil
 }

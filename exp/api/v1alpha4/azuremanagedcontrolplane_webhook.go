@@ -361,7 +361,7 @@ func (r *AzureManagedControlPlane) validateAadProfile() error {
 			return err
 		}
 		if managedAad && legacyAad {
-			return errors.New("conflicting values provided in AADProfile.")
+			return errors.New("conflicting values provided in AADProfile")
 		}
 	}
 	return nil
