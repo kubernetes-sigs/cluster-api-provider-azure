@@ -46,6 +46,8 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	dst.Spec.Template.SubnetName = restored.Spec.Template.SubnetName
+
 	dst.Spec.Strategy.Type = restored.Spec.Strategy.Type
 	if restored.Spec.Strategy.RollingUpdate != nil {
 
@@ -91,6 +93,10 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolin
 	}
 
 	return nil
+}
+
+func Convert_v1alpha4_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in *expv1alpha4.AzureMachinePoolMachineTemplate, out *AzureMachinePoolMachineTemplate, s convert.Scope) error { //nolint
+	return autoConvert_v1alpha4_AzureMachinePoolMachineTemplate_To_v1alpha3_AzureMachinePoolMachineTemplate(in, out, s)
 }
 
 func Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *expv1alpha4.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s convert.Scope) error {

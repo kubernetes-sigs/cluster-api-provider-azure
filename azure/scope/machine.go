@@ -145,13 +145,27 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 }
 
 // NICSpecs returns the network interface specs.
-func (m *MachineScope) NICSpecs() []azure.NICSpec {
+func (m *MachineScope) NICSpecs() ([]azure.NICSpec, error) {
+	subnetName := m.AzureMachine.Spec.SubnetName
+	if subnetName == "" {
+		subnets := m.Subnets()
+		var subnetCount int
+		for _, subnet := range subnets {
+			if string(subnet.Role) == m.Role() {
+				subnetCount++
+				subnetName = subnet.Name
+			}
+		}
+		if subnetCount == 0 || subnetCount > 1 {
+			return []azure.NICSpec{}, errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of the same role exist")
+		}
+	}
 	spec := azure.NICSpec{
 		Name:                  azure.GenerateNICName(m.Name()),
 		MachineName:           m.Name(),
 		VNetName:              m.Vnet().Name,
 		VNetResourceGroup:     m.Vnet().ResourceGroup,
-		SubnetName:            m.Subnet().Name,
+		SubnetName:            subnetName,
 		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		IPv6Enabled:           m.IsIPv6Enabled(),
@@ -168,8 +182,16 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 			spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
 		}
 	}
-	// If Nat Gateway is not specified, then the NIC needs to reference the LB to get outbound traffic.
-	if m.Role() == infrav1.Node && m.NodeNatGateway().Name == "" {
+
+	var isNatGatewayEnabled bool
+	for _, subnet := range m.Subnets() {
+		if subnet.Name == subnetName && subnet.NatGateway.Name != "" {
+			isNatGatewayEnabled = true
+		}
+	}
+
+	// If Nat Gateway is not enabled, then the NIC needs to reference the LB to get outbound traffic.
+	if m.Role() == infrav1.Node && !isNatGatewayEnabled {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
 	}
@@ -180,20 +202,21 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 			MachineName:           m.Name(),
 			VNetName:              m.Vnet().Name,
 			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			SubnetName:            m.Subnet().Name,
+			SubnetName:            subnetName,
 			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
 			VMSize:                m.AzureMachine.Spec.VMSize,
 			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		})
 	}
 
-	return specs
+	return specs, nil
 }
 
 // NICNames returns the NIC names.
 func (m *MachineScope) NICNames() []string {
-	nicNames := make([]string, len(m.NICSpecs()))
-	for i, nic := range m.NICSpecs() {
+	nicspecs, _ := m.NICSpecs()
+	nicNames := make([]string, len(nicspecs))
+	for i, nic := range nicspecs {
 		nicNames[i] = nic.Name
 	}
 	return nicNames
@@ -245,12 +268,9 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 	return []azure.VMExtensionSpec{}
 }
 
-// Subnet returns the machine's subnet based on its role.
-func (m *MachineScope) Subnet() infrav1.SubnetSpec {
-	if m.IsControlPlane() {
-		return m.ControlPlaneSubnet()
-	}
-	return m.NodeSubnet()
+// Subnet returns the machine's subnet name.
+func (m *MachineScope) Subnet() string {
+	return m.AzureMachine.Spec.SubnetName
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.

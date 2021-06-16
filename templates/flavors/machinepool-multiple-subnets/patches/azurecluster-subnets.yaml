@@ -1,0 +1,14 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    subnets:
+      - name: control-plane-subnet
+        role: control-plane
+      - name: "${CLUSTER_NAME}-mp-0"
+        role: node
+      - name: "${CLUSTER_NAME}-mp-1"
+        role: node

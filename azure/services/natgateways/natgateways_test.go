@@ -85,19 +85,30 @@ func TestReconcileNatGateways(t *testing.T) {
 							Name: "node-subnet",
 							Role: infrav1.SubnetNode,
 						},
+						NatGatewayIP: infrav1.PublicIPSpec{Name: "pip-node-subnet"},
 					},
 				})
 
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(network.NatGateway{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")).Times(1)
-				s.SetNodeNatGatewayID(gomock.Any()).Times(1)
 				s.Location().Return("westus")
+				s.SetSubnet(infrav1.SubnetSpec{
+					Role: infrav1.SubnetNode,
+					Name: "node-subnet",
+					NatGateway: infrav1.NatGateway{
+						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
+						Name: "my-node-natgateway",
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "pip-node-subnet",
+						},
+					},
+				})
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(1)
 			},
 		},
 		{
-			name: "update nat gateway if already exists",
+			name: "update nat gateway if already exists but it's out of date",
 			tags: infrav1.Tags{
 				"Name": "my-vnet",
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
@@ -117,6 +128,9 @@ func TestReconcileNatGateways(t *testing.T) {
 							Name: "node-subnet",
 							Role: infrav1.SubnetNode,
 						},
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/different-pip-name",
+						},
 					},
 				})
 
@@ -124,14 +138,75 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.ResourceGroup().Return("my-rg").AnyTimes()
 				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Times(1).Return(network.NatGateway{
 					Name: to.StringPtr("my-node-natgateway"),
-					ID:   to.StringPtr("1"),
+					ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway"),
 					NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{PublicIPAddresses: &[]network.SubResource{
-						{ID: to.StringPtr("1")},
+						{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw")},
 					}},
 				}, nil)
-				s.SetNodeNatGatewayID(gomock.Any()).Times(2)
+				s.SetSubnet(infrav1.SubnetSpec{
+					Role: infrav1.SubnetNode,
+					Name: "node-subnet",
+					NatGateway: infrav1.NatGateway{
+						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
+						Name: "my-node-natgateway",
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/different-pip-name",
+						},
+					},
+				})
 				s.Location().Return("westus")
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(1)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{}))
+			},
+		},
+		{
+			name: "nat gateway is not updated if it's up to date",
+			tags: infrav1.Tags{
+				"Name": "my-vnet",
+				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
+				"sigs.k8s.io_cluster-api-provider-azure_role":                 "common",
+			},
+			expectedError: "",
+			expect: func(s *mock_natgateways.MockNatGatewayScopeMockRecorder, m *mock_natgateways.MockclientMockRecorder) {
+				s.Vnet().Return(&infrav1.VnetSpec{
+					Name: "my-vnet",
+				})
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.ClusterName()
+				s.NatGatewaySpecs().Return([]azure.NatGatewaySpec{
+					{
+						Name: "my-node-natgateway",
+						Subnet: infrav1.SubnetSpec{
+							Name: "node-subnet",
+							Role: infrav1.SubnetNode,
+						},
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw",
+						},
+					},
+				})
+
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().Return("my-rg").AnyTimes()
+				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Times(1).Return(network.NatGateway{
+					Name: to.StringPtr("my-node-natgateway"),
+					ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway"),
+					NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{PublicIPAddresses: &[]network.SubResource{
+						{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw")},
+					}},
+				}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					Role: infrav1.SubnetNode,
+					Name: "node-subnet",
+					NatGateway: infrav1.NatGateway{
+						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
+						Name: "my-node-natgateway",
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw",
+						},
+					},
+				})
+				s.Location().Return("westus").Times(0)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(0)
 			},
 		},
 		{
@@ -160,7 +235,6 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(network.NatGateway{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				m.CreateOrUpdate(gomockinternal.AContext(), gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(network.NatGateway{})).Times(0)
-				s.NodeNatGateway().Times(0)
 			},
 		},
 		{

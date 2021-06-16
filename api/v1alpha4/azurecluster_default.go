@@ -29,6 +29,8 @@ const (
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
 	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR.
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
+	// DefaultNodeSubnetCIDRPattern is the pattern that will be used to generate the default subnets CIDRs.
+	DefaultNodeSubnetCIDRPattern = "10.%d.0.0/16"
 	// DefaultAzureBastionSubnetCIDR is the default Subnet CIDR for AzureBastion.
 	DefaultAzureBastionSubnetCIDR = "10.255.255.224/27"
 	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion.
@@ -87,12 +89,6 @@ func (c *AzureCluster) setSubnetDefaults() {
 		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
 	}
 
-	nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
-	if err != nil {
-		nodeSubnet = SubnetSpec{Role: SubnetNode}
-		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
-	}
-
 	if cpSubnet.Name == "" {
 		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
 	}
@@ -104,28 +100,51 @@ func (c *AzureCluster) setSubnetDefaults() {
 	}
 	setSecurityRuleDefaults(&cpSubnet.SecurityGroup)
 
-	if nodeSubnet.Name == "" {
-		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
-	}
-	if len(nodeSubnet.CIDRBlocks) == 0 {
-		nodeSubnet.CIDRBlocks = []string{DefaultNodeSubnetCIDR}
-	}
-	if nodeSubnet.SecurityGroup.Name == "" {
-		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
-	}
-	setSecurityRuleDefaults(&nodeSubnet.SecurityGroup)
-	if nodeSubnet.RouteTable.Name == "" {
-		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
-	}
+	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
 
-	if nodeSubnet.NatGateway.Name != "" {
-		if nodeSubnet.NatGateway.NatGatewayIP.Name == "" {
-			nodeSubnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, nodeSubnet.Name)
+	var nodeSubnetFound bool
+	var nodeSubnetCounter int
+	for i, subnet := range c.Spec.NetworkSpec.Subnets {
+		if subnet.Role == SubnetNode {
+			nodeSubnetCounter++
+			nodeSubnetFound = true
+			if subnet.Name == "" {
+				subnet.Name = withIndex(generateNodeSubnetName(c.ObjectMeta.Name), i)
+			}
+			if len(subnet.CIDRBlocks) == 0 {
+				subnet.CIDRBlocks = []string{fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter)}
+			}
+			if subnet.SecurityGroup.Name == "" {
+				subnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
+			}
+			setSecurityRuleDefaults(&subnet.SecurityGroup)
+			if subnet.RouteTable.Name == "" {
+				subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
+			}
+			if subnet.NatGateway.Name != "" {
+				if subnet.NatGateway.NatGatewayIP.Name == "" {
+					subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, subnet.Name)
+				}
+			}
+
+			c.Spec.NetworkSpec.Subnets[i] = subnet
 		}
 	}
 
-	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
-	c.Spec.NetworkSpec.UpdateNodeSubnet(nodeSubnet)
+	if !nodeSubnetFound {
+		nodeSubnet := SubnetSpec{
+			Role:       SubnetNode,
+			Name:       generateNodeSubnetName(c.ObjectMeta.Name),
+			CIDRBlocks: []string{DefaultNodeSubnetCIDR},
+			SecurityGroup: SecurityGroup{
+				Name: generateNodeSecurityGroupName(c.ObjectMeta.Name),
+			},
+			RouteTable: RouteTable{
+				Name: generateNodeRouteTableName(c.ObjectMeta.Name),
+			},
+		}
+		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
+	}
 }
 
 func setSecurityRuleDefaults(sg *SecurityGroup) {
@@ -182,11 +201,20 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
 			return
 		}
-		nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
-		// Only one outbound mechanism can be defined, so if Nat Gateway is defined, we don't default the LB.
-		if err == nil && nodeSubnet.NatGateway.Name != "" {
+
+		var oneSubnetWithoutNatGateway bool
+		for _, subnet := range c.Spec.NetworkSpec.Subnets {
+			if subnet.Role == SubnetNode && subnet.NatGateway.Name == "" {
+				oneSubnetWithoutNatGateway = true
+				break
+			}
+		}
+
+		// If there is at least one subnet with no NAT Gateway, we default the node outbound LB so that it's created.
+		if len(c.Spec.NetworkSpec.Subnets) > 0 && !oneSubnetWithoutNatGateway {
 			return
 		}
+
 		c.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
 	}
 

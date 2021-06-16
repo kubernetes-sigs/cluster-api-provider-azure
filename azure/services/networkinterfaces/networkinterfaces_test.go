@@ -64,7 +64,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VNetResourceGroup: "my-rg",
 						VMSize:            "Standard_D2v2",
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -88,7 +88,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: nil,
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -116,7 +116,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                  "Standard_D2v2",
 						AcceleratedNetworking:   nil,
 					},
-				})
+				}, nil)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -160,7 +160,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                  "Standard_D2v2",
 						AcceleratedNetworking:   nil,
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -206,7 +206,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                    "Standard_D2v2",
 						AcceleratedNetworking:     nil,
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -250,7 +250,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: nil,
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -275,7 +275,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: nil,
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -317,7 +317,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						VMSize:                "Standard_D2v2",
 						AcceleratedNetworking: to.BoolPtr(false),
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
@@ -361,7 +361,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 						AcceleratedNetworking: nil,
 						EnableIPForwarding:    true,
 					},
-				})
+				}, nil)
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.Location().AnyTimes().Return("fake-location")
@@ -466,7 +466,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 						PublicLBName: "my-public-lb",
 						MachineName:  "azure-test1",
 					},
-				})
+				}, nil)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-net-interface")
@@ -482,7 +482,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 						PublicLBName: "my-public-lb",
 						MachineName:  "azure-test1",
 					},
-				})
+				}, nil)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-net-interface").
@@ -499,7 +499,7 @@ func TestDeleteNetworkInterface(t *testing.T) {
 						PublicLBName: "my-public-lb",
 						MachineName:  "azure-test1",
 					},
-				})
+				}, nil)
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Delete(gomockinternal.AContext(), "my-rg", "my-net-interface").

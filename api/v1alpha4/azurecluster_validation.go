@@ -127,15 +127,21 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
 	}
-	nodeSubnet, err := networkSpec.GetNodeSubnet()
-	if err != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "NodeSubnet invalid"))
-	}
+
 	cidrBlocks = controlPlaneSubnet.CIDRBlocks
 
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 
-	allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, nodeSubnet, fldPath.Child("nodeOutboundLB"))...)
+	var oneSubnetWithoutNatGateway bool
+	for _, subnet := range networkSpec.Subnets {
+		if subnet.Role == SubnetNode && subnet.NatGateway.Name == "" {
+			oneSubnetWithoutNatGateway = true
+			break
+		}
+	}
+	if oneSubnetWithoutNatGateway {
+		allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
+	}
 
 	allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
 
@@ -355,16 +361,11 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 	return allErrs
 }
 
-func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, nodeSubnet SubnetSpec, fldPath *field.Path) field.ErrorList {
+func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	// LB can be nil when disabled for private clusters.
 	if lb == nil && apiserverLB.Type == Internal {
-		return allErrs
-	}
-
-	// no need to validate LB when using nat gateway.
-	if lb == nil && nodeSubnet.NatGateway.Name != "" {
 		return allErrs
 	}
 

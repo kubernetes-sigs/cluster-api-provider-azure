@@ -515,16 +515,6 @@ func (n *NetworkSpec) UpdateControlPlaneSubnet(subnet SubnetSpec) {
 	}
 }
 
-// GetNodeSubnet returns the cluster node subnet.
-func (n *NetworkSpec) GetNodeSubnet() (SubnetSpec, error) {
-	for _, sn := range n.Subnets {
-		if sn.Role == SubnetNode {
-			return sn, nil
-		}
-	}
-	return SubnetSpec{}, errors.Errorf("no subnet found with role %s", SubnetNode)
-}
-
 // UpdateNodeSubnet updates the cluster node subnet.
 func (n *NetworkSpec) UpdateNodeSubnet(subnet SubnetSpec) {
 	for i, sn := range n.Subnets {

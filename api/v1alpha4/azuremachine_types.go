@@ -108,6 +108,10 @@ type AzureMachineSpec struct {
 	// SecurityProfile specifies the Security profile settings for a virtual machine.
 	// +optional
 	SecurityProfile *SecurityProfile `json:"securityProfile,omitempty"`
+
+	// SubnetName selects the Subnet where the VM will be placed
+	// +optional
+	SubnetName string `json:"subnetName,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs.

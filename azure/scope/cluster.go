@@ -139,16 +139,17 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 		publicIPSpecs = append(publicIPSpecs, nodeOutboundIPSpecs...)
 	}
 
-	// Public IP specs for node nat gateway
+	// Public IP specs for node nat gateways
 	var nodeNatGatewayIPSpecs []azure.PublicIPSpec
-	nodeNatGateway := s.NodeNatGateway()
-	if nodeNatGateway.Name != "" {
-		nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, azure.PublicIPSpec{
-			Name:    nodeNatGateway.NatGatewayIP.Name,
-			DNSName: nodeNatGateway.NatGatewayIP.DNSName,
-		})
+	for _, subnet := range s.NodeSubnets() {
+		if subnet.NatGateway.Name != "" {
+			nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, azure.PublicIPSpec{
+				Name:    subnet.NatGateway.NatGatewayIP.Name,
+				DNSName: subnet.NatGateway.NatGatewayIP.DNSName,
+			})
+		}
+		publicIPSpecs = append(publicIPSpecs, nodeNatGatewayIPSpecs...)
 	}
-	publicIPSpecs = append(publicIPSpecs, nodeNatGatewayIPSpecs...)
 
 	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
 		// public IP for Azure Bastion.
@@ -211,12 +212,12 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 // RouteTableSpecs returns the node route table.
 func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	routetables := []azure.RouteTableSpec{}
-	if s.ControlPlaneRouteTable().Name != "" {
-		routetables = append(routetables, azure.RouteTableSpec{Name: s.ControlPlaneRouteTable().Name, Subnet: s.ControlPlaneSubnet()})
+	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		if subnet.RouteTable.Name != "" {
+			routetables = append(routetables, azure.RouteTableSpec{Name: subnet.RouteTable.Name, Subnet: subnet})
+		}
 	}
-	if s.NodeRouteTable().Name != "" {
-		routetables = append(routetables, azure.RouteTableSpec{Name: s.NodeRouteTable().Name, Subnet: s.NodeSubnet()})
-	}
+
 	return routetables
 }
 
@@ -225,53 +226,48 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 	natGateways := []azure.NatGatewaySpec{}
 
 	// We ignore the control plane nat gateway, as we will always use a LB to enable egress on the control plane.
-	natGateway := s.NodeNatGateway()
-	if natGateway.Name != "" {
-		natGateways = append(natGateways, azure.NatGatewaySpec{
-			Name: natGateway.Name,
-			NatGatewayIP: infrav1.PublicIPSpec{
-				Name: natGateway.NatGatewayIP.Name,
-			},
-			Subnet: s.NodeSubnet(),
-		})
+	for _, subnet := range s.NodeSubnets() {
+		if subnet.NatGateway.Name != "" {
+			natGateways = append(natGateways, azure.NatGatewaySpec{
+				Name: subnet.NatGateway.Name,
+				NatGatewayIP: infrav1.PublicIPSpec{
+					Name: subnet.NatGateway.NatGatewayIP.Name,
+				},
+				Subnet: subnet,
+			})
+		}
 	}
+
 	return natGateways
 }
 
 // NSGSpecs returns the security group specs.
 func (s *ClusterScope) NSGSpecs() []azure.NSGSpec {
-	return []azure.NSGSpec{
-		{
-			Name:          s.ControlPlaneSubnet().SecurityGroup.Name,
-			SecurityRules: s.ControlPlaneSubnet().SecurityGroup.SecurityRules,
-		},
-		{
-			Name:          s.NodeSubnet().SecurityGroup.Name,
-			SecurityRules: s.NodeSubnet().SecurityGroup.SecurityRules,
-		},
+	nsgspecs := []azure.NSGSpec{}
+	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		nsgspecs = append(nsgspecs, azure.NSGSpec{
+			Name:          subnet.SecurityGroup.Name,
+			SecurityRules: subnet.SecurityGroup.SecurityRules,
+		})
 	}
+
+	return nsgspecs
 }
 
 // SubnetSpecs returns the subnets specs.
 func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
-	subnetSpecs := []azure.SubnetSpec{
-		{
-			Name:              s.ControlPlaneSubnet().Name,
-			CIDRs:             s.ControlPlaneSubnet().CIDRBlocks,
+	subnetSpecs := []azure.SubnetSpec{}
+	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		subnetSpec := azure.SubnetSpec{
+			Name:              subnet.Name,
+			CIDRs:             subnet.CIDRBlocks,
 			VNetName:          s.Vnet().Name,
-			SecurityGroupName: s.ControlPlaneSubnet().SecurityGroup.Name,
-			Role:              s.ControlPlaneSubnet().Role,
-			RouteTableName:    s.ControlPlaneRouteTable().Name,
-		},
-		{
-			Name:              s.NodeSubnet().Name,
-			CIDRs:             s.NodeSubnet().CIDRBlocks,
-			VNetName:          s.Vnet().Name,
-			SecurityGroupName: s.NodeSubnet().SecurityGroup.Name,
-			Role:              s.NodeSubnet().Role,
-			RouteTableName:    s.NodeRouteTable().Name,
-			NatGatewayName:    s.NodeNatGateway().Name,
-		},
+			SecurityGroupName: subnet.SecurityGroup.Name,
+			RouteTableName:    subnet.RouteTable.Name,
+			Role:              subnet.Role,
+			NatGatewayName:    subnet.NatGateway.Name,
+		}
+		subnetSpecs = append(subnetSpecs, subnetSpec)
 	}
 
 	if s.AzureCluster.Spec.BastionSpec.AzureBastion != nil {
@@ -364,16 +360,32 @@ func (s *ClusterScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 	return subnet
 }
 
-// NodeSubnet returns the cluster node subnet.
-func (s *ClusterScope) NodeSubnet() infrav1.SubnetSpec {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
+// NodeSubnets returns the subnets with the node role.
+func (s *ClusterScope) NodeSubnets() []infrav1.SubnetSpec {
+	subnets := []infrav1.SubnetSpec{}
+	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		subnets = append(subnets, subnet)
+	}
+
+	return subnets
+}
+
+// Subnet returns the subnet with the provided name.
+func (s *ClusterScope) Subnet(name string) infrav1.SubnetSpec {
+	subnet := infrav1.SubnetSpec{}
+	for _, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
+		if sn.Name == name {
+			return subnet
+		}
+	}
+
 	return subnet
 }
 
-// SetSubnet sets the subnet spec for the subnet with the same role.
+// SetSubnet sets the subnet spec for the subnet with the same name.
 func (s *ClusterScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
 	for i, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		if sn.Role == subnetSpec.Role {
+		if sn.Name == subnetSpec.Name {
 			s.AzureCluster.Spec.NetworkSpec.Subnets[i] = subnetSpec
 			return
 		}
@@ -384,25 +396,6 @@ func (s *ClusterScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
 func (s *ClusterScope) ControlPlaneRouteTable() infrav1.RouteTable {
 	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetControlPlaneSubnet()
 	return subnet.RouteTable
-}
-
-// NodeRouteTable returns the cluster node routetable.
-func (s *ClusterScope) NodeRouteTable() infrav1.RouteTable {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-	return subnet.RouteTable
-}
-
-// NodeNatGateway returns the cluster node nat gateway.
-func (s *ClusterScope) NodeNatGateway() infrav1.NatGateway {
-	subnet, _ := s.AzureCluster.Spec.NetworkSpec.GetNodeSubnet()
-	return subnet.NatGateway
-}
-
-// SetNodeNatGatewayID updates the node subnet nat gateway ID.
-func (s *ClusterScope) SetNodeNatGatewayID(id string) {
-	nodeSubnet := s.NodeSubnet()
-	nodeSubnet.NatGateway.ID = id
-	s.SetSubnet(nodeSubnet)
 }
 
 // APIServerLB returns the cluster API Server load balancer.

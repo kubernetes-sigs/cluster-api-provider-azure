@@ -108,7 +108,22 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 }
 
 // ScaleSetSpec returns the scale set spec.
-func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
+func (m *MachinePoolScope) ScaleSetSpec() (azure.ScaleSetSpec, error) {
+	subnetName := m.AzureMachinePool.Spec.Template.SubnetName
+	if subnetName == "" {
+		subnets := m.Subnets()
+		var subnetNodeCount int
+		for _, subnet := range subnets {
+			if subnet.Role == infrav1.SubnetNode {
+				subnetNodeCount++
+				subnetName = subnet.Name
+			}
+		}
+		if subnetNodeCount == 0 || subnetNodeCount > 1 {
+			return azure.ScaleSetSpec{}, errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of role 'node' exist")
+		}
+	}
+
 	return azure.ScaleSetSpec{
 		Name:                    m.Name(),
 		Size:                    m.AzureMachinePool.Spec.Template.VMSize,
@@ -116,7 +131,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SSHKeyData:              m.AzureMachinePool.Spec.Template.SSHPublicKey,
 		OSDisk:                  m.AzureMachinePool.Spec.Template.OSDisk,
 		DataDisks:               m.AzureMachinePool.Spec.Template.DataDisks,
-		SubnetName:              m.NodeSubnet().Name,
+		SubnetName:              subnetName,
 		VNetName:                m.Vnet().Name,
 		VNetResourceGroup:       m.Vnet().ResourceGroup,
 		PublicLBName:            m.OutboundLBName(infrav1.Node),
@@ -127,7 +142,7 @@ func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 		SecurityProfile:         m.AzureMachinePool.Spec.Template.SecurityProfile,
 		SpotVMOptions:           m.AzureMachinePool.Spec.Template.SpotVMOptions,
 		FailureDomains:          m.MachinePool.Spec.FailureDomains,
-	}
+	}, nil
 }
 
 // Name returns the Azure Machine Pool Name.

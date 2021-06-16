@@ -207,6 +207,11 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
+// Subnets returns the subnets specs.
+func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
+	return infrav1.Subnets{}
+}
+
 // NodeSubnet returns the cluster node subnet.
 func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{
