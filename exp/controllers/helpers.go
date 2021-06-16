@@ -550,7 +550,6 @@ func MachinePoolModelHasChanged(logger logr.Logger) predicate.Funcs {
 
 			oldAmp, ok := e.ObjectOld.(*infrav1exp.AzureMachinePool)
 			if !ok {
-
 				log.V(4).Info("Expected AzureMachinePool", "type", e.ObjectOld.GetObjectKind().GroupVersionKind().String())
 				return false
 			}
@@ -584,7 +583,6 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 
 			oldAmp, ok := e.ObjectOld.(*infrav1exp.AzureMachinePoolMachine)
 			if !ok {
-
 				log.V(4).Info("Expected AzureMachinePoolMachine", "type", e.ObjectOld.GetObjectKind().GroupVersionKind().String())
 				return false
 			}

@@ -64,7 +64,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, roleSpec := range s.Scope.RoleAssignmentSpecs() {
-
 		switch roleSpec.ResourceType {
 		case azure.VirtualMachine:
 			return s.reconcileVM(ctx, roleSpec)
@@ -74,7 +73,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Errorf("unexpected resource type %q. Expected one of [%s, %s]", roleSpec.ResourceType,
 				azure.VirtualMachine, azure.VirtualMachineScaleSet)
 		}
-
 	}
 	return nil
 }

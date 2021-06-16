@@ -475,7 +475,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -547,7 +546,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -619,7 +617,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -692,7 +689,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -749,7 +745,6 @@ func TestReconcileVM(t *testing.T) {
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminPassword).Should(HaveLen(123))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminUsername).Should(Equal("capi"))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
-
 				})
 			},
 			ExpectedError: "",
@@ -826,7 +821,6 @@ func TestReconcileVM(t *testing.T) {
 				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(to.StringPtr("my-diskencryptionset-id")))
-
 				})
 			},
 			ExpectedError: "",
@@ -858,7 +852,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -895,7 +888,6 @@ func TestReconcileVM(t *testing.T) {
 				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(*vm.VirtualMachineProperties.SecurityProfile.EncryptionAtHost).To(Equal(true))
-
 				})
 			},
 			ExpectedError: "",
@@ -931,7 +923,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 
 				svc.resourceSKUCache = resourceskus.NewStaticCache(skus, "")
-
 			},
 		},
 		{
@@ -1088,7 +1079,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1214,7 +1204,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1281,7 +1270,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1348,7 +1336,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1422,7 +1409,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1587,7 +1573,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{

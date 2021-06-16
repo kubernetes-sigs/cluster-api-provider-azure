@@ -165,7 +165,6 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 			if err := s.bastionSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete bastion")
 			}
-
 		} else {
 			return errors.Wrap(err, "failed to delete resource group")
 		}

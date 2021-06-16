@@ -122,7 +122,6 @@ func TestMachineScope_Name(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got := tt.machineScope.Name()
 			if got != tt.want {
 				t.Errorf("MachineScope.Name() = %v, want %v", got, tt.want)
@@ -172,7 +171,6 @@ func TestMachineScope_GetVMID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got := tt.machineScope.GetVMID()
 			if got != tt.want {
 				t.Errorf("MachineScope.GetVMID() = %v, want %v", got, tt.want)
@@ -218,7 +216,6 @@ func TestMachineScope_ProviderID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got := tt.machineScope.ProviderID()
 			if got != tt.want {
 				t.Errorf("MachineScope.ProviderID() = %v, want %v", got, tt.want)

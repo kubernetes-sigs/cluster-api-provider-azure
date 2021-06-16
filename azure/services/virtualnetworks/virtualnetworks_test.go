@@ -355,7 +355,6 @@ func TestDeleteVnet(t *testing.T) {
 				})
 				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Honk Server"))
-
 			},
 		},
 	}

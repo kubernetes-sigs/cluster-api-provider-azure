@@ -27,7 +27,6 @@ import (
 
 // ImageToSDK converts a CAPZ Image (as RawExtension) to a Azure SDK Image Reference.
 func ImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
-
 	if image.ID != nil {
 		return specificImageToSDK(image)
 	}
@@ -39,7 +38,6 @@ func ImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 	}
 
 	return nil, errors.New("unable to convert image as no options set")
-
 }
 
 func mpImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
@@ -49,7 +47,6 @@ func mpImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {
 		Sku:       &image.Marketplace.SKU,
 		Version:   &image.Marketplace.Version,
 	}, nil
-
 }
 
 func sigImageToSDK(image *infrav1.Image) (*compute.ImageReference, error) {

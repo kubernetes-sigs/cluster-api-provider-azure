@@ -86,7 +86,6 @@ func TestClusterNameValidation(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			azureCluster := AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tc.clusterName,

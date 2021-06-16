@@ -133,7 +133,6 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			} else {
 				return ctrl.Result{}, errors.Wrap(err, "failed to get AzureCluster")
 			}
-
 		}
 		expectedIdentityName := identity.GetAzureIdentityName(azCluster.Name, azCluster.Namespace, azCluster.Spec.IdentityRef.Name)
 		if binding.Spec.AzureIdentity != expectedIdentityName {

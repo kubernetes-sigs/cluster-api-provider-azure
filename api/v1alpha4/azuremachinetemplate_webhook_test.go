@@ -125,5 +125,4 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 			}
 		})
 	}
-
 }
