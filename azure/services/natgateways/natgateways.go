@@ -90,7 +90,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{
 				PublicIPAddresses: &[]network.SubResource{
 					{
-						ID: to.StringPtr(natGatewaySpec.NatGatewayIP.Name),
+						ID: to.StringPtr(azure.PublicIPID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.NatGatewayIP.Name)),
 					},
 				},
 			},
@@ -104,7 +104,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			ID:   azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.Name),
 			Name: natGatewaySpec.Name,
 			NatGatewayIP: infrav1.PublicIPSpec{
-				Name: *(*natGatewayToCreate.NatGatewayPropertiesFormat.PublicIPAddresses)[0].ID,
+				Name: natGatewaySpec.NatGatewayIP.Name,
 			},
 		}
 		natGatewaySpec.Subnet.NatGateway = natGateway

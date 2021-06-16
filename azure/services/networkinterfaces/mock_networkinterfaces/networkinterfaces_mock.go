@@ -256,12 +256,11 @@ func (mr *MockNICScopeMockRecorder) Location() *gomock.Call {
 }
 
 // NICSpecs mocks base method.
-func (m *MockNICScope) NICSpecs() ([]azure.NICSpec, error) {
+func (m *MockNICScope) NICSpecs() []azure.NICSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NICSpecs")
 	ret0, _ := ret[0].([]azure.NICSpec)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // NICSpecs indicates an expected call of NICSpecs.

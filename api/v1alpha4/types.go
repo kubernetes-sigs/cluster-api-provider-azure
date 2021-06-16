@@ -524,6 +524,11 @@ func (n *NetworkSpec) UpdateNodeSubnet(subnet SubnetSpec) {
 	}
 }
 
+// IsNatGatewayEnabled returns whether or not a Nat Gateway is enabled on the subnet.
+func (s SubnetSpec) IsNatGatewayEnabled() bool {
+	return s.NatGateway.Name != ""
+}
+
 // SecurityProfile specifies the Security profile settings for a
 // virtual machine or virtual machine scale set.
 type SecurityProfile struct {

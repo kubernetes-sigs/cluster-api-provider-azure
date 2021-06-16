@@ -33,7 +33,7 @@ import (
 type NICScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	NICSpecs() ([]azure.NICSpec, error)
+	NICSpecs() []azure.NICSpec
 }
 
 // Service provides operations on Azure resources.
@@ -57,12 +57,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.Service.Reconcile")
 	defer span.End()
 
-	nicspecs, err := s.Scope.NICSpecs()
-	if err != nil {
-		return err
-	}
-
-	for _, nicSpec := range nicspecs {
+	for _, nicSpec := range s.Scope.NICSpecs() {
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
@@ -171,12 +166,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.Service.Delete")
 	defer span.End()
 
-	nicspecs, err := s.Scope.NICSpecs()
-	if err != nil {
-		return err
-	}
-
-	for _, nicSpec := range nicspecs {
+	for _, nicSpec := range s.Scope.NICSpecs() {
 		s.Scope.V(2).Info("deleting network interface %s", "network interface", nicSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {

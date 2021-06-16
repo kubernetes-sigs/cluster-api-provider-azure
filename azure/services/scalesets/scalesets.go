@@ -47,7 +47,7 @@ type (
 		GetVMImage() (*infrav1.Image, error)
 		SaveVMImageToStatus(*infrav1.Image)
 		MaxSurge() (int, error)
-		ScaleSetSpec() (azure.ScaleSetSpec, error)
+		ScaleSetSpec() azure.ScaleSetSpec
 		VMSSExtensionSpecs() []azure.VMSSExtensionSpec
 		SetAnnotation(string, string)
 		SetLongRunningOperationState(*infrav1.Future)
@@ -82,10 +82,9 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		return err
 	}
 
-	scaleSetSpec, err := s.Scope.ScaleSetSpec()
-	if err != nil {
-		return err
-	}
+	var err error
+
+	scaleSetSpec := s.Scope.ScaleSetSpec()
 
 	// check if there is an ongoing long running operation
 	var (
@@ -154,10 +153,9 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
 	defer span.End()
 
-	vmssSpec, err := s.Scope.ScaleSetSpec()
-	if err != nil {
-		return err
-	}
+	var err error
+
+	vmssSpec := s.Scope.ScaleSetSpec()
 
 	defer func() {
 		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
@@ -213,10 +211,7 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.createVMSS")
 	defer span.End()
 
-	spec, err := s.Scope.ScaleSetSpec()
-	if err != nil {
-		return nil, err
-	}
+	spec := s.Scope.ScaleSetSpec()
 
 	vmss, err := s.buildVMSSFromSpec(ctx, spec)
 	if err != nil {
@@ -237,10 +232,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.patchVMSSIfNeeded")
 	defer span.End()
 
-	spec, err := s.Scope.ScaleSetSpec()
-	if err != nil {
-		return nil, err
-	}
+	spec := s.Scope.ScaleSetSpec()
 
 	vmss, err := s.buildVMSSFromSpec(ctx, spec)
 	if err != nil {
@@ -295,10 +287,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.validateSpec")
 	defer span.End()
 
-	spec, err := s.Scope.ScaleSetSpec()
-	if err != nil {
-		return err
-	}
+	spec := s.Scope.ScaleSetSpec()
 
 	sku, err := s.resourceSKUCache.Get(ctx, spec.Size, resourceskus.VirtualMachines)
 	if err != nil {

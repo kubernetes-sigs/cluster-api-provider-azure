@@ -381,6 +381,20 @@ func (mr *MockLBScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockLBScope)(nil).Location))
 }
 
+// NodeSubnets mocks base method.
+func (m *MockLBScope) NodeSubnets() []v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeSubnets")
+	ret0, _ := ret[0].([]v1alpha4.SubnetSpec)
+	return ret0
+}
+
+// NodeSubnets indicates an expected call of NodeSubnets.
+func (mr *MockLBScopeMockRecorder) NodeSubnets() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnets", reflect.TypeOf((*MockLBScope)(nil).NodeSubnets))
+}
+
 // OutboundLBName mocks base method.
 func (m *MockLBScope) OutboundLBName(arg0 string) string {
 	m.ctrl.T.Helper()
@@ -433,6 +447,20 @@ func (m *MockLBScope) SetSubnet(arg0 v1alpha4.SubnetSpec) {
 func (mr *MockLBScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockLBScope)(nil).SetSubnet), arg0)
+}
+
+// Subnet mocks base method.
+func (m *MockLBScope) Subnet(arg0 string) v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subnet", arg0)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
+	return ret0
+}
+
+// Subnet indicates an expected call of Subnet.
+func (mr *MockLBScopeMockRecorder) Subnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnet", reflect.TypeOf((*MockLBScope)(nil).Subnet), arg0)
 }
 
 // Subnets mocks base method.

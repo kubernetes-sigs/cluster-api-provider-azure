@@ -342,12 +342,11 @@ func (mr *MockScaleSetScopeMockRecorder) SaveVMImageToStatus(arg0 interface{}) *
 }
 
 // ScaleSetSpec mocks base method.
-func (m *MockScaleSetScope) ScaleSetSpec() (azure.ScaleSetSpec, error) {
+func (m *MockScaleSetScope) ScaleSetSpec() azure.ScaleSetSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ScaleSetSpec")
 	ret0, _ := ret[0].(azure.ScaleSetSpec)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // ScaleSetSpec indicates an expected call of ScaleSetSpec.

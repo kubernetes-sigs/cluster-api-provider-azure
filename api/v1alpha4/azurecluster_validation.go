@@ -134,7 +134,7 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 
 	var oneSubnetWithoutNatGateway bool
 	for _, subnet := range networkSpec.Subnets {
-		if subnet.Role == SubnetNode && subnet.NatGateway.Name == "" {
+		if subnet.Role == SubnetNode && !subnet.IsNatGatewayEnabled() {
 			oneSubnetWithoutNatGateway = true
 			break
 		}

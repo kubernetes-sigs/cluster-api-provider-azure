@@ -129,7 +129,7 @@ func TestReconcileNatGateways(t *testing.T) {
 							Role: infrav1.SubnetNode,
 						},
 						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/different-pip-name",
+							Name: "different-pip-name",
 						},
 					},
 				})
@@ -150,7 +150,7 @@ func TestReconcileNatGateways(t *testing.T) {
 						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
 						Name: "my-node-natgateway",
 						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/different-pip-name",
+							Name: "different-pip-name",
 						},
 					},
 				})

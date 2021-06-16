@@ -142,7 +142,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	// Public IP specs for node nat gateways
 	var nodeNatGatewayIPSpecs []azure.PublicIPSpec
 	for _, subnet := range s.NodeSubnets() {
-		if subnet.NatGateway.Name != "" {
+		if subnet.IsNatGatewayEnabled() {
 			nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, azure.PublicIPSpec{
 				Name:    subnet.NatGateway.NatGatewayIP.Name,
 				DNSName: subnet.NatGateway.NatGatewayIP.DNSName,
@@ -227,7 +227,7 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 
 	// We ignore the control plane nat gateway, as we will always use a LB to enable egress on the control plane.
 	for _, subnet := range s.NodeSubnets() {
-		if subnet.NatGateway.Name != "" {
+		if subnet.IsNatGatewayEnabled() {
 			natGateways = append(natGateways, azure.NatGatewaySpec{
 				Name: subnet.NatGateway.Name,
 				NatGatewayIP: infrav1.PublicIPSpec{
@@ -364,7 +364,9 @@ func (s *ClusterScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 func (s *ClusterScope) NodeSubnets() []infrav1.SubnetSpec {
 	subnets := []infrav1.SubnetSpec{}
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
-		subnets = append(subnets, subnet)
+		if subnet.Role == infrav1.SubnetNode {
+			subnets = append(subnets, subnet)
+		}
 	}
 
 	return subnets
@@ -372,14 +374,13 @@ func (s *ClusterScope) NodeSubnets() []infrav1.SubnetSpec {
 
 // Subnet returns the subnet with the provided name.
 func (s *ClusterScope) Subnet(name string) infrav1.SubnetSpec {
-	subnet := infrav1.SubnetSpec{}
 	for _, sn := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		if sn.Name == name {
-			return subnet
+			return sn
 		}
 	}
 
-	return subnet
+	return infrav1.SubnetSpec{}
 }
 
 // SetSubnet sets the subnet spec for the subnet with the same name.

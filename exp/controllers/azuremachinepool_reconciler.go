@@ -32,6 +32,7 @@ import (
 
 // azureMachinePoolService is the group of services called by the AzureMachinePool controller.
 type azureMachinePoolService struct {
+	scope                      *scope.MachinePoolScope
 	virtualMachinesScaleSetSvc azure.Reconciler
 	skuCache                   *resourceskus.Cache
 	roleAssignmentsSvc         azure.Reconciler
@@ -48,6 +49,7 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 	}
 
 	return &azureMachinePoolService{
+		scope:                      machinePoolScope,
 		virtualMachinesScaleSetSvc: scalesets.NewService(machinePoolScope, cache),
 		skuCache:                   cache,
 		roleAssignmentsSvc:         roleassignments.New(machinePoolScope),
@@ -59,6 +61,10 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Reconcile")
 	defer span.End()
+
+	if err := s.scope.SetSubnetName(); err != nil {
+		return errors.Wrap(err, "failed defaulting subnet name")
+	}
 
 	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create scale set")

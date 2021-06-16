@@ -109,7 +109,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 			nodeSubnetCounter++
 			nodeSubnetFound = true
 			if subnet.Name == "" {
-				subnet.Name = withIndex(generateNodeSubnetName(c.ObjectMeta.Name), i)
+				subnet.Name = withIndex(generateNodeSubnetName(c.ObjectMeta.Name), nodeSubnetCounter)
 			}
 			if len(subnet.CIDRBlocks) == 0 {
 				subnet.CIDRBlocks = []string{fmt.Sprintf(DefaultNodeSubnetCIDRPattern, nodeSubnetCounter)}
@@ -121,7 +121,7 @@ func (c *AzureCluster) setSubnetDefaults() {
 			if subnet.RouteTable.Name == "" {
 				subnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 			}
-			if subnet.NatGateway.Name != "" {
+			if subnet.IsNatGatewayEnabled() {
 				if subnet.NatGateway.NatGatewayIP.Name == "" {
 					subnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, subnet.Name)
 				}
@@ -204,13 +204,15 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 
 		var oneSubnetWithoutNatGateway bool
 		for _, subnet := range c.Spec.NetworkSpec.Subnets {
-			if subnet.Role == SubnetNode && subnet.NatGateway.Name == "" {
+			if subnet.Role == SubnetNode && !subnet.IsNatGatewayEnabled() {
 				oneSubnetWithoutNatGateway = true
 				break
 			}
 		}
 
-		// If there is at least one subnet with no NAT Gateway, we default the node outbound LB so that it's created.
+		// If we don't default the outbound LB when there are some subnets with nat gateway,
+		// and some without, those without wouldn't have outbound traffic. So taking the
+		// safer route, we configure the outbound LB in that scenario.
 		if len(c.Spec.NetworkSpec.Subnets) > 0 && !oneSubnetWithoutNatGateway {
 			return
 		}

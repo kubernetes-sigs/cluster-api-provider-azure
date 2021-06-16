@@ -245,7 +245,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				defaultSpec := newDefaultVMSSSpec()
-				s.ScaleSetSpec().Return(defaultSpec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
@@ -258,7 +258,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				defaultSpec := newDefaultVMSSSpec()
-				s.ScaleSetSpec().Return(defaultSpec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				createdVMSS := newDefaultVMSS()
 				instances := newDefaultInstances()
 				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
@@ -270,7 +270,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				defaultSpec := newWindowsVMSSSpec()
-				s.ScaleSetSpec().Return(defaultSpec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				createdVMSS := newDefaultWindowsVMSS()
 				instances := newDefaultInstances()
 				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
@@ -283,7 +283,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.Size = "VM_SIZE_AN"
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
@@ -300,7 +300,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.SpotVMOptions = &infrav1.SpotVMOptions{}
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
@@ -319,7 +319,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.SpotVMOptions = &infrav1.SpotVMOptions{
 					MaxPrice: &maxPrice,
 				}
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
@@ -340,7 +340,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.OSDisk.ManagedDisk.DiskEncryptionSet = &infrav1.DiskEncryptionSetParameters{
 					ID: "my-diskencryptionset-id",
 				}
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				osdisk := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk
@@ -366,7 +366,7 @@ func TestReconcileVMSS(t *testing.T) {
 						ProviderID: "azure:///subscriptions/123/resourcegroups/456/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id1",
 					},
 				}
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
@@ -387,7 +387,7 @@ func TestReconcileVMSS(t *testing.T) {
 				spec := newDefaultVMSSSpec()
 				spec.Size = "VM_SIZE_EAH"
 				spec.SecurityProfile = &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)}
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS()
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.SecurityProfile = &compute.SecurityProfile{
@@ -409,7 +409,7 @@ func TestReconcileVMSS(t *testing.T) {
 					Capacity:        2,
 					SSHKeyData:      "ZmFrZXNzaGtleQo=",
 					SecurityProfile: &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)},
-				}, nil)
+				})
 			},
 		},
 		{
@@ -418,7 +418,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.Capacity = 2
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 
 				setupDefaultVMSSUpdateExpectations(s)
 				existingVMSS := newDefaultExistingVMSS()
@@ -450,7 +450,7 @@ func TestReconcileVMSS(t *testing.T) {
 					Size:       "VM_SIZE_1_CPU",
 					Capacity:   2,
 					SSHKeyData: "ZmFrZXNzaGtleQo=",
-				}, nil)
+				})
 			},
 		},
 		{
@@ -462,7 +462,7 @@ func TestReconcileVMSS(t *testing.T) {
 					Size:       "VM_SIZE_1_MEM",
 					Capacity:   2,
 					SSHKeyData: "ZmFrZXNzaGtleQo=",
-				}, nil)
+				})
 			},
 		},
 		{
@@ -474,7 +474,7 @@ func TestReconcileVMSS(t *testing.T) {
 					Size:       "INVALID_VM_SIZE",
 					Capacity:   2,
 					SSHKeyData: "ZmFrZXNzaGtleQo=",
-				}, nil)
+				})
 			},
 		},
 		{
@@ -482,7 +482,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "failed to start creating VMSS: cannot create VMSS: #: Internal error: StatusCode=500",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
-				s.ScaleSetSpec().Return(spec, nil).AnyTimes()
+				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomock.AssignableToTypeOf(compute.VirtualMachineScaleSet{})).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
@@ -541,7 +541,7 @@ func TestDeleteVMSS(t *testing.T) {
 					Name:     "my-existing-vmss",
 					Size:     "VM_SIZE",
 					Capacity: 3,
-				}, nil).AnyTimes()
+				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return("my-existing-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				future := &infrav1.Future{}
@@ -560,7 +560,7 @@ func TestDeleteVMSS(t *testing.T) {
 					Name:     name,
 					Size:     "VM_SIZE",
 					Capacity: 3,
-				}, nil).AnyTimes()
+				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState().Return(nil)
@@ -578,7 +578,7 @@ func TestDeleteVMSS(t *testing.T) {
 					Name:     name,
 					Size:     "VM_SIZE",
 					Capacity: 3,
-				}, nil).AnyTimes()
+				}).AnyTimes()
 				s.ResourceGroup().AnyTimes().Return(resourceGroup)
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GetLongRunningOperationState().Return(nil)

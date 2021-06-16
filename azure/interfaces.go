@@ -64,6 +64,8 @@ type NetworkDescriber interface {
 	IsVnetManaged() bool
 	ControlPlaneSubnet() infrav1.SubnetSpec
 	Subnets() infrav1.Subnets
+	Subnet(string) infrav1.SubnetSpec
+	NodeSubnets() []infrav1.SubnetSpec
 	SetSubnet(infrav1.SubnetSpec)
 	IsIPv6Enabled() bool
 	ControlPlaneRouteTable() infrav1.RouteTable

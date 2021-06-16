@@ -145,27 +145,13 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 }
 
 // NICSpecs returns the network interface specs.
-func (m *MachineScope) NICSpecs() ([]azure.NICSpec, error) {
-	subnetName := m.AzureMachine.Spec.SubnetName
-	if subnetName == "" {
-		subnets := m.Subnets()
-		var subnetCount int
-		for _, subnet := range subnets {
-			if string(subnet.Role) == m.Role() {
-				subnetCount++
-				subnetName = subnet.Name
-			}
-		}
-		if subnetCount == 0 || subnetCount > 1 {
-			return []azure.NICSpec{}, errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of the same role exist")
-		}
-	}
+func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	spec := azure.NICSpec{
 		Name:                  azure.GenerateNICName(m.Name()),
 		MachineName:           m.Name(),
 		VNetName:              m.Vnet().Name,
 		VNetResourceGroup:     m.Vnet().ResourceGroup,
-		SubnetName:            subnetName,
+		SubnetName:            m.AzureMachine.Spec.SubnetName,
 		VMSize:                m.AzureMachine.Spec.VMSize,
 		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		IPv6Enabled:           m.IsIPv6Enabled(),
@@ -183,15 +169,8 @@ func (m *MachineScope) NICSpecs() ([]azure.NICSpec, error) {
 		}
 	}
 
-	var isNatGatewayEnabled bool
-	for _, subnet := range m.Subnets() {
-		if subnet.Name == subnetName && subnet.NatGateway.Name != "" {
-			isNatGatewayEnabled = true
-		}
-	}
-
 	// If Nat Gateway is not enabled, then the NIC needs to reference the LB to get outbound traffic.
-	if m.Role() == infrav1.Node && !isNatGatewayEnabled {
+	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
 	}
@@ -202,19 +181,19 @@ func (m *MachineScope) NICSpecs() ([]azure.NICSpec, error) {
 			MachineName:           m.Name(),
 			VNetName:              m.Vnet().Name,
 			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			SubnetName:            subnetName,
+			SubnetName:            m.AzureMachine.Spec.SubnetName,
 			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
 			VMSize:                m.AzureMachine.Spec.VMSize,
 			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
 		})
 	}
 
-	return specs, nil
+	return specs
 }
 
 // NICNames returns the NIC names.
 func (m *MachineScope) NICNames() []string {
-	nicspecs, _ := m.NICSpecs()
+	nicspecs := m.NICSpecs()
 	nicNames := make([]string, len(nicspecs))
 	for i, nic := range nicspecs {
 		nicNames[i] = nic.Name
@@ -268,9 +247,15 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 	return []azure.VMExtensionSpec{}
 }
 
-// Subnet returns the machine's subnet name.
-func (m *MachineScope) Subnet() string {
-	return m.AzureMachine.Spec.SubnetName
+// Subnet returns the machine's subnet.
+func (m *MachineScope) Subnet() infrav1.SubnetSpec {
+	for _, subnet := range m.Subnets() {
+		if subnet.Name == m.AzureMachine.Spec.SubnetName {
+			return subnet
+		}
+	}
+
+	return infrav1.SubnetSpec{}
 }
 
 // AvailabilityZone returns the AzureMachine Availability Zone.
@@ -551,4 +536,28 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 
 	m.Info("No image specified for machine, using default Linux Image", "machine", m.AzureMachine.GetName())
 	return azure.GetDefaultUbuntuImage(to.String(m.Machine.Spec.Version))
+}
+
+// SetSubnetName defaults the AzureMachine subnet name to the name of one the subnets with the machine role when there is only one of them.
+// Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without the `subnetName` field being
+// set, and should be removed in the future when this field is no longer optional.
+func (m *MachineScope) SetSubnetName() error {
+	if m.AzureMachine.Spec.SubnetName == "" {
+		subnetName := ""
+		subnets := m.Subnets()
+		var subnetCount int
+		for _, subnet := range subnets {
+			if string(subnet.Role) == m.Role() {
+				subnetCount++
+				subnetName = subnet.Name
+			}
+		}
+		if subnetCount == 0 || subnetCount > 1 || subnetName == "" {
+			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of the same role exist")
+		}
+
+		m.AzureMachine.Spec.SubnetName = subnetName
+	}
+
+	return nil
 }

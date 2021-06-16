@@ -108,22 +108,7 @@ func NewMachinePoolScope(params MachinePoolScopeParams) (*MachinePoolScope, erro
 }
 
 // ScaleSetSpec returns the scale set spec.
-func (m *MachinePoolScope) ScaleSetSpec() (azure.ScaleSetSpec, error) {
-	subnetName := m.AzureMachinePool.Spec.Template.SubnetName
-	if subnetName == "" {
-		subnets := m.Subnets()
-		var subnetNodeCount int
-		for _, subnet := range subnets {
-			if subnet.Role == infrav1.SubnetNode {
-				subnetNodeCount++
-				subnetName = subnet.Name
-			}
-		}
-		if subnetNodeCount == 0 || subnetNodeCount > 1 {
-			return azure.ScaleSetSpec{}, errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of role 'node' exist")
-		}
-	}
-
+func (m *MachinePoolScope) ScaleSetSpec() azure.ScaleSetSpec {
 	return azure.ScaleSetSpec{
 		Name:                    m.Name(),
 		Size:                    m.AzureMachinePool.Spec.Template.VMSize,
@@ -131,7 +116,7 @@ func (m *MachinePoolScope) ScaleSetSpec() (azure.ScaleSetSpec, error) {
 		SSHKeyData:              m.AzureMachinePool.Spec.Template.SSHPublicKey,
 		OSDisk:                  m.AzureMachinePool.Spec.Template.OSDisk,
 		DataDisks:               m.AzureMachinePool.Spec.Template.DataDisks,
-		SubnetName:              subnetName,
+		SubnetName:              m.AzureMachinePool.Spec.Template.SubnetName,
 		VNetName:                m.Vnet().Name,
 		VNetResourceGroup:       m.Vnet().ResourceGroup,
 		PublicLBName:            m.OutboundLBName(infrav1.Node),
@@ -142,7 +127,7 @@ func (m *MachinePoolScope) ScaleSetSpec() (azure.ScaleSetSpec, error) {
 		SecurityProfile:         m.AzureMachinePool.Spec.Template.SecurityProfile,
 		SpotVMOptions:           m.AzureMachinePool.Spec.Template.SpotVMOptions,
 		FailureDomains:          m.MachinePool.Spec.FailureDomains,
-	}, nil
+	}
 }
 
 // Name returns the Azure Machine Pool Name.
@@ -613,4 +598,23 @@ func (m *MachinePoolScope) getDeploymentStrategy() machinepool.TypedDeleteSelect
 	}
 
 	return machinepool.NewMachinePoolDeploymentStrategy(m.AzureMachinePool.Spec.Strategy)
+}
+
+// SetSubnetName defaults the AzureMachinePool subnet name to the name of the subnet with role 'node' when there is only one of them.
+// Note: this logic exists only for purposes of ensuring backwards compatibility for old clusters created without the `subnetName` field being
+// set, and should be removed in the future when this field is no longer optional.
+func (m *MachinePoolScope) SetSubnetName() error {
+	if m.AzureMachinePool.Spec.Template.SubnetName == "" {
+		subnetName := ""
+		for _, subnet := range m.NodeSubnets() {
+			subnetName = subnet.Name
+		}
+		if len(m.NodeSubnets()) == 0 || len(m.NodeSubnets()) > 1 || subnetName == "" {
+			return errors.New("a subnet name must be specified when no subnets are specified or more than 1 subnet of role 'node' exist")
+		}
+
+		m.AzureMachinePool.Spec.Template.SubnetName = subnetName
+	}
+
+	return nil
 }
