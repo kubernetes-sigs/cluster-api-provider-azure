@@ -7,7 +7,7 @@ patchesStrategicMerge:
   - patches/windows-image-update.yaml
   - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
-  - ../prow-ci-version/patches/machine-image-ci-version.yaml
+  - ../prow-ci-version/patches/machine-deployment-ci-version.yaml
 patches:
 - target:
     group: bootstrap.cluster.x-k8s.io

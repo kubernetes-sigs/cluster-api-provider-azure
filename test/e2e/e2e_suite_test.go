@@ -32,11 +32,6 @@ import (
 	"testing"
 	"time"
 
-	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
-
-	"github.com/Azure/go-autorest/autorest/to"
-
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2019-06-01/insights"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -51,6 +46,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"

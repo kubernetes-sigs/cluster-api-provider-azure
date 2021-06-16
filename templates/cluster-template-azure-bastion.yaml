@@ -217,4 +217,3 @@ spec:
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
   tenantID: ${AZURE_TENANT_ID}
   type: ServicePrincipal
-

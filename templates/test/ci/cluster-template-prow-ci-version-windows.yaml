@@ -29,6 +29,10 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -161,7 +165,7 @@ spec:
             wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
             $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
             $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-            $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/kubernetes-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+            $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
           done
         fi
         echo "* checking binary versions"
@@ -356,7 +360,7 @@ spec:
               wget "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" -O "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
               $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
               $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
-              $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/kubernetes-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
+              $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
             done
           fi
           echo "* checking binary versions"
@@ -465,7 +469,7 @@ spec:
           if($$CI_VERSION -ne "")
           {
             $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
-            $$ci_url="https://storage.googleapis.com/kubernetes-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
+            $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
             foreach ( $$binary in $$binaries )
             {
               echo "downloading binary: $$ci_url/$$binary.exe"
@@ -502,6 +506,22 @@ spec:
         name: capi
         sshAuthorizedKeys:
         - ${AZURE_SSH_PUBLIC_KEY:=""}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet

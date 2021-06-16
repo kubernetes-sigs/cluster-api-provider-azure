@@ -13,13 +13,19 @@
       }
 
       # We are using a VHD that maps to v1.18.19 so the kubeproxy image is already pulled. (pull it just in case)
-      # Tag it to the ci version.  The image knows how to use the copy locally.
+      # Tag it to the ci_version which is the version set when kicking off the CI builds and doesn't match the KUBE_GIT_VERSION
+      # but matches the kubeproxy image tag when it gets generated. The image configuraiton knows how to use the binary locally.
+      # This does mean the image tage will not match the verison of the binary running.
+      # See:
+      # https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/529dbb507962a52ee9fd5a56f3d3856b9bcc53c1/templates/addons/windows/kube-proxy-windows.yaml#L60
+      # https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/529dbb507962a52ee9fd5a56f3d3856b9bcc53c1/scripts/ci-build-kubernetes.sh#L54-L59
       docker pull sigwindowstools/kube-proxy:v1.18.19-nanoserver
-      docker tag sigwindowstools/kube-proxy:v1.18.19-nanoserver "sigwindowstools/kube-proxy:${KUBE_GIT_VERSION/+/_}-nanoserver"
+      docker tag sigwindowstools/kube-proxy:v1.18.19-nanoserver "sigwindowstools/kube-proxy:${CI_VERSION/+/_}-nanoserver"
 
       kubeadm.exe version -o=short
       kubectl.exe version --client=true --short=true
       kubelet.exe --version
+      kube-proxy.exe --version
     path: C:/replace-k8s-binaries.ps1
     permissions: "0744"
 - op: add
