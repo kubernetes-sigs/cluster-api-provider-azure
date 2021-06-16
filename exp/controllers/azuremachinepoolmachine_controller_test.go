@@ -18,8 +18,11 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
@@ -72,6 +75,10 @@ func TestAzureMachinePoolMachineReconciler_Reconcile(t *testing.T) {
 			},
 		},
 	}
+
+	os.Setenv(auth.ClientID, "fooClient")
+	os.Setenv(auth.ClientSecret, "fooSecret")
+	os.Setenv(auth.TenantID, "fooTenant")
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
