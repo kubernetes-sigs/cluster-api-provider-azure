@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -501,7 +501,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 				{
 					Name: to.StringPtr("my-private-lb-frontEnd"),
 					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PrivateIPAllocationMethod: network.Static,
+						PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
 						Subnet: &network.Subnet{
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-cp-subnet"),
 						},

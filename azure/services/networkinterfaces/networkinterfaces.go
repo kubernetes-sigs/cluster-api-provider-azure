@@ -19,7 +19,7 @@ package networkinterfaces
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -73,9 +73,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 			nicConfig.Subnet = subnet
 
-			nicConfig.PrivateIPAllocationMethod = network.Dynamic
+			nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
 			if nicSpec.StaticIPAddress != "" {
-				nicConfig.PrivateIPAllocationMethod = network.Static
+				nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
 

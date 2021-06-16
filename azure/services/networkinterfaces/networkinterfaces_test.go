@@ -26,7 +26,7 @@ import (
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -134,7 +134,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
-									PrivateIPAllocationMethod:       network.Static,
+									PrivateIPAllocationMethod:       network.IPAllocationMethodStatic,
 									PrivateIPAddress:                to.StringPtr("fake.static.ip"),
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 								},
@@ -178,7 +178,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 									Name: to.StringPtr("pipConfig"),
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/cluster-name-outboundBackendPool")}},
-										PrivateIPAllocationMethod:       network.Dynamic,
+										PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 										Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
 									},
 								},
@@ -223,7 +223,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 									Subnet:                      &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:   network.Dynamic,
+									PrivateIPAllocationMethod:   network.IPAllocationMethodDynamic,
 									LoadBalancerInboundNatRules: &[]network.InboundNatRule{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/inboundNatRules/azure-test1")}},
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{
 										{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-public-lb/backendAddressPools/my-public-lb-backendPool")},
@@ -292,7 +292,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:       network.Dynamic,
+									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
 								},
 							},
@@ -335,7 +335,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 								Name: to.StringPtr("pipConfig"),
 								InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 									Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-									PrivateIPAllocationMethod:       network.Dynamic,
+									PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 									LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
 								},
 							},
@@ -379,7 +379,7 @@ func TestReconcileNetworkInterface(t *testing.T) {
 									Name: to.StringPtr("pipConfig"),
 									InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 										Subnet:                          &network.Subnet{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet")},
-										PrivateIPAllocationMethod:       network.Dynamic,
+										PrivateIPAllocationMethod:       network.IPAllocationMethodDynamic,
 										LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{},
 									},
 								},

@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo"
@@ -148,9 +148,9 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 			}
 
 			switch bastion.ProvisioningState {
-			case network.Succeeded:
+			case network.ProvisioningStateSucceeded:
 				return true, nil
-			case network.Updating:
+			case network.ProvisioningStateUpdating:
 				// Wait for operation to complete.
 				return false, nil
 			default:

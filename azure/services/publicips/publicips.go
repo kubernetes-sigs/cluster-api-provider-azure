@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -61,9 +61,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
 
 		// only set DNS properties if there is a DNS name specified
-		addressVersion := network.IPv4
+		addressVersion := network.IPVersionIPv4
 		if ip.IsIPv6 {
-			addressVersion = network.IPv6
+			addressVersion = network.IPVersionIPv6
 		}
 
 		// only set DNS properties if there is a DNS name specified
@@ -91,7 +91,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Location: to.StringPtr(s.Scope.Location()),
 				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 					PublicIPAddressVersion:   addressVersion,
-					PublicIPAllocationMethod: network.Static,
+					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 					DNSSettings:              dnsSettings,
 				},
 			},

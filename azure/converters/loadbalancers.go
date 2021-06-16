@@ -17,7 +17,7 @@ limitations under the License.
 package converters
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
