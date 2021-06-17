@@ -17,7 +17,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/google/go-cmp v0.5.6
 	github.com/google/gofuzz v1.2.0
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/onsi/ginkgo v1.16.4
@@ -31,7 +31,7 @@ require (
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.1-0.20210504183141-c99d5e999c69
 	go.opentelemetry.io/otel/sdk v0.20.1-0.20210504183141-c99d5e999c69
 	go.opentelemetry.io/otel/trace v0.20.0
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/mod v0.4.2
 	k8s.io/api v0.21.1
 	k8s.io/apimachinery v0.21.1
@@ -40,10 +40,10 @@ require (
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.21.1
 	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
-	sigs.k8s.io/cluster-api v0.4.0-beta.0
-	sigs.k8s.io/cluster-api/test v0.4.0-beta.0
+	sigs.k8s.io/cluster-api v0.4.0-beta.1
+	sigs.k8s.io/cluster-api/test v0.4.0-beta.1
 	sigs.k8s.io/controller-runtime v0.9.0
 	sigs.k8s.io/kind v0.11.1
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0-beta.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0-beta.1
