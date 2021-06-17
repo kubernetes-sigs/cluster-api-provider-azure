@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -74,8 +74,8 @@ func TestGetExistingVM(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				mpip.Get(gomockinternal.AContext(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{
 					PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-						PublicIPAddressVersion:   network.IPv4,
-						PublicIPAllocationMethod: network.Static,
+						PublicIPAddressVersion:   network.IPVersionIPv4,
+						PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 						IPAddress:                to.StringPtr("4.3.2.1"),
 					},
 				}, nil)
@@ -90,8 +90,8 @@ func TestGetExistingVM(t *testing.T) {
 										ID:   to.StringPtr("my-publicIP-id"),
 										Name: to.StringPtr("my-publicIP"),
 										PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-											PublicIPAddressVersion:   network.IPv4,
-											PublicIPAllocationMethod: network.Static,
+											PublicIPAddressVersion:   network.IPVersionIPv4,
+											PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 											IPAddress:                to.StringPtr("4.3.2.1"),
 										},
 									},
@@ -161,8 +161,8 @@ func TestGetExistingVM(t *testing.T) {
 										ID:   to.StringPtr("my-publicIP-id"),
 										Name: to.StringPtr("my-publicIP"),
 										PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-											PublicIPAddressVersion:   network.IPv4,
-											PublicIPAllocationMethod: network.Static,
+											PublicIPAddressVersion:   network.IPVersionIPv4,
+											PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 											IPAddress:                to.StringPtr("4.3.2.1"),
 										},
 									},
@@ -210,8 +210,8 @@ func TestGetExistingVM(t *testing.T) {
 										ID:   to.StringPtr("my-publicIP-id"),
 										Name: to.StringPtr("my-publicIP"),
 										PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-											PublicIPAddressVersion:   network.IPv4,
-											PublicIPAllocationMethod: network.Static,
+											PublicIPAddressVersion:   network.IPVersionIPv4,
+											PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 											IPAddress:                to.StringPtr("4.3.2.1"),
 										},
 									},

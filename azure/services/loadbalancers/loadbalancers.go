@@ -19,7 +19,7 @@ package loadbalancers
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -202,7 +202,7 @@ func (s *Service) getFrontendIPConfigs(lbSpec azure.LBSpec) ([]network.FrontendI
 		var properties network.FrontendIPConfigurationPropertiesFormat
 		if lbSpec.Type == infrav1.Internal {
 			properties = network.FrontendIPConfigurationPropertiesFormat{
-				PrivateIPAllocationMethod: network.Static,
+				PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
 				Subnet: &network.Subnet{
 					ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
 				},
