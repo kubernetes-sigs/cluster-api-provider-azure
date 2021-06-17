@@ -756,7 +756,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "AzureManagedControlPlane Legacy Aad can be set after cluster creation",
+			name: "AzureManagedControlPlane Legacy Aad cannot be set after cluster creation",
 			oldAMCP: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
 					Version: "v1.18.0",
@@ -773,7 +773,7 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "AzureManagedControlPlane Legacy Aad can be migrated to Managed Aad",
