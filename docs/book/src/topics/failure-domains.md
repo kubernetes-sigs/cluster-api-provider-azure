@@ -1,6 +1,6 @@
 # Failure Domains
 
-The Azure provider includes the support for [failure domains](https://cluster-api.sigs.k8s.io/developer/providers/v1alpha2-to-v1alpha4.html#optional-support-failure-domains) introduced as part of v1alpha4.
+The Azure provider includes the support for [failure domains](https://cluster-api.sigs.k8s.io/developer/providers/v1alpha2-to-v1alpha3.html#optional-support-failure-domains) introduced as part of v1alpha3.
 
 ## Failure domains in Azure
 
