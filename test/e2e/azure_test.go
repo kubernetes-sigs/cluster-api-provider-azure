@@ -454,6 +454,68 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	Context("Creating an AKS cluster using a different SP identity", func() {
+		BeforeEach(func() {
+			spClientSecret := os.Getenv("AZURE_MULTI_TENANCY_SECRET")
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sp-identity-secret",
+					Namespace: namespace.Name,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+			}
+			err := bootstrapClusterProxy.GetClient().Create(ctx, secret)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("with a single control plane node and 1 node", func() {
+			spClientID := os.Getenv("AZURE_MULTI_TENANCY_ID")
+			identityName := e2eConfig.GetVariable(MultiTenancyIdentityName)
+			os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
+			os.Setenv("CLUSTER_IDENTITY_NAMESPACE", namespace.Name)
+			os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
+			os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "sp-identity-secret")
+			os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", namespace.Name)
+
+			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig)
+			Expect(err).To(BeNil())
+
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "aks-multi-tenancy",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        kubernetesVersion,
+					ControlPlaneMachineCount: pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
+				},
+			}, result)
+
+			Context("Validating AKS Resources", func() {
+				AKSResourcesValidationSpec(ctx, func() AKSResourcesValidationSpecInput {
+					return AKSResourcesValidationSpecInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+					}
+				})
+			})
+		})
+	})
+
 	Context("Creating a Windows Enabled cluster", func() {
 		// Requires 3 control planes due to https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/857
 		It("With 3 control-plane nodes and 1 Linux worker node and 1 Windows worker node", func() {

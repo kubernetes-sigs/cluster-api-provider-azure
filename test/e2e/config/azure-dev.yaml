@@ -86,9 +86,12 @@ providers:
       targetName: "cluster-template-machine-pool-windows.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-cloud-provider.yaml"
       targetName: "cluster-template-external-cloud-provider.yaml"
+    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-multi-tenancy.yaml"
+      targetName: "cluster-template-aks-multi-tenancy.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"
+  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
   ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
   COREDNS_VERSION_UPGRADE_TO: "1.6.7"
   KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.19.11}"

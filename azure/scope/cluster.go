@@ -67,7 +67,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 			return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
 		}
 	} else {
-		credentailsProvider, err := NewAzureCredentialsProvider(ctx, params.Client, params.AzureCluster)
+		credentailsProvider, err := NewAzureClusterCredentialsProvider(ctx, params.Client, params.AzureCluster)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to init credentials provider")
 		}

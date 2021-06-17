@@ -82,6 +82,10 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
+
+	// IdentityRef is a reference to a AzureClusterIdentity to be used when reconciling this cluster
+	// +optional
+	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.

@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -77,18 +79,26 @@ func (k AzureLogCollector) CollectMachineLog(ctx context.Context, managementClus
 // CollectMachinePoolLog collects logs from a machine pool.
 func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool, outputPath string) error {
 	var errors []error
+	var isWindows bool
 
 	am, err := getAzureMachinePool(ctx, managementClusterClient, mp)
 	if err != nil {
-		return err
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+		// Machine pool can be an AzureManagedMachinePool for AKS clusters.
+		_, err = getAzureManagedMachinePool(ctx, managementClusterClient, mp)
+		if err != nil {
+			return err
+		}
+	} else {
+		isWindows = isAzureMachinePoolWindows(am)
 	}
 
 	cluster, err := util.GetClusterFromMetadata(ctx, managementClusterClient, mp.ObjectMeta)
 	if err != nil {
 		return err
 	}
-
-	isWindows := isAzureMachinePoolWindows(am)
 
 	for i, instance := range mp.Spec.ProviderIDList {
 		hostname := mp.Status.NodeRefs[i].Name
@@ -178,6 +188,17 @@ func getAzureMachinePool(ctx context.Context, managementClusterClient client.Cli
 	azMachinePool := &expv1alpha4.AzureMachinePool{}
 	err := managementClusterClient.Get(ctx, key, azMachinePool)
 	return azMachinePool, err
+}
+
+func getAzureManagedMachinePool(ctx context.Context, managementClusterClient client.Client, mp *expv1.MachinePool) (*expv1alpha4.AzureManagedMachinePool, error) {
+	key := client.ObjectKey{
+		Namespace: mp.Spec.Template.Spec.InfrastructureRef.Namespace,
+		Name:      mp.Spec.Template.Spec.InfrastructureRef.Name,
+	}
+
+	azManagedMachinePool := &expv1alpha4.AzureManagedMachinePool{}
+	err := managementClusterClient.Get(ctx, key, azManagedMachinePool)
+	return azManagedMachinePool, err
 }
 
 func linuxLogs(execToPathFn func(outputFileName string, command string, args ...string) func() error) []func() error {

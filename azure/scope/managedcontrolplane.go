@@ -48,7 +48,7 @@ type ManagedControlPlaneScopeParams struct {
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
-func NewManagedControlPlaneScope(params ManagedControlPlaneScopeParams) (*ManagedControlPlaneScope, error) {
+func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlaneScopeParams) (*ManagedControlPlaneScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -61,8 +61,19 @@ func NewManagedControlPlaneScope(params ManagedControlPlaneScopeParams) (*Manage
 		params.Logger = klogr.New()
 	}
 
-	if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, ""); err != nil {
-		return nil, errors.Wrap(err, "failed to create Azure session")
+	if params.ControlPlane.Spec.IdentityRef == nil {
+		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, ""); err != nil {
+			return nil, errors.Wrap(err, "failed to create Azure session")
+		}
+	} else {
+		credentialsProvider, err := NewManagedControlPlaneCredentialsProvider(ctx, params.Client, params.ControlPlane)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to init credentials provider")
+		}
+
+		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, "", credentialsProvider); err != nil {
+			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
+		}
 	}
 
 	helper, err := patch.NewHelper(params.PatchTarget, params.Client)

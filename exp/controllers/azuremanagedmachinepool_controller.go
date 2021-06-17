@@ -191,7 +191,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	// Create the scope.
-	mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
+	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
 		Client:           r.Client,
 		Logger:           log,
 		ControlPlane:     controlPlane,
