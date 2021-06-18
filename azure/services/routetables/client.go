@@ -55,16 +55,16 @@ func newRouteTablesClient(subscriptionID string, baseURI string, authorizer auto
 
 // Get gets the specified route table.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, rtName string) (network.RouteTable, error) {
-	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.AzureClient.Get")
+	defer done()
 
 	return ac.routetables.Get(ctx, resourceGroupName, rtName, "")
 }
 
 // CreateOrUpdate create or updates a route table in a specified resource group.
 func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, rtName string, rt network.RouteTable) error {
-	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.routetables.CreateOrUpdate(ctx, resourceGroupName, rtName, rt)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified route table.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, rtName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "routetables.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "routetables.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.routetables.Delete(ctx, resourceGroupName, rtName)
 	if err != nil {

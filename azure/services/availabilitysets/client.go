@@ -55,8 +55,8 @@ func newAvailabilitySetsClient(subscriptionID string, baseURI string, authorizer
 
 // Get gets an availability set.
 func (a *AzureClient) Get(ctx context.Context, resourceGroup, availabilitySetsName string) (compute.AvailabilitySet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.Get")
+	defer done()
 
 	return a.availabilitySets.Get(ctx, resourceGroup, availabilitySetsName)
 }
@@ -64,16 +64,16 @@ func (a *AzureClient) Get(ctx context.Context, resourceGroup, availabilitySetsNa
 // CreateOrUpdate creates or updates an availability set.
 func (a *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroup string, availabilitySetsName string,
 	params compute.AvailabilitySet) (compute.AvailabilitySet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.CreateOrUpdate")
+	defer done()
 
 	return a.availabilitySets.CreateOrUpdate(ctx, resourceGroup, availabilitySetsName, params)
 }
 
 // Delete deletes an availability set.
 func (a *AzureClient) Delete(ctx context.Context, resourceGroup, availabilitySetsName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "availabilitysets.AzureClient.Delete")
+	defer done()
 	_, err := a.availabilitySets.Delete(ctx, resourceGroup, availabilitySetsName)
 	return err
 }

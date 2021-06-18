@@ -55,16 +55,16 @@ func newInboundNatRulesClient(subscriptionID string, baseURI string, authorizer 
 
 // Get gets the specified inbound NAT rules.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) (network.InboundNatRule, error) {
-	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.AzureClient.Get")
+	defer done()
 
 	return ac.inboundnatrules.Get(ctx, resourceGroupName, lbName, inboundNatRuleName, "")
 }
 
 // CreateOrUpdate creates or updates a inbound NAT rules.
 func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, lbName string, inboundNatRuleName string, inboundNatRuleParameters network.InboundNatRule) error {
-	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.inboundnatrules.CreateOrUpdate(ctx, resourceGroupName, lbName, inboundNatRuleName, inboundNatRuleParameters)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified inbound NAT rules.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, lbName, inboundNatRuleName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "inboundnatrules.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.inboundnatrules.Delete(ctx, resourceGroupName, lbName, inboundNatRuleName)
 	if err != nil {

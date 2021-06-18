@@ -55,16 +55,16 @@ func netNatGatewaysClient(subscriptionID string, baseURI string, authorizer auto
 
 // Get gets the specified nat gateway.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, natGatewayName string) (network.NatGateway, error) {
-	ctx, span := tele.Tracer().Start(ctx, "natgateways.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.AzureClient.Get")
+	defer done()
 
 	return ac.natgateways.Get(ctx, resourceGroupName, natGatewayName, "")
 }
 
 // CreateOrUpdate create or updates a nat gateway in a specified resource group.
 func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, natGatewayName string, natGateway network.NatGateway) error {
-	ctx, span := tele.Tracer().Start(ctx, "natgateways.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.natgateways.CreateOrUpdate(ctx, resourceGroupName, natGatewayName, natGateway)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified nat gateway.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, natGatewayName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "natgateways.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "natgateways.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.natgateways.Delete(ctx, resourceGroupName, natGatewayName)
 	if err != nil {

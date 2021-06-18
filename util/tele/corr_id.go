@@ -19,6 +19,7 @@ package tele
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 )
 
@@ -79,4 +80,16 @@ func CorrIDFromCtx(ctx context.Context) (CorrID, bool) {
 	}
 
 	return CorrID(""), false
+}
+
+// corrIDLogger attempts to fetch the correlation ID from the
+// given ctx using CorrIDFromCtx. If it finds one, this function
+// uses lggr.WithValues to return a new logr.Logger with the
+// correlation ID in it.
+func corrIDLogger(ctx context.Context, lggr logr.Logger) logr.Logger {
+	corrID, ok := CorrIDFromCtx(ctx)
+	if ok {
+		lggr = lggr.WithValues(string(CorrIDKeyVal), string(corrID))
+	}
+	return lggr
 }

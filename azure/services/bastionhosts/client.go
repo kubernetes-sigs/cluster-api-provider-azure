@@ -55,16 +55,16 @@ func newBastionHostsClient(subscriptionID string, baseURI string, authorizer aut
 
 // Get gets information about the specified bastion host.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, bastionName string) (network.BastionHost, error) {
-	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "bastionhosts.AzureClient.Get")
+	defer done()
 
 	return ac.interfaces.Get(ctx, resourceGroupName, bastionName)
 }
 
 // CreateOrUpdate creates or updates a bastion host.
 func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, bastionName string, bastionHost network.BastionHost) error {
-	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "bastionhosts.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.interfaces.CreateOrUpdate(ctx, resourceGroupName, bastionName, bastionHost)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *azureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 
 // Delete deletes the specified network interface.
 func (ac *azureClient) Delete(ctx context.Context, resourceGroupName, bastionName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "bastionhosts.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.interfaces.Delete(ctx, resourceGroupName, bastionName)
 	if err != nil {

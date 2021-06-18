@@ -74,8 +74,8 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) (retErr error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Reconcile")
+	defer done()
 
 	if err := s.validateSpec(ctx); err != nil {
 		// do as much early validation as possible to limit calls to Azure
@@ -150,8 +150,8 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 // Delete deletes a scale set asynchronously. Delete sends a DELETE request to Azure and if accepted without error,
 // the VMSS will be considered deleted. The actual delete in Azure may take longer, but should eventually complete.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.Delete")
+	defer done()
 
 	var err error
 
@@ -208,8 +208,8 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.createVMSS")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.createVMSS")
+	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
 
@@ -229,8 +229,8 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 }
 
 func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.patchVMSSIfNeeded")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.patchVMSSIfNeeded")
+	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
 
@@ -284,8 +284,8 @@ func hasModelModifyingDifferences(infraVMSS *azure.VMSS, vmss compute.VirtualMac
 }
 
 func (s *Service) validateSpec(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.validateSpec")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.validateSpec")
+	defer done()
 
 	spec := s.Scope.ScaleSetSpec()
 
@@ -354,8 +354,8 @@ func (s *Service) validateSpec(ctx context.Context) error {
 }
 
 func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSetSpec) (compute.VirtualMachineScaleSet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.buildVMSSFromSpec")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.buildVMSSFromSpec")
+	defer done()
 
 	sku, err := s.resourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
@@ -507,8 +507,8 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 // getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
 func (s *Service) getVirtualMachineScaleSet(ctx context.Context, vmssName string) (*azure.VMSS, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSet")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.getVirtualMachineScaleSet")
+	defer done()
 
 	vmss, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmssName)
 	if err != nil {
@@ -525,8 +525,8 @@ func (s *Service) getVirtualMachineScaleSet(ctx context.Context, vmssName string
 
 // getVirtualMachineScaleSetIfDone gets a Virtual Machine Scale Set and its instances from Azure if the future is completed.
 func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *infrav1.Future) (*azure.VMSS, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSetIfDone")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.Service.getVirtualMachineScaleSetIfDone")
+	defer done()
 
 	vmss, err := s.GetResultIfDone(ctx, future)
 	if err != nil {

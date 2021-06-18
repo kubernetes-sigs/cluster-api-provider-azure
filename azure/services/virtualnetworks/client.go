@@ -58,16 +58,16 @@ func newVirtualNetworksClient(subscriptionID string, baseURI string, authorizer 
 
 // Get gets the specified virtual network by resource group.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vnetName string) (network.VirtualNetwork, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.AzureClient.Get")
+	defer done()
 
 	return ac.virtualnetworks.Get(ctx, resourceGroupName, vnetName, "")
 }
 
 // CreateOrUpdate creates or updates a virtual network in the specified resource group.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vnetName string, vn network.VirtualNetwork) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.virtualnetworks.CreateOrUpdate(ctx, resourceGroupName, vnetName, vn)
 	if err != nil {
@@ -83,8 +83,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vn
 
 // Delete deletes the specified virtual network.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vnetName string) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.virtualnetworks.Delete(ctx, resourceGroupName, vnetName)
 	if err != nil {
@@ -100,8 +100,8 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vnetName s
 
 // CheckIPAddressAvailability checks whether a private IP address is available for use.
 func (ac *AzureClient) CheckIPAddressAvailability(ctx context.Context, resourceGroupName, vnetName, ip string) (network.IPAddressAvailabilityResult, error) {
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.AzureClient.CheckIPAddressAvailability")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "virtualnetworks.AzureClient.CheckIPAddressAvailability")
+	defer done()
 
 	return ac.virtualnetworks.CheckIPAddressAvailability(ctx, resourceGroupName, vnetName, ip)
 }

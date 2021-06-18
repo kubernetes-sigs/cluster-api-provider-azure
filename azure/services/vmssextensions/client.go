@@ -52,8 +52,8 @@ func newVirtualMachineScaleSetExtensionsClient(subscriptionID string, baseURI st
 
 // Get creates or updates the virtual machine scale set extension.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmssName, name string) (compute.VirtualMachineScaleSetExtension, error) {
-	ctx, span := tele.Tracer().Start(ctx, "vmssextensions.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "vmssextensions.AzureClient.Get")
+	defer done()
 
 	return ac.vmssextensions.Get(ctx, resourceGroupName, vmssName, name, "")
 }

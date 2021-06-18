@@ -54,8 +54,8 @@ func New(scope PublicIPScope) *Service {
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "publicips.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Reconcile")
+	defer done()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
@@ -109,8 +109,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the public IP with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "publicips.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Delete")
+	defer done()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {
 		managed, err := s.isIPManaged(ctx, ip.Name)

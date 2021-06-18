@@ -56,16 +56,16 @@ func newAgentPoolsClient(subscriptionID string, baseURI string, authorizer autor
 
 // Get gets an agent pool.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, cluster, name string) (containerservice.AgentPool, error) {
-	ctx, span := tele.Tracer().Start(ctx, "agentpools.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Get")
+	defer done()
 
 	return ac.agentpools.Get(ctx, resourceGroupName, cluster, name)
 }
 
 // CreateOrUpdate creates or updates an agent pool.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cluster, name string, properties containerservice.AgentPool) error {
-	ctx, span := tele.Tracer().Start(ctx, "agentpools.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.agentpools.CreateOrUpdate(ctx, resourceGroupName, cluster, name, properties)
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, cl
 
 // Delete deletes an agent pool.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, cluster, name string) error {
-	ctx, span := tele.Tracer().Start(ctx, "agentpools.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "agentpools.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.agentpools.Delete(ctx, resourceGroupName, cluster, name)
 	if err != nil {

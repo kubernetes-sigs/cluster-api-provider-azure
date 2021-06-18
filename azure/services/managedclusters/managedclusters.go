@@ -135,8 +135,8 @@ func New(scope ManagedClusterScope) *Service {
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Reconcile")
+	defer done()
 
 	managedClusterSpec, err := s.Scope.ManagedClusterSpec()
 	if err != nil {
@@ -314,8 +314,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the virtual network with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Delete")
+	defer done()
 
 	klog.V(2).Infof("Deleting managed cluster  %s ", s.Scope.ClusterName())
 	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), s.Scope.ClusterName())

@@ -76,16 +76,16 @@ func newVirtualMachineScaleSetVMsClient(subscriptionID string, baseURI string, a
 
 // Get retrieves the Virtual Machine Scale Set Virtual Machine.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmssName, instanceID string) (compute.VirtualMachineScaleSetVM, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.azureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.azureClient.Get")
+	defer done()
 
 	return ac.scalesetvms.Get(ctx, resourceGroupName, vmssName, instanceID, "")
 }
 
 // GetResultIfDone fetches the result of a long-running operation future if it is done.
 func (ac *azureClient) GetResultIfDone(ctx context.Context, future *infrav1.Future) (compute.VirtualMachineScaleSetVM, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.azureClient.GetResultIfDone")
-	defer span.End()
+	ctx, _, spanDone := tele.StartSpanWithLogger(ctx, "scalesetvms.azureClient.GetResultIfDone")
+	defer spanDone()
 
 	var genericFuture genericScaleSetVMFuture
 	futureData, err := base64.URLEncoding.DecodeString(future.Data)
@@ -133,8 +133,8 @@ func (ac *azureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 //   vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
 //   instanceID - the ID of the VM scale set VM.
 func (ac *azureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssName, instanceID string) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.azureClient.DeleteAsync")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesetvms.azureClient.DeleteAsync")
+	defer done()
 
 	future, err := ac.scalesetvms.Delete(ctx, resourceGroupName, vmssName, instanceID, to.BoolPtr(false))
 	if err != nil {

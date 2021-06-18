@@ -63,8 +63,8 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, name string) 
 
 // GetCredentials fetches the admin kubeconfig for a managed cluster.
 func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, name string) ([]byte, error) {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.GetCredentials")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.GetCredentials")
+	defer done()
 
 	credentialList, err := ac.managedclusters.ListClusterAdminCredentials(ctx, resourceGroupName, name, "")
 	if err != nil {
@@ -80,8 +80,8 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 
 // CreateOrUpdate creates or updates a managed cluster.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) (containerservice.ManagedCluster, error) {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.CreateOrUpdate")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.CreateOrUpdate")
+	defer done()
 
 	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
 	if err != nil {
@@ -96,8 +96,8 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, na
 
 // Delete deletes a managed cluster.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.AzureClient.Delete")
+	defer done()
 
 	future, err := ac.managedclusters.Delete(ctx, resourceGroupName, name)
 	if err != nil {

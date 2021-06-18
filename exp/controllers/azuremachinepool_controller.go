@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -88,8 +86,8 @@ func NewAzureMachinePoolReconciler(client client.Client, log logr.Logger, record
 
 // SetupWithManager initializes this controller with a manager.
 func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolReconciler.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolReconciler.SetupWithManager")
+	defer done()
 
 	log := ampr.Log.WithValues("controller", "AzureMachinePool")
 	var r reconcile.Reconciler = ampr
@@ -160,19 +158,18 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, logger, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureMachinePoolReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureMachinePool"),
+	)
+	defer done()
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampr.ReconcileTimeout))
 	defer cancel()
 
-	logger := ampr.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
-
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureMachinePool"),
-		),
-	)
-	defer span.End()
+	logger = logger.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	azMachinePool := &infrav1exp.AzureMachinePool{}
 	err := ampr.Get(ctx, req.NamespacedName, azMachinePool)
@@ -262,8 +259,8 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 }
 
 func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolReconciler.reconcileNormal")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolReconciler.reconcileNormal")
+	defer done()
 
 	machinePoolScope.Info("Reconciling AzureMachinePool")
 	// If the AzureMachine is in an error state, return early.
@@ -340,8 +337,8 @@ func (ampr *AzureMachinePoolReconciler) reconcileNormal(ctx context.Context, mac
 }
 
 func (ampr *AzureMachinePoolReconciler) reconcileDelete(ctx context.Context, machinePoolScope *scope.MachinePoolScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolReconciler.reconcileDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureMachinePoolReconciler.reconcileDelete")
+	defer done()
 
 	machinePoolScope.V(2).Info("handling deleted AzureMachinePool")
 

@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
@@ -77,8 +75,8 @@ func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder r
 
 // SetupWithManager initializes this controller with a manager.
 func (acr *AzureClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.SetupWithManager")
+	defer done()
 
 	log := acr.Log.WithValues("controller", "AzureCluster")
 	var r reconcile.Reconciler = acr
@@ -121,13 +119,14 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	defer cancel()
 	log := acr.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureCluster"),
-		))
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureClusterReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureCluster"),
+	)
+	defer done()
 
 	// Fetch the AzureCluster instance
 	azureCluster := &infrav1.AzureCluster{}
@@ -205,8 +204,8 @@ func (acr *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileNormal")
+	defer done()
 
 	clusterScope.Info("Reconciling AzureCluster")
 	azureCluster := clusterScope.AzureCluster
@@ -243,8 +242,8 @@ func (acr *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterS
 }
 
 func (acr *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureClusterReconciler.reconcileDelete")
+	defer done()
 
 	clusterScope.Info("Reconciling AzureCluster delete")
 

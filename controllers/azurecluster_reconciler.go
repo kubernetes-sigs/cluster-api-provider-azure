@@ -81,8 +81,8 @@ var _ azure.Reconciler = (*azureClusterService)(nil)
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureClusterService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterService.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Reconcile")
+	defer done()
 
 	if err := s.setFailureDomainsForLocation(ctx); err != nil {
 		return errors.Wrap(err, "failed to get availability zones")
@@ -136,8 +136,8 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in a predetermined order.
 func (s *azureClusterService) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterService.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureClusterService.Delete")
+	defer done()
 
 	if err := s.groupsSvc.Delete(ctx); err != nil {
 		if errors.Is(err, azure.ErrNotOwned) {

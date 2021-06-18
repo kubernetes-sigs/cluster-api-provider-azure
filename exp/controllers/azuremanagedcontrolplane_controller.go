@@ -23,8 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -60,8 +58,8 @@ type AzureManagedControlPlaneReconciler struct {
 
 // SetupWithManager initializes this controller with a manager.
 func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlaneReconciler.SetupWithManager")
+	defer done()
 
 	log := amcpr.Log.WithValues("controller", "AzureManagedControlPlane")
 	var r reconcile.Reconciler = amcpr
@@ -119,15 +117,15 @@ func (amcpr *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Co
 func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(amcpr.ReconcileTimeout))
 	defer cancel()
-	log := amcpr.Log.WithValues("namespace", req.Namespace, "azureManagedControlPlane", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureManagedControlPlane"),
-		))
-	defer span.End()
+	ctx, log, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureManagedControlPlane"),
+	)
+	defer done()
+
+	log = log.WithValues("namespace", req.Namespace, "azureManagedControlPlane", req.Name)
 
 	// Fetch the AzureManagedControlPlane instance
 	azureControlPlane := &infrav1exp.AzureManagedControlPlane{}
@@ -202,8 +200,8 @@ func (amcpr *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, 
 }
 
 func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.reconcileNormal")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlaneReconciler.reconcileNormal")
+	defer done()
 
 	scope.Logger.Info("Reconciling AzureManagedControlPlane")
 
@@ -226,8 +224,8 @@ func (amcpr *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Con
 }
 
 func (amcpr *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.reconcileDelete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedControlPlaneReconciler.reconcileDelete")
+	defer done()
 
 	scope.Logger.Info("Reconciling AzureManagedControlPlane delete")
 

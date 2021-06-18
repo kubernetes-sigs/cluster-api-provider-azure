@@ -57,8 +57,11 @@ func New(scope BastionScope) *Service {
 
 // Reconcile gets/creates/updates a bastion host.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.Service.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"bastionhosts.Service.Reconcile",
+	)
+	defer done()
 
 	azureBastionSpec := s.Scope.BastionSpec().AzureBastion
 	if azureBastionSpec != nil {
@@ -73,8 +76,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the bastion host with the provided scope.
 func (s *Service) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "bastionhosts.Service.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "bastionhosts.Service.Delete")
+	defer done()
 
 	azureBastionSpec := s.Scope.BastionSpec().AzureBastion
 	if azureBastionSpec != nil {

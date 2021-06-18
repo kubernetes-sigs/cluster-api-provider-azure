@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -56,8 +54,8 @@ type AzureManagedClusterReconciler struct {
 
 // SetupWithManager initializes this controller with a manager.
 func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.SetupWithManager")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.AzureManagedClusterReconciler.SetupWithManager")
+	defer done()
 
 	log := amcr.Log.WithValues("controller", "AzureManagedCluster")
 	var r reconcile.Reconciler = amcr
@@ -109,13 +107,14 @@ func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ct
 	defer cancel()
 	log := amcr.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureManagedCluster"),
-		))
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(
+		ctx,
+		"controllers.AzureManagedClusterReconciler.Reconcile",
+		tele.KVP("namespace", req.Namespace),
+		tele.KVP("name", req.Name),
+		tele.KVP("kind", "AzureManagedCluster"),
+	)
+	defer done()
 
 	// Fetch the AzureManagedCluster instance
 	aksCluster := &infrav1exp.AzureManagedCluster{}

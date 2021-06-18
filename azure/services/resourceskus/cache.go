@@ -102,8 +102,8 @@ func NewStaticCache(data []compute.ResourceSku, location string) *Cache {
 }
 
 func (c *Cache) refresh(ctx context.Context, location string) error {
-	ctx, span := tele.Tracer().Start(ctx, "resourceskus.Cache.refresh")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.Cache.refresh")
+	defer done()
 
 	data, err := c.client.List(ctx, fmt.Sprintf("location eq '%s'", location))
 	if err != nil {
@@ -121,8 +121,8 @@ func (c *Cache) refresh(ctx context.Context, location string) error {
 // supported in region), which is why it returns an error and not a
 // boolean.
 func (c *Cache) Get(ctx context.Context, name string, kind ResourceType) (SKU, error) {
-	ctx, span := tele.Tracer().Start(ctx, "resourceskus.Cache.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.Cache.Get")
+	defer done()
 
 	if c.data == nil {
 		if err := c.refresh(ctx, c.location); err != nil {
@@ -140,8 +140,8 @@ func (c *Cache) Get(ctx context.Context, name string, kind ResourceType) (SKU, e
 
 // Map invokes a function over all cached values.
 func (c *Cache) Map(ctx context.Context, mapFn func(sku SKU)) error {
-	ctx, span := tele.Tracer().Start(ctx, "resourceskus.Cache.Map")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.Cache.Map")
+	defer done()
 
 	if c.data == nil {
 		if err := c.refresh(ctx, c.location); err != nil {
@@ -161,8 +161,8 @@ func (c *Cache) Map(ctx context.Context, mapFn func(sku SKU)) error {
 // set of zones into which some machine size may deploy. It removes
 // restricted virtual machine sizes and duplicates.
 func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error) {
-	ctx, span := tele.Tracer().Start(ctx, "resourceskus.Cache.GetZones")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.Cache.GetZones")
+	defer done()
 
 	var allZones = make(map[string]bool)
 	mapFn := func(sku SKU) {
@@ -223,8 +223,8 @@ func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error)
 
 // GetZonesWithVMSize returns available zones for a virtual machine size in the given location.
 func (c *Cache) GetZonesWithVMSize(ctx context.Context, size, location string) ([]string, error) {
-	ctx, span := tele.Tracer().Start(ctx, "resourceskus.Cache.GetZonesWithVMSize")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "resourceskus.Cache.GetZonesWithVMSize")
+	defer done()
 
 	var allZones = make(map[string]bool)
 	mapFn := func(sku SKU) {

@@ -97,8 +97,8 @@ func newVirtualMachineScaleSetsClient(subscriptionID string, baseURI string, aut
 
 // ListInstances retrieves information about the model views of a virtual machine scale set.
 func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vmssName string) ([]compute.VirtualMachineScaleSetVM, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.ListInstances")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.ListInstances")
+	defer done()
 
 	itr, err := ac.scalesetvms.ListComplete(ctx, resourceGroupName, vmssName, "", "", "")
 	if err != nil {
@@ -118,8 +118,8 @@ func (ac *AzureClient) ListInstances(ctx context.Context, resourceGroupName, vms
 
 // List returns all scale sets in a resource group.
 func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]compute.VirtualMachineScaleSet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.List")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.List")
+	defer done()
 
 	itr, err := ac.scalesets.ListComplete(ctx, resourceGroupName)
 	if err != nil {
@@ -139,8 +139,8 @@ func (ac *AzureClient) List(ctx context.Context, resourceGroupName string) ([]co
 
 // Get retrieves information about the model view of a virtual machine scale set.
 func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmssName string) (compute.VirtualMachineScaleSet, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.Get")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.Get")
+	defer done()
 
 	return ac.scalesets.Get(ctx, resourceGroupName, vmssName, "")
 }
@@ -148,8 +148,8 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmssName stri
 // CreateOrUpdateAsync the operation to create or update a virtual machine scale set without waiting for the operation
 // to complete.
 func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupName, vmssName string, vmss compute.VirtualMachineScaleSet) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.CreateOrUpdateAsync")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.CreateOrUpdateAsync")
+	defer done()
 
 	future, err := ac.scalesets.CreateOrUpdate(ctx, resourceGroupName, vmssName, vmss)
 	if err != nil {
@@ -181,8 +181,8 @@ func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, resourceGroupNam
 //   resourceGroupName - the name of the resource group.
 //   vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
 func (ac *AzureClient) UpdateAsync(ctx context.Context, resourceGroupName, vmssName string, parameters compute.VirtualMachineScaleSetUpdate) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.UpdateAsync")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.UpdateAsync")
+	defer done()
 
 	future, err := ac.scalesets.Update(ctx, resourceGroupName, vmssName, parameters)
 	if err != nil {
@@ -266,8 +266,8 @@ func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 
 // UpdateInstances update instances of a VM scale set.
 func (ac *AzureClient) UpdateInstances(ctx context.Context, resourceGroupName, vmssName string, instanceIDs []string) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.UpdateInstances")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.UpdateInstances")
+	defer done()
 
 	params := compute.VirtualMachineScaleSetVMInstanceRequiredIDs{
 		InstanceIds: &instanceIDs,
@@ -292,8 +292,8 @@ func (ac *AzureClient) UpdateInstances(ctx context.Context, resourceGroupName, v
 //   resourceGroupName - the name of the resource group.
 //   vmssName - the name of the VM scale set to create or update. parameters - the scale set object.
 func (ac *AzureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssName string) (*infrav1.Future, error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.DeleteAsync")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "scalesets.AzureClient.DeleteAsync")
+	defer done()
 
 	future, err := ac.scalesets.Delete(ctx, resourceGroupName, vmssName, to.BoolPtr(false))
 	if err != nil {

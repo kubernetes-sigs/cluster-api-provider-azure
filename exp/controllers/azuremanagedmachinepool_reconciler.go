@@ -87,8 +87,8 @@ func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) *a
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
+	defer done()
 
 	s.scope.Info("reconciling machine pool")
 	agentPoolName := s.scope.AgentPoolSpec().Name
@@ -136,8 +136,8 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 
 // Delete reconciles all the services in a predetermined order.
 func (s *azureManagedMachinePoolService) Delete(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Delete")
-	defer span.End()
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "controllers.azureManagedMachinePoolService.Delete")
+	defer done()
 
 	if err := s.agentPoolsSvc.Delete(ctx); err != nil {
 		return errors.Wrapf(err, "failed to delete machine pool %s", s.scope.AgentPoolSpec().Name)
