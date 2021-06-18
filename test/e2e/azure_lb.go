@@ -78,7 +78,7 @@ func AzureLBSpec(ctx context.Context, inputGetter func() AzureLBSpecInput) {
 		deploymentName = "web-windows" + util.RandomString(6)
 	}
 
-	webDeployment := deploymentBuilder.CreateDeployment("httpd", deploymentName, corev1.NamespaceDefault)
+	webDeployment := deploymentBuilder.Create("httpd", deploymentName, corev1.NamespaceDefault)
 	webDeployment.AddContainerPort("http", "http", 80, corev1.ProtocolTCP)
 
 	if input.Windows {

@@ -134,6 +134,12 @@ type (
 		// +optional
 		// +kubebuilder:default={type: "RollingUpdate", rollingUpdate: {maxSurge: 1, maxUnavailable: 0, deletePolicy: Oldest}}
 		Strategy AzureMachinePoolDeploymentStrategy `json:"strategy,omitempty"`
+
+		// NodeDrainTimeout is the total amount of time that the controller will spend on draining a node.
+		// The default value is 0, meaning that the node can be drained without any time limitations.
+		// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
+		// +optional
+		NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
 	}
 
 	// AzureMachinePoolDeploymentStrategyType is the type of deployment strategy employed to rollout a new version of

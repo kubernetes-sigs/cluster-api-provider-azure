@@ -18,19 +18,25 @@ package scope
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
-	utilkubeconfig "sigs.k8s.io/cluster-api/util/kubeconfig"
+	drain "sigs.k8s.io/cluster-api/third_party/kubernetes-drain"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,6 +44,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+)
+
+const (
+	// MachinePoolMachineScopeName is the sourceName, or more specifically the UserAgent, of client used in cordon and drain.
+	MachinePoolMachineScopeName = "azuremachinepoolmachine-scope"
 )
 
 type (
@@ -261,6 +272,158 @@ func (s *MachinePoolMachineScope) UpdateStatus(ctx context.Context) error {
 	return nil
 }
 
+// CordonAndDrain will cordon and drain the Kubernetes node associated with this AzureMachinePoolMachine.
+func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.CordonAndDrain")
+	defer span.End()
+
+	var (
+		nodeRef = s.AzureMachinePoolMachine.Status.NodeRef
+		node    *corev1.Node
+		err     error
+	)
+	if nodeRef == nil || nodeRef.Name == "" {
+		node, err = s.workloadNodeGetter.GetNodeByProviderID(ctx, s.ProviderID())
+	} else {
+		node, err = s.workloadNodeGetter.GetNodeByObjectReference(ctx, *nodeRef)
+	}
+
+	if err != nil && apierrors.IsNotFound(err) {
+		return nil // node was already gone, so no need to cordon and drain
+	} else if err != nil {
+		return errors.Wrap(err, "failed to find node")
+	}
+
+	// Drain node before deletion and issue a patch in order to make this operation visible to the users.
+	if s.isNodeDrainAllowed() {
+		patchHelper, err := patch.NewHelper(s.AzureMachinePoolMachine, s.client)
+		if err != nil {
+			return errors.Wrap(err, "failed to build a patchHelper when draining node")
+		}
+
+		s.V(4).Info("Draining node", "node", s.AzureMachinePoolMachine.Status.NodeRef.Name)
+		// The DrainingSucceededCondition never exists before the node is drained for the first time,
+		// so its transition time can be used to record the first time draining.
+		// This `if` condition prevents the transition time to be changed more than once.
+		if conditions.Get(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition) == nil {
+			conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition, clusterv1.DrainingReason, clusterv1.ConditionSeverityInfo, "Draining the node before deletion")
+		}
+
+		if err := patchHelper.Patch(ctx, s.AzureMachinePoolMachine); err != nil {
+			return errors.Wrap(err, "failed to patch AzureMachinePoolMachine")
+		}
+
+		if err := s.drainNode(ctx, node); err != nil {
+			// Check for condition existence. If the condition exists, it may have a different severity or message, which
+			// would cause the last transition time to be updated. The last transition time is used to determine how
+			// long to wait to timeout the node drain operation. If we were to keep updating the last transition time,
+			// a drain operation may never timeout.
+			if conditions.Get(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition) == nil {
+				conditions.MarkFalse(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition, clusterv1.DrainingFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
+			}
+			return err
+		}
+
+		conditions.MarkTrue(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition)
+	}
+
+	return nil
+}
+
+func (s *MachinePoolMachineScope) drainNode(ctx context.Context, node *corev1.Node) error {
+	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.drainNode")
+	defer span.End()
+
+	restConfig, err := remote.RESTConfig(ctx, MachinePoolMachineScopeName, s.client, client.ObjectKey{
+		Name:      s.ClusterName(),
+		Namespace: s.AzureMachinePoolMachine.Namespace,
+	})
+
+	if err != nil {
+		s.Error(err, "Error creating a remote client while deleting Machine, won't retry")
+		return nil
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		s.Error(err, "Error creating a remote client while deleting Machine, won't retry")
+		return nil
+	}
+
+	drainer := &drain.Helper{
+		Client:              kubeClient,
+		Force:               true,
+		IgnoreAllDaemonSets: true,
+		DeleteLocalData:     true,
+		GracePeriodSeconds:  -1,
+		// If a pod is not evicted in 20 seconds, retry the eviction next time the
+		// machine gets reconciled again (to allow other machines to be reconciled).
+		Timeout: 20 * time.Second,
+		OnPodDeletedOrEvicted: func(pod *corev1.Pod, usingEviction bool) {
+			verbStr := "Deleted"
+			if usingEviction {
+				verbStr = "Evicted"
+			}
+			s.V(4).Info(fmt.Sprintf("%s pod from Node", verbStr),
+				"pod", fmt.Sprintf("%s/%s", pod.Name, pod.Namespace))
+		},
+		Out:    writer{klog.Info},
+		ErrOut: writer{klog.Error},
+		DryRun: false,
+	}
+
+	if noderefutil.IsNodeUnreachable(node) {
+		// When the node is unreachable and some pods are not evicted for as long as this timeout, we ignore them.
+		drainer.SkipWaitForDeleteTimeoutSeconds = 60 * 5 // 5 minutes
+	}
+
+	if err := drain.RunCordonOrUncordon(ctx, drainer, node, true); err != nil {
+		// Machine will be re-reconciled after a cordon failure.
+		return azure.WithTransientError(errors.Errorf("unable to cordon node %s: %v", node.Name, err), 20*time.Second)
+	}
+
+	if err := drain.RunNodeDrain(ctx, drainer, node.Name); err != nil {
+		// Machine will be re-reconciled after a drain failure.
+		return azure.WithTransientError(errors.Wrap(err, "Drain failed, retry in 20s"), 20*time.Second)
+	}
+
+	s.V(4).Info("Drain successful")
+	return nil
+}
+
+// isNodeDrainAllowed checks to see the node is excluded from draining or if the NodeDrainTimeout has expired.
+func (s *MachinePoolMachineScope) isNodeDrainAllowed() bool {
+	if _, exists := s.AzureMachinePoolMachine.ObjectMeta.Annotations[clusterv1.ExcludeNodeDrainingAnnotation]; exists {
+		return false
+	}
+
+	if s.nodeDrainTimeoutExceeded() {
+		return false
+	}
+
+	return true
+}
+
+// nodeDrainTimeoutExceeded will check to see if the AzureMachinePool's NodeDrainTimeout is exceeded for the
+// AzureMachinePoolMachine.
+func (s *MachinePoolMachineScope) nodeDrainTimeoutExceeded() bool {
+	// if the NodeDrainTineout type is not set by user
+	pool := s.AzureMachinePool
+	if pool == nil || pool.Spec.NodeDrainTimeout == nil || pool.Spec.NodeDrainTimeout.Seconds() <= 0 {
+		return false
+	}
+
+	// if the draining succeeded condition does not exist
+	if conditions.Get(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition) == nil {
+		return false
+	}
+
+	now := time.Now()
+	firstTimeDrain := conditions.GetLastTransitionTime(s.AzureMachinePoolMachine, clusterv1.DrainingSucceededCondition)
+	diff := now.Sub(firstTimeDrain.Time)
+	return diff.Seconds() >= s.AzureMachinePool.Spec.NodeDrainTimeout.Seconds()
+}
+
 func (s *MachinePoolMachineScope) hasLatestModelApplied() (bool, error) {
 	if s.instance == nil {
 		return false, errors.New("instance must not be nil")
@@ -344,24 +507,16 @@ func getWorkloadClient(ctx context.Context, c client.Client, cluster client.Obje
 	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolMachineScope.getWorkloadClient")
 	defer span.End()
 
-	obj := client.ObjectKey{
-		Namespace: cluster.Namespace,
-		Name:      cluster.Name,
-	}
-	dataBytes, err := utilkubeconfig.FromSecret(ctx, c, obj)
-	if err != nil {
-		return nil, errors.Wrapf(err, "\"%s-kubeconfig\" not found in namespace %q", obj.Name, obj.Namespace)
-	}
+	return remote.NewClusterClient(ctx, MachinePoolMachineScopeName, c, cluster)
+}
 
-	config, err := clientcmd.Load(dataBytes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load \"%s-kubeconfig\" in namespace %q", obj.Name, obj.Namespace)
-	}
+// writer implements io.Writer interface as a pass-through for klog.
+type writer struct {
+	logFunc func(args ...interface{})
+}
 
-	restConfig, err := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{}).ClientConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed transform config \"%s-kubeconfig\" in namespace %q", obj.Name, obj.Namespace)
-	}
-
-	return client.New(restConfig, client.Options{})
+// Write passes string(p) into writer's logFunc and always returns len(p).
+func (w writer) Write(p []byte) (n int, err error) {
+	w.logFunc(string(p))
+	return len(p), nil
 }

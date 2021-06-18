@@ -377,8 +377,12 @@ func (r *azureMachinePoolMachineReconciler) Delete(ctx context.Context) error {
 		}
 	}()
 
-	err := r.scalesetVMsService.Delete(ctx)
-	if err != nil {
+	// cordon and drain stuff
+	if err := r.Scope.CordonAndDrain(ctx); err != nil {
+		return errors.Wrap(err, "failed to cordon and drain the scalesetVMs")
+	}
+
+	if err := r.scalesetVMsService.Delete(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile scalesetVMs")
 	}
 
