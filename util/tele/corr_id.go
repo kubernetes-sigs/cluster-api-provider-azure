@@ -22,15 +22,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type corrIDKey string
+// CorrIDKey is the type of the key used to store correlation
+// IDs in context.Contexts.
+type CorrIDKey string
+
+// CorrIDKeyVal is the key used to store the correlation ID in
+// context.Contexts, HTTP headers, and other similar locations.
+const CorrIDKeyVal CorrIDKey = "x-ms-correlation-request-id"
 
 // CorrID is a correlation ID that the cluster API provider
 // sends with all API requests to Azure. Do not create one
 // of these manually. Instead, use the CtxWithCorrelationID function
 // to create one of these within a context.Context.
 type CorrID string
-
-const corrIDKeyVal corrIDKey = "x-ms-correlation-id"
 
 // ctxWithCorrID creates a CorrID and creates a new context.Context
 // with the new CorrID in it. It returns the _new_ context and the
@@ -41,11 +45,11 @@ const corrIDKeyVal corrIDKey = "x-ms-correlation-id"
 // below:
 //
 // 	ctx := context.Background()
-//	ctx, newCorrID := CtxWithCorrID(ctx)
+//	ctx, newCorrID := ctxWithCorrID(ctx)
 //	fmt.Println("new corr ID: ", newCorrID)
 //	doSomething(ctx)
 func ctxWithCorrID(ctx context.Context) (context.Context, CorrID) {
-	currentCorrIDIface := ctx.Value(corrIDKeyVal)
+	currentCorrIDIface := ctx.Value(CorrIDKeyVal)
 	if currentCorrIDIface != nil {
 		currentCorrID, ok := currentCorrIDIface.(CorrID)
 		if ok {
@@ -57,7 +61,7 @@ func ctxWithCorrID(ctx context.Context) (context.Context, CorrID) {
 		return nil, CorrID("")
 	}
 	newCorrID := CorrID(uid.String())
-	ctx = context.WithValue(ctx, corrIDKeyVal, newCorrID)
+	ctx = context.WithValue(ctx, CorrIDKeyVal, newCorrID)
 	return ctx, newCorrID
 }
 
@@ -65,7 +69,7 @@ func ctxWithCorrID(ctx context.Context) (context.Context, CorrID) {
 // context.Context. If none exists, returns an empty CorrID and false.
 // Otherwise returns the CorrID value and true.
 func CorrIDFromCtx(ctx context.Context) (CorrID, bool) {
-	currentCorrIDIface := ctx.Value(corrIDKeyVal)
+	currentCorrIDIface := ctx.Value(CorrIDKeyVal)
 	if currentCorrIDIface == nil {
 		return CorrID(""), false
 	}

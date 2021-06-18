@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -35,7 +36,15 @@ func (t tracer) Start(
 	op string,
 	opts ...trace.SpanOption,
 ) (context.Context, trace.Span) {
-	ctx, _ = ctxWithCorrID(ctx)
+	ctx, corrID := ctxWithCorrID(ctx)
+	opts = append(
+		opts,
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attribute.String(
+			string(CorrIDKeyVal),
+			string(corrID),
+		)),
+	)
 	return t.Tracer.Start(ctx, op, opts...)
 }
 
