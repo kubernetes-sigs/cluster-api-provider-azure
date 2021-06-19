@@ -315,39 +315,25 @@ func (r *AzureManagedControlPlane) validateAadProfile() error {
 }
 
 func (r *AzureManagedControlPlane) validateManagedAadProfile() (bool, error) {
-	if r.Spec.AADProfile.Managed != nil && *r.Spec.AADProfile.Managed && (r.Spec.AADProfile.AdminGroupObjectIDs == nil || len(*r.Spec.AADProfile.AdminGroupObjectIDs) == 0) {
-		return false, errors.New("AdminGroupObjectIDs fields missing in AADProfile")
-	}
+	if r.Spec.AADProfile.ManagedAAD != nil {
+		aad := r.Spec.AADProfile.ManagedAAD
 
-	if r.Spec.AADProfile.Managed == nil && r.Spec.AADProfile.AdminGroupObjectIDs != nil && len(*r.Spec.AADProfile.AdminGroupObjectIDs) != 0 {
-		return false, errors.New("Managed field missing in AADProfile")
+		if *aad.Managed && len(*aad.AdminGroupObjectIDs) == 0 {
+			return false, errors.New("require atleast one groupObjectID in Spec.AADProfile.ManagedAAD.AdminGroupObjectID")
+		}
+
+		if len(*aad.AdminGroupObjectIDs) != 0 && !*aad.Managed {
+			return false, errors.New("managed field has to be true to enable aad integration with aks")
+		}
 	}
-	return r.Spec.AADProfile.Managed != nil && *r.Spec.AADProfile.Managed, nil
+	return r.Spec.AADProfile.ManagedAAD != nil, nil
 }
 
 func (r *AzureManagedControlPlane) validateLegacyAadProfile() (bool, error) {
-	err := ""
-	if r.Spec.AADProfile.ClientAppID != nil || r.Spec.AADProfile.ServerAppID != nil || r.Spec.AADProfile.ServerAppSecret != nil || r.Spec.AADProfile.TenantID != nil {
-		if r.Spec.AADProfile.ClientAppID == nil {
-			err = err + "missing ClientAppID in AADProfile. "
-		}
-		if r.Spec.AADProfile.ServerAppID == nil {
-			err = err + "missing ServerAppID in AADProfile. "
-		}
-		if r.Spec.AADProfile.ServerAppSecret == nil {
-			err = err + "missing ServerAppSecret in AADProfile. "
-		}
-		if r.Spec.AADProfile.TenantID == nil {
-			err = err + "missing TenantID in AADProfile. "
-		}
-	}
-	if err != "" {
-		return false, errors.New(err)
-	}
-	return r.Spec.AADProfile.ClientAppID != nil, nil
+	return r.Spec.AADProfile.LegacyAAD != nil, nil
 }
 
-func (r *AzureManagedControlPlane) validateUpdateAadProfile(old *ManagedClusterAADProfile) field.ErrorList {
+func (r *AzureManagedControlPlane) validateUpdateAadProfile(old *AADProfile) field.ErrorList {
 	allErrs := field.ErrorList{}
 	new := r.Spec.AADProfile
 
@@ -360,80 +346,47 @@ func (r *AzureManagedControlPlane) validateUpdateAadProfile(old *ManagedClusterA
 	}
 
 	if old == nil && new != nil {
-		if new.ClientAppID != nil {
+		if new.LegacyAAD != nil {
 			allErrs = append(allErrs,
 				field.Invalid(
-					field.NewPath("Spec", "AADProfile", "ClientAppID"),
-					new.ClientAppID,
-					"field is immutable"))
-		}
-		if new.ServerAppID != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "AADProfile", "ServerAppID"),
-					new.ServerAppID,
-					"field is immutable"))
-		}
-		if new.ServerAppSecret != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "AADProfile", "ServerAppSecret"),
-					new.ServerAppSecret,
-					"field is immutable"))
-		}
-		if new.TenantID != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "AADProfile", "TenantID"),
-					new.TenantID,
+					field.NewPath("Spec", "AADProfile", "LegacyAAD"),
+					new.LegacyAAD,
 					"field is immutable"))
 		}
 	}
 
 	if old != nil && new != nil {
-		if old.Managed != nil && (new.Managed == nil || !*new.Managed) {
+		if old.ManagedAAD != nil && new.ManagedAAD == nil {
 			allErrs = append(allErrs,
 				field.Invalid(
-					field.NewPath("Spec", "AADProfile", "Managed"),
-					new.Managed,
-					"field cannot be set to false, Managed AADManagedProfile cannot be disabled or migrated to Legacy"))
+					field.NewPath("Spec", "AADProfile", "ManagedAAD"),
+					new.ManagedAAD,
+					"AADProfile cannot be disabled or migrated to Legacy"))
 		}
 
-		if old.AdminGroupObjectIDs != nil && (new.AdminGroupObjectIDs == nil || len(*new.AdminGroupObjectIDs) == 0) {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "AADProfile", "AdminGroupObjectIDs"),
-					new.AdminGroupObjectIDs,
-					"need atleast one AdminGroupObjectID"))
+		if old.ManagedAAD != nil && new.ManagedAAD != nil {
+			if !*new.ManagedAAD.Managed {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile", "ManagedAAD"),
+						new.ManagedAAD.Managed,
+						"field cannot be set to false"))
+			}
+			if len(*new.ManagedAAD.AdminGroupObjectIDs) == 0 {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile", "AdminGroupObjectIDs"),
+						new.ManagedAAD.AdminGroupObjectIDs,
+						"need atleast one AdminGroupObjectID"))
+			}
 		}
 
-		if new.Managed == nil {
-			if new.ClientAppID != old.ClientAppID {
+		if new.ManagedAAD == nil {
+			if new.LegacyAAD != old.LegacyAAD {
 				allErrs = append(allErrs,
 					field.Invalid(
-						field.NewPath("Spec", "AADProfile", "ClientAppID"),
-						new.ClientAppID,
-						"field is immutable"))
-			}
-			if new.ServerAppID != old.ServerAppID {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("Spec", "AADProfile", "ServerAppID"),
-						new.ServerAppID,
-						"field is immutable"))
-			}
-			if new.ServerAppSecret != old.ServerAppSecret {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("Spec", "AADProfile", "ServerAppSecret"),
-						new.ServerAppSecret,
-						"field is immutable"))
-			}
-			if new.TenantID != old.TenantID {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("Spec", "AADProfile", "TenantID"),
-						new.TenantID,
+						field.NewPath("Spec", "AADProfile", "LegacyAAD"),
+						new.LegacyAAD,
 						"field is immutable"))
 			}
 		}

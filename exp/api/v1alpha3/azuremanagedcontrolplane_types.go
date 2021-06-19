@@ -84,32 +84,50 @@ type AzureManagedControlPlaneSpec struct {
 
 	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
 	// +optional
-	AADProfile *ManagedClusterAADProfile `json:"aadProfile,omitempty"`
+	AADProfile *AADProfile `json:"aadProfile,omitempty"`
 }
 
-// ManagedClusterAADProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
-type ManagedClusterAADProfile struct {
+// AADProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+type AADProfile struct {
+
+	// ManagedAAD - AAD integration is managed by AKS.
+	// +optional
+	ManagedAAD *ManagedAAD `json:"managedAadProfile,omitempty"`
+
+	// LegacyAAD is old style azure active directory integration, user has to create the client app and server app.
+	// +optional
+	LegacyAAD *LegacyAAD `json:"legacyAadProfile,omitempty"`
+}
+
+// ManagedAAD - AAD integration is managed by AKS.
+type ManagedAAD struct {
 	// Managed - Whether to enable managed AAD.
-	Managed *bool `json:"managed,omitempty"`
+	// +kubebuilder:validation:Required
+	Managed *bool `json:"managed"`
 
+	// DEPRECATED: use ManagedAAD instead
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
-	AdminGroupObjectIDs *[]string `json:"adminGroupObjectIDs,omitempty"`
+	// +kubebuilder:validation:Required
+	AdminGroupObjectIDs *[]string `json:"adminGroupObjectIDs"`
+}
 
-	// DEPRECATED: use AADConfig instead
+// LegacyAAD is old style azure active directory integration, user has to create and manage the client app and server app for the AAD integration with AKS.
+type LegacyAAD struct {
 	// ClientAppID - The client AAD application ID.
-	ClientAppID *string `json:"clientAppID,omitempty"`
+	// +kubebuilder:validation:Required
+	ClientAppID *string `json:"clientAppID"`
 
-	// DEPRECATED: use AADConfig instead
 	// ServerAppID - The server AAD application ID.
-	ServerAppID *string `json:"serverAppID,omitempty"`
+	// +kubebuilder:validation:Required
+	ServerAppID *string `json:"serverAppID"`
 
-	// DEPRECATED: use AADConfig instead
 	// ServerAppSecret - The server AAD application secret.
-	ServerAppSecret *string `json:"serverAppSecret,omitempty"`
+	// +kubebuilder:validation:Required
+	ServerAppSecret *string `json:"serverAppSecret"`
 
-	// DEPRECATED: use AADConfig instead
 	// TenantID - The AAD tenant ID to use for authentication.
-	TenantID *string `json:"tenantID,omitempty"`
+	// +kubebuilder:validation:Required
+	TenantID *string `json:"tenantID"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
