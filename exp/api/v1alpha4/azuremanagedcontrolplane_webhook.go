@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"errors"
 	"net"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -303,10 +304,7 @@ func (r *AzureManagedControlPlane) validateAadProfile() error {
 		if err != nil {
 			return err
 		}
-		legacyAad, err := r.validateLegacyAadProfile()
-		if err != nil {
-			return err
-		}
+		legacyAad := r.validateLegacyAadProfile()
 		if managedAad && legacyAad {
 			return errors.New("conflicting values provided in AADProfile")
 		}
@@ -329,8 +327,8 @@ func (r *AzureManagedControlPlane) validateManagedAadProfile() (bool, error) {
 	return r.Spec.AADProfile.ManagedAAD != nil, nil
 }
 
-func (r *AzureManagedControlPlane) validateLegacyAadProfile() (bool, error) {
-	return r.Spec.AADProfile.LegacyAAD != nil, nil
+func (r *AzureManagedControlPlane) validateLegacyAadProfile() bool {
+	return r.Spec.AADProfile.LegacyAAD != nil
 }
 
 func (r *AzureManagedControlPlane) validateUpdateAadProfile(old *AADProfile) field.ErrorList {
@@ -382,7 +380,7 @@ func (r *AzureManagedControlPlane) validateUpdateAadProfile(old *AADProfile) fie
 		}
 
 		if new.ManagedAAD == nil {
-			if new.LegacyAAD != old.LegacyAAD {
+			if !reflect.DeepEqual(new.LegacyAAD, old.LegacyAAD) {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("Spec", "AADProfile", "LegacyAAD"),
