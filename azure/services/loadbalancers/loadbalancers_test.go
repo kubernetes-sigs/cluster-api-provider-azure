@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -62,12 +62,13 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
-						Name:            "my-publiclb",
-						Role:            infrav1.APIServerRole,
-						Type:            infrav1.Public,
-						SKU:             infrav1.SKUStandard,
-						SubnetName:      "my-cp-subnet",
-						BackendPoolName: "my-publiclb-backendPool",
+						Name:                 "my-publiclb",
+						Role:                 infrav1.APIServerRole,
+						Type:                 infrav1.Public,
+						SKU:                  infrav1.SKUStandard,
+						SubnetName:           "my-cp-subnet",
+						BackendPoolName:      "my-publiclb-backendPool",
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
 						FrontendIPConfigs: []infrav1.FrontendIP{
 							{
 								Name: "my-publiclb-frontEnd",
@@ -92,12 +93,13 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
-						Name:            "my-private-lb",
-						Role:            infrav1.APIServerRole,
-						Type:            infrav1.Internal,
-						SKU:             infrav1.SKUStandard,
-						SubnetName:      "my-cp-subnet",
-						BackendPoolName: "my-private-lb-backendPool",
+						Name:                 "my-private-lb",
+						Role:                 infrav1.APIServerRole,
+						Type:                 infrav1.Internal,
+						SKU:                  infrav1.SKUStandard,
+						SubnetName:           "my-cp-subnet",
+						BackendPoolName:      "my-private-lb-backendPool",
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
 						FrontendIPConfigs: []infrav1.FrontendIP{
 							{
 								Name:             "my-private-lb-frontEnd",
@@ -123,11 +125,12 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
-						Name:            "my-cluster",
-						Role:            infrav1.NodeOutboundRole,
-						Type:            infrav1.Public,
-						SKU:             infrav1.SKUStandard,
-						BackendPoolName: "my-cluster-outboundBackendPool",
+						Name:                 "my-cluster",
+						Role:                 infrav1.NodeOutboundRole,
+						Type:                 infrav1.Public,
+						SKU:                  infrav1.SKUStandard,
+						BackendPoolName:      "my-cluster-outboundBackendPool",
+						IdleTimeoutInMinutes: to.Int32Ptr(30),
 						FrontendIPConfigs: []infrav1.FrontendIP{
 							{
 								Name: "my-cluster-frontEnd",
@@ -150,22 +153,25 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
-						Name:          "my-lb",
-						SubnetName:    "my-subnet",
-						APIServerPort: 6443,
-						Role:          infrav1.APIServerRole,
-						Type:          infrav1.Internal,
+						Name:                 "my-lb",
+						SubnetName:           "my-subnet",
+						APIServerPort:        6443,
+						Role:                 infrav1.APIServerRole,
+						Type:                 infrav1.Internal,
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
 					},
 					{
-						Name:          "my-lb-2",
-						APIServerPort: 6443,
-						Role:          infrav1.APIServerRole,
-						Type:          infrav1.Public,
+						Name:                 "my-lb-2",
+						APIServerPort:        6443,
+						Role:                 infrav1.APIServerRole,
+						Type:                 infrav1.Public,
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
 					},
 					{
-						Name: "my-lb-3",
-						Role: infrav1.NodeOutboundRole,
-						Type: infrav1.Public,
+						Name:                 "my-lb-3",
+						Role:                 infrav1.NodeOutboundRole,
+						Type:                 infrav1.Public,
+						IdleTimeoutInMinutes: to.Int32Ptr(30),
 					},
 				})
 				setupDefaultLBExpectations(s)
@@ -187,12 +193,13 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
-						Name:            "my-publiclb",
-						Role:            infrav1.APIServerRole,
-						Type:            infrav1.Public,
-						SKU:             infrav1.SKUStandard,
-						SubnetName:      "my-cp-subnet",
-						BackendPoolName: "my-publiclb-backendPool",
+						Name:                 "my-publiclb",
+						Role:                 infrav1.APIServerRole,
+						Type:                 infrav1.Public,
+						SKU:                  infrav1.SKUStandard,
+						SubnetName:           "my-cp-subnet",
+						BackendPoolName:      "my-publiclb-backendPool",
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
 						FrontendIPConfigs: []infrav1.FrontendIP{
 							{
 								Name: "my-publiclb-frontEnd",
@@ -217,12 +224,13 @@ func TestReconcileLoadBalancer(t *testing.T) {
 			expect: func(s *mock_loadbalancers.MockLBScopeMockRecorder, m *mock_loadbalancers.MockClientMockRecorder, mVnet *mock_virtualnetworks.MockClientMockRecorder) {
 				s.LBSpecs().Return([]azure.LBSpec{
 					{
-						Name:            "my-publiclb",
-						Role:            infrav1.APIServerRole,
-						Type:            infrav1.Public,
-						SKU:             infrav1.SKUStandard,
-						SubnetName:      "my-cp-subnet",
-						BackendPoolName: "my-publiclb-backendPool",
+						Name:                 "my-publiclb",
+						Role:                 infrav1.APIServerRole,
+						Type:                 infrav1.Public,
+						SKU:                  infrav1.SKUStandard,
+						SubnetName:           "my-cp-subnet",
+						BackendPoolName:      "my-publiclb-backendPool",
+						IdleTimeoutInMinutes: to.Int32Ptr(4),
 						FrontendIPConfigs: []infrav1.FrontendIP{
 							{
 								Name: "my-publiclb-frontEnd",
@@ -397,7 +405,7 @@ func newDefaultNodeOutboundLB() network.LoadBalancer {
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/backendAddressPools/my-cluster-outboundBackendPool"),
 						},
 						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
+						IdleTimeoutInMinutes: to.Int32Ptr(30),
 					},
 				},
 			},
@@ -493,7 +501,7 @@ func newDefaultInternalAPIServerLB() network.LoadBalancer {
 				{
 					Name: to.StringPtr("my-private-lb-frontEnd"),
 					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PrivateIPAllocationMethod: network.Static,
+						PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
 						Subnet: &network.Subnet{
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-cp-subnet"),
 						},

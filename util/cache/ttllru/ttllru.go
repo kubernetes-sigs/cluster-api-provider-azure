@@ -26,17 +26,24 @@ import (
 
 type (
 	// Cache is a TTL LRU cache which caches items with a max time to live and with
-	// bounded length
+	// bounded length.
 	Cache struct {
+		Cacher
 		TimeToLive time.Duration
-		cache      cacher
 		mu         sync.Mutex
 	}
 
-	cacher interface {
+	// Cacher describes a basic cache.
+	Cacher interface {
 		Get(key interface{}) (value interface{}, ok bool)
 		Add(key interface{}, value interface{}) (evicted bool)
 		Remove(key interface{}) (ok bool)
+	}
+
+	// PeekingCacher describes a basic cache with the ability to peek.
+	PeekingCacher interface {
+		Cacher
+		Peek(key interface{}) (value interface{}, expiration time.Time, ok bool)
 	}
 
 	timeToLiveItem struct {
@@ -46,8 +53,8 @@ type (
 )
 
 // New creates a new TTL LRU cache which caches items with a max time to live and with
-// bounded length
-func New(size int, timeToLive time.Duration) (*Cache, error) {
+// bounded length.
+func New(size int, timeToLive time.Duration) (PeekingCacher, error) {
 	c, err := lru.New(size)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build new LRU cache")
@@ -56,19 +63,51 @@ func New(size int, timeToLive time.Duration) (*Cache, error) {
 	return newCache(timeToLive, c)
 }
 
-func newCache(timeToLive time.Duration, cache cacher) (*Cache, error) {
+func newCache(timeToLive time.Duration, cache Cacher) (PeekingCacher, error) {
 	return &Cache{
-		cache:      cache,
+		Cacher:     cache,
 		TimeToLive: timeToLive,
 	}, nil
 }
 
-// Get returns a value and a bool indicating the value was found for a given key
+// Get returns a value and a bool indicating the value was found for a given key.
 func (ttlCache *Cache) Get(key interface{}) (value interface{}, ok bool) {
+	ttlItem, ok := ttlCache.peekItem(key)
+	if !ok {
+		return nil, false
+	}
+
+	ttlItem.LastTouch = time.Now()
+	return ttlItem.Value, true
+}
+
+// Add will add a value for a given key.
+func (ttlCache *Cache) Add(key interface{}, val interface{}) bool {
 	ttlCache.mu.Lock()
 	defer ttlCache.mu.Unlock()
 
-	val, ok := ttlCache.cache.Get(key)
+	return ttlCache.Cacher.Add(key, &timeToLiveItem{
+		Value:     val,
+		LastTouch: time.Now(),
+	})
+}
+
+// Peek will fetch an item from the cache, but will not update the expiration time.
+func (ttlCache *Cache) Peek(key interface{}) (value interface{}, expiration time.Time, ok bool) {
+	ttlItem, ok := ttlCache.peekItem(key)
+	if !ok {
+		return nil, time.Time{}, false
+	}
+
+	expirationTime := time.Now().Add(ttlCache.TimeToLive - time.Since(ttlItem.LastTouch))
+	return ttlItem.Value, expirationTime, true
+}
+
+func (ttlCache *Cache) peekItem(key interface{}) (value *timeToLiveItem, ok bool) {
+	ttlCache.mu.Lock()
+	defer ttlCache.mu.Unlock()
+
+	val, ok := ttlCache.Cacher.Get(key)
 	if !ok {
 		return nil, false
 	}
@@ -79,21 +118,9 @@ func (ttlCache *Cache) Get(key interface{}) (value interface{}, ok bool) {
 	}
 
 	if time.Since(ttlItem.LastTouch) > ttlCache.TimeToLive {
-		ttlCache.cache.Remove(key)
+		ttlCache.Cacher.Remove(key)
 		return nil, false
 	}
 
-	ttlItem.LastTouch = time.Now()
-	return ttlItem.Value, true
-}
-
-// Add will add a value for a given key
-func (ttlCache *Cache) Add(key interface{}, val interface{}) {
-	ttlCache.mu.Lock()
-	defer ttlCache.mu.Unlock()
-
-	ttlCache.cache.Add(key, &timeToLiveItem{
-		Value:     val,
-		LastTouch: time.Now(),
-	})
+	return ttlItem, true
 }

@@ -33,8 +33,8 @@ func TestAzureMachinePool_SetDefaultSSHPublicKey(t *testing.T) {
 	}
 
 	existingPublicKey := "testpublickey"
-	publicKeyExistTest := test{amp: createMachinePoolWithSSHPublicKey(t, existingPublicKey)}
-	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey(t, "")}
+	publicKeyExistTest := test{amp: createMachinePoolWithSSHPublicKey(existingPublicKey)}
+	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey("")}
 
 	err := publicKeyExistTest.amp.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
@@ -77,7 +77,7 @@ func TestAzureMachinePool_SetIdentityDefaults(t *testing.T) {
 	g.Expect(notSystemAssignedTest.machinePool.Spec.RoleAssignmentName).To(BeEmpty())
 }
 
-func createMachinePoolWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMachinePool {
+func createMachinePoolWithSSHPublicKey(sshPublicKey string) *AzureMachinePool {
 	return hardcodedAzureMachinePoolWithSSHKey(sshPublicKey)
 }
 

@@ -19,13 +19,13 @@ package system
 import "os"
 
 const (
-	// NamespaceEnvVarName is the env var coming from DownwardAPI in the manager manifest
+	// NamespaceEnvVarName is the env var coming from DownwardAPI in the manager manifest.
 	NamespaceEnvVarName = "POD_NAMESPACE"
-	// DefaultNamespace is the default value from manifest
+	// DefaultNamespace is the default value from manifest.
 	DefaultNamespace = "capz-system"
 )
 
-// GetManagerNamespace return the namespace where the controller is running
+// GetManagerNamespace returns the namespace where the controller is running.
 func GetManagerNamespace() string {
 	managerNamespace := os.Getenv(NamespaceEnvVarName)
 	if managerNamespace == "" {

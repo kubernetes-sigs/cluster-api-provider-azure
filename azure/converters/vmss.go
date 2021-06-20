@@ -19,14 +19,13 @@ package converters
 import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest/to"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // SDKToVMSS converts an Azure SDK VirtualMachineScaleSet to the AzureMachinePool type.
-func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) *infrav1exp.VMSS {
-	vmss := &infrav1exp.VMSS{
+func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.VirtualMachineScaleSetVM) *azure.VMSS {
+	vmss := &azure.VMSS{
 		ID:    to.String(sdkvmss.ID),
 		Name:  to.String(sdkvmss.Name),
 		State: infrav1.ProvisioningState(to.String(sdkvmss.ProvisioningState)),
@@ -46,25 +45,65 @@ func SDKToVMSS(sdkvmss compute.VirtualMachineScaleSet, sdkinstances []compute.Vi
 	}
 
 	if len(sdkinstances) > 0 {
-		vmss.Instances = make([]infrav1exp.VMSSVM, len(sdkinstances))
+		vmss.Instances = make([]azure.VMSSVM, len(sdkinstances))
 		for i, vm := range sdkinstances {
-			instance := infrav1exp.VMSSVM{
-				ID:         to.String(vm.ID),
-				InstanceID: to.String(vm.InstanceID),
-				Name:       to.String(vm.OsProfile.ComputerName),
-				State:      infrav1.ProvisioningState(to.String(vm.ProvisioningState)),
-			}
-
-			if vm.LatestModelApplied != nil {
-				instance.LatestModelApplied = *vm.LatestModelApplied
-			}
-
-			if vm.Zones != nil && len(*vm.Zones) > 0 {
-				instance.AvailabilityZone = to.StringSlice(vm.Zones)[0]
-			}
-			vmss.Instances[i] = instance
+			vmss.Instances[i] = *SDKToVMSSVM(vm)
 		}
 	}
 
+	if sdkvmss.VirtualMachineProfile != nil &&
+		sdkvmss.VirtualMachineProfile.StorageProfile != nil &&
+		sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference != nil {
+		imageRef := sdkvmss.VirtualMachineProfile.StorageProfile.ImageReference
+		vmss.Image = SDKImageToImage(imageRef, sdkvmss.Plan != nil)
+	}
+
 	return vmss
+}
+
+// SDKToVMSSVM converts an Azure SDK VirtualMachineScaleSetVM into an infrav1exp.VMSSVM.
+func SDKToVMSSVM(sdkInstance compute.VirtualMachineScaleSetVM) *azure.VMSSVM {
+	instance := azure.VMSSVM{
+		ID:         to.String(sdkInstance.ID),
+		InstanceID: to.String(sdkInstance.InstanceID),
+	}
+
+	if sdkInstance.VirtualMachineScaleSetVMProperties == nil {
+		return &instance
+	}
+
+	instance.State = infrav1.Creating
+	if sdkInstance.ProvisioningState != nil {
+		instance.State = infrav1.ProvisioningState(to.String(sdkInstance.ProvisioningState))
+	}
+
+	if sdkInstance.OsProfile != nil && sdkInstance.OsProfile.ComputerName != nil {
+		instance.Name = *sdkInstance.OsProfile.ComputerName
+	}
+
+	if sdkInstance.StorageProfile != nil && sdkInstance.StorageProfile.ImageReference != nil {
+		imageRef := sdkInstance.StorageProfile.ImageReference
+		instance.Image = SDKImageToImage(imageRef, sdkInstance.Plan != nil)
+	}
+
+	if sdkInstance.Zones != nil && len(*sdkInstance.Zones) > 0 {
+		// an instance should only have 1 zone, so we select the first item of the slice
+		instance.AvailabilityZone = to.StringSlice(sdkInstance.Zones)[0]
+	}
+
+	return &instance
+}
+
+// SDKImageToImage converts a SDK image reference to infrav1.Image.
+func SDKImageToImage(sdkImageRef *compute.ImageReference, isThirdPartyImage bool) infrav1.Image {
+	return infrav1.Image{
+		ID: sdkImageRef.ID,
+		Marketplace: &infrav1.AzureMarketplaceImage{
+			Publisher:       to.String(sdkImageRef.Publisher),
+			Offer:           to.String(sdkImageRef.Offer),
+			SKU:             to.String(sdkImageRef.Sku),
+			Version:         to.String(sdkImageRef.Version),
+			ThirdPartyImage: isThirdPartyImage,
+		},
+	}
 }

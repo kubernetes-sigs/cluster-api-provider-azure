@@ -39,7 +39,7 @@ type AvailabilitySetScope interface {
 	AvailabilitySet() (string, bool)
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope AvailabilitySetScope
 	Client

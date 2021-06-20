@@ -119,7 +119,6 @@ func TestAllowedNamespaces(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			fakeNamespace := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "namespace8",

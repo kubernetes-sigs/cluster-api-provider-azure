@@ -13,6 +13,7 @@ linters:
     - errorlint
     - goconst
     - gocyclo
+    - godot
     - gofmt
     - goimports
     - golint
@@ -29,6 +30,7 @@ linters:
     - unconvert
     - unused
     - varcheck
+    - whitespace
   # Run with --fast=false for more extensive checks
   fast: true
 issues:

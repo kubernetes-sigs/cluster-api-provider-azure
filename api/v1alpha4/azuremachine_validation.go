@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-// ValidateSSHKey validates an SSHKey
+// ValidateSSHKey validates an SSHKey.
 func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
@@ -63,7 +63,7 @@ func ValidateSystemAssignedIdentity(identityType VMIdentity, old, new string, fl
 	return allErrs
 }
 
-// ValidateUserAssignedIdentity validates the user-assigned identities list
+// ValidateUserAssignedIdentity validates the user-assigned identities list.
 func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdenteties []UserAssignedIdentity, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
@@ -73,7 +73,7 @@ func ValidateUserAssignedIdentity(identityType VMIdentity, userAssignedIdentetie
 	return allErrs
 }
 
-// ValidateDataDisks validates a list of data disks
+// ValidateDataDisks validates a list of data disks.
 func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	lunSet := make(map[int32]struct{})
@@ -118,7 +118,7 @@ func ValidateDataDisks(dataDisks []DataDisk, fieldPath *field.Path) field.ErrorL
 	return allErrs
 }
 
-// ValidateOSDisk validates the OSDisk spec
+// ValidateOSDisk validates the OSDisk spec.
 func ValidateOSDisk(osDisk OSDisk, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 

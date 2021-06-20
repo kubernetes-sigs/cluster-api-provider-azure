@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type client interface {
 	CreateOrUpdateZone(context.Context, string, string, privatedns.PrivateZone) error
 	DeleteZone(context.Context, string, string) error
@@ -36,7 +36,7 @@ type client interface {
 	DeleteRecordSet(context.Context, string, string, privatedns.RecordType, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// AzureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	privatezones privatedns.PrivateZonesClient
 	vnetlinks    privatedns.VirtualNetworkLinksClient

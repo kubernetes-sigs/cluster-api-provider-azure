@@ -25,14 +25,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// client wraps go-sdk.
 type client interface {
 	Get(ctx context.Context, resourceGroupName, vmName, name string) (compute.VirtualMachineExtension, error)
 	CreateOrUpdateAsync(context.Context, string, string, string, compute.VirtualMachineExtension) error
 	Delete(context.Context, string, string, string) error
 }
 
-// AzureClient contains the Azure go-sdk Client
+// azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	vmextensions compute.VirtualMachineExtensionsClient
 }
@@ -52,7 +52,7 @@ func newVirtualMachineExtensionsClient(subscriptionID string, baseURI string, au
 	return vmextensionsClient
 }
 
-// Get the virtual machine extension
+// Get the virtual machine extension.
 func (ac *azureClient) Get(ctx context.Context, resourceGroupName, vmName, name string) (compute.VirtualMachineExtension, error) {
 	ctx, span := tele.Tracer().Start(ctx, "vmextensions.AzureClient.Get")
 	defer span.End()

@@ -248,7 +248,6 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func createMachineWithSSHPublicKey(t *testing.T, sshPublicKey string) *AzureMachine {

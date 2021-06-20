@@ -73,7 +73,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	}, nil
 }
 
-// Reconcile reconciles all the services in pre determined order
+// Reconcile reconciles all the services in a predetermined order.
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Reconcile")
 	defer span.End()
@@ -113,7 +113,7 @@ func (s *azureMachineService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-// Delete deletes all the services in pre determined order
+// Delete deletes all the services in a predetermined order.
 func (s *azureMachineService) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Delete")
 	defer span.End()

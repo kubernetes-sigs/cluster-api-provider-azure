@@ -48,13 +48,13 @@ type Cache struct {
 	data []compute.ResourceSku
 }
 
-// Cacher describes the ability to get and to add items to cache
+// Cacher describes the ability to get and to add items to cache.
 type Cacher interface {
 	Get(key interface{}) (value interface{}, ok bool)
-	Add(key interface{}, value interface{})
+	Add(key interface{}, value interface{}) bool
 }
 
-// NewCacheFunc allows for mocking out the underlying client
+// NewCacheFunc allows for mocking out the underlying client.
 type NewCacheFunc func(azure.Authorizer, string) *Cache
 
 var (
@@ -71,7 +71,7 @@ func newCache(auth azure.Authorizer, location string) *Cache {
 	}
 }
 
-// GetCache either creates a new SKUs cache or returns an existing one based on the location + Authorizer HashKey()
+// GetCache either creates a new SKUs cache or returns an existing one based on the location + Authorizer HashKey().
 func GetCache(auth azure.Authorizer, location string) (*Cache, error) {
 	var err error
 	doOnce.Do(func() {
@@ -89,7 +89,7 @@ func GetCache(auth azure.Authorizer, location string) (*Cache, error) {
 	}
 
 	c = newCache(auth, location)
-	clientCache.Add(key, c)
+	_ = clientCache.Add(key, c)
 	return c.(*Cache), nil
 }
 

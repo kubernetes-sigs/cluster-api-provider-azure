@@ -55,7 +55,6 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureManagedMachinePool
         name: agentpool0
-        namespace: default
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
@@ -85,7 +84,6 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureManagedMachinePool
         name: agentpool1
-        namespace: default
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4

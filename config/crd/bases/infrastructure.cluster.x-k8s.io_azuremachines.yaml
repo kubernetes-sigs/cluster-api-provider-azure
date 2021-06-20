@@ -50,7 +50,7 @@ spec:
     name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: AzureMachine is the Schema for the azuremachines API
+        description: AzureMachine is the Schema for the azuremachines API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -61,7 +61,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachineSpec defines the desired state of AzureMachine
+            description: AzureMachineSpec defines the desired state of AzureMachine.
             properties:
               acceleratedNetworking:
                 description: AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on whether the requested VMSize supports accelerated networking. If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
@@ -258,7 +258,7 @@ spec:
                     type: boolean
                 type: object
               spotVMOptions:
-                description: SpotVMOptions allows the ability to specify the Machine should use a Spot VM
+                description: SpotVMOptions allows the ability to specify the Machine should use a Spot VM.
                 properties:
                   maxPrice:
                     anyOf:
@@ -291,7 +291,7 @@ spec:
             - vmSize
             type: object
           status:
-            description: AzureMachineStatus defines the observed state of AzureMachine
+            description: AzureMachineStatus defines the observed state of AzureMachine.
             properties:
               addresses:
                 description: Addresses contains the Azure instance associated addresses.
@@ -388,7 +388,7 @@ spec:
     name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: AzureMachine is the Schema for the azuremachines API
+        description: AzureMachine is the Schema for the azuremachines API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -399,7 +399,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureMachineSpec defines the desired state of AzureMachine
+            description: AzureMachineSpec defines the desired state of AzureMachine.
             properties:
               acceleratedNetworking:
                 description: AcceleratedNetworking enables or disables Azure accelerated networking. If omitted, it will be set based on whether the requested VMSize supports accelerated networking. If AcceleratedNetworking is set to true with a VMSize that does not support it, Azure will return an error.
@@ -622,7 +622,7 @@ spec:
             - vmSize
             type: object
           status:
-            description: AzureMachineStatus defines the observed state of AzureMachine
+            description: AzureMachineStatus defines the observed state of AzureMachine.
             properties:
               addresses:
                 description: Addresses contains the Azure instance associated addresses.

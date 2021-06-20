@@ -166,6 +166,12 @@ metadata:
   namespace: default
 spec:
   location: ${AZURE_LOCATION}
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     osDisk:
       diskSizeGB: 30

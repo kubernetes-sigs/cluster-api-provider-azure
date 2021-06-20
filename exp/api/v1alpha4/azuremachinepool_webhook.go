@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -45,7 +46,7 @@ func (amp *AzureMachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Defaulter = &AzureMachinePool{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (amp *AzureMachinePool) Default() {
 	azuremachinepoollog.Info("default", "name", amp.Name)
 
@@ -59,31 +60,32 @@ func (amp *AzureMachinePool) Default() {
 
 var _ webhook.Validator = &AzureMachinePool{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateCreate() error {
 	azuremachinepoollog.Info("validate create", "name", amp.Name)
 	return amp.Validate(nil)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateUpdate(old runtime.Object) error {
 	azuremachinepoollog.Info("validate update", "name", amp.Name)
 	return amp.Validate(old)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (amp *AzureMachinePool) ValidateDelete() error {
 	azuremachinepoollog.Info("validate delete", "name", amp.Name)
 	return nil
 }
 
-// Validate the Azure Machine Pool and return an aggregate error
+// Validate the Azure Machine Pool and return an aggregate error.
 func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 	validators := []func() error{
 		amp.ValidateImage,
 		amp.ValidateTerminateNotificationTimeout,
 		amp.ValidateSSHKey,
 		amp.ValidateUserAssignedIdentity,
+		amp.ValidateStrategy(),
 		amp.ValidateSystemAssignedIdentity(old),
 	}
 
@@ -97,7 +99,7 @@ func (amp *AzureMachinePool) Validate(old runtime.Object) error {
 	return kerrors.NewAggregate(errs)
 }
 
-// ValidateImage of an AzureMachinePool
+// ValidateImage of an AzureMachinePool.
 func (amp *AzureMachinePool) ValidateImage() error {
 	if amp.Spec.Template.Image != nil {
 		image := amp.Spec.Template.Image
@@ -111,7 +113,7 @@ func (amp *AzureMachinePool) ValidateImage() error {
 	return nil
 }
 
-// ValidateTerminateNotificationTimeout termination notification timeout to be between 5 and 15
+// ValidateTerminateNotificationTimeout termination notification timeout to be between 5 and 15.
 func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
 	if amp.Spec.Template.TerminateNotificationTimeout == nil {
 		return nil
@@ -127,7 +129,7 @@ func (amp *AzureMachinePool) ValidateTerminateNotificationTimeout() error {
 	return nil
 }
 
-// ValidateSSHKey validates an SSHKey
+// ValidateSSHKey validates an SSHKey.
 func (amp *AzureMachinePool) ValidateSSHKey() error {
 	if amp.Spec.Template.SSHPublicKey != "" {
 		sshKey := amp.Spec.Template.SSHPublicKey
@@ -141,7 +143,7 @@ func (amp *AzureMachinePool) ValidateSSHKey() error {
 	return nil
 }
 
-// ValidateUserAssignedIdentity validates the user-assigned identities list
+// ValidateUserAssignedIdentity validates the user-assigned identities list.
 func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	fldPath := field.NewPath("UserAssignedIdentities")
 	if errs := infrav1.ValidateUserAssignedIdentity(amp.Spec.Identity, amp.Spec.UserAssignedIdentities, fldPath); len(errs) > 0 {
@@ -151,7 +153,24 @@ func (amp *AzureMachinePool) ValidateUserAssignedIdentity() error {
 	return nil
 }
 
-// ValidateSystemAssignedIdentity validates system-assigned identity role
+// ValidateStrategy validates the strategy.
+func (amp *AzureMachinePool) ValidateStrategy() func() error {
+	return func() error {
+		if amp.Spec.Strategy.Type == RollingUpdateAzureMachinePoolDeploymentStrategyType && amp.Spec.Strategy.RollingUpdate != nil {
+			rollingUpdateStrategy := amp.Spec.Strategy.RollingUpdate
+			maxSurge := rollingUpdateStrategy.MaxSurge
+			maxUnavailable := rollingUpdateStrategy.MaxUnavailable
+			if maxSurge.Type == intstr.Int && maxSurge.IntVal == 0 &&
+				maxUnavailable.Type == intstr.Int && maxUnavailable.IntVal == 0 {
+				return errors.New("rolling update strategy MaxUnavailable must not be 0 if MaxSurge is 0")
+			}
+		}
+
+		return nil
+	}
+}
+
+// ValidateSystemAssignedIdentity validates system-assigned identity role.
 func (amp *AzureMachinePool) ValidateSystemAssignedIdentity(old runtime.Object) func() error {
 	return func() error {
 		var oldRole string

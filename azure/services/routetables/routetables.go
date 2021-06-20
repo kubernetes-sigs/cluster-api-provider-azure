@@ -19,7 +19,7 @@ package routetables
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// RouteTableScope defines the scope interface for route table service
+// RouteTableScope defines the scope interface for route table service.
 type RouteTableScope interface {
 	logr.Logger
 	azure.ClusterDescriber
@@ -37,7 +37,7 @@ type RouteTableScope interface {
 	RouteTableSpecs() []azure.RouteTableSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on azure resources.
 type Service struct {
 	Scope RouteTableScope
 	client

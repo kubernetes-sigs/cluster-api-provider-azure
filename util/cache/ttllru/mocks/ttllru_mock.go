@@ -22,35 +22,36 @@ package mock_ttllru
 
 import (
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
 
-// Mockcacher is a mock of cacher interface.
-type Mockcacher struct {
+// MockCacher is a mock of Cacher interface.
+type MockCacher struct {
 	ctrl     *gomock.Controller
-	recorder *MockcacherMockRecorder
+	recorder *MockCacherMockRecorder
 }
 
-// MockcacherMockRecorder is the mock recorder for Mockcacher.
-type MockcacherMockRecorder struct {
-	mock *Mockcacher
+// MockCacherMockRecorder is the mock recorder for MockCacher.
+type MockCacherMockRecorder struct {
+	mock *MockCacher
 }
 
-// NewMockcacher creates a new mock instance.
-func NewMockcacher(ctrl *gomock.Controller) *Mockcacher {
-	mock := &Mockcacher{ctrl: ctrl}
-	mock.recorder = &MockcacherMockRecorder{mock}
+// NewMockCacher creates a new mock instance.
+func NewMockCacher(ctrl *gomock.Controller) *MockCacher {
+	mock := &MockCacher{ctrl: ctrl}
+	mock.recorder = &MockCacherMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockcacher) EXPECT() *MockcacherMockRecorder {
+func (m *MockCacher) EXPECT() *MockCacherMockRecorder {
 	return m.recorder
 }
 
 // Add mocks base method.
-func (m *Mockcacher) Add(key, value interface{}) bool {
+func (m *MockCacher) Add(key, value interface{}) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", key, value)
 	ret0, _ := ret[0].(bool)
@@ -58,13 +59,13 @@ func (m *Mockcacher) Add(key, value interface{}) bool {
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockcacherMockRecorder) Add(key, value interface{}) *gomock.Call {
+func (mr *MockCacherMockRecorder) Add(key, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*Mockcacher)(nil).Add), key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockCacher)(nil).Add), key, value)
 }
 
 // Get mocks base method.
-func (m *Mockcacher) Get(key interface{}) (interface{}, bool) {
+func (m *MockCacher) Get(key interface{}) (interface{}, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", key)
 	ret0, _ := ret[0].(interface{})
@@ -73,13 +74,13 @@ func (m *Mockcacher) Get(key interface{}) (interface{}, bool) {
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockcacherMockRecorder) Get(key interface{}) *gomock.Call {
+func (mr *MockCacherMockRecorder) Get(key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockcacher)(nil).Get), key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCacher)(nil).Get), key)
 }
 
 // Remove mocks base method.
-func (m *Mockcacher) Remove(key interface{}) bool {
+func (m *MockCacher) Remove(key interface{}) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Remove", key)
 	ret0, _ := ret[0].(bool)
@@ -87,7 +88,89 @@ func (m *Mockcacher) Remove(key interface{}) bool {
 }
 
 // Remove indicates an expected call of Remove.
-func (mr *MockcacherMockRecorder) Remove(key interface{}) *gomock.Call {
+func (mr *MockCacherMockRecorder) Remove(key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*Mockcacher)(nil).Remove), key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockCacher)(nil).Remove), key)
+}
+
+// MockPeekingCacher is a mock of PeekingCacher interface.
+type MockPeekingCacher struct {
+	ctrl     *gomock.Controller
+	recorder *MockPeekingCacherMockRecorder
+}
+
+// MockPeekingCacherMockRecorder is the mock recorder for MockPeekingCacher.
+type MockPeekingCacherMockRecorder struct {
+	mock *MockPeekingCacher
+}
+
+// NewMockPeekingCacher creates a new mock instance.
+func NewMockPeekingCacher(ctrl *gomock.Controller) *MockPeekingCacher {
+	mock := &MockPeekingCacher{ctrl: ctrl}
+	mock.recorder = &MockPeekingCacherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPeekingCacher) EXPECT() *MockPeekingCacherMockRecorder {
+	return m.recorder
+}
+
+// Add mocks base method.
+func (m *MockPeekingCacher) Add(key, value interface{}) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Add", key, value)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Add indicates an expected call of Add.
+func (mr *MockPeekingCacherMockRecorder) Add(key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeekingCacher)(nil).Add), key, value)
+}
+
+// Get mocks base method.
+func (m *MockPeekingCacher) Get(key interface{}) (interface{}, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", key)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockPeekingCacherMockRecorder) Get(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPeekingCacher)(nil).Get), key)
+}
+
+// Peek mocks base method.
+func (m *MockPeekingCacher) Peek(key interface{}) (interface{}, time.Time, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Peek", key)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(time.Time)
+	ret2, _ := ret[2].(bool)
+	return ret0, ret1, ret2
+}
+
+// Peek indicates an expected call of Peek.
+func (mr *MockPeekingCacherMockRecorder) Peek(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Peek", reflect.TypeOf((*MockPeekingCacher)(nil).Peek), key)
+}
+
+// Remove mocks base method.
+func (m *MockPeekingCacher) Remove(key interface{}) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Remove", key)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Remove indicates an expected call of Remove.
+func (mr *MockPeekingCacherMockRecorder) Remove(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockPeekingCacher)(nil).Remove), key)
 }

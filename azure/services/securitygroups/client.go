@@ -19,21 +19,21 @@ package securitygroups
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk
+// client wraps go-sdk.
 type client interface {
 	Get(context.Context, string, string) (network.SecurityGroup, error)
 	CreateOrUpdate(context.Context, string, string, network.SecurityGroup) error
 	Delete(context.Context, string, string) error
 }
 
-// azureClient contains the Azure go-sdk Client
+// azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	securitygroups network.SecurityGroupsClient
 }

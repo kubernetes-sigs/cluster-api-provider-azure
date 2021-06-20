@@ -43,21 +43,21 @@ func (c *AzureCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &AzureCluster{}
 var _ webhook.Defaulter = &AzureCluster{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (c *AzureCluster) Default() {
 	clusterlog.Info("default", "name", c.Name)
 
 	c.setDefaults()
 }
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (c *AzureCluster) ValidateCreate() error {
 	clusterlog.Info("validate create", "name", c.Name)
 
 	return c.validateCluster(nil)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	clusterlog.Info("validate update", "name", c.Name)
 	var allErrs field.ErrorList
@@ -113,7 +113,7 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("AzureCluster").GroupKind(), c.Name, allErrs)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (c *AzureCluster) ValidateDelete() error {
 	clusterlog.Info("validate delete", "name", c.Name)
 

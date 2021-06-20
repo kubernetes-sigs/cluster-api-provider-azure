@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -38,7 +38,7 @@ type NSGScope interface {
 	NSGSpecs() []azure.NSGSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope NSGScope
 	client
@@ -94,7 +94,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			for _, rule := range nsgSpec.SecurityRules {
 				securityRules = append(securityRules, converters.SecurityRuleToSDK(rule))
 			}
-
 		}
 		sg := network.SecurityGroup{
 			Location: to.StringPtr(s.Scope.Location()),

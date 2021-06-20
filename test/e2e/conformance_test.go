@@ -29,12 +29,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/node"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/test/framework/kubetest"
@@ -45,7 +45,7 @@ var _ = Describe("Conformance Tests", func() {
 	var (
 		ctx           = context.TODO()
 		cancelWatches context.CancelFunc
-		cluster       *clusterv1.Cluster
+		result        *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName   string
 		namespace     *corev1.Namespace
 		specName      = "conformance-tests"
@@ -73,6 +73,8 @@ var _ = Describe("Conformance Tests", func() {
 
 		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+
+		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 	})
 
 	Measure(specName, func(b Benchmarker) {
@@ -108,7 +110,6 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		runtime := b.Time("cluster creation", func() {
-			result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -127,7 +128,6 @@ var _ = Describe("Conformance Tests", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
-			cluster = result.Cluster
 		})
 
 		b.RecordValue("cluster creation", runtime.Seconds())
@@ -169,8 +169,13 @@ var _ = Describe("Conformance Tests", func() {
 	}, 1)
 
 	AfterEach(func() {
+		if result.Cluster == nil {
+			// this means the cluster failed to come up. We make an attempt to find the cluster to be able to fetch logs for the failed bootstrapping.
+			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
+		}
+
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
-		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, skipCleanup)
+		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, result.Cluster, e2eConfig.GetIntervals, skipCleanup)
 
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())

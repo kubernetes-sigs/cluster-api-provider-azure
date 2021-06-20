@@ -23,7 +23,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
-
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 	mockttllru "sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru/mocks"
 )
@@ -42,7 +41,7 @@ func TestNew(t *testing.T) {
 func TestCache_Add(t *testing.T) {
 	g := NewWithT(t)
 	mockCtrl := gomock.NewController(t)
-	mockCache := mockttllru.NewMockcacher(mockCtrl)
+	mockCache := mockttllru.NewMockCacher(mockCtrl)
 	defer mockCtrl.Finish()
 	subject, err := newCache(defaultCacheDuration, mockCache)
 	g.Expect(err).Should(BeNil())
@@ -78,11 +77,11 @@ func TestCache_Get(t *testing.T) {
 
 	cases := []struct {
 		Name     string
-		TestCase func(g *GomegaWithT, subject *Cache, mock *mockttllru.Mockcacher)
+		TestCase func(g *GomegaWithT, subject PeekingCacher, mock *mockttllru.MockCacher)
 	}{
 		{
 			Name: "NoItemsInCache",
-			TestCase: func(g *GomegaWithT, subject *Cache, mock *mockttllru.Mockcacher) {
+			TestCase: func(g *GomegaWithT, subject PeekingCacher, mock *mockttllru.MockCacher) {
 				key := "not_there"
 				mock.EXPECT().Get(key).Return(nil, false)
 				val, ok := subject.Get(key)
@@ -92,7 +91,7 @@ func TestCache_Get(t *testing.T) {
 		},
 		{
 			Name: "ExistingItemNotExpired",
-			TestCase: func(g *GomegaWithT, subject *Cache, mock *mockttllru.Mockcacher) {
+			TestCase: func(g *GomegaWithT, subject PeekingCacher, mock *mockttllru.MockCacher) {
 				mock.EXPECT().Get(key).Return(&timeToLiveItem{
 					LastTouch: time.Now(),
 					Value:     value,
@@ -104,7 +103,7 @@ func TestCache_Get(t *testing.T) {
 		},
 		{
 			Name: "ExistingItemExpired",
-			TestCase: func(g *GomegaWithT, subject *Cache, mock *mockttllru.Mockcacher) {
+			TestCase: func(g *GomegaWithT, subject PeekingCacher, mock *mockttllru.MockCacher) {
 				mock.EXPECT().Get(key).Return(&timeToLiveItem{
 					LastTouch: time.Now().Add(-(10*time.Second + defaultCacheDuration)),
 					Value:     value,
@@ -117,7 +116,7 @@ func TestCache_Get(t *testing.T) {
 		},
 		{
 			Name: "ExistingItemGetAdvancesLastTouch",
-			TestCase: func(g *GomegaWithT, subject *Cache, mock *mockttllru.Mockcacher) {
+			TestCase: func(g *GomegaWithT, subject PeekingCacher, mock *mockttllru.MockCacher) {
 				lastTouch := time.Now().Add(defaultCacheDuration - 10*time.Second)
 				item := &timeToLiveItem{
 					LastTouch: lastTouch,
@@ -133,7 +132,7 @@ func TestCache_Get(t *testing.T) {
 		},
 		{
 			Name: "ExistingItemIsNotTTLItem",
-			TestCase: func(g *GomegaWithT, subject *Cache, mock *mockttllru.Mockcacher) {
+			TestCase: func(g *GomegaWithT, subject PeekingCacher, mock *mockttllru.MockCacher) {
 				item := &struct {
 					Value string
 				}{
@@ -153,7 +152,7 @@ func TestCache_Get(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			g := NewWithT(t)
 			mockCtrl := gomock.NewController(t)
-			mockCache := mockttllru.NewMockcacher(mockCtrl)
+			mockCache := mockttllru.NewMockCacher(mockCtrl)
 			defer mockCtrl.Finish()
 			subject, err := newCache(defaultCacheDuration, mockCache)
 			g.Expect(err).Should(BeNil())

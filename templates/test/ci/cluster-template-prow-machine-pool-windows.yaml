@@ -283,7 +283,7 @@ spec:
     owner: root:root
     path: c:/k/azure.json
     permissions: "0644"
-  - content: |
+  - content: |-
       # required as a work around for Flannel and Wins bugs
       # https://github.com/coreos/flannel/issues/1359
       # https://github.com/kubernetes-sigs/sig-windows-tools/issues/103#issuecomment-709426828

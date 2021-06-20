@@ -18,7 +18,6 @@ package scalesets
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"time"
@@ -35,40 +34,34 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// ScaleSetScope defines the scope interface for a scale sets service.
-type ScaleSetScope interface {
-	logr.Logger
-	azure.ClusterDescriber
-	ScaleSetSpec() azure.ScaleSetSpec
-	VMSSExtensionSpecs() []azure.VMSSExtensionSpec
-	GetBootstrapData(ctx context.Context) (string, error)
-	GetVMImage() (*infrav1.Image, error)
-	SetAnnotation(string, string)
-	SetProviderID(string)
-	UpdateInstanceStatuses(context.Context, []infrav1exp.VMSSVM) error
-	NeedsK8sVersionUpdate() bool
-	SaveK8sVersion()
-	SetProvisioningState(infrav1.ProvisioningState)
-	SetLongRunningOperationState(*infrav1.Future)
-	GetLongRunningOperationState() *infrav1.Future
-}
+type (
+	// ScaleSetScope defines the scope interface for a scale sets service.
+	ScaleSetScope interface {
+		logr.Logger
+		azure.ClusterDescriber
+		GetBootstrapData(ctx context.Context) (string, error)
+		GetLongRunningOperationState() *infrav1.Future
+		GetVMImage() (*infrav1.Image, error)
+		SaveVMImageToStatus(*infrav1.Image)
+		MaxSurge() (int, error)
+		ScaleSetSpec() azure.ScaleSetSpec
+		VMSSExtensionSpecs() []azure.VMSSExtensionSpec
+		SetAnnotation(string, string)
+		SetLongRunningOperationState(*infrav1.Future)
+		SetProviderID(string)
+		SetVMSSState(*azure.VMSS)
+	}
 
-type vmssBuildResult struct {
-	VMSSWithoutHash compute.VirtualMachineScaleSet
-	Tags            infrav1.Tags
-	Hash            string
-}
-
-// Service provides operations on azure resources
-type Service struct {
-	Scope ScaleSetScope
-	Client
-	resourceSKUCache *resourceskus.Cache
-}
+	// Service provides operations on Azure resources.
+	Service struct {
+		Scope ScaleSetScope
+		Client
+		resourceSKUCache *resourceskus.Cache
+	}
+)
 
 // NewService creates a new service.
 func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
@@ -80,7 +73,7 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 }
 
 // Reconcile idempotently gets, creates, and updates a scale set.
-func (s *Service) Reconcile(ctx context.Context) error {
+func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Reconcile")
 	defer span.End()
 
@@ -90,9 +83,27 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	// check if there is an ongoing long running operation
-	future := s.Scope.GetLongRunningOperationState()
-	var fetchedVMSS *infrav1exp.VMSS
-	var err error
+	var (
+		future      = s.Scope.GetLongRunningOperationState()
+		fetchedVMSS *azure.VMSS
+		err         error
+	)
+
+	defer func() {
+		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
+		if fetchedVMSS == nil {
+			fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx)
+			if err != nil && !azure.ResourceNotFound(err) {
+				s.Scope.Error(err, "failed to get vmss in deferred update")
+			}
+		}
+
+		if fetchedVMSS != nil {
+			s.Scope.SetProviderID(azure.ProviderIDPrefix + fetchedVMSS.ID)
+			s.Scope.SetVMSSState(fetchedVMSS)
+		}
+	}()
+
 	if future == nil {
 		fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx)
 	} else {
@@ -101,7 +112,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	switch {
 	case err != nil && !azure.ResourceNotFound(err):
-		// There was an error and it was not an HTTP 404 not found. This is either a transient error in Azure or a bug.
+		// There was an error and it was not an HTTP 404 not found. This is either a transient error, like long running operation not done, or an Azure service error.
 		return errors.Wrapf(err, "failed to get VMSS %s", s.Scope.ScaleSetSpec().Name)
 	case err != nil && azure.ResourceNotFound(err):
 		// HTTP(404) resource was not found, so we need to create it with a PUT
@@ -117,9 +128,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to start updating VMSS")
 		}
-	default:
-		// just in case, set the provider ID if the instance exists
-		s.Scope.SetProviderID(azure.ProviderIDPrefix + fetchedVMSS.ID)
 	}
 
 	// Try to get the VMSS to update status if we have created a long running operation. If the VMSS is still in a long
@@ -133,16 +141,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	// if we get to hear, we have completed any long running VMSS operations (creates / updates)
 	s.Scope.SetLongRunningOperationState(nil)
-
-	defer func() {
-		// make sure we always set the provisioning state at the end of reconcile
-		s.Scope.SetProvisioningState(fetchedVMSS.State)
-	}()
-
-	if err := s.reconcileInstances(ctx, fetchedVMSS); err != nil {
-		return errors.Wrap(err, "failed to reconcile instances")
-	}
-
 	return nil
 }
 
@@ -152,9 +150,36 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
 	defer span.End()
 
+	defer func() {
+		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
+		fetchedVMSS, err := s.getVirtualMachineScaleSet(ctx)
+		if err != nil && !azure.ResourceNotFound(err) {
+			s.Scope.Error(err, "failed to get vmss in deferred update")
+		}
+
+		if fetchedVMSS != nil {
+			s.Scope.SetVMSSState(fetchedVMSS)
+		}
+	}()
+
+	// check if there is an ongoing long running operation
+	future := s.Scope.GetLongRunningOperationState()
+	if future != nil {
+		// if the operation is not complete this will return an error
+		_, err := s.GetResultIfDone(ctx, future)
+		if err != nil {
+			return errors.Wrap(err, "failed to get result from future")
+		}
+
+		// ScaleSet has been deleted
+		s.Scope.SetLongRunningOperationState(nil)
+		return nil
+	}
+
+	// no long running delete operation is active, so delete the ScaleSet
 	vmssSpec := s.Scope.ScaleSetSpec()
 	s.Scope.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)
-	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
+	future, err := s.Client.DeleteAsync(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
@@ -163,7 +188,16 @@ func (s *Service) Delete(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to delete VMSS %s in resource group %s", vmssSpec.Name, s.Scope.ResourceGroup())
 	}
 
-	s.Scope.V(2).Info("successfully deleted VMSS", "scale set", vmssSpec.Name)
+	s.Scope.SetLongRunningOperationState(future)
+	if future != nil {
+		// if future exists, check state of the future
+		if _, err = s.GetResultIfDone(ctx, future); err != nil {
+			return errors.Wrap(err, "not done with long running operation, or failed to get result")
+		}
+	}
+
+	// future is either nil, or the result of the future is complete
+	s.Scope.SetLongRunningOperationState(nil)
 	return nil
 }
 
@@ -172,14 +206,11 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 	defer span.End()
 
 	spec := s.Scope.ScaleSetSpec()
-	result, err := s.buildVMSSFromSpec(ctx, spec)
+	vmss, err := s.buildVMSSFromSpec(ctx, spec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed building VMSS from spec")
 	}
 
-	vmss := result.VMSSWithoutHash
-	vmss.Tags = converters.TagsToMap(result.Tags.AddSpecVersionHashTag(result.Hash))
-	s.Scope.SetProvisioningState(infrav1.Creating)
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
 		return future, errors.Wrap(err, "cannot create VMSS")
@@ -187,45 +218,45 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 
 	s.Scope.V(2).Info("starting to create VMSS", "scale set", spec.Name)
 	s.Scope.SetLongRunningOperationState(future)
-	s.Scope.SaveK8sVersion()
 	return future, err
 }
 
-func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.VMSS) (*infrav1.Future, error) {
+func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) (*infrav1.Future, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.patchVMSSIfNeeded")
 	defer span.End()
 
-	s.Scope.SetProviderID(azure.ProviderIDPrefix + infraVMSS.ID)
-
 	spec := s.Scope.ScaleSetSpec()
-	result, err := s.buildVMSSFromSpec(ctx, spec)
+	vmss, err := s.buildVMSSFromSpec(ctx, spec)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to generate scale set update parameters for %s", spec.Name)
 	}
 
-	if infraVMSS.Tags.HasMatchingSpecVersionHash(result.Hash) {
-		// The VMSS built from the AzureMachinePool spec matches the hash in the tag of the existing VMSS. This means
-		// the VMSS does not need to be patched since it has not changed.
-		//
-		// hash(AzureMachinePool.Spec)
-		//
-		// Note: if a user were to mutate the VMSS in Azure rather than through CAPZ, this hash match may match, but not
-		// reflect the state of the specification in K8s.
-		s.Scope.V(2).Info("found matching spec hash no need to PATCH")
-		return nil, nil
-	}
-
-	s.Scope.V(2).Info("hashes don't match PATCHING VMSS", "oldHash", infraVMSS.Tags[infrav1.SpecVersionHashTagKey()], "newHash", result.Hash)
-	s.Scope.V(4).Info("diff", "oldVMSS", infraVMSS, "newVMSS", result)
-	vmss := result.VMSSWithoutHash
-	vmss.Tags = converters.TagsToMap(result.Tags.AddSpecVersionHashTag(result.Hash))
 	patch, err := getVMSSUpdateFromVMSS(vmss)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to generate vmss patch for %s", spec.Name)
 	}
 
-	// wipe out network profile, so updates won't conflict with Cloud Provider updates
-	patch.VirtualMachineProfile.NetworkProfile = nil
+	maxSurge, err := s.Scope.MaxSurge()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to calculate maxSurge")
+	}
+
+	hasModelChanges := hasModelModifyingDifferences(infraVMSS, vmss)
+	if maxSurge > 0 && (hasModelChanges || !infraVMSS.HasEnoughLatestModelOrNotMixedModel()) {
+		// surge capacity with the intention of lowering during instance reconciliation
+		surge := spec.Capacity + int64(maxSurge)
+		s.Scope.V(4).Info("surging...", "surge", surge)
+		patch.Sku.Capacity = to.Int64Ptr(surge)
+	}
+
+	// If there are no model changes and no increase in the replica count, do not update the VMSS.
+	// Decreases in replica count is handled by deleting AzureMachinePoolMachine instances in the MachinePoolScope
+	if *patch.Sku.Capacity <= infraVMSS.Capacity && !hasModelChanges {
+		s.Scope.V(4).Info("nothing to update on vmss", "scale set", spec.Name, "newReplicas", *patch.Sku.Capacity, "oldReplicas", infraVMSS.Capacity, "hasChanges", hasModelChanges)
+		return nil, nil
+	}
+
+	s.Scope.V(4).Info("patching vmss", "scale set", spec.Name, "patch", patch)
 	future, err := s.UpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, patch)
 	if err != nil {
 		if azure.ResourceConflict(err) {
@@ -234,43 +265,14 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *infrav1exp.V
 		return future, errors.Wrap(err, "failed updating VMSS")
 	}
 
-	s.Scope.SetProvisioningState(infrav1.Updating)
 	s.Scope.SetLongRunningOperationState(future)
 	s.Scope.V(2).Info("successfully started to update vmss", "scale set", spec.Name)
 	return future, err
 }
 
-func (s *Service) reconcileInstances(ctx context.Context, vmss *infrav1exp.VMSS) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.reconcileInstances")
-	defer span.End()
-
-	// check to see if we are running the most K8s version specified in the MachinePool spec
-	// if not, then update the instances that are not running that model
-	if s.Scope.NeedsK8sVersionUpdate() {
-		instanceIDs := make([]string, len(vmss.Instances))
-		for i, vm := range vmss.Instances {
-			instanceIDs[i] = vm.InstanceID
-		}
-
-		if err := s.Client.UpdateInstances(ctx, s.Scope.ResourceGroup(), vmss.Name, instanceIDs); err != nil {
-			return errors.Wrapf(err, "failed to update VMSS %s instances", vmss.Name)
-		}
-
-		s.Scope.SaveK8sVersion()
-		// get the VMSS to update status
-		var err error
-		vmss, err = s.getVirtualMachineScaleSet(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to get VMSS after updating an instance")
-		}
-	}
-
-	// update the status.
-	if err := s.Scope.UpdateInstanceStatuses(ctx, vmss.Instances); err != nil {
-		return errors.Wrap(err, "unable to update instance status")
-	}
-
-	return nil
+func hasModelModifyingDifferences(infraVMSS *azure.VMSS, vmss compute.VirtualMachineScaleSet) bool {
+	other := converters.SDKToVMSS(vmss, []compute.VirtualMachineScaleSetVM{})
+	return infraVMSS.HasModelChanges(*other)
 }
 
 func (s *Service) validateSpec(ctx context.Context) error {
@@ -327,15 +329,13 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSetSpec) (vmssBuildResult, error) {
+func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSetSpec) (compute.VirtualMachineScaleSet, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.buildVMSSFromSpec")
 	defer span.End()
 
-	var result vmssBuildResult
-
 	sku, err := s.resourceSKUCache.Get(ctx, vmssSpec.Size, resourceskus.VirtualMachines)
 	if err != nil {
-		return result, errors.Wrapf(err, "failed to get SKU %s in compute api", vmssSpec.Size)
+		return compute.VirtualMachineScaleSet{}, errors.Wrapf(err, "failed to get find SKU %s in compute api", vmssSpec.Size)
 	}
 
 	if vmssSpec.AcceleratedNetworking == nil {
@@ -348,17 +348,17 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	storageProfile, err := s.generateStorageProfile(vmssSpec, sku)
 	if err != nil {
-		return result, err
+		return compute.VirtualMachineScaleSet{}, err
 	}
 
 	securityProfile, err := getSecurityProfile(vmssSpec, sku)
 	if err != nil {
-		return result, err
+		return compute.VirtualMachineScaleSet{}, err
 	}
 
 	priority, evictionPolicy, billingProfile, err := converters.GetSpotVMOptions(vmssSpec.SpotVMOptions)
 	if err != nil {
-		return result, errors.Wrap(err, "failed to get Spot VM options")
+		return compute.VirtualMachineScaleSet{}, errors.Wrapf(err, "failed to get Spot VM options")
 	}
 
 	// Get the node outbound LB backend pool ID
@@ -374,7 +374,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 
 	osProfile, err := s.generateOSProfile(ctx, vmssSpec)
 	if err != nil {
-		return result, err
+		return compute.VirtualMachineScaleSet{}, err
 	}
 
 	vmss := compute.VirtualMachineScaleSet{
@@ -389,7 +389,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
 			},
-			DoNotRunExtensionsOnOverprovisionedVMs: to.BoolPtr(true),
+			Overprovision: to.BoolPtr(false),
 			VirtualMachineProfile: &compute.VirtualMachineScaleSetVMProfile{
 				OsProfile:       osProfile,
 				StorageProfile:  storageProfile,
@@ -434,23 +434,6 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		},
 	}
 
-	if vmssSpec.TerminateNotificationTimeout != nil {
-		vmss.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
-			TerminateNotificationProfile: &compute.TerminateNotificationProfile{
-				Enable:           to.BoolPtr(true),
-				NotBeforeTimeout: to.StringPtr(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
-			},
-		}
-		// Once we have scheduled events termination notification we can switch upgrade policy to be rolling
-		vmss.VirtualMachineScaleSetProperties.UpgradePolicy = &compute.UpgradePolicy{
-			// Prefer rolling upgrade compared to Automatic (which updates all instances at same time)
-			Mode: compute.UpgradeModeRolling,
-			// We need to set the rolling upgrade policy based on user defined values
-			// for now lets stick to defaults, future PR will include the configurability
-			// RollingUpgradePolicy: &compute.RollingUpgradePolicy{},
-		}
-	}
-
 	// Assign Identity to VMSS
 	if vmssSpec.Identity == infrav1.VMIdentitySystemAssigned {
 		vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
@@ -459,7 +442,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	} else if vmssSpec.Identity == infrav1.VMIdentityUserAssigned {
 		userIdentitiesMap, err := converters.UserAssignedIdentitiesToVMSSSDK(vmssSpec.UserAssignedIdentities)
 		if err != nil {
-			return result, errors.Wrapf(err, "failed to assign identity %q", vmssSpec.Name)
+			return vmss, errors.Wrapf(err, "failed to assign identity %q", vmssSpec.Name)
 		}
 		vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
 			Type:                   compute.ResourceIdentityTypeUserAssigned,
@@ -467,7 +450,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		}
 	}
 
-	tagsWithoutHash := infrav1.Build(infrav1.BuildParams{
+	tags := infrav1.Build(infrav1.BuildParams{
 		ClusterName: s.Scope.ClusterName(),
 		Lifecycle:   infrav1.ResourceLifecycleOwned,
 		Name:        to.StringPtr(vmssSpec.Name),
@@ -475,21 +458,12 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		Additional:  s.Scope.AdditionalTags(),
 	})
 
-	vmss.Tags = converters.TagsToMap(tagsWithoutHash)
-	hash, err := base64EncodedHash(vmss)
-	if err != nil {
-		return result, errors.Wrap(err, "failed to generate hash in vmss create")
-	}
-
-	return vmssBuildResult{
-		VMSSWithoutHash: vmss,
-		Tags:            tagsWithoutHash,
-		Hash:            hash,
-	}, nil
+	vmss.Tags = converters.TagsToMap(tags)
+	return vmss, nil
 }
 
-// getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances
-func (s *Service) getVirtualMachineScaleSet(ctx context.Context) (*infrav1exp.VMSS, error) {
+// getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
+func (s *Service) getVirtualMachineScaleSet(ctx context.Context) (*azure.VMSS, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSet")
 	defer span.End()
 
@@ -507,8 +481,8 @@ func (s *Service) getVirtualMachineScaleSet(ctx context.Context) (*infrav1exp.VM
 	return converters.SDKToVMSS(vmss, vmssInstances), nil
 }
 
-// getVirtualMachineScaleSetIfDone gets a Virtual Machine Scale Set and its instances from Azure if the future is completed
-func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *infrav1.Future) (*infrav1exp.VMSS, error) {
+// getVirtualMachineScaleSetIfDone gets a Virtual Machine Scale Set and its instances from Azure if the future is completed.
+func (s *Service) getVirtualMachineScaleSetIfDone(ctx context.Context, future *infrav1.Future) (*azure.VMSS, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSetIfDone")
 	defer span.End()
 
@@ -599,6 +573,8 @@ func (s *Service) generateStorageProfile(vmssSpec azure.ScaleSetSpec, sku resour
 		return nil, errors.Wrap(err, "failed to get VM image")
 	}
 
+	s.Scope.SaveVMImageToStatus(image)
+
 	imageRef, err := converters.ImageToSDK(image)
 	if err != nil {
 		return nil, err
@@ -660,9 +636,15 @@ func getVMSSUpdateFromVMSS(vmss compute.VirtualMachineScaleSet) (compute.Virtual
 	if err != nil {
 		return compute.VirtualMachineScaleSetUpdate{}, err
 	}
+
 	var update compute.VirtualMachineScaleSetUpdate
-	err = update.UnmarshalJSON(jsonData)
-	return update, err
+	if err := update.UnmarshalJSON(jsonData); err != nil {
+		return update, err
+	}
+
+	// wipe out network profile, so updates won't conflict with Cloud Provider updates
+	update.VirtualMachineProfile.NetworkProfile = nil
+	return update, nil
 }
 
 func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*compute.SecurityProfile, error) {
@@ -677,28 +659,4 @@ func getSecurityProfile(vmssSpec azure.ScaleSetSpec, sku resourceskus.SKU) (*com
 	return &compute.SecurityProfile{
 		EncryptionAtHost: to.BoolPtr(*vmssSpec.SecurityProfile.EncryptionAtHost),
 	}, nil
-}
-
-// base64EncodedHash transforms a VMSS into json and then creates a sha256 hash of the data encoded as a base64 encoded string
-func base64EncodedHash(vmss compute.VirtualMachineScaleSet) (string, error) {
-	// Setting Admin Password is not supported but an initial password is required for Windows
-	// Don't include it in the hash since it is generated and won't be the same each the spec is created (#1182)
-	tmpPass := vmss.VirtualMachineProfile.OsProfile.AdminPassword
-	// Don't include customData in the hash since it will change due to the kubeadm bootstrap token being regenerated.
-	tmpCustomData := vmss.VirtualMachineProfile.OsProfile.CustomData
-	vmss.VirtualMachineProfile.OsProfile.AdminPassword = nil
-	vmss.VirtualMachineProfile.OsProfile.CustomData = nil
-	defer func() {
-		vmss.VirtualMachineProfile.OsProfile.AdminPassword = tmpPass
-		vmss.VirtualMachineProfile.OsProfile.CustomData = tmpCustomData
-	}()
-
-	jsonData, err := vmss.MarshalJSON()
-	if err != nil {
-		return "", errors.Wrap(err, "failed marshaling vmss")
-	}
-
-	hasher := sha256.New()
-	_, _ = hasher.Write(jsonData)
-	return base64.URLEncoding.EncodeToString(hasher.Sum(nil)), nil
 }

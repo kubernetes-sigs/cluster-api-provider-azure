@@ -21,7 +21,7 @@ spec:
   - name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: AzureClusterIdentity is the Schema for the azureclustersidentities API
+        description: AzureClusterIdentity is the Schema for the azureclustersidentities API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -32,7 +32,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity
+            description: AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity.
             properties:
               allowedNamespaces:
                 description: "AllowedNamespaces is an array of namespaces that AzureClusters can use this Identity from. \n An empty list (default) indicates that AzureClusters can use this Identity from any namespace. This field is intentionally not a pointer because the nil behavior (no namespaces) is undesirable here."
@@ -70,7 +70,7 @@ spec:
             - type
             type: object
           status:
-            description: AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity
+            description: AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureClusterIdentity.
@@ -110,7 +110,7 @@ spec:
   - name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: AzureClusterIdentity is the Schema for the azureclustersidentities API
+        description: AzureClusterIdentity is the Schema for the azureclustersidentities API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -121,7 +121,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity
+            description: AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity.
             properties:
               allowedNamespaces:
                 description: AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from. Namespaces can be selected either using an array of namespaces or with label selector. An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace. If this object is nil, no namespaces will be allowed (default behaviour, if this field is not provided) A namespace should be either in the NamespaceList or match with Selector to use the identity.
@@ -195,7 +195,7 @@ spec:
             - type
             type: object
           status:
-            description: AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity
+            description: AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureClusterIdentity.

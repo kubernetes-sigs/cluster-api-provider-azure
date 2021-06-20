@@ -45,43 +45,43 @@ func ResourceNotFound(err error) bool {
 	return errors.As(err, &derr) && derr.StatusCode == 404
 }
 
-// ResourceConflict parses the error to check if it's a resource conflict error (409)
+// ResourceConflict parses the error to check if it's a resource conflict error (409).
 func ResourceConflict(err error) bool {
 	derr := autorest.DetailedError{}
 	return errors.As(err, &derr) && derr.StatusCode == 409
 }
 
-// VMDeletedError is returned when a virtual machine is deleted outside of capz
+// VMDeletedError is returned when a virtual machine is deleted outside of capz.
 type VMDeletedError struct {
 	ProviderID string
 }
 
-// Error returns the error string
+// Error returns the error string.
 func (vde VMDeletedError) Error() string {
 	return fmt.Sprintf("VM with provider id %q has been deleted", vde.ProviderID)
 }
 
 // ReconcileError represents an error that is not automatically recoverable
-// errorType indicates what type of action is required to recover. It can take two values
-// 1. `Transient` - Can be recovered through manual intervention, will be requeued after
-// 2. `Terminal` - Cannot be recovered, will not be requeued
+// errorType indicates what type of action is required to recover. It can take two values:
+// 1. `Transient` - Can be recovered through manual intervention, will be requeued after.
+// 2. `Terminal` - Cannot be recovered, will not be requeued.
 type ReconcileError struct {
 	error
 	errorType    ReconcileErrorType
 	requestAfter time.Duration
 }
 
-// ReconcileErrorType represents the type of a ReconcileError
+// ReconcileErrorType represents the type of a ReconcileError.
 type ReconcileErrorType string
 
 const (
-	// TransientErrorType can be recovered, will be requeued after a configured time interval
+	// TransientErrorType can be recovered, will be requeued after a configured time interval.
 	TransientErrorType ReconcileErrorType = "Transient"
-	// TerminalErrorType cannot be recovered, will not be requeued
+	// TerminalErrorType cannot be recovered, will not be requeued.
 	TerminalErrorType ReconcileErrorType = "Terminal"
 )
 
-// Error returns the error message for a ReconcileError
+// Error returns the error message for a ReconcileError.
 func (t ReconcileError) Error() string {
 	var errStr string
 	if t.error != nil {
@@ -89,59 +89,62 @@ func (t ReconcileError) Error() string {
 	}
 	switch t.errorType {
 	case TransientErrorType:
-		return fmt.Sprintf("reconcile error occurred that can be recovered. Object will be requeued after %s "+
-			"The actual error is: %s", t.requestAfter.String(), errStr)
+		return fmt.Sprintf("transient reconcile error occurred: %s. Object will be requeued after %s", errStr, t.requestAfter.String())
 	case TerminalErrorType:
-		return fmt.Sprintf("reconcile error occurred that cannot be recovered. Object will not be requeued. "+
-			"The actual error is: %s", errStr)
+		return fmt.Sprintf("reconcile error that cannot be recovered occurred: %s. Object will not be requeued", errStr)
 	default:
 		return fmt.Sprintf("reconcile error occurred with unknown recovery type. The actual error is: %s", errStr)
 	}
 }
 
-// IsTransient returns if the ReconcileError is recoverable
+// IsTransient returns if the ReconcileError is recoverable.
 func (t ReconcileError) IsTransient() bool {
 	return t.errorType == TransientErrorType
 }
 
-// IsTerminal returns if the ReconcileError is recoverable
+// IsTerminal returns if the ReconcileError is recoverable.
 func (t ReconcileError) IsTerminal() bool {
 	return t.errorType == TerminalErrorType
 }
 
-// RequeueAfter returns requestAfter value
+// Is returns true if the target is a ReconcileError.
+func (t ReconcileError) Is(target error) bool {
+	return errors.As(target, &ReconcileError{})
+}
+
+// RequeueAfter returns requestAfter value.
 func (t ReconcileError) RequeueAfter() time.Duration {
 	return t.requestAfter
 }
 
-// WithTransientError wraps the error in a ReconcileError with errorType as `Transient`
+// WithTransientError wraps the error in a ReconcileError with errorType as `Transient`.
 func WithTransientError(err error, requeueAfter time.Duration) ReconcileError {
 	return ReconcileError{error: err, errorType: TransientErrorType, requestAfter: requeueAfter}
 }
 
-// WithTerminalError wraps the error in a ReconcileError with errorType as `Terminal`
+// WithTerminalError wraps the error in a ReconcileError with errorType as `Terminal`.
 func WithTerminalError(err error) ReconcileError {
 	return ReconcileError{error: err, errorType: TerminalErrorType}
 }
 
-// OperationNotDoneError is used to represent a long running operation that is not yet complete
+// OperationNotDoneError is used to represent a long-running operation that is not yet complete.
 type OperationNotDoneError struct {
 	Future *infrav1.Future
 }
 
-// NewOperationNotDoneError returns a new OperationNotDoneError wrapping a Future
+// NewOperationNotDoneError returns a new OperationNotDoneError wrapping a Future.
 func NewOperationNotDoneError(future *infrav1.Future) *OperationNotDoneError {
 	return &OperationNotDoneError{
 		Future: future,
 	}
 }
 
-// Error returns the error represented as a string
+// Error returns the error represented as a string.
 func (onde OperationNotDoneError) Error() string {
 	return fmt.Sprintf("operation type %s on Azure resource %s/%s is not done", onde.Future.Type, onde.Future.ResourceGroup, onde.Future.Name)
 }
 
-// Is returns true if the target is an OperationNotDoneError
+// Is returns true if the target is an OperationNotDoneError.
 func (onde OperationNotDoneError) Is(target error) bool {
 	return errors.As(target, &OperationNotDoneError{})
 }

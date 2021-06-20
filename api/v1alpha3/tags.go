@@ -47,7 +47,7 @@ func (t Tags) HasAzureCloudProviderOwned(cluster string) bool {
 	return ok && ResourceLifecycle(value) == ResourceLifecycleOwned
 }
 
-// GetRole returns the Cluster API role for the tagged resource
+// GetRole returns the Cluster API role for the tagged resource.
 func (t Tags) GetRole() string {
 	return t[NameAzureClusterAPIRole]
 }
@@ -74,13 +74,13 @@ func (t Tags) Merge(other Tags) {
 	}
 }
 
-// AddSpecVersionHashTag adds a spec version hash to the Azure resource tags to determine if state has changed quickly
+// AddSpecVersionHashTag adds a spec version hash to the Azure resource tags to determine if state has changed quickly.
 func (t Tags) AddSpecVersionHashTag(hash string) Tags {
 	t[SpecVersionHashTagKey()] = hash
 	return t
 }
 
-// ResourceLifecycle configures the lifecycle of a resource
+// ResourceLifecycle configures the lifecycle of a resource.
 type ResourceLifecycle string
 
 const (
@@ -99,36 +99,36 @@ const (
 	// to be permissive about state changes.
 	// logically independent clusters running in the same AZ.
 	// The tag key = NameKubernetesAzureCloudProviderPrefix + clusterID
-	// The tag value is an ownership value
+	// The tag value is an ownership value.
 	NameKubernetesAzureCloudProviderPrefix = "kubernetes.io_cluster_"
 
 	// NameAzureProviderPrefix is the tag prefix we use to differentiate
 	// cluster-api-provider-azure owned components from other tooling that
-	// uses NameKubernetesClusterPrefix
+	// uses NameKubernetesClusterPrefix.
 	NameAzureProviderPrefix = "sigs.k8s.io_cluster-api-provider-azure_"
 
 	// NameAzureProviderOwned is the tag name we use to differentiate
 	// cluster-api-provider-azure owned components from other tooling that
-	// uses NameKubernetesClusterPrefix
+	// uses NameKubernetesClusterPrefix.
 	NameAzureProviderOwned = NameAzureProviderPrefix + "cluster_"
 
 	// NameAzureClusterAPIRole is the tag name we use to mark roles for resources
 	// dedicated to this cluster api provider implementation.
 	NameAzureClusterAPIRole = NameAzureProviderPrefix + "role"
 
-	// APIServerRole describes the value for the apiserver role
+	// APIServerRole describes the value for the apiserver role.
 	APIServerRole = "apiserver"
 
-	// NodeOutboundRole describes the value for the node outbound LB role
+	// NodeOutboundRole describes the value for the node outbound LB role.
 	NodeOutboundRole = "nodeOutbound"
 
-	// ControlPlaneOutboundRole describes the value for the control plane outbound LB role
+	// ControlPlaneOutboundRole describes the value for the control plane outbound LB role.
 	ControlPlaneOutboundRole = "controlPlaneOutbound"
 
-	// BastionRole describes the value for the bastion role
+	// BastionRole describes the value for the bastion role.
 	BastionRole = "bastion"
 
-	// CommonRole describes the value for the common role
+	// CommonRole describes the value for the common role.
 	CommonRole = "common"
 
 	// VMTagsLastAppliedAnnotation is the key for the machine object annotation
@@ -138,7 +138,7 @@ const (
 	VMTagsLastAppliedAnnotation = "sigs.k8s.io/cluster-api-provider-azure-last-applied-tags-vm"
 )
 
-// SpecVersionHashTagKey is the key for the spec version hash used to enable quick spec difference comparison
+// SpecVersionHashTagKey is the key for the spec version hash used to enable quick spec difference comparison.
 func SpecVersionHashTagKey() string {
 	return fmt.Sprintf("%s%s", NameAzureProviderPrefix, "spec-version-hash")
 }

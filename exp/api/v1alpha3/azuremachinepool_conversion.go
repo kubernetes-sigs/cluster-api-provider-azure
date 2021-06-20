@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	convert "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
@@ -45,6 +46,28 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	dst.Spec.Strategy.Type = restored.Spec.Strategy.Type
+	if restored.Spec.Strategy.RollingUpdate != nil {
+
+		if dst.Spec.Strategy.RollingUpdate == nil {
+			dst.Spec.Strategy.RollingUpdate = &expv1alpha4.MachineRollingUpdateDeployment{}
+		}
+
+		dst.Spec.Strategy.RollingUpdate.DeletePolicy = restored.Spec.Strategy.RollingUpdate.DeletePolicy
+	}
+
+	if restored.Spec.NodeDrainTimeout != nil {
+		dst.Spec.NodeDrainTimeout = restored.Spec.NodeDrainTimeout
+	}
+
+	if restored.Status.Image != nil {
+		dst.Status.Image = restored.Status.Image
+	}
+
+	if len(dst.Annotations) == 0 {
+		dst.Annotations = nil
+	}
+
 	return nil
 }
 
@@ -62,4 +85,12 @@ func (dst *AzureMachinePool) ConvertFrom(srcRaw conversion.Hub) error { // nolin
 	}
 
 	return nil
+}
+
+func Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *expv1alpha4.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s convert.Scope) error {
+	return autoConvert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in, out, s)
+}
+
+func Convert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in *expv1alpha4.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s convert.Scope) error {
+	return autoConvert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in, out, s)
 }

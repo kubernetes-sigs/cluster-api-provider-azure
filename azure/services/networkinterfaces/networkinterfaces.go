@@ -19,7 +19,7 @@ package networkinterfaces
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -36,7 +36,7 @@ type NICScope interface {
 	NICSpecs() []azure.NICSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope NICScope
 	Client
@@ -58,7 +58,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer span.End()
 
 	for _, nicSpec := range s.Scope.NICSpecs() {
-
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
@@ -74,9 +73,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 			nicConfig.Subnet = subnet
 
-			nicConfig.PrivateIPAllocationMethod = network.Dynamic
+			nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodDynamic
 			if nicSpec.StaticIPAddress != "" {
-				nicConfig.PrivateIPAllocationMethod = network.Static
+				nicConfig.PrivateIPAllocationMethod = network.IPAllocationMethodStatic
 				nicConfig.PrivateIPAddress = to.StringPtr(nicSpec.StaticIPAddress)
 			}
 

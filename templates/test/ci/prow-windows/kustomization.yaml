@@ -8,12 +8,12 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cluster-cni-windows.yaml
   - ../patches/controller-manager.yaml
-patchesJson6902:
+patches:
 - target:
     group: bootstrap.cluster.x-k8s.io
     version: v1alpha4
     kind: KubeadmConfigTemplate
-    name: ${CLUSTER_NAME}-md-win
+    name: .*-md-win
     namespace: default
   path: patches/windows-tmp-folder.yaml
 configMapGenerator:

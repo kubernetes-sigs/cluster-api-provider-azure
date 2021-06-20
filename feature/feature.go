@@ -22,8 +22,10 @@ import (
 )
 
 const (
-	// Every capz-specific feature gate should add method here following this template:
+	// nolint:godot
+	// Every capz-specific feature gate should add a method here following this template:
 	//
+	// // MyFeature is the feature gate for my feature.
 	// // owner: @username
 	// // alpha: v1.X
 	// MyFeature featuregate.Feature = "MyFeature"

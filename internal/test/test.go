@@ -27,7 +27,7 @@ const (
 	DefaultEventualTimeout = 20 * time.Second
 )
 
-// RandomName will generate a random name "{prefix}-{rand(len)}"
+// RandomName will generate a random name "{prefix}-{rand(len)}".
 func RandomName(prefix string, len int) string {
 	return fmt.Sprintf("%s-%s", prefix, rand.String(len))
 }

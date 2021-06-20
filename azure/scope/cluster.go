@@ -67,7 +67,7 @@ func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterSc
 			return nil, errors.Wrap(err, "failed to configure azure settings and credentials from environment")
 		}
 	} else {
-		credentailsProvider, err := NewAzureCredentialsProvider(ctx, params.Client, params.AzureCluster)
+		credentailsProvider, err := NewAzureClusterCredentialsProvider(ctx, params.Client, params.AzureCluster)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to init credentials provider")
 		}
@@ -170,26 +170,28 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	specs := []azure.LBSpec{
 		{
 			// Control Plane LB
-			Name:              s.APIServerLB().Name,
-			SubnetName:        s.ControlPlaneSubnet().Name,
-			FrontendIPConfigs: s.APIServerLB().FrontendIPs,
-			APIServerPort:     s.APIServerPort(),
-			Type:              s.APIServerLB().Type,
-			SKU:               infrav1.SKUStandard,
-			Role:              infrav1.APIServerRole,
-			BackendPoolName:   s.APIServerLBPoolName(s.APIServerLB().Name),
+			Name:                 s.APIServerLB().Name,
+			SubnetName:           s.ControlPlaneSubnet().Name,
+			FrontendIPConfigs:    s.APIServerLB().FrontendIPs,
+			APIServerPort:        s.APIServerPort(),
+			Type:                 s.APIServerLB().Type,
+			SKU:                  infrav1.SKUStandard,
+			Role:                 infrav1.APIServerRole,
+			BackendPoolName:      s.APIServerLBPoolName(s.APIServerLB().Name),
+			IdleTimeoutInMinutes: s.APIServerLB().IdleTimeoutInMinutes,
 		},
 	}
 
 	// Public Node outbound LB
 	if s.NodeOutboundLB() != nil {
 		specs = append(specs, azure.LBSpec{
-			Name:              s.NodeOutboundLBName(),
-			FrontendIPConfigs: s.NodeOutboundLB().FrontendIPs,
-			Type:              s.NodeOutboundLB().Type,
-			SKU:               s.NodeOutboundLB().SKU,
-			BackendPoolName:   s.OutboundPoolName(s.NodeOutboundLBName()),
-			Role:              infrav1.NodeOutboundRole,
+			Name:                 s.NodeOutboundLBName(),
+			FrontendIPConfigs:    s.NodeOutboundLB().FrontendIPs,
+			Type:                 s.NodeOutboundLB().Type,
+			SKU:                  s.NodeOutboundLB().SKU,
+			BackendPoolName:      s.OutboundPoolName(s.NodeOutboundLBName()),
+			IdleTimeoutInMinutes: s.NodeOutboundLB().IdleTimeoutInMinutes,
+			Role:                 infrav1.NodeOutboundRole,
 		})
 	}
 
@@ -208,16 +210,17 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 				},
 			},
 		},
-		Type:            infrav1.Public,
-		SKU:             infrav1.SKUStandard,
-		BackendPoolName: s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
-		Role:            infrav1.ControlPlaneOutboundRole,
+		Type:                 infrav1.Public,
+		SKU:                  infrav1.SKUStandard,
+		BackendPoolName:      s.OutboundPoolName(azure.GenerateControlPlaneOutboundLBName(s.ClusterName())),
+		Role:                 infrav1.ControlPlaneOutboundRole,
+		IdleTimeoutInMinutes: to.Int32Ptr(4),
 	})
 
 	return specs
 }
 
-// RouteTableSpecs returns the node route table
+// RouteTableSpecs returns the node route table.
 func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	routetables := []azure.RouteTableSpec{}
 	if s.ControlPlaneRouteTable().Name != "" {
@@ -555,7 +558,7 @@ func (s *ClusterScope) APIServerHost() string {
 	return s.APIServerPublicIP().DNSName
 }
 
-// SetFailureDomain will set the spec for a for a given key
+// SetFailureDomain will set the spec for a for a given key.
 func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainSpec) {
 	if s.AzureCluster.Status.FailureDomains == nil {
 		s.AzureCluster.Status.FailureDomains = make(clusterv1.FailureDomains)

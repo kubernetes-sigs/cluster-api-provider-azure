@@ -48,18 +48,18 @@ func (c *AzureClients) TenantID() string {
 	return c.Values[auth.TenantID]
 }
 
-// ClientID returns the Azure client id from the controller environment
+// ClientID returns the Azure client id from the controller environment.
 func (c *AzureClients) ClientID() string {
 	return c.Values[auth.ClientID]
 }
 
-// ClientSecret returns the Azure client secret from the controller environment
+// ClientSecret returns the Azure client secret from the controller environment.
 func (c *AzureClients) ClientSecret() string {
 	return c.Values[auth.ClientSecret]
 }
 
 // SubscriptionID returns the Azure subscription id of the cluster,
-// either specified or from the environment
+// either specified or from the environment.
 func (c *AzureClients) SubscriptionID() string {
 	return c.Values[auth.SubscriptionID]
 }
@@ -99,7 +99,7 @@ func (c *AzureClients) setCredentials(subscriptionID, environmentName string) er
 	return err
 }
 
-func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider *AzureCredentialsProvider) error {
+func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscriptionID, environmentName string, credentialsProvider CredentialsProvider) error {
 	if credentialsProvider == nil {
 		return fmt.Errorf("credentials provider cannot have an empty value")
 	}
@@ -151,7 +151,7 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 	return
 }
 
-// adds the specified environment variable value to the Values map if it exists
+// setValue adds the specified environment variable value to the Values map if it exists.
 func setValue(settings auth.EnvironmentSettings, key string) {
 	if v := os.Getenv(key); v != "" {
 		settings.Values[key] = v

@@ -2,4 +2,5 @@ namespace: default
 resources:
   - ../../../test/ci/prow
 patchesStrategicMerge:
+  - ../patches/control-plane-custom-builds.yaml
   - patches/custom-builds.yaml

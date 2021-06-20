@@ -2,16 +2,16 @@ namespace: default
 resources:
   - ../default
 
-patchesJson6902:
+patches:
 - path: patches/ephemeral.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
     version: v1alpha4
     kind: AzureMachineTemplate
-    name: "${CLUSTER_NAME}-md-0"
+    name: ".*-md-0"
 - path: patches/ephemeral.yaml
   target:
     group: infrastructure.cluster.x-k8s.io
     version: v1alpha4
     kind: AzureMachineTemplate
-    name: "${CLUSTER_NAME}-control-plane"
+    name: ".*-control-plane"

@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -74,8 +74,8 @@ func TestGetExistingVM(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				mpip.Get(gomockinternal.AContext(), "my-rg", "my-publicIP-id").Return(network.PublicIPAddress{
 					PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-						PublicIPAddressVersion:   network.IPv4,
-						PublicIPAllocationMethod: network.Static,
+						PublicIPAddressVersion:   network.IPVersionIPv4,
+						PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 						IPAddress:                to.StringPtr("4.3.2.1"),
 					},
 				}, nil)
@@ -90,8 +90,8 @@ func TestGetExistingVM(t *testing.T) {
 										ID:   to.StringPtr("my-publicIP-id"),
 										Name: to.StringPtr("my-publicIP"),
 										PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-											PublicIPAddressVersion:   network.IPv4,
-											PublicIPAllocationMethod: network.Static,
+											PublicIPAddressVersion:   network.IPVersionIPv4,
+											PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 											IPAddress:                to.StringPtr("4.3.2.1"),
 										},
 									},
@@ -161,8 +161,8 @@ func TestGetExistingVM(t *testing.T) {
 										ID:   to.StringPtr("my-publicIP-id"),
 										Name: to.StringPtr("my-publicIP"),
 										PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-											PublicIPAddressVersion:   network.IPv4,
-											PublicIPAllocationMethod: network.Static,
+											PublicIPAddressVersion:   network.IPVersionIPv4,
+											PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 											IPAddress:                to.StringPtr("4.3.2.1"),
 										},
 									},
@@ -210,8 +210,8 @@ func TestGetExistingVM(t *testing.T) {
 										ID:   to.StringPtr("my-publicIP-id"),
 										Name: to.StringPtr("my-publicIP"),
 										PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-											PublicIPAddressVersion:   network.IPv4,
-											PublicIPAllocationMethod: network.Static,
+											PublicIPAddressVersion:   network.IPVersionIPv4,
+											PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 											IPAddress:                to.StringPtr("4.3.2.1"),
 										},
 									},
@@ -475,7 +475,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -547,7 +546,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -619,7 +617,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -692,7 +689,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -749,7 +745,6 @@ func TestReconcileVM(t *testing.T) {
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminPassword).Should(HaveLen(123))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminUsername).Should(Equal("capi"))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
-
 				})
 			},
 			ExpectedError: "",
@@ -826,7 +821,6 @@ func TestReconcileVM(t *testing.T) {
 				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.ManagedDisk.DiskEncryptionSet.ID).To(Equal(to.StringPtr("my-diskencryptionset-id")))
-
 				})
 			},
 			ExpectedError: "",
@@ -858,7 +852,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -895,7 +888,6 @@ func TestReconcileVM(t *testing.T) {
 				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
 					g.Expect(*vm.VirtualMachineProperties.SecurityProfile.EncryptionAtHost).To(Equal(true))
-
 				})
 			},
 			ExpectedError: "",
@@ -931,7 +923,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 
 				svc.resourceSKUCache = resourceskus.NewStaticCache(skus, "")
-
 			},
 		},
 		{
@@ -1088,7 +1079,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1117,7 +1107,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: encryption at host is not supported for VM type Standard_D2v3",
+			ExpectedError: "reconcile error that cannot be recovered occurred: encryption at host is not supported for VM type Standard_D2v3. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1214,7 +1204,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1252,7 +1241,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm size should be bigger or equal to at least 2 vCPUs",
+			ExpectedError: "reconcile error that cannot be recovered occurred: vm size should be bigger or equal to at least 2 vCPUs. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1281,7 +1270,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1319,7 +1307,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm memory should be bigger or equal to at least 2Gi",
+			ExpectedError: "reconcile error that cannot be recovered occurred: vm memory should be bigger or equal to at least 2Gi. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1348,7 +1336,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1389,7 +1376,7 @@ func TestReconcileVM(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
 					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
-			ExpectedError: "reconcile error occurred that cannot be recovered. Object will not be requeued. The actual error is: vm size Standard_D2v3 does not support ephemeral os. select a different vm size or disable ephemeral os",
+			ExpectedError: "reconcile error that cannot be recovered occurred: vm size Standard_D2v3 does not support ephemeral os. select a different vm size or disable ephemeral os. Object will not be requeued",
 			SetupSKUs: func(svc *Service) {
 				skus := []compute.ResourceSku{
 					{
@@ -1422,7 +1409,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{
@@ -1587,7 +1573,6 @@ func TestReconcileVM(t *testing.T) {
 				}
 				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
 				svc.resourceSKUCache = resourceSkusCache
-
 			},
 		},
 		{

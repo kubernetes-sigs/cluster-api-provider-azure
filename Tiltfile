@@ -16,9 +16,9 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "nightly_master_20210526",
+    "capi_version": "v0.4.0-beta.1",
     "cert_manager_version": "v1.1.0",
-    "kubernetes_version": "v1.19.7",
+    "kubernetes_version": "v1.19.11",
     "aks_kubernetes_version": "v1.20.5"
 }
 
@@ -42,7 +42,7 @@ if "default_registry" in settings:
 # deploy CAPI
 def deploy_capi():
     version = settings.get("capi_version")
-    capi_uri = "https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/{}/cluster-api-components.yaml".format(version)
+    capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
     cmd = "curl -sSL {} | {} | kubectl apply -f -".format(capi_uri, envsubst_cmd)
     local(cmd, quiet=True)
     if settings.get("extra_args"):

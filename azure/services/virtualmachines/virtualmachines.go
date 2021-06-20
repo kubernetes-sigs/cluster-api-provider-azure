@@ -55,7 +55,7 @@ type VMScope interface {
 	UpdateStatus()
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope VMScope
 	Client
@@ -279,7 +279,6 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 		return addresses, nil
 	}
 	for _, nicRef := range *vm.NetworkProfile.NetworkInterfaces {
-
 		// The full ID includes the name at the very end. Split the string and pull the last element
 		// Ex: /subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Network/networkInterfaces/$NICNAME
 		// We'll check to see if ID is nil and bail early if we don't have it
@@ -324,7 +323,7 @@ func (s *Service) getAddresses(ctx context.Context, vm compute.VirtualMachine) (
 	return addresses, nil
 }
 
-// getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation
+// getPublicIPAddress will fetch a public ip address resource by name and return a nodeaddresss representation.
 func (s *Service) getPublicIPAddress(ctx context.Context, publicIPAddressName string) (corev1.NodeAddress, error) {
 	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.getPublicIPAddress")
 	defer span.End()

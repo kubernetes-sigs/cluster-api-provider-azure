@@ -34,7 +34,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 
-	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -87,8 +87,8 @@ func TestReconcilePublicIP(t *testing.T) {
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
 						},
 						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPv4,
-							PublicIPAllocationMethod: network.Static,
+							PublicIPAddressVersion:   network.IPVersionIPv4,
+							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 							DNSSettings: &network.PublicIPAddressDNSSettings{
 								DomainNameLabel: to.StringPtr("fakedns"),
 								Fqdn:            to.StringPtr("fakedns.mydomain.io"),
@@ -104,8 +104,8 @@ func TestReconcilePublicIP(t *testing.T) {
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
 						},
 						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPv4,
-							PublicIPAllocationMethod: network.Static,
+							PublicIPAddressVersion:   network.IPVersionIPv4,
+							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 							DNSSettings: &network.PublicIPAddressDNSSettings{
 								DomainNameLabel: to.StringPtr("fakedns2-52959"),
 								Fqdn:            to.StringPtr("fakedns2-52959.uksouth.cloudapp.azure.com"),
@@ -121,8 +121,8 @@ func TestReconcilePublicIP(t *testing.T) {
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
 						},
 						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPv4,
-							PublicIPAllocationMethod: network.Static,
+							PublicIPAddressVersion:   network.IPVersionIPv4,
+							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 						},
 					})).Times(1),
 					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-ipv6", gomockinternal.DiffEq(network.PublicIPAddress{
@@ -134,8 +134,8 @@ func TestReconcilePublicIP(t *testing.T) {
 							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
 						},
 						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPv6,
-							PublicIPAllocationMethod: network.Static,
+							PublicIPAddressVersion:   network.IPVersionIPv6,
+							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 							DNSSettings: &network.PublicIPAddressDNSSettings{
 								DomainNameLabel: to.StringPtr("fakename"),
 								Fqdn:            to.StringPtr("fakename.mydomain.io"),

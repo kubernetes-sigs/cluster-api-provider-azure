@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -48,7 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureMachineReconciler reconciles a AzureMachine object
+// AzureMachineReconciler reconciles an AzureMachine object.
 type AzureMachineReconciler struct {
 	client.Client
 	Log                       logr.Logger
@@ -60,7 +60,7 @@ type AzureMachineReconciler struct {
 
 type azureMachineServiceCreator func(machineScope *scope.MachineScope) (*azureMachineService, error)
 
-// NewAzureMachineReconciler returns a new AzureMachineReconciler instance
+// NewAzureMachineReconciler returns a new AzureMachineReconciler instance.
 func NewAzureMachineReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureMachineReconciler {
 	amr := &AzureMachineReconciler{
 		Client:           client,
@@ -134,9 +134,9 @@ func (r *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachineReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureMachine"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureMachine"),
 		))
 	defer span.End()
 

@@ -23,19 +23,21 @@ import (
 )
 
 const (
-	// DefaultVnetCIDR is the default Vnet CIDR
+	// DefaultVnetCIDR is the default Vnet CIDR.
 	DefaultVnetCIDR = "10.0.0.0/8"
-	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR
+	// DefaultControlPlaneSubnetCIDR is the default Control Plane Subnet CIDR.
 	DefaultControlPlaneSubnetCIDR = "10.0.0.0/16"
-	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR
+	// DefaultNodeSubnetCIDR is the default Node Subnet CIDR.
 	DefaultNodeSubnetCIDR = "10.1.0.0/16"
-	// DefaultAzureBastionSubnetCIDR is the default Subnet CIDR for AzureBastion
+	// DefaultAzureBastionSubnetCIDR is the default Subnet CIDR for AzureBastion.
 	DefaultAzureBastionSubnetCIDR = "10.255.255.224/27"
-	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion
+	// DefaultAzureBastionSubnetName is the default Subnet Name for AzureBastion.
 	DefaultAzureBastionSubnetName = "AzureBastionSubnet"
-	// DefaultInternalLBIPAddress is the default internal load balancer ip address
+	// DefaultInternalLBIPAddress is the default internal load balancer ip address.
 	DefaultInternalLBIPAddress = "10.0.0.100"
-	// DefaultAzureCloud is the public cloud that will be used by most users
+	// DefaultOutboundRuleIdleTimeoutInMinutes is the default for IdleTimeoutInMinutes for the load balancer.
+	DefaultOutboundRuleIdleTimeoutInMinutes = 4
+	// DefaultAzureCloud is the public cloud that will be used by most users.
 	DefaultAzureCloud = "AzurePublicCloud"
 )
 
@@ -135,6 +137,9 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 	if lb.SKU == "" {
 		lb.SKU = SKUStandard
 	}
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
 
 	if lb.Type == Public {
 		if lb.Name == "" {
@@ -150,7 +155,6 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 				},
 			}
 		}
-
 	} else if lb.Type == Internal {
 		if lb.Name == "" {
 			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
@@ -179,6 +183,10 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 	lb.SKU = SKUStandard
 	lb.Name = c.ObjectMeta.Name
 
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
+
 	if lb.FrontendIPsCount == nil {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
@@ -205,7 +213,6 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 				},
 			}
 		}
-
 	}
 }
 

@@ -18,10 +18,28 @@ package v1alpha4
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+)
+
+const (
+	// MachinePoolNameLabel indicates the AzureMachinePool name the AzureMachinePoolMachine belongs.
+	MachinePoolNameLabel = "azuremachinepool.infrastructure.cluster.x-k8s.io/machine-pool"
+
+	// RollingUpdateAzureMachinePoolDeploymentStrategyType replaces AzureMachinePoolMachines with older models with
+	// AzureMachinePoolMachines based on the latest model.
+	// i.e. gradually scale down the old AzureMachinePoolMachines and scale up the new ones.
+	RollingUpdateAzureMachinePoolDeploymentStrategyType AzureMachinePoolDeploymentStrategyType = "RollingUpdate"
+
+	// OldestDeletePolicyType will delete machines with the oldest creation date first.
+	OldestDeletePolicyType AzureMachinePoolDeletePolicyType = "Oldest"
+	// NewestDeletePolicyType will delete machines with the newest creation date first.
+	NewestDeletePolicyType AzureMachinePoolDeletePolicyType = "Newest"
+	// RandomDeletePolicyType will delete machines in random order.
+	RandomDeletePolicyType AzureMachinePoolDeletePolicyType = "Random"
 )
 
 type (
@@ -31,7 +49,7 @@ type (
 		// See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/createorupdate#virtualmachinesizetypes
 		VMSize string `json:"vmSize"`
 
-		// Image is used to provide details of an image to use during Virtual Machine creation.
+		// Image is used to provide details of an image to use during VM creation.
 		// If image details are omitted the image will default the Azure Marketplace "capi" offer,
 		// which is based on Ubuntu.
 		// +kubebuilder:validation:nullable
@@ -68,7 +86,7 @@ type (
 		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
 	}
 
-	// AzureMachinePoolSpec defines the desired state of AzureMachinePool
+	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.
 	AzureMachinePoolSpec struct {
 		// Location is the Azure region location e.g. westus2
 		Location string `json:"location"`
@@ -111,9 +129,87 @@ type (
 		// If not specified, a random GUID will be generated.
 		// +optional
 		RoleAssignmentName string `json:"roleAssignmentName,omitempty"`
+
+		// The deployment strategy to use to replace existing AzureMachinePoolMachines with new ones.
+		// +optional
+		// +kubebuilder:default={type: "RollingUpdate", rollingUpdate: {maxSurge: 1, maxUnavailable: 0, deletePolicy: Oldest}}
+		Strategy AzureMachinePoolDeploymentStrategy `json:"strategy,omitempty"`
+
+		// NodeDrainTimeout is the total amount of time that the controller will spend on draining a node.
+		// The default value is 0, meaning that the node can be drained without any time limitations.
+		// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
+		// +optional
+		NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
 	}
 
-	// AzureMachinePoolStatus defines the observed state of AzureMachinePool
+	// AzureMachinePoolDeploymentStrategyType is the type of deployment strategy employed to rollout a new version of
+	// the AzureMachinePool.
+	AzureMachinePoolDeploymentStrategyType string
+
+	// AzureMachinePoolDeploymentStrategy describes how to replace existing machines with new ones.
+	AzureMachinePoolDeploymentStrategy struct {
+		// Type of deployment. Currently the only supported strategy is RollingUpdate
+		// +optional
+		// +kubebuilder:validation:Enum=RollingUpdate
+		// +optional
+		// +kubebuilder:default=RollingUpdate
+		Type AzureMachinePoolDeploymentStrategyType `json:"type,omitempty"`
+
+		// Rolling update config params. Present only if
+		// MachineDeploymentStrategyType = RollingUpdate.
+		// +optional
+		RollingUpdate *MachineRollingUpdateDeployment `json:"rollingUpdate,omitempty"`
+	}
+
+	// AzureMachinePoolDeletePolicyType is the type of DeletePolicy employed to select machines to be deleted during an
+	// upgrade.
+	AzureMachinePoolDeletePolicyType string
+
+	// MachineRollingUpdateDeployment is used to control the desired behavior of rolling update.
+	MachineRollingUpdateDeployment struct {
+		// The maximum number of machines that can be unavailable during the update.
+		// Value can be an absolute number (ex: 5) or a percentage of desired
+		// machines (ex: 10%).
+		// Absolute number is calculated from percentage by rounding down.
+		// This can not be 0 if MaxSurge is 0.
+		// Defaults to 0.
+		// Example: when this is set to 30%, the old MachineSet can be scaled
+		// down to 70% of desired machines immediately when the rolling update
+		// starts. Once new machines are ready, old MachineSet can be scaled
+		// down further, followed by scaling up the new MachineSet, ensuring
+		// that the total number of machines available at all times
+		// during the update is at least 70% of desired machines.
+		// +optional
+		// +kubebuilder:default:=0
+		MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
+
+		// The maximum number of machines that can be scheduled above the
+		// desired number of machines.
+		// Value can be an absolute number (ex: 5) or a percentage of
+		// desired machines (ex: 10%).
+		// This can not be 0 if MaxUnavailable is 0.
+		// Absolute number is calculated from percentage by rounding up.
+		// Defaults to 1.
+		// Example: when this is set to 30%, the new MachineSet can be scaled
+		// up immediately when the rolling update starts, such that the total
+		// number of old and new machines do not exceed 130% of desired
+		// machines. Once old machines have been killed, new MachineSet can
+		// be scaled up further, ensuring that total number of machines running
+		// at any time during the update is at most 130% of desired machines.
+		// +optional
+		// +kubebuilder:default:=1
+		MaxSurge *intstr.IntOrString `json:"maxSurge,omitempty"`
+
+		// DeletePolicy defines the policy used by the MachineDeployment to identify nodes to delete when downscaling.
+		// Valid values are "Random, "Newest", "Oldest"
+		// When no value is supplied, the default is Oldest
+		// +optional
+		// +kubebuilder:validation:Enum=Random;Newest;Oldest
+		// +kubebuilder:default:=Oldest
+		DeletePolicy AzureMachinePoolDeletePolicyType `json:"deletePolicy,omitempty"`
+	}
+
+	// AzureMachinePoolStatus defines the observed state of AzureMachinePool.
 	AzureMachinePoolStatus struct {
 		// Ready is true when the provider resource is ready.
 		// +optional
@@ -126,6 +222,11 @@ type (
 		// Instances is the VM instance status for each VM in the VMSS
 		// +optional
 		Instances []*AzureMachinePoolInstanceStatus `json:"instances,omitempty"`
+
+		// Image is the current image used in the AzureMachinePool. When the spec image is nil, this image is populated
+		// with the details of the defaulted Azure Marketplace "capi" offer.
+		// +optional
+		Image *infrav1.Image `json:"image,omitempty"`
 
 		// Version is the Kubernetes version for the current VMSS model
 		// +optional
@@ -177,13 +278,13 @@ type (
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-		// LongRunningOperationState saves the state for an Azure long running operations so it can be continued on the
+		// LongRunningOperationState saves the state for an Azure long-running operations so it can be continued on the
 		// next reconciliation loop.
 		// +optional
 		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
 	}
 
-	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS
+	// AzureMachinePoolInstanceStatus provides status information for each instance in the VMSS.
 	AzureMachinePoolInstanceStatus struct {
 		// Version defines the Kubernetes version for the VM Instance
 		// +optional
@@ -223,7 +324,7 @@ type (
 	// +kubebuilder:printcolumn:name="VMSS ID",type="string",priority=1,JSONPath=".spec.providerID",description="Azure VMSS ID"
 	// +kubebuilder:printcolumn:name="VM Size",type="string",priority=1,JSONPath=".spec.template.vmSize",description="Azure VM Size"
 
-	// AzureMachinePool is the Schema for the azuremachinepools API
+	// AzureMachinePool is the Schema for the azuremachinepools API.
 	AzureMachinePool struct {
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -234,7 +335,7 @@ type (
 
 	// +kubebuilder:object:root=true
 
-	// AzureMachinePoolList contains a list of AzureMachinePool
+	// AzureMachinePoolList contains a list of AzureMachinePools.
 	AzureMachinePoolList struct {
 		metav1.TypeMeta `json:",inline"`
 		metav1.ListMeta `json:"metadata,omitempty"`
@@ -247,7 +348,7 @@ func (amp *AzureMachinePool) GetConditions() clusterv1.Conditions {
 	return amp.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureMachinePool object
+// SetConditions will set the given conditions on an AzureMachinePool object.
 func (amp *AzureMachinePool) SetConditions(conditions clusterv1.Conditions) {
 	amp.Status.Conditions = conditions
 }

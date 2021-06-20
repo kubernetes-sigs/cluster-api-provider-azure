@@ -21,14 +21,14 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
-// AzureManagedClusterSpec defines the desired state of AzureManagedCluster
+// AzureManagedClusterSpec defines the desired state of AzureManagedCluster.
 type AzureManagedClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 }
 
-// AzureManagedClusterStatus defines the observed state of AzureManagedCluster
+// AzureManagedClusterStatus defines the observed state of AzureManagedCluster.
 type AzureManagedClusterStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
@@ -40,7 +40,7 @@ type AzureManagedClusterStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureManagedCluster is the Schema for the azuremanagedclusters API
+// AzureManagedCluster is the Schema for the azuremanagedclusters API.
 type AzureManagedCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -51,7 +51,7 @@ type AzureManagedCluster struct {
 
 // +kubebuilder:object:root=true
 
-// AzureManagedClusterList contains a list of AzureManagedCluster
+// AzureManagedClusterList contains a list of AzureManagedClusters.
 type AzureManagedClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

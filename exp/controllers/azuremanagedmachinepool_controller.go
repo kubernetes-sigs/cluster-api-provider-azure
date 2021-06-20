@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureManagedMachinePoolReconciler reconciles a AzureManagedMachinePool object
+// AzureManagedMachinePoolReconciler reconciles an AzureManagedMachinePool object.
 type AzureManagedMachinePoolReconciler struct {
 	client.Client
 	Log                                  logr.Logger
@@ -59,7 +59,7 @@ type AzureManagedMachinePoolReconciler struct {
 
 type azureManagedMachinePoolServiceCreator func(managedControlPlaneScope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService
 
-// NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance
+// NewAzureManagedMachinePoolReconciler returns a new AzureManagedMachinePoolReconciler instance.
 func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureManagedMachinePoolReconciler {
 	ampr := &AzureManagedMachinePoolReconciler{
 		Client:           client,
@@ -128,9 +128,9 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureManagedMachinePool"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureManagedMachinePool"),
 		))
 	defer span.End()
 
@@ -191,7 +191,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	// Create the scope.
-	mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
+	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
 		Client:           r.Client,
 		Logger:           log,
 		ControlPlane:     controlPlane,

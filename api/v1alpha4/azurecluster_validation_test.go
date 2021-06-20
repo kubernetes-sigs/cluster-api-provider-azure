@@ -86,7 +86,6 @@ func TestClusterNameValidation(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			azureCluster := AzureCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tc.clusterName,
@@ -752,7 +751,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 						Name: "ip-2",
 					},
 				},
-				Detail: "API Server Load balancer should have 1 Frontend IP configuration",
+				Detail: "API Server Load balancer should have 1 Frontend IP",
 			},
 		},
 		{
@@ -966,7 +965,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			apiServerLB: LoadBalancerSpec{Type: Public},
 			wantErr:     true,
 			expectedErr: field.Error{
-				Type:     "FieldValueInvalid",
+				Type:     "FieldValueRequired",
 				Field:    "nodeOutboundLB",
 				BadValue: nil,
 				Detail:   "Node outbound load balancer cannot be nil for public clusters.",
@@ -988,7 +987,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type:     "FieldValueInvalid",
+				Type:     "FieldValueForbidden",
 				Field:    "nodeOutboundLB.id",
 				BadValue: "some-id",
 				Detail:   "Node outbound load balancer ID should not be modified after AzureCluster creation.",
@@ -1004,7 +1003,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type:     "FieldValueInvalid",
+				Type:     "FieldValueForbidden",
 				Field:    "nodeOutboundLB.name",
 				BadValue: "some-name",
 				Detail:   "Node outbound load balancer Name should not be modified after AzureCluster creation.",
@@ -1020,7 +1019,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type:     "FieldValueInvalid",
+				Type:     "FieldValueForbidden",
 				Field:    "nodeOutboundLB.sku",
 				BadValue: "some-sku",
 				Detail:   "Node outbound load balancer SKU should not be modified after AzureCluster creation.",
@@ -1040,12 +1039,12 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			},
 			wantErr: true,
 			expectedErr: field.Error{
-				Type:  "FieldValueInvalid",
+				Type:  "FieldValueForbidden",
 				Field: "nodeOutboundLB.frontendIPs[0]",
 				BadValue: FrontendIP{
 					Name: "some-frontend-ip",
 				},
-				Detail: "Node outbound load balancer FrontendIPs is not allowed to be modified after AzureCluster creation.",
+				Detail: "Node outbound load balancer FrontendIPs cannot be modified after AzureCluster creation.",
 			},
 		},
 		{

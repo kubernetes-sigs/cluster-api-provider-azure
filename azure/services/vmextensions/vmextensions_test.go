@@ -173,7 +173,6 @@ func TestReconcileVMExtension(t *testing.T) {
 				s.Location().AnyTimes().Return("test-location")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
 					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-
 			},
 		},
 		{
@@ -200,7 +199,6 @@ func TestReconcileVMExtension(t *testing.T) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1").
 					Return(compute.VirtualMachineExtension{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), "my-rg", "my-vm", "my-extension-1", gomock.AssignableToTypeOf(compute.VirtualMachineExtension{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
-
 			},
 		},
 	}

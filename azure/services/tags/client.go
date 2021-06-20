@@ -26,13 +26,13 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk
+// client wraps go-sdk.
 type client interface {
 	GetAtScope(context.Context, string) (resources.TagsResource, error)
 	CreateOrUpdateAtScope(context.Context, string, resources.TagsResource) (resources.TagsResource, error)
 }
 
-// azureClient contains the Azure go-sdk Client
+// azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	tags resources.TagsClient
 }

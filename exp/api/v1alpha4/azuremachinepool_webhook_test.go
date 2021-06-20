@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -38,6 +39,11 @@ var (
 func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	g := NewWithT(t)
 
+	var (
+		zero = intstr.FromInt(0)
+		one  = intstr.FromInt(1)
+	)
+
 	tests := []struct {
 		name    string
 		amp     *AzureMachinePool
@@ -45,68 +51,90 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 	}{
 		{
 			name:    "azuremachinepool with marketplace image - full",
-			amp:     createMachinePoolWithtMarketPlaceImage(t, "PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithtMarketPlaceImage("PUB1234", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing publisher",
-			amp:     createMachinePoolWithtMarketPlaceImage(t, "", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithtMarketPlaceImage("", "OFFER1234", "SKU1234", "1.0.0", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with shared gallery image - full",
-			amp:     createMachinePoolWithSharedImage(t, "SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with marketplace image - missing subscription",
-			amp:     createMachinePoolWithSharedImage(t, "", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
+			amp:     createMachinePoolWithSharedImage("", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with image by - with id",
-			amp:     createMachinePoolWithImageByID(t, "ID123", to.IntPtr(10)),
+			amp:     createMachinePoolWithImageByID("ID123", to.IntPtr(10)),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with image by - without id",
-			amp:     createMachinePoolWithImageByID(t, "", to.IntPtr(10)),
+			amp:     createMachinePoolWithImageByID("", to.IntPtr(10)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with valid SSHPublicKey",
-			amp:     createMachinePoolWithSSHPublicKey(t, validSSHPublicKey),
+			amp:     createMachinePoolWithSSHPublicKey(validSSHPublicKey),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with invalid SSHPublicKey",
-			amp:     createMachinePoolWithSSHPublicKey(t, "invalid ssh key"),
+			amp:     createMachinePoolWithSSHPublicKey("invalid ssh key"),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with wrong terminate notification",
-			amp:     createMachinePoolWithSharedImage(t, "SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(35)),
+			amp:     createMachinePoolWithSharedImage("SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0", to.IntPtr(35)),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with system assigned identity",
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
+			amp:     createMachinePoolWithSystemAssignedIdentity(string(uuid.NewUUID())),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with system assigned identity, but invalid role",
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, "not_a_uuid"),
+			amp:     createMachinePoolWithSystemAssignedIdentity("not_a_uuid"),
 			wantErr: true,
 		},
 		{
 			name:    "azuremachinepool with user assigned identity",
-			amp:     createMachinePoolWithUserAssignedIdentity(t, []string{"azure:://id1", "azure:://id2"}),
+			amp:     createMachinePoolWithUserAssignedIdentity([]string{"azure:://id1", "azure:://id2"}),
 			wantErr: false,
 		},
 		{
 			name:    "azuremachinepool with user assigned identity, but without any provider ids",
-			amp:     createMachinePoolWithUserAssignedIdentity(t, []string{}),
+			amp:     createMachinePoolWithUserAssignedIdentity([]string{}),
 			wantErr: true,
+		},
+		{
+			name: "azuremachinepool with invalid MaxSurge and MaxUnavailable rolling upgrade configuration",
+			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
+				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &MachineRollingUpdateDeployment{
+					MaxSurge:       &zero,
+					MaxUnavailable: &zero,
+				},
+			}),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinepool with valid MaxSurge and MaxUnavailable rolling upgrade configuration",
+			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
+				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &MachineRollingUpdateDeployment{
+					MaxSurge:       &zero,
+					MaxUnavailable: &one,
+				},
+			}),
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {
@@ -124,6 +152,11 @@ func TestAzureMachinePool_ValidateCreate(t *testing.T) {
 func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	g := NewWithT(t)
 
+	var (
+		zero = intstr.FromInt(0)
+		one  = intstr.FromInt(1)
+	)
+
 	tests := []struct {
 		name    string
 		oldAMP  *AzureMachinePool
@@ -131,28 +164,52 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "azuremachine with valid SSHPublicKey",
-			oldAMP:  createMachinePoolWithSSHPublicKey(t, ""),
-			amp:     createMachinePoolWithSSHPublicKey(t, validSSHPublicKey),
+			name:    "azuremachinepool with valid SSHPublicKey",
+			oldAMP:  createMachinePoolWithSSHPublicKey(""),
+			amp:     createMachinePoolWithSSHPublicKey(validSSHPublicKey),
 			wantErr: false,
 		},
 		{
-			name:    "azuremachine with invalid SSHPublicKey",
-			oldAMP:  createMachinePoolWithSSHPublicKey(t, ""),
-			amp:     createMachinePoolWithSSHPublicKey(t, "invalid ssh key"),
+			name:    "azuremachinepool with invalid SSHPublicKey",
+			oldAMP:  createMachinePoolWithSSHPublicKey(""),
+			amp:     createMachinePoolWithSSHPublicKey("invalid ssh key"),
 			wantErr: true,
 		},
 		{
-			name:    "azuremachine with system-assigned identity, and role unchanged",
-			oldAMP:  createMachinePoolWithSystemAssignedIdentity(t, "30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, "30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
+			name:    "azuremachinepool with system-assigned identity, and role unchanged",
+			oldAMP:  createMachinePoolWithSystemAssignedIdentity("30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
+			amp:     createMachinePoolWithSystemAssignedIdentity("30a757d8-fcf0-4c8b-acf0-9253a7e093ea"),
 			wantErr: false,
 		},
 		{
-			name:    "azuremachine with system-assigned identity, and role changed",
-			oldAMP:  createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
-			amp:     createMachinePoolWithSystemAssignedIdentity(t, string(uuid.NewUUID())),
+			name:    "azuremachinepool with system-assigned identity, and role changed",
+			oldAMP:  createMachinePoolWithSystemAssignedIdentity(string(uuid.NewUUID())),
+			amp:     createMachinePoolWithSystemAssignedIdentity(string(uuid.NewUUID())),
 			wantErr: true,
+		},
+		{
+			name:   "azuremachinepool with invalid MaxSurge and MaxUnavailable rolling upgrade configuration",
+			oldAMP: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{}),
+			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
+				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &MachineRollingUpdateDeployment{
+					MaxSurge:       &zero,
+					MaxUnavailable: &zero,
+				},
+			}),
+			wantErr: true,
+		},
+		{
+			name:   "azuremachinepool with valid MaxSurge and MaxUnavailable rolling upgrade configuration",
+			oldAMP: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{}),
+			amp: createMachinePoolWithStrategy(AzureMachinePoolDeploymentStrategy{
+				Type: RollingUpdateAzureMachinePoolDeploymentStrategyType,
+				RollingUpdate: &MachineRollingUpdateDeployment{
+					MaxSurge:       &zero,
+					MaxUnavailable: &one,
+				},
+			}),
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {
@@ -175,18 +232,18 @@ func TestAzureMachine_Default(t *testing.T) {
 	}
 
 	existingPublicKey := validSSHPublicKey
-	publicKeyExistTest := test{amp: createMachinePoolWithSSHPublicKey(t, existingPublicKey)}
-	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey(t, "")}
+	publicKeyExistTest := test{amp: createMachinePoolWithSSHPublicKey(existingPublicKey)}
+	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey("")}
 
 	publicKeyExistTest.amp.Default()
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
 
 	publicKeyNotExistTest.amp.Default()
-	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo((BeEmpty()))
+	g.Expect(publicKeyNotExistTest.amp.Spec.Template.SSHPublicKey).NotTo(BeEmpty())
 }
 
-func createMachinePoolWithtMarketPlaceImage(t *testing.T, publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := &infrav1.Image{
+func createMachinePoolWithtMarketPlaceImage(publisher, offer, sku, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+	image := infrav1.Image{
 		Marketplace: &infrav1.AzureMarketplaceImage{
 			Publisher: publisher,
 			Offer:     offer,
@@ -198,7 +255,7 @@ func createMachinePoolWithtMarketPlaceImage(t *testing.T, publisher, offer, sku,
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Image:                        image,
+				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
 			},
@@ -206,8 +263,8 @@ func createMachinePoolWithtMarketPlaceImage(t *testing.T, publisher, offer, sku,
 	}
 }
 
-func createMachinePoolWithSharedImage(t *testing.T, subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := &infrav1.Image{
+func createMachinePoolWithSharedImage(subscriptionID, resourceGroup, name, gallery, version string, terminateNotificationTimeout *int) *AzureMachinePool {
+	image := infrav1.Image{
 		SharedGallery: &infrav1.AzureSharedGalleryImage{
 			SubscriptionID: subscriptionID,
 			ResourceGroup:  resourceGroup,
@@ -220,7 +277,7 @@ func createMachinePoolWithSharedImage(t *testing.T, subscriptionID, resourceGrou
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Image:                        image,
+				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
 			},
@@ -228,15 +285,15 @@ func createMachinePoolWithSharedImage(t *testing.T, subscriptionID, resourceGrou
 	}
 }
 
-func createMachinePoolWithImageByID(t *testing.T, imageID string, terminateNotificationTimeout *int) *AzureMachinePool {
-	image := &infrav1.Image{
+func createMachinePoolWithImageByID(imageID string, terminateNotificationTimeout *int) *AzureMachinePool {
+	image := infrav1.Image{
 		ID: &imageID,
 	}
 
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Template: AzureMachinePoolMachineTemplate{
-				Image:                        image,
+				Image:                        &image,
 				SSHPublicKey:                 validSSHPublicKey,
 				TerminateNotificationTimeout: terminateNotificationTimeout,
 			},
@@ -244,7 +301,7 @@ func createMachinePoolWithImageByID(t *testing.T, imageID string, terminateNotif
 	}
 }
 
-func createMachinePoolWithSystemAssignedIdentity(t *testing.T, role string) *AzureMachinePool {
+func createMachinePoolWithSystemAssignedIdentity(role string) *AzureMachinePool {
 	return &AzureMachinePool{
 		Spec: AzureMachinePoolSpec{
 			Identity:           infrav1.VMIdentitySystemAssigned,
@@ -253,7 +310,7 @@ func createMachinePoolWithSystemAssignedIdentity(t *testing.T, role string) *Azu
 	}
 }
 
-func createMachinePoolWithUserAssignedIdentity(t *testing.T, providerIds []string) *AzureMachinePool {
+func createMachinePoolWithUserAssignedIdentity(providerIds []string) *AzureMachinePool {
 	userAssignedIdentities := make([]infrav1.UserAssignedIdentity, len(providerIds))
 
 	for _, providerID := range providerIds {
@@ -277,4 +334,12 @@ func generateSSHPublicKey(b64Enconded bool) string {
 		return base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
 	}
 	return string(ssh.MarshalAuthorizedKey(publicRsaKey))
+}
+
+func createMachinePoolWithStrategy(strategy AzureMachinePoolDeploymentStrategy) *AzureMachinePool {
+	return &AzureMachinePool{
+		Spec: AzureMachinePoolSpec{
+			Strategy: strategy,
+		},
+	}
 }

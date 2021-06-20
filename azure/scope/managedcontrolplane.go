@@ -33,7 +33,8 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
 
-// ManagedControlPlaneScopeParams defines the input parameters used to create a new
+// ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
+// control plane.
 type ManagedControlPlaneScopeParams struct {
 	AzureClients
 	Client           client.Client
@@ -47,7 +48,7 @@ type ManagedControlPlaneScopeParams struct {
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
-func NewManagedControlPlaneScope(params ManagedControlPlaneScopeParams) (*ManagedControlPlaneScope, error) {
+func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlaneScopeParams) (*ManagedControlPlaneScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -60,8 +61,19 @@ func NewManagedControlPlaneScope(params ManagedControlPlaneScopeParams) (*Manage
 		params.Logger = klogr.New()
 	}
 
-	if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, ""); err != nil {
-		return nil, errors.Wrap(err, "failed to create Azure session")
+	if params.ControlPlane.Spec.IdentityRef == nil {
+		if err := params.AzureClients.setCredentials(params.ControlPlane.Spec.SubscriptionID, ""); err != nil {
+			return nil, errors.Wrap(err, "failed to create Azure session")
+		}
+	} else {
+		credentialsProvider, err := NewManagedControlPlaneCredentialsProvider(ctx, params.Client, params.ControlPlane)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to init credentials provider")
+		}
+
+		if err := params.AzureClients.setCredentialsWithProvider(ctx, params.ControlPlane.Spec.SubscriptionID, "", credentialsProvider); err != nil {
+			return nil, errors.Wrap(err, "failed to configure azure settings and credentials for Identity")
+		}
 	}
 
 	helper, err := patch.NewHelper(params.PatchTarget, params.Client)
@@ -117,7 +129,7 @@ func (s *ManagedControlPlaneScope) Location() string {
 	return s.ControlPlane.Spec.Location
 }
 
-// AvailabilitySetEnabled is always false for a managed control plane
+// AvailabilitySetEnabled is always false for a managed control plane.
 func (s *ManagedControlPlaneScope) AvailabilitySetEnabled() bool {
 	return false // not applicable for a managed control plane
 }

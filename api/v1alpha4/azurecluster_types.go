@@ -27,11 +27,11 @@ const (
 	// removing it from the apiserver.
 	ClusterFinalizer = "azurecluster.infrastructure.cluster.x-k8s.io"
 
-	// ClusterLabelNamespace indicates the namespace of the cluster
+	// ClusterLabelNamespace indicates the namespace of the cluster.
 	ClusterLabelNamespace = "azurecluster.infrastructure.cluster.x-k8s.io/cluster-namespace"
 )
 
-// AzureClusterSpec defines the desired state of AzureCluster
+// AzureClusterSpec defines the desired state of AzureCluster.
 type AzureClusterSpec struct {
 	// NetworkSpec encapsulates all things related to Azure network.
 	NetworkSpec NetworkSpec `json:"networkSpec,omitempty"`
@@ -53,7 +53,7 @@ type AzureClusterSpec struct {
 	// +optional
 	AdditionalTags Tags `json:"additionalTags,omitempty"`
 
-	// IdentityRef is a reference to a AzureIdentity to be used when reconciling this cluster
+	// IdentityRef is a reference to an AzureIdentity to be used when reconciling this cluster
 	// +optional
 	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
 
@@ -79,7 +79,7 @@ type AzureClusterSpec struct {
 	CloudProviderConfigOverrides *CloudProviderConfigOverrides `json:"cloudProviderConfigOverrides,omitempty"`
 }
 
-// AzureClusterStatus defines the observed state of AzureCluster
+// AzureClusterStatus defines the observed state of AzureCluster.
 type AzureClusterStatus struct {
 	// FailureDomains specifies the list of unique failure domains for the location/region of the cluster.
 	// A FailureDomain maps to Availability Zone with an Azure Region (if the region support them). An
@@ -109,7 +109,7 @@ type AzureClusterStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureCluster is the Schema for the azureclusters API
+// AzureCluster is the Schema for the azureclusters API.
 type AzureCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -120,7 +120,7 @@ type AzureCluster struct {
 
 // +kubebuilder:object:root=true
 
-// AzureClusterList contains a list of AzureCluster
+// AzureClusterList contains a list of AzureClusters.
 type AzureClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -132,7 +132,7 @@ func (c *AzureCluster) GetConditions() clusterv1.Conditions {
 	return c.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureCluster object
+// SetConditions will set the given conditions on an AzureCluster object.
 func (c *AzureCluster) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
 }

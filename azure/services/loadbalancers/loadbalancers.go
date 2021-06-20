@@ -19,7 +19,7 @@ package loadbalancers
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -45,7 +45,7 @@ type LBScope interface {
 	LBSpecs() []azure.LBSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope LBScope
 	Client
@@ -202,7 +202,7 @@ func (s *Service) getFrontendIPConfigs(lbSpec azure.LBSpec) ([]network.FrontendI
 		var properties network.FrontendIPConfigurationPropertiesFormat
 		if lbSpec.Type == infrav1.Internal {
 			properties = network.FrontendIPConfigurationPropertiesFormat{
-				PrivateIPAllocationMethod: network.Static,
+				PrivateIPAllocationMethod: network.IPAllocationMethodStatic,
 				Subnet: &network.Subnet{
 					ID: to.StringPtr(azure.SubnetID(s.Scope.SubscriptionID(), s.Scope.Vnet().ResourceGroup, s.Scope.Vnet().Name, lbSpec.SubnetName)),
 				},
@@ -235,7 +235,7 @@ func (s *Service) getOutboundRules(lbSpec azure.LBSpec, frontendIDs []network.Su
 			Name: to.StringPtr(outboundNAT),
 			OutboundRulePropertiesFormat: &network.OutboundRulePropertiesFormat{
 				Protocol:                 network.LoadBalancerOutboundRuleProtocolAll,
-				IdleTimeoutInMinutes:     to.Int32Ptr(4),
+				IdleTimeoutInMinutes:     lbSpec.IdleTimeoutInMinutes,
 				FrontendIPConfigurations: &frontendIDs,
 				BackendAddressPool: &network.SubResource{
 					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
@@ -261,7 +261,7 @@ func (s *Service) getLoadBalancingRules(lbSpec azure.LBSpec, frontendIDs []netwo
 					Protocol:                network.TransportProtocolTCP,
 					FrontendPort:            to.Int32Ptr(lbSpec.APIServerPort),
 					BackendPort:             to.Int32Ptr(lbSpec.APIServerPort),
-					IdleTimeoutInMinutes:    to.Int32Ptr(4),
+					IdleTimeoutInMinutes:    lbSpec.IdleTimeoutInMinutes,
 					EnableFloatingIP:        to.BoolPtr(false),
 					LoadDistribution:        network.LoadDistributionDefault,
 					FrontendIPConfiguration: &frontendIPConfig,

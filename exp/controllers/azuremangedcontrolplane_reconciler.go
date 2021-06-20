@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// azureManagedControlPlaneReconciler are list of services required by cluster controller
+// azureManagedControlPlaneReconciler contains the services required by the cluster controller.
 type azureManagedControlPlaneReconciler struct {
 	kubeclient         client.Client
 	managedClustersSvc *managedclusters.Service
@@ -51,7 +51,7 @@ type azureManagedControlPlaneReconciler struct {
 	subnetsSvc         azure.Reconciler
 }
 
-// newAzureManagedControlPlaneReconciler populates all the services based on input scope
+// newAzureManagedControlPlaneReconciler populates all the services based on input scope.
 func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope) *azureManagedControlPlaneReconciler {
 	return &azureManagedControlPlaneReconciler{
 		kubeclient:         scope.Client,
@@ -62,7 +62,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 	}
 }
 
-// Reconcile reconciles all the services in pre determined order
+// Reconcile reconciles all the services in a predetermined order.
 func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.Reconcile")
 	defer span.End()
@@ -132,7 +132,7 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 	return nil
 }
 
-// Delete reconciles all the services in pre determined order
+// Delete reconciles all the services in a predetermined order.
 func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.Delete")
 	defer span.End()
@@ -153,7 +153,7 @@ func (r *azureManagedControlPlaneReconciler) Delete(ctx context.Context, scope *
 	}
 
 	scope.V(2).Info("Deleting managed cluster resource group")
-	if err := r.groupsSvc.Delete(ctx); err != nil {
+	if err := r.groupsSvc.Delete(ctx); err != nil && !errors.Is(err, azure.ErrNotOwned) {
 		return errors.Wrap(err, "failed to delete managed cluster resource group")
 	}
 

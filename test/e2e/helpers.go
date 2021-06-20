@@ -41,6 +41,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -48,6 +49,7 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/kubernetesversions"
@@ -310,19 +312,22 @@ type nodeSSHInfo struct {
 
 // getClusterSSHInfo returns the information needed to establish a SSH connection through a
 // control plane endpoint to each node in the cluster.
-func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name string) ([]nodeSSHInfo, error) {
-	sshInfo := []nodeSSHInfo{}
-
+func getClusterSSHInfo(ctx context.Context, mgmtClusterProxy framework.ClusterProxy, namespace, clusterName string) ([]nodeSSHInfo, error) {
+	var (
+		sshInfo               []nodeSSHInfo
+		mgmtClusterClient     = mgmtClusterProxy.GetClient()
+		workloadClusterClient = mgmtClusterProxy.GetWorkloadCluster(ctx, namespace, clusterName).GetClient()
+	)
 	// Collect the info for each VM / Machine.
-	machines, err := getMachinesInCluster(ctx, c, namespace, name)
+	machines, err := getMachinesInCluster(ctx, mgmtClusterClient, namespace, clusterName)
 	if err != nil {
-		return nil, err
+		return sshInfo, errors.Wrap(err, "failed to get machines in the cluster")
 	}
 	for i := range machines.Items {
 		m := &machines.Items[i]
-		cluster, err := util.GetClusterFromMetadata(ctx, c, m.ObjectMeta)
+		cluster, err := util.GetClusterFromMetadata(ctx, mgmtClusterClient, m.ObjectMeta)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get cluster from metadata")
 		}
 		sshInfo = append(sshInfo, nodeSSHInfo{
 			Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
@@ -332,28 +337,66 @@ func getClusterSSHInfo(ctx context.Context, c client.Client, namespace, name str
 	}
 
 	// Collect the info for each instance in a VMSS / MachinePool.
-	machinePools, err := getMachinePoolsInCluster(ctx, c, namespace, name)
+	machinePools, err := getMachinePoolsInCluster(ctx, mgmtClusterClient, namespace, clusterName)
 	if err != nil {
-		return nil, err
+		return sshInfo, errors.Wrap(err, "failed to find machine pools in cluster")
 	}
+
 	for i := range machinePools.Items {
 		p := &machinePools.Items[i]
-		cluster, err := util.GetClusterFromMetadata(ctx, c, p.ObjectMeta)
+		cluster, err := util.GetClusterFromMetadata(ctx, mgmtClusterClient, p.ObjectMeta)
 		if err != nil {
-			return nil, err
+			return sshInfo, errors.Wrap(err, "failed to get cluster from metadata")
 		}
-		for j := range p.Status.NodeRefs {
-			n := p.Status.NodeRefs[j]
+
+		nodes, err := getReadyNodes(ctx, workloadClusterClient, p.Status.NodeRefs)
+		if err != nil {
+			return sshInfo, errors.Wrap(err, "failed to get ready nodes")
+		}
+
+		if p.Spec.Replicas != nil && len(nodes) < int(*p.Spec.Replicas) {
+			message := fmt.Sprintf("machine pool %s/%s expected replicas %d, but only found %d ready nodes", p.Namespace, p.Name, *p.Spec.Replicas, len(nodes))
+			Log(message)
+			return sshInfo, errors.New(message)
+		}
+
+		for _, node := range nodes {
 			sshInfo = append(sshInfo, nodeSSHInfo{
 				Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
-				Hostname: n.Name,
+				Hostname: node.Name,
 				Port:     sshPort,
 			})
 		}
-
 	}
 
 	return sshInfo, nil
+}
+
+func getReadyNodes(ctx context.Context, c client.Client, refs []corev1.ObjectReference) ([]corev1.Node, error) {
+	var nodes []corev1.Node
+	for _, ref := range refs {
+		var node corev1.Node
+		if err := c.Get(ctx, client.ObjectKey{
+			Namespace: ref.Namespace,
+			Name:      ref.Name,
+		}, &node); err != nil {
+			if apierrors.IsNotFound(err) {
+				// If 404, continue. Likely the node refs have not caught up to infra providers
+				continue
+			}
+
+			return nodes, err
+		}
+
+		if !noderefutil.IsNodeReady(&node) {
+			Logf("node is not ready and won't be counted for ssh info %s/%s", node.Namespace, node.Name)
+			continue
+		}
+
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
 }
 
 // getMachinesInCluster returns a list of all machines in the given cluster.

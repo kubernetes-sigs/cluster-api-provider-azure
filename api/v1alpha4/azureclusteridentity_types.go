@@ -23,7 +23,7 @@ import (
 )
 
 // AllowedNamespaces defines the namespaces the clusters are allowed to use the identity from
-// NamespaceList takes precedence over the Selector
+// NamespaceList takes precedence over the Selector.
 type AllowedNamespaces struct {
 	// A nil or empty list indicates that AzureCluster cannot use the identity from any namespace.
 	//
@@ -41,7 +41,7 @@ type AllowedNamespaces struct {
 	Selector *metav1.LabelSelector `json:"selector"`
 }
 
-// AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity
+// AzureClusterIdentitySpec defines the parameters that are used to create an AzureIdentity.
 type AzureClusterIdentitySpec struct {
 	// UserAssignedMSI or Service Principal
 	Type IdentityType `json:"type"`
@@ -66,7 +66,7 @@ type AzureClusterIdentitySpec struct {
 	AllowedNamespaces *AllowedNamespaces `json:"allowedNamespaces"`
 }
 
-// AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity
+// AzureClusterIdentityStatus defines the observed state of AzureClusterIdentity.
 type AzureClusterIdentityStatus struct {
 	// Conditions defines current service state of the AzureClusterIdentity.
 	// +optional
@@ -78,7 +78,7 @@ type AzureClusterIdentityStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureClusterIdentity is the Schema for the azureclustersidentities API
+// AzureClusterIdentity is the Schema for the azureclustersidentities API.
 type AzureClusterIdentity struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -89,7 +89,7 @@ type AzureClusterIdentity struct {
 
 // +kubebuilder:object:root=true
 
-// AzureClusterIdentityList contains a list of AzureClusterIdentity
+// AzureClusterIdentityList contains a list of AzureClusterIdentity.
 type AzureClusterIdentityList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -101,7 +101,7 @@ func (c *AzureClusterIdentity) GetConditions() clusterv1.Conditions {
 	return c.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an AzureClusterIdentity object
+// SetConditions will set the given conditions on an AzureClusterIdentity object.
 func (c *AzureClusterIdentity) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
 }

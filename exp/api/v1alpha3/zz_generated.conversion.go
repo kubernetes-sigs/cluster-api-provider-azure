@@ -85,18 +85,8 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachinePoolSpec)(nil), (*AzureMachinePoolSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(a.(*v1alpha4.AzureMachinePoolSpec), b.(*AzureMachinePoolSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*AzureMachinePoolStatus)(nil), (*v1alpha4.AzureMachinePoolStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolStatus(a.(*AzureMachinePoolStatus), b.(*v1alpha4.AzureMachinePoolStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureMachinePoolStatus)(nil), (*AzureMachinePoolStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(a.(*v1alpha4.AzureMachinePoolStatus), b.(*AzureMachinePoolStatus), scope)
 	}); err != nil {
 		return err
 	}
@@ -162,11 +152,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*AzureManagedControlPlaneSpec)(nil), (*v1alpha4.AzureManagedControlPlaneSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedControlPlaneSpec(a.(*AzureManagedControlPlaneSpec), b.(*v1alpha4.AzureManagedControlPlaneSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.AzureManagedControlPlaneSpec)(nil), (*AzureManagedControlPlaneSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedControlPlaneSpec(a.(*v1alpha4.AzureManagedControlPlaneSpec), b.(*AzureManagedControlPlaneSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -240,26 +225,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*VMSS)(nil), (*v1alpha4.VMSS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_VMSS_To_v1alpha4_VMSS(a.(*VMSS), b.(*v1alpha4.VMSS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.VMSS)(nil), (*VMSS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_VMSS_To_v1alpha3_VMSS(a.(*v1alpha4.VMSS), b.(*VMSS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*VMSSVM)(nil), (*v1alpha4.VMSSVM)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha3_VMSSVM_To_v1alpha4_VMSSVM(a.(*VMSSVM), b.(*v1alpha4.VMSSVM), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha4.VMSSVM)(nil), (*VMSSVM)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha4_VMSSVM_To_v1alpha3_VMSSVM(a.(*v1alpha4.VMSSVM), b.(*VMSSVM), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddConversionFunc((*apiv1alpha3.APIEndpoint)(nil), (*apiv1alpha4.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha3_APIEndpoint_To_v1alpha4_APIEndpoint(a.(*apiv1alpha3.APIEndpoint), b.(*apiv1alpha4.APIEndpoint), scope)
 	}); err != nil {
@@ -277,6 +242,21 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*apiv1alpha4.APIEndpoint)(nil), (*apiv1alpha3.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_APIEndpoint_To_v1alpha3_APIEndpoint(a.(*apiv1alpha4.APIEndpoint), b.(*apiv1alpha3.APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha4.AzureMachinePoolSpec)(nil), (*AzureMachinePoolSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(a.(*v1alpha4.AzureMachinePoolSpec), b.(*AzureMachinePoolSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha4.AzureMachinePoolStatus)(nil), (*AzureMachinePoolStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(a.(*v1alpha4.AzureMachinePoolStatus), b.(*AzureMachinePoolStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha4.AzureManagedControlPlaneSpec)(nil), (*AzureManagedControlPlaneSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedControlPlaneSpec(a.(*v1alpha4.AzureManagedControlPlaneSpec), b.(*AzureManagedControlPlaneSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -483,12 +463,9 @@ func autoConvert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(
 	out.Identity = clusterapiproviderazureapiv1alpha3.VMIdentity(in.Identity)
 	out.UserAssignedIdentities = *(*[]clusterapiproviderazureapiv1alpha3.UserAssignedIdentity)(unsafe.Pointer(&in.UserAssignedIdentities))
 	out.RoleAssignmentName = in.RoleAssignmentName
+	// WARNING: in.Strategy requires manual conversion: does not exist in peer-type
+	// WARNING: in.NodeDrainTimeout requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *v1alpha4.AzureMachinePoolSpec, out *AzureMachinePoolSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in, out, s)
 }
 
 func autoConvert_v1alpha3_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolStatus(in *AzureMachinePoolStatus, out *v1alpha4.AzureMachinePoolStatus, s conversion.Scope) error {
@@ -513,6 +490,7 @@ func autoConvert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolSta
 	out.Ready = in.Ready
 	out.Replicas = in.Replicas
 	out.Instances = *(*[]*AzureMachinePoolInstanceStatus)(unsafe.Pointer(&in.Instances))
+	// WARNING: in.Image requires manual conversion: does not exist in peer-type
 	out.Version = in.Version
 	out.ProvisioningState = (*clusterapiproviderazureapiv1alpha3.VMState)(unsafe.Pointer(in.ProvisioningState))
 	out.FailureReason = (*errors.MachineStatusError)(unsafe.Pointer(in.FailureReason))
@@ -520,11 +498,6 @@ func autoConvert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolSta
 	out.Conditions = *(*apiv1alpha3.Conditions)(unsafe.Pointer(&in.Conditions))
 	out.LongRunningOperationState = (*clusterapiproviderazureapiv1alpha3.Future)(unsafe.Pointer(in.LongRunningOperationState))
 	return nil
-}
-
-// Convert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus is an autogenerated conversion function.
-func Convert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in *v1alpha4.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in, out, s)
 }
 
 func autoConvert_v1alpha3_AzureManagedCluster_To_v1alpha4_AzureManagedCluster(in *AzureManagedCluster, out *v1alpha4.AzureManagedCluster, s conversion.Scope) error {
@@ -765,12 +738,8 @@ func autoConvert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedC
 	out.DefaultPoolRef = in.DefaultPoolRef
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
+	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedControlPlaneSpec is an autogenerated conversion function.
-func Convert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedControlPlaneSpec(in *v1alpha4.AzureManagedControlPlaneSpec, out *AzureManagedControlPlaneSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedControlPlaneSpec(in, out, s)
 }
 
 func autoConvert_v1alpha3_AzureManagedControlPlaneStatus_To_v1alpha4_AzureManagedControlPlaneStatus(in *AzureManagedControlPlaneStatus, out *v1alpha4.AzureManagedControlPlaneStatus, s conversion.Scope) error {
@@ -947,76 +916,4 @@ func autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedC
 // Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork is an autogenerated conversion function.
 func Convert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(in *v1alpha4.ManagedControlPlaneVirtualNetwork, out *ManagedControlPlaneVirtualNetwork, s conversion.Scope) error {
 	return autoConvert_v1alpha4_ManagedControlPlaneVirtualNetwork_To_v1alpha3_ManagedControlPlaneVirtualNetwork(in, out, s)
-}
-
-func autoConvert_v1alpha3_VMSS_To_v1alpha4_VMSS(in *VMSS, out *v1alpha4.VMSS, s conversion.Scope) error {
-	out.ID = in.ID
-	out.Name = in.Name
-	out.Sku = in.Sku
-	out.Capacity = in.Capacity
-	out.Zones = *(*[]string)(unsafe.Pointer(&in.Zones))
-	if err := Convert_v1alpha3_Image_To_v1alpha4_Image(&in.Image, &out.Image, s); err != nil {
-		return err
-	}
-	out.State = clusterapiproviderazureapiv1alpha4.ProvisioningState(in.State)
-	out.Identity = clusterapiproviderazureapiv1alpha4.VMIdentity(in.Identity)
-	out.Tags = *(*clusterapiproviderazureapiv1alpha4.Tags)(unsafe.Pointer(&in.Tags))
-	out.Instances = *(*[]v1alpha4.VMSSVM)(unsafe.Pointer(&in.Instances))
-	return nil
-}
-
-// Convert_v1alpha3_VMSS_To_v1alpha4_VMSS is an autogenerated conversion function.
-func Convert_v1alpha3_VMSS_To_v1alpha4_VMSS(in *VMSS, out *v1alpha4.VMSS, s conversion.Scope) error {
-	return autoConvert_v1alpha3_VMSS_To_v1alpha4_VMSS(in, out, s)
-}
-
-func autoConvert_v1alpha4_VMSS_To_v1alpha3_VMSS(in *v1alpha4.VMSS, out *VMSS, s conversion.Scope) error {
-	out.ID = in.ID
-	out.Name = in.Name
-	out.Sku = in.Sku
-	out.Capacity = in.Capacity
-	out.Zones = *(*[]string)(unsafe.Pointer(&in.Zones))
-	if err := Convert_v1alpha4_Image_To_v1alpha3_Image(&in.Image, &out.Image, s); err != nil {
-		return err
-	}
-	out.State = clusterapiproviderazureapiv1alpha3.VMState(in.State)
-	out.Identity = clusterapiproviderazureapiv1alpha3.VMIdentity(in.Identity)
-	out.Tags = *(*clusterapiproviderazureapiv1alpha3.Tags)(unsafe.Pointer(&in.Tags))
-	out.Instances = *(*[]VMSSVM)(unsafe.Pointer(&in.Instances))
-	return nil
-}
-
-// Convert_v1alpha4_VMSS_To_v1alpha3_VMSS is an autogenerated conversion function.
-func Convert_v1alpha4_VMSS_To_v1alpha3_VMSS(in *v1alpha4.VMSS, out *VMSS, s conversion.Scope) error {
-	return autoConvert_v1alpha4_VMSS_To_v1alpha3_VMSS(in, out, s)
-}
-
-func autoConvert_v1alpha3_VMSSVM_To_v1alpha4_VMSSVM(in *VMSSVM, out *v1alpha4.VMSSVM, s conversion.Scope) error {
-	out.ID = in.ID
-	out.InstanceID = in.InstanceID
-	out.Name = in.Name
-	out.AvailabilityZone = in.AvailabilityZone
-	out.State = clusterapiproviderazureapiv1alpha4.ProvisioningState(in.State)
-	out.LatestModelApplied = in.LatestModelApplied
-	return nil
-}
-
-// Convert_v1alpha3_VMSSVM_To_v1alpha4_VMSSVM is an autogenerated conversion function.
-func Convert_v1alpha3_VMSSVM_To_v1alpha4_VMSSVM(in *VMSSVM, out *v1alpha4.VMSSVM, s conversion.Scope) error {
-	return autoConvert_v1alpha3_VMSSVM_To_v1alpha4_VMSSVM(in, out, s)
-}
-
-func autoConvert_v1alpha4_VMSSVM_To_v1alpha3_VMSSVM(in *v1alpha4.VMSSVM, out *VMSSVM, s conversion.Scope) error {
-	out.ID = in.ID
-	out.InstanceID = in.InstanceID
-	out.Name = in.Name
-	out.AvailabilityZone = in.AvailabilityZone
-	out.State = clusterapiproviderazureapiv1alpha3.VMState(in.State)
-	out.LatestModelApplied = in.LatestModelApplied
-	return nil
-}
-
-// Convert_v1alpha4_VMSSVM_To_v1alpha3_VMSSVM is an autogenerated conversion function.
-func Convert_v1alpha4_VMSSVM_To_v1alpha3_VMSSVM(in *v1alpha4.VMSSVM, out *VMSSVM, s conversion.Scope) error {
-	return autoConvert_v1alpha4_VMSSVM_To_v1alpha3_VMSSVM(in, out, s)
 }

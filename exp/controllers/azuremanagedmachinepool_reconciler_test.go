@@ -59,5 +59,4 @@ func TestIsAgentPoolVMSSNotFoundError(t *testing.T) {
 			g.Expect(IsAgentPoolVMSSNotFoundError(c.Err)).To(gomega.Equal(c.Expected))
 		})
 	}
-
 }

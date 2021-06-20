@@ -9,7 +9,7 @@ providers:
     type: CoreProvider
     versions:
     - name: v0.4.0
-      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210526/core-components.yaml
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/core-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -22,7 +22,7 @@ providers:
     type: BootstrapProvider
     versions:
     - name: v0.4.0
-      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210526/bootstrap-components.yaml
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/bootstrap-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -35,7 +35,7 @@ providers:
     type: ControlPlaneProvider
     versions:
     - name: v0.4.0
-      value: https://storage.googleapis.com/artifacts.k8s-staging-cluster-api.appspot.com/components/nightly_master_20210526/control-plane-components.yaml
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/control-plane-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -51,6 +51,9 @@ providers:
       value: "${PWD}/config/default"
       files:
       - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
+      replacements:
+      - old: "--v=0"
+        new: "--v=2"
     files:
     - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"
@@ -83,15 +86,15 @@ providers:
       targetName: "cluster-template-machine-pool-windows.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-external-cloud-provider.yaml"
       targetName: "cluster-template-external-cloud-provider.yaml"
-    replacements:
-    - old: "--v=0"
-      new: "--v=4"
+    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-multi-tenancy.yaml"
+      targetName: "cluster-template-aks-multi-tenancy.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"
+  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
   ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
   COREDNS_VERSION_UPGRADE_TO: "1.6.7"
-  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.19.7}"
+  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.19.11}"
   KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.18.15}"
   CNI: "${PWD}/templates/addons/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
@@ -117,4 +120,4 @@ intervals:
   default/wait-deployment: ["15m", "10s"]
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["5m", "10s"]
-  default/wait-machine-pool-nodes: ["20m", "10s"]
+  default/wait-machine-pool-nodes: ["30m", "10s"]

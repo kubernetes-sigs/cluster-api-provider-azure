@@ -30,23 +30,23 @@ import (
 )
 
 const (
-	// DefaultUserName is the default username for created vm
+	// DefaultUserName is the default username for a created VM.
 	DefaultUserName = "capi"
 )
 
 const (
-	// DefaultImageOfferID is the default Azure Marketplace offer ID
+	// DefaultImageOfferID is the default Azure Marketplace offer ID.
 	DefaultImageOfferID = "capi"
-	// DefaultWindowsImageOfferID is the default Azure Marketplace offer ID for Windows
+	// DefaultWindowsImageOfferID is the default Azure Marketplace offer ID for Windows.
 	DefaultWindowsImageOfferID = "capi-windows"
-	// DefaultImagePublisherID is the default Azure Marketplace publisher ID
+	// DefaultImagePublisherID is the default Azure Marketplace publisher ID.
 	DefaultImagePublisherID = "cncf-upstream"
-	// LatestVersion is the image version latest
+	// LatestVersion is the image version latest.
 	LatestVersion = "latest"
 )
 
 const (
-	// WindowsOS is Windows OS value for OSDisk
+	// WindowsOS is Windows OS value for OSDisk.
 	WindowsOS = "Windows"
 )
 
@@ -61,7 +61,7 @@ const (
 )
 
 const (
-	// ControlPlaneNodeGroup will be used to create availability set for control plane machines
+	// ControlPlaneNodeGroup will be used to create availability set for control plane machines.
 	ControlPlaneNodeGroup = "control-plane"
 )
 
@@ -160,7 +160,7 @@ func GenerateAvailabilitySetName(clusterName, nodeGroup string) string {
 	return fmt.Sprintf("%s_%s-as", clusterName, nodeGroup)
 }
 
-// WithIndex appends the index as suffix to a generated name
+// WithIndex appends the index as suffix to a generated name.
 func WithIndex(name string, n int) string {
 	return fmt.Sprintf("%s-%d", name, n)
 }
@@ -295,13 +295,13 @@ func UserAgent() string {
 	return fmt.Sprintf("cluster-api-provider-azure/%s", version.Get().String())
 }
 
-// SetAutoRestClientDefaults set authorizer and user agent for autorest client
+// SetAutoRestClientDefaults set authorizer and user agent for autorest client.
 func SetAutoRestClientDefaults(c *autorest.Client, auth autorest.Authorizer) {
 	c.Authorizer = auth
 	AutoRestClientAppendUserAgent(c, UserAgent())
 }
 
-// AutoRestClientAppendUserAgent autorest client calls "AddToUserAgent" but ignores errors
+// AutoRestClientAppendUserAgent autorest client calls "AddToUserAgent" but ignores errors.
 func AutoRestClientAppendUserAgent(c *autorest.Client, extension string) {
 	_ = c.AddToUserAgent(extension) // intentionally ignore error as it doesn't matter
 }

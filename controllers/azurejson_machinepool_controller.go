@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureJSONMachinePoolReconciler reconciles azure json secrets for AzureMachinePool objects
+// AzureJSONMachinePoolReconciler reconciles Azure json secrets for AzureMachinePool objects.
 type AzureJSONMachinePoolReconciler struct {
 	client.Client
 	Log              logr.Logger
@@ -50,7 +50,7 @@ type AzureJSONMachinePoolReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
-// SetupWithManager initializes this controller with a manager
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&expv1.AzureMachinePool{}).
@@ -58,7 +58,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 		Complete(r)
 }
 
-// Reconcile reconciles the azure json for AzureMachinePool objects
+// Reconcile reconciles the Azure json for AzureMachinePool objects.
 func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
@@ -66,9 +66,9 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureJSONMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureMachinePool"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureMachinePool"),
 		))
 	defer span.End()
 

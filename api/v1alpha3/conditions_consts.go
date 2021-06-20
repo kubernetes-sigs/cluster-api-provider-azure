@@ -18,19 +18,19 @@ package v1alpha3
 
 import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
-// AzureCluster Conditions and Reasons
+// AzureCluster Conditions and Reasons.
 const (
-	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure
+	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure.
 	NetworkInfrastructureReadyCondition = "NetworkInfrastructureReady"
-	// LoadBalancerProvisioningReason API Server endpoint for the loadbalancer
+	// LoadBalancerProvisioningReason API Server endpoint for the loadbalancer.
 	LoadBalancerProvisioningReason = "LoadBalancerProvisioning"
 	// LoadBalancerProvisioningFailedReason used for failure during provisioning of loadbalancer.
 	LoadBalancerProvisioningFailedReason = "LoadBalancerProvisioningFailed"
-	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity
+	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity.
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
 
-// AzureMachine Conditions and Reasons
+// AzureMachine Conditions and Reasons.
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
 	VMRunningCondition clusterv1.ConditionType = "VMRunning"

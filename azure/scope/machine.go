@@ -185,7 +185,7 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	return specs
 }
 
-// NICNames returns the NIC names
+// NICNames returns the NIC names.
 func (m *MachineScope) NICNames() []string {
 	nicNames := make([]string, len(m.NICSpecs()))
 	for i, nic := range m.NICSpecs() {
@@ -240,7 +240,7 @@ func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
 	return []azure.VMExtensionSpec{}
 }
 
-// Subnet returns the machine's subnet based on its role
+// Subnet returns the machine's subnet based on its role.
 func (m *MachineScope) Subnet() infrav1.SubnetSpec {
 	if m.IsControlPlane() {
 		return m.ControlPlaneSubnet()
@@ -267,14 +267,12 @@ func (m *MachineScope) AvailabilityZone() string {
 
 // Name returns the AzureMachine name.
 func (m *MachineScope) Name() string {
+	if id := m.GetVMID(); id != "" {
+		return id
+	}
 	// Windows Machine names cannot be longer than 15 chars
 	if m.AzureMachine.Spec.OSDisk.OSType == azure.WindowsOS && len(m.AzureMachine.Name) > 15 {
-		clustername := m.ClusterName()
-		if len(m.ClusterName()) > 9 {
-			clustername = strings.TrimSuffix(clustername[0:9], "-")
-		}
-
-		return clustername + "-" + m.AzureMachine.Name[len(m.AzureMachine.Name)-5:]
+		return strings.TrimSuffix(m.AzureMachine.Name[0:9], "-") + "-" + m.AzureMachine.Name[len(m.AzureMachine.Name)-5:]
 	}
 	return m.AzureMachine.Name
 }
@@ -297,7 +295,7 @@ func (m *MachineScope) Role() string {
 	return infrav1.Node
 }
 
-// GetVMID returns the AzureMachine instance id by parsing Spec.ProviderID.
+// GetVMID returns the AzureMachine instance id by parsing Spec.FakeProviderID.
 func (m *MachineScope) GetVMID() string {
 	parsed, err := noderefutil.NewProviderID(m.ProviderID())
 	if err != nil {
@@ -312,10 +310,10 @@ func (m *MachineScope) ProviderID() string {
 	if err != nil {
 		return ""
 	}
-	return parsed.ID()
+	return parsed.String()
 }
 
-// AvailabilitySet returns the availability set for this machine if available
+// AvailabilitySet returns the availability set for this machine if available.
 func (m *MachineScope) AvailabilitySet() (string, bool) {
 	if !m.AvailabilitySetEnabled() {
 		return "", false
@@ -381,11 +379,11 @@ func (m *MachineScope) SetBootstrapConditions(provisioningState string, extensio
 	case infrav1.Creating:
 		m.V(4).Info("extension provisioning state is creating", "vm extension", extensionName, "virtual machine", m.Name())
 		conditions.MarkFalse(m.AzureMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapInProgressReason, clusterv1.ConditionSeverityInfo, "")
-		return azure.WithTransientError(errors.New("extension still provisioning"), 30*time.Second)
+		return azure.WithTransientError(errors.New("extension is still in provisioning state. This likely means that bootstrapping has not yet completed on the VM"), 30*time.Second)
 	case infrav1.Failed:
 		m.V(4).Info("extension provisioning state is failed", "vm extension", extensionName, "virtual machine", m.Name())
 		conditions.MarkFalse(m.AzureMachine, infrav1.BootstrapSucceededCondition, infrav1.BootstrapFailedReason, clusterv1.ConditionSeverityError, "")
-		return azure.WithTerminalError(errors.New("extension state failed"))
+		return azure.WithTerminalError(errors.New("extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more"))
 	default:
 		return nil
 	}

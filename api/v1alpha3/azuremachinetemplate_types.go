@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate
+// AzureMachineTemplateSpec defines the desired state of AzureMachineTemplate.
 type AzureMachineTemplateSpec struct {
 	Template AzureMachineTemplateResource `json:"template"`
 }
@@ -28,7 +28,7 @@ type AzureMachineTemplateSpec struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremachinetemplates,scope=Namespaced,categories=cluster-api
 
-// AzureMachineTemplate is the Schema for the azuremachinetemplates API
+// AzureMachineTemplate is the Schema for the azuremachinetemplates API.
 type AzureMachineTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -38,7 +38,7 @@ type AzureMachineTemplate struct {
 
 // +kubebuilder:object:root=true
 
-// AzureMachineTemplateList contains a list of AzureMachineTemplate
+// AzureMachineTemplateList contains a list of AzureMachineTemplate.
 type AzureMachineTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -49,7 +49,7 @@ func init() {
 	SchemeBuilder.Register(&AzureMachineTemplate{}, &AzureMachineTemplateList{})
 }
 
-// AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template
+// AzureMachineTemplateResource describes the data needed to create an AzureMachine from a template.
 type AzureMachineTemplateResource struct {
 	// Spec is the specification of the desired behavior of the machine.
 	Spec AzureMachineSpec `json:"spec"`

@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Client
 }

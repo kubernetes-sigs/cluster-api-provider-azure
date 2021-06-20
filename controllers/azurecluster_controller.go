@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
@@ -48,7 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureClusterReconciler reconciles a AzureCluster object
+// AzureClusterReconciler reconciles an AzureCluster object.
 type AzureClusterReconciler struct {
 	client.Client
 	Log                       logr.Logger
@@ -60,7 +60,7 @@ type AzureClusterReconciler struct {
 
 type azureClusterServiceCreator func(clusterScope *scope.ClusterScope) (*azureClusterService, error)
 
-// NewAzureClusterReconciler returns a new AzureClusterReconciler instance
+// NewAzureClusterReconciler returns a new AzureClusterReconciler instance.
 func NewAzureClusterReconciler(client client.Client, log logr.Logger, recorder record.EventRecorder, reconcileTimeout time.Duration, watchFilterValue string) *AzureClusterReconciler {
 	acr := &AzureClusterReconciler{
 		Client:           client,
@@ -114,9 +114,9 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureCluster"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureCluster"),
 		))
 	defer span.End()
 

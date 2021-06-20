@@ -569,7 +569,6 @@ func createMachineWithSharedImage(t *testing.T, subscriptionID, resourceGroup, n
 			OSDisk:       validOSDisk,
 		},
 	}
-
 }
 
 func createMachineWithtMarketPlaceImage(t *testing.T, publisher, offer, sku, version string) *AzureMachine {

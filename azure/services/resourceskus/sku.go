@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SKU is a thin layer over the Azure resource SKU API to better introspect capabilities
+// SKU is a thin layer over the Azure resource SKU API to better introspect capabilities.
 type SKU compute.ResourceSku
 
 // ResourceType models available resource types as a set of known string constants.
@@ -43,9 +43,9 @@ const (
 type Supported string
 
 const (
-	// CapabilitySupported is the value returned by this API from Azure when the capability is supported
+	// CapabilitySupported is the value returned by this API from Azure when the capability is supported.
 	CapabilitySupported Supported = "True"
-	// CapabilityUnsupported is the value returned by this API from Azure when the capability is unsupported
+	// CapabilityUnsupported is the value returned by this API from Azure when the capability is unsupported.
 	CapabilityUnsupported Supported = "False"
 )
 
@@ -64,14 +64,14 @@ const (
 	MinimumMemory = 2
 	// EncryptionAtHost identifies the capability for encryption at host.
 	EncryptionAtHost = "EncryptionAtHostSupported"
-	// MaximumPlatformFaultDomainCount identifies the maximum fault domain count for an availability set  in a region
+	// MaximumPlatformFaultDomainCount identifies the maximum fault domain count for an availability set in a region.
 	MaximumPlatformFaultDomainCount = "MaximumPlatformFaultDomainCount"
 )
 
 // HasCapability return true for a capability which can be either
 // supported or not. Examples include "EphemeralOSDiskSupported",
 // "UltraSSDAvavailable" "EncryptionAtHostSupported",
-// "AcceleratedNetworkingEnabled", and "RdmaEnabled"
+// "AcceleratedNetworkingEnabled", and "RdmaEnabled".
 func (s SKU) HasCapability(name string) bool {
 	if s.Capabilities != nil {
 		for _, capability := range *s.Capabilities {
@@ -92,7 +92,7 @@ func (s SKU) HasCapability(name string) bool {
 // "MemoryGB","MaxDataDiskCount", "CombinedTempDiskAndCachedIOPS",
 // "CombinedTempDiskAndCachedReadBytesPerSecond",
 // "CombinedTempDiskAndCachedWriteBytesPerSecond", "UncachedDiskIOPS",
-// and "UncachedDiskBytesPerSecond"
+// and "UncachedDiskBytesPerSecond".
 func (s SKU) HasCapabilityWithCapacity(name string, value int64) (bool, error) {
 	if s.Capabilities == nil {
 		return false, nil
@@ -116,8 +116,8 @@ func (s SKU) HasCapabilityWithCapacity(name string, value int64) (bool, error) {
 	return false, nil
 }
 
-// GetCapability gets the value assigned to the given capability
-// Eg. MaximumPlatformFaultDomainCount -> "3" will return "3" for the capability "MaximumPlatformFaultDomainCount"
+// GetCapability gets the value assigned to the given capability.
+// Eg. MaximumPlatformFaultDomainCount -> "3" will return "3" for the capability "MaximumPlatformFaultDomainCount".
 func (s SKU) GetCapability(name string) (string, bool) {
 	if s.Capabilities != nil {
 		for _, capability := range *s.Capabilities {

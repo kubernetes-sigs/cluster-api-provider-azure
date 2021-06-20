@@ -33,7 +33,7 @@ type DiskScope interface {
 	DiskSpecs() []azure.DiskSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope DiskScope
 	client

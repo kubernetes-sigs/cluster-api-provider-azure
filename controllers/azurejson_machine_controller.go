@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureJSONMachineReconciler reconciles azure json secrets for AzureMachine objects
+// AzureJSONMachineReconciler reconciles Azure json secrets for AzureMachine objects.
 type AzureJSONMachineReconciler struct {
 	client.Client
 	Log              logr.Logger
@@ -53,7 +53,7 @@ type AzureJSONMachineReconciler struct {
 	ReconcileTimeout time.Duration
 }
 
-// SetupWithManager initializes this controller with a manager
+// SetupWithManager initializes this controller with a manager.
 func (r *AzureJSONMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.AzureMachine{}).
@@ -77,7 +77,7 @@ func (f filterUnclonedMachinesPredicate) Update(e event.UpdateEvent) bool {
 	})
 }
 
-// Generic implements default GenericEvent filter
+// Generic implements a default GenericEvent filter.
 func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	if e.Object == nil {
 		f.log.Error(nil, "Generic event has no old metadata", "event", e)
@@ -94,7 +94,7 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	return !isClonedFromTemplate
 }
 
-// Reconcile reconciles the azure json for a specific machine not in a machine deployment
+// Reconcile reconciles the Azure json for a specific machine not in a machine deployment.
 func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
@@ -102,9 +102,9 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureJSONMachineReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureMachine"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureMachine"),
 		))
 	defer span.End()
 

@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// azureClusterService is the reconciler called by the AzureCluster controller
+// azureClusterService is the reconciler called by the AzureCluster controller.
 type azureClusterService struct {
 	scope            *scope.ClusterScope
 	groupsSvc        azure.Reconciler
@@ -52,7 +52,7 @@ type azureClusterService struct {
 	skuCache         *resourceskus.Cache
 }
 
-// newAzureClusterService populates all the services based on input scope
+// newAzureClusterService populates all the services based on input scope.
 func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, error) {
 	skuCache, err := resourceskus.GetCache(scope, scope.Location())
 	if err != nil {
@@ -76,7 +76,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 
 var _ azure.Reconciler = (*azureClusterService)(nil)
 
-// Reconcile reconciles all the services in pre determined order
+// Reconcile reconciles all the services in a predetermined order.
 func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterService.Reconcile")
 	defer span.End()
@@ -127,7 +127,7 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-// Delete reconciles all the services in pre determined order
+// Delete reconciles all the services in a predetermined order.
 func (s *azureClusterService) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterService.Delete")
 	defer span.End()
@@ -165,7 +165,6 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 			if err := s.bastionSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete bastion")
 			}
-
 		} else {
 			return errors.Wrap(err, "failed to delete resource group")
 		}

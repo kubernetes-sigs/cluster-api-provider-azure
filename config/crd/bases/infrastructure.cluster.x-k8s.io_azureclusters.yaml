@@ -46,7 +46,7 @@ spec:
     name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: AzureCluster is the Schema for the azureclusters API
+        description: AzureCluster is the Schema for the azureclusters API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -57,7 +57,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureClusterSpec defines the desired state of AzureCluster
+            description: AzureClusterSpec defines the desired state of AzureCluster.
             properties:
               additionalTags:
                 additionalProperties:
@@ -266,7 +266,7 @@ spec:
             - location
             type: object
           status:
-            description: AzureClusterStatus defines the observed state of AzureCluster
+            description: AzureClusterStatus defines the observed state of AzureCluster.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureCluster.
@@ -349,7 +349,7 @@ spec:
     name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: AzureCluster is the Schema for the azureclusters API
+        description: AzureCluster is the Schema for the azureclusters API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -360,7 +360,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AzureClusterSpec defines the desired state of AzureCluster
+            description: AzureClusterSpec defines the desired state of AzureCluster.
             properties:
               additionalTags:
                 additionalProperties:
@@ -482,6 +482,28 @@ spec:
               cloudProviderConfigOverrides:
                 description: 'CloudProviderConfigOverrides is an optional set of configuration values that can be overridden in azure cloud provider config. This is only a subset of options that are available in azure cloud provider config. Some values for the cloud provider config are inferred from other parts of cluster api provider azure spec, and may not be available for overrides. See: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs Note: All cloud provider config values can be customized by creating the secret beforehand. CloudProviderConfigOverrides is only used when the secret is managed by the Azure Provider.'
                 properties:
+                  backOffs:
+                    description: BackOffConfig indicates the back-off config options.
+                    properties:
+                      cloudProviderBackoff:
+                        type: boolean
+                      cloudProviderBackoffDuration:
+                        type: integer
+                      cloudProviderBackoffExponent:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      cloudProviderBackoffJitter:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      cloudProviderBackoffRetries:
+                        type: integer
+                    type: object
                   rateLimits:
                     items:
                       description: 'RateLimitSpec represents the rate limit configuration for a particular kind of resource. Eg. loadBalancerRateLimit is used to configure rate limits for load balancers. This eventually gets converted to CloudProviderRateLimitConfig that cloud-provider-azure expects. See: https://github.com/kubernetes-sigs/cloud-provider-azure/blob/d585c2031925b39c925624302f22f8856e29e352/pkg/provider/azure_ratelimit.go#L25 We cannot use CloudProviderRateLimitConfig directly because floating point values are not supported in controller-tools. See: https://github.com/kubernetes-sigs/controller-tools/issues/245'
@@ -545,7 +567,7 @@ spec:
                 - port
                 type: object
               identityRef:
-                description: IdentityRef is a reference to a AzureIdentity to be used when reconciling this cluster
+                description: IdentityRef is a reference to an AzureIdentity to be used when reconciling this cluster
                 properties:
                   apiVersion:
                     description: API version of the referent.
@@ -601,10 +623,15 @@ spec:
                           type: object
                         type: array
                       frontendIPsCount:
+                        description: FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
                         format: int32
                         type: integer
                       id:
                         type: string
+                      idleTimeoutInMinutes:
+                        description: IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
+                        format: int32
+                        type: integer
                       name:
                         type: string
                       sku:
@@ -641,10 +668,15 @@ spec:
                           type: object
                         type: array
                       frontendIPsCount:
+                        description: FrontendIPsCount specifies the number of frontend IP addresses for the load balancer.
                         format: int32
                         type: integer
                       id:
                         type: string
+                      idleTimeoutInMinutes:
+                        description: IdleTimeoutInMinutes specifies the timeout for the TCP idle connection.
+                        format: int32
+                        type: integer
                       name:
                         type: string
                       sku:
@@ -783,7 +815,7 @@ spec:
             - location
             type: object
           status:
-            description: AzureClusterStatus defines the observed state of AzureCluster
+            description: AzureClusterStatus defines the observed state of AzureCluster.
             properties:
               conditions:
                 description: Conditions defines current service state of the AzureCluster.

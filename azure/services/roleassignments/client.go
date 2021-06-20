@@ -26,12 +26,12 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// client wraps go-sdk
+// client wraps go-sdk.
 type client interface {
 	Create(context.Context, string, string, authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error)
 }
 
-// azureClient contains the Azure go-sdk Client
+// azureClient contains the Azure go-sdk Client.
 type azureClient struct {
 	roleassignments authorization.RoleAssignmentsClient
 }

@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Client wraps go-sdk
+// Client wraps go-sdk.
 type Client interface {
 	List(context.Context, string) ([]compute.VirtualMachineScaleSet, error)
 	ListInstances(context.Context, string, string) ([]compute.VirtualMachineScaleSetVM, error)
@@ -51,7 +51,7 @@ type Client interface {
 }
 
 type (
-	// AzureClient contains the Azure go-sdk Client
+	// AzureClient contains the Azure go-sdk Client.
 	AzureClient struct {
 		scalesetvms compute.VirtualMachineScaleSetVMsClient
 		scalesets   compute.VirtualMachineScaleSetsClient
@@ -74,11 +74,11 @@ type (
 )
 
 const (
-	// PatchFuture is a future that was derived from a PATCH request to VMSS
+	// PatchFuture is a future that was derived from a PATCH request to VMSS.
 	PatchFuture string = "PATCH"
-	// PutFuture is a future that was derived from a PUT request to VMSS
+	// PutFuture is a future that was derived from a PUT request to VMSS.
 	PutFuture string = "PUT"
-	// DeleteFuture is a future that was derived from a DELETE request to VMSS
+	// DeleteFuture is a future that was derived from a DELETE request to VMSS.
 	DeleteFuture string = "DELETE"
 )
 
@@ -266,7 +266,7 @@ func (ac *AzureClient) UpdateAsync(ctx context.Context, resourceGroupName, vmssN
 	}, nil
 }
 
-// GetResultIfDone fetches the result of a long running operation future if it is done
+// GetResultIfDone fetches the result of a long-running operation future if it is done.
 func (ac *AzureClient) GetResultIfDone(ctx context.Context, future *infrav1.Future) (compute.VirtualMachineScaleSet, error) {
 	var genericFuture genericScaleSetFuture
 	futureData, err := base64.URLEncoding.DecodeString(future.FutureData)

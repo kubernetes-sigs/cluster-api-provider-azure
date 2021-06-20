@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -37,17 +38,36 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AzureCredentialsProvider provides
-type AzureCredentialsProvider struct {
-	Client       client.Client
-	AzureCluster *infrav1.AzureCluster
-	Identity     *infrav1.AzureClusterIdentity
+// CredentialsProvider defines the behavior for azure identity based credential providers.
+type CredentialsProvider interface {
+	GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error)
 }
 
-// NewAzureCredentialsProvider creates a new AzureCredentialsProvider from the supplied inputs.
-func NewAzureCredentialsProvider(ctx context.Context, kubeClient client.Client, azureCluster *infrav1.AzureCluster) (*AzureCredentialsProvider, error) {
+// AzureCredentialsProvider represents a credential provider with azure cluster identity.
+type AzureCredentialsProvider struct {
+	Client   client.Client
+	Identity *infrav1.AzureClusterIdentity
+}
+
+// AzureClusterCredentialsProvider wraps AzureCredentialsProvider with AzureCluster.
+type AzureClusterCredentialsProvider struct {
+	AzureCredentialsProvider
+	AzureCluster *infrav1.AzureCluster
+}
+
+// ManagedControlPlaneCredentialsProvider wraps AzureCredentialsProvider with AzureManagedControlPlane.
+type ManagedControlPlaneCredentialsProvider struct {
+	AzureCredentialsProvider
+	AzureManagedControlPlane *infrav1exp.AzureManagedControlPlane
+}
+
+var _ CredentialsProvider = (*AzureClusterCredentialsProvider)(nil)
+var _ CredentialsProvider = (*ManagedControlPlaneCredentialsProvider)(nil)
+
+// NewAzureClusterCredentialsProvider creates a new AzureClusterCredentialsProvider from the supplied inputs.
+func NewAzureClusterCredentialsProvider(ctx context.Context, kubeClient client.Client, azureCluster *infrav1.AzureCluster) (*AzureClusterCredentialsProvider, error) {
 	if azureCluster.Spec.IdentityRef == nil {
-		return nil, errors.New("failed to generate new AzureCredentialsProvider from empty identityName")
+		return nil, errors.New("failed to generate new AzureClusterCredentialsProvider from empty identityName")
 	}
 
 	ref := azureCluster.Spec.IdentityRef
@@ -66,15 +86,58 @@ func NewAzureCredentialsProvider(ctx context.Context, kubeClient client.Client, 
 		return nil, errors.New("AzureClusterIdentity is not of type Service Principal")
 	}
 
-	return &AzureCredentialsProvider{
-		Client:       kubeClient,
-		AzureCluster: azureCluster,
-		Identity:     identity,
+	return &AzureClusterCredentialsProvider{
+		AzureCredentialsProvider{
+			Client:   kubeClient,
+			Identity: identity,
+		},
+		azureCluster,
 	}, nil
 }
 
-// GetAuthorizer returns an Azure authorizer based on the provided azure identity
-func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
+// GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureCluster metadata.
+func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, p.AzureCluster.ObjectMeta)
+}
+
+// NewManagedControlPlaneCredentialsProvider creates a new ManagedControlPlaneCredentialsProvider from the supplied inputs.
+func NewManagedControlPlaneCredentialsProvider(ctx context.Context, kubeClient client.Client, managedControlPlane *infrav1exp.AzureManagedControlPlane) (*ManagedControlPlaneCredentialsProvider, error) {
+	if managedControlPlane.Spec.IdentityRef == nil {
+		return nil, errors.New("failed to generate new ManagedControlPlaneCredentialsProvider from empty identityName")
+	}
+
+	ref := managedControlPlane.Spec.IdentityRef
+	// if the namespace isn't specified then assume it's in the same namespace as the AzureManagedControlPlane
+	namespace := ref.Namespace
+	if namespace == "" {
+		namespace = managedControlPlane.Namespace
+	}
+	identity := &infrav1.AzureClusterIdentity{}
+	key := client.ObjectKey{Name: ref.Name, Namespace: namespace}
+	if err := kubeClient.Get(ctx, key, identity); err != nil {
+		return nil, errors.Errorf("failed to retrieve AzureClusterIdentity external object %q/%q: %v", key.Namespace, key.Name, err)
+	}
+
+	if identity.Spec.Type != infrav1.ServicePrincipal {
+		return nil, errors.New("AzureClusterIdentity is not of type Service Principal")
+	}
+
+	return &ManagedControlPlaneCredentialsProvider{
+		AzureCredentialsProvider{
+			Client:   kubeClient,
+			Identity: identity,
+		},
+		managedControlPlane,
+	}, nil
+}
+
+// GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureManagedControlPlane metadata.
+func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, p.AzureManagedControlPlane.ObjectMeta)
+}
+
+// GetAuthorizer returns an Azure authorizer based on the provided azure identity and cluster metadata.
+func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
 	azureIdentityType, err := getAzureIdentityType(p.Identity)
 	if err != nil {
 		return nil, err
@@ -85,17 +148,17 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 			APIVersion: "aadpodidentity.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      identity.GetAzureIdentityName(p.AzureCluster.Name, p.AzureCluster.Namespace, p.Identity.Name),
+			Name:      identity.GetAzureIdentityName(clusterMeta.Name, clusterMeta.Namespace, p.Identity.Name),
 			Namespace: system.GetManagerNamespace(),
 			Annotations: map[string]string{
 				aadpodv1.BehaviorKey: "namespaced",
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:         p.AzureCluster.Name,
-				infrav1.ClusterLabelNamespace:      p.AzureCluster.Namespace,
+				clusterv1.ClusterLabelName:         clusterMeta.Name,
+				infrav1.ClusterLabelNamespace:      clusterMeta.Namespace,
 				clusterctl.ClusterctlMoveLabelName: "true",
 			},
-			OwnerReferences: p.AzureCluster.OwnerReferences,
+			OwnerReferences: clusterMeta.OwnerReferences,
 		},
 		Spec: aadpodv1.AzureIdentitySpec{
 			Type:           azureIdentityType,
@@ -119,11 +182,11 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 			Name:      fmt.Sprintf("%s-binding", copiedIdentity.Name),
 			Namespace: copiedIdentity.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:         p.AzureCluster.Name,
-				infrav1.ClusterLabelNamespace:      p.AzureCluster.Namespace,
+				clusterv1.ClusterLabelName:         clusterMeta.Name,
+				infrav1.ClusterLabelNamespace:      clusterMeta.Namespace,
 				clusterctl.ClusterctlMoveLabelName: "true",
 			},
-			OwnerReferences: p.AzureCluster.OwnerReferences,
+			OwnerReferences: clusterMeta.OwnerReferences,
 		},
 		Spec: aadpodv1.AzureIdentityBindingSpec{
 			AzureIdentity: copiedIdentity.Name,
@@ -161,10 +224,9 @@ func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.Iden
 	}
 
 	return 0, errors.New("AzureIdentity does not have a vaild type")
-
 }
 
-// IsClusterNamespaceAllowed indicates if the cluster namespace is allowed
+// IsClusterNamespaceAllowed indicates if the cluster namespace is allowed.
 func IsClusterNamespaceAllowed(ctx context.Context, k8sClient client.Client, allowedNamespaces *infrav1.AllowedNamespaces, namespace string) bool {
 	if allowedNamespaces == nil {
 		return false

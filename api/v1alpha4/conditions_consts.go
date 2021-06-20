@@ -18,15 +18,15 @@ package v1alpha4
 
 import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 
-// AzureCluster Conditions and Reasons
+// AzureCluster Conditions and Reasons.
 const (
-	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure
+	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure.
 	NetworkInfrastructureReadyCondition clusterv1.ConditionType = "NetworkInfrastructureReady"
-	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity
+	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity.
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
 
-// AzureMachine Conditions and Reasons
+// AzureMachine Conditions and Reasons.
 const (
 	// VMRunningCondition reports on current status of the Azure VM.
 	VMRunningCondition clusterv1.ConditionType = "VMRunning"
@@ -50,7 +50,7 @@ const (
 	BootstrapFailedReason = "BootstrapFailed"
 )
 
-// AzureMachinePool Conditions and Reasons
+// AzureMachinePool Conditions and Reasons.
 const (
 	// ScaleSetRunningCondition reports on current status of the Azure Scale Set.
 	ScaleSetRunningCondition clusterv1.ConditionType = "ScaleSetRunning"
@@ -62,4 +62,16 @@ const (
 	ScaleSetDeletingReason = "ScaleSetDeleting"
 	// ScaleSetProvisionFailedReason used for failures during scale set provisioning.
 	ScaleSetProvisionFailedReason = "ScaleSetProvisionFailed"
+
+	// ScaleSetDesiredReplicasCondition reports on the scaling state of the machine pool.
+	ScaleSetDesiredReplicasCondition clusterv1.ConditionType = "ScaleSetDesiredReplicas"
+	// ScaleSetScaleUpReason describes the machine pool scaling up.
+	ScaleSetScaleUpReason = "ScaleSetScalingUp"
+	// ScaleSetScaleDownReason describes the machine pool scaling down.
+	ScaleSetScaleDownReason = "ScaleSetScalingDown"
+
+	// ScaleSetModelUpdatedCondition reports on the model state of the pool.
+	ScaleSetModelUpdatedCondition clusterv1.ConditionType = "ScaleSetModelUpdated"
+	// ScaleSetModelOutOfDateReason describes the machine pool model being out of date.
+	ScaleSetModelOutOfDateReason = "ScaleSetModelOutOfDate"
 )

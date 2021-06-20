@@ -37,7 +37,7 @@ type BastionScope interface {
 	BastionSpec() azure.BastionSpec
 }
 
-// Service provides operations on azure resources
+// Service provides operations on Azure resources.
 type Service struct {
 	Scope BastionScope
 	client

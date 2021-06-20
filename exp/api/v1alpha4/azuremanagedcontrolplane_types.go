@@ -24,7 +24,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
-// AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane
+// AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
 	// +kubebuilder:validation:MinLength:=2
@@ -82,6 +82,10 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
+
+	// IdentityRef is a reference to a AzureClusterIdentity to be used when reconciling this cluster
+	// +optional
+	IdentityRef *corev1.ObjectReference `json:"identityRef,omitempty"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
@@ -97,7 +101,7 @@ type ManagedControlPlaneSubnet struct {
 	CIDRBlock string `json:"cidrBlock"`
 }
 
-// AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane
+// AzureManagedControlPlaneStatus defines the observed state of AzureManagedControlPlane.
 type AzureManagedControlPlaneStatus struct {
 	// Ready is true when the provider resource is ready.
 	// +optional
@@ -115,7 +119,7 @@ type AzureManagedControlPlaneStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// AzureManagedControlPlane is the Schema for the azuremanagedcontrolplanes API
+// AzureManagedControlPlane is the Schema for the azuremanagedcontrolplanes API.
 type AzureManagedControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -126,7 +130,7 @@ type AzureManagedControlPlane struct {
 
 // +kubebuilder:object:root=true
 
-// AzureManagedControlPlaneList contains a list of AzureManagedControlPlane
+// AzureManagedControlPlaneList contains a list of AzureManagedControlPlane.
 type AzureManagedControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

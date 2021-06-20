@@ -20,10 +20,12 @@ import (
 	"context"
 	"time"
 
+	"sigs.k8s.io/cluster-api/util/patch"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -47,7 +49,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// AzureManagedControlPlaneReconciler reconciles a AzureManagedControlPlane object
+// AzureManagedControlPlaneReconciler reconciles an AzureManagedControlPlane object.
 type AzureManagedControlPlaneReconciler struct {
 	client.Client
 	Log              logr.Logger
@@ -112,9 +114,9 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
 		trace.WithAttributes(
-			label.String("namespace", req.Namespace),
-			label.String("name", req.Name),
-			label.String("kind", "AzureManagedControlPlane"),
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureManagedControlPlane"),
 		))
 	defer span.End()
 
@@ -150,7 +152,7 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 	// needs to happen before trying to fetch the default pool to avoid circular deletion dependencies
 	if !azureControlPlane.DeletionTimestamp.IsZero() {
 		// Create the scope.
-		mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
+		mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
 			Client:       r.Client,
 			Logger:       log,
 			Cluster:      cluster,
@@ -192,8 +194,29 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 
 	log = log.WithValues("machinePool", ownerPool.Name)
 
+	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
+	if azureControlPlane.Spec.IdentityRef != nil {
+		identity, err := infracontroller.GetClusterIdentityFromRef(ctx, r.Client, azureControlPlane.Namespace, azureControlPlane.Spec.IdentityRef)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureControlPlane.Namespace) {
+			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current azure managed control plane namespace")
+		}
+		if identity.Namespace == azureControlPlane.Namespace {
+			patchHelper, err := patch.NewHelper(identity, r.Client)
+			if err != nil {
+				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
+			}
+			identity.ObjectMeta.OwnerReferences = azureControlPlane.GetOwnerReferences()
+			if err := patchHelper.Patch(ctx, identity); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
 	// Create the scope.
-	mcpScope, err := scope.NewManagedControlPlaneScope(scope.ManagedControlPlaneScopeParams{
+	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
 		Client:           r.Client,
 		Logger:           log,
 		Cluster:          cluster,
