@@ -98,6 +98,7 @@ type AADProfile struct {
 	// +optional
 	ManagedAAD *ManagedAAD `json:"managedAadProfile,omitempty"`
 
+	// DEPRECATED: use ManagedAAD instead
 	// LegacyAAD is old style azure active directory integration, user has to create the client app and server app.
 	// +optional
 	LegacyAAD *LegacyAAD `json:"legacyAadProfile,omitempty"`
@@ -109,7 +110,6 @@ type ManagedAAD struct {
 	// +kubebuilder:validation:Required
 	Managed *bool `json:"managed"`
 
-	// DEPRECATED: use ManagedAAD instead
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
 	// +kubebuilder:validation:Required
 	AdminGroupObjectIDs *[]string `json:"adminGroupObjectIDs"`
