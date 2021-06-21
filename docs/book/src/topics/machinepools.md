@@ -33,10 +33,54 @@
 
 ## AzureMachinePool
 Cluster API Provider Azure (CAPZ) has experimental support for `MachinePool` through the infrastructure
-type `AzureMachinePool`. An `AzureMachinePool` corresponds to an [Azure Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview),
-which provides the cloud provider specific resource for orchestrating a group of Virtual Machines.
+type `AzureMachinePool` and `AzureMachinePoolMachine`. An `AzureMachinePool` corresponds to an 
+[Azure Virtual Machine Scale Set](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview),
+which provides the cloud provider specific resource for orchestrating a group of Virtual Machines. The 
+`AzureMachinePoolMachine` corresponds to a virtual machine instance within the Virtual Machine Scale Set.
 
-⚠️ Cloud provider for Azure does not currently support clusters in mixed mode (both vmss and vmas node pools), so it is not supported to have both `AzureMachinePools` and `AzureMachines` in the same workload cluster.
+### Safe Rolling Upgrades and Delete Policy
+`AzureMachinePools` provides the ability to safely deploy new versions of Kubernetes, or more generally, changes to the
+Virtual Machine Scale Set model, e.g., updating the OS image run by the virtual machines in the scale set. For example,
+if a cluster operator wanted to change the Kubernetes version of the `MachinePool`, they would update the `Version`
+field on the `MachinePool`, then `AzureMachinePool` would respond by rolling out the new OS image for the specified
+Kubernetes version to each of the virtual machines in the scale set progressively cordon, draining, then replacing the
+machine. This enables `AzureMachinePools` to upgrade the underlying pool of virtual machines with minimal interruption 
+to the workloads running on them.
+
+`AzureMachinePools` also provides the ability to specify the order of virtual machine deletion.
+
+#### Describing the Deployment Strategy
+Below we see a partially described `AzureMachinePool`. The `strategy` field describes the 
+`AzureMachinePoolDeploymentStrategy`. At the time of writing this, there is only one strategy type, `RollingUpdate`, 
+which provides the ability to specify delete policy, max surge, and max unavailable.
+
+- **deletePolicy:** provides three options for order of deletion `Oldest`, `Newest`, and `Random`
+- **maxSurge:** provides the ability to specify how many machines can be added in addition to the current replica count
+  during an upgrade operation. This can be a percentage, or a fixed number.
+- **maxUnavailable:** provides the ability to specify how many machines can be unavailable at any time. This can be a 
+  percentage, or a fixed number.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachinePool
+metadata:
+  name: capz-mp-0
+spec:
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+```
+
+### AzureMachinePoolMachines
+`AzureMachinePoolMachine` represents a virtual machine in the scale set. `AzureMachinePoolMachines` are created by the
+`AzureMachinePool` controller and are used to track the life cycle of a virtual machine in the scale set. When a 
+`AzureMachinePool` is created, each virtual machine instance will be represented as a `AzureMachinePoolMachine`
+resource. A cluster operator can delete the `AzureMachinePoolMachine` resource if they would like to delete a specific
+virtual machine from the scale set. This is useful if one would like to manually control upgrades and rollouts through
+CAPZ.
 
 ### Using `clusterctl` to deploy
 To deploy a MachinePool / AzureMachinePool via `clusterctl config` there's a [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors)
@@ -83,6 +127,12 @@ metadata:
   name: capz-mp-0
 spec:
   location: westus2
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     osDisk:
       diskSizeGB: 30
