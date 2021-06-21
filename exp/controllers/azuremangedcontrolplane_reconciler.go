@@ -23,7 +23,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-03-01/containerservice"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,6 +97,23 @@ func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scop
 	}
 	if scope.ControlPlane.Spec.LoadBalancerSKU != nil {
 		managedClusterSpec.LoadBalancerSKU = *scope.ControlPlane.Spec.LoadBalancerSKU
+	}
+
+	if scope.ControlPlane.Spec.AADProfile != nil && scope.ControlPlane.Spec.AADProfile.LegacyAAD != nil {
+		managedClusterSpec.AADProfile = &managedclusters.ManagedClusterAADProfile{
+			ClientAppID:     scope.ControlPlane.Spec.AADProfile.LegacyAAD.ClientAppID,
+			ServerAppID:     scope.ControlPlane.Spec.AADProfile.LegacyAAD.ServerAppID,
+			ServerAppSecret: scope.ControlPlane.Spec.AADProfile.LegacyAAD.ServerAppSecret,
+			TenantID:        scope.ControlPlane.Spec.AADProfile.LegacyAAD.TenantID,
+		}
+	}
+
+	if scope.ControlPlane.Spec.AADProfile != nil && scope.ControlPlane.Spec.AADProfile.ManagedAAD != nil {
+		managedClusterSpec.AADProfile = &managedclusters.ManagedClusterAADProfile{
+			Managed:             scope.ControlPlane.Spec.AADProfile.ManagedAAD.Managed,
+			EnableAzureRBAC:     scope.ControlPlane.Spec.AADProfile.ManagedAAD.Managed,
+			AdminGroupObjectIDs: scope.ControlPlane.Spec.AADProfile.ManagedAAD.AdminGroupObjectIDs,
+		}
 	}
 
 	scope.V(2).Info("Reconciling managed cluster resource group")
@@ -231,7 +248,6 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 		// Add to cluster spec
 		managedClusterSpec.AgentPools = []managedclusters.PoolSpec{defaultPoolSpec}
 	}
-
 	// Send to Azure for create/update.
 	if err := r.managedClustersSvc.Reconcile(ctx, managedClusterSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile managed cluster %s", scope.ControlPlane.Name)

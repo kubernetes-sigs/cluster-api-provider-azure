@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-03-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
@@ -82,6 +82,33 @@ type Spec struct {
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service
 	DNSServiceIP *string
+
+	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+	AADProfile *ManagedClusterAADProfile
+}
+
+// ManagedClusterAADProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+type ManagedClusterAADProfile struct {
+	// Managed - Whether to enable managed AAD.
+	Managed *bool
+
+	// EnableAzureRBAC - Whether to enable Azure RBAC for Kubernetes authorization.
+	EnableAzureRBAC *bool
+
+	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
+	AdminGroupObjectIDs *[]string
+
+	// ClientAppID - The client AAD application ID.
+	ClientAppID *string
+
+	// ServerAppID - The server AAD application ID.
+	ServerAppID *string
+
+	// ServerAppSecret - The server AAD application secret.
+	ServerAppSecret *string
+
+	// TenantID - The AAD tenant ID to use for authentication.
+	TenantID *string
 }
 
 // PoolSpec contains agent pool specification details.
@@ -124,7 +151,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	managedCluster := containerservice.ManagedCluster{
 		Identity: &containerservice.ManagedClusterIdentity{
-			Type: containerservice.SystemAssigned,
+			Type: containerservice.ResourceIdentityTypeSystemAssigned,
 		},
 		Location: &managedClusterSpec.Location,
 		Tags:     *to.StringMapPtr(managedClusterSpec.Tags),
@@ -146,7 +173,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 				ClientID: &managedIdentity,
 			},
 			AgentPoolProfiles: &[]containerservice.ManagedClusterAgentPoolProfile{},
-			NetworkProfile: &containerservice.NetworkProfileType{
+			NetworkProfile: &containerservice.NetworkProfile{
 				NetworkPlugin:   containerservice.NetworkPlugin(managedClusterSpec.NetworkPlugin),
 				LoadBalancerSku: containerservice.LoadBalancerSku(managedClusterSpec.LoadBalancerSKU),
 				NetworkPolicy:   containerservice.NetworkPolicy(managedClusterSpec.NetworkPolicy),
@@ -180,15 +207,27 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	for _, pool := range managedClusterSpec.AgentPools {
 		profile := containerservice.ManagedClusterAgentPoolProfile{
 			Name:         &pool.Name,
-			VMSize:       containerservice.VMSizeTypes(pool.SKU),
+			VMSize:       &pool.SKU,
 			OsDiskSizeGB: &pool.OSDiskSizeGB,
 			Count:        &pool.Replicas,
-			Type:         containerservice.VirtualMachineScaleSets,
+			Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
+			Mode:         containerservice.AgentPoolModeSystem,
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 
+	if managedClusterSpec.AADProfile != nil {
+		managedCluster.AadProfile = &containerservice.ManagedClusterAADProfile{
+			Managed:             managedClusterSpec.AADProfile.Managed,
+			EnableAzureRBAC:     managedClusterSpec.AADProfile.EnableAzureRBAC,
+			AdminGroupObjectIDs: managedClusterSpec.AADProfile.AdminGroupObjectIDs,
+			ServerAppID:         managedClusterSpec.AADProfile.ServerAppID,
+			ClientAppID:         managedClusterSpec.AADProfile.ClientAppID,
+			ServerAppSecret:     managedClusterSpec.AADProfile.ServerAppSecret,
+			TenantID:            managedClusterSpec.AADProfile.TenantID,
+		}
+	}
 	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing managed cluster")
@@ -218,6 +257,28 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
 			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
+		}
+
+		if managedCluster.AadProfile != nil {
+			propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+				Managed:             managedCluster.AadProfile.Managed,
+				EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
+				AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
+				ClientAppID:         managedCluster.AadProfile.ClientAppID,
+				ServerAppID:         managedCluster.AadProfile.ServerAppID,
+				ServerAppSecret:     managedCluster.AadProfile.ServerAppSecret,
+			}
+		}
+
+		if existingMC.AadProfile != nil {
+			existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+				Managed:             existingMC.AadProfile.Managed,
+				EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
+				AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
+				ClientAppID:         existingMC.AadProfile.ClientAppID,
+				ServerAppID:         existingMC.AadProfile.ServerAppID,
+				ServerAppSecret:     existingMC.AadProfile.ServerAppSecret,
+			}
 		}
 
 		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)

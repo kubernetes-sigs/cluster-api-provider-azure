@@ -197,6 +197,31 @@ spec:
 ---
 ```
 
+### AKS AAD
+
+Azure Kubernetes Service (AKS) can be configured to use Azure Active Directory (AD) for user authentication.
+AAD for managed clusters can be configured by enabling the `managed` spec in AzureManagedControlPlane to true 
+and by providing Azure AD GroupObjectId in `adminGroupObjectIDs` array. The group is needed as admin group for
+the cluster to grant cluster admin permissions. You can use an existing Azure AD group, or create a new one.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  defaultPoolRef:
+    name: agentpool0
+  location: southcentralus
+  resourceGroup: foo-bar
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
+  version: v1.19.6
+  aadProfile:
+    managed: true
+    adminGroupObjectIDs: 
+    - 917056a9-8eb5-439c-g679-b34901ade75h # fake admin groupId
+```
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,

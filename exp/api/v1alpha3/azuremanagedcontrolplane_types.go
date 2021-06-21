@@ -81,6 +81,53 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
+
+	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+	// +optional
+	AADProfile *AADProfile `json:"aadProfile,omitempty"`
+}
+
+// AADProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+type AADProfile struct {
+
+	// ManagedAAD - AAD integration is managed by AKS.
+	// +optional
+	ManagedAAD *ManagedAAD `json:"managedAadProfile,omitempty"`
+
+	// DEPRECATED: use ManagedAAD instead
+	// LegacyAAD is old style azure active directory integration, user has to create the client app and server app.
+	// +optional
+	LegacyAAD *LegacyAAD `json:"legacyAadProfile,omitempty"`
+}
+
+// ManagedAAD - AAD integration is managed by AKS.
+type ManagedAAD struct {
+	// Managed - Whether to enable managed AAD.
+	// +kubebuilder:validation:Required
+	Managed *bool `json:"managed"`
+
+	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
+	// +kubebuilder:validation:Required
+	AdminGroupObjectIDs *[]string `json:"adminGroupObjectIDs"`
+}
+
+// LegacyAAD is old style azure active directory integration, user has to create and manage the client app and server app for the AAD integration with AKS.
+type LegacyAAD struct {
+	// ClientAppID - The client AAD application ID.
+	// +kubebuilder:validation:Required
+	ClientAppID *string `json:"clientAppID"`
+
+	// ServerAppID - The server AAD application ID.
+	// +kubebuilder:validation:Required
+	ServerAppID *string `json:"serverAppID"`
+
+	// ServerAppSecret - The server AAD application secret.
+	// +kubebuilder:validation:Required
+	ServerAppSecret *string `json:"serverAppSecret"`
+
+	// TenantID - The AAD tenant ID to use for authentication.
+	// +kubebuilder:validation:Required
+	TenantID *string `json:"tenantID"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.

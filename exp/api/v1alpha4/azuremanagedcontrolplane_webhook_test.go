@@ -140,6 +140,93 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		{
+			name: "Valid Managed AADProfile",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.17.8",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Invalid Managed AADProfile AdminGroupObjectIDs cannot be empty",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.17.8",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed:             to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Invalid ManagedAADProfile managed field set to false",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.17.8",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed:             to.BoolPtr(false),
+							AdminGroupObjectIDs: &[]string{"616077a8-5db7-4c98-b856-b34619afg75h"},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Valid Legacy AADProfile",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.17.8",
+					AADProfile: &AADProfile{
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Invalid AADProfile, conflicting values",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.17.8",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -167,39 +254,82 @@ func TestAzureManagedControlPlane_ValidateCreate(t *testing.T) {
 		errorLen int
 	}{
 		{
-			name:    "all valid",
-			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(true)),
+			name: "all valid",
+			amcp: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(true), &AADProfile{
+				ManagedAAD: &ManagedAAD{
+					Managed: to.BoolPtr(true),
+					AdminGroupObjectIDs: &[]string{
+						"616077a8-5db7-4c98-b856-b34619afg75h",
+					},
+				},
+			}),
+			wantErr: false,
+		},
+		{
+			name: "all valid",
+			amcp: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(true), &AADProfile{
+				LegacyAAD: &LegacyAAD{
+					ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+					ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+					ServerAppSecret: to.StringPtr("286******************"),
+					TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+				},
+			}),
 			wantErr: false,
 		},
 		{
 			name:     "invalid DNSServiceIP",
-			amcp:     createAzureManagedControlPlane(t, "192.168.0.0.3", "v1.18.0", generateSSHPublicKey(true)),
+			amcp:     createAzureManagedControlPlane(t, "192.168.0.0.3", "v1.18.0", generateSSHPublicKey(true), nil),
 			wantErr:  true,
 			errorLen: 1,
 		},
 		{
 			name:     "invalid sshKey",
-			amcp:     createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(false)),
+			amcp:     createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(false), nil),
 			wantErr:  true,
 			errorLen: 1,
 		},
 		{
 			name:     "invalid sshKey with a simple text and invalid DNSServiceIP",
-			amcp:     createAzureManagedControlPlane(t, "192.168.0.0.3", "v1.18.0", "invalid_sshkey_honk"),
+			amcp:     createAzureManagedControlPlane(t, "192.168.0.0.3", "v1.18.0", "invalid_sshkey_honk", nil),
 			wantErr:  true,
 			errorLen: 2,
 		},
 		{
 			name:     "invalid version",
-			amcp:     createAzureManagedControlPlane(t, "192.168.0.0", "honk.version", generateSSHPublicKey(true)),
+			amcp:     createAzureManagedControlPlane(t, "192.168.0.0", "honk.version", generateSSHPublicKey(true), nil),
 			wantErr:  true,
 			errorLen: 1,
 		},
 		{
-			name:     "all invalid version",
-			amcp:     createAzureManagedControlPlane(t, "192.168.0.0.5", "honk.version", "invalid_sshkey_honk"),
+			name: "invalid managed AADProfile",
+			amcp: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(true), &AADProfile{
+				ManagedAAD: &ManagedAAD{
+					Managed:             to.BoolPtr(false),
+					AdminGroupObjectIDs: &[]string{"616077a8-5db7-4c98-b856-b34619afg75h"},
+				},
+			}),
 			wantErr:  true,
-			errorLen: 3,
+			errorLen: 1,
+		},
+		{
+			name: "all invalid version",
+			amcp: createAzureManagedControlPlane(t, "192.168.0.0.5", "honk.version", "invalid_sshkey_honk", &AADProfile{
+				ManagedAAD: &ManagedAAD{
+					Managed: to.BoolPtr(true),
+					AdminGroupObjectIDs: &[]string{
+						"616077a8-5db7-4c98-b856-b34619afg75h",
+					},
+				},
+				LegacyAAD: &LegacyAAD{
+					ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+					ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+					ServerAppSecret: to.StringPtr("286******************"),
+					TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+				},
+			}),
+			wantErr:  true,
+			errorLen: 4,
 		},
 	}
 	for _, tc := range tests {
@@ -226,26 +356,26 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	}{
 		{
 			name:    "AzureManagedControlPlane with valid SSHPublicKey",
-			oldAMCP: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(true)),
+			oldAMCP: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", "", nil),
+			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(true), nil),
 			wantErr: false,
 		},
 		{
 			name:    "AzureManagedControlPlane with invalid SSHPublicKey",
-			oldAMCP: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(false)),
+			oldAMCP: createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", "", nil),
+			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "v1.18.0", generateSSHPublicKey(false), nil),
 			wantErr: true,
 		},
 		{
 			name:    "AzureManagedControlPlane with invalid serviceIP",
-			oldAMCP: createAzureManagedControlPlane(t, "", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane(t, "192.168.0.0.3", "v1.18.0", generateSSHPublicKey(true)),
+			oldAMCP: createAzureManagedControlPlane(t, "", "v1.18.0", "", nil),
+			amcp:    createAzureManagedControlPlane(t, "192.168.0.0.3", "v1.18.0", generateSSHPublicKey(true), nil),
 			wantErr: true,
 		},
 		{
 			name:    "AzureManagedControlPlane with invalid version",
-			oldAMCP: createAzureManagedControlPlane(t, "", "v1.18.0", ""),
-			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "1.999.9", generateSSHPublicKey(true)),
+			oldAMCP: createAzureManagedControlPlane(t, "", "v1.18.0", "", nil),
+			amcp:    createAzureManagedControlPlane(t, "192.168.0.0", "1.999.9", generateSSHPublicKey(true), nil),
 			wantErr: true,
 		},
 		{
@@ -496,6 +626,258 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "AzureManagedControlPlane ManagedAad can be set after cluster creation",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane ManagedAad cannot be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version:    "v1.18.0",
+					AADProfile: &AADProfile{},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane managed field cannot set to false",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(false),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane adminGroupObjectIDs cannot set to empty",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed:             to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane ManagedAad cannot be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane ManagedAad cannot be mirgrated to LegacyAad",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane LegacyAad cannot be set after cluster creation",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane LegacyAad can be migrated to ManagedAad",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						ManagedAAD: &ManagedAAD{
+							Managed: to.BoolPtr(true),
+							AdminGroupObjectIDs: &[]string{
+								"616077a8-5db7-4c98-b856-b34619afg75h",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AzureManagedControlPlane LegacyAad cannot be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane LegacyAad cannot be disabled",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.18.0",
+					AADProfile: &AADProfile{
+						LegacyAAD: &LegacyAAD{
+							ClientAppID:     to.StringPtr("959d77a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppID:     to.StringPtr("967077a8-5db7-4c98-b856-b34619afg75h"),
+							ServerAppSecret: to.StringPtr("286******************"),
+							TenantID:        to.StringPtr("678977a8-5db7-4c98-b856-b34619afg75h"),
+						},
+					},
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version:    "v1.18.0",
+					AADProfile: &AADProfile{},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -509,12 +891,13 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 	}
 }
 
-func createAzureManagedControlPlane(t *testing.T, serviceIP, version, sshKey string) *AzureManagedControlPlane {
+func createAzureManagedControlPlane(t *testing.T, serviceIP, version, sshKey string, aadProfile *AADProfile) *AzureManagedControlPlane {
 	return &AzureManagedControlPlane{
 		Spec: AzureManagedControlPlaneSpec{
 			SSHPublicKey: sshKey,
 			DNSServiceIP: to.StringPtr(serviceIP),
 			Version:      version,
+			AADProfile:   aadProfile,
 		},
 	}
 }
