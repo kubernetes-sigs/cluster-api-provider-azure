@@ -52,6 +52,10 @@ kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/c
 kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
 kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
 
-for i in {1..6}; do (echo "$TEST_RESOURCE" | kubectl apply -f - ) && break || sleep 15; done
+for _ in {1..6}; do
+  (echo "$TEST_RESOURCE" | kubectl apply -f -) && break
+  sleep 15
+done
+
 kubectl wait --for=condition=Ready --timeout=300s -n cert-manager-test certificate/selfsigned-cert
 echo "$TEST_RESOURCE" | kubectl delete -f -

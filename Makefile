@@ -568,7 +568,7 @@ clean-release: ## Remove the release folder
 	rm -rf $(RELEASE_DIR)
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen
+verify: verify-boilerplate verify-modules verify-gen verify-shellcheck
 
 .PHONY: verify-boilerplate
 verify-boilerplate:
@@ -585,3 +585,7 @@ verify-gen: generate
 	@if !(git diff --quiet HEAD); then \
 		git diff; echo "generated files are out of date, run make generate"; exit 1; \
 	fi
+
+.PHONY: verify-shellcheck
+verify-shellcheck:
+	./hack/verify-shellcheck.sh
