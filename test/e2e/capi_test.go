@@ -27,7 +27,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
-	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -83,6 +82,20 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
+	Context("Running the KCP upgrade spec in a HA cluster using scale in rollout", func() {
+		capi_e2e.KCPUpgradeSpec(context.TODO(), func() capi_e2e.KCPUpgradeSpecInput {
+			return capi_e2e.KCPUpgradeSpecInput{
+				E2EConfig:                e2eConfig,
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				BootstrapClusterProxy:    bootstrapClusterProxy,
+				ArtifactFolder:           artifactFolder,
+				ControlPlaneMachineCount: 3,
+				SkipCleanup:              skipCleanup,
+				Flavor:                   "kcp-scale-in",
+			}
+		})
+	})
+
 	Context("Running the MachineDeployment upgrade spec", func() {
 		capi_e2e.MachineDeploymentUpgradesSpec(context.TODO(), func() capi_e2e.MachineDeploymentUpgradesSpecInput {
 			return capi_e2e.MachineDeploymentUpgradesSpecInput{
@@ -126,7 +139,7 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			return capi_e2e.KCPAdoptionSpecInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy.(framework.ClusterProxy),
+				BootstrapClusterProxy: bootstrapClusterProxy,
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
 			}
@@ -138,10 +151,35 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			return capi_e2e.MachinePoolInput{
 				E2EConfig:             e2eConfig,
 				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy.(framework.ClusterProxy),
+				BootstrapClusterProxy: bootstrapClusterProxy,
 				ArtifactFolder:        artifactFolder,
 				SkipCleanup:           skipCleanup,
 			}
 		})
 	})
+
+	Context("Should successfully scale out and scale in a MachineDeployment", func() {
+		capi_e2e.MachineDeploymentScaleSpec(context.TODO(), func() capi_e2e.MachineDeploymentScaleSpecInput {
+			return capi_e2e.MachineDeploymentScaleSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
+
+	// TODO: enable this with a longer timeout once https://github.com/kubernetes-sigs/cluster-api/pull/4830 is imported.
+	//Context("Should successfully set and use node drain timeout", func() {
+	//	capi_e2e.NodeDrainTimeoutSpec(context.TODO(), func() capi_e2e.NodeDrainTimeoutSpecInput {
+	//		return capi_e2e.NodeDrainTimeoutSpecInput{
+	//			E2EConfig:             e2eConfig,
+	//			ClusterctlConfigPath:  clusterctlConfigPath,
+	//			BootstrapClusterProxy: bootstrapClusterProxy,
+	//			ArtifactFolder:        artifactFolder,
+	//			SkipCleanup:           skipCleanup,
+	//		}
+	//	})
+	//})
 })

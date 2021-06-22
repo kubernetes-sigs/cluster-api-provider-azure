@@ -58,16 +58,18 @@ providers:
     - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"
       targetName: "cluster-template.yaml"
-    - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-adoption.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-kcp-adoption.yaml"
       targetName: "cluster-template-kcp-adoption.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ipv6.yaml"
       targetName: "cluster-template-ipv6.yaml"
-    - sourcePath: "../data/infrastructure-azure/cluster-template-md-remediation.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-md-remediation.yaml"
       targetName: "cluster-template-md-remediation.yaml"
-    - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-remediation.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-kcp-remediation.yaml"
       targetName: "cluster-template-kcp-remediation.yaml"
-    - sourcePath: "../data/infrastructure-azure/cluster-template-kcp-scale-in.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-kcp-scale-in.yaml"
       targetName: "cluster-template-kcp-scale-in.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-node-drain.yaml"
+      targetName: "cluster-template-node-drain.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool.yaml"
       targetName: "cluster-template-machine-pool.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-nvidia-gpu.yaml"
@@ -108,6 +110,7 @@ variables:
   CONFORMANCE_NODES: "${CONFORMANCE_NODES:-1}"
   IP_FAMILY: "IPv4" # this is used by the CAPI quickstart spec
   MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
+  NODE_DRAIN_TIMEOUT: "60s"
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
@@ -118,6 +121,7 @@ intervals:
   default/wait-machine-upgrade: ["60m", "10s"]
   default/wait-machine-remediation: ["30m", "10s"]
   default/wait-deployment: ["15m", "10s"]
+  default/wait-deployment-available: ["15m", "10s"]
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["5m", "10s"]
   default/wait-machine-pool-nodes: ["30m", "10s"]

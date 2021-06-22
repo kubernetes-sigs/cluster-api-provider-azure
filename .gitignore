@@ -62,6 +62,9 @@ test/e2e/config/azure-dev-envsubst.yaml
 test/e2e/logs/*
 _artifacts
 
+# E2E test templates
+test/e2e/data/infrastructure-azure/v1alpha4/cluster-template*.yaml
+
 # boilerplate_test output
 hack/boilerplate/__pycache__
 hack/boilerplate/*.pyc

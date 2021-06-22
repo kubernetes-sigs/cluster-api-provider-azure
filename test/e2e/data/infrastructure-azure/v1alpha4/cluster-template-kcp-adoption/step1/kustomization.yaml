@@ -1,0 +1,6 @@
+commonLabels:
+  kcp-adoption.step1: ""
+
+bases:
+  - cluster-with-cp0.yaml
+  - ../../bases/crs.yaml
