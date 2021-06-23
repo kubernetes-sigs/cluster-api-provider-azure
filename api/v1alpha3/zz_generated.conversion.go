@@ -1325,6 +1325,7 @@ func autoConvert_v1alpha4_NetworkSpec_To_v1alpha3_NetworkSpec(in *v1alpha4.Netwo
 		return err
 	}
 	// WARNING: in.NodeOutboundLB requires manual conversion: does not exist in peer-type
+	// WARNING: in.ControlPlaneOutboundLB requires manual conversion: does not exist in peer-type
 	// WARNING: in.PrivateDNSZoneName requires manual conversion: does not exist in peer-type
 	return nil
 }
