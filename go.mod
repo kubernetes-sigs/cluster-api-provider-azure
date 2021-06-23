@@ -14,7 +14,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.4.0
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.5.0
 	github.com/google/go-cmp v0.5.6
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.2.0
@@ -33,17 +33,17 @@ require (
 	go.opentelemetry.io/otel/trace v0.20.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/mod v0.4.2
-	k8s.io/api v0.21.1
-	k8s.io/apimachinery v0.21.1
-	k8s.io/client-go v0.21.1
-	k8s.io/component-base v0.21.1
+	k8s.io/api v0.21.2
+	k8s.io/apimachinery v0.21.2
+	k8s.io/client-go v0.21.2
+	k8s.io/component-base v0.21.2
 	k8s.io/klog/v2 v2.9.0
-	k8s.io/kubectl v0.21.1
+	k8s.io/kubectl v0.21.2
 	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
-	sigs.k8s.io/cluster-api v0.4.0-beta.1
-	sigs.k8s.io/cluster-api/test v0.4.0-beta.1
-	sigs.k8s.io/controller-runtime v0.9.0
+	sigs.k8s.io/cluster-api v0.4.0-rc.0
+	sigs.k8s.io/cluster-api/test v0.4.0-rc.0
+	sigs.k8s.io/controller-runtime v0.9.1
 	sigs.k8s.io/kind v0.11.1
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0-beta.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0-rc.0
