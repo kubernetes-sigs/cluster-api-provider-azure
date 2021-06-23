@@ -32,6 +32,8 @@ spec:
     apiServerLB:
       name: ${CLUSTER_NAME}-internal-lb
       type: Internal
+    controlPlaneOutboundLB:
+      frontendIPsCount: 1
     nodeOutboundLB:
       frontendIPsCount: 1
     vnet:
