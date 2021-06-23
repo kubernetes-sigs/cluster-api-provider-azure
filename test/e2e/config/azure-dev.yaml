@@ -125,3 +125,4 @@ intervals:
   default/wait-job: ["5m", "10s"]
   default/wait-service: ["5m", "10s"]
   default/wait-machine-pool-nodes: ["30m", "10s"]
+  node-drain/wait-machine-deleted: [ "10m", "10s" ]
