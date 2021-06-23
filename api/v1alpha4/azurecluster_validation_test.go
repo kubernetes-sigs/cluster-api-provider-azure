@@ -1118,6 +1118,78 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 	}
 }
 
+func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
+	g := NewWithT(t)
+
+	testcases := []struct {
+		name        string
+		lb          *LoadBalancerSpec
+		old         *LoadBalancerSpec
+		apiServerLB LoadBalancerSpec
+		wantErr     bool
+		expectedErr field.Error
+	}{
+		{
+			name:        "cp outbound lb cannot be set for public clusters",
+			lb:          &LoadBalancerSpec{Name: "foo"},
+			apiServerLB: LoadBalancerSpec{Type: Public},
+			wantErr:     true,
+			expectedErr: field.Error{
+				Type:     "FieldValueForbidden",
+				Field:    "controlPlaneOutboundLB",
+				BadValue: LoadBalancerSpec{Name: "foo"},
+				Detail:   "Control plane outbound load balancer cannot be set for public clusters.",
+			},
+		},
+		{
+			name:        "cp outbound lb can be set for private clusters",
+			lb:          &LoadBalancerSpec{Name: "foo"},
+			apiServerLB: LoadBalancerSpec{Type: Internal},
+			wantErr:     false,
+		},
+		{
+			name:        "cp outbound lb can be nil for private clusters",
+			lb:          nil,
+			apiServerLB: LoadBalancerSpec{Type: Internal},
+			wantErr:     false,
+		},
+		{
+			name: "frontend ips count exceeds max value",
+			lb: &LoadBalancerSpec{
+				FrontendIPsCount: pointer.Int32Ptr(100),
+			},
+			apiServerLB: LoadBalancerSpec{Type: Internal},
+			wantErr:     true,
+			expectedErr: field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "controlPlaneOutboundLB.frontendIPsCount",
+				BadValue: 100,
+				Detail:   "Max front end ips allowed is 16",
+			},
+		},
+	}
+
+	for _, test := range testcases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateControlPlaneOutboundLB(test.lb, test.apiServerLB, field.NewPath("controlPlaneOutboundLB"))
+			if test.wantErr {
+				g.Expect(err).NotTo(HaveLen(0))
+				found := false
+				for _, actual := range err {
+					if actual.Error() == test.expectedErr.Error() {
+						found = true
+					}
+				}
+				g.Expect(found).To(BeTrue())
+			} else {
+				g.Expect(err).To(HaveLen(0))
+			}
+		})
+	}
+}
+
 func TestValidateCloudProviderConfigOverrides(t *testing.T) {
 	g := NewWithT(t)
 

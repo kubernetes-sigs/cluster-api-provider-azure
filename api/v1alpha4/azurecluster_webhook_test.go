@@ -214,6 +214,38 @@ func TestAzureCluster_ValidateUpdate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "azurecluster azureEnvironment is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					AzureEnvironment: "AzureGermanCloud",
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					AzureEnvironment: "AzureChinaCloud",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "control plane outbound lb is immutable",
+			oldCluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						ControlPlaneOutboundLB: &LoadBalancerSpec{Name: "cp-lb"},
+					},
+				},
+			},
+			cluster: &AzureCluster{
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						ControlPlaneOutboundLB: &LoadBalancerSpec{Name: "cp-lb-new"},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
