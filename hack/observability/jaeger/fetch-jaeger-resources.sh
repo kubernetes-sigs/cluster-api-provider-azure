@@ -18,11 +18,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CHART_RELEASE=${CHART_RELEASE:-0.5.9}
-OTEL_ROOT=$(dirname "${BASH_SOURCE[0]}")
-CHART_ROOT=$OTEL_ROOT/chart
+CHART_RELEASE=${CHART_RELEASE:-0.1.5}
+JAEGER_ROOT=$(dirname "${BASH_SOURCE[0]}")
+CHART_ROOT=$JAEGER_ROOT/chart
 
-rm -rf "$CHART_ROOT"
-wget -qO- https://github.com/open-telemetry/opentelemetry-helm-charts/releases/download/opentelemetry-collector-"$CHART_RELEASE"/opentelemetry-collector-"$CHART_RELEASE".tgz \
-  | tar xvz -C "$OTEL_ROOT" -s /^opentelemetry-collector/chart/ -
-wget -q https://raw.githubusercontent.com/open-telemetry/opentelemetry-helm-charts/main/LICENSE -P "$CHART_ROOT"
+rm -rf "${CHART_ROOT:?}/"*
+wget -qO- https://github.com/hansehe/jaeger-all-in-one/raw/master/helm/charts/jaeger-all-in-one-"$CHART_RELEASE".tgz \
+    | tar xvz -C "$JAEGER_ROOT" -s /^jaeger-all-in-one/chart/ -

@@ -1,18 +1,29 @@
 config:
   exporters:
     azuremonitor: {}
+    jaeger:
+      endpoint: jaeger-all-in-one:14250
+      insecure: true
+  receivers:
+    jaeger: null
+    zipkin: null
   service:
     pipelines:
       traces:
         exporters:
-        - logging
-        - azuremonitor
+          - logging
+          - azuremonitor
+          - jaeger
+        receivers:
+          - otlp
+
 image:
   repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
-  tag: 0.28.0
+  tag: 0.29.0
 command:
   name: otelcontribcol
+
 agentCollector:
   enabled: true
   resources:
@@ -22,6 +33,7 @@ agentCollector:
     requests:
       cpu: 128m
       memory: 256Mi
+
 standaloneCollector:
   enabled: true
   resources:
@@ -31,3 +43,8 @@ standaloneCollector:
     requests:
       cpu: 128m
       memory: 256Mi
+
+ports:
+  jaeger-thrift: null
+  jaeger-grpc: null
+  zipkin: null

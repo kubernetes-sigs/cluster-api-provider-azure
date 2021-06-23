@@ -1,10 +1,29 @@
 # Observability
-During development of CAPZ, it has become clear log messages can only tell part of the debugging story. As complexity 
-of the controller increases, we need better tools to help us understand what is happening in the controller.
-In that spirit, we've added support for metrics and tracing. This directory provides tools for running development
-clusters with [Jaeger](https://github.com/jaegertracing/jaeger-operator) and [Prometheus](https://github.com/prometheus-operator/prometheus-operator).
 
-To access Jaeger traces, run `make tilt-up` and open `http://localhost:8080`.
+During development of CAPZ, it's become clear log messages can only tell part of the debugging
+story. As the code becomes more complex, we need better tools to help us understand what is
+happening in the controller.
 
-To access Prometheus metrics, run `make tilt-up`, `kubectl port-forward -n prometheus prometheus-prometheus-0 9090:9090`,
-and open `https://localhost:9090`.
+In that spirit, we've added support for metrics and tracing. This directory contains resources for
+development clusters to install [OpenTelemetry](https://opentelemetry.io/),
+[Jaeger](https://github.com/jaegertracing/jaeger-operator), and
+[Prometheus](https://github.com/prometheus-operator/prometheus-operator). With
+
+If you run `make tilt-up` to create your development cluster, these observability resources are
+installed and enabled automatically.
+
+<!-- markdown-link-check-disable-next-line -->
+To access traces in the Jaeger web interface, visit http://localhost:16686/ or select the
+"traces: jaeger-all-in-one" resource in the Tilt UI and click on "View traces" near the top of
+the screen.
+
+To access traces in
+[Application Insights](https://docs.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview),
+specify an `AZURE_INSTRUMENTATION_KEY` in your `tilt-settings.json`, then navigate to the
+App Insights resource in the Azure Portal and choose "Transaction search" to query for traces. See
+the tracing docs for more detail.
+
+<!-- markdown-link-check-disable-next-line -->
+To access metrics in the Prometheus web interface, visit http://localhost:9090/ or select the
+"metrics: prometheus-operator" resource in the Tilt UI and click on "View metrics" near the top of
+the screen.

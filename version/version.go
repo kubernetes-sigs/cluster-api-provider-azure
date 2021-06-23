@@ -58,7 +58,7 @@ func Get() Info {
 		GoVersion:       runtime.Version(),
 		Compiler:        runtime.Compiler,
 		Platform:        fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-		AzureSdkVersion: fmt.Sprintf("v%s", azuresdkversion.Number),
+		AzureSdkVersion: azuresdkversion.Number,
 	}
 }
 

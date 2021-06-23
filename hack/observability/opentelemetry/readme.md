@@ -1,18 +1,32 @@
 # OpenTelemetry Tracing
 
 This directory contains resources to help deploy [opentelemetry-collector][1] and to export and view
-[traces][2] in Azure Application Insights.
+[traces][2] locally in the Jaeger UI or in the cloud with Azure Application Insights.
+
+When creating a management cluster for development with `make tilt-up`, OpenTelemetry tracing is
+automatically enabled.
+
+## View traces in Jaeger
+
+`make tilt-up` installs a Jaeger "all-in-one" resource for viewing traces.
+
+**NOTE:** The Jaeger "all-in-one" component uses in-memory storage and is designed for testing.
+
+<!-- markdown-link-check-disable-next-line -->
+Visit http://localhost:16686/ or select the "traces: jaeger-all-in-one" resource in the Tilt UI and
+click on "View traces" near the top of the screen.
+
+![Jaeger Trace UI](assets/jaeger_ui.png)
 
 ## View traces in Application Insights
 
-When creating a development cluster with `make tilt-up`, OpenTelemetry tracing is automatically
-enabled. Traces are exported to the App Insights resource that you specify
+Traces can be exported to the App Insights resource that you specify
 with `AZURE_INSTRUMENTATION_KEY`.
 
 If you don't have an App Insights resource, create one through the Azure Portal
 at https://ms.portal.azure.com/#create/Microsoft.AppInsights.
 
-To the upper right of the "Overview" page for your App Insights resource you will see an entry
+To the upper right of the "Overview" page for your App Insights resource is an entry
 for "Instrumentation Key".
 
 ![Instrumentation Key](assets/portal_instrumentation_key.png)

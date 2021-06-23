@@ -213,19 +213,29 @@ make delete-workload-cluster
 > Check out the [troubleshooting guide](../topics/troubleshooting.md) for common errors you might run into.
 
 #### Viewing Telemetry
-The CAPZ controller emits tracing and metrics data. When run in Tilt, the KinD cluster is provisioned with a development
-deployment of OpenTelemetry for distributed tracing, and Prometheus for metrics scraping and visualization.
 
-The OpenTelemetry and Prometheus deployments are for development purposes only. These illustrate the hooks for tracing and
-metrics, but lack the robustness of production cluster deployments.
+The CAPZ controller emits tracing and metrics data. When run in Tilt, the KinD management cluster is
+provisioned with development deployments of OpenTelemetry for collecting distributed traces, Jaeger
+for viewing traces, and Prometheus for scraping and visualizing metrics.
 
-After the Tilt cluster has been initialized, if you followed the [tracing documentation](../../../../hack/observability/opentelemetry/readme.md),
-you can view distributed traces in the Azure Portal. Open the App Insights resource identified by the
-`AZURE_INSTRUMENTATION_KEY` you specified, choose "Transaction search" from the "Investigate" menu on the left,
-and click "Refresh" or make a specific query of the trace data.
+The OpenTelemetry, Jaeger, and Prometheus deployments are for development purposes only. These
+illustrate the hooks for tracing and metrics, but lack the robustness of production cluster
+deployments. For example, the Jaeger "all-in-one" component only keeps traces in memory, not in a
+persistent store.
 
-To view metrics, run `kubectl port-forward -n capz-system prometheus-prometheus-0 9090` and open
-`http://localhost:9090` to see the Prometheus UI.
+To view traces in the Jaeger interface, wait until the Tilt cluster is fully initialized. Then open
+the Tilt web interface, select the "traces: jaeger-all-in-one" resource, and click "View traces"
+near the top of the screen. Or visit http://localhost:16686/ in your browser. <!-- markdown-link-check-disable-line -->
+
+To view traces in App Insights, follow the
+[tracing documentation](../../../../hack/observability/opentelemetry/readme.md) before running
+`make tilt-up`. Then open the Azure Portal in your browser. Find the App Insights resource you
+specified in `AZURE_INSTRUMENTATION_KEY`, choose "Transaction search" on the left, and click
+"Refresh" to see recent trace data.
+
+To view metrics in the Prometheus interface, open the Tilt web interface, select the
+"metrics: prometheus-operator" resource, and click "View metrics" near the top of the screen. Or
+visit http://localhost:9090/ in your browser. <!-- markdown-link-check-disable-line -->
 
 ### Manual Testing
 
