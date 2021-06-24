@@ -1,0 +1,11 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  identityRef: 
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureClusterIdentity
+    name: "${CLUSTER_IDENTITY_NAME}"
+

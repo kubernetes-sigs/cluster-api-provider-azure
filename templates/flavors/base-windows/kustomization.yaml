@@ -4,4 +4,3 @@ resources:
 patchesStrategicMerge:
   - patches/kubeadm-control-plane.yaml
   - patches/cluster.yaml
-

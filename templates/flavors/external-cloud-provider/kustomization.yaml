@@ -1,9 +1,13 @@
 namespace: default
 resources:
   - ../default
+  - ../../azure-cluster-identity
   - ccm-resource-set.yaml
+
 patchesStrategicMerge:
   - patches/external-cloud-provider.yaml
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml 
+
 configMapGenerator:
   - name: cloud-controller-manager-addon
     files:

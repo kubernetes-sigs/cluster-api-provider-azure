@@ -30,6 +30,10 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureClusterIdentity
+    name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -199,6 +203,20 @@ spec:
             cloud-config: /etc/kubernetes/azure.json
             cloud-provider: external
           name: '{{ ds.meta_data["local_hostname"] }}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureClusterIdentity
+metadata:
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet

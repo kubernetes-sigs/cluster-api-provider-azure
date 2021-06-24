@@ -1,5 +1,9 @@
 namespace: default
 resources:
   - ../base-windows
+  - ../../azure-cluster-identity
   - machine-pool-deployment.yaml
   - machine-pool-deployment-windows.yaml
+
+patchesStrategicMerge:
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
