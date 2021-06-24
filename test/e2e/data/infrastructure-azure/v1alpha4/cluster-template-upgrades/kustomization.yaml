@@ -3,3 +3,7 @@ resources:
   - ../bases/crs.yaml
   - ../bases/md.yaml
   - ../bases/mp.yaml
+  - ../bases/azure-cluster-identity.yaml
+
+patchesStrategicMerge:
+  - ../patches/azurecluster-identity-ref.yaml

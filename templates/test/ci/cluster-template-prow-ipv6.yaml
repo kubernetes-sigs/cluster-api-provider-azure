@@ -36,7 +36,6 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureClusterIdentity
     name: ${CLUSTER_IDENTITY_NAME}
-    namespace: ${CLUSTER_IDENTITY_NAMESPACE}
   location: ${AZURE_LOCATION}
   networkSpec:
     subnets:

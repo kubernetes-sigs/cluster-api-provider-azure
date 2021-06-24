@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
@@ -74,11 +75,14 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		spClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
+		spClientSecret := os.Getenv(AzureClientSecret)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster-identity-secret",
 				Namespace: namespace.Name,
+				Labels: map[string]string{
+					clusterctlv1.ClusterctlMoveHierarchyLabelName: "true",
+				},
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
@@ -86,13 +90,13 @@ var _ = Describe("Workload cluster creation", func() {
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
 		Expect(err).ToNot(HaveOccurred())
 
-		spClientID := os.Getenv("AZURE_CLIENT_ID")
+		spClientID := os.Getenv(AzureClientId)
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
-		os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
-		os.Setenv("CLUSTER_IDENTITY_NAMESPACE", namespace.Name)
-		os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
-		os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret")
-		os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", namespace.Name)
+		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityClientId, spClientID)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {

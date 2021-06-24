@@ -91,7 +91,9 @@ providers:
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-multi-tenancy.yaml"
       targetName: "cluster-template-aks-multi-tenancy.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
-      targetName: "cluster-template-custom-vnet.yaml"      
+      targetName: "cluster-template-custom-vnet.yaml"
+    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-identity-from-env.yaml"
+      targetName: "cluster-template-identity-from-env.yaml"        
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"

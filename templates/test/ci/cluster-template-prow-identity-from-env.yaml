@@ -29,10 +29,6 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
-  identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-    kind: AzureClusterIdentity
-    name: ${CLUSTER_IDENTITY_NAME}
   location: ${AZURE_LOCATION}
   networkSpec:
     vnet:
@@ -43,8 +39,6 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
-  annotations:
-    controlplane.cluster.x-k8s.io/skip-kube-proxy: "true"
   name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
@@ -75,7 +69,6 @@ spec:
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
-      kubernetesVersion: ci/${CI_VERSION}
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0
@@ -94,55 +87,6 @@ spec:
         overwrite: false
         tableType: gpt
     files:
-    - content: |
-        #!/bin/bash
-
-        set -o nounset
-        set -o pipefail
-        set -o errexit
-
-        systemctl stop kubelet
-        declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-        for BINARY in "$${BINARIES[@]}"; do
-          echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-          curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
-        done
-        systemctl restart kubelet
-
-        # prepull images from gcr.io/k8s-staging-ci-images and retag it to
-        # k8s.gcr.io so kubeadm can fetch correct images no matter what
-        declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
-        [[ $(id -u) != 0 ]] && SUDO="sudo" || SUDO=""
-        for IMAGE in "$${IMAGES[@]}"; do
-          $${SUDO} ctr -n k8s.io images pull "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}"
-          $${SUDO} ctr -n k8s.io images tag "gcr.io/k8s-staging-ci-images/$${IMAGE}:${CI_VERSION/+/_}" "k8s.gcr.io/$${IMAGE}:${CI_VERSION/+/_}"
-        done
-
-        echo "kubeadm version: $(kubeadm version -o=short)"
-        echo "kubectl version: $(kubectl version --client=true --short=true)"
-        echo "kubelet version: $(kubelet --version)"
-      owner: root:root
-      path: /tmp/replace-k8s-binaries.sh
-      permissions: "0744"
-    - content: |
-        #!/bin/bash
-
-        set -o nounset
-        set -o pipefail
-        set -o errexit
-
-        curl -L --retry 10 --retry-delay 5 https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz --output /tmp/yq_linux_amd64.tar.gz
-        tar -xzvf /tmp/yq_linux_amd64.tar.gz -C /tmp && mv /tmp/yq_linux_amd64 /usr/bin/yq
-        rm /tmp/yq_linux_amd64.tar.gz
-
-        export KUBECONFIG=/etc/kubernetes/admin.conf
-        kubectl -n kube-system set image daemonset/kube-proxy kube-proxy="${REGISTRY}/kube-proxy:${IMAGE_TAG}"
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-apiserver:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-apiserver.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-controller-manager:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-controller-manager.yaml
-        yq e '.spec.containers[0].image = "${REGISTRY}/kube-scheduler:${IMAGE_TAG}"' -i /etc/kubernetes/manifests/kube-scheduler.yaml
-      owner: root:root
-      path: /tmp/replace-k8s-components.sh
-      permissions: "0744"
     - contentFrom:
         secret:
           key: control-plane-azure.json
@@ -167,11 +111,6 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - bash -c /tmp/replace-k8s-components.sh
-    preKubeadmCommands:
-    - bash -c /tmp/replace-k8s-binaries.sh
-    useExperimentalRetryJoin: true
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
@@ -192,12 +131,6 @@ spec:
       - diskSizeGB: 256
         lun: 0
         nameSuffix: etcddisk
-      image:
-        marketplace:
-          offer: capi
-          publisher: cncf-upstream
-          sku: k8s-1dot18dot8-ubuntu-1804
-          version: 2020.08.17
       osDisk:
         diskSizeGB: 128
         osType: Linux
@@ -205,99 +138,84 @@ spec:
       vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
-kind: MachinePool
+kind: MachineDeployment
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
+  selector: {}
   template:
+    metadata:
+      labels:
+        nodepool: pool1
     spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-          kind: KubeadmConfig
-          name: ${CLUSTER_NAME}-mp-0
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-        kind: AzureMachinePool
-        name: ${CLUSTER_NAME}-mp-0
+        kind: AzureMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachinePool
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
-  location: ${AZURE_LOCATION}
-  strategy:
-    rollingUpdate:
-      deletePolicy: Oldest
-      maxSurge: 25%
-      maxUnavailable: 1
-    type: RollingUpdate
   template:
-    image:
-      marketplace:
-        offer: capi
-        publisher: cncf-upstream
-        sku: k8s-1dot18dot8-ubuntu-1804
-        version: 2020.08.17
-    osDisk:
-      diskSizeGB: 30
-      managedDisk:
-        storageAccountType: Premium_LRS
-      osType: Linux
-    sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-    vmSize: ${AZURE_NODE_MACHINE_TYPE}
+    spec:
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfig
+kind: KubeadmConfigTemplate
 metadata:
-  name: ${CLUSTER_NAME}-mp-0
+  name: ${CLUSTER_NAME}-md-0
   namespace: default
 spec:
-  files:
-  - content: |
-      #!/bin/bash
-
-      set -o nounset
-      set -o pipefail
-      set -o errexit
-
-      systemctl stop kubelet
-      declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
-      for BINARY in "$${BINARIES[@]}"; do
-        echo "* installing package: $${BINARY} ${KUBE_GIT_VERSION}"
-        curl --retry 10 --retry-delay 5 "https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${JOB_NAME}/${KUBE_GIT_VERSION}/bin/linux/amd64/$${BINARY}" --output "/usr/bin/$${BINARY}"
-      done
-      systemctl restart kubelet
-
-      echo "kubeadm version: $(kubeadm version -o=short)"
-      echo "kubectl version: $(kubectl version --client=true --short=true)"
-      echo "kubelet version: $(kubelet --version)"
-    owner: root:root
-    path: /tmp/replace-k8s-binaries.sh
-    permissions: "0744"
-  - contentFrom:
-      secret:
-        key: control-plane-azure.json
-        name: ${CLUSTER_NAME}-control-plane-azure-json
-    owner: root:root
-    path: /etc/kubernetes/azure.json
-    permissions: "0644"
-  joinConfiguration:
-    nodeRegistration:
-      kubeletExtraArgs:
-        azure-container-registry-config: /etc/kubernetes/azure.json
-        cloud-config: /etc/kubernetes/azure.json
-        cloud-provider: azure
-      name: '{{ ds.meta_data["local_hostname"] }}'
-  preKubeadmCommands:
-  - bash -c /tmp/replace-k8s-binaries.sh
+  template:
+    spec:
+      files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-config: /etc/kubernetes/azure.json
+            cloud-provider: azure
+          name: '{{ ds.meta_data["local_hostname"] }}'
+---
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  selector:
+    matchLabels:
+      nodepool: pool1
+  unhealthyConditions:
+  - status: "True"
+    timeout: 30s
+    type: E2ENodeUnhealthy
 ---
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet
@@ -312,20 +230,6 @@ spec:
   - kind: ConfigMap
     name: cni-${CLUSTER_NAME}-calico
   strategy: ApplyOnce
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureClusterIdentity
-metadata:
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
-  clientSecret:
-    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
-    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
 ---
 apiVersion: v1
 data:

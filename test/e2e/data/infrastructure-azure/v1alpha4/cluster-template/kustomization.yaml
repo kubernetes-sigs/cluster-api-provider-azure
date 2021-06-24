@@ -2,4 +2,7 @@ bases:
 - ../bases/cluster-with-kcp.yaml
 - ../bases/md.yaml
 - ../bases/crs.yaml
+- ../bases/azure-cluster-identity.yaml
 
+patchesStrategicMerge:
+- ../patches/azurecluster-identity-ref.yaml

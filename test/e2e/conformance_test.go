@@ -77,7 +77,7 @@ var _ = Describe("Conformance Tests", func() {
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
-		spClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
+		spClientSecret := os.Getenv(AzureClientSecret)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cluster-identity-secret",
@@ -89,13 +89,13 @@ var _ = Describe("Conformance Tests", func() {
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
 		Expect(err).ToNot(HaveOccurred())
 
-		spClientID := os.Getenv("AZURE_CLIENT_ID")
+		spClientID := os.Getenv(AzureClientId)
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
-		os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
-		os.Setenv("CLUSTER_IDENTITY_NAMESPACE", namespace.Name)
-		os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
-		os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret")
-		os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", namespace.Name)
+		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityClientId, spClientID)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
 	})
 
 	Measure(specName, func(b Benchmarker) {
