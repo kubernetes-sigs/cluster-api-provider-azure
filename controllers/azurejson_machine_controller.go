@@ -94,6 +94,8 @@ func (f filterUnclonedMachinesPredicate) Generic(e event.GenericEvent) bool {
 	return !isClonedFromTemplate
 }
 
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+
 // Reconcile reconciles the Azure json for a specific machine not in a machine deployment.
 func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))

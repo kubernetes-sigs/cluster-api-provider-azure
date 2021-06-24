@@ -62,11 +62,6 @@ type AzureManagedControlPlaneReconciler struct {
 func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
 	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
-	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(ctx, r.Client, log)
-	if err != nil {
-		return errors.Wrap(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
-	}
 
 	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
 	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, r.Client, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
@@ -75,11 +70,6 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		WithOptions(options).
 		For(azManagedControlPlane).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
-		// watch AzureManagedCluster resources
-		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},
-			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
-		).
 		// watch MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},

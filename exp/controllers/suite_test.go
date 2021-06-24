@@ -51,12 +51,6 @@ var _ = BeforeSuite(func(done Done) {
 	By("bootstrapping test environment")
 	testEnv = env.NewTestEnvironment()
 
-	Expect((&AzureManagedClusterReconciler{
-		Client:   testEnv,
-		Log:      testEnv.Log,
-		Recorder: testEnv.GetEventRecorderFor("azuremanagedcluster-reconciler"),
-	}).SetupWithManager(context.Background(), testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
-
 	Expect((&AzureManagedControlPlaneReconciler{
 		Client:   testEnv,
 		Log:      testEnv.Log,

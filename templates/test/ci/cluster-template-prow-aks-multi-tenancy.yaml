@@ -14,7 +14,7 @@ spec:
     name: ${CLUSTER_NAME}
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-    kind: AzureManagedCluster
+    kind: AzureManagedControlPlane
     name: ${CLUSTER_NAME}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
@@ -39,12 +39,6 @@ spec:
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
   version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureManagedCluster
-metadata:
-  name: ${CLUSTER_NAME}
-  namespace: default
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachinePool

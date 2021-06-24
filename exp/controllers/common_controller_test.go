@@ -33,9 +33,7 @@ import (
 )
 
 var (
-	clusterControllers = []string{
-		"AzureManagedCluster",
-	}
+	clusterControllers = []string{}
 
 	infraControllers = []string{
 		"AzureMachinePool",
@@ -67,7 +65,7 @@ var _ = Describe("CommonReconcilerBehaviors", func() {
 				InfrastructureRef: &corev1.ObjectReference{
 					Name:       azManagedClusterName,
 					Namespace:  "default",
-					Kind:       "AzureManagedCluster",
+					Kind:       "AzureManagedControlPlane",
 					APIVersion: infrav1exp.GroupVersion.Identifier(),
 				},
 			},

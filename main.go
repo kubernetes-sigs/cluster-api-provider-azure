@@ -453,17 +453,6 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 				os.Exit(1)
 			}
 
-			if err := (&infrav1controllersexp.AzureManagedClusterReconciler{
-				Client:           mgr.GetClient(),
-				Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedCluster"),
-				Recorder:         mgr.GetEventRecorderFor("azuremanagedcluster-reconciler"),
-				ReconcileTimeout: reconcileTimeout,
-				WatchFilterValue: watchFilterValue,
-			}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureClusterConcurrency}); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "AzureManagedCluster")
-				os.Exit(1)
-			}
-
 			if err := (&infrav1controllersexp.AzureManagedControlPlaneReconciler{
 				Client:           mgr.GetClient(),
 				Log:              ctrl.Log.WithName("controllers").WithName("AzureManagedControlPlane"),
