@@ -221,8 +221,6 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
-	log.EXPECT().WithValues("AzureManagedControlPlane", cpName, "Namespace", cluster.Namespace).Return(log)
-	log.EXPECT().Info("expected a MachinePool, got wrong type", "type", gomock.Any())
 	mapper := MachinePoolToAzureManagedControlPlaneMapFunc(context.Background(), fakeClient, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
 
 	// default pool should trigger
@@ -264,8 +262,6 @@ func TestMachinePoolToAzureManagedControlPlaneMapFuncFailure(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
 
 	log := mock_log.NewMockLogger(gomock.NewController(t))
-	log.EXPECT().WithValues("AzureManagedControlPlane", cpName, "Namespace", cluster.Namespace).Return(log)
-	log.EXPECT().Info("expected a MachinePool, got wrong type", "type", gomock.Any())
 	log.EXPECT().Error(gomock.Any(), "failed to fetch default pool reference")
 	log.EXPECT().Error(gomock.Any(), "failed to fetch default pool reference") // twice because we are testing two calls
 
