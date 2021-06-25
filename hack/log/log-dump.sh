@@ -21,9 +21,9 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../..
 cd "${REPO_ROOT}" || exit 1
 
-# shellcheck source=../hack/ensure-kind.sh
+# shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=../hack/ensure-kubectl.sh
+# shellcheck source=hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 
 export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
@@ -33,7 +33,8 @@ export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 
 get_node_name() {
     local -r pod_name="${1}"
-    echo "$(kubectl get pod "${pod_name}" -ojsonpath={.spec.nodeName})"
+    # shellcheck disable=SC1083
+    kubectl get pod "${pod_name}" -ojsonpath={.spec.nodeName}
 }
 
 dump_mgmt_cluster_logs() {
@@ -90,7 +91,8 @@ dump_workload_cluster_logs() {
     kubectl apply -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml"
     kubectl wait pod -l app=log-dump-node --for=condition=Ready --timeout=5m
 
-    local -r log_dump_pods=( $(kubectl get pod -l app=log-dump-node -ojsonpath={.items[*].metadata.name}) )
+    local -r log_dump_pods=()
+    IFS=" " read -r -a log_dump_pods <<< "$(kubectl get pod -l app=log-dump-node -ojsonpath='{.items[*].metadata.name}')"
     local log_dump_commands=(
         "journalctl --output=short-precise -u kubelet > kubelet.log"
         "journalctl --output=short-precise -u containerd > containerd.log"
@@ -108,7 +110,8 @@ dump_workload_cluster_logs() {
     fi
 
     for log_dump_pod in "${log_dump_pods[@]}"; do
-        local node_name="$(get_node_name "${log_dump_pod}")"
+        local node_name
+        node_name="$(get_node_name "${log_dump_pod}")"
 
         local log_dump_dir="${ARTIFACTS}/workload-cluster/${node_name}"
         mkdir -p "${log_dump_dir}"
@@ -127,6 +130,7 @@ dump_workload_cluster_logs() {
 
 cleanup() {
     kubectl delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml" || true
+    # shellcheck source=hack/log/redact.sh
     source "${REPO_ROOT}/hack/log/redact.sh"
 }
 

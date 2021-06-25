@@ -25,19 +25,19 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
 
-# shellcheck source=../hack/ensure-go.sh
+# shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=../hack/ensure-kind.sh
+# shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=../hack/ensure-kubectl.sh
+# shellcheck source=hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
-# shellcheck source=../hack/ensure-kustomize.sh
+# shellcheck source=hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
-# shellcheck source=../hack/ensure-tags.sh
+# shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh"
-# shellcheck source=../hack/parse-prow-creds.sh
+# shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
-# shellcheck source=../hack/util.sh
+# shellcheck source=hack/util.sh
 source "${REPO_ROOT}/hack/util.sh"
 
 get_random_region() {
@@ -48,7 +48,7 @@ get_random_region() {
 setup() {
     # setup REGISTRY for custom images.
     : "${REGISTRY:?Environment variable empty or not defined.}"
-    ${REPO_ROOT}/hack/ensure-acr-login.sh
+    "${REPO_ROOT}/hack/ensure-acr-login.sh"
     if [[ -z "${CLUSTER_TEMPLATE:-}" ]]; then
         select_cluster_template
     fi
@@ -64,11 +64,13 @@ setup() {
 
 select_cluster_template() {
     if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
+        # shellcheck source=scripts/ci-build-kubernetes.sh
         source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
         export CLUSTER_TEMPLATE="test/dev/cluster-template-custom-builds.yaml"
     elif [[ -n "${CI_VERSION:-}" ]] || [[ -n "${USE_CI_ARTIFACTS:-}" ]]; then
         # export cluster template which contains the manifests needed for creating the Azure cluster to run the tests
-        KUBERNETES_BRANCH="$(cd $(go env GOPATH)/src/k8s.io/kubernetes && git rev-parse --abbrev-ref HEAD)"
+        GOPATH="$(go env GOPATH)"
+        KUBERNETES_BRANCH="$(cd "${GOPATH}/src/k8s.io/kubernetes" && git rev-parse --abbrev-ref HEAD)"
         if [[ "${KUBERNETES_BRANCH:-}" =~ "release-" ]]; then
             CI_VERSION_URL="https://dl.k8s.io/ci/latest-${KUBERNETES_BRANCH/release-}.txt"
         else
@@ -83,6 +85,7 @@ select_cluster_template() {
 
     if [[ -n "${TEST_CCM:-}" ]]; then
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
+        # shellcheck source=scripts/ci-build-azure-ccm.sh
         source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
         echo "Using CCM image ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG} and CNM image ${AZURE_CLOUD_NODE_MANAGER_IMG} to build external cloud provider cluster"
     fi
@@ -97,14 +100,14 @@ select_cluster_template() {
 }
 
 create_cluster() {
-    ${REPO_ROOT}/hack/create-dev-cluster.sh
+    "${REPO_ROOT}/hack/create-dev-cluster.sh"
 }
 
 wait_for_nodes() {
     echo "Waiting for ${CONTROL_PLANE_MACHINE_COUNT} control plane machine(s) and ${WORKER_MACHINE_COUNT} worker machine(s) to become Ready"
 
     # Ensure that all nodes are registered with the API server before checking for readiness
-    local total_nodes="$((${CONTROL_PLANE_MACHINE_COUNT} + ${WORKER_MACHINE_COUNT}))"
+    local total_nodes="$((CONTROL_PLANE_MACHINE_COUNT + WORKER_MACHINE_COUNT))"
     while [[ $(kubectl get nodes -ojson | jq '.items | length') -ne "${total_nodes}" ]]; do
         sleep 10
     done
@@ -121,7 +124,7 @@ cleanup() {
 
 on_exit() {
     unset KUBECONFIG
-    ${REPO_ROOT}/hack/log/log-dump.sh || true
+    "${REPO_ROOT}/hack/log/log-dump.sh" || true
     # cleanup
     if [[ -z "${SKIP_CLEANUP:-}" ]]; then
         cleanup

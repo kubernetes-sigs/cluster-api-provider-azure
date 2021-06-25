@@ -1,3 +1,23 @@
+---
+# AzureCluster object referenced by the Cluster object
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: '${CLUSTER_NAME}'
+spec:
+  additionalTags:
+    creationTimestamp: ${TIMESTAMP}
+    jobName: ${JOB_NAME}
+  location: ${AZURE_LOCATION}
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
+  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
+  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+---
+# Cluster object with
+# - Reference to the KubeadmControlPlane object
+# - the label cni=${CLUSTER_NAME}-crs-0, so the cluster can be selected by the ClusterResourceSet.
 apiVersion: cluster.x-k8s.io/v1alpha4
 kind: Cluster
 metadata:
@@ -19,27 +39,34 @@ spec:
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
+# AzureMachineTemplate object referenced by the KubeadmControlPlane object
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureCluster
+kind: AzureMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-control-plane
   namespace: default
 spec:
-  additionalTags:
-    creationTimestamp: ${TIMESTAMP}
-    jobName: ${JOB_NAME}
-  location: ${AZURE_LOCATION}
-  networkSpec:
-    vnet:
-      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
-  resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
-  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  template:
+    spec:
+      dataDisks:
+        - diskSizeGB: 256
+          lun: 0
+          nameSuffix: etcddisk
+      osDisk:
+        diskSizeGB: 128
+        osType: Linux
+      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
 ---
+# KubeadmControlPlane referenced by the Cluster object with
+# - the label kcp-adoption.step2, because it should be created in the second step of the kcp-adoption test.
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
-  namespace: default
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+    kcp-adoption.step2: ""
 spec:
   machineTemplate:
     infrastructureRef:
@@ -114,107 +141,3 @@ spec:
         - /var/lib/etcddisk
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-control-plane
-  namespace: default
-spec:
-  template:
-    spec:
-      dataDisks:
-        - diskSizeGB: 256
-          lun: 0
-          nameSuffix: etcddisk
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      vmSize: ${AZURE_CONTROL_PLANE_MACHINE_TYPE}
----
-apiVersion: cluster.x-k8s.io/v1alpha4
-kind: MachineDeployment
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: null
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-        kind: AzureMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  template:
-    spec:
-      osDisk:
-        diskSizeGB: 128
-        managedDisk:
-          storageAccountType: Premium_LRS
-        osType: Linux
-      sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
-      vmSize: ${AZURE_NODE_MACHINE_TYPE}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-  namespace: default
-spec:
-  template:
-    spec:
-      files:
-        - contentFrom:
-            secret:
-              key: worker-node-azure.json
-              name: ${CLUSTER_NAME}-md-0-azure-json
-          owner: root:root
-          path: /etc/kubernetes/azure.json
-          permissions: "0644"
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            cloud-config: /etc/kubernetes/azure.json
-            cloud-provider: azure
-          name: '{{ ds.meta_data["local_hostname"] }}'
----
-apiVersion: v1
-data: ${CNI_RESOURCES}
-kind: ConfigMap
-metadata:
-  name: cni-${CLUSTER_NAME}-crs-0
-  namespace: default
----
-apiVersion: addons.cluster.x-k8s.io/v1alpha4
-kind: ClusterResourceSet
-metadata:
-  name: ${CLUSTER_NAME}-crs-0
-  namespace: default
-spec:
-  clusterSelector:
-    matchLabels:
-      cni: ${CLUSTER_NAME}-crs-0
-  resources:
-    - kind: ConfigMap
-      name: cni-${CLUSTER_NAME}-crs-0
-  strategy: ApplyOnce

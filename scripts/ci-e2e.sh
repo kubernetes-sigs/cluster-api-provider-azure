@@ -26,17 +26,17 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
 
-# shellcheck source=../hack/ensure-go.sh
+# shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=../hack/ensure-kind.sh
+# shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=../hack/ensure-kubectl.sh
+# shellcheck source=hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
-# shellcheck source=../hack/ensure-kustomize.sh
+# shellcheck source=hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
-# shellcheck source=../hack/ensure-tags.sh
+# shellcheck source=hack/ensure-tags.sh
 source "${REPO_ROOT}/hack/ensure-tags.sh"
-# shellcheck source=../hack/parse-prow-creds.sh
+# shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
 # Verify the required Environment Variables are present.
@@ -54,9 +54,10 @@ export LOCAL_ONLY=${LOCAL_ONLY:-"true"}
 
 if [[ "${LOCAL_ONLY}" == "false" ]]; then
   : "${REGISTRY:?Environment variable empty or not defined.}"
-  ${REPO_ROOT}/hack/ensure-acr-login.sh
+  "${REPO_ROOT}/hack/ensure-acr-login.sh"
   if [[ "$(capz::util::should_build_kubernetes)" == "true" ]]; then
     export E2E_ARGS="-kubetest.use-pr-artifacts"
+    # shellcheck source=scripts/ci-build-kubernetes.sh
     source "${REPO_ROOT}/scripts/ci-build-kubernetes.sh"
   fi
 else
@@ -66,10 +67,13 @@ fi
 defaultTag=$(date -u '+%Y%m%d%H%M%S')
 export TAG="${defaultTag:-dev}"
 export GINKGO_NODES=3
-export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
-export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
-export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
-export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+
+AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+export AZURE_SUBSCRIPTION_ID_B64 AZURE_TENANT_ID_B64 AZURE_CLIENT_ID_B64 AZURE_CLIENT_SECRET_B64
+
 export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
 export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
@@ -84,12 +88,14 @@ if [ -z "${AZURE_SSH_PUBLIC_KEY_FILE}" ]; then
     ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
     AZURE_SSH_PUBLIC_KEY_FILE="${SSH_KEY_FILE}.pub"
 fi
-export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | base64 | tr -d '\r\n')
+AZURE_SSH_PUBLIC_KEY_B64=$(base64 "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY_B64
 # Windows sets the public key via cloudbase-init which take the raw text as input
-export AZURE_SSH_PUBLIC_KEY=$(cat "${AZURE_SSH_PUBLIC_KEY_FILE}" | tr -d '\r\n')
+AZURE_SSH_PUBLIC_KEY=$(tr -d '\r\n' < "${AZURE_SSH_PUBLIC_KEY_FILE}")
+export AZURE_SSH_PUBLIC_KEY
 
 cleanup() {
-    ${REPO_ROOT}/hack/log/redact.sh || true
+    "${REPO_ROOT}/hack/log/redact.sh" || true
 }
 
 trap cleanup EXIT

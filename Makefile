@@ -50,6 +50,7 @@ E2E_DATA_DIR ?= $(ROOT_DIR)/test/e2e/data
 KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
 KUBETEST_WINDOWS_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/upstream-windows.yaml)
 KUBETEST_REPO_LIST_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/repo-list.yaml)
+AZURE_TEMPLATES := $(E2E_DATA_DIR)/infrastructure-azure
 
 # set --output-base used for conversion-gen which needs to be different for in GOPATH and outside GOPATH dev
 ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azure)
@@ -57,38 +58,38 @@ ifneq ($(abspath $(ROOT_DIR)),$(GOPATH)/src/sigs.k8s.io/cluster-api-provider-azu
 endif
 
 # Binaries.
-CONTROLLER_GEN_VER := v0.5.0
+CONTROLLER_GEN_VER := v0.6.1
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
 
-CONVERSION_GEN_VER := v0.20.4
+CONVERSION_GEN_VER := v0.21.2
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)-drone
 
-GOLANGCI_LINT_VER := v1.38.0
+GOLANGCI_LINT_VER := v1.41.1
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
-KUSTOMIZE_VER := v4.0.4
+KUSTOMIZE_VER := v4.1.3
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
 
-MOCKGEN_VER := v1.5.0
+MOCKGEN_VER := v1.6.0
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 
-RELEASE_NOTES_VER := v0.3.4
+RELEASE_NOTES_VER := v0.9.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
-GO_APIDIFF_VER := latest
+GO_APIDIFF_VER := v0.1.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
-GINKGO_VER := v1.15.2
+GINKGO_VER := v1.16.4
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 
@@ -168,7 +169,7 @@ test-cover: envs-test $(KUBECTL) $(KUBE_APISERVER) $(ETCD) ## Run tests with cod
 	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-e2e-run
-test-e2e-run: $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
+test-e2e-run: generate-e2e-templates $(ENVSUBST) $(KUBECTL) $(GINKGO) ## Run e2e tests
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
     $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \
@@ -289,6 +290,7 @@ generate: ## Generate code
 	$(MAKE) generate-go
 	$(MAKE) generate-manifests
 	$(MAKE) generate-flavors
+	$(MAKE) generate-e2e-templates
 
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(MOCKGEN) $(CONVERSION_GEN) ## Runs Go related generate targets
@@ -327,6 +329,19 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 .PHONY: generate-flavors ## Generate template flavors
 generate-flavors: $(KUSTOMIZE)
 	./hack/gen-flavors.sh
+
+.PHONY: generate-e2e-templates ## Generate Azure infrastructure templates for the v1alpha4 CAPI test suite.
+generate-e2e-templates: $(KUSTOMIZE)
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-md-remediation.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-remediation --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-remediation.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption/step1 --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption.yaml
+	echo "---" >> $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption/step2 --load-restrictor LoadRestrictionsNone >> $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-machine-pool --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-machine-pool.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-node-drain --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-node-drain.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-upgrades --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-upgrades.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-scale-in.yaml
 
 ## --------------------------------------
 ## Docker
@@ -458,7 +473,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
 	./hack/install-cert-manager.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-rc.0/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
 
 	# Deploy CAPZ
 	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=capz
@@ -568,7 +583,7 @@ clean-release: ## Remove the release folder
 	rm -rf $(RELEASE_DIR)
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen
+verify: verify-boilerplate verify-modules verify-gen verify-shellcheck
 
 .PHONY: verify-boilerplate
 verify-boilerplate:
@@ -585,3 +600,7 @@ verify-gen: generate
 	@if !(git diff --quiet HEAD); then \
 		git diff; echo "generated files are out of date, run make generate"; exit 1; \
 	fi
+
+.PHONY: verify-shellcheck
+verify-shellcheck:
+	./hack/verify-shellcheck.sh

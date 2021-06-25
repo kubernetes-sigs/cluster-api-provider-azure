@@ -144,7 +144,8 @@ spec:
     postKubeadmCommands:
     - sed -i '\#--listen-client-urls#s#$#,https://127.0.0.1:2379#' /etc/kubernetes/manifests/etcd.yaml
     - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+      /etc/resolv.conf
     - systemctl restart systemd-resolved
   machineTemplate:
     infrastructureRef:
@@ -251,5 +252,6 @@ spec:
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+      - mv /etc/resolv.conf /etc/resolv.conf.OLD && ln -s /run/systemd/resolve/resolv.conf
+        /etc/resolv.conf
       - systemctl restart systemd-resolved

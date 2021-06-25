@@ -25,12 +25,14 @@ parse_cred() {
 # for Prow we use the provided AZURE_CREDENTIALS file.
 # the file is expected to be in toml format.
 if [[ -n "${AZURE_CREDENTIALS:-}" ]]; then
-    export AZURE_SUBSCRIPTION_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred SubscriptionID)"
-    export AZURE_TENANT_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred TenantID)"
-    export AZURE_CLIENT_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred ClientID)"
-    export AZURE_CLIENT_SECRET="$(cat ${AZURE_CREDENTIALS} | parse_cred ClientSecret)"
-    export AZURE_MULTI_TENANCY_ID="$(cat ${AZURE_CREDENTIALS} | parse_cred MultiTenancyClientID)"
-    export AZURE_MULTI_TENANCY_SECRET="$(cat ${AZURE_CREDENTIALS} | parse_cred MultiTenancyClientSecret)"
-    export AZURE_STORAGE_ACCOUNT="$(cat ${AZURE_CREDENTIALS} | parse_cred StorageAccountName)"
-    export AZURE_STORAGE_KEY="$(cat ${AZURE_CREDENTIALS} | parse_cred StorageAccountKey)"
+    AZURE_SUBSCRIPTION_ID="$(parse_cred SubscriptionID < "${AZURE_CREDENTIALS}")"
+    AZURE_TENANT_ID="$(parse_cred TenantID < "${AZURE_CREDENTIALS}")"
+    AZURE_CLIENT_ID="$(parse_cred ClientID < "${AZURE_CREDENTIALS}")"
+    AZURE_CLIENT_SECRET="$(parse_cred ClientSecret < "${AZURE_CREDENTIALS}")"
+    AZURE_MULTI_TENANCY_ID="$(parse_cred MultiTenancyClientID < "${AZURE_CREDENTIALS}")"
+    AZURE_MULTI_TENANCY_SECRET="$(parse_cred MultiTenancyClientSecret < "${AZURE_CREDENTIALS}")"
+    AZURE_STORAGE_ACCOUNT="$(parse_cred StorageAccountName < "${AZURE_CREDENTIALS}")"
+    AZURE_STORAGE_KEY="$(parse_cred StorageAccountKey < "${AZURE_CREDENTIALS}")"
+
+    export AZURE_SUBSCRIPTION_ID AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET AZURE_MULTI_TENANCY_ID AZURE_MULTI_TENANCY_SECRET AZURE_STORAGE_ACCOUNT AZURE_STORAGE_KEY
 fi

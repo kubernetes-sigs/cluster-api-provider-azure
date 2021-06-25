@@ -23,7 +23,7 @@ cd "${REPO_ROOT}" || exit 1
 
 if [[ "${REGISTRY:-}" =~ capzci\.azurecr\.io ]]; then
     # if we are using the prow Azure Container Registry, login.
-    ${REPO_ROOT}/hack/ensure-azcli.sh
+    "${REPO_ROOT}/hack/ensure-azcli.sh"
     : "${AZURE_SUBSCRIPTION_ID:?Environment variable empty or not defined.}"
     az account set -s "${AZURE_SUBSCRIPTION_ID}"
     az acr login --name capzci

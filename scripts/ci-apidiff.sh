@@ -24,7 +24,7 @@ cd "${REPO_ROOT}"
 APIDIFF="${PWD}/hack/tools/bin/go-apidiff"
 PULL_BASE_SHA=${PULL_BASE_SHA:-$(git rev-parse origin/master)}
 
-make ${APIDIFF}
+make "${APIDIFF}"
 echo "*** Running go-apidiff ***"
 
 ${APIDIFF} "${PULL_BASE_SHA}" --print-compatible

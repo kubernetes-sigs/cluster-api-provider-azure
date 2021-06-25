@@ -34,10 +34,13 @@ export AZURE_VNET_NAME=${CLUSTER_NAME}-vnet
 # Azure settings.
 export AZURE_LOCATION="${AZURE_LOCATION:-southcentralus}"
 export AZURE_RESOURCE_GROUP=${CLUSTER_NAME}
-export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
-export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
-export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
-export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+
+AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+
+export AZURE_SUBSCRIPTION_ID_B64 AZURE_TENANT_ID_B64 AZURE_CLIENT_ID_B64 AZURE_CLIENT_SECRET_B64
 
 # Machine settings.
 export CONTROL_PLANE_MACHINE_COUNT=${CONTROL_PLANE_MACHINE_COUNT:-3}
@@ -49,13 +52,15 @@ export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE:-cluster-template.yaml}"
 
 # Generate SSH key.
 SSH_KEY_FILE=${SSH_KEY_FILE:-""}
-if ! [ -n "$SSH_KEY_FILE" ]; then
+if [ -z "$SSH_KEY_FILE" ]; then
     SSH_KEY_FILE=.sshkey
     rm -f "${SSH_KEY_FILE}" 2>/dev/null
     ssh-keygen -t rsa -b 2048 -f "${SSH_KEY_FILE}" -N '' 1>/dev/null
     echo "Machine SSH key generated in ${SSH_KEY_FILE}"
 fi
-export AZURE_SSH_PUBLIC_KEY_B64=$(cat "${SSH_KEY_FILE}.pub" | base64 | tr -d '\r\n')
+
+AZURE_SSH_PUBLIC_KEY_B64=$(base64 "${SSH_KEY_FILE}.pub" | tr -d '\r\n')
+export AZURE_SSH_PUBLIC_KEY_B64
 
 echo "================ DOCKER BUILD ==============="
 PULL_POLICY=IfNotPresent make modules docker-build

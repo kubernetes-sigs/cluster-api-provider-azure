@@ -43,7 +43,7 @@ verify_kind_version() {
   IFS=" " read -ra kind_version <<< "$(kind version)"
   if [[ "${MINIMUM_KIND_VERSION}" != $(echo -e "${MINIMUM_KIND_VERSION}\n${kind_version[1]}" | sort -s -t. -k 1,1 -k 2,2n -k 3,3n | head -n1) ]]; then
     cat <<EOF
-Detected kind version: ${kind_version}.
+Detected kind version: ${kind_version[0]}.
 Requires ${MINIMUM_KIND_VERSION} or greater.
 Please install ${MINIMUM_KIND_VERSION} or later.
 EOF
