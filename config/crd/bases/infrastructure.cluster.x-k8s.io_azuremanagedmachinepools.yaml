@@ -43,7 +43,8 @@ spec:
               AzureManagedMachinePool.
             properties:
               mode:
-                description: 'Mode - represents mode of an agent pool. Possible values include: ''System'', ''User'''
+                description: 'Mode - represents mode of an agent pool. Possible values
+                  include: ''System'', ''User'''
                 enum:
                 - System
                 - User
@@ -117,7 +118,8 @@ spec:
               AzureManagedMachinePool.
             properties:
               mode:
-                description: 'Mode - represents mode of an agent pool. Possible values include: ''System'', ''User'''
+                description: 'Mode - represents mode of an agent pool. Possible values
+                  include: ''System'', ''User'''
                 enum:
                 - System
                 - User

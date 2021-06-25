@@ -235,7 +235,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 			// Fetch the owning MachinePool.
 			ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.kubeclient, pool.ObjectMeta)
 			if err != nil {
-				scope.Logger.Error(err, "failed to fetch owner ref for system pool")
+				scope.Logger.Error(err, "failed to fetch owner ref for system pool: %s", pool.Name)
 				continue
 			}
 			if ownerPool == nil {

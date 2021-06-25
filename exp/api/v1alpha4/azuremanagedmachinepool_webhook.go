@@ -109,7 +109,7 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object) error {
 
 	if r.Spec.Mode != SystemNodePool && old.Spec.Mode == SystemNodePool {
 		// validate for last system node pool
-		if err := r.ValidateLastSystemNodePool(); err != nil {
+		if err := r.validateLastSystemNodePool(); err != nil {
 			allErrs = append(allErrs, field.Invalid(
 				field.NewPath("Spec", "Mode"),
 				r.Spec.Mode,
@@ -132,11 +132,10 @@ func (r *AzureManagedMachinePool) ValidateDelete() error {
 		return nil
 	}
 
-	return r.ValidateLastSystemNodePool()
+	return r.validateLastSystemNodePool()
 }
 
-func (r *AzureManagedMachinePool) ValidateLastSystemNodePool() error {
-
+func (r *AzureManagedMachinePool) validateLastSystemNodePool() error {
 	ctx := context.Background()
 
 	// Fetch the Cluster.

@@ -27,9 +27,6 @@ const (
 
 	// SystemNodePool represents mode system for azuremachinepool.
 	SystemNodePool = "System"
-
-	// AzuremanagedMachinepoolStatusReadyIndex is used by the AzureManagedMachinepool Webhook to index based on the status.ready and list ready ammps.
-	AzuremanagedMachinepoolStatusReadyIndex = "status.ready"
 )
 
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
