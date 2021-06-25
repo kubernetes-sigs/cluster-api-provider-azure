@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -209,27 +210,62 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 	}
 
 	// We are creating this cluster for the first time.
-	// Configure the default pool, rest will be handled by machinepool controller
+	// Configure the system pool, rest will be handled by machinepool controller
 	// We do this here because AKS will only let us mutate agent pools via managed
 	// clusters API at create time, not update.
 	if azure.ResourceNotFound(err) {
-		defaultPoolSpec := managedclusters.PoolSpec{
-			Name:         scope.InfraMachinePool.Name,
-			SKU:          scope.InfraMachinePool.Spec.SKU,
-			Replicas:     1,
-			OSDiskSizeGB: 0,
+		opt1 := client.InNamespace(scope.ControlPlane.Namespace)
+		opt2 := client.MatchingLabels(map[string]string{
+			infrav1exp.LabelAgentPoolMode: infrav1exp.SystemNodePool,
+			clusterv1.ClusterLabelName:    scope.Cluster.Name,
+		})
+
+		ammpList := &infrav1exp.AzureManagedMachinePoolList{}
+
+		if err := r.kubeclient.List(ctx, ammpList, opt1, opt2); err != nil {
+			return err
 		}
 
-		// Set optional values
-		if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {
-			defaultPoolSpec.OSDiskSizeGB = *scope.InfraMachinePool.Spec.OSDiskSizeGB
+		if ammpList == nil || len(ammpList.Items) == 0 {
+			return errors.New("failed to fetch azuremanagedMachine pool with mode:System, require atleast 1 system node pool")
 		}
-		if scope.MachinePool.Spec.Replicas != nil {
-			defaultPoolSpec.Replicas = *scope.MachinePool.Spec.Replicas
-		}
+		ammps := []managedclusters.PoolSpec{}
 
+		for _, pool := range ammpList.Items {
+			// Fetch the owning MachinePool.
+			ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.kubeclient, pool.ObjectMeta)
+			if err != nil {
+				scope.Logger.Error(err, "failed to fetch owner ref for system pool")
+				continue
+			}
+			if ownerPool == nil {
+				scope.Logger.Info("failed to fetch owner ref for system pool")
+				continue
+			}
+
+			ammp := managedclusters.PoolSpec{
+				Name:         pool.Name,
+				SKU:          pool.Spec.SKU,
+				Replicas:     1,
+				OSDiskSizeGB: 0,
+			}
+
+			// Set optional values
+			if pool.Spec.OSDiskSizeGB != nil {
+				ammp.OSDiskSizeGB = *pool.Spec.OSDiskSizeGB
+			}
+
+			if ownerPool.Spec.Replicas != nil {
+				ammp.Replicas = *ownerPool.Spec.Replicas
+			}
+
+			ammps = append(ammps, ammp)
+		}
+		if len(ammps) == 0 {
+			return errors.New("owner ref for system machine pools not ready")
+		}
 		// Add to cluster spec
-		managedClusterSpec.AgentPools = []managedclusters.PoolSpec{defaultPoolSpec}
+		managedClusterSpec.AgentPools = ammps
 	}
 
 	// Send to Azure for create/update.

@@ -21,8 +21,24 @@ import (
 	capierrors "sigs.k8s.io/cluster-api/errors"
 )
 
+const (
+	// LabelAgentPoolMode represents mode of an agent pool. Possible values include: 'System', 'User'.
+	LabelAgentPoolMode = "azurecluster.infrastructure.cluster.x-k8s.io/agentpoolmode"
+
+	// SystemNodePool represents mode system for azuremachinepool.
+	SystemNodePool = "System"
+
+	// AzuremanagedMachinepoolStatusReadyIndex is used by the AzureManagedMachinepool Webhook to index based on the status.ready and list ready ammps.
+	AzuremanagedMachinepoolStatusReadyIndex = "status.ready"
+)
+
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
+
+	// Mode - represents mode of an agent pool. Possible values include: 'System', 'User'
+	// +kubebuilder:validation:Enum=System;User
+	Mode string `json:"mode"`
+
 	// SKU is the size of the VMs in the node pool.
 	SKU string `json:"sku"`
 

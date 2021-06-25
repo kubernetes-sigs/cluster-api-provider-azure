@@ -38,6 +38,7 @@ type Spec struct {
 	Replicas      int32
 	OSDiskSizeGB  int32
 	VnetSubnetID  string
+	Mode          string
 }
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
@@ -59,6 +60,7 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			OrchestratorVersion: agentPoolSpec.Version,
 			VnetSubnetID:        &agentPoolSpec.VnetSubnetID,
+			Mode:                containerservice.AgentPoolMode(agentPoolSpec.Mode),
 		},
 	}
 

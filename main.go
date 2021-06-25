@@ -511,6 +511,15 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 	}
 
+	if feature.Gates.Enabled(feature.AKS) {
+		if err := infrav1alpha4exp.NewAzureManagedMachinePoolWebhook(
+			mgr.GetClient(),
+		).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedMachinePool")
+			os.Exit(1)
+		}
+	}
+
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to create ready check")
 		os.Exit(1)

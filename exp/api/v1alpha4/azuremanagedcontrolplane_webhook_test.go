@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -468,28 +467,6 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 			},
 			amcp: &AzureManagedControlPlane{
 				Spec: AzureManagedControlPlaneSpec{
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "AzureManagedControlPlane DefaultPoolRef.Name is immutable",
-			oldAMCP: &AzureManagedControlPlane{
-				Spec: AzureManagedControlPlaneSpec{
-					DefaultPoolRef: v1.LocalObjectReference{
-						Name: "pool-1",
-					},
-					DNSServiceIP: to.StringPtr("192.168.0.0"),
-					Version:      "v1.18.0",
-				},
-			},
-			amcp: &AzureManagedControlPlane{
-				Spec: AzureManagedControlPlaneSpec{
-					DefaultPoolRef: v1.LocalObjectReference{
-						Name: "pool-2",
-					},
 					DNSServiceIP: to.StringPtr("192.168.0.0"),
 					Version:      "v1.18.0",
 				},
