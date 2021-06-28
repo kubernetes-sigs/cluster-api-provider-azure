@@ -18,8 +18,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	"github.com/go-logr/logr"
@@ -213,6 +215,12 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 				return reconcile.Result{}, err
 			}
 		}
+	} else {
+		warningMessage := ("You're using deprecated functionality: ")
+		warningMessage += ("Using Azure credentials from the manager environment is deprecated and will be removed in future releases. ")
+		warningMessage += ("Please specify an AzureClusterIdentity for the AzureManagedControlPlane instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html ")
+		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
+		r.Recorder.Eventf(azureControlPlane, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
 	}
 
 	// Create the scope.

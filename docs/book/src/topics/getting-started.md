@@ -51,8 +51,23 @@ An Azure Service Principal is needed for deploying Azure resources. The below in
   export AZURE_LOCATION="eastus" # this should be an Azure region that your subscription has quota for.
   ```
 
-:warning: NOTE: If your password contains single quotes (`'`), make sure to escape them. To escape a single quote, close the quoting before it, insert the single quote, and re-open the quoting.
+<aside class="note warning"> 
+
+<h1> Warning </h1>
+
+NOTE: If your password contains single quotes (`'`), make sure to escape them. To escape a single quote, close the quoting before it, insert the single quote, and re-open the quoting.
 For example, if your password is `foo'blah$`, you should do `export AZURE_CLIENT_SECRET='foo'\''blah$'`.
+
+</aside>
+
+<aside class="note warning"> 
+
+<h1> Warning </h1> 
+
+The capability to set credentials using environment variables is now deprecated and will be removed in future releases, the recommended approach is to use `AzureClusterIdentity` as explained [here](multitenancy.md) 
+
+</aside>
+
 
 ### Building your first cluster
 
