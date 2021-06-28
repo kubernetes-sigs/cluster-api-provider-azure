@@ -39,16 +39,16 @@ which provides the cloud provider specific resource for orchestrating a group of
 ⚠️ Cloud provider for Azure does not currently support clusters in mixed mode (both vmss and vmas node pools), so it is not supported to have both `AzureMachinePools` and `AzureMachines` in the same workload cluster.
 
 ### Using `clusterctl` to deploy
-To deploy a MachinePool / AzureMachinePool via `clusterctl config` there's a [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors)
+To deploy a MachinePool / AzureMachinePool via `clusterctl generate` there's a [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors)
 for that.
 
 Make sure to set up your Azure environment as described [here](https://cluster-api.sigs.k8s.io/user/quick-start.html).
 
 ```shell
-clusterctl config cluster my-cluster --kubernetes-version v1.19.7 --flavor machinepool > my-cluster.yaml
+clusterctl generate cluster my-cluster --kubernetes-version v1.19.7 --flavor machinepool > my-cluster.yaml
 ```
 
-The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors)
+The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors)
 is located [here](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-machinepool.yaml).
 
 ### Example MachinePool, AzureMachinePool and KubeadmConfig Resources

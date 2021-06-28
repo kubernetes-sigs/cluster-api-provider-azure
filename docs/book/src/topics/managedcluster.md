@@ -58,7 +58,7 @@ Execute clusterctl to template the resources, then apply to a management cluster
 
 ```bash
 clusterctl init --infrastructure azure
-clusterctl config cluster ${CLUSTER_NAME} --kubernetes-version ${KUBERNETES_VERSION} --flavor aks > cluster.yaml
+clusterctl generate cluster ${CLUSTER_NAME} --kubernetes-version ${KUBERNETES_VERSION} --flavor aks > cluster.yaml
 
 # assumes an existing management cluster
 kubectl apply -f cluster.yaml
