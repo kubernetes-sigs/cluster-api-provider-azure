@@ -83,16 +83,16 @@ virtual machine from the scale set. This is useful if one would like to manually
 CAPZ.
 
 ### Using `clusterctl` to deploy
-To deploy a MachinePool / AzureMachinePool via `clusterctl config` there's a [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors)
+To deploy a MachinePool / AzureMachinePool via `clusterctl generate` there's a [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors)
 for that.
 
 Make sure to set up your Azure environment as described [here](https://cluster-api.sigs.k8s.io/user/quick-start.html).
 
 ```shell
-clusterctl config cluster my-cluster --kubernetes-version v1.19.7 --flavor machinepool > my-cluster.yaml
+clusterctl generate cluster my-cluster --kubernetes-version v1.19.7 --flavor machinepool > my-cluster.yaml
 ```
 
-The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/config-cluster.html#flavors)
+The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors)
 is located [here](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-machinepool.yaml).
 
 ### Example MachinePool, AzureMachinePool and KubeadmConfig Resources

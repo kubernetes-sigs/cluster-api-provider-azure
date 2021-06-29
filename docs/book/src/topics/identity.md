@@ -146,7 +146,7 @@ spec:
 
 The CAPZ controller will look for `SystemAssigned` value in `identity` field under `AzureMachinePool`, and enable system-assigned managed identity in the virtual machine scale set.
 
-Alternatively, you can also use the `system-assigned-identity`, and `machinepool-system-assigned-identity` flavors by setting the `{flavor}` in `clusterctl config cluster --flavor {flavor}` to use system-assigned managed identity in machine deployment, and machine pool respectively.
+Alternatively, you can also use the `system-assigned-identity`, and `machinepool-system-assigned-identity` flavors by setting the `{flavor}` in `clusterctl generate cluster --flavor {flavor}` to use system-assigned managed identity in machine deployment, and machine pool respectively.
 
 #### User-assigned managed identity
 
@@ -249,4 +249,4 @@ spec:
 
 The CAPZ controller will look for `UserAssigned` value in `identity` field under `AzureMachinePool`, and assign the user identities listed in `userAssignedIdentities` to the virtual machine scale set.
 
-Similar to system assigned identity, you can use the `user-assigned-identity`, and `machinepool-user-assigned-identity` flavors by setting the `{flavor}` in `clusterctl config cluster --flavor {flavor}` to use user-assigned managed identity in machine deployment, and machine pool respectively.
+Similar to system assigned identity, you can use the `user-assigned-identity`, and `machinepool-user-assigned-identity` flavors by setting the `{flavor}` in `clusterctl generate cluster --flavor {flavor}` to use user-assigned managed identity in machine deployment, and machine pool respectively.
