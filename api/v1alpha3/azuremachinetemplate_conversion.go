@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	apimachineryconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -42,6 +43,12 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 			// restore nil value if nothing has changed since conversion
 			dst.Spec.Template.Spec.OSDisk.ManagedDisk = nil
 		}
+	}
+
+	if restored.Spec.Template.Spec.Image.SharedGallery != nil {
+		dst.Spec.Template.Spec.Image.SharedGallery.Offer = restored.Spec.Template.Spec.Image.SharedGallery.Offer
+		dst.Spec.Template.Spec.Image.SharedGallery.Publisher = restored.Spec.Template.Spec.Image.SharedGallery.Publisher
+		dst.Spec.Template.Spec.Image.SharedGallery.SKU = restored.Spec.Template.Spec.Image.SharedGallery.SKU
 	}
 
 	return nil
@@ -72,4 +79,12 @@ func (src *AzureMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error { //
 func (dst *AzureMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error { // nolint
 	src := srcRaw.(*infrav1alpha4.AzureMachineTemplateList)
 	return Convert_v1alpha4_AzureMachineTemplateList_To_v1alpha3_AzureMachineTemplateList(src, dst, nil)
+}
+
+func Convert_v1alpha4_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in *infrav1alpha4.AzureSharedGalleryImage, out *AzureSharedGalleryImage, s apimachineryconversion.Scope) error { // nolint
+	if err := autoConvert_v1alpha4_AzureSharedGalleryImage_To_v1alpha3_AzureSharedGalleryImage(in, out, s); err != nil {
+		return err
+	}
+
+	return nil
 }

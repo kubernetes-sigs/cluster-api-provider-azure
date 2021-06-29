@@ -251,7 +251,16 @@ func (s *Service) getExisting(ctx context.Context, name string) (*infrav1.VM, er
 func (s *Service) generateImagePlan() *compute.Plan {
 	image, err := s.Scope.GetVMImage()
 	if err != nil {
+		s.Scope.Error(err, "failed to get vm image, disabling Plan")
 		return nil
+	}
+
+	if image.SharedGallery != nil && image.SharedGallery.Publisher != nil && image.SharedGallery.SKU != nil && image.SharedGallery.Offer != nil {
+		return &compute.Plan{
+			Publisher: image.SharedGallery.Publisher,
+			Name:      image.SharedGallery.SKU,
+			Product:   image.SharedGallery.Offer,
+		}
 	}
 
 	if image.Marketplace == nil || !image.Marketplace.ThirdPartyImage {

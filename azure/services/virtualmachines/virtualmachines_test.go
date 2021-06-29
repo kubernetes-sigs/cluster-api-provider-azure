@@ -1752,6 +1752,166 @@ func TestReconcileVM(t *testing.T) {
 			ExpectedError: "VM with provider id \"ExistingVM-ProviderID\" has been deleted",
 			SetupSKUs:     func(svc *Service) {},
 		},
+		{
+			Name: "can create a vm with a SIG image using a plan",
+			Expect: func(g *WithT, s *mock_virtualmachines.MockVMScopeMockRecorder, m *mock_virtualmachines.MockClientMockRecorder, mnic *mock_networkinterfaces.MockClientMockRecorder, mpip *mock_publicips.MockClientMockRecorder) {
+				s.VMSpec().Return(azure.VMSpec{
+					Name:       "my-vm",
+					Role:       infrav1.ControlPlane,
+					NICNames:   []string{"my-nic", "second-nic"},
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					Size:       "Standard_D2v3",
+					Zone:       "1",
+					Identity:   infrav1.VMIdentityNone,
+					OSDisk: infrav1.OSDisk{
+						OSType:     "Linux",
+						DiskSizeGB: to.Int32Ptr(128),
+						ManagedDisk: &infrav1.ManagedDiskParameters{
+							StorageAccountType: "Premium_LRS",
+						},
+					},
+					DataDisks: []infrav1.DataDisk{
+						{
+							NameSuffix: "mydisk",
+							DiskSizeGB: 64,
+							Lun:        to.Int32Ptr(0),
+						},
+					},
+					UserAssignedIdentities: nil,
+					SpotVMOptions:          nil,
+				})
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.AdditionalTags()
+				s.Location().Return("test-location")
+				s.ClusterName().Return("my-cluster")
+				s.ProviderID().Return("")
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vm").
+					Return(compute.VirtualMachine{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				s.GetVMImage().AnyTimes().Return(&infrav1.Image{
+					SharedGallery: &infrav1.AzureSharedGalleryImage{
+						SubscriptionID: "fake-sub-id",
+						ResourceGroup:  "fake-rg",
+						Gallery:        "fake-gallery",
+						Name:           "fake-name",
+						Version:        "1.0",
+						Publisher:      to.StringPtr("fake-publisher"),
+						Offer:          to.StringPtr("my-offer"),
+						SKU:            to.StringPtr("sku-id"),
+					},
+				}, nil)
+				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
+				s.AvailabilitySet().Return("", false)
+				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomockinternal.DiffEq(compute.VirtualMachine{
+					Plan: &compute.Plan{
+						Name:      to.StringPtr("sku-id"),
+						Publisher: to.StringPtr("fake-publisher"),
+						Product:   to.StringPtr("my-offer"),
+					},
+					VirtualMachineProperties: &compute.VirtualMachineProperties{
+						HardwareProfile: &compute.HardwareProfile{VMSize: "Standard_D2v3"},
+						StorageProfile: &compute.StorageProfile{
+							ImageReference: &compute.ImageReference{
+								ID: to.StringPtr("/subscriptions/fake-sub-id/resourceGroups/fake-rg/providers/Microsoft.Compute/galleries/fake-gallery/images/fake-name/versions/1.0"),
+							},
+							OsDisk: &compute.OSDisk{
+								OsType:       "Linux",
+								Name:         to.StringPtr("my-vm_OSDisk"),
+								CreateOption: "FromImage",
+								DiskSizeGB:   to.Int32Ptr(128),
+								ManagedDisk: &compute.ManagedDiskParameters{
+									StorageAccountType: "Premium_LRS",
+								},
+							},
+							DataDisks: &[]compute.DataDisk{
+								{
+									Lun:          to.Int32Ptr(0),
+									Name:         to.StringPtr("my-vm_mydisk"),
+									CreateOption: "Empty",
+									DiskSizeGB:   to.Int32Ptr(64),
+								},
+							},
+						},
+						OsProfile: &compute.OSProfile{
+							ComputerName:  to.StringPtr("my-vm"),
+							AdminUsername: to.StringPtr("capi"),
+							CustomData:    to.StringPtr("fake-bootstrap-data"),
+							LinuxConfiguration: &compute.LinuxConfiguration{
+								DisablePasswordAuthentication: to.BoolPtr(true),
+								SSH: &compute.SSHConfiguration{
+									PublicKeys: &[]compute.SSHPublicKey{
+										{
+											Path:    to.StringPtr("/home/capi/.ssh/authorized_keys"),
+											KeyData: to.StringPtr("fakesshkey\n"),
+										},
+									},
+								},
+							},
+						},
+						DiagnosticsProfile: &compute.DiagnosticsProfile{
+							BootDiagnostics: &compute.BootDiagnostics{
+								Enabled: to.BoolPtr(true),
+							},
+						},
+						NetworkProfile: &compute.NetworkProfile{
+							NetworkInterfaces: &[]compute.NetworkInterfaceReference{
+								{
+									NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{Primary: to.BoolPtr(true)},
+									ID:                                  to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkInterfaces/my-nic"),
+								},
+								{
+									NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{Primary: to.BoolPtr(false)},
+									ID:                                  to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/networkInterfaces/second-nic"),
+								},
+							},
+						},
+					},
+					Resources: nil,
+					Identity:  nil,
+					Zones:     &[]string{"1"},
+					ID:        nil,
+					Name:      nil,
+					Type:      nil,
+					Location:  to.StringPtr("test-location"),
+					Tags: map[string]*string{
+						"Name": to.StringPtr("my-vm"),
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
+						"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("control-plane"),
+					},
+				}))
+			},
+			ExpectedError: "",
+			SetupSKUs: func(svc *Service) {
+				skus := []compute.ResourceSku{
+					{
+						Name: to.StringPtr("Standard_D2v3"),
+						Kind: to.StringPtr(string(resourceskus.VirtualMachines)),
+						Locations: &[]string{
+							"test-location",
+						},
+						LocationInfo: &[]compute.ResourceSkuLocationInfo{
+							{
+								Location: to.StringPtr("test-location"),
+								Zones:    &[]string{"1"},
+							},
+						},
+						Capabilities: &[]compute.ResourceSkuCapabilities{
+							{
+								Name:  to.StringPtr(resourceskus.VCPUs),
+								Value: to.StringPtr("2"),
+							},
+							{
+								Name:  to.StringPtr(resourceskus.MemoryGB),
+								Value: to.StringPtr("4"),
+							},
+						},
+					},
+				}
+				resourceSkusCache := resourceskus.NewStaticCache(skus, "")
+				svc.resourceSKUCache = resourceSkusCache
+			},
+		},
 	}
 
 	for _, tc := range testcases {

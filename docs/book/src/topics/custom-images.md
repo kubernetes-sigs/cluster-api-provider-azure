@@ -83,6 +83,31 @@ ManagedImageSharedImageGalleryId: /subscriptions/01234567-89ab-cdef-0123-4567890
 
 Please also see the [replication recommendations][replication-recommendations] for the Shared Image Gallery.
 
+If the image you want to use is based on an image released by a third party publisher such as for example 
+`Flatcar Linux` by `Kinvolk`, then you need to specify the `publisher`, `offer`, and `sku` fields as well:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: capz-shared-gallery-example
+spec:
+  template:
+    spec:
+      image:
+        sharedGallery:
+          resourceGroup: "cluster-api-images"
+          name: "capi-1234567890"
+          subscriptionID: "01234567-89ab-cdef-0123-4567890abcde"
+          gallery: "ClusterAPI"
+          version: "0.3.1234567890"
+          publisher: "kinvolk"
+          offer: "flatcar-container-linux-free"
+          sku: "stable"
+```
+
+This will make API calls to create Virtual Machines or Virtual Machine Scale Sets to have the `Plan` correctly set.
+
 ### Using image ID
 
 To use a managed image resource by ID, only the `id` field must be set:

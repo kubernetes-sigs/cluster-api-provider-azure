@@ -385,6 +385,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 			Capacity: to.Int64Ptr(vmssSpec.Capacity),
 		},
 		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
+		Plan:  s.generateImagePlan(),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
@@ -629,6 +630,36 @@ func (s *Service) generateOSProfile(ctx context.Context, vmssSpec azure.ScaleSet
 	}
 
 	return osProfile, nil
+}
+
+func (s *Service) generateImagePlan() *compute.Plan {
+	image, err := s.Scope.GetVMImage()
+	if err != nil {
+		s.Scope.Error(err, "failed to get vm image, disabling Plan")
+		return nil
+	}
+
+	if image.SharedGallery != nil && image.SharedGallery.Publisher != nil && image.SharedGallery.SKU != nil && image.SharedGallery.Offer != nil {
+		return &compute.Plan{
+			Publisher: image.SharedGallery.Publisher,
+			Name:      image.SharedGallery.SKU,
+			Product:   image.SharedGallery.Offer,
+		}
+	}
+
+	if image.Marketplace == nil || !image.Marketplace.ThirdPartyImage {
+		return nil
+	}
+
+	if image.Marketplace.Publisher == "" || image.Marketplace.SKU == "" || image.Marketplace.Offer == "" {
+		return nil
+	}
+
+	return &compute.Plan{
+		Publisher: to.StringPtr(image.Marketplace.Publisher),
+		Name:      to.StringPtr(image.Marketplace.SKU),
+		Product:   to.StringPtr(image.Marketplace.Offer),
+	}
 }
 
 func getVMSSUpdateFromVMSS(vmss compute.VirtualMachineScaleSet) (compute.VirtualMachineScaleSetUpdate, error) {

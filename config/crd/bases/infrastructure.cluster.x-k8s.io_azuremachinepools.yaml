@@ -837,10 +837,34 @@ spec:
                             description: Name is the name of the image
                             minLength: 1
                             type: string
+                          offer:
+                            description: Offer specifies the name of a group of related
+                              images created by the publisher. For example, UbuntuServer,
+                              WindowsServer This value will be used to add a `Plan`
+                              in the API request when creating the VM/VMSS resource.
+                              This is needed when the source image from which this
+                              SIG image was built requires the `Plan` to be used.
+                            type: string
+                          publisher:
+                            description: Publisher is the name of the organization
+                              that created the image. This value will be used to add
+                              a `Plan` in the API request when creating the VM/VMSS
+                              resource. This is needed when the source image from
+                              which this SIG image was built requires the `Plan` to
+                              be used.
+                            type: string
                           resourceGroup:
                             description: ResourceGroup specifies the resource group
                               containing the shared image gallery
                             minLength: 1
+                            type: string
+                          sku:
+                            description: SKU specifies an instance of an offer, such
+                              as a major release of a distribution. For example, 18.04-LTS,
+                              2019-Datacenter This value will be used to add a `Plan`
+                              in the API request when creating the VM/VMSS resource.
+                              This is needed when the source image from which this
+                              SIG image was built requires the `Plan` to be used.
                             type: string
                           subscriptionID:
                             description: SubscriptionID is the identifier of the subscription
@@ -1120,10 +1144,33 @@ spec:
                         description: Name is the name of the image
                         minLength: 1
                         type: string
+                      offer:
+                        description: Offer specifies the name of a group of related
+                          images created by the publisher. For example, UbuntuServer,
+                          WindowsServer This value will be used to add a `Plan` in
+                          the API request when creating the VM/VMSS resource. This
+                          is needed when the source image from which this SIG image
+                          was built requires the `Plan` to be used.
+                        type: string
+                      publisher:
+                        description: Publisher is the name of the organization that
+                          created the image. This value will be used to add a `Plan`
+                          in the API request when creating the VM/VMSS resource. This
+                          is needed when the source image from which this SIG image
+                          was built requires the `Plan` to be used.
+                        type: string
                       resourceGroup:
                         description: ResourceGroup specifies the resource group containing
                           the shared image gallery
                         minLength: 1
+                        type: string
+                      sku:
+                        description: SKU specifies an instance of an offer, such as
+                          a major release of a distribution. For example, 18.04-LTS,
+                          2019-Datacenter This value will be used to add a `Plan`
+                          in the API request when creating the VM/VMSS resource. This
+                          is needed when the source image from which this SIG image
+                          was built requires the `Plan` to be used.
                         type: string
                       subscriptionID:
                         description: SubscriptionID is the identifier of the subscription
