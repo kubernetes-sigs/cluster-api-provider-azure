@@ -37,6 +37,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const (
+	// UltraSSDStorageAccountType identifies the Ultra disk storage account type.
+	UltraSSDStorageAccountType = "UltraSSD_LRS"
+)
+
 type (
 	// ScaleSetScope defines the scope interface for a scale sets service.
 	ScaleSetScope interface {
@@ -314,6 +319,21 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		return azure.WithTerminalError(errors.Errorf("encryption at host is not supported for VM type %s", spec.Size))
 	}
 
+	// check the support for ultra disks based on location and vm size
+	for _, disks := range spec.DataDisks {
+		location := s.Scope.Location()
+		zones, err := s.resourceSKUCache.GetZones(ctx, location)
+		if err != nil {
+			return azure.WithTerminalError(errors.Wrapf(err, "failed to get the zones for location %s", location))
+		}
+
+		for _, zone := range zones {
+			if disks.ManagedDisk != nil && disks.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone) {
+				return azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", spec.Size, location))
+			}
+		}
+	}
+
 	// Checking if selected availability zones are available selected VM type in location
 	azsInLocation, err := s.resourceSKUCache.GetZonesWithVMSize(ctx, spec.Size, s.Scope.Location())
 	if err != nil {
@@ -449,6 +469,14 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
 			Type:                   compute.ResourceIdentityTypeUserAssigned,
 			UserAssignedIdentities: userIdentitiesMap,
+		}
+	}
+
+	for _, dataDisk := range vmssSpec.DataDisks {
+		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType {
+			vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
+				UltraSSDEnabled: to.BoolPtr(true),
+			}
 		}
 	}
 
