@@ -322,6 +322,23 @@ type AzureSharedGalleryImage struct {
 	// time even if a new version becomes available.
 	// +kubebuilder:validation:MinLength=1
 	Version string `json:"version"`
+	// Publisher is the name of the organization that created the image.
+	// This value will be used to add a `Plan` in the API request when creating the VM/VMSS resource.
+	// This is needed when the source image from which this SIG image was built requires the `Plan` to be used.
+	// +optional
+	Publisher *string `json:"publisher,omitempty"`
+	// Offer specifies the name of a group of related images created by the publisher.
+	// For example, UbuntuServer, WindowsServer
+	// This value will be used to add a `Plan` in the API request when creating the VM/VMSS resource.
+	// This is needed when the source image from which this SIG image was built requires the `Plan` to be used.
+	// +optional
+	Offer *string `json:"offer,omitempty"`
+	// SKU specifies an instance of an offer, such as a major release of a distribution.
+	// For example, 18.04-LTS, 2019-Datacenter
+	// This value will be used to add a `Plan` in the API request when creating the VM/VMSS resource.
+	// This is needed when the source image from which this SIG image was built requires the `Plan` to be used.
+	// +optional
+	SKU *string `json:"sku,omitempty"`
 }
 
 // VMIdentity defines the identity of the virtual machine, if configured.
