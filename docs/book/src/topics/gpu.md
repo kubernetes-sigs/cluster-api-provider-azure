@@ -18,7 +18,7 @@ Let's create a CAPZ cluster with an N-series node and run a GPU-powered vector c
 
 ### Generate an nvidia-gpu cluster template
 
-Use the `clusterctl config cluster` command to generate a manifest that defines your GPU-enabled
+Use the `clusterctl generate cluster` command to generate a manifest that defines your GPU-enabled
 workload cluster.
 
 Remember to use the `nvidia-gpu` flavor with N-series nodes.
@@ -27,7 +27,7 @@ Remember to use the `nvidia-gpu` flavor with N-series nodes.
 AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D2s_v3 \
 AZURE_NODE_MACHINE_TYPE=Standard_NC6s_v3 \
 AZURE_LOCATION=southcentralus \
-clusterctl config cluster azure-gpu \
+clusterctl generate cluster azure-gpu \
   --kubernetes-version=v1.19.7 \
   --worker-machine-count=1 \
   --flavor=nvidia-gpu > azure-gpu-cluster.yaml
