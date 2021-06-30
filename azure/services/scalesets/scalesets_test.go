@@ -1057,7 +1057,7 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 			Version:   "1.0",
 		},
 	}
-	s.GetVMImage().Return(image, nil)
+	s.GetVMImage().Return(image, nil).AnyTimes()
 	s.SaveVMImageToStatus(image)
 }
 
@@ -1071,7 +1071,7 @@ func setupUpdateVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder
 			Version:   "2.0",
 		},
 	}
-	s.GetVMImage().Return(image, nil)
+	s.GetVMImage().Return(image, nil).AnyTimes()
 	s.SaveVMImageToStatus(image)
 }
 
