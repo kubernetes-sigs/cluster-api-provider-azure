@@ -64,6 +64,11 @@ type NetworkSpec struct {
 	// +optional
 	NodeOutboundLB *LoadBalancerSpec `json:"nodeOutboundLB,omitempty"`
 
+	// ControlPlaneOutboundLB is the configuration for the control-plane outbound load balancer.
+	// This is different from APIServerLB, and is used only in private clusters (optionally) for enabling outbound traffic.
+	// +optional
+	ControlPlaneOutboundLB *LoadBalancerSpec `json:"controlPlaneOutboundLB,omitempty"`
+
 	// PrivateDNSZoneName defines the zone name for the Azure Private DNS.
 	// +optional
 	PrivateDNSZoneName string `json:"privateDNSZoneName,omitempty"`
