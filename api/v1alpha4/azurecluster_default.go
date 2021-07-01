@@ -175,6 +175,11 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
 			return
 		}
+		nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
+		// Only one outbound mechanism can be defined, so if Nat Gateway is defined, we don't default the LB.
+		if err == nil && nodeSubnet.NatGateway.Name != "" {
+			return
+		}
 		c.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
 	}
 

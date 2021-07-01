@@ -467,6 +467,20 @@ func (mr *MockNetworkDescriberMockRecorder) IsVnetManaged() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockNetworkDescriber)(nil).IsVnetManaged))
 }
 
+// NodeNatGateway mocks base method.
+func (m *MockNetworkDescriber) NodeNatGateway() v1alpha4.NatGateway {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeNatGateway")
+	ret0, _ := ret[0].(v1alpha4.NatGateway)
+	return ret0
+}
+
+// NodeNatGateway indicates an expected call of NodeNatGateway.
+func (mr *MockNetworkDescriberMockRecorder) NodeNatGateway() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeNatGateway", reflect.TypeOf((*MockNetworkDescriber)(nil).NodeNatGateway))
+}
+
 // NodeRouteTable mocks base method.
 func (m *MockNetworkDescriber) NodeRouteTable() v1alpha4.RouteTable {
 	m.ctrl.T.Helper()
@@ -1055,6 +1069,20 @@ func (m *MockClusterScoper) Location() string {
 func (mr *MockClusterScoperMockRecorder) Location() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockClusterScoper)(nil).Location))
+}
+
+// NodeNatGateway mocks base method.
+func (m *MockClusterScoper) NodeNatGateway() v1alpha4.NatGateway {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeNatGateway")
+	ret0, _ := ret[0].(v1alpha4.NatGateway)
+	return ret0
+}
+
+// NodeNatGateway indicates an expected call of NodeNatGateway.
+func (mr *MockClusterScoperMockRecorder) NodeNatGateway() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeNatGateway", reflect.TypeOf((*MockClusterScoper)(nil).NodeNatGateway))
 }
 
 // NodeRouteTable mocks base method.

@@ -1,0 +1,6 @@
+namespace: default
+resources:
+  - ../default
+patchesStrategicMerge:
+  - patches/nat-gateway.yaml
+

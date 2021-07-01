@@ -70,6 +70,8 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 					}
 				}
 				dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules = append(dst.Spec.NetworkSpec.Subnets[i].SecurityGroup.SecurityRules, restoredOutboundRules...)
+				dst.Spec.NetworkSpec.Subnets[i].NatGateway = restoredSubnet.NatGateway
+
 				break
 			}
 		}

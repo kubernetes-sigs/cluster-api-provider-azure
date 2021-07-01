@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/bastionhosts"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/privatedns"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
@@ -50,6 +51,7 @@ type azureClusterService struct {
 	privateDNSSvc    azure.Reconciler
 	bastionSvc       azure.Reconciler
 	skuCache         *resourceskus.Cache
+	natGatewaySvc    azure.Reconciler
 }
 
 // newAzureClusterService populates all the services based on input scope.
@@ -65,6 +67,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 		vnetSvc:          virtualnetworks.New(scope),
 		securityGroupSvc: securitygroups.New(scope),
 		routeTableSvc:    routetables.New(scope),
+		natGatewaySvc:    natgateways.New(scope),
 		subnetsSvc:       subnets.New(scope),
 		publicIPSvc:      publicips.New(scope),
 		loadBalancerSvc:  loadbalancers.New(scope),
@@ -104,12 +107,16 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 		return errors.Wrap(err, "failed to reconcile route table")
 	}
 
-	if err := s.subnetsSvc.Reconcile(ctx); err != nil {
-		return errors.Wrap(err, "failed to reconcile subnet")
-	}
-
 	if err := s.publicIPSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile public IP")
+	}
+
+	if err := s.natGatewaySvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile nat gateway")
+	}
+
+	if err := s.subnetsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile subnet")
 	}
 
 	if err := s.loadBalancerSvc.Reconcile(ctx); err != nil {
@@ -142,12 +149,16 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 				return errors.Wrap(err, "failed to delete load balancer")
 			}
 
-			if err := s.publicIPSvc.Delete(ctx); err != nil {
-				return errors.Wrap(err, "failed to delete public IP")
-			}
-
 			if err := s.subnetsSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete subnet")
+			}
+
+			if err := s.natGatewaySvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete nat gateway")
+			}
+
+			if err := s.publicIPSvc.Delete(ctx); err != nil {
+				return errors.Wrapf(err, "failed to delete public IP")
 			}
 
 			if err := s.routeTableSvc.Delete(ctx); err != nil {

@@ -147,19 +147,19 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 // NICSpecs returns the network interface specs.
 func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	spec := azure.NICSpec{
-		Name:                    azure.GenerateNICName(m.Name()),
-		MachineName:             m.Name(),
-		VNetName:                m.Vnet().Name,
-		VNetResourceGroup:       m.Vnet().ResourceGroup,
-		SubnetName:              m.Subnet().Name,
-		VMSize:                  m.AzureMachine.Spec.VMSize,
-		AcceleratedNetworking:   m.AzureMachine.Spec.AcceleratedNetworking,
-		IPv6Enabled:             m.IsIPv6Enabled(),
-		EnableIPForwarding:      m.AzureMachine.Spec.EnableIPForwarding,
-		PublicLBName:            m.OutboundLBName(m.Role()),
-		PublicLBAddressPoolName: m.OutboundPoolName(m.OutboundLBName(m.Role())),
+		Name:                  azure.GenerateNICName(m.Name()),
+		MachineName:           m.Name(),
+		VNetName:              m.Vnet().Name,
+		VNetResourceGroup:     m.Vnet().ResourceGroup,
+		SubnetName:            m.Subnet().Name,
+		VMSize:                m.AzureMachine.Spec.VMSize,
+		AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		IPv6Enabled:           m.IsIPv6Enabled(),
+		EnableIPForwarding:    m.AzureMachine.Spec.EnableIPForwarding,
 	}
 	if m.Role() == infrav1.ControlPlane {
+		spec.PublicLBName = m.OutboundLBName(m.Role())
+		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
 		if m.IsAPIServerPrivate() {
 			spec.InternalLBName = m.APIServerLBName()
 			spec.InternalLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
@@ -167,6 +167,11 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 			spec.PublicLBNATRuleName = m.Name()
 			spec.PublicLBAddressPoolName = m.APIServerLBPoolName(m.APIServerLBName())
 		}
+	}
+	// If Nat Gateway is not specified, then the NIC needs to reference the LB to get outbound traffic.
+	if m.Role() == infrav1.Node && m.NodeNatGateway().Name == "" {
+		spec.PublicLBName = m.OutboundLBName(m.Role())
+		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
 	}
 	specs := []azure.NICSpec{spec}
 	if m.AzureMachine.Spec.AllocatePublicIP {

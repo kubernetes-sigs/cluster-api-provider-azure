@@ -99,6 +99,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				}
 			}
 
+			if subnetSpec.NatGatewayName != "" {
+				subnetProperties.NatGateway = &network.SubResource{
+					ID: to.StringPtr(azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.NatGatewayName)),
+				}
+			}
+
 			if subnetSpec.SecurityGroupName != "" {
 				subnetProperties.NetworkSecurityGroup = &network.SecurityGroup{
 					ID: to.StringPtr(azure.SecurityGroupID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), subnetSpec.SecurityGroupName)),
