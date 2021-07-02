@@ -120,12 +120,20 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		return errors.New("expected managed cluster specification")
 	}
 
+	enablePrivateCluster := false
+	apiServerAuthorizedIPRanges := &[]string{"35.156.11.187/32"}
+	apiAccessProfile := containerservice.ManagedClusterAPIServerAccessProfile{
+		EnablePrivateCluster: &enablePrivateCluster,
+		AuthorizedIPRanges:   apiServerAuthorizedIPRanges,
+	}
+
 	properties := containerservice.ManagedCluster{
 		Identity: &containerservice.ManagedClusterIdentity{
 			Type: containerservice.SystemAssigned,
 		},
 		Location: &managedClusterSpec.Location,
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
+			APIServerAccessProfile: &apiAccessProfile,
 			NodeResourceGroup: &managedClusterSpec.NodeResourceGroupName,
 			DNSPrefix:         &managedClusterSpec.Name,
 			KubernetesVersion: &managedClusterSpec.Version,
