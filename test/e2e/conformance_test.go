@@ -89,11 +89,9 @@ var _ = Describe("Conformance Tests", func() {
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
 		Expect(err).ToNot(HaveOccurred())
 
-		spClientID := os.Getenv(AzureClientId)
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentityClientId, spClientID)).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
 	})

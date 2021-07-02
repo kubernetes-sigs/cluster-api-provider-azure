@@ -71,10 +71,8 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
 		Expect(err).ToNot(HaveOccurred())
 
-		spClientID := os.Getenv(AzureClientId)
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(ClusterIdentityClientId, spClientID)).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretName, IdentitySecretName)).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, identityNamespace.Name)).NotTo(HaveOccurred())
 
@@ -86,7 +84,6 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(ClusterIdentityName)).NotTo(HaveOccurred())
-		Expect(os.Unsetenv(ClusterIdentityClientId)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(ClusterIdentitySecretName)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(ClusterIdentitySecretNamespace)).NotTo(HaveOccurred())
 	})

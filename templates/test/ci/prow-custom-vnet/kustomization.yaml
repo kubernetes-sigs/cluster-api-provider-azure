@@ -5,14 +5,12 @@ resources:
   - ../../../flavors/default
   - ../prow/mhc.yaml
   - ../prow/cni-resource-set.yaml
-  - ../prow/azure-cluster-identity.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/mhc.yaml
   - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - patches/custom-vnet.yaml
-  - ../patches/azurecluster-identity-ref.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:

@@ -142,6 +142,12 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 	if err != nil {
 		return nil, err
 	}
+
+	// AzureIdentity and AzureIdentityBinding will no longer have an OwnerRef starting from capz release v0.5.0 because of the following:
+	// In Kubenetes v1.20+, if the garbage collector detects an invalid cross-namespace ownerReference, or a cluster-scoped dependent with
+	// an ownerReference referencing a namespaced kind, a warning Event with a reason of OwnerRefInvalidNamespace and an involvedObject
+	// of the invalid dependent is reported. You can check for that kind of Event by running kubectl get events -A --field-selector=reason=OwnerRefInvalidNamespace.
+
 	copiedIdentity := &aadpodv1.AzureIdentity{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AzureIdentity",
@@ -158,7 +164,6 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 				infrav1.ClusterLabelNamespace:               clusterMeta.Namespace,
 				clusterctl.ClusterctlMoveHierarchyLabelName: "true",
 			},
-			OwnerReferences: clusterMeta.OwnerReferences,
 		},
 		Spec: aadpodv1.AzureIdentitySpec{
 			Type:           azureIdentityType,
@@ -186,7 +191,6 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 				infrav1.ClusterLabelNamespace:               clusterMeta.Namespace,
 				clusterctl.ClusterctlMoveHierarchyLabelName: "true",
 			},
-			OwnerReferences: clusterMeta.OwnerReferences,
 		},
 		Spec: aadpodv1.AzureIdentityBindingSpec{
 			AzureIdentity: copiedIdentity.Name,

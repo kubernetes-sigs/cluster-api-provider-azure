@@ -207,6 +207,20 @@ spec:
         cloud-provider: azure
       name: '{{ ds.meta_data["local_hostname"] }}'
 ---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureClusterIdentity
+metadata:
+  name: ${CLUSTER_IDENTITY_NAME}
+  namespace: default
+spec:
+  allowedNamespaces: {}
+  clientID: ${AZURE_CLIENT_ID}
+  clientSecret:
+    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
+    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
+  tenantID: ${AZURE_TENANT_ID}
+  type: ServicePrincipal
+---
 apiVersion: addons.cluster.x-k8s.io/v1alpha4
 kind: ClusterResourceSet
 metadata:
@@ -220,20 +234,6 @@ spec:
   - kind: ConfigMap
     name: cni-${CLUSTER_NAME}-calico
   strategy: ApplyOnce
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: AzureClusterIdentity
-metadata:
-  name: ${CLUSTER_IDENTITY_NAME}
-  namespace: default
-spec:
-  allowedNamespaces: {}
-  clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
-  clientSecret:
-    name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
-    namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}
-  tenantID: ${AZURE_TENANT_ID}
-  type: ServicePrincipal
 ---
 apiVersion: v1
 data:

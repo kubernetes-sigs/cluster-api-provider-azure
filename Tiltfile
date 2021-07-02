@@ -169,6 +169,19 @@ def capz():
 
     k8s_yaml(blob(yaml))
 
+def create_identity_secret():
+    #create secret for identity password
+    local("kubectl delete secret cluster-identity-secret --ignore-not-found=true")
+
+    os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAME', 'cluster-identity-secret')
+    os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE', 'default')
+    os.putenv('CLUSTER_IDENTITY_NAME', 'cluster-identity')
+
+    substitutions = settings.get("kustomize_substitutions", {})
+    os.putenv('AZURE_CLIENT_SECRET_B64', substitutions.get("AZURE_CLIENT_SECRET_B64"))
+
+    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | kubectl apply -f -", quiet=True)
+
 def create_crs():
     # create config maps
     local("kubectl delete configmaps calico-addon --ignore-not-found=true")
@@ -323,6 +336,8 @@ if settings.get("deploy_cert_manager"):
     deploy_cert_manager()
 
 deploy_capi()
+
+create_identity_secret()
 
 capz()
 

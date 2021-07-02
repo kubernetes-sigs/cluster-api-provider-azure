@@ -4,7 +4,6 @@ namespace: default
 resources:
   - ../../../flavors/nvidia-gpu
   - ../prow/cni-resource-set.yaml
-  - ../prow/azure-cluster-identity.yaml  
 patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/cluster-cni.yaml

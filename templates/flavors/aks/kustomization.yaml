@@ -3,3 +3,6 @@ kind: Kustomization
 namespace: default
 resources:
 - cluster-template.yaml
+- ../../azure-cluster-identity
+patchesStrategicMerge:
+- ../../azure-cluster-identity/managedazurecluster-identity-ref.yaml

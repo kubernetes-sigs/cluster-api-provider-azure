@@ -80,8 +80,6 @@ providers:
       targetName: "cluster-template-conformance-ci-artifacts.yaml"
     - sourcePath: "${PWD}/templates/test/dev/cluster-template-custom-builds.yaml"
       targetName: "cluster-template-conformance-presubmit-artifacts.yaml"
-    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-multi-tenancy.yaml"
-      targetName: "cluster-template-multi-tenancy.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-windows.yaml"
       targetName: "cluster-template-windows.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool-windows.yaml"

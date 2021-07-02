@@ -111,11 +111,9 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 	err := publicClusterProxy.GetClient().Create(ctx, secret)
 	Expect(err).ToNot(HaveOccurred())
 
-	spClientID := os.Getenv("AZURE_CLIENT_ID")
 	identityName := e2eConfig.GetVariable(ClusterIdentityName)
 	os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
 	os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)
-	os.Setenv("AZURE_CLUSTER_IDENTITY_CLIENT_ID", spClientID)
 	os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret-private")
 	os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", input.Namespace.Name)
 	//*************

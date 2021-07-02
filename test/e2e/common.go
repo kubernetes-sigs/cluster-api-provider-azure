@@ -53,7 +53,6 @@ const (
 	MultiTenancyIdentityName       = "MULTI_TENANCY_IDENTITY_NAME"
 	ClusterIdentityName            = "CLUSTER_IDENTITY_NAME"
 	ClusterIdentityNamespace       = "CLUSTER_IDENTITY_NAMESPACE"
-	ClusterIdentityClientId        = "AZURE_CLUSTER_IDENTITY_CLIENT_ID"
 	ClusterIdentitySecretName      = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"
 	ClusterIdentitySecretNamespace = "AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE"
 	AzureClientSecret              = "AZURE_CLIENT_SECRET"
