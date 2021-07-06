@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	mock_scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope/mocks"
@@ -311,6 +312,100 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 
 			if c.Verify != nil {
 				c.Verify(g, s)
+			}
+		})
+	}
+}
+
+func TestMachinePoolMachineScope_CordonAndDrain(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = capiv1exp.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
+
+	var (
+		clusterScope = ClusterScope{
+			Cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-foo",
+				},
+			},
+		}
+	)
+
+	cases := []struct {
+		Name  string
+		Setup func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1.AzureMachinePoolMachine) *infrav1.AzureMachinePoolMachine
+		Err   string
+	}{
+		{
+			Name: "should skip cordon and drain if the node does not exist with provider ID",
+			Setup: func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1.AzureMachinePoolMachine) *infrav1.AzureMachinePoolMachine {
+				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(nil, nil)
+				return ampm
+			},
+		},
+		{
+			Name: "should skip cordon and drain if the node does not exist with node reference",
+			Setup: func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1.AzureMachinePoolMachine) *infrav1.AzureMachinePoolMachine {
+				nodeRef := corev1.ObjectReference{
+					Name: "node1",
+				}
+				ampm.Status.NodeRef = &nodeRef
+				mockNodeGetter.EXPECT().GetNodeByObjectReference(gomock2.AContext(), nodeRef).Return(nil, nil)
+				return ampm
+			},
+		},
+		{
+			Name: "if GetNodeByProviderID fails with an error, an error will be returned",
+			Setup: func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1.AzureMachinePoolMachine) *infrav1.AzureMachinePoolMachine {
+				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(nil, errors.New("boom"))
+				return ampm
+			},
+			Err: "failed to find node: boom",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var (
+				controller = gomock.NewController(t)
+				mockClient = mock_scope.NewMocknodeGetter(controller)
+				g          = NewWithT(t)
+				params     = MachinePoolMachineScopeParams{
+					Client:       fake.NewClientBuilder().WithScheme(scheme).Build(),
+					ClusterScope: &clusterScope,
+					MachinePool: &capiv1exp.MachinePool{
+						Spec: capiv1exp.MachinePoolSpec{
+							Template: clusterv1.MachineTemplateSpec{
+								Spec: clusterv1.MachineSpec{
+									Version: to.StringPtr("v1.19.11"),
+								},
+							},
+						},
+					},
+					AzureMachinePool: new(infrav1.AzureMachinePool),
+				}
+			)
+
+			defer controller.Finish()
+
+			ampm := c.Setup(mockClient, &infrav1.AzureMachinePoolMachine{
+				Spec: infrav1.AzureMachinePoolMachineSpec{
+					ProviderID: FakeProviderID,
+				},
+			})
+			params.AzureMachinePoolMachine = ampm
+			s, err := NewMachinePoolMachineScope(params)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s).ToNot(BeNil())
+			s.Logger = klogr.New()
+			s.workloadNodeGetter = mockClient
+
+			err = s.CordonAndDrain(context.TODO())
+			if c.Err == "" {
+				g.Expect(err).To(Succeed())
+			} else {
+				g.Expect(err).To(MatchError(c.Err))
 			}
 		})
 	}
