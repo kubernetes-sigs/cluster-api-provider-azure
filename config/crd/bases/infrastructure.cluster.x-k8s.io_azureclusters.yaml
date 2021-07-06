@@ -504,6 +504,25 @@ spec:
                           name:
                             description: Name defines a name for the subnet resource.
                             type: string
+                          natGateway:
+                            description: NatGateway associated with this subnet.
+                            properties:
+                              id:
+                                type: string
+                              ip:
+                                description: PublicIPSpec defines the inputs to create
+                                  an Azure public IP address.
+                                properties:
+                                  dnsName:
+                                    type: string
+                                  name:
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              name:
+                                type: string
+                            type: object
                           role:
                             description: Role defines the subnet role (eg. Node, ControlPlane)
                             type: string
@@ -809,6 +828,58 @@ spec:
                         description: LBType defines an Azure load balancer Type.
                         type: string
                     type: object
+                  controlPlaneOutboundLB:
+                    description: ControlPlaneOutboundLB is the configuration for the
+                      control-plane outbound load balancer. This is different from
+                      APIServerLB, and is used only in private clusters (optionally)
+                      for enabling outbound traffic.
+                    properties:
+                      frontendIPs:
+                        items:
+                          description: FrontendIP defines a load balancer frontend
+                            IP configuration.
+                          properties:
+                            name:
+                              minLength: 1
+                              type: string
+                            privateIP:
+                              type: string
+                            publicIP:
+                              description: PublicIPSpec defines the inputs to create
+                                an Azure public IP address.
+                              properties:
+                                dnsName:
+                                  type: string
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      frontendIPsCount:
+                        description: FrontendIPsCount specifies the number of frontend
+                          IP addresses for the load balancer.
+                        format: int32
+                        type: integer
+                      id:
+                        type: string
+                      idleTimeoutInMinutes:
+                        description: IdleTimeoutInMinutes specifies the timeout for
+                          the TCP idle connection.
+                        format: int32
+                        type: integer
+                      name:
+                        type: string
+                      sku:
+                        description: SKU defines an Azure load balancer SKU.
+                        type: string
+                      type:
+                        description: LBType defines an Azure load balancer Type.
+                        type: string
+                    type: object
                   nodeOutboundLB:
                     description: NodeOutboundLB is the configuration for the node
                       outbound load balancer.
@@ -882,6 +953,25 @@ spec:
                         name:
                           description: Name defines a name for the subnet resource.
                           type: string
+                        natGateway:
+                          description: NatGateway associated with this subnet.
+                          properties:
+                            id:
+                              type: string
+                            ip:
+                              description: PublicIPSpec defines the inputs to create
+                                an Azure public IP address.
+                              properties:
+                                dnsName:
+                                  type: string
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            name:
+                              type: string
+                          type: object
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
                           type: string

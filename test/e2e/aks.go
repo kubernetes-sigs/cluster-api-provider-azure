@@ -31,6 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -83,6 +84,7 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAtLeastOneControlPlaneAndMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
+		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
@@ -106,6 +108,7 @@ func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndW
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
+		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
@@ -135,6 +138,7 @@ func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureMan
 
 // WaitForControlPlaneAndMachinesReadyInput contains the fields required for checking the status of azure managed control plane machines.
 type WaitForControlPlaneAndMachinesReadyInput struct {
+	Lister       framework.Lister
 	Getter       framework.Getter
 	ControlPlane *infraexpv1.AzureManagedControlPlane
 	ClusterName  string
@@ -175,13 +179,40 @@ func (r controlPlaneReplicas) value(mp *clusterv1exp.MachinePool) int {
 // WaitForControlPlaneMachinesToExist waits for a certain number of control plane machines to be provisioned represented.
 func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForControlPlaneAndMachinesReadyInput, minReplicas controlPlaneReplicas, intervals ...interface{}) {
 	Eventually(func() (bool, error) {
-		controlPlaneMachinePool := &clusterv1exp.MachinePool{}
-		if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.ControlPlane.Spec.DefaultPoolRef.Name},
-			controlPlaneMachinePool); err != nil {
+
+		opt1 := client.InNamespace(input.Namespace)
+		opt2 := client.MatchingLabels(map[string]string{
+			infrav1exp.LabelAgentPoolMode: infrav1exp.SystemNodePool,
+			clusterv1.ClusterLabelName:    input.ClusterName,
+		})
+
+		ammpList := &infrav1exp.AzureManagedMachinePoolList{}
+
+		if err := input.Lister.List(ctx, ammpList, opt1, opt2); err != nil {
 			Logf("Failed to get machinePool: %+v", err)
 			return false, err
 		}
-		return len(controlPlaneMachinePool.Status.NodeRefs) >= minReplicas.value(controlPlaneMachinePool), nil
+
+		for _, pool := range ammpList.Items {
+			// Fetch the owning MachinePool.
+			for _, ref := range pool.OwnerReferences {
+				if ref.Kind != "MachinePool" {
+					continue
+				}
+
+				ownerMachinePool := &clusterv1exp.MachinePool{}
+				if err := input.Getter.Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: ref.Name},
+					ownerMachinePool); err != nil {
+					Logf("Failed to get machinePool: %+v", err)
+					return false, err
+				}
+				if len(ownerMachinePool.Status.NodeRefs) >= minReplicas.value(ownerMachinePool) {
+					return true, nil
+				}
+			}
+		}
+
+		return false, errors.New("system machine pools not ready")
 
 	}, intervals...).Should(Equal(true))
 }

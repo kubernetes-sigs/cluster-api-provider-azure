@@ -8,6 +8,7 @@
     - [AAD Integration](./topics/aad-integration.md)
     - [API Server Endpoint](./topics/api-server-endpoint.md)
     - [Cloud Provider Config](./topics/cloud-provider-config.md)
+    - [Control Plane Outbound Load Balancer](./topics/control-plane-outbound-lb.md)
     - [Custom Private DNS Zone Name](./topics/custom-dns.md)
     - [Custom Images](./topics/custom-images.md)
     - [Data Disks](./topics/data-disks.md)

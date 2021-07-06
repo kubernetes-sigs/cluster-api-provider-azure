@@ -16,7 +16,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v0.4.0-rc.0",
+    "capi_version": "v0.4.0",
     "cert_manager_version": "v1.1.0",
     "kubernetes_version": "v1.19.11",
     "aks_kubernetes_version": "v1.20.5"
@@ -138,7 +138,7 @@ def capz():
     local_resource(
         "manager",
         cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
-        deps = ["api", "cloud", "config", "controllers", "exp", "feature", "pkg", "go.mod", "go.sum", "main.go"]
+        deps = ["api", "azure", "config", "controllers", "exp", "feature", "pkg", "util", "go.mod", "go.sum", "main.go"]
     )
 
     dockerfile_contents = "\n".join([

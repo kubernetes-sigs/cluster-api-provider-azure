@@ -9,4 +9,5 @@ spec:
       type: Internal
     nodeOutboundLB:
       frontendIPsCount: 1
-
+    controlPlaneOutboundLB:
+      frontendIPsCount: 1

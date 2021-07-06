@@ -25,18 +25,22 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  bastionSpec:
-    azureBastion: {}
   location: ${AZURE_LOCATION}
   networkSpec:
-    apiServerLB:
-      name: ${CLUSTER_NAME}-internal-lb
-      type: Internal
-    controlPlaneOutboundLB:
-      frontendIPsCount: 1
-    nodeOutboundLB:
-      frontendIPsCount: 1
+    subnets:
+    - cidrBlocks:
+      - 10.0.0.0/16
+      name: control-plane-subnet
+      role: control-plane
+    - cidrBlocks:
+      - 10.1.0.0/16
+      name: node-subnet
+      natGateway:
+        name: node-natgateway
+      role: node
     vnet:
+      cidrBlocks:
+      - 10.0.0.0/8
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
@@ -115,13 +119,6 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
-    postKubeadmCommands:
-    - if [ -f /tmp/kubeadm-join-config.yaml ] || [ -f /run/kubeadm/kubeadm-join-config.yaml
-      ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io apiserver' >> /etc/hosts;
-      fi
-    preKubeadmCommands:
-    - if [ -f /tmp/kubeadm.yaml ] || [ -f /run/kubeadm/kubeadm.yaml ]; then echo '127.0.0.1   apiserver.${CLUSTER_NAME}.capz.io
-      apiserver' >> /etc/hosts; fi
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4

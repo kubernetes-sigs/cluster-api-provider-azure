@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -171,6 +172,12 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				return reconcile.Result{}, err
 			}
 		}
+	} else {
+		warningMessage := ("You're using deprecated functionality: ")
+		warningMessage += ("Using Azure credentials from the manager environment is deprecated and will be removed in future releases. ")
+		warningMessage += ("Please specify an AzureClusterIdentity for the AzureCluster instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html ")
+		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
 	}
 
 	// Create the scope.

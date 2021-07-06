@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	// LabelAgentPoolMode represents mode of an agent pool. Possible values include: 'System', 'User'.
+	// LabelAgentPoolMode represents mode of an agent pool. Possible values include: System, User.
 	LabelAgentPoolMode = "azurecluster.infrastructure.cluster.x-k8s.io/agentpoolmode"
 
 	// SystemNodePool represents mode system for azuremachinepool.
@@ -32,7 +32,7 @@ const (
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
 
-	// Mode - represents mode of an agent pool. Possible values include: 'System', 'User'
+	// Mode - represents mode of an agent pool. Possible values include: System, User.
 	// +kubebuilder:validation:Enum=System;User
 	Mode string `json:"mode"`
 

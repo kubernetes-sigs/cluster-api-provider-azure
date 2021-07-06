@@ -53,6 +53,7 @@ func (c *AzureCluster) setNetworkSpecDefaults() {
 	c.setSubnetDefaults()
 	c.setAPIServerLBDefaults()
 	c.setNodeOutboundLBDefaults()
+	c.setControlPlaneOutboundLBDefaults()
 }
 
 func (c *AzureCluster) setResourceGroupDefault() {
@@ -175,6 +176,11 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
 			return
 		}
+		nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
+		// Only one outbound mechanism can be defined, so if Nat Gateway is defined, we don't default the LB.
+		if err == nil && nodeSubnet.NatGateway.Name != "" {
+			return
+		}
 		c.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
 	}
 
@@ -191,6 +197,42 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
 
+	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
+}
+
+func (c *AzureCluster) setControlPlaneOutboundLBDefaults() {
+	// public clusters don't need control plane outbound lb
+	if c.Spec.NetworkSpec.APIServerLB.Type == Public {
+		return
+	}
+
+	// private clusters can disable control plane outbound lb by setting it to nil.
+	if c.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
+		return
+	}
+
+	lb := c.Spec.NetworkSpec.ControlPlaneOutboundLB
+	lb.Type = Public
+	lb.SKU = SKUStandard
+
+	if lb.Name == "" {
+		lb.Name = generateControlPlaneOutboundLBName(c.ObjectMeta.Name)
+	}
+
+	if lb.IdleTimeoutInMinutes == nil {
+		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
+	}
+
+	if lb.FrontendIPsCount == nil {
+		lb.FrontendIPsCount = pointer.Int32Ptr(1)
+	}
+
+	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
+}
+
+// setOutboundLBFrontendIPs sets the frontend ips for the given load balancer.
+// The name of the frontend ip is generated using generatePublicIPName function.
+func (c *AzureCluster) setOutboundLBFrontendIPs(lb *LoadBalancerSpec, generatePublicIPName func(string) string) {
 	switch *lb.FrontendIPsCount {
 	case 0:
 		lb.FrontendIPs = []FrontendIP{}
@@ -199,7 +241,7 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 			{
 				Name: generateFrontendIPConfigName(lb.Name),
 				PublicIP: &PublicIPSpec{
-					Name: generateNodeOutboundIPName(c.ObjectMeta.Name),
+					Name: generatePublicIPName(c.ObjectMeta.Name),
 				},
 			},
 		}
@@ -209,7 +251,7 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 			lb.FrontendIPs[i] = FrontendIP{
 				Name: withIndex(generateFrontendIPConfigName(lb.Name), i+1),
 				PublicIP: &PublicIPSpec{
-					Name: withIndex(generateNodeOutboundIPName(c.ObjectMeta.Name), i+1),
+					Name: withIndex(generatePublicIPName(c.ObjectMeta.Name), i+1),
 				},
 			}
 		}
@@ -289,6 +331,11 @@ func generatePublicLBName(clusterName string) string {
 	return fmt.Sprintf("%s-%s", clusterName, "public-lb")
 }
 
+// generateControlPlaneOutboundLBName generates the name of the control plane outbound LB.
+func generateControlPlaneOutboundLBName(clusterName string) string {
+	return fmt.Sprintf("%s-outbound-lb", clusterName)
+}
+
 // generatePublicIPName generates a public IP name, based on the cluster name and a hash.
 func generatePublicIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-apiserver", clusterName)
@@ -302,6 +349,11 @@ func generateFrontendIPConfigName(lbName string) string {
 // generateNodeOutboundIPName generates a public IP name, based on the cluster name.
 func generateNodeOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-node-outbound", clusterName)
+}
+
+// generateControlPlaneOutboundIPName generates a public IP name, based on the cluster name.
+func generateControlPlaneOutboundIPName(clusterName string) string {
+	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
 }
 
 // withIndex appends the index as suffix to a generated name.

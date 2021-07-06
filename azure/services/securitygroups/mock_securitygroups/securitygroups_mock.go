@@ -381,6 +381,20 @@ func (mr *MockNSGScopeMockRecorder) NSGSpecs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NSGSpecs", reflect.TypeOf((*MockNSGScope)(nil).NSGSpecs))
 }
 
+// NodeNatGateway mocks base method.
+func (m *MockNSGScope) NodeNatGateway() v1alpha4.NatGateway {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeNatGateway")
+	ret0, _ := ret[0].(v1alpha4.NatGateway)
+	return ret0
+}
+
+// NodeNatGateway indicates an expected call of NodeNatGateway.
+func (mr *MockNSGScopeMockRecorder) NodeNatGateway() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeNatGateway", reflect.TypeOf((*MockNSGScope)(nil).NodeNatGateway))
+}
+
 // NodeRouteTable mocks base method.
 func (m *MockNSGScope) NodeRouteTable() v1alpha4.RouteTable {
 	m.ctrl.T.Helper()

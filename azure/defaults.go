@@ -97,6 +97,11 @@ func GenerateFrontendIPConfigName(lbName string) string {
 	return fmt.Sprintf("%s-%s", lbName, "frontEnd")
 }
 
+// GenerateNatGatewayIPName generates a nat gateway IP name.
+func GenerateNatGatewayIPName(clusterName, subnetName string) string {
+	return fmt.Sprintf("pip-%s-%s-natgw", clusterName, subnetName)
+}
+
 // GenerateNodeOutboundIPName generates a public IP name, based on the cluster name.
 func GenerateNodeOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-node-outbound", clusterName)
@@ -193,6 +198,11 @@ func RouteTableID(subscriptionID, resourceGroup, routeTableName string) string {
 // SecurityGroupID returns the azure resource ID for a given security group.
 func SecurityGroupID(subscriptionID, resourceGroup, nsgName string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, resourceGroup, nsgName)
+}
+
+// NatGatewayID returns the azure resource ID for a given nat gateway.
+func NatGatewayID(subscriptionID, resourceGroup, natgatewayName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/natGateways/%s", subscriptionID, resourceGroup, natgatewayName)
 }
 
 // NetworkInterfaceID returns the azure resource ID for a given network interface.

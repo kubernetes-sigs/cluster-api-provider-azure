@@ -916,6 +916,128 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 	}
 }
 
+func TestControlPlaneOutboundLBDefaults(t *testing.T) {
+	cases := []struct {
+		name    string
+		cluster *AzureCluster
+		output  *AzureCluster
+	}{
+		{
+			name: "no cp lb for public clusters",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "no cp lb for private clusters",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Internal},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Internal,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "frontendIPsCount > 1",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Internal},
+						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							FrontendIPsCount:     to.Int32Ptr(2),
+							IdleTimeoutInMinutes: to.Int32Ptr(15),
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{
+							Type: Internal,
+						},
+						ControlPlaneOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test-outbound-lb",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{
+								{
+									Name: "cluster-test-outbound-lb-frontEnd-1",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-controlplane-outbound-1",
+									},
+								},
+								{
+									Name: "cluster-test-outbound-lb-frontEnd-2",
+									PublicIP: &PublicIPSpec{
+										Name: "pip-cluster-test-controlplane-outbound-2",
+									},
+								},
+							},
+							Type:                 Public,
+							FrontendIPsCount:     to.Int32Ptr(2),
+							IdleTimeoutInMinutes: to.Int32Ptr(15),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		tc := c
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cluster.setControlPlaneOutboundLBDefaults()
+			if !reflect.DeepEqual(tc.cluster, tc.output) {
+				expected, _ := json.MarshalIndent(tc.output, "", "\t")
+				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
+				t.Errorf("Expected %s, got %s", string(expected), string(actual))
+			}
+		})
+	}
+}
+
 func TestBastionDefault(t *testing.T) {
 	cases := map[string]struct {
 		cluster *AzureCluster

@@ -135,6 +135,8 @@ func (r *AzureManagedMachinePool) ValidateDelete() error {
 	return r.validateLastSystemNodePool()
 }
 
+// validateLastSystemNodePool is used to check if the existing system node pool is the last system node pool.
+// If it is a last system node pool it cannot be deleted or mutated to user node pool as aks expects min 1 system node pool.
 func (r *AzureManagedMachinePool) validateLastSystemNodePool() error {
 	ctx := context.Background()
 
@@ -151,7 +153,7 @@ func (r *AzureManagedMachinePool) validateLastSystemNodePool() error {
 	}
 
 	if err := webhookClient.Get(ctx, key, ownerCluster); err != nil {
-		if !azure.ResourceNotFound(err) {
+		if azure.ResourceNotFound(err) {
 			return nil
 		}
 		return err

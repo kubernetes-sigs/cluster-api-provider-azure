@@ -64,6 +64,11 @@ type NetworkSpec struct {
 	// +optional
 	NodeOutboundLB *LoadBalancerSpec `json:"nodeOutboundLB,omitempty"`
 
+	// ControlPlaneOutboundLB is the configuration for the control-plane outbound load balancer.
+	// This is different from APIServerLB, and is used only in private clusters (optionally) for enabling outbound traffic.
+	// +optional
+	ControlPlaneOutboundLB *LoadBalancerSpec `json:"controlPlaneOutboundLB,omitempty"`
+
 	// PrivateDNSZoneName defines the zone name for the Azure Private DNS.
 	// +optional
 	PrivateDNSZoneName string `json:"privateDNSZoneName,omitempty"`
@@ -110,6 +115,14 @@ type SecurityGroup struct {
 type RouteTable struct {
 	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
+}
+
+// NatGateway defines an Azure Nat Gateway.
+// NAT gateway resources are part of Vnet NAT and provide outbound Internet connectivity for subnets of a virtual network.
+type NatGateway struct {
+	ID           string       `json:"id,omitempty"`
+	Name         string       `json:"name,omitempty"`
+	NatGatewayIP PublicIPSpec `json:"ip,omitempty"`
 }
 
 // SecurityGroupProtocol defines the protocol type for a security group rule.
@@ -477,6 +490,10 @@ type SubnetSpec struct {
 	// RouteTable defines the route table that should be attached to this subnet.
 	// +optional
 	RouteTable RouteTable `json:"routeTable,omitempty"`
+
+	// NatGateway associated with this subnet.
+	// +optional
+	NatGateway NatGateway `json:"natGateway,omitempty"`
 }
 
 // GetControlPlaneSubnet returns the cluster control plane subnet.

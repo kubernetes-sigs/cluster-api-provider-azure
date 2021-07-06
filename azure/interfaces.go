@@ -68,6 +68,7 @@ type NetworkDescriber interface {
 	IsIPv6Enabled() bool
 	NodeRouteTable() infrav1.RouteTable
 	ControlPlaneRouteTable() infrav1.RouteTable
+	NodeNatGateway() infrav1.NatGateway
 	APIServerLBName() string
 	APIServerLBPoolName(string) string
 	IsAPIServerPrivate() bool

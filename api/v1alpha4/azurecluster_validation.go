@@ -123,15 +123,21 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 	}
 
 	var cidrBlocks []string
-	subnet, err := networkSpec.GetControlPlaneSubnet()
+	controlPlaneSubnet, err := networkSpec.GetControlPlaneSubnet()
 	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "ControlPlaneSubnet invalid"))
 	}
-	cidrBlocks = subnet.CIDRBlocks
+	nodeSubnet, err := networkSpec.GetNodeSubnet()
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("subnets"), networkSpec.Subnets, "NodeSubnet invalid"))
+	}
+	cidrBlocks = controlPlaneSubnet.CIDRBlocks
 
 	allErrs = append(allErrs, validateAPIServerLB(networkSpec.APIServerLB, old.APIServerLB, cidrBlocks, fldPath.Child("apiServerLB"))...)
 
-	allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, fldPath.Child("nodeOutboundLB"))...)
+	allErrs = append(allErrs, validateNodeOutboundLB(networkSpec.NodeOutboundLB, old.NodeOutboundLB, networkSpec.APIServerLB, nodeSubnet, fldPath.Child("nodeOutboundLB"))...)
+
+	allErrs = append(allErrs, validateControlPlaneOutboundLB(networkSpec.ControlPlaneOutboundLB, networkSpec.APIServerLB, fldPath.Child("controlPlaneOutboundLB"))...)
 
 	allErrs = append(allErrs, validatePrivateDNSZoneName(networkSpec, fldPath)...)
 
@@ -349,11 +355,16 @@ func validateAPIServerLB(lb LoadBalancerSpec, old LoadBalancerSpec, cidrs []stri
 	return allErrs
 }
 
-func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserverLB LoadBalancerSpec, nodeSubnet SubnetSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	// LB can be nil when disabled for private clusters.
 	if lb == nil && apiserverLB.Type == Internal {
+		return allErrs
+	}
+
+	// no need to validate LB when using nat gateway.
+	if lb == nil && nodeSubnet.NatGateway.Name != "" {
 		return allErrs
 	}
 
@@ -406,6 +417,34 @@ func validateNodeOutboundLB(lb *LoadBalancerSpec, old *LoadBalancerSpec, apiserv
 	if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
 			fmt.Sprintf("Node outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
+	}
+
+	return allErrs
+}
+
+func validateControlPlaneOutboundLB(lb *LoadBalancerSpec, apiserverLB LoadBalancerSpec, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	switch apiserverLB.Type {
+	case Public:
+		if lb != nil {
+			allErrs = append(allErrs, field.Forbidden(fldPath, "Control plane outbound load balancer cannot be set for public clusters."))
+		}
+	case Internal:
+		// Control plane outbound lb can be nil when it's disabled for private clusters.
+		if lb == nil {
+			return nil
+		}
+
+		if lb.FrontendIPsCount != nil && *lb.FrontendIPsCount > MaxLoadBalancerOutboundIPs {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("frontendIPsCount"), *lb.FrontendIPsCount,
+				fmt.Sprintf("Max front end ips allowed is %d", MaxLoadBalancerOutboundIPs)))
+		}
+
+		if lb.IdleTimeoutInMinutes != nil && (*lb.IdleTimeoutInMinutes < MinLBIdleTimeoutInMinutes || *lb.IdleTimeoutInMinutes > MaxLBIdleTimeoutInMinutes) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("idleTimeoutInMinutes"), *lb.IdleTimeoutInMinutes,
+				fmt.Sprintf("Control plane outbound idle timeout should be between %d and %d minutes", MinLBIdleTimeoutInMinutes, MaxLoadBalancerOutboundIPs)))
+		}
 	}
 
 	return allErrs

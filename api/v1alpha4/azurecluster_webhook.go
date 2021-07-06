@@ -106,6 +106,13 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) error {
 		)
 	}
 
+	if !reflect.DeepEqual(c.Spec.NetworkSpec.ControlPlaneOutboundLB, old.Spec.NetworkSpec.ControlPlaneOutboundLB) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "networkSpec", "controlPlaneOutboundLB"),
+				c.Spec.NetworkSpec.ControlPlaneOutboundLB, "field is immutable"),
+		)
+	}
+
 	if len(allErrs) == 0 {
 		return c.validateCluster(old)
 	}
