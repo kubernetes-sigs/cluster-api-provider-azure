@@ -288,10 +288,16 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 		node, err = s.workloadNodeGetter.GetNodeByObjectReference(ctx, *nodeRef)
 	}
 
-	if err != nil && apierrors.IsNotFound(err) {
-		return nil // node was already gone, so no need to cordon and drain
-	} else if err != nil {
+	switch {
+	case err != nil && !apierrors.IsNotFound(err):
+		// failed due to an unexpected error
 		return errors.Wrap(err, "failed to find node")
+	case err != nil && apierrors.IsNotFound(err):
+		// node was not found due to 404 when finding by ObjectReference
+		return nil
+	case node == nil:
+		// node was not found due to not finding a nodes with the ProviderID
+		return nil
 	}
 
 	// Drain node before deletion and issue a patch in order to make this operation visible to the users.
@@ -301,7 +307,7 @@ func (s *MachinePoolMachineScope) CordonAndDrain(ctx context.Context) error {
 			return errors.Wrap(err, "failed to build a patchHelper when draining node")
 		}
 
-		s.V(4).Info("Draining node", "node", s.AzureMachinePoolMachine.Status.NodeRef.Name)
+		s.V(4).Info("Draining node", "node", node.Name)
 		// The DrainingSucceededCondition never exists before the node is drained for the first time,
 		// so its transition time can be used to record the first time draining.
 		// This `if` condition prevents the transition time to be changed more than once.
