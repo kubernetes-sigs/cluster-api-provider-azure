@@ -404,8 +404,9 @@ func newDefaultNodeOutboundLB() network.LoadBalancer {
 						BackendAddressPool: &network.SubResource{
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-cluster/backendAddressPools/my-cluster-outboundBackendPool"),
 						},
-						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-						IdleTimeoutInMinutes: to.Int32Ptr(30),
+						Protocol:               network.LoadBalancerOutboundRuleProtocolAll,
+						IdleTimeoutInMinutes:   to.Int32Ptr(30),
+						AllocatedOutboundPorts: to.Int32Ptr(0),
 					},
 				},
 			},
@@ -479,8 +480,9 @@ func newDefaultPublicAPIServerLB() network.LoadBalancer {
 						BackendAddressPool: &network.SubResource{
 							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/my-publiclb/backendAddressPools/my-publiclb-backendPool"),
 						},
-						Protocol:             network.LoadBalancerOutboundRuleProtocolAll,
-						IdleTimeoutInMinutes: to.Int32Ptr(4),
+						Protocol:               network.LoadBalancerOutboundRuleProtocolAll,
+						IdleTimeoutInMinutes:   to.Int32Ptr(4),
+						AllocatedOutboundPorts: to.Int32Ptr(0),
 					},
 				},
 			},

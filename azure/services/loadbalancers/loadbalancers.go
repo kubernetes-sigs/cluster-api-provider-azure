@@ -240,6 +240,7 @@ func (s *Service) getOutboundRules(lbSpec azure.LBSpec, frontendIDs []network.Su
 				BackendAddressPool: &network.SubResource{
 					ID: to.StringPtr(azure.AddressPoolID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), lbSpec.Name, lbSpec.BackendPoolName)),
 				},
+				AllocatedOutboundPorts: to.Int32Ptr(0),
 			},
 		},
 	}
