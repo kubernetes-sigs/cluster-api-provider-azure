@@ -144,7 +144,7 @@ func (s *ClusterScope) PublicIPSpecs() []azure.PublicIPSpec {
 	nodeNatGateway := s.NodeNatGateway()
 	if nodeNatGateway.Name != "" {
 		nodeNatGatewayIPSpecs = append(nodeNatGatewayIPSpecs, azure.PublicIPSpec{
-			Name:    s.GetNodeNatGatewayIPName(),
+			Name:    nodeNatGateway.NatGatewayIP.Name,
 			DNSName: nodeNatGateway.NatGatewayIP.DNSName,
 		})
 	}
@@ -220,17 +220,6 @@ func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
 	return routetables
 }
 
-// GetNodeNatGatewayIPName returns the node nat gateway IP name if defined, or a generated name if it's not.
-func (s *ClusterScope) GetNodeNatGatewayIPName() string {
-	natGateway := s.NodeNatGateway()
-	natGatewayIPName := azure.GenerateNatGatewayIPName(s.ClusterName(), s.NodeSubnet().Name)
-	if natGateway.NatGatewayIP.Name != "" {
-		natGatewayIPName = natGateway.NatGatewayIP.Name
-	}
-
-	return natGatewayIPName
-}
-
 // NatGatewaySpecs returns the node nat gateway.
 func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 	natGateways := []azure.NatGatewaySpec{}
@@ -241,7 +230,7 @@ func (s *ClusterScope) NatGatewaySpecs() []azure.NatGatewaySpec {
 		natGateways = append(natGateways, azure.NatGatewaySpec{
 			Name: natGateway.Name,
 			NatGatewayIP: infrav1.PublicIPSpec{
-				Name: s.GetNodeNatGatewayIPName(),
+				Name: natGateway.NatGatewayIP.Name,
 			},
 			Subnet: s.NodeSubnet(),
 		})

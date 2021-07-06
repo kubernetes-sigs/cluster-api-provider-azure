@@ -118,6 +118,12 @@ func (c *AzureCluster) setSubnetDefaults() {
 		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
 	}
 
+	if nodeSubnet.NatGateway.Name != "" {
+		if nodeSubnet.NatGateway.NatGatewayIP.Name == "" {
+			nodeSubnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, nodeSubnet.Name)
+		}
+	}
+
 	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
 	c.Spec.NetworkSpec.UpdateNodeSubnet(nodeSubnet)
 }
@@ -354,6 +360,11 @@ func generateNodeOutboundIPName(clusterName string) string {
 // generateControlPlaneOutboundIPName generates a public IP name, based on the cluster name.
 func generateControlPlaneOutboundIPName(clusterName string) string {
 	return fmt.Sprintf("pip-%s-controlplane-outbound", clusterName)
+}
+
+// generateNatGatewayIPName generates a nat gateway IP name.
+func generateNatGatewayIPName(clusterName, subnetName string) string {
+	return fmt.Sprintf("pip-%s-%s-natgw", clusterName, subnetName)
 }
 
 // withIndex appends the index as suffix to a generated name.
