@@ -301,6 +301,7 @@ func TestSubnetDefaults(t *testing.T) {
 								Role:       SubnetNode,
 								Name:       "my-node-subnet",
 								CIDRBlocks: []string{"10.1.0.16/24"},
+								NatGateway: NatGateway{Name: "foo-natgw"},
 							},
 						},
 					},
@@ -326,6 +327,12 @@ func TestSubnetDefaults(t *testing.T) {
 								CIDRBlocks:    []string{"10.1.0.16/24"},
 								SecurityGroup: SecurityGroup{Name: "cluster-test-node-nsg"},
 								RouteTable:    RouteTable{Name: "cluster-test-node-routetable"},
+								NatGateway: NatGateway{
+									Name: "foo-natgw",
+									NatGatewayIP: PublicIPSpec{
+										Name: "pip-cluster-test-my-node-subnet-natgw",
+									},
+								},
 							},
 						},
 					},
