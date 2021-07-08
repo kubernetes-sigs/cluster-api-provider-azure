@@ -387,6 +387,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		Zones: to.StringSlicePtr(vmssSpec.FailureDomains),
 		Plan:  s.generateImagePlan(),
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+			SinglePlacementGroup: to.BoolPtr(false),
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
 			},

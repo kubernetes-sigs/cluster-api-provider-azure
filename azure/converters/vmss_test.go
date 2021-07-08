@@ -52,7 +52,8 @@ func Test_SDKToVMSS(t *testing.T) {
 						Location: to.StringPtr("westus2"),
 						Tags:     tags,
 						VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-							ProvisioningState: to.StringPtr(string(compute.ProvisioningState1Succeeded)),
+							SinglePlacementGroup: to.BoolPtr(false),
+							ProvisioningState:    to.StringPtr(string(compute.ProvisioningState1Succeeded)),
 						},
 					},
 					[]compute.VirtualMachineScaleSetVM{
