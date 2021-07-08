@@ -58,7 +58,12 @@ const (
 func (c *AzureCluster) validateCluster(old *AzureCluster) error {
 	var allErrs field.ErrorList
 	allErrs = append(allErrs, c.validateClusterName()...)
-	allErrs = append(allErrs, c.validateClusterSpec(old)...)
+	var oldSpec *AzureClusterSpec
+	if old != nil {
+		oldSpec = &old.Spec
+	}
+	allErrs = append(allErrs, c.Spec.validateClusterSpec(oldSpec)...)
+
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -69,19 +74,19 @@ func (c *AzureCluster) validateCluster(old *AzureCluster) error {
 }
 
 // validateClusterSpec validates a ClusterSpec.
-func (c *AzureCluster) validateClusterSpec(old *AzureCluster) field.ErrorList {
+func (s *AzureClusterSpec) validateClusterSpec(old *AzureClusterSpec) field.ErrorList {
 	var allErrs field.ErrorList
 	var oldNetworkSpec NetworkSpec
 	if old != nil {
-		oldNetworkSpec = old.Spec.NetworkSpec
+		oldNetworkSpec = old.NetworkSpec
 	}
-	allErrs = append(allErrs, validateNetworkSpec(c.Spec.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
+	allErrs = append(allErrs, validateNetworkSpec(s.NetworkSpec, oldNetworkSpec, field.NewPath("spec").Child("networkSpec"))...)
 
 	var oldCloudProviderConfigOverrides *CloudProviderConfigOverrides
 	if old != nil {
-		oldCloudProviderConfigOverrides = old.Spec.CloudProviderConfigOverrides
+		oldCloudProviderConfigOverrides = old.CloudProviderConfigOverrides
 	}
-	allErrs = append(allErrs, validateCloudProviderConfigOverrides(c.Spec.CloudProviderConfigOverrides, oldCloudProviderConfigOverrides,
+	allErrs = append(allErrs, validateCloudProviderConfigOverrides(s.CloudProviderConfigOverrides, oldCloudProviderConfigOverrides,
 		field.NewPath("spec").Child("cloudProviderConfigOverrides"))...)
 
 	return allErrs

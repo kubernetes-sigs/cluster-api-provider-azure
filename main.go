@@ -483,6 +483,11 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		os.Exit(1)
 	}
 
+	if err := (&infrav1alpha4.AzureClusterTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureClusterTemplate")
+		os.Exit(1)
+	}
+
 	if err := (&infrav1alpha4.AzureMachine{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachine")
 		os.Exit(1)

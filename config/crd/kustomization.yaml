@@ -14,8 +14,8 @@ resources:
   - bases/infrastructure.cluster.x-k8s.io_azuremanagedclusters.yaml
   - bases/infrastructure.cluster.x-k8s.io_azuremanagedcontrolplanes.yaml
   - bases/infrastructure.cluster.x-k8s.io_azuremachinepoolmachines.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureclustertemplates.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
-
 
 patchesStrategicMerge:
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
@@ -25,6 +25,7 @@ patchesStrategicMerge:
   - patches/webhook_in_azuremachinetemplates.yaml
   - patches/webhook_in_azuremachinepools.yaml
   - patches/webhook_in_azuremachinepoolmachines.yaml
+  - patches/webhook_in_azureclustertemplates.yaml
   # - patches/webhook_in_azuremanagedmachinepools.yaml
   # - patches/webhook_in_azuremanagedclusters.yaml
   # - patches/webhook_in_azuremanagedcontrolplanes.yaml
@@ -37,6 +38,7 @@ patchesStrategicMerge:
   - patches/cainjection_in_azuremachinetemplates.yaml
   - patches/cainjection_in_azuremachinepools.yaml
   - patches/cainjection_in_azuremachinepoolmachines.yaml
+  - patches/cainjection_in_azureclustertemplates.yaml
   # - patches/cainjection_in_azuremanagedmachinepools.yaml
   # - patches/cainjection_in_azuremanagedclusters.yaml
   # - patches/cainjection_in_azuremanagedcontrolplanes.yaml

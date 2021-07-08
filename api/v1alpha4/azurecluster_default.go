@@ -41,91 +41,91 @@ const (
 	DefaultAzureCloud = "AzurePublicCloud"
 )
 
-func (c *AzureCluster) setDefaults() {
-	c.setResourceGroupDefault()
-	c.setAzureEnvironmentDefault()
-	c.setNetworkSpecDefaults()
+func (s *AzureClusterSpec) setDefaults(name string) {
+	s.setResourceGroupDefault(name)
+	s.setAzureEnvironmentDefault()
+	s.setNetworkSpecDefaults(name)
 }
 
-func (c *AzureCluster) setNetworkSpecDefaults() {
-	c.setVnetDefaults()
-	c.setBastionDefaults()
-	c.setSubnetDefaults()
-	c.setAPIServerLBDefaults()
-	c.setNodeOutboundLBDefaults()
-	c.setControlPlaneOutboundLBDefaults()
+func (s *AzureClusterSpec) setNetworkSpecDefaults(name string) {
+	s.setVnetDefaults(name)
+	s.setBastionDefaults(name)
+	s.setSubnetDefaults(name)
+	s.setAPIServerLBDefaults(name)
+	s.setNodeOutboundLBDefaults(name)
+	s.setControlPlaneOutboundLBDefaults(name)
 }
 
-func (c *AzureCluster) setResourceGroupDefault() {
-	if c.Spec.ResourceGroup == "" {
-		c.Spec.ResourceGroup = c.Name
+func (s *AzureClusterSpec) setResourceGroupDefault(name string) {
+	if s.ResourceGroup == "" {
+		s.ResourceGroup = name
 	}
 }
 
-func (c *AzureCluster) setAzureEnvironmentDefault() {
-	if c.Spec.AzureEnvironment == "" {
-		c.Spec.AzureEnvironment = DefaultAzureCloud
+func (s *AzureClusterSpec) setAzureEnvironmentDefault() {
+	if s.AzureEnvironment == "" {
+		s.AzureEnvironment = DefaultAzureCloud
 	}
 }
 
-func (c *AzureCluster) setVnetDefaults() {
-	if c.Spec.NetworkSpec.Vnet.ResourceGroup == "" {
-		c.Spec.NetworkSpec.Vnet.ResourceGroup = c.Spec.ResourceGroup
+func (s *AzureClusterSpec) setVnetDefaults(name string) {
+	if s.NetworkSpec.Vnet.ResourceGroup == "" {
+		s.NetworkSpec.Vnet.ResourceGroup = s.ResourceGroup
 	}
-	if c.Spec.NetworkSpec.Vnet.Name == "" {
-		c.Spec.NetworkSpec.Vnet.Name = generateVnetName(c.ObjectMeta.Name)
+	if s.NetworkSpec.Vnet.Name == "" {
+		s.NetworkSpec.Vnet.Name = generateVnetName(name)
 	}
-	if len(c.Spec.NetworkSpec.Vnet.CIDRBlocks) == 0 {
-		c.Spec.NetworkSpec.Vnet.CIDRBlocks = []string{DefaultVnetCIDR}
+	if len(s.NetworkSpec.Vnet.CIDRBlocks) == 0 {
+		s.NetworkSpec.Vnet.CIDRBlocks = []string{DefaultVnetCIDR}
 	}
 }
 
-func (c *AzureCluster) setSubnetDefaults() {
-	cpSubnet, err := c.Spec.NetworkSpec.GetControlPlaneSubnet()
+func (s *AzureClusterSpec) setSubnetDefaults(name string) {
+	cpSubnet, err := s.NetworkSpec.GetControlPlaneSubnet()
 	if err != nil {
 		cpSubnet = SubnetSpec{Role: SubnetControlPlane}
-		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, cpSubnet)
+		s.NetworkSpec.Subnets = append(s.NetworkSpec.Subnets, cpSubnet)
 	}
 
-	nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
+	nodeSubnet, err := s.NetworkSpec.GetNodeSubnet()
 	if err != nil {
 		nodeSubnet = SubnetSpec{Role: SubnetNode}
-		c.Spec.NetworkSpec.Subnets = append(c.Spec.NetworkSpec.Subnets, nodeSubnet)
+		s.NetworkSpec.Subnets = append(s.NetworkSpec.Subnets, nodeSubnet)
 	}
 
 	if cpSubnet.Name == "" {
-		cpSubnet.Name = generateControlPlaneSubnetName(c.ObjectMeta.Name)
+		cpSubnet.Name = generateControlPlaneSubnetName(name)
 	}
 	if len(cpSubnet.CIDRBlocks) == 0 {
 		cpSubnet.CIDRBlocks = []string{DefaultControlPlaneSubnetCIDR}
 	}
 	if cpSubnet.SecurityGroup.Name == "" {
-		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(c.ObjectMeta.Name)
+		cpSubnet.SecurityGroup.Name = generateControlPlaneSecurityGroupName(name)
 	}
 	setSecurityRuleDefaults(&cpSubnet.SecurityGroup)
 
 	if nodeSubnet.Name == "" {
-		nodeSubnet.Name = generateNodeSubnetName(c.ObjectMeta.Name)
+		nodeSubnet.Name = generateNodeSubnetName(name)
 	}
 	if len(nodeSubnet.CIDRBlocks) == 0 {
 		nodeSubnet.CIDRBlocks = []string{DefaultNodeSubnetCIDR}
 	}
 	if nodeSubnet.SecurityGroup.Name == "" {
-		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(c.ObjectMeta.Name)
+		nodeSubnet.SecurityGroup.Name = generateNodeSecurityGroupName(name)
 	}
 	setSecurityRuleDefaults(&nodeSubnet.SecurityGroup)
 	if nodeSubnet.RouteTable.Name == "" {
-		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(c.ObjectMeta.Name)
+		nodeSubnet.RouteTable.Name = generateNodeRouteTableName(name)
 	}
 
 	if nodeSubnet.NatGateway.Name != "" {
 		if nodeSubnet.NatGateway.NatGatewayIP.Name == "" {
-			nodeSubnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(c.ObjectMeta.Name, nodeSubnet.Name)
+			nodeSubnet.NatGateway.NatGatewayIP.Name = generateNatGatewayIPName(name, nodeSubnet.Name)
 		}
 	}
 
-	c.Spec.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
-	c.Spec.NetworkSpec.UpdateNodeSubnet(nodeSubnet)
+	s.NetworkSpec.UpdateControlPlaneSubnet(cpSubnet)
+	s.NetworkSpec.UpdateNodeSubnet(nodeSubnet)
 }
 
 func setSecurityRuleDefaults(sg *SecurityGroup) {
@@ -136,8 +136,8 @@ func setSecurityRuleDefaults(sg *SecurityGroup) {
 	}
 }
 
-func (c *AzureCluster) setAPIServerLBDefaults() {
-	lb := &c.Spec.NetworkSpec.APIServerLB
+func (s *AzureClusterSpec) setAPIServerLBDefaults(name string) {
+	lb := &s.NetworkSpec.APIServerLB
 	if lb.Type == "" {
 		lb.Type = Public
 	}
@@ -150,21 +150,21 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 
 	if lb.Type == Public {
 		if lb.Name == "" {
-			lb.Name = generatePublicLBName(c.ObjectMeta.Name)
+			lb.Name = generatePublicLBName(name)
 		}
 		if len(lb.FrontendIPs) == 0 {
 			lb.FrontendIPs = []FrontendIP{
 				{
 					Name: generateFrontendIPConfigName(lb.Name),
 					PublicIP: &PublicIPSpec{
-						Name: generatePublicIPName(c.ObjectMeta.Name),
+						Name: generatePublicIPName(name),
 					},
 				},
 			}
 		}
 	} else if lb.Type == Internal {
 		if lb.Name == "" {
-			lb.Name = generateInternalLBName(c.ObjectMeta.Name)
+			lb.Name = generateInternalLBName(name)
 		}
 		if len(lb.FrontendIPs) == 0 {
 			lb.FrontendIPs = []FrontendIP{
@@ -177,23 +177,23 @@ func (c *AzureCluster) setAPIServerLBDefaults() {
 	}
 }
 
-func (c *AzureCluster) setNodeOutboundLBDefaults() {
-	if c.Spec.NetworkSpec.NodeOutboundLB == nil {
-		if c.Spec.NetworkSpec.APIServerLB.Type == Internal {
+func (s *AzureClusterSpec) setNodeOutboundLBDefaults(name string) {
+	if s.NetworkSpec.NodeOutboundLB == nil {
+		if s.NetworkSpec.APIServerLB.Type == Internal {
 			return
 		}
-		nodeSubnet, err := c.Spec.NetworkSpec.GetNodeSubnet()
+		nodeSubnet, err := s.NetworkSpec.GetNodeSubnet()
 		// Only one outbound mechanism can be defined, so if Nat Gateway is defined, we don't default the LB.
 		if err == nil && nodeSubnet.NatGateway.Name != "" {
 			return
 		}
-		c.Spec.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
+		s.NetworkSpec.NodeOutboundLB = &LoadBalancerSpec{}
 	}
 
-	lb := c.Spec.NetworkSpec.NodeOutboundLB
+	lb := s.NetworkSpec.NodeOutboundLB
 	lb.Type = Public
 	lb.SKU = SKUStandard
-	lb.Name = c.ObjectMeta.Name
+	lb.Name = name
 
 	if lb.IdleTimeoutInMinutes == nil {
 		lb.IdleTimeoutInMinutes = pointer.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes)
@@ -203,26 +203,26 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
 
-	c.setOutboundLBFrontendIPs(lb, generateNodeOutboundIPName)
+	s.setOutboundLBFrontendIPs(name, lb, generateNodeOutboundIPName)
 }
 
-func (c *AzureCluster) setControlPlaneOutboundLBDefaults() {
+func (s *AzureClusterSpec) setControlPlaneOutboundLBDefaults(name string) {
 	// public clusters don't need control plane outbound lb
-	if c.Spec.NetworkSpec.APIServerLB.Type == Public {
+	if s.NetworkSpec.APIServerLB.Type == Public {
 		return
 	}
 
 	// private clusters can disable control plane outbound lb by setting it to nil.
-	if c.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
+	if s.NetworkSpec.ControlPlaneOutboundLB == nil {
 		return
 	}
 
-	lb := c.Spec.NetworkSpec.ControlPlaneOutboundLB
+	lb := s.NetworkSpec.ControlPlaneOutboundLB
 	lb.Type = Public
 	lb.SKU = SKUStandard
 
 	if lb.Name == "" {
-		lb.Name = generateControlPlaneOutboundLBName(c.ObjectMeta.Name)
+		lb.Name = generateControlPlaneOutboundLBName(name)
 	}
 
 	if lb.IdleTimeoutInMinutes == nil {
@@ -233,12 +233,12 @@ func (c *AzureCluster) setControlPlaneOutboundLBDefaults() {
 		lb.FrontendIPsCount = pointer.Int32Ptr(1)
 	}
 
-	c.setOutboundLBFrontendIPs(lb, generateControlPlaneOutboundIPName)
+	s.setOutboundLBFrontendIPs(name, lb, generateControlPlaneOutboundIPName)
 }
 
 // setOutboundLBFrontendIPs sets the frontend ips for the given load balancer.
 // The name of the frontend ip is generated using generatePublicIPName function.
-func (c *AzureCluster) setOutboundLBFrontendIPs(lb *LoadBalancerSpec, generatePublicIPName func(string) string) {
+func (s *AzureClusterSpec) setOutboundLBFrontendIPs(name string, lb *LoadBalancerSpec, generatePublicIPName func(string) string) {
 	switch *lb.FrontendIPsCount {
 	case 0:
 		lb.FrontendIPs = []FrontendIP{}
@@ -247,7 +247,7 @@ func (c *AzureCluster) setOutboundLBFrontendIPs(lb *LoadBalancerSpec, generatePu
 			{
 				Name: generateFrontendIPConfigName(lb.Name),
 				PublicIP: &PublicIPSpec{
-					Name: generatePublicIPName(c.ObjectMeta.Name),
+					Name: generatePublicIPName(name),
 				},
 			},
 		}
@@ -257,31 +257,31 @@ func (c *AzureCluster) setOutboundLBFrontendIPs(lb *LoadBalancerSpec, generatePu
 			lb.FrontendIPs[i] = FrontendIP{
 				Name: withIndex(generateFrontendIPConfigName(lb.Name), i+1),
 				PublicIP: &PublicIPSpec{
-					Name: withIndex(generatePublicIPName(c.ObjectMeta.Name), i+1),
+					Name: withIndex(generatePublicIPName(name), i+1),
 				},
 			}
 		}
 	}
 }
 
-func (c *AzureCluster) setBastionDefaults() {
-	if c.Spec.BastionSpec.AzureBastion != nil {
-		if c.Spec.BastionSpec.AzureBastion.Name == "" {
-			c.Spec.BastionSpec.AzureBastion.Name = generateAzureBastionName(c.ObjectMeta.Name)
+func (s *AzureClusterSpec) setBastionDefaults(name string) {
+	if s.BastionSpec.AzureBastion != nil {
+		if s.BastionSpec.AzureBastion.Name == "" {
+			s.BastionSpec.AzureBastion.Name = generateAzureBastionName(name)
 		}
 		// Ensure defaults for the Subnet settings.
 		{
-			if c.Spec.BastionSpec.AzureBastion.Subnet.Name == "" {
-				c.Spec.BastionSpec.AzureBastion.Subnet.Name = DefaultAzureBastionSubnetName
+			if s.BastionSpec.AzureBastion.Subnet.Name == "" {
+				s.BastionSpec.AzureBastion.Subnet.Name = DefaultAzureBastionSubnetName
 			}
-			if len(c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
-				c.Spec.BastionSpec.AzureBastion.Subnet.CIDRBlocks = []string{DefaultAzureBastionSubnetCIDR}
+			if len(s.BastionSpec.AzureBastion.Subnet.CIDRBlocks) == 0 {
+				s.BastionSpec.AzureBastion.Subnet.CIDRBlocks = []string{DefaultAzureBastionSubnetCIDR}
 			}
 		}
 		// Ensure defaults for the PublicIP settings.
 		{
-			if c.Spec.BastionSpec.AzureBastion.PublicIP.Name == "" {
-				c.Spec.BastionSpec.AzureBastion.PublicIP.Name = generateAzureBastionPublicIPName(c.ObjectMeta.Name)
+			if s.BastionSpec.AzureBastion.PublicIP.Name == "" {
+				s.BastionSpec.AzureBastion.PublicIP.Name = generateAzureBastionPublicIPName(name)
 			}
 		}
 	}

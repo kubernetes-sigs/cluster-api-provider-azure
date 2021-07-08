@@ -72,7 +72,7 @@ func TestResourceGroupDefault(t *testing.T) {
 		c := cases[name]
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			c.cluster.setResourceGroupDefault()
+			c.cluster.Spec.setResourceGroupDefault(c.cluster.Name)
 			if !reflect.DeepEqual(c.cluster, c.output) {
 				expected, _ := json.MarshalIndent(c.output, "", "\t")
 				actual, _ := json.MarshalIndent(c.cluster, "", "\t")
@@ -231,7 +231,7 @@ func TestVnetDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setVnetDefaults()
+			tc.cluster.Spec.setVnetDefaults(tc.cluster.Name)
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
@@ -612,7 +612,7 @@ func TestSubnetDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setSubnetDefaults()
+			tc.cluster.Spec.setSubnetDefaults(tc.cluster.Name)
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
@@ -705,7 +705,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setAPIServerLBDefaults()
+			tc.cluster.Spec.setAPIServerLBDefaults(tc.cluster.Name)
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
@@ -778,7 +778,7 @@ func TestAzureEnviromentDefault(t *testing.T) {
 		c := cases[name]
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			c.cluster.setAzureEnvironmentDefault()
+			c.cluster.Spec.setAzureEnvironmentDefault()
 			if !reflect.DeepEqual(c.cluster, c.output) {
 				expected, _ := json.MarshalIndent(c.output, "", "\t")
 				actual, _ := json.MarshalIndent(c.cluster, "", "\t")
@@ -913,7 +913,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setNodeOutboundLBDefaults()
+			tc.cluster.Spec.setNodeOutboundLBDefaults(tc.cluster.Name)
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
@@ -1035,7 +1035,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		tc := c
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.cluster.setControlPlaneOutboundLBDefaults()
+			tc.cluster.Spec.setControlPlaneOutboundLBDefaults(tc.cluster.Name)
 			if !reflect.DeepEqual(tc.cluster, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(tc.cluster, "", "\t")
@@ -1238,7 +1238,7 @@ func TestBastionDefault(t *testing.T) {
 		c := cases[name]
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			c.cluster.setBastionDefaults()
+			c.cluster.Spec.setBastionDefaults(c.cluster.Name)
 			if !reflect.DeepEqual(c.cluster, c.output) {
 				expected, _ := json.MarshalIndent(c.output, "", "\t")
 				actual, _ := json.MarshalIndent(c.cluster, "", "\t")

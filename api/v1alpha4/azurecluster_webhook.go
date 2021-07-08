@@ -47,7 +47,7 @@ var _ webhook.Defaulter = &AzureCluster{}
 func (c *AzureCluster) Default() {
 	clusterlog.Info("default", "name", c.Name)
 
-	c.setDefaults()
+	c.Spec.setDefaults(c.Name)
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
