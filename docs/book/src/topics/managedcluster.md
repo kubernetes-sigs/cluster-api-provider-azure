@@ -222,7 +222,6 @@ spec:
     adminGroupObjectIDs: 
     - 917056a9-8eb5-439c-g679-b34901ade75h # fake admin groupId
 ```
-
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,
