@@ -50,6 +50,11 @@ export WORKER_MACHINE_COUNT=${WORKER_MACHINE_COUNT:-2}
 export KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.19.7}"
 export CLUSTER_TEMPLATE="${CLUSTER_TEMPLATE:-cluster-template.yaml}"
 
+# identity secret settings.
+export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
+export CLUSTER_IDENTITY_NAME=${CLUSTER_IDENTITY_NAME:="cluster-identity"} 
+export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
+
 # Generate SSH key.
 SSH_KEY_FILE=${SSH_KEY_FILE:-""}
 if [ -z "$SSH_KEY_FILE" ]; then
