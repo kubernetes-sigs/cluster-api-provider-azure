@@ -2,3 +2,7 @@ resources:
   - ../bases/cluster-with-kcp.yaml
   - ../bases/mp.yaml
   - ../bases/crs.yaml
+  - ../bases/azure-cluster-identity.yaml
+
+patchesStrategicMerge:
+  - ../patches/azurecluster-identity-ref.yaml

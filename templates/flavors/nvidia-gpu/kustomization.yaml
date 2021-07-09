@@ -1,10 +1,14 @@
 namespace: default
 resources:
   - ../base
+  - ../../azure-cluster-identity
   - machine-deployment.yaml
   - gpu-operator-resources-set.yaml
+
 patchesStrategicMerge:
   - patches/cluster.yaml
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml  
+
 configMapGenerator:
   - name: nvidia-clusterpolicy-crd
     files:

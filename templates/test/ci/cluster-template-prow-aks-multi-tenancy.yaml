@@ -111,7 +111,7 @@ metadata:
   namespace: default
 spec:
   allowedNamespaces: {}
-  clientID: ${AZURE_CLUSTER_IDENTITY_CLIENT_ID}
+  clientID: ${AZURE_CLIENT_ID}
   clientSecret:
     name: ${AZURE_CLUSTER_IDENTITY_SECRET_NAME}
     namespace: ${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}

@@ -31,6 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
@@ -96,6 +97,26 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		kubeSystem := &corev1.Namespace{}
 		return publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, kubeSystem)
 	}, "5s", "100ms").Should(BeNil(), "Failed to assert public API server stability")
+
+	// **************
+	spClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cluster-identity-secret-private",
+			Namespace: input.Namespace.Name,
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+	}
+	err := publicClusterProxy.GetClient().Create(ctx, secret)
+	Expect(err).ToNot(HaveOccurred())
+
+	identityName := e2eConfig.GetVariable(ClusterIdentityName)
+	os.Setenv("CLUSTER_IDENTITY_NAME", identityName)
+	os.Setenv("CLUSTER_IDENTITY_NAMESPACE", input.Namespace.Name)
+	os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAME", "cluster-identity-secret-private")
+	os.Setenv("AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE", input.Namespace.Name)
+	//*************
 
 	By("Creating a private workload cluster")
 	clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
@@ -177,6 +198,8 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	vnetClient.Authorizer = authorizer
 	nsgClient := network.NewSecurityGroupsClient(subscriptionID)
 	nsgClient.Authorizer = authorizer
+	routetableClient := network.NewRouteTablesClient(subscriptionID)
+	routetableClient.Authorizer = authorizer
 
 	By("creating a resource group")
 	groupName := os.Getenv(AzureResourceGroup)
@@ -231,6 +254,30 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	err = nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)
 	Expect(err).To(BeNil())
 
+	By("creating a node security group")
+	nsgNodeName := "node-nsg"
+	securityRulesNode := []network.SecurityRule{}
+	nsgNodeFuture, err := nsgClient.CreateOrUpdate(ctx, groupName, nsgNodeName, network.SecurityGroup{
+		Location: pointer.StringPtr(os.Getenv(AzureLocation)),
+		SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+			SecurityRules: &securityRulesNode,
+		},
+	})
+	Expect(err).To(BeNil())
+	err = nsgNodeFuture.WaitForCompletionRef(ctx, nsgClient.Client)
+	Expect(err).To(BeNil())
+
+	By("creating a node routetable")
+	routeTableName := "node-routetable"
+	routeTable := network.RouteTable{
+		Location:                   pointer.StringPtr(os.Getenv(AzureLocation)),
+		RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
+	}
+	routetableFuture, err := routetableClient.CreateOrUpdate(ctx, groupName, routeTableName, routeTable)
+	Expect(err).To(BeNil())
+	err = routetableFuture.WaitForCompletionRef(ctx, routetableClient.Client)
+	Expect(err).To(BeNil())
+
 	By("creating a virtual network")
 	var subnets []network.Subnet
 	for name, cidr := range cpSubnetCidrs {
@@ -248,6 +295,12 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 		subnets = append(subnets, network.Subnet{
 			SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
 				AddressPrefix: pointer.StringPtr(cidr),
+				NetworkSecurityGroup: &network.SecurityGroup{
+					ID: pointer.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", subscriptionID, groupName, nsgNodeName)),
+				},
+				RouteTable: &network.RouteTable{
+					ID: pointer.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/routeTables/%s", subscriptionID, groupName, routeTableName)),
+				},
 			},
 			Name: pointer.StringPtr(name),
 		})

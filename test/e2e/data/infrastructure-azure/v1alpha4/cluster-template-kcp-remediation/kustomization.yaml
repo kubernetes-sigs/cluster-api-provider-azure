@@ -3,3 +3,7 @@ bases:
   - ../bases/md.yaml
   - ../bases/crs.yaml
   - mhc.yaml
+  - ../bases/azure-cluster-identity.yaml
+
+patchesStrategicMerge:
+  - ../patches/azurecluster-identity-ref.yaml

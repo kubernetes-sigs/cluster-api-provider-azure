@@ -326,7 +326,7 @@ func initScheme() *runtime.Scheme {
 	Expect(expv1.AddToScheme(scheme)).To(Succeed())
 	Expect(clusterv1exp.AddToScheme(scheme)).To(Succeed())
 	// Add aadpodidentity v1 to the scheme.
-	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.CRDGroup, Version: aadpodv1.CRDVersion}
+	aadPodIdentityGroupVersion := schema.GroupVersion{Group: aadpodv1.GroupName, Version: "v1"}
 	scheme.AddKnownTypes(aadPodIdentityGroupVersion,
 		&aadpodv1.AzureIdentity{},
 		&aadpodv1.AzureIdentityList{},

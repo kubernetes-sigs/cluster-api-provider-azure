@@ -43,18 +43,24 @@ import (
 
 // Test suite constants for e2e config variables
 const (
-	RedactLogScriptPath         = "REDACT_LOG_SCRIPT"
-	AzureLocation               = "AZURE_LOCATION"
-	AzureResourceGroup          = "AZURE_RESOURCE_GROUP"
-	AzureVNetName               = "AZURE_VNET_NAME"
-	AzureInternalLBIP           = "AZURE_INTERNAL_LB_IP"
-	AzureCPSubnetCidr           = "AZURE_CP_SUBNET_CIDR"
-	AzureNodeSubnetCidr         = "AZURE_NODE_SUBNET_CIDR"
-	MultiTenancyIdentityName    = "MULTI_TENANCY_IDENTITY_NAME"
-	JobName                     = "JOB_NAME"
-	Timestamp                   = "TIMESTAMP"
-	AKSKubernetesVersion        = "AKS_KUBERNETES_VERSION"
-	ManagedClustersResourceType = "managedClusters"
+	RedactLogScriptPath            = "REDACT_LOG_SCRIPT"
+	AzureLocation                  = "AZURE_LOCATION"
+	AzureResourceGroup             = "AZURE_RESOURCE_GROUP"
+	AzureVNetName                  = "AZURE_VNET_NAME"
+	AzureInternalLBIP              = "AZURE_INTERNAL_LB_IP"
+	AzureCPSubnetCidr              = "AZURE_CP_SUBNET_CIDR"
+	AzureNodeSubnetCidr            = "AZURE_NODE_SUBNET_CIDR"
+	MultiTenancyIdentityName       = "MULTI_TENANCY_IDENTITY_NAME"
+	ClusterIdentityName            = "CLUSTER_IDENTITY_NAME"
+	ClusterIdentityNamespace       = "CLUSTER_IDENTITY_NAMESPACE"
+	ClusterIdentitySecretName      = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"
+	ClusterIdentitySecretNamespace = "AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE"
+	AzureClientSecret              = "AZURE_CLIENT_SECRET"
+	AzureClientId                  = "AZURE_CLIENT_ID"
+	JobName                        = "JOB_NAME"
+	Timestamp                      = "TIMESTAMP"
+	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
+	ManagedClustersResourceType    = "managedClusters"
 )
 
 func Byf(format string, a ...interface{}) {

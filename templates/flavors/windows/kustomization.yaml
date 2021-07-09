@@ -3,4 +3,7 @@ resources:
   - ../base-windows
   - machine-deployment.yaml
   - machine-deployment-windows.yaml
-  
+  - ../../azure-cluster-identity
+
+patchesStrategicMerge:
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml

@@ -34,6 +34,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -75,6 +76,24 @@ var _ = Describe("Conformance Tests", func() {
 		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
+
+		spClientSecret := os.Getenv(AzureClientSecret)
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster-identity-secret",
+				Namespace: namespace.Name,
+			},
+			Type: corev1.SecretTypeOpaque,
+			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
+		}
+		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
+		Expect(err).ToNot(HaveOccurred())
+
+		identityName := e2eConfig.GetVariable(ClusterIdentityName)
+		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
+		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
 	})
 
 	Measure(specName, func(b Benchmarker) {

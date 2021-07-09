@@ -2,12 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ../../../flavors/multi-tenancy
+  - ../../../flavors/default
+  - ../prow/mhc.yaml
   - ../prow/cni-resource-set.yaml
 patchesStrategicMerge:
   - ../patches/tags.yaml
-  - ../patches/controller-manager.yaml
+  - ../patches/mhc.yaml
   - ../patches/cluster-cni.yaml
+  - ../patches/controller-manager.yaml
+  - patches/custom-vnet.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:

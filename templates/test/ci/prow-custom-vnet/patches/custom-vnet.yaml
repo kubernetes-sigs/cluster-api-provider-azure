@@ -1,0 +1,19 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  networkSpec:
+    vnet:
+      name: ${AZURE_VNET_NAME}
+    subnets:
+      - name: ${CLUSTER_NAME}-controlplane-subnet
+        role: control-plane
+        securityGroup: 
+          name: control-plane-nsg
+      - name: ${CLUSTER_NAME}-node-subnet
+        role: node
+        securityGroup: 
+          name: node-nsg
+        routeTable: 
+          name: node-routetable

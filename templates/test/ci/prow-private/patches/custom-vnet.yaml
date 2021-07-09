@@ -9,10 +9,16 @@ spec:
     subnets:
       - name: private-cp-subnet
         role: control-plane
+        securityGroup: 
+          name: control-plane-nsg
         cidrBlocks:
           - ${AZURE_CP_SUBNET_CIDR}
       - name: private-node-subnet
         role: node
+        securityGroup: 
+          name: node-nsg
+        routeTable: 
+          name: node-routetable
         cidrBlocks:
           - ${AZURE_NODE_SUBNET_CIDR}
     apiServerLB:
