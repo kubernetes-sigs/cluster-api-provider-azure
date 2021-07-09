@@ -33,7 +33,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -101,7 +100,7 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "azureIdentity", req.Name)
+	log := r.Log.WithValues("namespace", req.Namespace, "identityOwner", req.Name)
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureIdentityReconciler.Reconcile",
 		trace.WithAttributes(
@@ -112,7 +111,7 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	defer span.End()
 
 	// identityOwner is the resource that created the identity. This could be either an AzureCluster or AzureManagedControlPlane (if AKS is enabled).
-	// check for AzureManagedControlPlane first and if it is not found, check for AzureManagedControlPlane.
+	// check for AzureCluster first and if it is not found, check for AzureManagedControlPlane.
 	var identityOwner interface{}
 
 	// Fetch the AzureCluster instance
@@ -158,7 +157,6 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		clusterNamespace := binding.ObjectMeta.Labels[infrav1.ClusterLabelNamespace]
 
 		key := client.ObjectKey{Name: clusterName, Namespace: clusterNamespace}
-		var expectedIdentityName string
 
 		// only delete bindings when the identity owner type is not found.
 		// we should not delete an identity when azureCluster is not found because it could have been created by AzureManagedControlPlane.
@@ -173,7 +171,6 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					return ctrl.Result{}, errors.Wrap(err, "failed to get AzureCluster")
 				}
 			}
-			expectedIdentityName = identity.GetAzureIdentityName(azCluster.Name, azCluster.Namespace, azCluster.Spec.IdentityRef.Name)
 		case infraexpv1.AzureManagedControlPlane:
 			azManagedControlPlane := &infraexpv1.AzureManagedControlPlane{}
 			if err := r.Get(ctx, key, azManagedControlPlane); err != nil {
@@ -184,12 +181,6 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					return ctrl.Result{}, errors.Wrap(err, "failed to get AzureManagedControlPlane")
 				}
 			}
-			expectedIdentityName = identity.GetAzureIdentityName(azManagedControlPlane.Name, azManagedControlPlane.Namespace,
-				azManagedControlPlane.Spec.IdentityRef.Name)
-		}
-
-		if binding.Spec.AzureIdentity != expectedIdentityName {
-			bindingsToDelete = append(bindingsToDelete, b)
 		}
 	}
 
