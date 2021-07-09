@@ -133,8 +133,8 @@ type OperationNotDoneError struct {
 }
 
 // NewOperationNotDoneError returns a new OperationNotDoneError wrapping a Future.
-func NewOperationNotDoneError(future *infrav1.Future) *OperationNotDoneError {
-	return &OperationNotDoneError{
+func NewOperationNotDoneError(future *infrav1.Future) OperationNotDoneError {
+	return OperationNotDoneError{
 		Future: future,
 	}
 }
@@ -146,5 +146,14 @@ func (onde OperationNotDoneError) Error() string {
 
 // Is returns true if the target is an OperationNotDoneError.
 func (onde OperationNotDoneError) Is(target error) bool {
+	return IsOperationNotDoneError(target)
+}
+
+// IsOperationNotDoneError returns true if the target is an OperationNotDoneError.
+func IsOperationNotDoneError(target error) bool {
+	reconcileErr := &ReconcileError{}
+	if errors.As(target, reconcileErr) {
+		return IsOperationNotDoneError(reconcileErr.error)
+	}
 	return errors.As(target, &OperationNotDoneError{})
 }

@@ -29,6 +29,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1alpha40 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // MockScaleSetScope is a mock of ScaleSetScope interface.
@@ -180,6 +181,18 @@ func (mr *MockScaleSetScopeMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockScaleSetScope)(nil).ClusterName))
 }
 
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockScaleSetScope) DeleteLongRunningOperationState(arg0, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockScaleSetScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
 // Enabled mocks base method.
 func (m *MockScaleSetScope) Enabled() bool {
 	m.ctrl.T.Helper()
@@ -212,32 +225,32 @@ func (mr *MockScaleSetScopeMockRecorder) Error(err, msg interface{}, keysAndValu
 }
 
 // GetBootstrapData mocks base method.
-func (m *MockScaleSetScope) GetBootstrapData(ctx context.Context) (string, error) {
+func (m *MockScaleSetScope) GetBootstrapData(arg0 context.Context) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBootstrapData", ctx)
+	ret := m.ctrl.Call(m, "GetBootstrapData", arg0)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBootstrapData indicates an expected call of GetBootstrapData.
-func (mr *MockScaleSetScopeMockRecorder) GetBootstrapData(ctx interface{}) *gomock.Call {
+func (mr *MockScaleSetScopeMockRecorder) GetBootstrapData(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBootstrapData", reflect.TypeOf((*MockScaleSetScope)(nil).GetBootstrapData), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBootstrapData", reflect.TypeOf((*MockScaleSetScope)(nil).GetBootstrapData), arg0)
 }
 
 // GetLongRunningOperationState mocks base method.
-func (m *MockScaleSetScope) GetLongRunningOperationState() *v1alpha4.Future {
+func (m *MockScaleSetScope) GetLongRunningOperationState(arg0, arg1 string) *v1alpha4.Future {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLongRunningOperationState")
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
 	ret0, _ := ret[0].(*v1alpha4.Future)
 	return ret0
 }
 
 // GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
-func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState() *gomock.Call {
+func (mr *MockScaleSetScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).GetLongRunningOperationState))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockScaleSetScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
 // GetVMImage mocks base method.
@@ -429,6 +442,42 @@ func (m *MockScaleSetScope) TenantID() string {
 func (mr *MockScaleSetScopeMockRecorder) TenantID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockScaleSetScope)(nil).TenantID))
+}
+
+// UpdateDeleteStatus mocks base method.
+func (m *MockScaleSetScope) UpdateDeleteStatus(arg0 v1alpha40.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
+}
+
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockScaleSetScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockScaleSetScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockScaleSetScope) UpdatePatchStatus(arg0 v1alpha40.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockScaleSetScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockScaleSetScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockScaleSetScope) UpdatePutStatus(arg0 v1alpha40.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockScaleSetScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockScaleSetScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }
 
 // V mocks base method.

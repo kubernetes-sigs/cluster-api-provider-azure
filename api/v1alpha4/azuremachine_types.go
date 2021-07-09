@@ -175,6 +175,11 @@ type AzureMachineStatus struct {
 	// Conditions defines current service state of the AzureMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
+	// next reconciliation loop.
+	// +optional
+	LongRunningOperationStates Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -214,6 +219,16 @@ func (m *AzureMachine) GetConditions() clusterv1.Conditions {
 // SetConditions will set the given conditions on an AzureMachine object.
 func (m *AzureMachine) SetConditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
+}
+
+// GetFutures returns the list of long running operation states for an AzureMachine API object.
+func (m *AzureMachine) GetFutures() Futures {
+	return m.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AzureMachine object.
+func (m *AzureMachine) SetFutures(futures Futures) {
+	m.Status.LongRunningOperationStates = futures
 }
 
 func init() {

@@ -29,7 +29,7 @@ import (
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-azure/azure/mocks"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/mock_azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 )
@@ -47,7 +47,7 @@ func Test_newAzureMachinePoolService(t *testing.T) {
 		Vnet: infrav1.VnetSpec{Name: "my-vnet", ResourceGroup: "my-rg"},
 	}
 
-	clusterMock := mocks.NewMockClusterScoper(mockCtrl)
+	clusterMock := mock_azure.NewMockClusterScoper(mockCtrl)
 	clusterMock.EXPECT().SubscriptionID().AnyTimes()
 	clusterMock.EXPECT().BaseURI().AnyTimes()
 	clusterMock.EXPECT().Authorizer().AnyTimes()

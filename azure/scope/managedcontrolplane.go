@@ -39,6 +39,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new managed
@@ -543,4 +544,35 @@ func (s *ManagedControlPlaneScope) GetKubeConfigData() []byte {
 // SetKubeConfigData sets kubeconfig data.
 func (s *ManagedControlPlaneScope) SetKubeConfigData(kubeConfigData []byte) {
 	s.kubeConfigData = kubeConfigData
+}
+
+// SetLongRunningOperationState will set the future on the AzureManagedControlPlane status to allow the resource to continue
+// in the next reconciliation.
+func (s *ManagedControlPlaneScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(s.ControlPlane, future)
+}
+
+// GetLongRunningOperationState will get the future on the AzureManagedControlPlane status.
+func (s *ManagedControlPlaneScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(s.ControlPlane, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureManagedControlPlane status.
+func (s *ManagedControlPlaneScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(s.ControlPlane, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureManagedControlPlane status after a DELETE operation.
+func (s *ManagedControlPlaneScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	// TODO: add condition to AzureManagedControlPlane status
+}
+
+// UpdatePutStatus updates a condition on the AzureManagedControlPlane status after a PUT operation.
+func (s *ManagedControlPlaneScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	// TODO: add condition to AzureManagedControlPlane status
+}
+
+// UpdatePatchStatus updates a condition on the AzureManagedControlPlane status after a PATCH operation.
+func (s *ManagedControlPlaneScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	// TODO: add condition to AzureManagedControlPlane status
 }

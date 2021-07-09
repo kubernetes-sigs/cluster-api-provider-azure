@@ -29,21 +29,37 @@ const (
 	Node string = "node"
 )
 
+// Futures is a slice of Future.
+type Futures []Future
+
+const (
+	// PatchFuture is a future that was derived from a PATCH request.
+	PatchFuture string = "PATCH"
+	// PutFuture is a future that was derived from a PUT request.
+	PutFuture string = "PUT"
+	// DeleteFuture is a future that was derived from a DELETE request.
+	DeleteFuture string = "DELETE"
+)
+
 // Future contains the data needed for an Azure long-running operation to continue across reconcile loops.
 type Future struct {
-	// Type describes the type of future, update, create, delete, etc
+	// Type describes the type of future, such as update, create, delete, etc.
 	Type string `json:"type"`
 
-	// ResourceGroup is the Azure resource group for the resource
+	// ResourceGroup is the Azure resource group for the resource.
 	// +optional
 	ResourceGroup string `json:"resourceGroup,omitempty"`
 
-	// Name is the name of the Azure resource
-	// +optional
-	Name string `json:"name,omitempty"`
+	// ServiceName is the name of the Azure service.
+	// Together with the name of the resource, this forms the unique identifier for the future.
+	ServiceName string `json:"serviceName"`
 
-	// FutureData is the base64 url encoded json Azure AutoRest Future
-	FutureData string `json:"futureData,omitempty"`
+	// Name is the name of the Azure resource.
+	// Together with the service name, this forms the unique identifier for the future.
+	Name string `json:"name"`
+
+	// Data is the base64 url encoded json Azure AutoRest Future.
+	Data string `json:"data,omitempty"`
 }
 
 // NetworkSpec specifies what the Azure networking resources should look like.

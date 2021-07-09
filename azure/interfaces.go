@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // Reconciler is a generic interface used by components offering a type of service.
@@ -80,8 +81,33 @@ type ClusterDescriber interface {
 	CloudProviderConfigOverrides() *infrav1.CloudProviderConfigOverrides
 }
 
+// AsyncStatusUpdater is an interface used to keep track of long running operations in Status that has Conditions and Futures.
+type AsyncStatusUpdater interface {
+	SetLongRunningOperationState(*infrav1.Future)
+	GetLongRunningOperationState(string, string) *infrav1.Future
+	DeleteLongRunningOperationState(string, string)
+	UpdatePutStatus(clusterv1.ConditionType, string, error)
+	UpdateDeleteStatus(clusterv1.ConditionType, string, error)
+	UpdatePatchStatus(clusterv1.ConditionType, string, error)
+}
+
 // ClusterScoper combines the ClusterDescriber and NetworkDescriber interfaces.
 type ClusterScoper interface {
 	ClusterDescriber
 	NetworkDescriber
+}
+
+// ResourceSpecGetter is an interface for getting all the required information to create/update/delete an Azure resource.
+type ResourceSpecGetter interface {
+	// ResourceName returns the name of the resource.
+	ResourceName() string
+	// OwnerResourceName returns the name of the resource that owns the resource
+	// in the case that the resource is an Azure subresource.
+	OwnerResourceName() string
+	// ResourceGroupName returns the name of the resource group the resource is in.
+	ResourceGroupName() string
+	// Parameters takes the existing resource and returns the desired parameters of the resource.
+	// If the resource does not exist, or we do not care about existing parameters to update the resource, existing should be nil.
+	// If no update is needed on the resource, Parameters should return nil.
+	Parameters(existing interface{}) (interface{}, error)
 }

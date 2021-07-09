@@ -33,13 +33,9 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-)
-
-const (
-	// UltraSSDStorageAccountType identifies the Ultra disk storage account type.
-	UltraSSDStorageAccountType = "UltraSSD_LRS"
 )
 
 type (
@@ -47,15 +43,14 @@ type (
 	ScaleSetScope interface {
 		logr.Logger
 		azure.ClusterDescriber
-		GetBootstrapData(ctx context.Context) (string, error)
-		GetLongRunningOperationState() *infrav1.Future
+		azure.AsyncStatusUpdater
+		GetBootstrapData(context.Context) (string, error)
 		GetVMImage() (*infrav1.Image, error)
 		SaveVMImageToStatus(*infrav1.Image)
 		MaxSurge() (int, error)
 		ScaleSetSpec() azure.ScaleSetSpec
 		VMSSExtensionSpecs() []azure.VMSSExtensionSpec
 		SetAnnotation(string, string)
-		SetLongRunningOperationState(*infrav1.Future)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)
 	}
@@ -93,7 +88,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 
 	// check if there is an ongoing long running operation
 	var (
-		future      = s.Scope.GetLongRunningOperationState()
+		future      = s.Scope.GetLongRunningOperationState(s.Scope.ScaleSetSpec().Name, scope.ScalesetsServiceName)
 		fetchedVMSS *azure.VMSS
 	)
 
@@ -147,8 +142,8 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		}
 	}
 
-	// if we get to hear, we have completed any long running VMSS operations (creates / updates)
-	s.Scope.SetLongRunningOperationState(nil)
+	// if we get to here, we have completed any long running VMSS operations (creates / updates)
+	s.Scope.DeleteLongRunningOperationState(s.Scope.ScaleSetSpec().Name, scope.ScalesetsServiceName)
 	return nil
 }
 
@@ -175,7 +170,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}()
 
 	// check if there is an ongoing long running operation
-	future := s.Scope.GetLongRunningOperationState()
+	future := s.Scope.GetLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
 	if future != nil {
 		// if the operation is not complete this will return an error
 		_, err := s.GetResultIfDone(ctx, future)
@@ -184,7 +179,7 @@ func (s *Service) Delete(ctx context.Context) error {
 		}
 
 		// ScaleSet has been deleted
-		s.Scope.SetLongRunningOperationState(nil)
+		s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
 		return nil
 	}
 
@@ -208,7 +203,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	// future is either nil, or the result of the future is complete
-	s.Scope.SetLongRunningOperationState(nil)
+	s.Scope.DeleteLongRunningOperationState(vmssSpec.Name, scope.ScalesetsServiceName)
 	return nil
 }
 
@@ -225,7 +220,7 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 
 	future, err := s.Client.CreateOrUpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, vmss)
 	if err != nil {
-		return future, errors.Wrap(err, "cannot create VMSS")
+		return nil, errors.Wrap(err, "cannot create VMSS")
 	}
 
 	s.Scope.V(2).Info("starting to create VMSS", "scale set", spec.Name)
@@ -273,9 +268,9 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	future, err := s.UpdateAsync(ctx, s.Scope.ResourceGroup(), spec.Name, patch)
 	if err != nil {
 		if azure.ResourceConflict(err) {
-			return future, azure.WithTransientError(err, 30*time.Second)
+			return nil, azure.WithTransientError(err, 30*time.Second)
 		}
-		return future, errors.Wrap(err, "failed updating VMSS")
+		return nil, errors.Wrap(err, "failed updating VMSS")
 	}
 
 	s.Scope.SetLongRunningOperationState(future)
@@ -337,7 +332,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 		}
 
 		for _, zone := range zones {
-			if disks.ManagedDisk != nil && disks.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone) {
+			if disks.ManagedDisk != nil && disks.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, zone) {
 				return azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", spec.Size, location))
 			}
 		}
@@ -482,7 +477,7 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 	}
 
 	for _, dataDisk := range vmssSpec.DataDisks {
-		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType {
+		if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == string(compute.StorageAccountTypesUltraSSDLRS) {
 			vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
 				UltraSSDEnabled: to.BoolPtr(true),
 			}

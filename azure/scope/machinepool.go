@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -44,6 +46,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+// ScalesetsServiceName is the name of the scalesets service.
+// TODO: move this to scalesets.go once we remove the usage in this package,
+// added here to avoid a circular dependency.
+const ScalesetsServiceName = "scalesets"
 
 type (
 	// MachinePoolScopeParams defines the input parameters used to create a new MachinePoolScope.
@@ -297,7 +304,7 @@ func (m *MachinePoolScope) applyAzureMachinePoolMachines(ctx context.Context) er
 		return nil
 	}
 
-	if m.GetLongRunningOperationState() != nil {
+	if futures.Has(m.AzureMachinePool, m.Name(), ScalesetsServiceName) {
 		m.V(4).Info("exiting early due an in-progress long running operation on the ScaleSet")
 		// exit early to be less greedy about delete
 		return nil
@@ -373,13 +380,17 @@ func (m *MachinePoolScope) createMachine(ctx context.Context, machine azure.VMSS
 // SetLongRunningOperationState will set the future on the AzureMachinePool status to allow the resource to continue
 // in the next reconciliation.
 func (m *MachinePoolScope) SetLongRunningOperationState(future *infrav1.Future) {
-	m.AzureMachinePool.Status.LongRunningOperationState = future
+	futures.Set(m.AzureMachinePool, future)
 }
 
-// GetLongRunningOperationState will get the future on the AzureMachinePool status to allow the resource to continue
-// in the next reconciliation.
-func (m *MachinePoolScope) GetLongRunningOperationState() *infrav1.Future {
-	return m.AzureMachinePool.Status.LongRunningOperationState
+// GetLongRunningOperationState will get the future on the AzureMachinePool status.
+func (m *MachinePoolScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(m.AzureMachinePool, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureMachinePool status.
+func (m *MachinePoolScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(m.AzureMachinePool, name, service)
 }
 
 // setProvisioningStateAndConditions sets the AzureMachinePool provisioning state and conditions.
@@ -617,4 +628,46 @@ func (m *MachinePoolScope) SetSubnetName() error {
 	}
 
 	return nil
+}
+
+// UpdateDeleteStatus updates a condition on the AzureMachinePool status after a DELETE operation.
+func (m *MachinePoolScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePutStatus updates a condition on the AzureMachinePool status after a PUT operation.
+func (m *MachinePoolScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(m.AzureMachinePool, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePatchStatus updates a condition on the AzureMachinePool status after a PATCH operation.
+func (m *MachinePoolScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(m.AzureMachinePool, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(m.AzureMachinePool, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }

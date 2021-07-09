@@ -36,6 +36,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -538,21 +539,13 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
-	conditions.SetSummary(s.AzureCluster,
-		conditions.WithConditions(
-			infrav1.NetworkInfrastructureReadyCondition,
-		),
-		conditions.WithStepCounterIfOnly(
-			infrav1.NetworkInfrastructureReadyCondition,
-		),
-	)
+	conditions.SetSummary(s.AzureCluster)
 
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
-			infrav1.NetworkInfrastructureReadyCondition,
 		}})
 }
 
@@ -677,4 +670,62 @@ func (s *ClusterScope) getOutboundLBPublicIPSpecs(outboundLB *infrav1.LoadBalanc
 	}
 
 	return outboundIPSpecs
+}
+
+// SetLongRunningOperationState will set the future on the AzureCluster status to allow the resource to continue
+// in the next reconciliation.
+func (s *ClusterScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(s.AzureCluster, future)
+}
+
+// GetLongRunningOperationState will get the future on the AzureCluster status.
+func (s *ClusterScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(s.AzureCluster, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureCluster status.
+func (s *ClusterScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(s.AzureCluster, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureCluster status after a DELETE operation.
+func (s *ClusterScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePutStatus updates a condition on the AzureCluster status after a PUT operation.
+func (s *ClusterScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.AzureCluster, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePatchStatus updates a condition on the AzureCluster status after a PATCH operation.
+func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(s.AzureCluster, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }

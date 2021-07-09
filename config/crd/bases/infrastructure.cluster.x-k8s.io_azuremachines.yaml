@@ -940,6 +940,42 @@ spec:
                   during the reconciliation of Machines can be added as events to
                   the Machine object and/or logged in the controller's output."
                 type: string
+              longRunningOperationStates:
+                description: LongRunningOperationStates saves the states for Azure
+                  long-running operations so they can be continued on the next reconciliation
+                  loop.
+                items:
+                  description: Future contains the data needed for an Azure long-running
+                    operation to continue across reconcile loops.
+                  properties:
+                    data:
+                      description: Data is the base64 url encoded json Azure AutoRest
+                        Future.
+                      type: string
+                    name:
+                      description: Name is the name of the Azure resource. Together
+                        with the service name, this forms the unique identifier for
+                        the future.
+                      type: string
+                    resourceGroup:
+                      description: ResourceGroup is the Azure resource group for the
+                        resource.
+                      type: string
+                    serviceName:
+                      description: ServiceName is the name of the Azure service. Together
+                        with the name of the resource, this forms the unique identifier
+                        for the future.
+                      type: string
+                    type:
+                      description: Type describes the type of future, such as update,
+                        create, delete, etc.
+                      type: string
+                  required:
+                  - name
+                  - serviceName
+                  - type
+                  type: object
+                type: array
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean

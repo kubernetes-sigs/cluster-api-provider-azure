@@ -124,6 +124,11 @@ type AzureManagedControlPlaneStatus struct {
 	// In the AzureManagedControlPlane implementation, these are identical.
 	// +optional
 	Initialized bool `json:"initialized,omitempty"`
+
+	// LongRunningOperationStates saves the states for Azure long-running operations so they can be continued on the
+	// next reconciliation loop.
+	// +optional
+	LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -147,6 +152,16 @@ type AzureManagedControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AzureManagedControlPlane `json:"items"`
+}
+
+// GetFutures returns the list of long running operation states for an AzureManagedControlPlane API object.
+func (m *AzureManagedControlPlane) GetFutures() infrav1.Futures {
+	return m.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AzureManagedControlPlane object.
+func (m *AzureManagedControlPlane) SetFutures(futures infrav1.Futures) {
+	m.Status.LongRunningOperationStates = futures
 }
 
 func init() {

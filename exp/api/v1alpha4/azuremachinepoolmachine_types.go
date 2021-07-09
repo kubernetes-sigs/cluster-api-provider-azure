@@ -83,10 +83,10 @@ type (
 		// +optional
 		Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-		// LongRunningOperationState saves the state for an Azure long running operations so it can be continued on the
+		// LongRunningOperationStates saves the state for Azure long running operations so they can be continued on the
 		// next reconciliation loop.
 		// +optional
-		LongRunningOperationState *infrav1.Future `json:"longRunningOperationState,omitempty"`
+		LongRunningOperationStates infrav1.Futures `json:"longRunningOperationStates,omitempty"`
 
 		// LatestModelApplied indicates the instance is running the most up-to-date VMSS model. A VMSS model describes
 		// the image version the VM is running. If the instance is not running the latest model, it means the instance
@@ -134,6 +134,16 @@ func (ampm *AzureMachinePoolMachine) GetConditions() clusterv1.Conditions {
 // SetConditions will set the given conditions on an AzureMachinePool object.
 func (ampm *AzureMachinePoolMachine) SetConditions(conditions clusterv1.Conditions) {
 	ampm.Status.Conditions = conditions
+}
+
+// GetFutures returns the list of long running operation states for an AzureMachinePoolMachine API object.
+func (ampm *AzureMachinePoolMachine) GetFutures() infrav1.Futures {
+	return ampm.Status.LongRunningOperationStates
+}
+
+// SetFutures will set the given long running operation states on an AzureMachinePoolMachine object.
+func (ampm *AzureMachinePoolMachine) SetFutures(futures infrav1.Futures) {
+	ampm.Status.LongRunningOperationStates = futures
 }
 
 func init() {
