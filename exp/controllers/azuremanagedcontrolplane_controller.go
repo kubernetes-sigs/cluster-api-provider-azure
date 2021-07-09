@@ -22,7 +22,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/cluster-api/util/patch"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -204,16 +203,6 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 		}
 		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureControlPlane.Namespace) {
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current azure managed control plane namespace")
-		}
-		if identity.Namespace == azureControlPlane.Namespace {
-			patchHelper, err := patch.NewHelper(identity, r.Client)
-			if err != nil {
-				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
-			}
-			identity.ObjectMeta.OwnerReferences = azureControlPlane.GetOwnerReferences()
-			if err := patchHelper.Patch(ctx, identity); err != nil {
-				return reconcile.Result{}, err
-			}
 		}
 	} else {
 		warningMessage := ("You're using deprecated functionality: ")
