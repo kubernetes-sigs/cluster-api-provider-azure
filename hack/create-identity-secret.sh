@@ -26,9 +26,5 @@ source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=hack/parse-prow-creds.sh
 source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 
-export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
-export CLUSTER_IDENTITY_NAME=${CLUSTER_IDENTITY_NAME:="cluster-identity"} 
-export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
-
 kubectl create secret generic "${AZURE_CLUSTER_IDENTITY_SECRET_NAME}" --from-literal=clientSecret="${AZURE_CLIENT_SECRET}"
 kubectl label secret "${AZURE_CLUSTER_IDENTITY_SECRET_NAME}" "clusterctl.cluster.x-k8s.io/move-hierarchy=true" --overwrite=true
