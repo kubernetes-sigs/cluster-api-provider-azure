@@ -193,8 +193,17 @@ var _ = Describe("Conformance Tests", func() {
 			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
 		}
 
+		cleanInput := cleanupInput{
+			SpecName:          specName,
+			Cluster:           result.Cluster,
+			ClusterProxy:      bootstrapClusterProxy,
+			Namespace:         namespace,
+			CancelWatches:     cancelWatches,
+			IntervalsGetter:   e2eConfig.GetIntervals,
+			SkipCleanup:       skipCleanup,
+		}
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
-		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, result.Cluster, e2eConfig.GetIntervals, skipCleanup)
+		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())

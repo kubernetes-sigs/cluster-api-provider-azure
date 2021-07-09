@@ -59,6 +59,7 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 			expect: func(grp *mocks.MockReconcilerMockRecorder, vnet *mocks.MockReconcilerMockRecorder, sg *mocks.MockReconcilerMockRecorder, rt *mocks.MockReconcilerMockRecorder, sn *mocks.MockReconcilerMockRecorder, natg *mocks.MockReconcilerMockRecorder, pip *mocks.MockReconcilerMockRecorder, lb *mocks.MockReconcilerMockRecorder, dns *mocks.MockReconcilerMockRecorder, bastion *mocks.MockReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Delete(gomockinternal.AContext()).Return(azure.ErrNotOwned),
+					bastion.Delete(gomockinternal.AContext()),
 					dns.Delete(gomockinternal.AContext()),
 					lb.Delete(gomockinternal.AContext()),
 					sn.Delete(gomockinternal.AContext()),
@@ -67,7 +68,6 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 					rt.Delete(gomockinternal.AContext()),
 					sg.Delete(gomockinternal.AContext()),
 					vnet.Delete(gomockinternal.AContext()),
-					bastion.Delete(gomockinternal.AContext()),
 				)
 			},
 		},
@@ -76,6 +76,7 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 			expect: func(grp *mocks.MockReconcilerMockRecorder, vnet *mocks.MockReconcilerMockRecorder, sg *mocks.MockReconcilerMockRecorder, rt *mocks.MockReconcilerMockRecorder, sn *mocks.MockReconcilerMockRecorder, pip *mocks.MockReconcilerMockRecorder, natg *mocks.MockReconcilerMockRecorder, lb *mocks.MockReconcilerMockRecorder, dns *mocks.MockReconcilerMockRecorder, bastion *mocks.MockReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Delete(gomockinternal.AContext()).Return(azure.ErrNotOwned),
+					bastion.Delete(gomockinternal.AContext()),
 					dns.Delete(gomockinternal.AContext()),
 					lb.Delete(gomockinternal.AContext()).Return(errors.New("some error happened")),
 				)
@@ -86,6 +87,7 @@ func TestAzureClusterReconcilerDelete(t *testing.T) {
 			expect: func(grp *mocks.MockReconcilerMockRecorder, vnet *mocks.MockReconcilerMockRecorder, sg *mocks.MockReconcilerMockRecorder, rt *mocks.MockReconcilerMockRecorder, sn *mocks.MockReconcilerMockRecorder, pip *mocks.MockReconcilerMockRecorder, natg *mocks.MockReconcilerMockRecorder, lb *mocks.MockReconcilerMockRecorder, dns *mocks.MockReconcilerMockRecorder, bastion *mocks.MockReconcilerMockRecorder) {
 				gomock.InOrder(
 					grp.Delete(gomockinternal.AContext()).Return(azure.ErrNotOwned),
+					bastion.Delete(gomockinternal.AContext()),
 					dns.Delete(gomockinternal.AContext()),
 					lb.Delete(gomockinternal.AContext()),
 					sn.Delete(gomockinternal.AContext()),
