@@ -44,6 +44,7 @@ require (
 	sigs.k8s.io/cluster-api/test v0.4.0
 	sigs.k8s.io/controller-runtime v0.9.1
 	sigs.k8s.io/kind v0.11.1
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.0
