@@ -31,7 +31,7 @@ import (
 const AzureMachineTemplateImmutableMsg = "AzureMachineTemplate spec.template.spec field is immutable. Please create new resource instead. ref doc: https://cluster-api.sigs.k8s.io/tasks/change-machine-template.html"
 
 // log is for logging in this package.
-var _ = logf.Log.WithName("azuremachinetemplate-resource")
+var machinetemplatelog = logf.Log.WithName("azuremachinetemplate-resource")
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -40,18 +40,26 @@ func (r *AzureMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=update,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinetemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates,versions=v1alpha4,name=validation.azuremachinetemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinetemplate,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates,versions=v1alpha4,name=default.azuremachinetemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinetemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinetemplates,versions=v1alpha4,name=validation.azuremachinetemplate.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1beta1
 
+var _ webhook.Defaulter = &AzureMachineTemplate{}
 var _ webhook.Validator = &AzureMachineTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateCreate() error {
+	machinetemplatelog.Info("validate create", "name", r.Name)
+	spec := r.Spec.Template.Spec
+
+	if allErrs := ValidateAzureMachineSpec(spec); len(allErrs) > 0 {
+		return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachineTemplate").GroupKind(), r.Name, allErrs)
+	}
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
-	clusterlog.Info("validate update", "name", r.Name)
+	machinetemplatelog.Info("validate update", "name", r.Name)
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureMachineTemplate)
 
@@ -70,4 +78,10 @@ func (r *AzureMachineTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *AzureMachineTemplate) ValidateDelete() error {
 	return nil
+}
+
+// Default implements webhookutil.defaulter so a webhook will be registered for the type.
+func (r *AzureMachineTemplate) Default() {
+	machinetemplatelog.Info("default", "name", r.Name)
+	r.Spec.Template.Spec.SetDefaults(machinetemplatelog)
 }

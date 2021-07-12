@@ -19,10 +19,124 @@ package v1alpha4
 import (
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		name            string
+		machineTemplate *AzureMachineTemplate
+		wantErr         bool
+	}{
+		{
+			name: "azuremachinetemplate with marketplane image - full",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithtMarketPlaceImage(t, "PUB1234", "OFFER1234", "SKU1234", "1.0.0"),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with marketplace image - missing publisher",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithtMarketPlaceImage(t, "", "OFFER1234", "SKU1234", "1.0.0"),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with shared gallery image - full",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithSharedImage(t, "SUB123", "RG123", "NAME123", "GALLERY1", "1.0.0"),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with marketplace image - missing subscription",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithSharedImage(t, "", "RG123", "NAME123", "GALLERY1", "1.0.0"),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with image by - with id",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithImageByID(t, "ID123"),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with image by - without id",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithImageByID(t, ""),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with valid SSHPublicKey",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithSSHPublicKey(t, validSSHPublicKey),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate without SSHPublicKey",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithSSHPublicKey(t, ""),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with invalid SSHPublicKey",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithSSHPublicKey(t, "invalid ssh key"),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with list of user-assigned identities",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{{ProviderID: "azure:///123"}, {ProviderID: "azure:///456"}}),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with empty list of user-assigned identities",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithUserAssignedIdentities(t, []UserAssignedIdentity{}),
+			),
+			wantErr: true,
+		},
+		{
+			name: "azuremachinetemplate with valid osDisk cache type",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithOsDiskCacheType(t, string(compute.PossibleCachingTypesValues()[1])),
+			),
+			wantErr: false,
+		},
+		{
+			name: "azuremachinetemplate with invalid osDisk cache type",
+			machineTemplate: createAzureMachineTemplateFromMachine(
+				createMachineWithOsDiskCacheType(t, "invalid_cache_type"),
+			),
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.machineTemplate.ValidateCreate()
+			if test.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
 
 func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 	g := NewWithT(t)
@@ -124,5 +238,15 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
+	}
+}
+
+func createAzureMachineTemplateFromMachine(machine *AzureMachine) *AzureMachineTemplate {
+	return &AzureMachineTemplate{
+		Spec: AzureMachineTemplateSpec{
+			Template: AzureMachineTemplateResource{
+				Spec: machine.Spec,
+			},
+		},
 	}
 }

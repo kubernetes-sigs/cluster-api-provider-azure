@@ -45,36 +45,12 @@ var _ webhook.Validator = &AzureMachine{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *AzureMachine) ValidateCreate() error {
 	machinelog.Info("validate create", "name", m.Name)
-	var allErrs field.ErrorList
 
-	if errs := ValidateImage(m.Spec.Image, field.NewPath("image")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+	if allErrs := ValidateAzureMachineSpec(m.Spec); len(allErrs) > 0 {
+		return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
 	}
 
-	if errs := ValidateOSDisk(m.Spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
-	}
-
-	if errs := ValidateSSHKey(m.Spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
-	}
-
-	if errs := ValidateSystemAssignedIdentity(m.Spec.Identity, "", m.Spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
-	}
-
-	if errs := ValidateUserAssignedIdentity(m.Spec.Identity, m.Spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
-	}
-
-	if errs := ValidateDataDisks(m.Spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
-	}
-
-	if len(allErrs) == 0 {
-		return nil
-	}
-	return apierrors.NewInvalid(GroupVersion.WithKind("AzureMachine").GroupKind(), m.Name, allErrs)
+	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -183,18 +159,5 @@ func (m *AzureMachine) ValidateDelete() error {
 // Default implements webhookutil.defaulter so a webhook will be registered for the type.
 func (m *AzureMachine) Default() {
 	machinelog.Info("default", "name", m.Name)
-
-	err := m.SetDefaultSSHPublicKey()
-	if err != nil {
-		machinelog.Error(err, "SetDefaultSshPublicKey failed")
-	}
-
-	err = m.SetDefaultCachingType()
-	if err != nil {
-		machinelog.Error(err, "SetDefaultCachingType failed")
-	}
-
-	m.SetDataDisksDefaults()
-
-	m.SetIdentityDefaults()
+	m.Spec.SetDefaults(machinelog)
 }

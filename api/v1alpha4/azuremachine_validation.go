@@ -27,6 +27,37 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
+// ValidateAzureMachineSpec check for validation errors of azuremachine.spec.
+func ValidateAzureMachineSpec(spec AzureMachineSpec) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if errs := ValidateImage(spec.Image, field.NewPath("image")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateOSDisk(spec.OSDisk, field.NewPath("osDisk")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateSSHKey(spec.SSHPublicKey, field.NewPath("sshPublicKey")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateSystemAssignedIdentity(spec.Identity, "", spec.RoleAssignmentName, field.NewPath("roleAssignmentName")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateUserAssignedIdentity(spec.Identity, spec.UserAssignedIdentities, field.NewPath("userAssignedIdentities")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	if errs := ValidateDataDisks(spec.DataDisks, field.NewPath("dataDisks")); len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	}
+
+	return allErrs
+}
+
 // ValidateSSHKey validates an SSHKey.
 func ValidateSSHKey(sshKey string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
