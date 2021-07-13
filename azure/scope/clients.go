@@ -120,6 +120,14 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
 	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
 	c.Values[auth.SubscriptionID] = strings.TrimSuffix(subscriptionID, "\n")
+	c.Values[auth.TenantID] = strings.TrimSuffix(credentialsProvider.GetTenantID(), "\n")
+	c.Values[auth.ClientID] = strings.TrimSuffix(credentialsProvider.GetClientID(), "\n")
+
+	clientSecret, err := credentialsProvider.GetClientSecret(ctx)
+	if err != nil {
+		return err
+	}
+	c.Values[auth.ClientSecret] = strings.TrimSuffix(clientSecret, "\n")
 
 	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint)
 	return err
