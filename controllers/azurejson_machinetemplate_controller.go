@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -143,6 +144,11 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	userAssignedIdentityIfExists := ""
 	if len(azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities) > 0 {
 		userAssignedIdentityIfExists = azureMachineTemplate.Spec.Template.Spec.UserAssignedIdentities[0].ProviderID
+	}
+
+	if azureMachineTemplate.Spec.Template.Spec.Identity == infrav1.VMIdentityNone {
+		log.Info(fmt.Sprintf("WARNING, %s", spIdentityWarning))
+		r.Recorder.Eventf(azureMachineTemplate, corev1.EventTypeWarning, "VMIdentityNone", spIdentityWarning)
 	}
 
 	newSecret, err := GetCloudProviderSecret(

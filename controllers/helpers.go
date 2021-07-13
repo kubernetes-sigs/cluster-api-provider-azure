@@ -49,6 +49,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 )
 
+const (
+	spIdentityWarning = "You are using Service Principal authentication for Cloud Provider Azure which is less secure than Managed Identity. " +
+		"Your Service Principal credentials will be written to a file on the disk of each VM in order to be accessible by Cloud Provider. " +
+		"To learn more, see https://capz.sigs.k8s.io/topics/identities-use-cases.html#azure-host-identity "
+	deprecatedManagerCredsWarning = "You're using deprecated functionality: " +
+		"Using Azure credentials from the manager environment is deprecated and will be removed in future releases. " +
+		"Please specify an AzureClusterIdentity for the AzureCluster instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html "
+)
+
 type (
 	// Options are controller options extended.
 	Options struct {
