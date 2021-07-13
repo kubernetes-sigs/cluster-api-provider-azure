@@ -12,9 +12,9 @@ custom resources:
 The combination of AzureManagedControlPlane/AzureManagedCluster
 corresponds to provisioning an AKS cluster. AzureManagedMachinePool
 corresponds one-to-one with AKS node pools. This also means that
-creating an AzureManagedControlPlane requires defining the default
-machine pool, since AKS requires at least one system pool at creation
-time.
+creating an AzureManagedControlPlane requires at least one AzureManagedMachinePool
+with `spec.mode` `System`, since AKS expects at least one system pool at creation 
+time. For more documentation on system node pool refer [AKS Docs](https://docs.microsoft.com/en-us/azure/aks/use-system-pools) 
 
 ## Deploy with clusterctl
 
@@ -95,13 +95,11 @@ kind: AzureManagedControlPlane
 metadata:
   name: my-cluster-control-plane
 spec:
-  defaultPoolRef:
-    name: agentpool0
   location: southcentralus
   resourceGroup: foo-bar
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
-  version: v1.19.6
+  version: v1.20.5
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
 ---
@@ -127,15 +125,42 @@ spec:
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
-      version: v1.19.6
+      version: v1.20.5
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureManagedMachinePool
 metadata:
   name: agentpool0
 spec:
+  mode: System
   osDiskSizeGB: 512
-  sku: Standard_D8s_v3
+  sku: Standard_D2s_v3
+---
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachinePool
+metadata:
+  name: agentpool1
+spec:
+  clusterName: my-cluster
+  replicas: 2
+  template:
+    spec:
+      clusterName: my-cluster
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        kind: AzureManagedMachinePool
+        name: agentpool1
+        namespace: default
+      version: v1.20.5
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureManagedMachinePool
+metadata:
+  name: agentpool1
+spec:
+  mode: User
+  osDiskSizeGB: 1024
+  sku: Standard_D2s_v4
 ```
 
 The main features for configuration today are
@@ -214,3 +239,83 @@ Current limitations
 - Only supports Standard load balancer (SLB).
   - We will not support Basic load balancer in CAPZ. SLB is generally
     the path forward in Azure.
+
+## Troubleshooting
+
+If a user tries to delete the MachinePool which refers to the last system node pool AzureManagedMachinePool webhook will reject deletion, so time stamp never gets set on the AzureManagedMachinePool. However the timestamp would be set on the MachinePool and would be in deletion state. To recover from this state create a new MachinePool manually referencing the AzureManagedMachinePool, edit the required references and finalizers to link the MachinePool to the AzureManagedMachinePool. In the AzureManagedMachinePool remove the owner reference to the old MachinePool, and set it to the new MachinePool. Once the new MachinePool is pointing to the AzureManagedMachinePool you can delete the old MachinePool. To delete the old MachinePool remove the finalizers in that object.
+
+Here is an Example:
+
+```yaml
+# MachinePool deleted 
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachinePool
+metadata:
+  finalizers:             # remove finalizers once new object is pointing to the AzureManagedMachinePool
+  - machinepool.cluster.x-k8s.io
+  labels:
+    cluster.x-k8s.io/cluster-name: capz-managed-aks
+  name: agentpool0
+  namespace: default
+  ownerReferences:
+  - apiVersion: cluster.x-k8s.io/v1alpha4
+    kind: Cluster
+    name: capz-managed-aks
+    uid: 152ecf45-0a02-4635-987c-1ebb89055fa2
+  uid: ae4a235a-f0fa-4252-928a-0e3b4c61dbea
+spec:
+  clusterName: capz-managed-aks
+  minReadySeconds: 0
+  providerIDList:
+  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-agentpool0-10226072-vmss/virtualMachines/0
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: capz-managed-aks
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        kind: AzureManagedMachinePool
+        name: agentpool0
+        namespace: default
+      version: v1.20.5
+
+---
+# New Machinepool
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachinePool
+metadata:
+  finalizers:
+  - machinepool.cluster.x-k8s.io
+  generation: 2
+  labels:
+    cluster.x-k8s.io/cluster-name: capz-managed-aks
+  name: agentpool2    # change the name of the machinepool
+  namespace: default 
+  ownerReferences:
+  - apiVersion: cluster.x-k8s.io/v1alpha4
+    kind: Cluster
+    name: capz-managed-aks
+    uid: 152ecf45-0a02-4635-987c-1ebb89055fa2   
+  # uid: ae4a235a-f0fa-4252-928a-0e3b4c61dbea     # remove the uid set for machinepool
+spec:
+  clusterName: capz-managed-aks
+  minReadySeconds: 0
+  providerIDList:
+  - azure:///subscriptions/9107f2fb-e486-a434-a948-52e2929b6f18/resourceGroups/MC_rg_capz-managed-aks_eastus/providers/Microsoft.Compute/virtualMachineScaleSets/aks-agentpool0-10226072-vmss/virtualMachines/0  
+  replicas: 1
+  template:
+    metadata: {}
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: capz-managed-aks
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        kind: AzureManagedMachinePool
+        name: agentpool0
+        namespace: default
+      version: v1.20.5
+```

@@ -23,6 +23,10 @@ import (
 
 // AzureManagedMachinePoolSpec defines the desired state of AzureManagedMachinePool.
 type AzureManagedMachinePoolSpec struct {
+	// Mode - represents mode of an agent pool. Possible values include: System, User.
+	// +kubebuilder:validation:Enum=System;User
+	Mode string `json:"mode"`
+
 	// SKU is the size of the VMs in the node pool.
 	SKU string `json:"sku"`
 

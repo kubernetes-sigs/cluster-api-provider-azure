@@ -117,6 +117,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 			scope.ControlPlane.Spec.VirtualNetwork.Name,
 			scope.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
 		),
+		Mode: scope.InfraMachinePool.Spec.Mode,
 	}
 
 	if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {

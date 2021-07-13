@@ -64,15 +64,6 @@ spec:
                 - host
                 - port
                 type: object
-              defaultPoolRef:
-                description: DefaultPoolRef is the specification for the default pool,
-                  without which an AKS cluster cannot be created.
-                properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
-                type: object
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
                   DNS service. It must be within the Kubernetes service address range
@@ -147,7 +138,6 @@ spec:
                 - name
                 type: object
             required:
-            - defaultPoolRef
             - location
             - nodeResourceGroupName
             - resourceGroupName
@@ -216,15 +206,6 @@ spec:
                 required:
                 - host
                 - port
-                type: object
-              defaultPoolRef:
-                description: DefaultPoolRef is the specification for the default pool,
-                  without which an AKS cluster cannot be created.
-                properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
                 type: object
               dnsServiceIP:
                 description: DNSServiceIP is an IP address assigned to the Kubernetes
@@ -337,7 +318,6 @@ spec:
                 - name
                 type: object
             required:
-            - defaultPoolRef
             - location
             - resourceGroupName
             - sshPublicKey

@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha3
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
@@ -68,9 +67,6 @@ type AzureManagedControlPlaneSpec struct {
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
 	SSHPublicKey string `json:"sshPublicKey"`
-
-	// DefaultPoolRef is the specification for the default pool, without which an AKS cluster cannot be created.
-	DefaultPoolRef corev1.LocalObjectReference `json:"defaultPoolRef"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.

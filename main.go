@@ -67,6 +67,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/ot"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 
@@ -510,6 +511,16 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AzureManagedControlPlane")
 			os.Exit(1)
 		}
+	}
+
+	if feature.Gates.Enabled(feature.AKS) {
+		hookServer := mgr.GetWebhookServer()
+		hookServer.Register("/mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedmachinepool", webhook.NewMutatingWebhook(
+			&infrav1alpha4exp.AzureManagedMachinePool{}, mgr.GetClient(),
+		))
+		hookServer.Register("/validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremanagedmachinepool", webhook.NewValidatingWebhook(
+			&infrav1alpha4exp.AzureManagedMachinePool{}, mgr.GetClient(),
+		))
 	}
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {

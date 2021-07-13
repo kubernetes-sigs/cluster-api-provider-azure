@@ -19,7 +19,7 @@ package agentpools
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -38,6 +38,7 @@ type Spec struct {
 	Replicas      int32
 	OSDiskSizeGB  int32
 	VnetSubnetID  string
+	Mode          string
 }
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
@@ -52,13 +53,14 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 
 	profile := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-			VMSize:              containerservice.VMSizeTypes(agentPoolSpec.SKU),
-			OsType:              containerservice.Linux,
+			VMSize:              &agentPoolSpec.SKU,
+			OsType:              containerservice.OSTypeLinux,
 			OsDiskSizeGB:        &agentPoolSpec.OSDiskSizeGB,
 			Count:               &agentPoolSpec.Replicas,
-			Type:                containerservice.VirtualMachineScaleSets,
+			Type:                containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			OrchestratorVersion: agentPoolSpec.Version,
 			VnetSubnetID:        &agentPoolSpec.VnetSubnetID,
+			Mode:                containerservice.AgentPoolMode(agentPoolSpec.Mode),
 		},
 	}
 
@@ -87,18 +89,22 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		// Normalize individual agent pools to diff in case we need to update
 		existingProfile := containerservice.AgentPool{
 			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
-				VMSize:              existingPool.ManagedClusterAgentPoolProfileProperties.VMSize,
-				OsType:              containerservice.Linux,
-				OsDiskSizeGB:        existingPool.ManagedClusterAgentPoolProfileProperties.OsDiskSizeGB,
-				Count:               existingPool.ManagedClusterAgentPoolProfileProperties.Count,
-				Type:                containerservice.VirtualMachineScaleSets,
-				OrchestratorVersion: existingPool.ManagedClusterAgentPoolProfileProperties.OrchestratorVersion,
-				VnetSubnetID:        existingPool.ManagedClusterAgentPoolProfileProperties.VnetSubnetID,
+				Count:               existingPool.Count,
+				OrchestratorVersion: existingPool.OrchestratorVersion,
+				Mode:                existingPool.Mode,
+			},
+		}
+
+		normalizedProfile := containerservice.AgentPool{
+			ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
+				Count:               profile.Count,
+				OrchestratorVersion: profile.OrchestratorVersion,
+				Mode:                profile.Mode,
 			},
 		}
 
 		// Diff and check if we require an update
-		diff := cmp.Diff(profile, existingProfile)
+		diff := cmp.Diff(existingProfile, normalizedProfile)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
 			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)
