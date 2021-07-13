@@ -22,7 +22,7 @@ settings = {
     "aks_kubernetes_version": "v1.20.5"
 }
 
-keys = ["AZURE_SUBSCRIPTION_ID_B64", "AZURE_TENANT_ID_B64", "AZURE_CLIENT_SECRET_B64", "AZURE_CLIENT_ID_B64"]
+keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
 
 # global settings
 settings.update(read_json(
@@ -178,9 +178,10 @@ def create_identity_secret():
     os.putenv('CLUSTER_IDENTITY_NAME', 'cluster-identity')
 
     substitutions = settings.get("kustomize_substitutions", {})
-    os.putenv('AZURE_CLIENT_SECRET_B64', substitutions.get("AZURE_CLIENT_SECRET_B64"))
+    os.putenv('AZURE_CLIENT_SECRET_B64', base64_encode(substitutions.get("AZURE_CLIENT_SECRET")))
 
     local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | kubectl apply -f -", quiet=True)
+    os.unsetenv('AZURE_CLIENT_SECRET_B64')
 
 def create_crs():
     # create config maps
