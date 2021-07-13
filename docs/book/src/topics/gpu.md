@@ -28,7 +28,7 @@ AZURE_CONTROL_PLANE_MACHINE_TYPE=Standard_D2s_v3 \
 AZURE_NODE_MACHINE_TYPE=Standard_NC6s_v3 \
 AZURE_LOCATION=southcentralus \
 clusterctl generate cluster azure-gpu \
-  --kubernetes-version=v1.19.7 \
+  --kubernetes-version=v1.21.2 \
   --worker-machine-count=1 \
   --flavor=nvidia-gpu > azure-gpu-cluster.yaml
 ```
@@ -71,8 +71,8 @@ NAME        PHASE
 azure-gpu   Provisioned
 $ kubectl get machines
 NAME                             PROVIDERID                                                                                                                                     PHASE     VERSION
-azure-gpu-control-plane-t94nm    azure:////subscriptions/<subscription_id>/resourceGroups/azure-gpu/providers/Microsoft.Compute/virtualMachines/azure-gpu-control-plane-nnb57   Running   v1.19.7
-azure-gpu-md-0-f6b88dd78-vmkph   azure:////subscriptions/<subscription_id>/resourceGroups/azure-gpu/providers/Microsoft.Compute/virtualMachines/azure-gpu-md-0-gcc8v            Running   v1.19.7
+azure-gpu-control-plane-t94nm    azure:////subscriptions/<subscription_id>/resourceGroups/azure-gpu/providers/Microsoft.Compute/virtualMachines/azure-gpu-control-plane-nnb57   Running   v1.21.2
+azure-gpu-md-0-f6b88dd78-vmkph   azure:////subscriptions/<subscription_id>/resourceGroups/azure-gpu/providers/Microsoft.Compute/virtualMachines/azure-gpu-md-0-gcc8v            Running   v1.21.2
 ```
 
 Install a [CNI](https://cluster-api.sigs.k8s.io/user/quick-start.html#deploy-a-cni-solution) of your choice.
@@ -104,8 +104,8 @@ $ kubectl -n kube-system get po | grep nvidia
 kube-system   nvidia-device-plugin-daemonset-d5dn6                    1/1     Running   0          16m
 $ kubectl get nodes
 NAME                            STATUS   ROLES    AGE   VERSION
-azure-gpu-control-plane-nnb57   Ready    master   42m   v1.19.7
-azure-gpu-md-0-gcc8v            Ready    <none>   38m   v1.19.7
+azure-gpu-control-plane-nnb57   Ready    master   42m   v1.21.2
+azure-gpu-md-0-gcc8v            Ready    <none>   38m   v1.21.2
 $ kubectl get node azure-gpu-md-0-gcc8v -o jsonpath={.status.allocatable} | jq
 {
   "attachable-volumes-azure-disk": "12",
