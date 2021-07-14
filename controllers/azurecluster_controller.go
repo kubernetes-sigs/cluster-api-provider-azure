@@ -162,11 +162,8 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 		}
 	} else {
-		warningMessage := ("You're using deprecated functionality: ")
-		warningMessage += ("Using Azure credentials from the manager environment is deprecated and will be removed in future releases. ")
-		warningMessage += ("Please specify an AzureClusterIdentity for the AzureCluster instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html ")
-		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
-		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
+		log.Info(fmt.Sprintf("WARNING, %s", deprecatedManagerCredsWarning))
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", deprecatedManagerCredsWarning)
 	}
 
 	// Create the scope.
