@@ -465,16 +465,16 @@ func (mr *MockNatGatewayScopeMockRecorder) ResourceGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockNatGatewayScope)(nil).ResourceGroup))
 }
 
-// SetNodeNatGateway mocks base method.
-func (m *MockNatGatewayScope) SetNodeNatGateway(natGateway v1alpha4.NatGateway) {
+// SetNodeNatGatewayID mocks base method.
+func (m *MockNatGatewayScope) SetNodeNatGatewayID(id string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetNodeNatGateway", natGateway)
+	m.ctrl.Call(m, "SetNodeNatGatewayID", id)
 }
 
-// SetNodeNatGateway indicates an expected call of SetNodeNatGateway.
-func (mr *MockNatGatewayScopeMockRecorder) SetNodeNatGateway(natGateway interface{}) *gomock.Call {
+// SetNodeNatGatewayID indicates an expected call of SetNodeNatGatewayID.
+func (mr *MockNatGatewayScopeMockRecorder) SetNodeNatGatewayID(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNodeNatGateway", reflect.TypeOf((*MockNatGatewayScope)(nil).SetNodeNatGateway), natGateway)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNodeNatGatewayID", reflect.TypeOf((*MockNatGatewayScope)(nil).SetNodeNatGatewayID), id)
 }
 
 // SetSubnet mocks base method.

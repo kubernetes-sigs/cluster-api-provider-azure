@@ -91,7 +91,7 @@ func TestReconcileNatGateways(t *testing.T) {
 				s.SubscriptionID().AnyTimes().Return("123")
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				m.Get(gomockinternal.AContext(), "my-rg", "my-node-natgateway").Return(network.NatGateway{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found")).Times(1)
-				s.SetNodeNatGateway(gomock.Any()).Times(1)
+				s.SetNodeNatGatewayID(gomock.Any()).Times(1)
 				s.Location().Return("westus")
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(1)
 			},
@@ -129,7 +129,7 @@ func TestReconcileNatGateways(t *testing.T) {
 						{ID: to.StringPtr("1")},
 					}},
 				}, nil)
-				s.SetNodeNatGateway(gomock.Any()).Times(2)
+				s.SetNodeNatGatewayID(gomock.Any()).Times(2)
 				s.Location().Return("westus")
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-node-natgateway", gomock.AssignableToTypeOf(network.NatGateway{})).Times(1)
 			},
