@@ -214,16 +214,15 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	// TODO: enable this with a longer timeout once https://github.com/kubernetes-sigs/cluster-api/pull/4830 is imported.
-	//Context("Should successfully set and use node drain timeout", func() {
-	//	capi_e2e.NodeDrainTimeoutSpec(context.TODO(), func() capi_e2e.NodeDrainTimeoutSpecInput {
-	//		return capi_e2e.NodeDrainTimeoutSpecInput{
-	//			E2EConfig:             e2eConfig,
-	//			ClusterctlConfigPath:  clusterctlConfigPath,
-	//			BootstrapClusterProxy: bootstrapClusterProxy,
-	//			ArtifactFolder:        artifactFolder,
-	//			SkipCleanup:           skipCleanup,
-	//		}
-	//	})
-	//})
+	Context("Should successfully set and use node drain timeout", func() {
+		capi_e2e.NodeDrainTimeoutSpec(context.TODO(), func() capi_e2e.NodeDrainTimeoutSpecInput {
+			return capi_e2e.NodeDrainTimeoutSpecInput{
+				E2EConfig:             e2eConfig,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				ArtifactFolder:        artifactFolder,
+				SkipCleanup:           skipCleanup,
+			}
+		})
+	})
 })
