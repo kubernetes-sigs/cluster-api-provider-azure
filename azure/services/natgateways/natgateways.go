@@ -34,7 +34,7 @@ type NatGatewayScope interface {
 	logr.Logger
 	azure.ClusterScoper
 	NatGatewaySpecs() []azure.NatGatewaySpec
-	SetNodeNatGateway(natGateway infrav1.NatGateway)
+	SetNodeNatGatewayID(id string)
 }
 
 // Service provides operations on azure resources.
@@ -71,7 +71,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		case err == nil:
 			// nat gateway already exists
 			s.Scope.V(4).Info("nat gateway already exists", "nat gateway", natGatewaySpec.Name)
-			s.Scope.SetNodeNatGateway(*existingNatGateway)
+			s.Scope.SetNodeNatGatewayID(existingNatGateway.ID)
 
 			if existingNatGateway.NatGatewayIP.Name == natGatewaySpec.NatGatewayIP.Name {
 				// Skip update for Nat Gateway as it exists with expected values
@@ -99,13 +99,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to create nat gateway %s in resource group %s", natGatewaySpec.Name, s.Scope.ResourceGroup())
 		}
 		s.Scope.V(2).Info("successfully created nat gateway", "nat gateway", natGatewaySpec.Name)
-		s.Scope.SetNodeNatGateway(infrav1.NatGateway{
-			ID:   azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.Name),
-			Name: natGatewaySpec.Name,
-			NatGatewayIP: infrav1.PublicIPSpec{
-				Name: *(*natGatewayToCreate.NatGatewayPropertiesFormat.PublicIPAddresses)[0].ID,
-			},
-		})
+		s.Scope.SetNodeNatGatewayID(azure.NatGatewayID(s.Scope.SubscriptionID(), s.Scope.ResourceGroup(), natGatewaySpec.Name))
 	}
 	return nil
 }

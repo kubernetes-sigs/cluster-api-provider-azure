@@ -398,10 +398,10 @@ func (s *ClusterScope) NodeNatGateway() infrav1.NatGateway {
 	return subnet.NatGateway
 }
 
-// SetNodeNatGateway sets the node subnet into the scope with the updated nat gateway.
-func (s *ClusterScope) SetNodeNatGateway(natGateway infrav1.NatGateway) {
+// SetNodeNatGatewayID updates the node subnet nat gateway ID.
+func (s *ClusterScope) SetNodeNatGatewayID(id string) {
 	nodeSubnet := s.NodeSubnet()
-	nodeSubnet.NatGateway = natGateway
+	nodeSubnet.NatGateway.ID = id
 	s.SetSubnet(nodeSubnet)
 }
 
