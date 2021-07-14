@@ -38,7 +38,7 @@ The status of VM bootstrap operations (cloud-init, kubeadm) is opaque from the p
 
 ### Option 1: Enable VM boot diagnostics
 Azure VM and VMSS support a boot diagnostics feature which streams cloud init logs and boot time output into a storage account. This would allow log collection for some aspects of bootstrapping (at least cloud init logs).
-See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/tutorial-monitor#enable-boot-diagnostics and https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/606
+See https://docs.microsoft.com/azure/virtual-machines/boot-diagnostics and https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/606
 
 #### Enable VM Boot Diagnostics Pros:
 - Low effort (this VM feature gets us basic logs for free once we enable it)
@@ -143,7 +143,7 @@ VM Boot Diagnostics should be used in conjunction with the extension. The VM ext
     - Yes, the CAPZ extension will be a clone of the [custom script extension](https://github.com/Azure/custom-script-extension-linux).
 - Will the extension need to be republished often?
     - No. Once the extension is published once, we don't expect to have to republish it unless code defects are found in the extension itself. The script run by the extension will live in the cluster-api-provider-azure repository and can be updated without changing the extension itself.
-- Will the extension be available in all Azure regions and clouds? 
+- Will the extension be available in all Azure regions and clouds?
     - Yes. At first, the extension will be available in all Azure Public Cloud regions. Shortly after, it will be published in other clouds.
 - Does this proposed solution work for both VMs and VMSS?
     - Yes. Scale sets have can have a common extension that runs on all instances.
