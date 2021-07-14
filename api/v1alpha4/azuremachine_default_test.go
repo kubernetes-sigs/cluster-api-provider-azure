@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestAzureMachine_SetDefaultSSHPublicKey(t *testing.T) {
+func TestAzureMachineSpec_SetDefaultSSHPublicKey(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -38,16 +38,16 @@ func TestAzureMachine_SetDefaultSSHPublicKey(t *testing.T) {
 	publicKeyExistTest := test{machine: createMachineWithSSHPublicKey(t, existingPublicKey)}
 	publicKeyNotExistTest := test{machine: createMachineWithSSHPublicKey(t, "")}
 
-	err := publicKeyExistTest.machine.SetDefaultSSHPublicKey()
+	err := publicKeyExistTest.machine.Spec.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
 	g.Expect(publicKeyExistTest.machine.Spec.SSHPublicKey).To(Equal(existingPublicKey))
 
-	err = publicKeyNotExistTest.machine.SetDefaultSSHPublicKey()
+	err = publicKeyNotExistTest.machine.Spec.SetDefaultSSHPublicKey()
 	g.Expect(err).To(BeNil())
 	g.Expect(publicKeyNotExistTest.machine.Spec.SSHPublicKey).To(Not(BeEmpty()))
 }
 
-func TestAzureMachine_SetIdentityDefaults(t *testing.T) {
+func TestAzureMachineSpec_SetIdentityDefaults(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -67,19 +67,19 @@ func TestAzureMachine_SetIdentityDefaults(t *testing.T) {
 		Identity: VMIdentityUserAssigned,
 	}}}
 
-	roleAssignmentExistTest.machine.SetIdentityDefaults()
+	roleAssignmentExistTest.machine.Spec.SetIdentityDefaults()
 	g.Expect(roleAssignmentExistTest.machine.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
 
-	roleAssignmentEmptyTest.machine.SetIdentityDefaults()
+	roleAssignmentEmptyTest.machine.Spec.SetIdentityDefaults()
 	g.Expect(roleAssignmentEmptyTest.machine.Spec.RoleAssignmentName).To(Not(BeEmpty()))
 	_, err := uuid.Parse(roleAssignmentEmptyTest.machine.Spec.RoleAssignmentName)
 	g.Expect(err).To(Not(HaveOccurred()))
 
-	notSystemAssignedTest.machine.SetIdentityDefaults()
+	notSystemAssignedTest.machine.Spec.SetIdentityDefaults()
 	g.Expect(notSystemAssignedTest.machine.Spec.RoleAssignmentName).To(BeEmpty())
 }
 
-func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
+func TestAzureMachineSpec_SetDataDisksDefaults(t *testing.T) {
 	cases := []struct {
 		name   string
 		disks  []DataDisk
@@ -240,7 +240,7 @@ func TestAzureMachine_SetDataDisksDefaults(t *testing.T) {
 			t.Parallel()
 			machine := hardcodedAzureMachineWithSSHKey(generateSSHPublicKey(true))
 			machine.Spec.DataDisks = tc.disks
-			machine.SetDataDisksDefaults()
+			machine.Spec.SetDataDisksDefaults()
 			if !reflect.DeepEqual(machine.Spec.DataDisks, tc.output) {
 				expected, _ := json.MarshalIndent(tc.output, "", "\t")
 				actual, _ := json.MarshalIndent(machine.Spec.DataDisks, "", "\t")

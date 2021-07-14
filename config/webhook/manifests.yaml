@@ -54,6 +54,27 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinetemplate
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.azuremachinetemplate.infrastructure.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1alpha4
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - azuremachinetemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinepool
   failurePolicy: Fail
   name: default.azuremachinepool.infrastructure.cluster.x-k8s.io
@@ -154,6 +175,7 @@ webhooks:
     apiVersions:
     - v1alpha4
     operations:
+    - CREATE
     - UPDATE
     resources:
     - azuremachinetemplates
