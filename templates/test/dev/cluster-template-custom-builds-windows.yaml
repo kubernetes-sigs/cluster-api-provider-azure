@@ -96,6 +96,25 @@ spec:
         tableType: gpt
     files:
     - content: |
+        network:
+          version: 2
+          ethernets:
+            eth0:
+              mtu: 1400
+              match:
+                macaddress: MACADDRESS
+              set-name: eth0
+      owner: root:root
+      path: /etc/netplan/60-eth0.yaml
+      permissions: "0644"
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
+    - content: |
         #!/bin/bash
 
         set -o nounset
@@ -144,13 +163,6 @@ spec:
       owner: root:root
       path: /tmp/replace-k8s-components.sh
       permissions: "0744"
-    - contentFrom:
-        secret:
-          key: control-plane-azure.json
-          name: ${CLUSTER_NAME}-control-plane-azure-json
-      owner: root:root
-      path: /etc/kubernetes/azure.json
-      permissions: "0644"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -169,6 +181,9 @@ spec:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
     postKubeadmCommands:
+    - mac=$(ip -o link | grep eth0 | grep ether | awk '{ print $17 }')
+    - sed -i -e "s/MACADDRESS/$${mac}/g" /etc/netplan/60-eth0.yaml
+    - netplan apply
     - bash -c /tmp/replace-k8s-components.sh
     preKubeadmCommands:
     - bash -c /tmp/replace-k8s-binaries.sh
@@ -260,6 +275,25 @@ spec:
   template:
     spec:
       files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+      - content: |
+          network:
+            version: 2
+            ethernets:
+              eth0:
+                mtu: 1400
+                match:
+                  macaddress: MACADDRESS
+                set-name: eth0
+        owner: root:root
+        path: /etc/netplan/60-eth0.yaml
+        permissions: "0644"
       - content: |
           #!/bin/bash
 
@@ -281,13 +315,6 @@ spec:
         owner: root:root
         path: /tmp/replace-k8s-binaries.sh
         permissions: "0744"
-      - contentFrom:
-          secret:
-            key: control-plane-azure.json
-            name: ${CLUSTER_NAME}-control-plane-azure-json
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:

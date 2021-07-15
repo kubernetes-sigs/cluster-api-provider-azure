@@ -106,6 +106,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    postKubeadmCommands: []
     preKubeadmCommands: []
   machineTemplate:
     infrastructureRef:

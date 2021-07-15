@@ -2,5 +2,18 @@ namespace: default
 resources:
   - ../../../test/ci/prow
 patchesStrategicMerge:
-  - ../patches/control-plane-custom-builds.yaml
-  - patches/custom-builds.yaml
+  - patches/machine-deployment-pr-version.yaml
+patches:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+  path: patches/kubeadm-bootstrap.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+  path: patches/kubeadm-controlplane-bootstrap.yaml

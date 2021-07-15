@@ -115,6 +115,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    postKubeadmCommands: []
     preKubeadmCommands: []
     useExperimentalRetryJoin: true
   machineTemplate:
