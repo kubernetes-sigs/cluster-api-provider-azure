@@ -1,0 +1,157 @@
+# VM Identity
+
+This document describes the available identities that be configured on the Azure host. For example, this is what grants permissions to the Azure Cloud Provider to provision LB services in Azure on the control plane nodes.
+
+## Flavors of Identities in Azure
+
+All identities used in Azure are owned by Azure Active Directory (AAD). An identity, or principal, in AAD will provide the basis for each of the flavors of identities we will describe.
+
+### Managed Identities
+
+Managed identity is a feature of Azure Active Directory (AAD) and Azure Resource Manager (ARM), which assigns ARM Role Base Access Control (RBAC) rights to AAD identities for use in Azure resources, like Virtual Machines. Each of the [Azure services that support managed identities for Azure resources](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-msi) are subject to their own timeline. Make sure you review the [availability](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-msi) status of managed identities for your resource and [known issues](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/known-issues) before you begin.
+
+Managed identity is used to create nodes which have an AAD identity provisioned onto the node by Azure Resource Manager (the Azure control plane) rather than providing credentials in the azure.json file. Managed identities are the preferred way to provide RBAC rights for a given resource in Azure as the lifespan of the identity is linked to the lifespan of the resource.
+
+### User-assigned managed identity (recommended)
+
+A standalone Azure resource that is created by the user outside of the scope of this provider. The identity can be assigned to one or more Azure Machines. The lifecycle of a user-assigned identity is managed separately from the lifecycle of the Azure Machines to which it's assigned.
+
+This lifecycle allows you to separate your resource creation and identity administration responsibilities. User-assigned identities and their role assignments can be configured in advance of the resources that require them. Users who create the resources only require the access to assign a user-assigned identity, without the need to create new identities or role assignments.
+
+Full details on how to create and manage user assigned identities using [Azure CLI](https://github.com/Azure/azure-cli) can be found in the [Azure docs](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-cli).
+
+### System-assigned managed identity
+A system-assigned identity is a managed identity which is tied to the lifespan of a resource in Azure. The identity is created by Azure in AAD for the resource it is applied upon and reaped when the resource is deleted. Unlike a service principal, a system assigned identity is available on the local resource through a local port service via the [instance metadata service](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/instance-metadata-service?tabs=linux).
+
+⚠️  **When a Node is created with a System Assigned Identity, A role of Subscription contributor is added to this generated Identity**
+
+<aside class="note warning"> 
+
+<h1> Warning </h1> 
+
+To create an Azure VM with the system-assigned managed identity enabled, your AzureClusterIdentity needs the [Virtual Machine Contributor](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor) role assignment. In order to be able to grant the subscription contributor role to the identity, it also needs `Microsoft.Authorization/roleAssignments/write` permissions, such as [User Access Administrator](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator) or [Owner](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#owner).
+
+</aside>
+
+### How to use managed identity
+
+#### User-assigned
+
+* In Machines
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      identity: UserAssigned
+      userAssignedIdentities:
+      - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}
+      ...
+```
+
+The CAPZ controller will look for `UserAssigned` value in `identity` field under `AzureMachineTemplate`, and assign the user identities listed in `userAssignedIdentities` to the virtual machine.
+
+* In Machine Pool
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  identity: UserAssigned
+  userAssignedIdentities:
+  - providerID: ${USER_ASSIGNED_IDENTITY_PROVIDER_ID}
+  ...
+```
+
+The CAPZ controller will look for `UserAssigned` value in `identity` field under `AzureMachinePool`, and assign the user identities listed in `userAssignedIdentities` to the virtual machine scale set.
+
+Alternatively, you can use the `user-assigned-identity`, and `machinepool-user-assigned-identity` flavors by setting the `{flavor}` in `clusterctl generate cluster --flavor {flavor}` to use user-assigned managed identity in machine deployment, and machine pool respectively.
+
+#### System-assigned
+
+* In Machines
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      identity: SystemAssigned
+      ...
+```
+
+The CAPZ controller will look for `SystemAssigned` value in `identity` field under `AzureMachineTemplate`, and enable system-assigned managed identity in the virtual machine.
+
+* In Machine Pool
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachinePool
+metadata:
+  name: ${CLUSTER_NAME}-mp-0
+  namespace: default
+spec:
+  identity: SystemAssigned
+  ...
+```
+
+The CAPZ controller will look for `SystemAssigned` value in `identity` field under `AzureMachinePool`, and enable system-assigned managed identity in the virtual machine scale set.
+
+Alternatively, you can also use the `system-assigned-identity`, and `machinepool-system-assigned-identity` flavors by setting the `{flavor}` in `clusterctl generate cluster --flavor {flavor}` to use system-assigned managed identity in machine deployment, and machine pool respectively.
+
+### Service Principal (not recommended)
+
+A service principal is an identity in AAD which is described by a tenant ID and client (or "app") ID. It can have one or more associated secrets or certificates. The set of these values will enable the holder to exchange the values for a JWT token to communicate with Azure. The user generally creates a service principal, saves the credentials, and then uses the credentials in applications. To read more about Service Principals and AD Applications see ["Application and service principal objects in Azure Active Directory"](https://azure.microsoft.com/en-us/documentation/articles/active-directory-application-objects/).
+
+<aside class="note warning"> 
+
+<h1> Warning </h1> 
+
+Using Service Principal authentication for Cloud Provider Azure is less secure than Managed Identity. Your Service Principal credentials will be written to a file on the disk of each VM in order to be accessible by Cloud Provider.
+
+</aside>
+
+To use a client id/secret for authentication for Cloud Provider, simply leave the `identity` empty, or set it to `None`. The autogenerated [cloud provider config secret](cloud-provider-config.md) will contain the client id and secret used in your AzureClusterIdentity for AzureCluster creation as `aadClientID` and `aadClientSecret`.
+
+To use a certificate/password for authentication, you will need to write the certificate file on the VM (for example using the files option if using CABPK/cloud-init) and mount it to the cloud-controller-manager, then refer to it as `aadClientCertPath`, along with `aadClientCertPassword`, in your cloud provider config. Please consider using a user-assigned identity instead before going down that route as they are more secure and flexible, as described above.
+
+#### Creating a Service Principal
+
+* **With the [Azure CLI](https://github.com/Azure/azure-cli)**
+
+  * Subscription level Scope
+
+     ```shell
+     az login
+     az account set --subscription="${AZURE_SUBSCRIPTION_ID}"
+     az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
+     ```
+
+  * Resource group level scope
+
+     ```shell
+     az login
+     az account set --subscription="${AZURE_SUBSCRIPTION_ID}"
+     az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AZURE_RESOURCE_GROUP}"
+     ```
+
+   This will output your `appId`, `password`, `name`, and `tenant`.  The `name` or `appId` is used for the `AZURE_CLIENT_ID` and the `password` is used for `AZURE_CLIENT_SECRET`.
+
+   Confirm your service principal by opening a new shell and run the following commands substituting in `name`, `password`, and `tenant`:
+
+   ```shell
+   az login --service-principal -u NAME -p PASSWORD --tenant TENANT
+   az vm list-sizes --location eastus
+   ```
