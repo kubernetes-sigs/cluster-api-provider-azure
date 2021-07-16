@@ -40,13 +40,14 @@ import (
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx           = context.TODO()
-		specName      = "create-workload-cluster"
-		namespace     *corev1.Namespace
-		cancelWatches context.CancelFunc
-		result        *clusterctl.ApplyClusterTemplateAndWaitResult
-		clusterName   string
-		specTimes     = map[string]time.Time{}
+		ctx               = context.TODO()
+		specName          = "create-workload-cluster"
+		namespace         *corev1.Namespace
+		cancelWatches     context.CancelFunc
+		result            *clusterctl.ApplyClusterTemplateAndWaitResult
+		clusterName       string
+		clusterNamePrefix string
+		specTimes         = map[string]time.Time{}
 	)
 
 	BeforeEach(func() {
@@ -57,22 +58,15 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
 		Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
-
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
 
-		clusterName = os.Getenv("CLUSTER_NAME")
-		if clusterName == "" {
-			clusterName = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
-		}
-		fmt.Fprintf(GinkgoWriter, "INFO: Cluster name is %s\n", clusterName)
+		clusterNamePrefix = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error
-		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterName, bootstrapClusterProxy, artifactFolder)
+		namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterNamePrefix, bootstrapClusterProxy, artifactFolder)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
-		Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
 		spClientSecret := os.Getenv(AzureClientSecret)
@@ -112,6 +106,7 @@ var _ = Describe("Workload cluster creation", func() {
 	if os.Getenv("LOCAL_ONLY") != "true" {
 		Context("Creating a private cluster", func() {
 			It("Creates a public management cluster in the same vnet", func() {
+				clusterName = getClusterName(clusterNamePrefix, "public-custom-vnet")
 				Context("Creating a custom virtual network", func() {
 					Expect(os.Setenv(AzureVNetName, "custom-vnet")).NotTo(HaveOccurred())
 					cpCIDR := "10.128.0.0/16"
@@ -172,6 +167,7 @@ var _ = Describe("Workload cluster creation", func() {
 	}
 
 	It("With 3 control-plane nodes and 2 worker nodes", func() {
+		clusterName = getClusterName(clusterNamePrefix, "ha")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
@@ -245,6 +241,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating a ipv6 control-plane cluster", func() {
 		It("With ipv6 worker node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "ipv6")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -290,6 +287,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating a VMSS cluster", func() {
 		It("with a single control plane node and an AzureMachinePool with 2 nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "vmss")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -351,6 +349,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/ for pricing.
 	Context("Creating a GPU-enabled cluster", func() {
 		It("with a single control plane node and 1 node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "gpu")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -400,6 +399,7 @@ var _ = Describe("Workload cluster creation", func() {
 	// To include this test, set `GINKGO_SKIP=""`.
 	Context("Creating a cluster that uses the external cloud provider", func() {
 		It("with a 1 control plane nodes and 2 worker nodes", func() {
+			clusterName = getClusterName(clusterNamePrefix, "oot")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -432,8 +432,9 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	Context("Creating an AKS cluster using a different SP identity", func() {
+	Context("Creating an AKS cluster", func() {
 		It("with a single control plane node and 1 node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "aks")
 			kubernetesVersion, err := GetAKSKubernetesVersion(ctx, e2eConfig)
 			Expect(err).To(BeNil())
 
@@ -475,6 +476,7 @@ var _ = Describe("Workload cluster creation", func() {
 	Context("Creating a Windows Enabled cluster", func() {
 		// Requires 3 control planes due to https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/857
 		It("With 3 control-plane nodes and 1 Linux worker node and 1 Windows worker node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "win-ha")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -524,6 +526,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating a Windows enabled VMSS cluster", func() {
 		It("with a single control plane node and an Linux AzureMachinePool with 1 nodes and Windows AzureMachinePool with 1 node", func() {
+			clusterName = getClusterName(clusterNamePrefix, "win-vmss")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
