@@ -1,0 +1,52 @@
+@startuml
+hide empty description
+title Figure 3. AzureCluster reconcile loop
+
+[*] --> ReconcileResourceGroup : start AzureCluster Reconcile with global timeout
+
+ReconcileResourceGroup --> ReconcileVNet
+ReconcileResourceGroup -> UpdateStatus : context timeout exceeded
+ReconcileResourceGroup: start with local timeout
+ReconcileResourceGroup: each Azure call has its own timeout 
+
+ReconcileVNet --> ReconcileSecurityGroups
+ReconcileVNet -> UpdateStatus : context timeout exceeded
+ReconcileVNet: start with local timeout
+ReconcileVNet: each Azure call has its own timeout
+
+ReconcileSecurityGroups --> ReconcileRoutesTables
+ReconcileSecurityGroups -> UpdateStatus : context timeout exceeded
+ReconcileSecurityGroups: start with local timeout
+ReconcileSecurityGroups: each Azure call has its own timeout
+
+ReconcileRoutesTables --> ReconcilePublicIPs
+ReconcileRoutesTables -> UpdateStatus : context timeout exceeded
+ReconcileRoutesTables: start with local timeout
+ReconcileRoutesTables: each Azure call has its own timeout
+
+ReconcilePublicIPs --> ReconcileNATGateways
+ReconcilePublicIPs -> UpdateStatus : context timeout exceeded
+ReconcilePublicIPs: start with local timeout
+ReconcilePublicIPs: each Azure call has its own timeout
+
+ReconcileNATGateways --> ReconcileSubnets
+ReconcileNATGateways -> UpdateStatus : context timeout exceeded
+ReconcileNATGateways: start with local timeout
+ReconcileNATGateways: each Azure call has its own timeout
+
+ReconcileSubnets --> ReconcileLoadBalancers
+ReconcileSubnets -> UpdateStatus : context timeout exceeded
+ReconcileSubnets: start with local timeout
+ReconcileSubnets: each Azure call has its own timeout
+
+ReconcileLoadBalancers --> UpdateStatus
+ReconcileLoadBalancers -> UpdateStatus : context timeout exceeded
+ReconcileLoadBalancers: start with local timeout
+ReconcileLoadBalancers: each Azure call has its own timeout
+
+UpdateStatus --> [*]
+UpdateStatus : store long running operation(s) future data
+UpdateStatus : update conditions
+UpdateStatus : patch resource status and spec
+
+@enduml
