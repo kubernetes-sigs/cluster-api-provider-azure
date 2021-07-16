@@ -478,14 +478,17 @@ var _ = Describe("Workload cluster creation", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
-					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-					ClusterctlConfigPath:     clusterctlConfigPath,
-					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   "windows",
-					Namespace:                namespace.Name,
-					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
+					LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:   clusterctlConfigPath,
+					KubeconfigPath:         bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider: clusterctl.DefaultInfrastructureProvider,
+					Flavor:                 "windows",
+					Namespace:              namespace.Name,
+					ClusterName:            clusterName,
+					// using a different version for windows because of an issue on azure cloud provider
+					// that only affects windows and external load balancer
+					// https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
+					KubernetesVersion:        e2eConfig.GetVariable(WindowsKubernetesVersion),
 					ControlPlaneMachineCount: pointer.Int64Ptr(3),
 					WorkerMachineCount:       pointer.Int64Ptr(1),
 				},
