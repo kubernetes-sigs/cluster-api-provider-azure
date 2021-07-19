@@ -7,6 +7,7 @@ metadata:
   name: mutating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -28,6 +29,7 @@ webhooks:
     - azureclusters
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -49,6 +51,7 @@ webhooks:
     - azuremachines
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -70,6 +73,7 @@ webhooks:
     - azuremachinetemplates
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -90,6 +94,7 @@ webhooks:
     - azuremachinepools
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -118,6 +123,7 @@ metadata:
   name: validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -139,6 +145,7 @@ webhooks:
     - azureclusters
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -160,6 +167,7 @@ webhooks:
     - azuremachines
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -181,6 +189,7 @@ webhooks:
     - azuremachinetemplates
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -201,6 +210,7 @@ webhooks:
     - azuremachinepools
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
@@ -221,6 +231,7 @@ webhooks:
     - azuremachinepoolmachines
   sideEffects: None
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
