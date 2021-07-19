@@ -54,6 +54,7 @@ func (amp *AzureMachinePool) Default() {
 	if err != nil {
 		azuremachinepoollog.Error(err, "SetDefaultSshPublicKey failed")
 	}
+	amp.SetIdentityDefaults()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1alpha4-azuremachinepool,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=azuremachinepools,versions=v1alpha4,name=validation.azuremachinepool.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1beta1
