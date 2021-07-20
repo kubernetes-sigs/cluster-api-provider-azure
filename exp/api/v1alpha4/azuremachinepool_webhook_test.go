@@ -29,6 +29,8 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 
+	guuid "github.com/google/uuid"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
@@ -224,7 +226,7 @@ func TestAzureMachinePool_ValidateUpdate(t *testing.T) {
 	}
 }
 
-func TestAzureMachine_Default(t *testing.T) {
+func TestAzureMachinePool_Default(t *testing.T) {
 	g := NewWithT(t)
 
 	type test struct {
@@ -234,6 +236,25 @@ func TestAzureMachine_Default(t *testing.T) {
 	existingPublicKey := validSSHPublicKey
 	publicKeyExistTest := test{amp: createMachinePoolWithSSHPublicKey(existingPublicKey)}
 	publicKeyNotExistTest := test{amp: createMachinePoolWithSSHPublicKey("")}
+
+	existingRoleAssignmentName := "42862306-e485-4319-9bf0-35dbc6f6fe9c"
+	roleAssignmentExistTest := test{amp: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:           "SystemAssigned",
+		RoleAssignmentName: existingRoleAssignmentName,
+	}}}
+
+	roleAssignmentEmptyTest := test{amp: &AzureMachinePool{Spec: AzureMachinePoolSpec{
+		Identity:           "SystemAssigned",
+		RoleAssignmentName: "",
+	}}}
+
+	roleAssignmentExistTest.amp.Default()
+	g.Expect(roleAssignmentExistTest.amp.Spec.RoleAssignmentName).To(Equal(existingRoleAssignmentName))
+
+	roleAssignmentEmptyTest.amp.Default()
+	g.Expect(roleAssignmentEmptyTest.amp.Spec.RoleAssignmentName).To(Not(BeEmpty()))
+	_, err := guuid.Parse(roleAssignmentEmptyTest.amp.Spec.RoleAssignmentName)
+	g.Expect(err).To(Not(HaveOccurred()))
 
 	publicKeyExistTest.amp.Default()
 	g.Expect(publicKeyExistTest.amp.Spec.Template.SSHPublicKey).To(Equal(existingPublicKey))
