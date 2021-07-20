@@ -457,7 +457,6 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
-			t.Parallel()
 			g := NewWithT(t)
 
 			mockCtrl := gomock.NewController(t)
@@ -468,6 +467,76 @@ func Test_MachinePoolToInfrastructureMapFunc(t *testing.T) {
 				c.Setup(log)
 			}
 			f := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureMachinePool"), log)
+			reqs := f(c.MapObjectFactory(g))
+			c.Expect(g, reqs)
+		})
+	}
+}
+
+func Test_ManagedMachinePoolToInfrastructureMapFunc(t *testing.T) {
+	cases := []struct {
+		Name             string
+		Setup            func(logMock *mock_log.MockLogger)
+		MapObjectFactory func(*GomegaWithT) client.Object
+		Expect           func(*GomegaWithT, []reconcile.Request)
+	}{
+		{
+			Name: "MachinePoolToAzureManagedMachinePool",
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newManagedMachinePoolWithInfrastructureRef("azureManagedCluster", "ManagedMachinePool")
+			},
+			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
+				g.Expect(reqs).To(HaveLen(1))
+				g.Expect(reqs[0]).To(Equal(reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      "azureManagedMachinePool",
+						Namespace: "default",
+					},
+				}))
+			},
+		},
+		{
+			Name: "MachinePoolWithoutMatchingInfraRef",
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newMachinePool("azureManagedCluster", "machinePool")
+			},
+			Setup: func(logMock *mock_log.MockLogger) {
+				ampGK := infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool").GroupKind()
+				logMock.EXPECT().V(4).Return(logMock)
+				logMock.EXPECT().Info("gk does not match", "gk", ampGK, "infraGK", gomock.Any())
+			},
+			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
+				g.Expect(reqs).To(HaveLen(0))
+			},
+		},
+		{
+			Name: "NotAMachinePool",
+			MapObjectFactory: func(g *GomegaWithT) client.Object {
+				return newCluster("azureManagedCluster")
+			},
+			Setup: func(logMock *mock_log.MockLogger) {
+				logMock.EXPECT().V(4).Return(logMock)
+				logMock.EXPECT().Info("attempt to map incorrect type", "type", "*v1alpha4.Cluster")
+			},
+			Expect: func(g *GomegaWithT, reqs []reconcile.Request) {
+				g.Expect(reqs).To(HaveLen(0))
+			},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			log := mock_log.NewMockLogger(mockCtrl)
+			if c.Setup != nil {
+				c.Setup(log)
+			}
+			f := MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), log)
 			reqs := f(c.MapObjectFactory(g))
 			c.Expect(g, reqs)
 		})
