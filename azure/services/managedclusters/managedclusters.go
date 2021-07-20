@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
+	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -202,9 +203,10 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		}
 	} else {
 		ps := *existingMC.ManagedClusterProperties.ProvisioningState
-		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
-			klog.V(2).Infof("Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded")
-			return nil
+		if ps != string(infrav1alpha4.Canceled) && ps != string(infrav1alpha4.Failed) && ps != string(infrav1alpha4.Succeeded) {
+			msg := fmt.Sprintf("Unable to update existing managed cluster in non terminal state. Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
+			klog.V(2).Infof(msg)
+			return errors.New(msg)
 		}
 
 		// Normalize properties for the desired (CR spec) and existing managed
