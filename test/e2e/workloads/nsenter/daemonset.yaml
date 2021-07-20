@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: &name nsenter
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+    spec:
+      hostPID: true
+      containers:
+      - image: us.gcr.io/k8s-artifacts-prod/busybox:1.27.2
+        name: nsenter
+        command: ["sleep", "100d"] # busybox sleep doesn't support infinity, so use a really long time.
+        resources:
+          requests: {}
+          limits: {}
+        securityContext:
+          privileged: true
