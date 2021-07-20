@@ -123,6 +123,17 @@ func newMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv
 	return m
 }
 
+func newManagedMachinePoolWithInfrastructureRef(clusterName, poolName string) *clusterv1exp.MachinePool {
+	m := newMachinePool(clusterName, poolName)
+	m.Spec.Template.Spec.InfrastructureRef = v1.ObjectReference{
+		Kind:       "AzureManagedMachinePool",
+		Namespace:  m.Namespace,
+		Name:       "azure" + poolName,
+		APIVersion: infrav1exp.GroupVersion.String(),
+	}
+	return m
+}
+
 func newAzureCluster(clusterName string) *infrav1.AzureCluster {
 	return &infrav1.AzureCluster{
 		ObjectMeta: metav1.ObjectMeta{
