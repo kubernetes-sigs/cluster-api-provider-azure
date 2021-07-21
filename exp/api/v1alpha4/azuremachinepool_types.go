@@ -84,6 +84,10 @@ type (
 		// SpotVMOptions allows the ability to specify the Machine should use a Spot VM
 		// +optional
 		SpotVMOptions *infrav1.SpotVMOptions `json:"spotVMOptions,omitempty"`
+
+		// SubnetName selects the Subnet where the VMSS will be placed
+		// +optional
+		SubnetName string `json:"subnetName,omitempty"`
 	}
 
 	// AzureMachinePoolSpec defines the desired state of AzureMachinePool.

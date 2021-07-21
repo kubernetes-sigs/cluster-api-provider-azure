@@ -702,6 +702,10 @@ spec:
                         type: object
                       sshPublicKey:
                         type: string
+                      subnetName:
+                        description: SubnetName selects the Subnet where the VM will
+                          be placed
+                        type: string
                       userAssignedIdentities:
                         description: UserAssignedIdentities is a list of standalone
                           Azure identities provided by the user The lifecycle of a

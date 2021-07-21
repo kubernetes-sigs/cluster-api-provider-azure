@@ -82,17 +82,20 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 		return err
 	}
 
+	var err error
+
+	scaleSetSpec := s.Scope.ScaleSetSpec()
+
 	// check if there is an ongoing long running operation
 	var (
 		future      = s.Scope.GetLongRunningOperationState()
 		fetchedVMSS *azure.VMSS
-		err         error
 	)
 
 	defer func() {
 		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
 		if fetchedVMSS == nil {
-			fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx)
+			fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx, scaleSetSpec.Name)
 			if err != nil && !azure.ResourceNotFound(err) {
 				s.Scope.Error(err, "failed to get vmss in deferred update")
 			}
@@ -105,7 +108,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	}()
 
 	if future == nil {
-		fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx)
+		fetchedVMSS, err = s.getVirtualMachineScaleSet(ctx, scaleSetSpec.Name)
 	} else {
 		fetchedVMSS, err = s.getVirtualMachineScaleSetIfDone(ctx, future)
 	}
@@ -113,7 +116,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	switch {
 	case err != nil && !azure.ResourceNotFound(err):
 		// There was an error and it was not an HTTP 404 not found. This is either a transient error, like long running operation not done, or an Azure service error.
-		return errors.Wrapf(err, "failed to get VMSS %s", s.Scope.ScaleSetSpec().Name)
+		return errors.Wrapf(err, "failed to get VMSS %s", scaleSetSpec.Name)
 	case err != nil && azure.ResourceNotFound(err):
 		// HTTP(404) resource was not found, so we need to create it with a PUT
 		future, err = s.createVMSS(ctx)
@@ -135,7 +138,7 @@ func (s *Service) Reconcile(ctx context.Context) (retErr error) {
 	if future != nil {
 		fetchedVMSS, err = s.getVirtualMachineScaleSetIfDone(ctx, future)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get VMSS %s after create or update", s.Scope.ScaleSetSpec().Name)
+			return errors.Wrapf(err, "failed to get VMSS %s after create or update", scaleSetSpec.Name)
 		}
 	}
 
@@ -150,9 +153,13 @@ func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Delete")
 	defer span.End()
 
+	var err error
+
+	vmssSpec := s.Scope.ScaleSetSpec()
+
 	defer func() {
 		// save the updated state of the VMSS for the MachinePoolScope to use for updating K8s state
-		fetchedVMSS, err := s.getVirtualMachineScaleSet(ctx)
+		fetchedVMSS, err := s.getVirtualMachineScaleSet(ctx, vmssSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {
 			s.Scope.Error(err, "failed to get vmss in deferred update")
 		}
@@ -177,9 +184,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	}
 
 	// no long running delete operation is active, so delete the ScaleSet
-	vmssSpec := s.Scope.ScaleSetSpec()
 	s.Scope.V(2).Info("deleting VMSS", "scale set", vmssSpec.Name)
-	future, err := s.Client.DeleteAsync(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
+	future, err = s.Client.DeleteAsync(ctx, s.Scope.ResourceGroup(), vmssSpec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
@@ -206,6 +212,7 @@ func (s *Service) createVMSS(ctx context.Context) (*infrav1.Future, error) {
 	defer span.End()
 
 	spec := s.Scope.ScaleSetSpec()
+
 	vmss, err := s.buildVMSSFromSpec(ctx, spec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed building VMSS from spec")
@@ -226,6 +233,7 @@ func (s *Service) patchVMSSIfNeeded(ctx context.Context, infraVMSS *azure.VMSS) 
 	defer span.End()
 
 	spec := s.Scope.ScaleSetSpec()
+
 	vmss, err := s.buildVMSSFromSpec(ctx, spec)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to generate scale set update parameters for %s", spec.Name)
@@ -280,6 +288,7 @@ func (s *Service) validateSpec(ctx context.Context) error {
 	defer span.End()
 
 	spec := s.Scope.ScaleSetSpec()
+
 	sku, err := s.resourceSKUCache.Get(ctx, spec.Size, resourceskus.VirtualMachines)
 	if err != nil {
 		return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", spec.Size))
@@ -465,17 +474,16 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 }
 
 // getVirtualMachineScaleSet provides information about a Virtual Machine Scale Set and its instances.
-func (s *Service) getVirtualMachineScaleSet(ctx context.Context) (*azure.VMSS, error) {
+func (s *Service) getVirtualMachineScaleSet(ctx context.Context, vmssName string) (*azure.VMSS, error) {
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.getVirtualMachineScaleSet")
 	defer span.End()
 
-	name := s.Scope.ScaleSetSpec().Name
-	vmss, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), name)
+	vmss, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), vmssName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get existing vmss")
 	}
 
-	vmssInstances, err := s.Client.ListInstances(ctx, s.Scope.ResourceGroup(), name)
+	vmssInstances, err := s.Client.ListInstances(ctx, s.Scope.ResourceGroup(), vmssName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list instances")
 	}

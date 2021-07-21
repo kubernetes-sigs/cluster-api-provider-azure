@@ -45,6 +45,8 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	dst.Spec.SubnetName = restored.Spec.SubnetName
+
 	return nil
 }
 

@@ -38,6 +38,7 @@ import (
 
 // azureMachineService is the group of services called by the AzureMachine controller.
 type azureMachineService struct {
+	scope                *scope.MachineScope
 	networkInterfacesSvc azure.Reconciler
 	inboundNatRulesSvc   azure.Reconciler
 	virtualMachinesSvc   azure.Reconciler
@@ -60,6 +61,7 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 	}
 
 	return &azureMachineService{
+		scope:                machineScope,
 		inboundNatRulesSvc:   inboundnatrules.New(machineScope),
 		networkInterfacesSvc: networkinterfaces.New(machineScope, cache),
 		virtualMachinesSvc:   virtualmachines.New(machineScope, cache),
@@ -77,6 +79,10 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Reconcile")
 	defer span.End()
+
+	if err := s.scope.SetSubnetName(); err != nil {
+		return errors.Wrap(err, "failed defaulting subnet name")
+	}
 
 	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to create public IP")

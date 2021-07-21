@@ -133,3 +133,84 @@ spec:
           - 10.0.2.0/24
   resourceGroup: cluster-example
 ```
+
+### Custom subnets
+
+Sometimes it's desirable to use different subnets for different node pools.
+Several subnets can be specified in the `networkSpec` to be later referenced by name from other CR's like `AzureMachine` or `AzureMachinePool`.
+When more than one `node` subnet is specified, the `subnetName` field in those other CR's becomes mandatory because the controllers wouldn't know which subnet to use.
+
+The subnet used for the control plane must use the role `control-plane` while the subnets for the worker nodes must use the role `node`.
+
+
+```yaml
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureCluster
+metadata:
+  name: cluster-example
+  namespace: default
+spec:
+  location: southcentralus
+  networkSpec:
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+    - name: subnet-mp-1
+      role: node
+    - name: subnet-mp-2
+      role: node
+    vnet:
+      name: my-vnet
+      cidrBlocks:
+        - 10.0.0.0/16
+  resourceGroup: cluster-example
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachinePool
+metadata:
+  name: mp1
+  namespace: default
+spec:
+  location: southcentralus
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${YOUR_SSH_PUB_KEY}
+    subnetName: subnet-mp-1
+    vmSize: Standard_D2s_v3
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureMachinePool
+metadata:
+  name: mp2
+  namespace: default
+spec:
+  location: southcentralus
+  strategy:
+    rollingUpdate:
+      deletePolicy: Oldest
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    osDisk:
+      diskSizeGB: 30
+      managedDisk:
+        storageAccountType: Premium_LRS
+      osType: Linux
+    sshPublicKey: ${YOUR_SSH_PUB_KEY}
+    subnetName: subnet-mp-2
+    vmSize: Standard_D2s_v3
+```
+
+If you don't specify any `node` subnets, one subnet with role `node` will be created and added to the `networkSpec` definition.

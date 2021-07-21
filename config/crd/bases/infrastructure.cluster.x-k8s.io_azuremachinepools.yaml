@@ -967,6 +967,10 @@ spec:
                     description: SSHPublicKey is the SSH public key string base64
                       encoded to add to a Virtual Machine
                     type: string
+                  subnetName:
+                    description: SubnetName selects the Subnet where the VMSS will
+                      be placed
+                    type: string
                   terminateNotificationTimeout:
                     description: TerminateNotificationTimeout enables or disables
                       VMSS scheduled events termination notification with specified

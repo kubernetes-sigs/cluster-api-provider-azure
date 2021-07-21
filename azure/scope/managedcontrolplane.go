@@ -207,6 +207,11 @@ func (s *ManagedControlPlaneScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 }
 
+// Subnets returns the subnets specs.
+func (s *ManagedControlPlaneScope) Subnets() infrav1.Subnets {
+	return infrav1.Subnets{}
+}
+
 // NodeSubnet returns the cluster node subnet.
 func (s *ManagedControlPlaneScope) NodeSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{
@@ -224,6 +229,27 @@ func (s *ManagedControlPlaneScope) SetSubnet(subnetSpec infrav1.SubnetSpec) {
 // ControlPlaneSubnet returns the cluster control plane subnet.
 func (s *ManagedControlPlaneScope) ControlPlaneSubnet() infrav1.SubnetSpec {
 	return infrav1.SubnetSpec{}
+}
+
+// NodeSubnets returns the subnets with the node role.
+func (s *ManagedControlPlaneScope) NodeSubnets() []infrav1.SubnetSpec {
+	return []infrav1.SubnetSpec{
+		{
+			Name:       s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+			CIDRBlocks: []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock},
+		},
+	}
+}
+
+// Subnet returns the subnet with the provided name.
+func (s *ManagedControlPlaneScope) Subnet(name string) infrav1.SubnetSpec {
+	subnet := infrav1.SubnetSpec{}
+	if name == s.ControlPlane.Spec.VirtualNetwork.Subnet.Name {
+		subnet.Name = s.ControlPlane.Spec.VirtualNetwork.Subnet.Name
+		subnet.CIDRBlocks = []string{s.ControlPlane.Spec.VirtualNetwork.Subnet.CIDRBlock}
+	}
+
+	return subnet
 }
 
 // IsIPv6Enabled returns true if a cluster is ipv6 enabled.

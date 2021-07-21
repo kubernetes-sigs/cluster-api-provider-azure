@@ -110,7 +110,6 @@ func TestGetExistingVMSS(t *testing.T) {
 			result:        &azure.VMSS{},
 			expectedError: "failed to get existing vmss: #: Not found: StatusCode=404",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
-				s.ScaleSetSpec().Return(newDefaultVMSSSpec())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -139,7 +138,6 @@ func TestGetExistingVMSS(t *testing.T) {
 			},
 			expectedError: "",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
-				s.ScaleSetSpec().Return(newDefaultVMSSSpec())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
@@ -176,7 +174,6 @@ func TestGetExistingVMSS(t *testing.T) {
 			result:        &azure.VMSS{},
 			expectedError: "failed to list instances: #: Not found: StatusCode=404",
 			expect: func(s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
-				s.ScaleSetSpec().Return(newDefaultVMSSSpec())
 				s.ResourceGroup().AnyTimes().Return("my-rg")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				m.Get(gomockinternal.AContext(), "my-rg", "my-vmss").Return(compute.VirtualMachineScaleSet{
@@ -210,7 +207,7 @@ func TestGetExistingVMSS(t *testing.T) {
 				Client: clientMock,
 			}
 
-			result, err := s.getVirtualMachineScaleSet(context.TODO())
+			result, err := s.getVirtualMachineScaleSet(context.TODO(), tc.vmssName)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				t.Log(err.Error())

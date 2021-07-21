@@ -367,46 +367,18 @@ func (mr *MockSubnetScopeMockRecorder) Location() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockSubnetScope)(nil).Location))
 }
 
-// NodeNatGateway mocks base method.
-func (m *MockSubnetScope) NodeNatGateway() v1alpha4.NatGateway {
+// NodeSubnets mocks base method.
+func (m *MockSubnetScope) NodeSubnets() []v1alpha4.SubnetSpec {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeNatGateway")
-	ret0, _ := ret[0].(v1alpha4.NatGateway)
+	ret := m.ctrl.Call(m, "NodeSubnets")
+	ret0, _ := ret[0].([]v1alpha4.SubnetSpec)
 	return ret0
 }
 
-// NodeNatGateway indicates an expected call of NodeNatGateway.
-func (mr *MockSubnetScopeMockRecorder) NodeNatGateway() *gomock.Call {
+// NodeSubnets indicates an expected call of NodeSubnets.
+func (mr *MockSubnetScopeMockRecorder) NodeSubnets() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeNatGateway", reflect.TypeOf((*MockSubnetScope)(nil).NodeNatGateway))
-}
-
-// NodeRouteTable mocks base method.
-func (m *MockSubnetScope) NodeRouteTable() v1alpha4.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeRouteTable")
-	ret0, _ := ret[0].(v1alpha4.RouteTable)
-	return ret0
-}
-
-// NodeRouteTable indicates an expected call of NodeRouteTable.
-func (mr *MockSubnetScopeMockRecorder) NodeRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeRouteTable", reflect.TypeOf((*MockSubnetScope)(nil).NodeRouteTable))
-}
-
-// NodeSubnet mocks base method.
-func (m *MockSubnetScope) NodeSubnet() v1alpha4.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeSubnet")
-	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
-	return ret0
-}
-
-// NodeSubnet indicates an expected call of NodeSubnet.
-func (mr *MockSubnetScopeMockRecorder) NodeSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnet", reflect.TypeOf((*MockSubnetScope)(nil).NodeSubnet))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnets", reflect.TypeOf((*MockSubnetScope)(nil).NodeSubnets))
 }
 
 // OutboundLBName mocks base method.
@@ -463,6 +435,20 @@ func (mr *MockSubnetScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockSubnetScope)(nil).SetSubnet), arg0)
 }
 
+// Subnet mocks base method.
+func (m *MockSubnetScope) Subnet(arg0 string) v1alpha4.SubnetSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subnet", arg0)
+	ret0, _ := ret[0].(v1alpha4.SubnetSpec)
+	return ret0
+}
+
+// Subnet indicates an expected call of Subnet.
+func (mr *MockSubnetScopeMockRecorder) Subnet(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnet", reflect.TypeOf((*MockSubnetScope)(nil).Subnet), arg0)
+}
+
 // SubnetSpecs mocks base method.
 func (m *MockSubnetScope) SubnetSpecs() []azure.SubnetSpec {
 	m.ctrl.T.Helper()
@@ -475,6 +461,20 @@ func (m *MockSubnetScope) SubnetSpecs() []azure.SubnetSpec {
 func (mr *MockSubnetScopeMockRecorder) SubnetSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubnetSpecs", reflect.TypeOf((*MockSubnetScope)(nil).SubnetSpecs))
+}
+
+// Subnets mocks base method.
+func (m *MockSubnetScope) Subnets() v1alpha4.Subnets {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subnets")
+	ret0, _ := ret[0].(v1alpha4.Subnets)
+	return ret0
+}
+
+// Subnets indicates an expected call of Subnets.
+func (mr *MockSubnetScopeMockRecorder) Subnets() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnets", reflect.TypeOf((*MockSubnetScope)(nil).Subnets))
 }
 
 // SubscriptionID mocks base method.
