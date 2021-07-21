@@ -303,6 +303,20 @@ func logCheckpoint(specTimes map[string]time.Time) {
 	}
 }
 
+// getClusterName gets the cluster name for the test cluster
+// and sets the environment variables that depend on it.
+func getClusterName(prefix, specName string) string {
+	clusterName := os.Getenv("CLUSTER_NAME")
+	if clusterName == "" {
+		clusterName = fmt.Sprintf("%s-%s", prefix, specName)
+	}
+	fmt.Fprintf(GinkgoWriter, "INFO: Cluster name is %s\n", clusterName)
+
+	Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+	return clusterName
+}
+
 // nodeSSHInfo provides information to establish an SSH connection to a VM or VMSS instance.
 type nodeSSHInfo struct {
 	Endpoint string // Endpoint is the control plane hostname or IP address for initial connection.

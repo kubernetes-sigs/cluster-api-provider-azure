@@ -75,6 +75,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error
 		namespace, cancelWatches, err = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
+		Expect(err).ToNot(HaveOccurred())
 		clusterResources = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 
 		spClientSecret := os.Getenv(AzureClientSecret)
