@@ -1,0 +1,7 @@
+@startuml
+[AzureCluster] .right.> [CAPZ]: Reconciles
+[CAPZ]-up-> [MachineDeployment]: Creates
+[CAPZ]-down-> [AzureMachinePool]: Creates
+[MachineDeployment] ..> [CAPZ]: Reconciles
+[AzureMachineTemplate] ..> [CAPZ]: Reconciles
+@enduml
