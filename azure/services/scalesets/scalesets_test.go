@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"testing"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -245,12 +247,21 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				defaultSpec := newDefaultVMSSSpec()
+				defaultSpec.DataDisks = append(defaultSpec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
 			},
 		},
 		{
@@ -259,7 +270,7 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				defaultSpec := newDefaultVMSSSpec()
 				s.ScaleSetSpec().Return(defaultSpec).AnyTimes()
-				createdVMSS := newDefaultVMSS()
+				createdVMSS := newDefaultVMSS("VM_SIZE")
 				instances := newDefaultInstances()
 				_ = setupDefaultVMSSInProgressOperationDoneExpectations(s, m, createdVMSS, instances)
 				s.SetLongRunningOperationState(nil)
@@ -285,13 +296,13 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.Size = "VM_SIZE_AN"
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE_AN")
 				netConfigs := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations
 				(*netConfigs)[0].EnableAcceleratedNetworking = to.BoolPtr(true)
 				vmss.Sku.Name = to.StringPtr(spec.Size)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_AN"), putFuture)
 			},
 		},
 		{
@@ -300,14 +311,23 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.SpotVMOptions = &infrav1.SpotVMOptions{}
+				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
 			},
 		},
 		{
@@ -319,17 +339,26 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.SpotVMOptions = &infrav1.SpotVMOptions{
 					MaxPrice: &maxPrice,
 				}
+				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.BillingProfile = &compute.BillingProfile{
 					MaxPrice: to.Float64Ptr(0.001),
 				}
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
 			},
 		},
 		{
@@ -340,9 +369,18 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.OSDisk.ManagedDisk.DiskEncryptionSet = &infrav1.DiskEncryptionSetParameters{
 					ID: "my-diskencryptionset-id",
 				}
+				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				osdisk := vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk
 				osdisk.ManagedDisk = &compute.VirtualMachineScaleSetManagedDiskParameters{
 					StorageAccountType: "Premium_LRS",
@@ -352,7 +390,7 @@ func TestReconcileVMSS(t *testing.T) {
 				}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
 			},
 		},
 		{
@@ -360,6 +398,14 @@ func TestReconcileVMSS(t *testing.T) {
 			expectedError: "failed to get VMSS my-vmss after create or update: failed to get result from future: operation type PUT on Azure resource my-rg/my-vmss is not done",
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
+				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
 				spec.Identity = infrav1.VMIdentityUserAssigned
 				spec.UserAssignedIdentities = []infrav1.UserAssignedIdentity{
 					{
@@ -368,7 +414,8 @@ func TestReconcileVMSS(t *testing.T) {
 				}
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE")
+				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				vmss.Identity = &compute.VirtualMachineScaleSetIdentity{
 					Type: compute.ResourceIdentityTypeUserAssigned,
 					UserAssignedIdentities: map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{
@@ -377,7 +424,7 @@ func TestReconcileVMSS(t *testing.T) {
 				}
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
 			},
 		},
 		{
@@ -389,14 +436,14 @@ func TestReconcileVMSS(t *testing.T) {
 				spec.SecurityProfile = &infrav1.SecurityProfile{EncryptionAtHost: to.BoolPtr(true)}
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
-				vmss := newDefaultVMSS()
+				vmss := newDefaultVMSS("VM_SIZE_EAH")
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.SecurityProfile = &compute.SecurityProfile{
 					EncryptionAtHost: to.BoolPtr(true),
 				}
 				vmss.Sku.Name = to.StringPtr(spec.Size)
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
-				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS(), putFuture)
+				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE_EAH"), putFuture)
 			},
 		},
 		{
@@ -418,17 +465,29 @@ func TestReconcileVMSS(t *testing.T) {
 			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
 				spec := newDefaultVMSSSpec()
 				spec.Capacity = 2
+				spec.DataDisks = append(spec.DataDisks, infrav1.DataDisk{
+					NameSuffix: "my_disk_with_ultra_disks",
+					DiskSizeGB: 128,
+					Lun:        to.Int32Ptr(3),
+					ManagedDisk: &infrav1.ManagedDiskParameters{
+						StorageAccountType: "UltraSSD_LRS",
+					},
+				})
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 
 				setupDefaultVMSSUpdateExpectations(s)
-				existingVMSS := newDefaultExistingVMSS()
+				existingVMSS := newDefaultExistingVMSS("VM_SIZE")
+				existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				existingVMSS.Sku.Capacity = to.Int64Ptr(2)
+				existingVMSS.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
 				instances := newDefaultInstances()
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(existingVMSS, nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(instances, nil)
 
-				clone := newDefaultExistingVMSS()
+				clone := newDefaultExistingVMSS("VM_SIZE")
 				clone.Sku.Capacity = to.Int64Ptr(3)
+				clone.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
+
 				patchVMSS, err := getVMSSUpdateFromVMSS(clone)
 				g.Expect(err).NotTo(HaveOccurred())
 				patchVMSS.VirtualMachineProfile.StorageProfile.ImageReference.Version = to.StringPtr("2.0")
@@ -488,6 +547,26 @@ func TestReconcileVMSS(t *testing.T) {
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal error"))
 				m.Get(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).
 					Return(compute.VirtualMachineScaleSet{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+			},
+		},
+		{
+			name:          "fail to create a vm with ultra disk enabled",
+			expectedError: "reconcile error that cannot be recovered occurred: vm size VM_SIZE_USSD does not support ultra disks in location test-location. select a different vm size or disable ultra disks. Object will not be requeued",
+			expect: func(g *WithT, s *mock_scalesets.MockScaleSetScopeMockRecorder, m *mock_scalesets.MockClientMockRecorder) {
+				s.ScaleSetSpec().Return(azure.ScaleSetSpec{
+					Name:       defaultVMSSName,
+					Size:       "VM_SIZE_USSD",
+					Capacity:   2,
+					SSHKeyData: "ZmFrZXNzaGtleQo=",
+					DataDisks: []infrav1.DataDisk{
+						{
+							ManagedDisk: &infrav1.ManagedDiskParameters{
+								StorageAccountType: "UltraSSD_LRS",
+							},
+						},
+					},
+				})
+				s.Location().AnyTimes().Return("test-location")
 			},
 		},
 	}
@@ -585,7 +664,7 @@ func TestDeleteVMSS(t *testing.T) {
 				m.DeleteAsync(gomockinternal.AContext(), resourceGroup, name).
 					Return(nil, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 				m.Get(gomockinternal.AContext(), resourceGroup, name).
-					Return(newDefaultVMSS(), nil)
+					Return(newDefaultVMSS("VM_SIZE"), nil)
 				m.ListInstances(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName).Return(newDefaultInstances(), nil).AnyTimes()
 				s.SetVMSSState(gomock.AssignableToTypeOf(&azure.VMSS{}))
 			},
@@ -633,6 +712,17 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Location: to.StringPtr("test-location"),
 					Zones:    &[]string{"1", "3"},
+					ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+						{
+							Capabilities: &[]compute.ResourceSkuCapabilities{
+								{
+									Name:  pointer.String("UltraSSDAvailable"),
+									Value: pointer.String("True"),
+								},
+							},
+							Name: &[]string{"1", "3"},
+						},
+					},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -661,6 +751,16 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Location: to.StringPtr("test-location"),
 					Zones:    &[]string{"1", "3"},
+					//ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					//	{
+					//		Capabilities: &[]compute.ResourceSkuCapabilities{
+					//			{
+					//				Name:  pointer.String("UltraSSDAvailable"),
+					//				Value: pointer.String("True"),
+					//			},
+					//		},
+					//	},
+					//},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -745,6 +845,16 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Location: to.StringPtr("test-location"),
 					Zones:    &[]string{"1", "3"},
+					//ZoneDetails: &[]compute.ResourceSkuZoneDetails{
+					//	{
+					//		Capabilities: &[]compute.ResourceSkuCapabilities{
+					//			{
+					//				Name:  pointer.String("UltraSSDAvailable"),
+					//				Value: pointer.String("True"),
+					//			},
+					//		},
+					//	},
+					//},
 				},
 			},
 			Capabilities: &[]compute.ResourceSkuCapabilities{
@@ -759,6 +869,34 @@ func getFakeSkus() []compute.ResourceSku {
 				{
 					Name:  to.StringPtr(resourceskus.EncryptionAtHost),
 					Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+				},
+			},
+		},
+		{
+			Name:         to.StringPtr("VM_SIZE_USSD"),
+			ResourceType: to.StringPtr(string(resourceskus.VirtualMachines)),
+			Kind:         to.StringPtr(string(resourceskus.VirtualMachines)),
+			Locations: &[]string{
+				"test-location",
+			},
+			LocationInfo: &[]compute.ResourceSkuLocationInfo{
+				{
+					Location: to.StringPtr("test-location"),
+					Zones:    &[]string{"1", "3"},
+				},
+			},
+			Capabilities: &[]compute.ResourceSkuCapabilities{
+				{
+					Name:  to.StringPtr(resourceskus.AcceleratedNetworking),
+					Value: to.StringPtr(string(resourceskus.CapabilitySupported)),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.VCPUs),
+					Value: to.StringPtr("4"),
+				},
+				{
+					Name:  to.StringPtr(resourceskus.MemoryGB),
+					Value: to.StringPtr("6"),
 				},
 			},
 		},
@@ -821,14 +959,14 @@ func newWindowsVMSSSpec() azure.ScaleSetSpec {
 	return vmss
 }
 
-func newDefaultExistingVMSS() compute.VirtualMachineScaleSet {
-	vmss := newDefaultVMSS()
+func newDefaultExistingVMSS(vmSize string) compute.VirtualMachineScaleSet {
+	vmss := newDefaultVMSS(vmSize)
 	vmss.ID = to.StringPtr("vmss-id")
 	return vmss
 }
 
 func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
-	vmss := newDefaultVMSS()
+	vmss := newDefaultVMSS("VM_SIZE")
 	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType = compute.Windows
 	vmss.VirtualMachineProfile.OsProfile.LinuxConfiguration = nil
 	vmss.VirtualMachineProfile.OsProfile.WindowsConfiguration = &compute.WindowsConfiguration{
@@ -837,7 +975,8 @@ func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
 	return vmss
 }
 
-func newDefaultVMSS() compute.VirtualMachineScaleSet {
+func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
+	dataDisk := fetchDataDiskBasedOnSize(vmSize)
 	return compute.VirtualMachineScaleSet{
 		Location: to.StringPtr("test-location"),
 		Tags: map[string]*string{
@@ -846,7 +985,7 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 			"sigs.k8s.io_cluster-api-provider-azure_role":               to.StringPtr("node"),
 		},
 		Sku: &compute.Sku{
-			Name:     to.StringPtr("VM_SIZE"),
+			Name:     to.StringPtr(vmSize),
 			Tier:     to.StringPtr("Standard"),
 			Capacity: to.Int64Ptr(2),
 		},
@@ -889,35 +1028,7 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 							StorageAccountType: "Premium_LRS",
 						},
 					},
-					DataDisks: &[]compute.VirtualMachineScaleSetDataDisk{
-						{
-							Lun:          to.Int32Ptr(0),
-							Name:         to.StringPtr("my-vmss_my_disk"),
-							CreateOption: "Empty",
-							DiskSizeGB:   to.Int32Ptr(128),
-						},
-						{
-							Lun:          to.Int32Ptr(1),
-							Name:         to.StringPtr("my-vmss_my_disk_with_managed_disk"),
-							CreateOption: "Empty",
-							DiskSizeGB:   to.Int32Ptr(128),
-							ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-								StorageAccountType: "Standard_LRS",
-							},
-						},
-						{
-							Lun:          to.Int32Ptr(2),
-							Name:         to.StringPtr("my-vmss_managed_disk_with_encryption"),
-							CreateOption: "Empty",
-							DiskSizeGB:   to.Int32Ptr(128),
-							ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-								StorageAccountType: "Standard_LRS",
-								DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
-									ID: to.StringPtr("encryption_id"),
-								},
-							},
-						},
-					},
+					DataDisks: dataDisk,
 				},
 				DiagnosticsProfile: &compute.DiagnosticsProfile{
 					BootDiagnostics: &compute.BootDiagnostics{
@@ -967,6 +1078,81 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 			},
 		},
 	}
+}
+
+func fetchDataDiskBasedOnSize(vmSize string) *[]compute.VirtualMachineScaleSetDataDisk {
+	var dataDisk *[]compute.VirtualMachineScaleSetDataDisk
+	if vmSize == "VM_SIZE" {
+		dataDisk = &[]compute.VirtualMachineScaleSetDataDisk{
+			{
+				Lun:          to.Int32Ptr(0),
+				Name:         to.StringPtr("my-vmss_my_disk"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+			},
+			{
+				Lun:          to.Int32Ptr(1),
+				Name:         to.StringPtr("my-vmss_my_disk_with_managed_disk"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: "Standard_LRS",
+				},
+			},
+			{
+				Lun:          to.Int32Ptr(2),
+				Name:         to.StringPtr("my-vmss_managed_disk_with_encryption"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: "Standard_LRS",
+					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+						ID: to.StringPtr("encryption_id"),
+					},
+				},
+			},
+			{
+				Lun:          to.Int32Ptr(3),
+				Name:         to.StringPtr("my-vmss_my_disk_with_ultra_disks"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: "UltraSSD_LRS",
+				},
+			},
+		}
+	} else {
+		dataDisk = &[]compute.VirtualMachineScaleSetDataDisk{
+			{
+				Lun:          to.Int32Ptr(0),
+				Name:         to.StringPtr("my-vmss_my_disk"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+			},
+			{
+				Lun:          to.Int32Ptr(1),
+				Name:         to.StringPtr("my-vmss_my_disk_with_managed_disk"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: "Standard_LRS",
+				},
+			},
+			{
+				Lun:          to.Int32Ptr(2),
+				Name:         to.StringPtr("my-vmss_managed_disk_with_encryption"),
+				CreateOption: "Empty",
+				DiskSizeGB:   to.Int32Ptr(128),
+				ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
+					StorageAccountType: "Standard_LRS",
+					DiskEncryptionSet: &compute.DiskEncryptionSetParameters{
+						ID: to.StringPtr("encryption_id"),
+					},
+				},
+			},
+		}
+	}
+	return dataDisk
 }
 
 func newDefaultInstances() []compute.VirtualMachineScaleSetVM {

@@ -66,6 +66,8 @@ const (
 	EncryptionAtHost = "EncryptionAtHostSupported"
 	// MaximumPlatformFaultDomainCount identifies the maximum fault domain count for an availability set in a region.
 	MaximumPlatformFaultDomainCount = "MaximumPlatformFaultDomainCount"
+	// UltraSSDAvailable identifies the capability for the support of UltraSSD data disks.
+	UltraSSDAvailable = "UltraSSDAvailable"
 )
 
 // HasCapability return true for a capability which can be either
@@ -127,4 +129,39 @@ func (s SKU) GetCapability(name string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// HasLocationCapability returns true if the provided resource supports the location capability.
+func (s SKU) HasLocationCapability(capabilityName, location, zone string) bool {
+	if s.LocationInfo == nil {
+		return false
+	}
+
+	for _, info := range *s.LocationInfo {
+		if info.Location == nil || *info.Location != location || info.ZoneDetails == nil {
+			continue
+		}
+
+		for _, zoneDetail := range *info.ZoneDetails {
+			if zoneDetail.Capabilities == nil {
+				continue
+			}
+
+			for _, capability := range *zoneDetail.Capabilities {
+				if capability.Name != nil && *capability.Name == capabilityName {
+					if zoneDetail.Name == nil {
+						return false
+					}
+
+					for _, name := range *zoneDetail.Name {
+						if name == zone {
+							return true
+						}
+					}
+					return false
+				}
+			}
+		}
+	}
+	return false
 }

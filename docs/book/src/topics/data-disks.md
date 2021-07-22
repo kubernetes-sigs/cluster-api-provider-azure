@@ -24,6 +24,15 @@ See [Introduction to Azure managed disks](https://docs.microsoft.com/en-us/azure
  
  > IMPORTANT! The `lun` specified in the AzureMachine Spec must match the LUN used to refer to the device in Kubeadm diskSetup. See below for an example.
 
+### Ultra disk support for data disks
+If we use StorageAccountType as `UltraSSD_LRS` in Managed Disks, the ultra disk support will be enabled for the region and zone which supports the `UltraSSDAvailable` capability.
+
+To check all available vm-sizes in a given region which supports availability zone that has the `UltraSSDAvailable` capability supported, execute following using Azure CLI:
+```bash
+az vm list-skus -l <location> -z -s <VM-size>
+```
+See [Ultra disk](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disk) for ultra disk performance and GA scope.
+
 ## Configuring partitions, file systems and mounts 
 
 `KubeadmConfig` makes it easy to partition, format, and mount your data disk so your Linux VM can use it. Use the `diskSetup` and `mounts` options to describe partitions, file systems and mounts.

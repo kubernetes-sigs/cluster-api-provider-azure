@@ -39,6 +39,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
+const (
+	// UltraSSDStorageAccountType identifies the Ultra disk storage account type.
+	UltraSSDStorageAccountType = "UltraSSD_LRS"
+)
+
 // VMScope defines the scope interface for a virtual machines service.
 type VMScope interface {
 	logr.Logger
@@ -190,6 +195,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			virtualMachine.Identity = &compute.VirtualMachineIdentity{
 				Type:                   compute.ResourceIdentityTypeUserAssigned,
 				UserAssignedIdentities: userIdentitiesMap,
+			}
+		}
+
+		for _, dataDisk := range vmSpec.DataDisks {
+			if dataDisk.ManagedDisk != nil && dataDisk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType {
+				virtualMachine.VirtualMachineProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{
+					UltraSSDEnabled: to.BoolPtr(true),
+				}
 			}
 		}
 
@@ -419,6 +432,12 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 
 			if disk.ManagedDisk.DiskEncryptionSet != nil {
 				dataDisks[i].ManagedDisk.DiskEncryptionSet = &compute.DiskEncryptionSetParameters{ID: to.StringPtr(disk.ManagedDisk.DiskEncryptionSet.ID)}
+			}
+
+			// check the support for ultra disks based on location and vm size
+			location := s.Scope.Location()
+			if disk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, vmSpec.Zone) {
+				return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", vmSpec.Size, location))
 			}
 		}
 	}
