@@ -392,6 +392,9 @@ const (
 
 	// ServicePrincipal represents a service principal.
 	ServicePrincipal IdentityType = "ServicePrincipal"
+
+	// ManualServicePrincipal represents a manual service principal.
+	ManualServicePrincipal IdentityType = "ManualServicePrincipal"
 )
 
 // OSDisk defines the operating system disk for a VM.

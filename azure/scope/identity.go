@@ -44,7 +44,7 @@ const azureSecretKey = "clientSecret"
 
 // CredentialsProvider defines the behavior for azure identity based credential providers.
 type CredentialsProvider interface {
-	GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error)
+	GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string) (autorest.Authorizer, error)
 	GetClientID() string
 	GetClientSecret(ctx context.Context) (string, error)
 	GetTenantID() string
@@ -103,8 +103,8 @@ func NewAzureClusterCredentialsProvider(ctx context.Context, kubeClient client.C
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureCluster metadata.
-func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, p.AzureCluster.ObjectMeta)
+func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, p.AzureCluster.ObjectMeta)
 }
 
 // NewManagedControlPlaneCredentialsProvider creates a new ManagedControlPlaneCredentialsProvider from the supplied inputs.
@@ -139,88 +139,47 @@ func NewManagedControlPlaneCredentialsProvider(ctx context.Context, kubeClient c
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureManagedControlPlane metadata.
-func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, p.AzureManagedControlPlane.ObjectMeta)
+func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, activeDirectoryEndpoint, p.AzureManagedControlPlane.ObjectMeta)
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity and cluster metadata.
-func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
-	azureIdentityType, err := getAzureIdentityType(p.Identity)
-	if err != nil {
-		return nil, err
-	}
-
-	// AzureIdentity and AzureIdentityBinding will no longer have an OwnerRef starting from capz release v0.5.0 because of the following:
-	// In Kubenetes v1.20+, if the garbage collector detects an invalid cross-namespace ownerReference, or a cluster-scoped dependent with
-	// an ownerReference referencing a namespaced kind, a warning Event with a reason of OwnerRefInvalidNamespace and an involvedObject
-	// of the invalid dependent is reported. You can check for that kind of Event by running kubectl get events -A --field-selector=reason=OwnerRefInvalidNamespace.
-
-	copiedIdentity := &aadpodv1.AzureIdentity{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureIdentity",
-			APIVersion: "aadpodidentity.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      identity.GetAzureIdentityName(clusterMeta.Name, clusterMeta.Namespace, p.Identity.Name),
-			Namespace: system.GetManagerNamespace(),
-			Annotations: map[string]string{
-				aadpodv1.BehaviorKey: "namespaced",
-			},
-			Labels: map[string]string{
-				clusterv1.ClusterLabelName:                  clusterMeta.Name,
-				infrav1.ClusterLabelNamespace:               clusterMeta.Namespace,
-				clusterctl.ClusterctlMoveHierarchyLabelName: "true",
-			},
-		},
-		Spec: aadpodv1.AzureIdentitySpec{
-			Type:           azureIdentityType,
-			TenantID:       p.Identity.Spec.TenantID,
-			ClientID:       p.Identity.Spec.ClientID,
-			ClientPassword: p.Identity.Spec.ClientSecret,
-			ResourceID:     p.Identity.Spec.ResourceID,
-		},
-	}
-	err = p.Client.Create(ctx, copiedIdentity)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
-	}
-
-	azureIdentityBinding := &aadpodv1.AzureIdentityBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AzureIdentityBinding",
-			APIVersion: "aadpodidentity.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-binding", copiedIdentity.Name),
-			Namespace: copiedIdentity.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterLabelName:                  clusterMeta.Name,
-				infrav1.ClusterLabelNamespace:               clusterMeta.Namespace,
-				clusterctl.ClusterctlMoveHierarchyLabelName: "true",
-			},
-		},
-		Spec: aadpodv1.AzureIdentityBindingSpec{
-			AzureIdentity: copiedIdentity.Name,
-			Selector:      infrav1.AzureIdentityBindingSelector, //should be same as selector added on controller
-		},
-	}
-	err = p.Client.Create(ctx, azureIdentityBinding)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
-	}
-
+func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint, activeDirectoryEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
 	var spt *adal.ServicePrincipalToken
-	msiEndpoint, err := adal.GetMSIVMEndpoint()
-	if err != nil {
-		return nil, errors.Errorf("failed to get MSI endpoint: %v", err)
-	}
-	if p.Identity.Spec.Type == infrav1.ServicePrincipal {
+	switch p.Identity.Spec.Type {
+	case infrav1.ServicePrincipal:
+		if err := createAzureIdentityWithBindings(ctx, p.Identity, clusterMeta, p.Client); err != nil {
+			return nil, err
+		}
+
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, errors.Errorf("failed to get MSI endpoint: %v", err)
+		}
+
 		spt, err = adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, resourceManagerEndpoint, p.Identity.Spec.ClientID)
 		if err != nil {
 			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
 		}
-	} else if p.Identity.Spec.Type == infrav1.UserAssignedMSI {
-		return nil, errors.Errorf("UserAssignedMSI not supported: %v", err)
+
+	case infrav1.ManualServicePrincipal:
+		oauthConfig, err := adal.NewOAuthConfig(activeDirectoryEndpoint, p.GetTenantID())
+		if err != nil {
+			return nil, err
+		}
+
+		clientSecret, err := p.GetClientSecret(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get client secret")
+		}
+
+		spt, err = adal.NewServicePrincipalToken(*oauthConfig, p.Identity.Spec.ClientID, clientSecret, resourceManagerEndpoint)
+		if err != nil {
+			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
+		}
+
+	default:
+		return nil, errors.Errorf("identity type %s not supported", p.Identity.Spec.Type)
 	}
 
 	return autorest.NewBearerAuthorizer(spt), nil
@@ -251,6 +210,75 @@ func (p *AzureCredentialsProvider) GetClientSecret(ctx context.Context) (string,
 // GetTenantID returns the Tenant ID associated with the AzureCredentialsProvider's Identity.
 func (p *AzureCredentialsProvider) GetTenantID() string {
 	return p.Identity.Spec.TenantID
+}
+
+func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1.AzureClusterIdentity, clusterMeta metav1.ObjectMeta,
+	kubeClient client.Client) error {
+	azureIdentityType, err := getAzureIdentityType(azureIdentity)
+	if err != nil {
+		return err
+	}
+
+	// AzureIdentity and AzureIdentityBinding will no longer have an OwnerRef starting from capz release v0.5.0 because of the following:
+	// In Kubenetes v1.20+, if the garbage collector detects an invalid cross-namespace ownerReference, or a cluster-scoped dependent with
+	// an ownerReference referencing a namespaced kind, a warning Event with a reason of OwnerRefInvalidNamespace and an involvedObject
+	// of the invalid dependent is reported. You can check for that kind of Event by running kubectl get events -A --field-selector=reason=OwnerRefInvalidNamespace.
+
+	copiedIdentity := &aadpodv1.AzureIdentity{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AzureIdentity",
+			APIVersion: "aadpodidentity.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      identity.GetAzureIdentityName(clusterMeta.Name, clusterMeta.Namespace, azureIdentity.Name),
+			Namespace: system.GetManagerNamespace(),
+			Annotations: map[string]string{
+				aadpodv1.BehaviorKey: "namespaced",
+			},
+			Labels: map[string]string{
+				clusterv1.ClusterLabelName:                  clusterMeta.Name,
+				infrav1.ClusterLabelNamespace:               clusterMeta.Namespace,
+				clusterctl.ClusterctlMoveHierarchyLabelName: "true",
+			},
+		},
+		Spec: aadpodv1.AzureIdentitySpec{
+			Type:           azureIdentityType,
+			TenantID:       azureIdentity.Spec.TenantID,
+			ClientID:       azureIdentity.Spec.ClientID,
+			ClientPassword: azureIdentity.Spec.ClientSecret,
+			ResourceID:     azureIdentity.Spec.ResourceID,
+		},
+	}
+	err = kubeClient.Create(ctx, copiedIdentity)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+	}
+
+	azureIdentityBinding := &aadpodv1.AzureIdentityBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AzureIdentityBinding",
+			APIVersion: "aadpodidentity.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-binding", copiedIdentity.Name),
+			Namespace: copiedIdentity.Namespace,
+			Labels: map[string]string{
+				clusterv1.ClusterLabelName:                  clusterMeta.Name,
+				infrav1.ClusterLabelNamespace:               clusterMeta.Namespace,
+				clusterctl.ClusterctlMoveHierarchyLabelName: "true",
+			},
+		},
+		Spec: aadpodv1.AzureIdentityBindingSpec{
+			AzureIdentity: copiedIdentity.Name,
+			Selector:      infrav1.AzureIdentityBindingSelector, //should be same as selector added on controller
+		},
+	}
+	err = kubeClient.Create(ctx, azureIdentityBinding)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+	}
+
+	return nil
 }
 
 func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.IdentityType, error) {
