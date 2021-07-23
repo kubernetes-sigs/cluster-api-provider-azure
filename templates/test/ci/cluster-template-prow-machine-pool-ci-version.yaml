@@ -131,12 +131,12 @@ spec:
             done
           else
             CI_URL="dl.k8s.io/k8s-release-dev/ci-periodic/$$CI_VERSION/bin/linux/amd64"
-            if ! $${wget} ls "$${CI_URL}" > /dev/null; then
+            if ! wget"$${CI_URL}" > /dev/null; then
               CI_URL="dl.k8s.io/k8s-release-dev/ci/$$CI_VERSION/bin/linux/amd64"
             fi
             for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
               echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-              $${wget} cp "$$CI_URL/$$CI_PACKAGE" "$$CI_DIR/$$CI_PACKAGE"
+              wget"$$CI_URL/$$CI_PACKAGE" "$$CI_DIR/$$CI_PACKAGE"
               chmod +x "$$CI_DIR/$$CI_PACKAGE"
               mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
             done
@@ -144,7 +144,7 @@ spec:
           fi
           for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
             echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-            $${wget} cp "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
+            wget"$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
             $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
             $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
             $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
@@ -314,12 +314,12 @@ spec:
           done
         else
           CI_URL="dl.k8s.io/k8s-release-dev/ci-periodic/$$CI_VERSION/bin/linux/amd64"
-          if ! $${wget} ls "$${CI_URL}" > /dev/null; then
+          if ! wget"$${CI_URL}" > /dev/null; then
             CI_URL="dl.k8s.io/k8s-release-dev/ci/$$CI_VERSION/bin/linux/amd64"
           fi
           for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
             echo "* downloading binary: $$CI_URL/$$CI_PACKAGE"
-            $${wget} cp "$$CI_URL/$$CI_PACKAGE" "$$CI_DIR/$$CI_PACKAGE"
+            wget"$$CI_URL/$$CI_PACKAGE" "$$CI_DIR/$$CI_PACKAGE"
             chmod +x "$$CI_DIR/$$CI_PACKAGE"
             mv "$$CI_DIR/$$CI_PACKAGE" "/usr/bin/$$CI_PACKAGE"
           done
@@ -327,7 +327,7 @@ spec:
         fi
         for CI_CONTAINER in "$${CONTAINERS_TO_TEST[@]}"; do
           echo "* downloading package: $$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT"
-          $${wget} cp "$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
+          wget"$$CI_URL/$$CI_CONTAINER.$$CONTAINER_EXT" "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT"
           $${SUDO} ctr -n k8s.io images import "$$CI_DIR/$$CI_CONTAINER.$$CONTAINER_EXT" || echo "* ignoring expected 'ctr images import' result"
           $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" k8s.gcr.io/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
           $${SUDO} ctr -n k8s.io images tag k8s.gcr.io/$$CI_CONTAINER-amd64:"$${CI_VERSION//+/_}" gcr.io/k8s-staging-ci-images/$$CI_CONTAINER:"$${CI_VERSION//+/_}"
