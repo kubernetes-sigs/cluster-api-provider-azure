@@ -131,7 +131,7 @@ spec:
             done
           else
             CI_URL="dl.k8s.io/k8s-release-dev/ci-periodic/$$CI_VERSION/bin/linux/amd64"
-            if ! wget"$${CI_URL}" > /dev/null; then
+            if ! CI_URL="https://storage.googleapis.com/k8s-release-dev/ci/$${KUBERNETES_VERSION}/bin/linux/amd64""$${CI_URL}" > /dev/null; then
               CI_URL="dl.k8s.io/k8s-release-dev/ci/$$CI_VERSION/bin/linux/amd64"
             fi
             for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
@@ -314,7 +314,7 @@ spec:
           done
         else
           CI_URL="dl.k8s.io/k8s-release-dev/ci-periodic/$$CI_VERSION/bin/linux/amd64"
-          if ! wget"$${CI_URL}" > /dev/null; then
+          if ! CI_URL="https://storage.googleapis.com/k8s-release-dev/ci/$${KUBERNETES_VERSION}/bin/linux/amd64""$${CI_URL}" > /dev/null; then
             CI_URL="dl.k8s.io/k8s-release-dev/ci/$$CI_VERSION/bin/linux/amd64"
           fi
           for CI_PACKAGE in "$${PACKAGES_TO_TEST[@]}"; do
