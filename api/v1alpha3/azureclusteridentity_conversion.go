@@ -17,10 +17,15 @@ limitations under the License.
 package v1alpha3
 
 import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
+
+const (
+	AzureClusterKind = "AzureCluster"
 )
 
 // ConvertTo converts this AzureCluster to the Hub version (v1alpha4).
@@ -43,6 +48,15 @@ func (src *AzureClusterIdentity) ConvertTo(dstRaw conversion.Hub) error { // nol
 		}
 		dst.Spec.AllowedNamespaces.Selector = restored.Spec.AllowedNamespaces.Selector
 	}
+
+	// removing ownerReference for AzureCluster as ownerReference is not required from v1alpha4 onwards.
+	var restoredOwnerReferences []v1.OwnerReference
+	for _, ownerRef :=  range dst.OwnerReferences {
+		if ownerRef.Kind != AzureClusterKind {
+			restoredOwnerReferences = append(restoredOwnerReferences, ownerRef)
+		}
+	}
+	dst.OwnerReferences = restoredOwnerReferences
 
 	return nil
 }
