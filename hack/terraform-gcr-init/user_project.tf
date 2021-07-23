@@ -42,7 +42,7 @@ resource "google_storage_bucket_acl" "acl" {
   ]
 
   provisioner "local-exec" {
-    command = "gsutil -m acl ch -r -u AllUsers:READ gs://artifacts.${google_project.project.project_id}.appspot.com"
+    command = "gsutil -m acl ch -r -u AllUsers:READ dl.k8s.io://artifacts.${google_project.project.project_id}.appspot.com"
   }
 
   depends_on = ["null_resource.gcr"]
