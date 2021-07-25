@@ -165,6 +165,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 
+	if managedClusterSpec.AADProfile != nil {
+		managedCluster.AadProfile = &containerservice.ManagedClusterAADProfile{
+			Managed:             &managedClusterSpec.AADProfile.Managed,
+			EnableAzureRBAC:     &managedClusterSpec.AADProfile.EnableAzureRBAC,
+			AdminGroupObjectIDs: &managedClusterSpec.AADProfile.AdminGroupObjectIDs,
+		}
+	}
+
 	if isCreate {
 		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
 		if err != nil {
@@ -189,6 +197,22 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
 			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
+		}
+
+		if managedCluster.AadProfile != nil {
+			propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+				Managed:             managedCluster.AadProfile.Managed,
+				EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
+				AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
+			}
+		}
+
+		if existingMC.AadProfile != nil {
+			existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+				Managed:             existingMC.AadProfile.Managed,
+				EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
+				AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
+			}
 		}
 
 		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)

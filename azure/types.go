@@ -354,6 +354,21 @@ type ManagedClusterSpec struct {
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service
 	DNSServiceIP *string
+
+	// AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
+	AADProfile *AADProfile
+}
+
+// AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
+type AADProfile struct {
+	// Managed - Whether to enable managed AAD.
+	Managed bool
+
+	// EnableAzureRBAC - Whether to enable Azure RBAC for Kubernetes authorization.
+	EnableAzureRBAC bool
+
+	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
+	AdminGroupObjectIDs []string
 }
 
 // AgentPoolSpec contains agent pool specification details.

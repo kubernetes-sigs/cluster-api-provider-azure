@@ -77,6 +77,21 @@ type AzureManagedControlPlaneSpec struct {
 	// +kubebuilder:validation:Enum=Basic;Standard
 	// +optional
 	LoadBalancerSKU *string `json:"loadBalancerSKU,omitempty"`
+
+	// AadProfile is Azure Active Directory configuration to integrate with AKS for aad authentication.
+	// +optional
+	AADProfile *AADProfile `json:"aadProfile,omitempty"`
+}
+
+// AADProfile - AAD integration managed by AKS.
+type AADProfile struct {
+	// Managed - Whether to enable managed AAD.
+	// +kubebuilder:validation:Required
+	Managed bool `json:"managed"`
+
+	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
+	// +kubebuilder:validation:Required
+	AdminGroupObjectIDs []string `json:"adminGroupObjectIDs"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.

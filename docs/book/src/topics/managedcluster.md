@@ -96,10 +96,10 @@ metadata:
   name: my-cluster-control-plane
 spec:
   location: southcentralus
-  resourceGroup: foo-bar
+  resourceGroupName: foo-bar
   sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
   subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
-  version: v1.20.5
+  version: v1.21.2
   networkPolicy: azure # or calico
   networkPlugin: azure # or kubenet
 ---
@@ -125,7 +125,7 @@ spec:
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
-      version: v1.20.5
+      version: v1.21.2
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureManagedMachinePool
@@ -151,7 +151,7 @@ spec:
         kind: AzureManagedMachinePool
         name: agentpool1
         namespace: default
-      version: v1.20.5
+      version: v1.21.2
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureManagedMachinePool
@@ -207,8 +207,6 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
-  defaultPoolRef:
-    name: agentpool0
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureClusterIdentity
@@ -222,6 +220,29 @@ spec:
 ---
 ```
 
+### AKS Managed Azure Active Directory Integration
+
+Azure Kubernetes Service can be configured to use Azure Active Directory for user authentication.
+AAD for managed clusters can be configured by enabling the `managed` spec in `AzureManagedControlPlane` to `true` 
+and by providing Azure AD GroupObjectId in `AdminGroupObjectIDs` array. The group is needed as admin group for
+the cluster to grant cluster admin permissions. You can use an existing Azure AD group, or create a new one. For more documentation about AAD refer [AKS AAD Docs](https://docs.microsoft.com/en-us/azure/aks/managed-aad)
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  location: southcentralus
+  resourceGroupName: foo-bar
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: fae7cc14-bfba-4471-9435-f945b42a16dd # fake uuid
+  version: v1.21.2
+  aadProfile:
+    managed: true
+    adminGroupObjectIDs: 
+    - 917056a9-8eb5-439c-g679-b34901ade75h # fake admin groupId
+```
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,
@@ -239,6 +260,8 @@ Current limitations
 - Only supports Standard load balancer (SLB).
   - We will not support Basic load balancer in CAPZ. SLB is generally
     the path forward in Azure.
+- Only supports Azure Active Directory Managed by Azure.
+  - We will not support Legacy Azure Active Directory
 
 ## Troubleshooting
 
@@ -280,7 +303,7 @@ spec:
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
-      version: v1.20.5
+      version: v1.21.2
 
 ---
 # New Machinepool
@@ -317,5 +340,5 @@ spec:
         kind: AzureManagedMachinePool
         name: agentpool0
         namespace: default
-      version: v1.20.5
+      version: v1.21.2
 ```

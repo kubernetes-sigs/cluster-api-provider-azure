@@ -217,6 +217,31 @@ func (r *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 		}
 	}
 
+	if old.Spec.AADProfile != nil {
+		if r.Spec.AADProfile == nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("Spec", "AADProfile"),
+					r.Spec.AADProfile,
+					"field cannot be nil, cannot disable AADProfile"))
+		} else {
+			if !r.Spec.AADProfile.Managed && old.Spec.AADProfile.Managed {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile.Managed"),
+						r.Spec.AADProfile.Managed,
+						"cannot set AADProfile.Managed to false"))
+			}
+			if len(r.Spec.AADProfile.AdminGroupObjectIDs) == 0 {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("Spec", "AADProfile.AdminGroupObjectIDs"),
+						r.Spec.AADProfile.AdminGroupObjectIDs,
+						"length of AADProfile.AdminGroupObjectIDs cannot be zero"))
+			}
+		}
+	}
+
 	if len(allErrs) == 0 {
 		return r.Validate()
 	}
