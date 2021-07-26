@@ -37,6 +37,16 @@ To create an Azure VM with the system-assigned managed identity enabled, your Az
 
 #### User-assigned
 
+<aside class="note"> 
+
+<h1> Note </h1>
+
+While CAPZ allows you to specify multiple user-assigned identities, only the first one will be used for Cloud Provider authentication. The other identities are left at the user's discretion for other use cases.
+
+The first user assigned identity should have the `Contributor` role on the resource group or, if resources are spread across multiple resource groups (e.g. custom vnet in a separate RG), `Contributor` role on the subscription. You may also want to grant `acrpull` permissions to allow your nodes to access [Azure Container Registries](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication-managed-identity).
+
+</aside>
+
 * In Machines
 
 ```yaml

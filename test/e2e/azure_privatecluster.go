@@ -23,18 +23,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
+	azuresdk "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -144,8 +151,33 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	Expect(cluster).ToNot(BeNil())
 
+	defer func() {
+		// Delete the private cluster, so that all of the Azure resources will be cleaned up when the public
+		// cluster is deleted at the end of the test. If we don't delete this cluster, the Azure resource delete
+		// verification will fail.
+		Logf("deleting private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
+		Expect(publicClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
+		Eventually(func() error {
+			var c clusterv1.Cluster
+			err := publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}, &c)
+			if apierrors.IsNotFound(err) {
+				// 404 the cluster has been deleted
+				return nil
+			}
+
+			if err != nil {
+				// some unexpected error occurred; return it
+				return err
+			}
+
+			return fmt.Errorf("cluster %q as not yet been deleted", cluster.Name)
+		}, input.E2EConfig.GetIntervals(specName, "wait-delete-cluster")...).Should(BeNil())
+		Logf("deleted private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
+	}()
+
 	// Check that azure bastion is provisioned successfully.
 	{
+		By("verifying the Azure Bastion Host was create successfully")
 		settings, err := auth.GetSettingsFromEnvironment()
 		Expect(err).To(BeNil())
 
@@ -185,7 +217,7 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 }
 
 // SetupExistingVNet creates a resource group and a VNet to be used by a workload cluster.
-func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, nodeSubnetCidrs map[string]string) {
+func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, nodeSubnetCidrs map[string]string) func() {
 	By("creating Azure clients with the workload cluster's subscription")
 	settings, err := auth.GetSettingsFromEnvironment()
 	Expect(err).NotTo(HaveOccurred())
@@ -329,4 +361,88 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	Expect(err).To(BeNil())
 	err = vnetFuture.WaitForCompletionRef(ctx, vnetClient.Client)
 	Expect(err).To(BeNil())
+
+	return func() {
+		Logf("deleting an existing virtual network %q", os.Getenv(AzureVNetName))
+		vFuture, err := vnetClient.Delete(ctx, groupName, os.Getenv(AzureVNetName))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(vFuture.WaitForCompletionRef(ctx, vnetClient.Client)).ToNot(HaveOccurred())
+
+		Logf("deleting an existing route table %q", routeTableName)
+		rtFuture, err := routetableClient.Delete(ctx, groupName, routeTableName)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rtFuture.WaitForCompletionRef(ctx, routetableClient.Client)).ToNot(HaveOccurred())
+
+		Logf("deleting an existing network security group %q", nsgNodeName)
+		nsgFuture, err := nsgClient.Delete(ctx, groupName, nsgNodeName)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).NotTo(HaveOccurred())
+
+		Logf("deleting an existing network security group %q", nsgName)
+		nsgFuture, err = nsgClient.Delete(ctx, groupName, nsgName)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(nsgFuture.WaitForCompletionRef(ctx, nsgClient.Client)).NotTo(HaveOccurred())
+
+		Logf("verifying the existing resource group %q is empty", groupName)
+		resClient := resources.NewClient(subscriptionID)
+		resClient.Authorizer = authorizer
+		Eventually(func() ([]resources.GenericResourceExpanded, error) {
+			page, err := resClient.ListByResourceGroup(ctx, groupName, "", "provisioningState", to.Int32Ptr(10))
+			if err != nil {
+				return nil, err
+			}
+
+			// for each resource do a GET directly for that resource to avoid hitting Azure list cache
+			var foundResources []resources.GenericResourceExpanded
+			for _, genericResource := range page.Values() {
+				apiversion, err := getAPIVersion(*genericResource.ID)
+				if err != nil {
+					Logf("failed to get API version for %q with %+v", *genericResource.ID, err)
+				}
+
+				_, err = resClient.GetByID(ctx, *genericResource.ID, apiversion)
+				if err != nil && azure.ResourceNotFound(err) {
+					// the resources is returned in the list, but it's actually 404
+					continue
+				}
+
+				// unexpected error calling GET on the resource
+				if err != nil {
+					Logf("failed GETing resource %q with %+v", *genericResource.ID, err)
+					return nil, err
+				}
+
+				// if resource is still there, then append to foundResources
+				foundResources = append(foundResources, genericResource)
+			}
+			return foundResources, nil
+			// add some tolerance for Azure caching of resource group resource caching
+		}, 5*time.Minute, 10*time.Second).Should(HaveLen(0), "Expect the manually created resource group is empty after removing the manually created resources.")
+
+		Logf("deleting the existing resource group %q", groupName)
+		grpFuture, err := groupClient.Delete(ctx, groupName)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(grpFuture.WaitForCompletionRef(ctx, nsgClient.Client)).NotTo(HaveOccurred())
+	}
+}
+
+func getAPIVersion(resourceID string) (string, error) {
+	parsed, err := azuresdk.ParseResourceID(resourceID)
+	if err != nil {
+		return "", errors.Wrap(err, fmt.Sprintf("unable to parse resource ID %q", resourceID))
+	}
+
+	switch parsed.Provider {
+	case "Microsoft.Network":
+		return getAPIVersionFromUserAgent(network.UserAgent()), nil
+	case "Microsoft.Compute":
+		return getAPIVersionFromUserAgent(compute.UserAgent()), nil
+	default:
+		return "", fmt.Errorf("failed to find an API version for resource provider %q", parsed.Provider)
+	}
+}
+
+func getAPIVersionFromUserAgent(userAgent string) string {
+	splits := strings.Split(userAgent, "/")
+	return splits[len(splits) - 1]
 }
