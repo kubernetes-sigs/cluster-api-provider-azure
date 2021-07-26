@@ -47,6 +47,7 @@ var _ = Describe("Workload cluster creation", func() {
 		result            *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName       string
 		clusterNamePrefix string
+		additionalCleanup func()
 		specTimes         = map[string]time.Time{}
 	)
 
@@ -89,6 +90,7 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Setenv(ClusterIdentityNamespace, namespace.Name)).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretName, "cluster-identity-secret")).NotTo(HaveOccurred())
 		Expect(os.Setenv(ClusterIdentitySecretNamespace, namespace.Name)).NotTo(HaveOccurred())
+		additionalCleanup = nil
 	})
 
 	AfterEach(func() {
@@ -96,7 +98,18 @@ var _ = Describe("Workload cluster creation", func() {
 			// this means the cluster failed to come up. We make an attempt to find the cluster to be able to fetch logs for the failed bootstrapping.
 			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
 		}
-		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, result.Cluster, e2eConfig.GetIntervals, skipCleanup)
+
+		cleanInput := cleanupInput{
+			SpecName:          specName,
+			Cluster:           result.Cluster,
+			ClusterProxy:      bootstrapClusterProxy,
+			Namespace:         namespace,
+			CancelWatches:     cancelWatches,
+			IntervalsGetter:   e2eConfig.GetIntervals,
+			SkipCleanup:       skipCleanup,
+			AdditionalCleanup: additionalCleanup,
+		}
+		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())
 		Expect(os.Unsetenv(AzureVNetName)).NotTo(HaveOccurred())
 
@@ -113,7 +126,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Expect(os.Setenv(AzureCPSubnetCidr, cpCIDR)).NotTo(HaveOccurred())
 					nodeCIDR := "10.129.0.0/16"
 					Expect(os.Setenv(AzureNodeSubnetCidr, nodeCIDR)).NotTo(HaveOccurred())
-					SetupExistingVNet(ctx,
+					additionalCleanup = SetupExistingVNet(ctx,
 						"10.0.0.0/8",
 						map[string]string{fmt.Sprintf("%s-controlplane-subnet", clusterName): "10.0.0.0/16", "private-cp-subnet": cpCIDR},
 						map[string]string{fmt.Sprintf("%s-node-subnet", clusterName): "10.1.0.0/16", "private-node-subnet": nodeCIDR})

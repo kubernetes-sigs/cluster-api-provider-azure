@@ -141,6 +141,10 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 
 	if err := s.groupsSvc.Delete(ctx); err != nil {
 		if errors.Is(err, azure.ErrNotOwned) {
+			if err := s.bastionSvc.Delete(ctx); err != nil {
+				return errors.Wrap(err, "failed to delete bastion")
+			}
+
 			if err := s.privateDNSSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete private dns")
 			}
@@ -171,10 +175,6 @@ func (s *azureClusterService) Delete(ctx context.Context) error {
 
 			if err := s.vnetSvc.Delete(ctx); err != nil {
 				return errors.Wrap(err, "failed to delete virtual network")
-			}
-
-			if err := s.bastionSvc.Delete(ctx); err != nil {
-				return errors.Wrap(err, "failed to delete bastion")
 			}
 		} else {
 			return errors.Wrap(err, "failed to delete resource group")
