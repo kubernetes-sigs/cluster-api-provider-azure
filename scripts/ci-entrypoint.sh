@@ -85,6 +85,9 @@ select_cluster_template() {
 
     if [[ -n "${TEST_CCM:-}" ]]; then
         export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider.yaml"
+        if [[ -n "${WINDOWS:-}" ]]; then
+            export CLUSTER_TEMPLATE="test/ci/cluster-template-prow-external-cloud-provider-windows.yaml"
+        fi
         # shellcheck source=scripts/ci-build-azure-ccm.sh
         source "${REPO_ROOT}/scripts/ci-build-azure-ccm.sh"
         echo "Using CCM image ${AZURE_CLOUD_CONTROLLER_MANAGER_IMG} and CNM image ${AZURE_CLOUD_NODE_MANAGER_IMG} to build external cloud provider cluster"

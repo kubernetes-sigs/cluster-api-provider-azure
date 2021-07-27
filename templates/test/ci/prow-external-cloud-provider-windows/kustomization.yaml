@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - ../../../flavors/external-cloud-provider-windows
+  - ../prow-windows/cni-resource-set-windows.yaml
+patchesStrategicMerge:
+  - ../patches/tags.yaml
+  - ../patches/controller-manager.yaml
+  - ../patches/cluster-cni-windows.yaml
+patches:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: ../prow-windows/patches/windows-tmp-folder.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-flannel
+    files:
+      - cni=../../../addons/windows/flannel.yaml
+      - proxy=../../../addons/windows/kube-proxy-windows.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated

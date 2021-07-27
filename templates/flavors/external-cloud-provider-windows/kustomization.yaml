@@ -1,0 +1,21 @@
+namespace: default
+resources:
+  - ../windows
+  - ../external-cloud-provider/ccm-resource-set.yaml
+
+patchesStrategicMerge:
+  - patches/external-cloud-provider.yaml
+
+configMapGenerator:
+  - name: cloud-controller-manager-addon
+    files:
+      - ../external-cloud-provider/cloud-controller-manager.yaml
+  - name: cloud-node-manager-addon
+    files:
+      - ../external-cloud-provider/cloud-node-manager.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated
