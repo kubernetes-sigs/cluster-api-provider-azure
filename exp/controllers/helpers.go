@@ -408,11 +408,28 @@ func MachinePoolToAzureManagedControlPlaneMapFunc(ctx context.Context, c client.
 			}
 		}
 
-		nameMatches := controlPlane.Spec.DefaultPoolRef.Name == infraMachinePoolRef.Name
 		kindMatches := infraMachinePoolRef.Kind == "AzureManagedMachinePool"
 		groupMatches := controlPlaneGK.Group == gv.Group
 
-		if groupMatches && kindMatches && nameMatches {
+		ammp := &infrav1exp.AzureManagedMachinePool{}
+		key := types.NamespacedName{Namespace: infraMachinePoolRef.Namespace, Name: infraMachinePoolRef.Name}
+		if err := c.Get(ctx, key, ammp); err != nil {
+			log.Error(err, "failed to fetch azure managed machine pool for Machinepool: %s", infraMachinePoolRef.Name)
+			// If we get here, we might want to reconcile but aren't sure.
+			// Do it anyway to be safe. Worst case we reconcile a few extra times with no-ops.
+			return []reconcile.Request{
+				{
+					NamespacedName: client.ObjectKey{
+						Namespace: ref.Namespace,
+						Name:      ref.Name,
+					},
+				},
+			}
+		}
+
+		isSystemNodePool := ammp.Spec.Mode == string(infrav1exp.NodePoolModeSystem)
+
+		if groupMatches && kindMatches && isSystemNodePool {
 			return []reconcile.Request{
 				{
 					NamespacedName: client.ObjectKey{

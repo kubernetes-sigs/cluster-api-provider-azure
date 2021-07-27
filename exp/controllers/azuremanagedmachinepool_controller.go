@@ -185,7 +185,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 	// For non-system node pools, we wait for the control plane to be
 	// initialized, otherwise Azure API will return an error for node pool
 	// CreateOrUpdate request.
-	if infraPool.Name != controlPlane.Spec.DefaultPoolRef.Name && !controlPlane.Status.Initialized {
+	if infraPool.Spec.Mode != string(infrav1exp.NodePoolModeSystem) && !controlPlane.Status.Initialized {
 		log.Info("AzureManagedControlPlane is not initialized")
 		return reconcile.Result{}, nil
 	}

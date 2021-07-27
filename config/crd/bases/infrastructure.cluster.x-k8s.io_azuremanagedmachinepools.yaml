@@ -42,6 +42,13 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              mode:
+                description: 'Mode - represents mode of an agent pool. Possible values
+                  include: System, User.'
+                enum:
+                - System
+                - User
+                type: string
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this
                   agent pool. If you specify 0, it will apply the default osDisk size
@@ -58,6 +65,7 @@ spec:
                 description: SKU is the size of the VMs in the node pool.
                 type: string
             required:
+            - mode
             - sku
             type: object
           status:
@@ -109,6 +117,13 @@ spec:
             description: AzureManagedMachinePoolSpec defines the desired state of
               AzureManagedMachinePool.
             properties:
+              mode:
+                description: 'Mode - represents mode of an agent pool. Possible values
+                  include: System, User.'
+                enum:
+                - System
+                - User
+                type: string
               osDiskSizeGB:
                 description: OSDiskSizeGB is the disk size for every machine in this
                   agent pool. If you specify 0, it will apply the default osDisk size
@@ -125,6 +140,7 @@ spec:
                 description: SKU is the size of the VMs in the node pool.
                 type: string
             required:
+            - mode
             - sku
             type: object
           status:

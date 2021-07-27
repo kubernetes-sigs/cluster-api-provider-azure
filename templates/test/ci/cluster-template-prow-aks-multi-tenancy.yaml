@@ -27,8 +27,6 @@ spec:
     buildProvenance: ${BUILD_PROVENANCE}
     creationTimestamp: ${TIMESTAMP}
     jobName: ${JOB_NAME}
-  defaultPoolRef:
-    name: agentpool0
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
     kind: AzureClusterIdentity
@@ -72,6 +70,7 @@ metadata:
   name: agentpool0
   namespace: default
 spec:
+  mode: System
   osDiskSizeGB: 512
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
@@ -101,6 +100,7 @@ metadata:
   name: agentpool1
   namespace: default
 spec:
+  mode: User
   osDiskSizeGB: 1024
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---

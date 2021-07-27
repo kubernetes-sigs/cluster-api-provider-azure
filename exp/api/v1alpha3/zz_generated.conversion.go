@@ -704,7 +704,6 @@ func autoConvert_v1alpha3_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedC
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
 	out.SSHPublicKey = in.SSHPublicKey
-	out.DefaultPoolRef = in.DefaultPoolRef
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	return nil
@@ -731,7 +730,6 @@ func autoConvert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedC
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
 	out.SSHPublicKey = in.SSHPublicKey
-	out.DefaultPoolRef = in.DefaultPoolRef
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
@@ -815,6 +813,7 @@ func Convert_v1alpha4_AzureManagedMachinePoolList_To_v1alpha3_AzureManagedMachin
 }
 
 func autoConvert_v1alpha3_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMachinePoolSpec(in *AzureManagedMachinePoolSpec, out *v1alpha4.AzureManagedMachinePoolSpec, s conversion.Scope) error {
+	out.Mode = in.Mode
 	out.SKU = in.SKU
 	out.OSDiskSizeGB = (*int32)(unsafe.Pointer(in.OSDiskSizeGB))
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
@@ -827,6 +826,7 @@ func Convert_v1alpha3_AzureManagedMachinePoolSpec_To_v1alpha4_AzureManagedMachin
 }
 
 func autoConvert_v1alpha4_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMachinePoolSpec(in *v1alpha4.AzureManagedMachinePoolSpec, out *AzureManagedMachinePoolSpec, s conversion.Scope) error {
+	out.Mode = in.Mode
 	out.SKU = in.SKU
 	out.OSDiskSizeGB = (*int32)(unsafe.Pointer(in.OSDiskSizeGB))
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
