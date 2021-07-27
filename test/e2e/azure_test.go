@@ -108,6 +108,7 @@ var _ = Describe("Workload cluster creation", func() {
 			IntervalsGetter:   e2eConfig.GetIntervals,
 			SkipCleanup:       skipCleanup,
 			AdditionalCleanup: additionalCleanup,
+			ArtifactFolder:    artifactFolder,
 		}
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 		Expect(os.Unsetenv(AzureResourceGroup)).NotTo(HaveOccurred())

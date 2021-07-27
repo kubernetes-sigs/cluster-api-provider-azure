@@ -236,6 +236,7 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 			CancelWatches:   cancelWatches,
 			IntervalsGetter: input.E2EConfig.GetIntervals,
 			SkipCleanup:     input.SkipCleanup,
+			ArtifactFolder:  input.ArtifactFolder,
 		}
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
