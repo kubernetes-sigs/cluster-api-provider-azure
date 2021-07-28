@@ -140,17 +140,19 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 		})
 	})
 
-	Context("Running the MachineDeployment upgrade spec", func() {
-		capi_e2e.MachineDeploymentUpgradesSpec(context.TODO(), func() capi_e2e.MachineDeploymentUpgradesSpecInput {
-			return capi_e2e.MachineDeploymentUpgradesSpecInput{
-				E2EConfig:             e2eConfig,
-				ClusterctlConfigPath:  clusterctlConfigPath,
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				ArtifactFolder:        artifactFolder,
-				SkipCleanup:           skipCleanup,
-			}
-		})
-	})
+	// disabled because of https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/1568
+	// TODO: re-enable when https://github.com/kubernetes-sigs/cluster-api/issues/4896 is done.
+	// Context("Running the MachineDeployment upgrade spec", func() {
+	// 	capi_e2e.MachineDeploymentUpgradesSpec(context.TODO(), func() capi_e2e.MachineDeploymentUpgradesSpecInput {
+	// 		return capi_e2e.MachineDeploymentUpgradesSpecInput{
+	// 			E2EConfig:             e2eConfig,
+	// 			ClusterctlConfigPath:  clusterctlConfigPath,
+	// 			BootstrapClusterProxy: bootstrapClusterProxy,
+	// 			ArtifactFolder:        artifactFolder,
+	// 			SkipCleanup:           skipCleanup,
+	// 		}
+	// 	})
+	// })
 
 	if os.Getenv("LOCAL_ONLY") != "true" {
 		Context("Running the self-hosted spec", func() {
