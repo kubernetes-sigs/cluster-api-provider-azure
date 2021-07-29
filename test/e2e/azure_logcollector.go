@@ -235,6 +235,10 @@ func linuxLogs(execToPathFn func(outputFileName string, command string, args ...
 			"sentinel-file-dir.txt",
 			"ls", "/run/cluster-api/",
 		),
+		execToPathFn(
+			"etc/containerd/config.toml",
+			"cat", "/etc/containerd/config.toml",
+		),
 	}
 }
 
