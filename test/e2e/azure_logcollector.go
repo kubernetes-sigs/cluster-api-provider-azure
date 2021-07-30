@@ -101,14 +101,16 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 	}
 
 	for i, instance := range mp.Spec.ProviderIDList {
-		hostname := mp.Status.NodeRefs[i].Name
+		if i < len(mp.Status.NodeRefs) {
+			hostname := mp.Status.NodeRefs[i].Name
 
-		if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
-			errors = append(errors, err)
-		}
+			if err := collectLogsFromNode(ctx, managementClusterClient, cluster, hostname, isWindows, filepath.Join(outputPath, hostname)); err != nil {
+				errors = append(errors, err)
+			}
 
-		if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
-			errors = append(errors, err)
+			if err := collectVMSSBootLog(ctx, instance, filepath.Join(outputPath, hostname)); err != nil {
+				errors = append(errors, err)
+			}
 		}
 	}
 
