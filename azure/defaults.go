@@ -246,7 +246,21 @@ func getDefaultImageSKUID(k8sVersion, os, osVersion string) (string, error) {
 
 // GetDefaultUbuntuImage returns the default image spec for Ubuntu.
 func GetDefaultUbuntuImage(k8sVersion string) (*infrav1.Image, error) {
-	skuID, err := getDefaultImageSKUID(k8sVersion, "ubuntu", "1804")
+	v, err := semver.ParseTolerant(k8sVersion)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to parse Kubernetes version \"%s\"", k8sVersion)
+	}
+	// Default to Ubuntu 20.04 LTS, except for k8s versions which have only 18.04 reference images.
+	osVersion := "2004"
+	if (v.Major == 1 && v.Minor == 21 && v.Patch < 2) ||
+		(v.Major == 1 && v.Minor == 20 && v.Patch < 8) ||
+		(v.Major == 1 && v.Minor == 19 && v.Patch < 12) ||
+		(v.Major == 1 && v.Minor == 18 && v.Patch < 20) ||
+		(v.Major == 1 && v.Minor < 18) {
+		osVersion = "1804"
+	}
+
+	skuID, err := getDefaultImageSKUID(k8sVersion, "ubuntu", osVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get default image")
 	}

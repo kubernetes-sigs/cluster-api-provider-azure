@@ -95,6 +95,34 @@ func TestGetDefaultImageSKUID(t *testing.T) {
 			os:             "windows",
 			osVersion:      "2019",
 		},
+		{
+			k8sVersion:     "v1.20.8",
+			expectedResult: "k8s-1dot20dot8-windows-2019",
+			expectedError:  false,
+			os:             "windows",
+			osVersion:      "2019",
+		},
+		{
+			k8sVersion:     "v1.21.2",
+			expectedResult: "k8s-1dot21dot2-windows-2019",
+			expectedError:  false,
+			os:             "windows",
+			osVersion:      "2019",
+		},
+		{
+			k8sVersion:     "v1.20.8",
+			expectedResult: "k8s-1dot20dot8-ubuntu-2004",
+			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "2004",
+		},
+		{
+			k8sVersion:     "v1.21.2",
+			expectedResult: "k8s-1dot21dot2-ubuntu-2004",
+			expectedError:  false,
+			os:             "ubuntu",
+			osVersion:      "2004",
+		},
 	}
 
 	for _, test := range tests {
@@ -146,6 +174,64 @@ func TestAutoRestClientAppendUserAgent(t *testing.T) {
 			AutoRestClientAppendUserAgent(tt.args.c, tt.args.extension)
 
 			g.Expect(tt.want).To(Equal(tt.args.c.UserAgent))
+		})
+	}
+}
+
+func TestGetDefaultUbuntuImage(t *testing.T) {
+	g := NewWithT(t)
+
+	tests := []struct {
+		k8sVersion  string
+		expectedSKU string
+	}{
+		{
+			k8sVersion:  "v1.15.6",
+			expectedSKU: "k8s-1dot15dot6-ubuntu-1804",
+		},
+		{
+			k8sVersion:  "v1.17.11",
+			expectedSKU: "k8s-1dot17dot11-ubuntu-1804",
+		},
+		{
+			k8sVersion:  "v1.18.19",
+			expectedSKU: "k8s-1dot18dot19-ubuntu-1804",
+		},
+		{
+			k8sVersion:  "v1.18.20",
+			expectedSKU: "k8s-1dot18dot20-ubuntu-2004",
+		},
+		{
+			k8sVersion:  "v1.19.11",
+			expectedSKU: "k8s-1dot19dot11-ubuntu-1804",
+		},
+		{
+			k8sVersion:  "v1.19.12",
+			expectedSKU: "k8s-1dot19dot12-ubuntu-2004",
+		},
+		{
+			k8sVersion:  "v1.21.1",
+			expectedSKU: "k8s-1dot21dot1-ubuntu-1804",
+		},
+		{
+			k8sVersion:  "v1.21.2",
+			expectedSKU: "k8s-1dot21dot2-ubuntu-2004",
+		},
+		{
+			k8sVersion:  "v1.22.0",
+			expectedSKU: "k8s-1dot22dot0-ubuntu-2004",
+		},
+		{
+			k8sVersion:  "v1.23.6",
+			expectedSKU: "k8s-1dot23dot6-ubuntu-2004",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.k8sVersion, func(t *testing.T) {
+			image, err := GetDefaultUbuntuImage(test.k8sVersion)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(image.Marketplace.SKU).To(Equal(test.expectedSKU))
 		})
 	}
 }
