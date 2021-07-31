@@ -45,7 +45,7 @@ func (src *AzureMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nol
 		}
 	}
 
-	if restored.Spec.Template.Spec.Image.SharedGallery != nil {
+	if restored.Spec.Template.Spec.Image != nil && restored.Spec.Template.Spec.Image.SharedGallery != nil {
 		dst.Spec.Template.Spec.Image.SharedGallery.Offer = restored.Spec.Template.Spec.Image.SharedGallery.Offer
 		dst.Spec.Template.Spec.Image.SharedGallery.Publisher = restored.Spec.Template.Spec.Image.SharedGallery.Publisher
 		dst.Spec.Template.Spec.Image.SharedGallery.SKU = restored.Spec.Template.Spec.Image.SharedGallery.SKU

@@ -38,36 +38,23 @@ func TestFuzzyConversion(t *testing.T) {
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureCluster{},
 		Spoke:       &AzureCluster{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideImageFuncs, overrideDeprecatedFieldsFuncs},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs},
 	}))
 
 	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureMachine{},
 		Spoke:       &AzureMachine{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideImageFuncs, overrideDeprecatedFieldsFuncs},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs},
 	}))
 
 	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureMachineTemplate{},
 		Spoke:       &AzureMachineTemplate{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideImageFuncs, overrideDeprecatedFieldsFuncs},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs},
 	}))
 
-}
-
-func overrideImageFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
-	return []interface{}{
-		func(image *v1alpha4.Image, c fuzz.Continue) {
-			image.Marketplace = &v1alpha4.AzureMarketplaceImage{
-				Publisher: "PUB1234",
-				Offer:     "OFFER123",
-				SKU:       "SKU123",
-				Version:   "1.0.0",
-			}
-		},
-	}
 }
 
 func overrideDeprecatedFieldsFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
