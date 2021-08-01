@@ -96,7 +96,11 @@ def fixup_yaml_empty_arrays(yaml_str):
 
 def validate_auth():
     substitutions = settings.get("kustomize_substitutions", {})
-    missing = [k for k in keys if k not in substitutions and not os.environ.get(k)]
+    os.environ.update(substitutions)
+    for sub in substitutions:
+        if sub[-4:] == "_B64":
+            os.environ[sub[:-4]] = base64_decode(os.environ[sub])
+    missing = [k for k in keys if not os.environ.get(k)]
     if missing:
         fail("missing kustomize_substitutions keys {} in tilt-setting.json".format(missing))
 
@@ -130,8 +134,6 @@ def observability():
 # Build CAPZ and add feature gates
 def capz():
     # Apply the kustomized yaml for this provider
-    substitutions = settings.get("kustomize_substitutions", {})
-    os.environ.update(substitutions)
     yaml = str(kustomizesub("./hack/observability")) # build an observable kind deployment by default
 
     # add extra_args if they are defined
@@ -186,10 +188,8 @@ def create_identity_secret():
     os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE', 'default')
     os.putenv('CLUSTER_IDENTITY_NAME', 'cluster-identity')
 
-    substitutions = settings.get("kustomize_substitutions", {})
-    os.putenv('AZURE_CLIENT_SECRET_B64', base64_encode(substitutions.get("AZURE_CLIENT_SECRET")))
-
-    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | kubectl apply -f -", quiet=True)
+    os.putenv('AZURE_CLIENT_SECRET_B64', base64_encode(os.environ.get("AZURE_CLIENT_SECRET")))
+    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | kubectl apply -f -", quiet=True, echo_off=True)
     os.unsetenv('AZURE_CLIENT_SECRET_B64')
 
 def create_crs():
@@ -214,12 +214,8 @@ def flavors():
     config.define_string_list("worker-flavors")
     cfg = config.parse()
     worker_templates = cfg.get('templates-to-run', [])
-
+   
     substitutions = settings.get("kustomize_substitutions", {})
-    for key in keys:
-        if key[-4:] == "_B64":
-            os.environ[key[:-4]] = base64_decode(os.environ[key])
-
     ssh_pub_key_B64 = "AZURE_SSH_PUBLIC_KEY_B64"
     ssh_pub_key_path = "$HOME/.ssh/id_rsa.pub"
     if substitutions.get(ssh_pub_key_B64):
@@ -307,7 +303,7 @@ def deploy_worker_templates(template, substitutions):
 
 
 def base64_encode(to_encode):
-    encode_blob = local("echo '{}' | tr -d '\n' | base64 - | tr -d '\n'".format(to_encode), quiet=True)
+    encode_blob = local("echo '{}' | tr -d '\n' | base64 - | tr -d '\n'".format(to_encode), quiet=True, echo_off=True)
     return str(encode_blob)
 
 
@@ -320,7 +316,7 @@ def read_file_from_path(path_to_read):
     return str(str_blob)
 
 def base64_decode(to_decode):
-    decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True)
+    decode_blob = local("echo '{}' | base64 --decode -".format(to_decode), quiet=True, echo_off=True)
     return str(decode_blob)
 
 def kustomizesub(folder):
