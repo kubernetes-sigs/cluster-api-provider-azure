@@ -243,14 +243,6 @@ var _ = Describe("Workload cluster creation", func() {
 				}
 			})
 		})
-
-		Context("Validating accelerated networking", func() {
-			AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
-				return AzureAcceleratedNetworkingSpecInput{
-					ClusterName: clusterName,
-				}
-			})
-		})
 	})
 
 	Context("Creating a ipv6 control-plane cluster", func() {
@@ -395,14 +387,6 @@ var _ = Describe("Workload cluster creation", func() {
 						Namespace:             namespace,
 						ClusterName:           clusterName,
 						SkipCleanup:           skipCleanup,
-					}
-				})
-			})
-
-			Context("Validating accelerated networking", func() {
-				AzureAcceleratedNetworkingSpec(ctx, func() AzureAcceleratedNetworkingSpecInput {
-					return AzureAcceleratedNetworkingSpecInput{
-						ClusterName: clusterName,
 					}
 				})
 			})
