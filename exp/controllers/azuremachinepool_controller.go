@@ -168,7 +168,8 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachinePool"),
-		))
+		),
+	)
 	defer span.End()
 
 	azMachinePool := &infrav1exp.AzureMachinePool{}

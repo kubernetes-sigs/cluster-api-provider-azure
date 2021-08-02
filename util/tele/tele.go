@@ -17,11 +17,39 @@ limitations under the License.
 package tele
 
 import (
+	"context"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Tracer returns the default opentelemetry tracer.
+type tracer struct {
+	trace.Tracer
+}
+
+// Start creates a new context with a new Azure correlation ID, then
+// creates a new trace.Span with that new context. This function then
+// returns the new Context and Span.
+func (t tracer) Start(
+	ctx context.Context,
+	op string,
+	opts ...trace.SpanOption,
+) (context.Context, trace.Span) {
+	ctx, _ = ctxWithCorrID(ctx)
+	return t.Tracer.Start(ctx, op, opts...)
+}
+
+// Tracer returns an OpenTelemetry Tracer implementation to be used
+// to create spans. Use this implementation instead of the "raw" one that
+// you could otherwise get from calling `otel.Tracer("whatever")`.
+//
+// Example usage:
+//
+//	ctx, span := tele.Tracer().Start(ctx, "myFunction")
+//	defer span.End()
+//	// use the span and context here
 func Tracer() trace.Tracer {
-	return otel.Tracer("capz")
+	return tracer{
+		Tracer: otel.Tracer("capz"),
+	}
 }

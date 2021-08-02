@@ -137,7 +137,8 @@ func (r *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachine"),
-		))
+		),
+	)
 	defer span.End()
 
 	// Fetch the AzureMachine VM.

@@ -136,7 +136,8 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachinePoolMachine"),
-		))
+		),
+	)
 	defer span.End()
 
 	machine := &infrav1exp.AzureMachinePoolMachine{}
