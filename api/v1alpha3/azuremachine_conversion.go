@@ -45,6 +45,12 @@ func (src *AzureMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		}
 	}
 
+	if restored.Spec.Image != nil && restored.Spec.Image.SharedGallery != nil {
+		dst.Spec.Image.SharedGallery.Offer = restored.Spec.Image.SharedGallery.Offer
+		dst.Spec.Image.SharedGallery.Publisher = restored.Spec.Image.SharedGallery.Publisher
+		dst.Spec.Image.SharedGallery.SKU = restored.Spec.Image.SharedGallery.SKU
+	}
+
 	dst.Spec.SubnetName = restored.Spec.SubnetName
 
 	return nil
