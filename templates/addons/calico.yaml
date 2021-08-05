@@ -11,13 +11,12 @@ data:
   typha_service_name: "none"
   # Configure the backend to use.
   calico_backend: "vxlan"
-  # Configure the MTU to use for workload interfaces and tunnels.
-  # - If Wireguard is enabled, set to your network MTU - 60
-  # - Otherwise, if VXLAN or BPF mode is enabled, set to your network MTU - 50
-  # - Otherwise, if IPIP is enabled, set to your network MTU - 20
-  # - Otherwise, if not using any encapsulation, set to your network MTU.
-  veth_mtu: "1440"
-
+  # On Azure, the underlying network has an MTU of 1400, even though the network interface will have an MTU of 1500.
+  # We set this value to 1350 for “physical network MTU size minus 50” since we use VXLAN, which uses a 50-byte header.
+  # If enabling Wireguard, this value should be changed to 1340 (Wireguard uses a 60-byte header).
+  # https://docs.projectcalico.org/networking/mtu#determine-mtu-size
+  veth_mtu: "1350"
+  
   # The CNI network configuration to install on each node. The special
   # values in this config will be automatically populated.
   cni_network_config: |-
