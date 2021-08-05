@@ -33,7 +33,7 @@ type tracer struct {
 func (t tracer) Start(
 	ctx context.Context,
 	op string,
-	opts ...trace.SpanOption,
+	opts ...trace.SpanStartOption,
 ) (context.Context, trace.Span) {
 	ctx, _ = ctxWithCorrID(ctx)
 	return t.Tracer.Start(ctx, op, opts...)

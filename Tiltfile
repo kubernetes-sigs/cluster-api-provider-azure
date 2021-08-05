@@ -121,11 +121,23 @@ COPY manager .
 def observability():
     instrumentation_key = os.getenv("AZURE_INSTRUMENTATION_KEY", "")
     if instrumentation_key == "":
-        warn("AZURE_INSTRUMENTATION_KEY is not set, so tracing won't be exported to Application Insights")
+        warn("AZURE_INSTRUMENTATION_KEY is not set, so traces won't be exported to Application Insights")
+        trace_links = []
+    else:
+        trace_links = [link("https://ms.portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/microsoft.insights%2Fcomponents", "App Insights")]
     k8s_yaml(helm("./hack/observability/opentelemetry/chart",
          name="opentelemetry-collector", namespace="capz-system",
          values=["./hack/observability/opentelemetry/values.yaml"],
          set=["config.exporters.azuremonitor.instrumentation_key="+instrumentation_key]))
+    k8s_yaml(helm("./hack/observability/jaeger/chart",
+         name="jaeger-all-in-one", namespace="capz-system",
+         set=["crd.install=false", "rbac.create=false",
+              "resources.limits.cpu=200m", "resources.limits.memory=256Mi"]))
+    k8s_resource(workload="jaeger-all-in-one", new_name="traces: jaeger-all-in-one",
+        port_forwards=[port_forward(16686, name="View traces", link_path='/search?service=capz')],
+        links=trace_links)
+    k8s_resource(workload="prometheus-operator", new_name="metrics: prometheus-operator",
+        port_forwards=[port_forward(9090, name="View metrics")], extra_pod_selectors=[{"app": "prometheus"}])
 
 # Build CAPZ and add feature gates
 def capz():

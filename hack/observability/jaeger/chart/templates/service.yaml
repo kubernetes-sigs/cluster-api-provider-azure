@@ -1,0 +1,55 @@
+{{- if .Values.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jaeger-all-in-one.fullname" . }}
+  labels:
+    {{- include "jaeger-all-in-one.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: 6831
+      targetPort: udp-com-thr
+      protocol: UDP
+      name: udp-com-thr
+    - port: 6832
+      targetPort: udp-bin-thr
+      protocol: UDP
+      name: udp-bin-thr
+    - port: 5775
+      targetPort: udp-bin-thr-o
+      protocol: UDP
+      name: udp-bin-thr-o
+    - port: 5778
+      targetPort: http-configs
+      protocol: TCP
+      name: http-configs
+    - port: {{ .Values.service.port }}
+      targetPort: http-ui
+      protocol: TCP
+      name: http-ui
+    - port: 14250
+      targetPort: grpc-proto
+      protocol: TCP
+      name: grpc-proto
+    - port: 14268
+      targetPort: http-bin-thr
+      protocol: TCP
+      name: http-bin-thr
+    - port: 14269
+      targetPort: http-admin
+      protocol: TCP
+      name: http-admin
+    {{- if .Values.enableHttpZipkinCollector }}
+    - port: 9411
+      targetPort: http-zipkin
+      protocol: TCP
+      name: http-zipkin
+    {{- end }}  
+  selector:
+    {{- include "jaeger-all-in-one.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,109 @@
+{{- if .Values.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "jaeger-all-in-one.fullname" . }}
+  labels:
+    {{- include "jaeger-all-in-one.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "jaeger-all-in-one.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "jaeger-all-in-one.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "jaeger-all-in-one.selectorLabels" . | nindent 8 }}
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "jaeger-all-in-one.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.volume.enabled }}
+      volumes:
+        - name: jaeger-volume
+          persistentVolumeClaim:
+            claimName: {{ include "jaeger-all-in-one.fullname" . }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: udp-com-thr
+              containerPort: 6831
+              protocol: UDP
+            - name: udp-bin-thr
+              containerPort: 6832
+              protocol: UDP
+            - name: udp-bin-thr-o
+              containerPort: 5775
+              protocol: UDP
+            - name: http-configs
+              containerPort: 5778
+              protocol: TCP
+            - name: http-ui
+              containerPort: 16686
+              protocol: TCP
+            - name: grpc-proto
+              containerPort: 14250
+              protocol: TCP
+            - name: http-bin-thr
+              containerPort: 14268
+              protocol: TCP
+            - name: http-admin
+              containerPort: 14269
+              protocol: TCP
+            {{- if .Values.enableHttpZipkinCollector }}
+            - name: http-zipkin
+              containerPort: 9411
+              protocol: TCP
+            {{- end }}  
+          {{- if .Values.volume.enabled }}
+          volumeMounts:
+            - mountPath: "/badger"
+              name: jaeger-volume
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.healthCheckUrl | quote }}
+              port: http-admin
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.healthCheckUrl | quote }}
+              port: http-admin
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          {{- range $key, $value := .Values.environmentVariables }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+          {{- if .Values.enableHttpZipkinCollector }}
+          - name: COLLECTOR_ZIPKIN_HOST_PORT
+            value: "9411"
+          {{- end }}  
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+{{- end }}
