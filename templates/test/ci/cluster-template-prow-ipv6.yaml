@@ -547,6 +547,11 @@ data:
                         Peers node to use the "next hop keep;" instead of "next hop self;"(default)
                         in the specific branch of the Node on "bird.cfg".
                       type: boolean
+                    maxRestartTime:
+                      description: Time to allow for software restart.  When specified, this
+                        is configured as the graceful restart timeout.  When not specified,
+                        the BIRD default of 120s is used.
+                      type: string
                     node:
                       description: The node name identifying the Calico node instance that
                         is targeted by this peer. If this is not set, and no nodeSelector
@@ -1484,6 +1489,26 @@ data:
                                       AND'ed.
                                     type: string
                                 type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
+                                    type: string
+                                type: object
                             type: object
                           http:
                             description: HTTP contains match criteria that apply to HTTP
@@ -1687,6 +1712,26 @@ data:
                                       account that matches the given label selector. If
                                       both Names and Selector are specified then they are
                                       AND'ed.
+                                    type: string
+                                type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
                                     type: string
                                 type: object
                             type: object
@@ -1815,6 +1860,26 @@ data:
                                       AND'ed.
                                     type: string
                                 type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
+                                    type: string
+                                type: object
                             type: object
                           http:
                             description: HTTP contains match criteria that apply to HTTP
@@ -2018,6 +2083,26 @@ data:
                                       account that matches the given label selector. If
                                       both Names and Selector are specified then they are
                                       AND'ed.
+                                    type: string
+                                type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
                                     type: string
                                 type: object
                             type: object
@@ -2739,6 +2824,12 @@ data:
                                       of host endpoints for every node. [Default: Disabled]'
                                       type: string
                                   type: object
+                                leakGracePeriod:
+                                  description: 'LeakGracePeriod is the period used by the
+                                    controller to determine if an IP address has been leaked.
+                                    Set to 0 to disable IP garbage collection. [Default:
+                                    15m]'
+                                  type: string
                                 reconcilerPeriod:
                                   description: 'ReconcilerPeriod is the period to perform
                                   reconciliation with the Calico datastore. [Default:
@@ -2969,6 +3060,26 @@ data:
                                       AND'ed.
                                     type: string
                                 type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
+                                    type: string
+                                type: object
                             type: object
                           http:
                             description: HTTP contains match criteria that apply to HTTP
@@ -3172,6 +3283,26 @@ data:
                                       account that matches the given label selector. If
                                       both Names and Selector are specified then they are
                                       AND'ed.
+                                    type: string
+                                type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
                                     type: string
                                 type: object
                             type: object
@@ -3300,6 +3431,26 @@ data:
                                       AND'ed.
                                     type: string
                                 type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
+                                    type: string
+                                type: object
                             type: object
                           http:
                             description: HTTP contains match criteria that apply to HTTP
@@ -3503,6 +3654,26 @@ data:
                                       account that matches the given label selector. If
                                       both Names and Selector are specified then they are
                                       AND'ed.
+                                    type: string
+                                type: object
+                              services:
+                                description: "Services is an optional field that contains
+                                  options for matching Kubernetes Services. If specified,
+                                  only traffic that originates from or terminates at endpoints
+                                  within the selected service(s) will be matched, and only
+                                  to/from each endpoint's port. \n Services cannot be specified
+                                  on the same rule as Selector, NotSelector, NamespaceSelector,
+                                  Ports, NotPorts, Nets, NotNets or ServiceAccounts. \n
+                                  Only valid on egress rules."
+                                properties:
+                                  name:
+                                    description: Name specifies the name of a Kubernetes
+                                      Service to match.
+                                    type: string
+                                  namespace:
+                                    description: Namespace specifies the namespace of the
+                                      given Service. If left empty, the rule will match
+                                      within this policy's namespace.
                                     type: string
                                 type: object
                             type: object
@@ -3643,12 +3814,14 @@ data:
           - watch
           - list
           - get
-      # Pods are queried to check for existence.
+      # Pods are watched to check for existence as part of IPAM controller.
       - apiGroups: [""]
         resources:
           - pods
         verbs:
           - get
+          - list
+          - watch
       # IPAM resources are manipulated when nodes are deleted.
       - apiGroups: ["crd.projectcalico.org"]
         resources:
@@ -3730,14 +3903,14 @@ data:
           - namespaces
         verbs:
           - get
-      - apiGroups: [""]
+      # EndpointSlices are used for Service-based network policy rule
+      # enforcement.
+      - apiGroups: ["discovery.k8s.io"]
         resources:
-          - secrets
+          - endpointslices
         verbs:
-          # Needed when configuring bgp password in bgppeer
           - watch
           - list
-          - get
       - apiGroups: [""]
         resources:
           - endpoints
@@ -3922,7 +4095,7 @@ data:
             # This container installs the CNI binaries
             # and CNI network config file on each node.
             - name: install-cni
-              image: calico/cni:v3.19.2
+              image: calico/cni:v3.20.0
               command: ["/opt/cni/bin/install"]
               env:
                 # Name of the CNI config file to create.
@@ -3952,7 +4125,7 @@ data:
             # Adds a Flex Volume Driver that creates a per-pod Unix Domain Socket to allow Dikastes
             # to communicate with Felix over the Policy Sync API.
             - name: flexvol-driver
-              image: calico/pod2daemon-flexvol:v3.19.2
+              image: calico/pod2daemon-flexvol:v3.20.0
               volumeMounts:
                 - name: flexvol-driver-host
                   mountPath: /host/driver
@@ -3963,7 +4136,7 @@ data:
             # container programs network policy and routes on each
             # host.
             - name: calico-node
-              image: calico/node:v3.19.2
+              image: calico/node:v3.20.0
               env:
                 # Use Kubernetes API as the backing datastore.
                 - name: DATASTORE_TYPE
@@ -4146,7 +4319,7 @@ data:
           priorityClassName: system-cluster-critical
           containers:
             - name: calico-kube-controllers
-              image: calico/kube-controllers:v3.19.2
+              image: calico/kube-controllers:v3.20.0
               env:
                 # Choose which controllers to run.
                 - name: ENABLED_CONTROLLERS
@@ -4161,6 +4334,7 @@ data:
                 periodSeconds: 10
                 initialDelaySeconds: 10
                 failureThreshold: 6
+                timeoutSeconds: 10
               readinessProbe:
                 exec:
                   command:
