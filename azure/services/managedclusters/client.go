@@ -31,7 +31,7 @@ import (
 type Client interface {
 	Get(context.Context, string, string) (containerservice.ManagedCluster, error)
 	GetCredentials(context.Context, string, string) ([]byte, error)
-	CreateOrUpdate(context.Context, string, string, containerservice.ManagedCluster) error
+	CreateOrUpdate(context.Context, string, string, containerservice.ManagedCluster) (containerservice.ManagedCluster, error)
 	Delete(context.Context, string, string) error
 }
 
@@ -79,19 +79,19 @@ func (ac *AzureClient) GetCredentials(ctx context.Context, resourceGroupName, na
 }
 
 // CreateOrUpdate creates or updates a managed cluster.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) error {
+func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, name string, cluster containerservice.ManagedCluster) (containerservice.ManagedCluster, error) {
 	ctx, span := tele.Tracer().Start(ctx, "managedclusters.AzureClient.CreateOrUpdate")
 	defer span.End()
 
 	future, err := ac.managedclusters.CreateOrUpdate(ctx, resourceGroupName, name, cluster)
 	if err != nil {
-		return errors.Wrap(err, "failed to begin operation")
+		return containerservice.ManagedCluster{}, errors.Wrap(err, "failed to begin operation")
 	}
 	if err := future.WaitForCompletionRef(ctx, ac.managedclusters.Client); err != nil {
-		return errors.Wrap(err, "failed to end operation")
+		return containerservice.ManagedCluster{}, errors.Wrap(err, "failed to end operation")
 	}
-	_, err = future.Result(ac.managedclusters)
-	return err
+	managedCluster, err := future.Result(ac.managedclusters)
+	return managedCluster, err
 }
 
 // Delete deletes a managed cluster.

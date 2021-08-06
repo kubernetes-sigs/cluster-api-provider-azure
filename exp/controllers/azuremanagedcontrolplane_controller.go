@@ -21,12 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -180,7 +179,7 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 
 	// Always patch when exiting so we can persist changes to finalizers and status
 	defer func() {
-		if err := mcpScope.PatchObject(ctx); err != nil && reterr == nil {
+		if err := mcpScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
 	}()
@@ -206,7 +205,7 @@ func (r *AzureManagedControlPlaneReconciler) reconcileNormal(ctx context.Context
 		return reconcile.Result{}, err
 	}
 
-	if err := newAzureManagedControlPlaneReconciler(scope).Reconcile(ctx, scope); err != nil {
+	if err := newAzureManagedControlPlaneReconciler(scope).Reconcile(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error creating AzureManagedControlPlane %s/%s", scope.ControlPlane.Namespace, scope.ControlPlane.Name)
 	}
 
@@ -223,7 +222,7 @@ func (r *AzureManagedControlPlaneReconciler) reconcileDelete(ctx context.Context
 
 	scope.Logger.Info("Reconciling AzureManagedControlPlane delete")
 
-	if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx, scope); err != nil {
+	if err := newAzureManagedControlPlaneReconciler(scope).Delete(ctx); err != nil {
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedControlPlane %s/%s", scope.ControlPlane.Namespace, scope.ControlPlane.Name)
 	}
 
