@@ -108,7 +108,7 @@ func TestReconcileNatGateways(t *testing.T) {
 			},
 		},
 		{
-			name: "update nat gateway if already exists but it's out of date",
+			name: "update nat gateway if actual state does not match desired state",
 			tags: infrav1.Tags{
 				"Name": "my-vnet",
 				"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": "owned",
@@ -180,7 +180,7 @@ func TestReconcileNatGateways(t *testing.T) {
 							Role: infrav1.SubnetNode,
 						},
 						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw",
+							Name: "pip-my-node-natgateway-node-subnet-natgw",
 						},
 					},
 				})
@@ -191,7 +191,9 @@ func TestReconcileNatGateways(t *testing.T) {
 					Name: to.StringPtr("my-node-natgateway"),
 					ID:   to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway"),
 					NatGatewayPropertiesFormat: &network.NatGatewayPropertiesFormat{PublicIPAddresses: &[]network.SubResource{
-						{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw")},
+						{
+							ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw"),
+						},
 					}},
 				}, nil)
 				s.SetSubnet(infrav1.SubnetSpec{
@@ -201,7 +203,7 @@ func TestReconcileNatGateways(t *testing.T) {
 						ID:   "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/natGateways/my-node-natgateway",
 						Name: "my-node-natgateway",
 						NatGatewayIP: infrav1.PublicIPSpec{
-							Name: "/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/publicIPAddresses/pip-my-node-natgateway-node-subnet-natgw",
+							Name: "pip-my-node-natgateway-node-subnet-natgw",
 						},
 					},
 				})

@@ -190,6 +190,18 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16"},
+				})
+				s.Subnet("my-subnet-1").AnyTimes().Return(infrav1.SubnetSpec{
+					ID:         "subnet-id-1",
+					Name:       "my-subnet-1",
+					Role:       infrav1.SubnetControlPlane,
+					CIDRBlocks: []string{"10.2.0.0/16"},
+				})
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-subnet",
@@ -263,6 +275,18 @@ func TestReconcileSubnets(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.Subnet("my-ipv6-subnet").AnyTimes().Return(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-ipv6-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16", "2001:1234:5678:9abd::/64"},
+				})
+				s.Subnet("my-ipv6-subnet-cp").AnyTimes().Return(infrav1.SubnetSpec{
+					ID:         "subnet-id-1",
+					Name:       "my-ipv6-subnet-cp",
+					Role:       infrav1.SubnetControlPlane,
+					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+				})
 				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
 					{
 						Name:              "my-ipv6-subnet",
@@ -335,6 +359,121 @@ func TestReconcileSubnets(t *testing.T) {
 					Name:       "my-ipv6-subnet-cp",
 					Role:       infrav1.SubnetControlPlane,
 					CIDRBlocks: []string{"10.2.0.0/16", "2001:1234:5678:9abc::/64"},
+				}).Times(1)
+			},
+		},
+		{
+			name:          "doesn't overwrite existing NAT Gateway",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16"},
+					NatGateway: infrav1.NatGateway{
+						ID:   azure.NatGatewayID("123", "my-rg", "existing-natgateway"),
+						Name: "existing-natgateway",
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "existing-natgateway-ip-name",
+						},
+					},
+				})
+				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
+					{
+						Name:              "my-subnet",
+						CIDRs:             []string{"10.0.0.0/16"},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet").
+					Return(network.Subnet{
+						ID:   to.StringPtr("subnet-id"),
+						Name: to.StringPtr("my-subnet"),
+						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+							AddressPrefix: to.StringPtr("10.0.0.0/16"),
+							RouteTable: &network.RouteTable{
+								ID:   to.StringPtr("rt-id"),
+								Name: to.StringPtr("my-subnet_route_table"),
+							},
+							NetworkSecurityGroup: &network.SecurityGroup{
+								ID:   to.StringPtr("sg-id"),
+								Name: to.StringPtr("my-sg"),
+							},
+							NatGateway: &network.SubResource{
+								ID: to.StringPtr(azure.NatGatewayID("123", "my-rg", "existing-natgateway")),
+							},
+						},
+					}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16"},
+					NatGateway: infrav1.NatGateway{
+						ID:   azure.NatGatewayID("123", "my-rg", "existing-natgateway"),
+						Name: "existing-natgateway",
+						NatGatewayIP: infrav1.PublicIPSpec{
+							Name: "existing-natgateway-ip-name",
+						},
+					},
+				}).Times(1)
+			},
+		},
+		{
+			name:          "spec has empty CIDR and ID data but GET from Azure has the values",
+			expectedError: "",
+			expect: func(s *mock_subnets.MockSubnetScopeMockRecorder, m *mock_subnets.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.Subnet("my-subnet").AnyTimes().Return(infrav1.SubnetSpec{
+					ID:         "",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{},
+				})
+				s.SubnetSpecs().AnyTimes().Return([]azure.SubnetSpec{
+					{
+						Name:              "my-subnet",
+						CIDRs:             []string{},
+						VNetName:          "my-vnet",
+						RouteTableName:    "my-subnet_route_table",
+						SecurityGroupName: "my-sg",
+						Role:              infrav1.SubnetNode,
+					},
+				})
+				s.Vnet().AnyTimes().Return(&infrav1.VnetSpec{Name: "my-vnet"})
+				s.ClusterName().AnyTimes().Return("fake-cluster")
+				s.SubscriptionID().AnyTimes().Return("123")
+				s.ResourceGroup().AnyTimes().Return("my-rg")
+				m.Get(gomockinternal.AContext(), "", "my-vnet", "my-subnet").
+					Return(network.Subnet{
+						ID:   to.StringPtr("subnet-id"),
+						Name: to.StringPtr("my-subnet"),
+						SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
+							AddressPrefix: to.StringPtr("10.0.0.0/16"),
+							RouteTable: &network.RouteTable{
+								ID:   to.StringPtr("rt-id"),
+								Name: to.StringPtr("my-subnet_route_table"),
+							},
+							NetworkSecurityGroup: &network.SecurityGroup{
+								ID:   to.StringPtr("sg-id"),
+								Name: to.StringPtr("my-sg"),
+							},
+						},
+					}, nil)
+				s.SetSubnet(infrav1.SubnetSpec{
+					ID:         "subnet-id",
+					Name:       "my-subnet",
+					Role:       infrav1.SubnetNode,
+					CIDRBlocks: []string{"10.0.0.0/16"},
 				}).Times(1)
 			},
 		},

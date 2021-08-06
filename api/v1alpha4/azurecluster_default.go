@@ -202,10 +202,10 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 			return
 		}
 
-		var oneSubnetWithoutNatGateway bool
+		var needsOutboundLB bool
 		for _, subnet := range c.Spec.NetworkSpec.Subnets {
 			if subnet.Role == SubnetNode && !subnet.IsNatGatewayEnabled() {
-				oneSubnetWithoutNatGateway = true
+				needsOutboundLB = true
 				break
 			}
 		}
@@ -213,7 +213,7 @@ func (c *AzureCluster) setNodeOutboundLBDefaults() {
 		// If we don't default the outbound LB when there are some subnets with nat gateway,
 		// and some without, those without wouldn't have outbound traffic. So taking the
 		// safer route, we configure the outbound LB in that scenario.
-		if len(c.Spec.NetworkSpec.Subnets) > 0 && !oneSubnetWithoutNatGateway {
+		if !needsOutboundLB {
 			return
 		}
 

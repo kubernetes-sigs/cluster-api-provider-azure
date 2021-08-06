@@ -803,6 +803,20 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
 						APIServerLB: LoadBalancerSpec{Type: Public},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
 					},
 				},
 			},
@@ -812,6 +826,20 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 				Spec: AzureClusterSpec{
 					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
 						APIServerLB: LoadBalancerSpec{
 							Type: Public,
 						},
@@ -827,6 +855,334 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 							Type:                 Public,
 							FrontendIPsCount:     to.Int32Ptr(1),
 							IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "NAT Gateway enabled - no LB",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway",
+								},
+							},
+						},
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "NAT Gateway enabled on 1 of 2 node subnets",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway",
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-2",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway",
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-2",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{{
+								Name: "cluster-test-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							Type:                 Public,
+							FrontendIPsCount:     to.Int32Ptr(1),
+							IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple node subnets, NAT Gateway not enabled in any of them",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-2",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-3",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-2",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-3",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+						},
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
+						},
+						NodeOutboundLB: &LoadBalancerSpec{
+							Name: "cluster-test",
+							SKU:  SKUStandard,
+							FrontendIPs: []FrontendIP{{
+								Name: "cluster-test-frontEnd",
+								PublicIP: &PublicIPSpec{
+									Name: "pip-cluster-test-node-outbound",
+								},
+							}},
+							Type:                 Public,
+							FrontendIPsCount:     to.Int32Ptr(1),
+							IdleTimeoutInMinutes: to.Int32Ptr(DefaultOutboundRuleIdleTimeoutInMinutes),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple node subnets, NAT Gateway enabled on all of them",
+			cluster: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						APIServerLB: LoadBalancerSpec{Type: Public},
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway",
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-2",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway-2",
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-3",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway-3",
+								},
+							},
+						},
+					},
+				},
+			},
+			output: &AzureCluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster-test",
+				},
+				Spec: AzureClusterSpec{
+					NetworkSpec: NetworkSpec{
+						Subnets: Subnets{
+							{
+								Role:          SubnetControlPlane,
+								Name:          "control-plane-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway",
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-2",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway-2",
+								},
+							},
+							{
+								Role:          SubnetNode,
+								Name:          "node-subnet-3",
+								SecurityGroup: SecurityGroup{},
+								RouteTable:    RouteTable{},
+								NatGateway: NatGateway{
+									Name: "node-natgateway-3",
+								},
+							},
+						},
+						APIServerLB: LoadBalancerSpec{
+							Type: Public,
 						},
 					},
 				},
@@ -858,7 +1214,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "frontendIPsCount > 1",
+			name: "NodeOutboundLB declared as input with non-default IdleTimeoutInMinutes and FrontendIPsCount values",
 			cluster: &AzureCluster{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "cluster-test",
@@ -900,8 +1256,8 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 								},
 							},
 							Type:                 Public,
-							FrontendIPsCount:     to.Int32Ptr(2),
-							IdleTimeoutInMinutes: to.Int32Ptr(15),
+							FrontendIPsCount:     to.Int32Ptr(2),  // we expect the original value to be respected here
+							IdleTimeoutInMinutes: to.Int32Ptr(15), // we expect the original value to be respected here
 						},
 					},
 				},

@@ -63,13 +63,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.Wrapf(err, "failed to get subnet %s", subnetSpec.Name)
 		case err == nil:
 			// subnet already exists, update the spec and skip creation
-			var subnet infrav1.SubnetSpec
-			subnet.ID = existingSubnet.ID
-			subnet.Name = existingSubnet.Name
-			subnet.Role = existingSubnet.Role
-			subnet.CIDRBlocks = existingSubnet.CIDRBlocks
-
-			s.Scope.SetSubnet(subnet)
+			s.Scope.SetSubnet(*existingSubnet)
+			continue
 
 		case !s.Scope.IsVnetManaged():
 			return fmt.Errorf("vnet was provided but subnet %s is missing", subnetSpec.Name)
@@ -167,12 +162,9 @@ func (s *Service) getExisting(ctx context.Context, rgName string, spec azure.Sub
 		addresses = to.StringSlice(subnet.SubnetPropertiesFormat.AddressPrefixes)
 	}
 
-	subnetSpec := &infrav1.SubnetSpec{
-		Role:       spec.Role,
-		Name:       to.String(subnet.Name),
-		ID:         to.String(subnet.ID),
-		CIDRBlocks: addresses,
-	}
+	subnetSpec := s.Scope.Subnet(spec.Name)
+	subnetSpec.ID = to.String(subnet.ID)
+	subnetSpec.CIDRBlocks = addresses
 
-	return subnetSpec, nil
+	return &subnetSpec, nil
 }
