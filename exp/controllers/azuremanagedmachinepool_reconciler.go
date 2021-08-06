@@ -23,21 +23,13 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	// ManagedMachinePoolScopeName is the sourceName, or more specifically the UserAgent, of client used in AMMP reconciliation.
-	ManagedMachinePoolScopeName = "azuremanagedmachinepoolmachine-scope"
 )
 
 type (
@@ -132,36 +124,43 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 		agentPoolSpec.OSDiskSizeGB = *scope.InfraMachinePool.Spec.OSDiskSizeGB
 	}
 
-	scope.V(2).Info("Reconciling agentpool")
 	if err := s.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
 
-	clusterClient, err := remote.NewClusterClient(ctx, ManagedMachinePoolScopeName, s.kubeclient, types.NamespacedName{Namespace: scope.Cluster.Namespace, Name: scope.Cluster.Name})
+	vmss, err := s.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to retrieve kubeconfig for cluster")
+		return errors.Wrapf(err, "failed to list vmss in resource group %s", scope.ControlPlane.Spec.NodeResourceGroupName)
 	}
 
-	matchingLabels := client.MatchingLabels(map[string]string{
-		"agentpool": scope.InfraMachinePool.Name,
-	})
-
-	scope.V(2).Info(fmt.Sprintf("Listing node in agentpool '%s'", scope.InfraMachinePool.Name))
-	var nodeList corev1.NodeList
-	if err := clusterClient.List(ctx, &nodeList, matchingLabels); err != nil {
-		return errors.Wrapf(err, "failed to list nodes to extract providerIDs")
+	var match *compute.VirtualMachineScaleSet
+	for _, ss := range vmss {
+		ss := ss
+		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == scope.InfraMachinePool.Name {
+			match = &ss
+			break
+		}
 	}
 
-	var providerIDs = make([]string, len(nodeList.Items))
-	for i := 0; i < len(nodeList.Items); i++ {
-		providerIDs[i] = nodeList.Items[i].Spec.ProviderID
+	if match == nil {
+		return NewAgentPoolVMSSNotFoundError(scope.ControlPlane.Spec.NodeResourceGroupName, scope.InfraMachinePool.Name)
+	}
+
+	instances, err := s.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
+	}
+
+	var providerIDs = make([]string, len(instances))
+	for i := 0; i < len(instances); i++ {
+		providerIDs[i] = azure.ProviderIDPrefix + *instances[i].ID
 	}
 
 	scope.InfraMachinePool.Spec.ProviderIDList = providerIDs
 	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))
-	scope.InfraMachinePool.Status.Ready = int32(len(providerIDs)) == *scope.MachinePool.Spec.Replicas
+	scope.InfraMachinePool.Status.Ready = true
 
-	scope.V(2).Info("reconciled machine pool successfully")
+	scope.Logger.Info("reconciled machine pool successfully")
 	return nil
 }
 
