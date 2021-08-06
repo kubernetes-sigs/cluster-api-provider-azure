@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -63,11 +62,6 @@ type AzureManagedControlPlaneReconciler struct {
 func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
 	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
-	// create mapper to transform incoming AzureManagedClusters into AzureManagedControlPlane requests
-	azureManagedClusterMapper, err := AzureManagedClusterToAzureManagedControlPlaneMapper(ctx, r.Client, log)
-	if err != nil {
-		return errors.Wrap(err, "failed to create AzureManagedCluster to AzureManagedControlPlane mapper")
-	}
 
 	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
 	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, r.Client, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
@@ -76,11 +70,6 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		WithOptions(options).
 		For(azManagedControlPlane).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
-		// watch AzureManagedCluster resources
-		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedCluster{}},
-			handler.EnqueueRequestsFromMapFunc(azureManagedClusterMapper),
-		).
 		// watch MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
@@ -91,14 +80,16 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		return errors.Wrap(err, "error creating controller")
 	}
 
-	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
-	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
-		predicates.ClusterUnpausedAndInfrastructureReady(log),
-	); err != nil {
-		return errors.Wrap(err, "failed adding a watch for ready clusters")
-	}
+	_ = c
+
+	// // Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	// if err = c.Watch(
+	// 	&source.Kind{Type: &clusterv1.Cluster{}},
+	// 	handler.EnqueueRequestsFromMapFunc(ClusterToControlPlaneMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
+	// 	predicates.ClusterUnpausedAndInfrastructureReady(log),
+	// ); err != nil {
+	// 	return errors.Wrap(err, "failed adding a watch for ready clusters")
+	// }
 
 	return nil
 }
