@@ -39,6 +39,7 @@ var (
 
 	infraControllers = []string{
 		"AzureMachinePool",
+		"AzureManagedControlPlane",
 		"AzureManagedMachinePool",
 	}
 )
