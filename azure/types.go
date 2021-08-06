@@ -307,3 +307,59 @@ func (vmss VMSS) HasLatestModelApplied(vm VMSSVM) bool {
 	// if the images match, then the VM is of the same model
 	return reflect.DeepEqual(vm.Image, vmss.Image)
 }
+
+// ManagedClusterSpec contains properties to create a managed cluster.
+type ManagedClusterSpec struct {
+	// Name is the name of this AKS Cluster.
+	Name string
+
+	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
+	ResourceGroupName string
+
+	// NodeResourceGroupName is the name of the Azure resource group containing IaaS VMs.
+	NodeResourceGroupName string
+
+	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
+	VnetSubnetID string
+
+	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
+	Location string
+
+	// Tags is a set of tags to add to this cluster.
+	Tags map[string]string
+
+	// Version defines the desired Kubernetes version.
+	Version string
+
+	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to Standard.
+	LoadBalancerSKU string
+
+	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
+	NetworkPlugin string
+
+	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'. Defaults to azure.
+	NetworkPolicy string
+
+	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
+	SSHPublicKey string
+
+	// AgentPools is the list of agent pool specifications in this cluster.
+	AgentPools []AgentPoolSpec
+
+	// PodCIDR is the CIDR block for IP addresses distributed to pods
+	PodCIDR string
+
+	// ServiceCIDR is the CIDR block for IP addresses distributed to services
+	ServiceCIDR string
+
+	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service
+	DNSServiceIP *string
+}
+
+// AgentPoolSpec contains agent pool specification details.
+type AgentPoolSpec struct {
+	Name         string
+	SKU          string
+	Replicas     int32
+	OSDiskSizeGB int32
+}

@@ -23,9 +23,12 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -37,90 +40,60 @@ var (
 	managedIdentity string = "msi"
 )
 
-// Spec contains properties to create a managed cluster.
-type Spec struct {
-	// Name is the name of this AKS Cluster.
-	Name string
-
-	// ResourceGroupName is the name of the Azure resource group for this AKS Cluster.
-	ResourceGroupName string
-
-	// NodeResourceGroupName is the name of the Azure resource group containing IaaS VMs.
-	NodeResourceGroupName string
-
-	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
-	VnetSubnetID string
-
-	// Location is a string matching one of the canonical Azure region names. Examples: "westus2", "eastus".
-	Location string
-
-	// Tags is a set of tags to add to this cluster.
-	Tags map[string]string
-
-	// Version defines the desired Kubernetes version.
-	Version string
-
-	// LoadBalancerSKU for the managed cluster. Possible values include: 'Standard', 'Basic'. Defaults to Standard.
-	LoadBalancerSKU string
-
-	// NetworkPlugin used for building Kubernetes network. Possible values include: 'azure', 'kubenet'. Defaults to azure.
-	NetworkPlugin string
-
-	// NetworkPolicy used for building Kubernetes network. Possible values include: 'calico', 'azure'. Defaults to azure.
-	NetworkPolicy string
-
-	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
-	SSHPublicKey string
-
-	// AgentPools is the list of agent pool specifications in this cluster.
-	AgentPools []PoolSpec
-
-	// PodCIDR is the CIDR block for IP addresses distributed to pods
-	PodCIDR string
-
-	// ServiceCIDR is the CIDR block for IP addresses distributed to services
-	ServiceCIDR string
-
-	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service
-	DNSServiceIP *string
+// ManagedClusterScope defines the scope interface for a managed cluster.
+type ManagedClusterScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
+	GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
+	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
+	MakeEmptyKubeConfigSecret() corev1.Secret
+	GetKubeConfigData() []byte
+	SetKubeConfigData([]byte)
 }
 
-// PoolSpec contains agent pool specification details.
-type PoolSpec struct {
-	Name         string
-	SKU          string
-	Replicas     int32
-	OSDiskSizeGB int32
+// Service provides operations on azure resources.
+type Service struct {
+	Scope ManagedClusterScope
+	Client
 }
 
-// Get fetches a managed cluster from Azure.
-func (s *Service) Get(ctx context.Context, spec interface{}) (interface{}, error) {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Get")
-	defer span.End()
-
-	managedClusterSpec, ok := spec.(*Spec)
-	if !ok {
-		return nil, errors.New("expected managed cluster specification")
+// New creates a new service.
+func New(scope ManagedClusterScope) *Service {
+	return &Service{
+		Scope:  scope,
+		Client: NewClient(scope),
 	}
-	return s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
-}
-
-// GetCredentials fetches a managed cluster kubeconfig from Azure.
-func (s *Service) GetCredentials(ctx context.Context, group, name string) ([]byte, error) {
-	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.GetCredentials")
-	defer span.End()
-
-	return s.Client.GetCredentials(ctx, group, name)
 }
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Reconcile")
 	defer span.End()
 
-	managedClusterSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("expected managed cluster specification")
+	managedClusterSpec, err := s.Scope.ManagedClusterSpec()
+	if err != nil {
+		return errors.Wrap(err, "failed to get managed cluster spec")
+	}
+
+	isCreate := false
+	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
+	// Transient or other failure not due to 404
+	if err != nil && !azure.ResourceNotFound(err) {
+		return errors.Wrap(err, "failed to fetch existing managed cluster")
+	}
+
+	// We are creating this cluster for the first time.
+	// Configure the system pool, rest will be handled by machinepool controller
+	// We do this here because AKS will only let us mutate agent pools via managed
+	// clusters API at create time, not update.
+	if azure.ResourceNotFound(err) {
+		isCreate = true
+		// Add system agent pool to cluster spec that will be submitted to the API
+		managedClusterSpec.AgentPools, err = s.Scope.GetSystemAgentPoolSpecs(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get system agent pool specs for managed cluster %s", s.Scope.ClusterName())
+		}
 	}
 
 	managedCluster := containerservice.ManagedCluster{
@@ -192,14 +165,8 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 
-	existingMC, err := s.Client.Get(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
-	if err != nil && !azure.ResourceNotFound(err) {
-		return errors.Wrap(err, "failed to get existing managed cluster")
-	}
-
-	isCreate := azure.ResourceNotFound(err)
 	if isCreate {
-		err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
+		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
 		if err != nil {
 			return fmt.Errorf("failed to create managed cluster, %w", err)
 		}
@@ -227,36 +194,48 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
-			err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
+			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
 			if err != nil {
 				return fmt.Errorf("failed to update managed cluster, %w", err)
 			}
 		}
 	}
 
+	// Update control plane endpoint.
+	if managedCluster.ManagedClusterProperties != nil && managedCluster.ManagedClusterProperties.Fqdn != nil {
+		endpoint := clusterv1.APIEndpoint{
+			Host: *managedCluster.ManagedClusterProperties.Fqdn,
+			Port: 443,
+		}
+		s.Scope.SetControlPlaneEndpoint(endpoint)
+	}
+
+	// Update kubeconfig data
+	// Always fetch credentials in case of rotation
+	kubeConfigData, err := s.Client.GetCredentials(ctx, s.Scope.ResourceGroup(), s.Scope.ClusterName())
+	if err != nil {
+		return errors.Wrap(err, "failed to get credentials for managed cluster")
+	}
+	s.Scope.SetKubeConfigData(kubeConfigData)
+
 	return nil
 }
 
 // Delete deletes the virtual network with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "managedclusters.Service.Delete")
 	defer span.End()
 
-	managedClusterSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("expected managed cluster specification")
-	}
-
-	klog.V(2).Infof("Deleting managed cluster  %s ", managedClusterSpec.Name)
-	err := s.Client.Delete(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name)
+	klog.V(2).Infof("Deleting managed cluster  %s ", s.Scope.ClusterName())
+	err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), s.Scope.ClusterName())
 	if err != nil {
 		if azure.ResourceNotFound(err) {
 			// already deleted
 			return nil
 		}
-		return errors.Wrapf(err, "failed to delete managed cluster %s in resource group %s", managedClusterSpec.Name, managedClusterSpec.ResourceGroupName)
+		return errors.Wrapf(err, "failed to delete managed cluster %s in resource group %s", s.Scope.ClusterName(), s.Scope.ResourceGroup())
 	}
 
-	klog.V(2).Infof("successfully deleted managed cluster %s ", managedClusterSpec.Name)
+	klog.V(2).Infof("successfully deleted managed cluster %s ", s.Scope.ClusterName())
 	return nil
 }
