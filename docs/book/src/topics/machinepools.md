@@ -89,7 +89,7 @@ for that.
 Make sure to set up your Azure environment as described [here](https://cluster-api.sigs.k8s.io/user/quick-start.html).
 
 ```shell
-clusterctl generate cluster my-cluster --kubernetes-version v1.21.2 --flavor machinepool > my-cluster.yaml
+clusterctl generate cluster my-cluster --kubernetes-version v1.22.0 --flavor machinepool > my-cluster.yaml
 ```
 
 The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors)
@@ -119,7 +119,7 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
         kind: AzureMachinePool
         name: capz-mp-0
-      version: v1.21.2
+      version: v1.22.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
 kind: AzureMachinePool
