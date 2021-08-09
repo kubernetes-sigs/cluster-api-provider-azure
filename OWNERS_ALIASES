@@ -16,11 +16,11 @@ aliases:
     - justinsb
     - vincepri
   cluster-api-azure-maintainers:
+    - alexeldeib
     - CecileRobertMichon
     - devigned
     - nader-ziada
   cluster-api-azure-reviewers:
-    - alexeldeib
     - cpanato
     - juan-lee
     - shysank
