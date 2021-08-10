@@ -294,6 +294,21 @@ func TestDeleteVnet(t *testing.T) {
 					Name:          "vnet-exists",
 					CIDRs:         []string{"10.0.0.0/16"},
 				})
+				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
+					Return(network.VirtualNetwork{
+						ID:   to.StringPtr("azure/fake/id"),
+						Name: to.StringPtr("vnet-exists"),
+						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+							AddressSpace: &network.AddressSpace{
+								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/8"}),
+							},
+						},
+						Tags: map[string]*string{
+							"Name": to.StringPtr("vnet-exists"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
+						},
+					}, nil)
 				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists")
 			},
 		},
@@ -315,8 +330,8 @@ func TestDeleteVnet(t *testing.T) {
 					Name:          "vnet-exists",
 					CIDRs:         []string{"10.0.0.0/16"},
 				})
-				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists").
-					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
+				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
+					Return(network.VirtualNetwork{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
 			},
 		},
 		{
@@ -333,6 +348,19 @@ func TestDeleteVnet(t *testing.T) {
 					Name:          "my-vnet",
 					CIDRs:         []string{"10.0.0.0/16"},
 				})
+				m.Get(gomockinternal.AContext(), "my-rg", "my-vnet").
+					Return(network.VirtualNetwork{
+						ID:   to.StringPtr("azure/custom-vnet/id"),
+						Name: to.StringPtr("my-vnet"),
+						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+							AddressSpace: &network.AddressSpace{
+								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/16"}),
+							},
+						},
+						Tags: map[string]*string{
+							"Name": to.StringPtr("my-vnet"),
+						},
+					}, nil)
 			},
 		},
 		{
@@ -353,6 +381,21 @@ func TestDeleteVnet(t *testing.T) {
 					Name:          "vnet-exists",
 					CIDRs:         []string{"10.0.0.0/16"},
 				})
+				m.Get(gomockinternal.AContext(), "my-rg", "vnet-exists").
+					Return(network.VirtualNetwork{
+						ID:   to.StringPtr("azure/fake/id"),
+						Name: to.StringPtr("vnet-exists"),
+						VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+							AddressSpace: &network.AddressSpace{
+								AddressPrefixes: to.StringSlicePtr([]string{"10.0.0.0/8"}),
+							},
+						},
+						Tags: map[string]*string{
+							"Name": to.StringPtr("vnet-exists"),
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_fake-cluster": to.StringPtr("owned"),
+							"sigs.k8s.io_cluster-api-provider-azure_role":                 to.StringPtr("common"),
+						},
+					}, nil)
 				m.Delete(gomockinternal.AContext(), "my-rg", "vnet-exists").
 					Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Honk Server"))
 			},
