@@ -114,6 +114,14 @@ started prerequisites](../topics/getting-started.md#Prerequisites) section.
 
 ### Using Tilt
 
+Install [Tilt](https://docs.tilt.dev/install.html):
+ - `brew install tilt-dev/tap/tilt` on macOs or Linux
+ - `scoop bucket add tilt-dev https://github.com/tilt-dev/scoop-bucket` & `scoop install tilt` on Windows
+ - for alternatives you can follow the installation instruction for [macOS](https://docs.tilt.dev/install.html#macos),
+   [Linux](https://docs.tilt.dev/install.html#linux) or [Windows](https://docs.tilt.dev/install.html#windows)
+
+After the installation is done, verify that you have installed it correctly with: `tilt version`
+
 Both of the [Tilt](https://tilt.dev) setups below will get you started developing CAPZ in a local kind cluster.
 The main difference is the number of components you will build from source and the scope of the changes you'd like to make.
 If you only want to make changes in CAPZ, then follow [CAPZ instructions](#tilt-for-dev-in-capz). This will
