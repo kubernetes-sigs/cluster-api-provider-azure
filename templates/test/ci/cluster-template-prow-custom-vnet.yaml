@@ -47,7 +47,7 @@ spec:
       securityGroup:
         name: node-nsg
     vnet:
-      name: ${AZURE_VNET_NAME}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
   resourceGroup: ${AZURE_RESOURCE_GROUP:=${CLUSTER_NAME}}
   subscriptionID: ${AZURE_SUBSCRIPTION_ID}
 ---

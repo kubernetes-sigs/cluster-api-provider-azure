@@ -5,7 +5,7 @@ metadata:
 spec:
   networkSpec:
     vnet:
-      name: ${AZURE_VNET_NAME}
+      name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
     subnets:
       - name: ${CLUSTER_NAME}-controlplane-subnet
         role: control-plane
