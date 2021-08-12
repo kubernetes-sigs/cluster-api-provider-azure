@@ -38,6 +38,7 @@ source "${REPO_ROOT}/hack/parse-prow-creds.sh"
 : "${JOB_NAME:?Environment variable empty or not defined.}"
 
 declare -a BINARIES=("kubeadm" "kubectl" "kubelet")
+declare -a WINDOWS_BINARIES=("kubeadm" "kubectl" "kubelet" "kube-proxy")
 declare -a IMAGES=("kube-apiserver" "kube-controller-manager" "kube-proxy" "kube-scheduler")
 
 setup() {
@@ -100,7 +101,19 @@ main() {
         for BINARY in "${BINARIES[@]}"; do
             az storage blob upload --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/linux/amd64/${BINARY}" --name "${KUBE_GIT_VERSION}/bin/linux/amd64/${BINARY}"
         done
-    fi
+
+        if [[ "${WINDOWS:-}" == "true" ]]; then
+            echo "Building Kubernetes Windows binaries"
+
+            for BINARY in "${WINDOWS_BINARIES[@]}"; do
+                "${KUBE_ROOT}"/build/run.sh make WHAT=cmd/"${BINARY}" KUBE_BUILD_PLATFORMS=windows/amd64 KUBE_VERBOSE=0
+            done
+
+            for BINARY in "${WINDOWS_BINARIES[@]}"; do
+                az storage blob upload --container-name "${JOB_NAME}" --file "${KUBE_ROOT}/_output/dockerized/bin/windows/amd64/${BINARY}.exe" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe"
+            done
+        fi
+    fi 
 }
 
 # can_reuse_artifacts returns true if there exists Kubernetes artifacts built from a PR that we can reuse
@@ -116,6 +129,14 @@ can_reuse_artifacts() {
             echo "false" && return
         fi
     done
+
+    if [[ "${WINDOWS:-}" == "true" ]]; then
+        for BINARY in "${WINDOWS_BINARIES[@]}"; do
+            if [[ "$(az storage blob exists --container-name "${JOB_NAME}" --name "${KUBE_GIT_VERSION}/bin/windows/amd64/${BINARY}.exe" --query exists)" == "false" ]]; then
+                echo "false" && return
+            fi
+        done
+    fi
 
     echo "true"
 }

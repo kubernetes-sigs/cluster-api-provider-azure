@@ -1,0 +1,32 @@
+- op: add
+  path: /spec/template/spec/files/-
+  value:
+    content: |
+      Stop-Service kubelet -Force
+
+      $$CI_VERSION="${CI_VERSION}"
+      if($$CI_VERSION -ne "")
+      {
+        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+        $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
+        foreach ( $$binary in $$binaries )
+        {
+          echo "downloading binary: $$ci_url/$$binary.exe"
+          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+        }
+      }
+
+      # We are using a VHD that maps to v1.18.19 so the kubeproxy image is already pulled. (pull it just in case)
+      # Tag it to the ci version.  The image knows how to use the copy locally.
+      docker pull sigwindowstools/kube-proxy:v1.18.19-nanoserver
+      docker tag sigwindowstools/kube-proxy:v1.18.19-nanoserver "sigwindowstools/kube-proxy:${CI_VERSION/+/_}-nanoserver"
+
+      kubeadm.exe version -o=short
+      kubectl.exe version --client=true --short=true
+      kubelet.exe --version
+    path: C:/replace-k8s-binaries.ps1
+    permissions: "0744"
+- op: add
+  path: /spec/template/spec/preKubeadmCommands/-
+  value:
+    powershell C:/replace-k8s-binaries.ps1

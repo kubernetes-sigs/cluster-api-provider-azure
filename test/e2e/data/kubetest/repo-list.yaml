@@ -1,3 +1,7 @@
-gcAuthenticatedRegistry: e2eprivate
+# used for 1.21+ https://github.com/kubernetes-sigs/windows-testing/tree/master/images#image-repository-list
 gcEtcdRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images
-privateRegistry: e2eteam
+# There are two other repos that could be set:
+# privateRegistry: e2eteam
+#  - only used in gce tests
+# gcAuthenticatedRegistry: e2eprivate
+# - needed for OS versions 20H2+ requires update to capi framework to accepted dockerregistry config file

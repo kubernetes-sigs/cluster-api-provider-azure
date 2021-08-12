@@ -1,0 +1,8 @@
+# used for k8s versions <= 1.20 https://github.com/kubernetes-sigs/windows-testing/tree/master/images#image-repository-list
+dockerLibraryRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images
+e2eRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images
+promoterE2eRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images
+etcdRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images
+gcRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images
+PrivateRegistry: e2eteam
+sampleRegistry: k8sprow.azurecr.io/kubernetes-e2e-test-images

@@ -4,6 +4,14 @@ namespace: default
 resources:
   - ../prow-machine-pool
 patchesStrategicMerge:
-  - ../patches/control-plane-ci-version.yaml
+  - ../patches/control-plane-image-ci-version.yaml
   - ../patches/controller-manager.yaml
   - patches/machine-pool-ci-version.yaml
+patches:
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+    namespace: default
+  path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml

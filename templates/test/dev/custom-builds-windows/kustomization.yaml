@@ -1,0 +1,27 @@
+namespace: default
+resources:
+  - ../../../test/ci/prow-windows
+patchesStrategicMerge:
+  - patches/windows-image-update.yaml
+  - ../custom-builds/patches/machine-deployment-pr-version.yaml
+patchesJson6902:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: patches/custom-builds-windows.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-0
+    namespace: default
+  path: ../custom-builds/patches/kubeadm-bootstrap.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmControlPlane
+    name: .*-control-plane
+  path: ../custom-builds/patches/kubeadm-controlplane-bootstrap.yaml

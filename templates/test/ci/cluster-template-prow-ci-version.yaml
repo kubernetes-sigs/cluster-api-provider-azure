@@ -92,6 +92,13 @@ spec:
         overwrite: false
         tableType: gpt
     files:
+    - contentFrom:
+        secret:
+          key: control-plane-azure.json
+          name: ${CLUSTER_NAME}-control-plane-azure-json
+      owner: root:root
+      path: /etc/kubernetes/azure.json
+      permissions: "0644"
     - content: |
         #!/bin/bash
 
@@ -157,13 +164,6 @@ spec:
       owner: root:root
       path: /tmp/kubeadm-bootstrap.sh
       permissions: "0744"
-    - contentFrom:
-        secret:
-          key: control-plane-azure.json
-          name: ${CLUSTER_NAME}-control-plane-azure-json
-      owner: root:root
-      path: /etc/kubernetes/azure.json
-      permissions: "0644"
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
@@ -181,6 +181,7 @@ spec:
     mounts:
     - - LABEL=etcd_disk
       - /var/lib/etcddisk
+    postKubeadmCommands: []
     preKubeadmCommands:
     - bash -c /tmp/kubeadm-bootstrap.sh
     useExperimentalRetryJoin: true
@@ -271,6 +272,13 @@ spec:
   template:
     spec:
       files:
+      - contentFrom:
+          secret:
+            key: worker-node-azure.json
+            name: ${CLUSTER_NAME}-md-0-azure-json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
       - content: |
           #!/bin/bash
 
@@ -336,13 +344,6 @@ spec:
         owner: root:root
         path: /tmp/kubeadm-bootstrap.sh
         permissions: "0744"
-      - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: ${CLUSTER_NAME}-md-0-azure-json
-        owner: root:root
-        path: /etc/kubernetes/azure.json
-        permissions: "0644"
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:

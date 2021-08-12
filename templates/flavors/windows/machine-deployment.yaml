@@ -5,7 +5,7 @@ metadata:
   name: "${CLUSTER_NAME}-md-0"
 spec:
   clusterName: "${CLUSTER_NAME}"
-  replicas: ${WORKER_MACHINE_COUNT}
+  replicas: ${LINUX_WORKER_MACHINE_COUNT:-1}
   selector:
     matchLabels:
   template:
@@ -44,6 +44,7 @@ metadata:
 spec:
   template:
     spec:
+      preKubeadmCommands: []
       postKubeadmCommands:
         # Azures vnet MTU is 1400. 
         # When using Flannel VXLAN to avoid packet fragmentation 

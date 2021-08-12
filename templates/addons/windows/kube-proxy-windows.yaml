@@ -5,6 +5,12 @@ data:
     mkdir -force /host/var/lib/kube-proxy/var/run/secrets/kubernetes.io/serviceaccount
     mkdir -force /host/k/kube-proxy
 
+    $$CI_VERSION="${CI_VERSION:-}"
+    if($$CI_VERSION -ne "" -And (Test-Path -Path "/host/k/kube-proxy.exe"))
+    {
+      cp -force /host/k/kube-proxy.exe /k/kube-proxy/kube-proxy.exe
+    }
+
     cp -force /k/kube-proxy/* /host/k/kube-proxy
     cp -force /var/lib/kube-proxy/* /host/var/lib/kube-proxy
     cp -force /var/run/secrets/kubernetes.io/serviceaccount/* /host/var/lib/kube-proxy/var/run/secrets/kubernetes.io/serviceaccount #FIXME?
@@ -57,7 +63,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION}-nanoserver
+        image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-nanoserver
         name: kube-proxy
         volumeMounts:
         - name: wins
