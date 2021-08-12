@@ -23,4 +23,5 @@ aliases:
   cluster-api-azure-reviewers:
     - cpanato
     - juan-lee
+    - mboersma
     - shysank
