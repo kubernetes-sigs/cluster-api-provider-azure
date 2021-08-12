@@ -80,57 +80,6 @@ func (mr *MockReconcilerMockRecorder) Reconcile(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockReconciler)(nil).Reconcile), ctx)
 }
 
-// MockOldService is a mock of OldService interface.
-type MockOldService struct {
-	ctrl     *gomock.Controller
-	recorder *MockOldServiceMockRecorder
-}
-
-// MockOldServiceMockRecorder is the mock recorder for MockOldService.
-type MockOldServiceMockRecorder struct {
-	mock *MockOldService
-}
-
-// NewMockOldService creates a new mock instance.
-func NewMockOldService(ctrl *gomock.Controller) *MockOldService {
-	mock := &MockOldService{ctrl: ctrl}
-	mock.recorder = &MockOldServiceMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockOldService) EXPECT() *MockOldServiceMockRecorder {
-	return m.recorder
-}
-
-// Delete mocks base method.
-func (m *MockOldService) Delete(ctx context.Context, spec interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, spec)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockOldServiceMockRecorder) Delete(ctx, spec interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOldService)(nil).Delete), ctx, spec)
-}
-
-// Reconcile mocks base method.
-func (m *MockOldService) Reconcile(ctx context.Context, spec interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reconcile", ctx, spec)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Reconcile indicates an expected call of Reconcile.
-func (mr *MockOldServiceMockRecorder) Reconcile(ctx, spec interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reconcile", reflect.TypeOf((*MockOldService)(nil).Reconcile), ctx, spec)
-}
-
 // MockCredentialGetter is a mock of CredentialGetter interface.
 type MockCredentialGetter struct {
 	ctrl     *gomock.Controller

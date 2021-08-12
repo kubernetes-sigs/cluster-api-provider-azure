@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	"github.com/google/go-cmp/cmp"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
@@ -156,7 +157,7 @@ type BastionSpec struct {
 }
 
 // AzureBastionSpec defines the specification for azure bastion feature.
-type AzureBastionSpec struct { //nolint
+type AzureBastionSpec struct { // nolint
 	Name         string
 	SubnetSpec   infrav1.SubnetSpec
 	PublicIPName string
@@ -373,8 +374,30 @@ type AADProfile struct {
 
 // AgentPoolSpec contains agent pool specification details.
 type AgentPoolSpec struct {
-	Name         string
-	SKU          string
-	Replicas     int32
+	// Name is the name of agent pool.
+	Name string
+
+	// ResourceGroup is the name of the Azure resource group for the AKS Cluster.
+	ResourceGroup string
+
+	// Cluster is the name of the AKS cluster.
+	Cluster string
+
+	// Version defines the desired Kubernetes version.
+	Version *string
+
+	// SKU defines the Azure VM size for the agent pool VMs.
+	SKU string
+
+	// Replicas is the number of desired machines.
+	Replicas int32
+
+	// OSDiskSizeGB is the OS disk size in GB for every machine in this agent pool.
 	OSDiskSizeGB int32
+
+	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
+	VnetSubnetID string
+
+	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
+	Mode string
 }

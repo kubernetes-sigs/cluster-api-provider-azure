@@ -23,20 +23,19 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/pkg/errors"
+
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type (
 	// azureManagedMachinePoolService contains the services required by the cluster controller.
 	azureManagedMachinePoolService struct {
-		kubeclient    client.Client
-		agentPoolsSvc azure.OldService
+		scope         agentpools.ManagedMachinePoolScope
+		agentPoolsSvc azure.Reconciler
 		scaleSetsSvc  NodeLister
 	}
 
@@ -80,75 +79,46 @@ func (a *AgentPoolVMSSNotFoundError) Is(target error) bool {
 // newAzureManagedMachinePoolService populates all the services based on input scope.
 func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) *azureManagedMachinePoolService {
 	return &azureManagedMachinePoolService{
-		kubeclient:    scope.Client,
-		agentPoolsSvc: agentpools.NewService(scope),
+		scope:         scope,
+		agentPoolsSvc: agentpools.New(scope),
 		scaleSetsSvc:  scalesets.NewClient(scope),
 	}
 }
 
 // Reconcile reconciles all the services in a predetermined order.
-func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
 	defer span.End()
 
-	scope.Logger.Info("reconciling machine pool")
+	s.scope.Info("reconciling machine pool")
+	agentPoolName := s.scope.AgentPoolSpec().Name
 
-	var normalizedVersion *string
-	if scope.MachinePool.Spec.Template.Spec.Version != nil {
-		v := strings.TrimPrefix(*scope.MachinePool.Spec.Template.Spec.Version, "v")
-		normalizedVersion = &v
+	if err := s.agentPoolsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
 	}
 
-	replicas := int32(1)
-	if scope.MachinePool.Spec.Replicas != nil {
-		replicas = *scope.MachinePool.Spec.Replicas
-	}
-
-	agentPoolSpec := &agentpools.Spec{
-		Name:          scope.InfraMachinePool.Name,
-		ResourceGroup: scope.ControlPlane.Spec.ResourceGroupName,
-		Cluster:       scope.ControlPlane.Name,
-		SKU:           scope.InfraMachinePool.Spec.SKU,
-		Replicas:      replicas,
-		Version:       normalizedVersion,
-		VnetSubnetID: azure.SubnetID(
-			scope.ControlPlane.Spec.SubscriptionID,
-			scope.ControlPlane.Spec.ResourceGroupName,
-			scope.ControlPlane.Spec.VirtualNetwork.Name,
-			scope.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
-		),
-		Mode: scope.InfraMachinePool.Spec.Mode,
-	}
-
-	if scope.InfraMachinePool.Spec.OSDiskSizeGB != nil {
-		agentPoolSpec.OSDiskSizeGB = *scope.InfraMachinePool.Spec.OSDiskSizeGB
-	}
-
-	if err := s.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
-		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
-	}
-
-	vmss, err := s.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
+	nodeResourceGroup := s.scope.NodeResourceGroup()
+	vmss, err := s.scaleSetsSvc.List(ctx, nodeResourceGroup)
 	if err != nil {
-		return errors.Wrapf(err, "failed to list vmss in resource group %s", scope.ControlPlane.Spec.NodeResourceGroupName)
+		return errors.Wrapf(err, "failed to list vmss in resource group %s", nodeResourceGroup)
 	}
 
 	var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
-		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == scope.InfraMachinePool.Name {
+		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == agentPoolName {
 			match = &ss
 			break
 		}
 	}
 
 	if match == nil {
-		return NewAgentPoolVMSSNotFoundError(scope.ControlPlane.Spec.NodeResourceGroupName, scope.InfraMachinePool.Name)
+		return NewAgentPoolVMSSNotFoundError(nodeResourceGroup, agentPoolName)
 	}
 
-	instances, err := s.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
+	instances, err := s.scaleSetsSvc.ListInstances(ctx, nodeResourceGroup, *match.Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
+		return errors.Wrapf(err, "failed to reconcile machine pool %s", agentPoolName)
 	}
 
 	var providerIDs = make([]string, len(instances))
@@ -156,27 +126,21 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 		providerIDs[i] = strings.ToLower(azure.ProviderIDPrefix + *instances[i].ID)
 	}
 
-	scope.InfraMachinePool.Spec.ProviderIDList = providerIDs
-	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))
-	scope.InfraMachinePool.Status.Ready = true
+	s.scope.SetAgentPoolProviderIDList(providerIDs)
+	s.scope.SetAgentPoolReplicas(int32(len(providerIDs)))
+	s.scope.SetAgentPoolReady(true)
 
-	scope.Logger.Info("reconciled machine pool successfully")
+	s.scope.Info("reconciled machine pool successfully")
 	return nil
 }
 
 // Delete reconciles all the services in a predetermined order.
-func (s *azureManagedMachinePoolService) Delete(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+func (s *azureManagedMachinePoolService) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Delete")
 	defer span.End()
 
-	agentPoolSpec := &agentpools.Spec{
-		Name:          scope.InfraMachinePool.Name,
-		ResourceGroup: scope.ControlPlane.Spec.ResourceGroupName,
-		Cluster:       scope.ControlPlane.Name,
-	}
-
-	if err := s.agentPoolsSvc.Delete(ctx, agentPoolSpec); err != nil {
-		return errors.Wrapf(err, "failed to delete machine pool %s", scope.InfraMachinePool.Name)
+	if err := s.agentPoolsSvc.Delete(ctx); err != nil {
+		return errors.Wrapf(err, "failed to delete machine pool %s", s.scope.AgentPoolSpec().Name)
 	}
 
 	return nil

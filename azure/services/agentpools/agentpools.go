@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -30,28 +31,38 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
-// Spec contains properties to create a agent pool.
-type Spec struct {
-	Name          string
-	ResourceGroup string
-	Cluster       string
-	Version       *string
-	SKU           string
-	Replicas      int32
-	OSDiskSizeGB  int32
-	VnetSubnetID  string
-	Mode          string
+// ManagedMachinePoolScope defines the scope interface for a managed machine pool.
+type ManagedMachinePoolScope interface {
+	logr.Logger
+	azure.ClusterDescriber
+
+	NodeResourceGroup() string
+	AgentPoolSpec() azure.AgentPoolSpec
+	SetAgentPoolProviderIDList([]string)
+	SetAgentPoolReplicas(int32)
+	SetAgentPoolReady(bool)
+}
+
+// Service provides operations on Azure resources.
+type Service struct {
+	scope ManagedMachinePoolScope
+	Client
+}
+
+// New creates a new service.
+func New(scope ManagedMachinePoolScope) *Service {
+	return &Service{
+		scope:  scope,
+		Client: NewClient(scope),
+	}
 }
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
-func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "agentpools.Service.Reconcile")
 	defer span.End()
 
-	agentPoolSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid agent pool specification")
-	}
+	agentPoolSpec := s.scope.AgentPoolSpec()
 
 	profile := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
@@ -123,14 +134,11 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 }
 
 // Delete deletes the virtual network with the provided name.
-func (s *Service) Delete(ctx context.Context, spec interface{}) error {
+func (s *Service) Delete(ctx context.Context) error {
 	ctx, span := tele.Tracer().Start(ctx, "agentpools.Service.Delete")
 	defer span.End()
 
-	agentPoolSpec, ok := spec.(*Spec)
-	if !ok {
-		return errors.New("invalid agent pool specification")
-	}
+	agentPoolSpec := s.scope.AgentPoolSpec()
 
 	klog.V(2).Infof("deleting agent pool  %s ", agentPoolSpec.Name)
 	err := s.Client.Delete(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)

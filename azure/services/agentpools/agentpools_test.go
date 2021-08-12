@@ -22,55 +22,32 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-05-01/containerservice"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	capi "sigs.k8s.io/cluster-api/api/v1alpha4"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools/mock_agentpools"
+	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 )
-
-const (
-	expectedInvalidSpec = "invalid agent pool specification"
-)
-
-func TestInvalidAgentPoolsSpec(t *testing.T) {
-	g := NewWithT(t)
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
-
-	s := &Service{
-		Client: agentpoolsMock,
-	}
-
-	// Wrong Spec
-	wrongSpec := &network.LoadBalancer{}
-
-	err := s.Reconcile(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-
-	err = s.Delete(context.TODO(), &wrongSpec)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err).To(MatchError(expectedInvalidSpec))
-}
 
 func TestReconcile(t *testing.T) {
 	provisioningstatetestcases := []struct {
 		name                     string
-		agentpoolSpec            Spec
+		agentpoolSpec            azure.AgentPoolSpec
 		provisioningStatesToTest []string
 		expectedError            string
 		expect                   func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string)
 	}{
 		{
 			name: "agentpool in terminal provisioning state",
-			agentpoolSpec: Spec{
+			agentpoolSpec: azure.AgentPoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				Name:          "my-agentpool",
@@ -86,7 +63,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "agentpool in nonterminal provisioning state",
-			agentpoolSpec: Spec{
+			agentpoolSpec: azure.AgentPoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				Name:          "my-agentpool",
@@ -113,14 +90,31 @@ func TestReconcile(t *testing.T) {
 				defer mockCtrl.Finish()
 
 				agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+				machinePoolScope := &scope.ManagedControlPlaneScope{
+					ControlPlane: &infraexpv1.AzureManagedControlPlane{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: tc.agentpoolSpec.Cluster,
+						},
+						Spec: infraexpv1.AzureManagedControlPlaneSpec{
+							ResourceGroupName: tc.agentpoolSpec.ResourceGroup,
+						},
+					},
+					MachinePool: &capiexp.MachinePool{},
+					InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: tc.agentpoolSpec.Name,
+						},
+					},
+				}
 
 				tc.expect(agentpoolsMock.EXPECT(), provisioningstate)
 
 				s := &Service{
 					Client: agentpoolsMock,
+					scope:  machinePoolScope,
 				}
 
-				err := s.Reconcile(context.TODO(), &tc.agentpoolSpec)
+				err := s.Reconcile(context.TODO())
 				if tc.expectedError != "" {
 					g.Expect(err.Error()).To(HavePrefix(tc.expectedError))
 					g.Expect(err.Error()).To(ContainSubstring(provisioningstate))
@@ -133,13 +127,13 @@ func TestReconcile(t *testing.T) {
 
 	testcases := []struct {
 		name           string
-		agentPoolsSpec Spec
+		agentPoolsSpec azure.AgentPoolSpec
 		expectedError  string
 		expect         func(m *mock_agentpools.MockClientMockRecorder)
 	}{
 		{
 			name: "no agentpool exists",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
 				Name:          "my-agentpool",
@@ -152,7 +146,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "fail to get existing agent pool",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -168,7 +162,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "can create an Agent Pool",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -185,7 +179,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "fail to create an Agent Pool",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -202,7 +196,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "fail to update an Agent Pool",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -227,7 +221,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name: "no update needed on Agent Pool",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -262,15 +256,48 @@ func TestReconcile(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
+			replicas := tc.agentPoolsSpec.Replicas
+			osDiskSizeGB := tc.agentPoolsSpec.OSDiskSizeGB
+
 			agentpoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+			machinePoolScope := &scope.ManagedControlPlaneScope{
+				ControlPlane: &infraexpv1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentPoolsSpec.Cluster,
+					},
+					Spec: infraexpv1.AzureManagedControlPlaneSpec{
+						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+					},
+				},
+				MachinePool: &capiexp.MachinePool{
+					Spec: capiexp.MachinePoolSpec{
+						Replicas: &replicas,
+						Template: capi.MachineTemplateSpec{
+							Spec: capi.MachineSpec{
+								Version: tc.agentPoolsSpec.Version,
+							},
+						},
+					},
+				},
+				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentPoolsSpec.Name,
+					},
+					Spec: infraexpv1.AzureManagedMachinePoolSpec{
+						SKU:          tc.agentPoolsSpec.SKU,
+						OSDiskSizeGB: &osDiskSizeGB,
+					},
+				},
+			}
 
 			tc.expect(agentpoolsMock.EXPECT())
 
 			s := &Service{
 				Client: agentpoolsMock,
+				scope:  machinePoolScope,
 			}
 
-			err := s.Reconcile(context.TODO(), &tc.agentPoolsSpec)
+			err := s.Reconcile(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
@@ -284,13 +311,13 @@ func TestReconcile(t *testing.T) {
 func TestDeleteAgentPools(t *testing.T) {
 	testcases := []struct {
 		name           string
-		agentPoolsSpec Spec
+		agentPoolsSpec azure.AgentPoolSpec
 		expectedError  string
 		expect         func(m *mock_agentpools.MockClientMockRecorder)
 	}{
 		{
 			name: "successfully delete an existing agent pool",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -302,7 +329,7 @@ func TestDeleteAgentPools(t *testing.T) {
 		},
 		{
 			name: "agent pool already deleted",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -315,7 +342,7 @@ func TestDeleteAgentPools(t *testing.T) {
 		},
 		{
 			name: "agent pool deletion fails",
-			agentPoolsSpec: Spec{
+			agentPoolsSpec: azure.AgentPoolSpec{
 				Name:          "my-agent-pool",
 				ResourceGroup: "my-rg",
 				Cluster:       "my-cluster",
@@ -337,14 +364,31 @@ func TestDeleteAgentPools(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			agentPoolsMock := mock_agentpools.NewMockClient(mockCtrl)
+			machinePoolScope := &scope.ManagedControlPlaneScope{
+				ControlPlane: &infraexpv1.AzureManagedControlPlane{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentPoolsSpec.Cluster,
+					},
+					Spec: infraexpv1.AzureManagedControlPlaneSpec{
+						ResourceGroupName: tc.agentPoolsSpec.ResourceGroup,
+					},
+				},
+				MachinePool: &capiexp.MachinePool{},
+				InfraMachinePool: &infraexpv1.AzureManagedMachinePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tc.agentPoolsSpec.Name,
+					},
+				},
+			}
 
 			tc.expect(agentPoolsMock.EXPECT())
 
 			s := &Service{
 				Client: agentPoolsMock,
+				scope:  machinePoolScope,
 			}
 
-			err := s.Delete(context.TODO(), &tc.agentPoolsSpec)
+			err := s.Delete(context.TODO())
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError))
