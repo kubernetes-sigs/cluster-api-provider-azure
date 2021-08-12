@@ -127,6 +127,14 @@ func (s *ManagedControlPlaneScope) ResourceGroup() string {
 	return s.ControlPlane.Spec.ResourceGroupName
 }
 
+// NodeResourceGroup returns the managed control plane's node resource group.
+func (s *ManagedControlPlaneScope) NodeResourceGroup() string {
+	if s.ControlPlane == nil {
+		return ""
+	}
+	return s.ControlPlane.Spec.NodeResourceGroupName
+}
+
 // ClusterName returns the managed control plane's name.
 func (s *ManagedControlPlaneScope) ClusterName() string {
 	return s.Cluster.Name
@@ -448,6 +456,57 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 	}
 
 	return ammps, nil
+}
+
+// AgentPoolSpec returns an azure.AgentPoolSpec for currently reconciled AzureManagedMachinePool.
+func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
+	var normalizedVersion *string
+	if s.MachinePool.Spec.Template.Spec.Version != nil {
+		v := strings.TrimPrefix(*s.MachinePool.Spec.Template.Spec.Version, "v")
+		normalizedVersion = &v
+	}
+
+	replicas := int32(1)
+	if s.MachinePool.Spec.Replicas != nil {
+		replicas = *s.MachinePool.Spec.Replicas
+	}
+
+	agentPoolSpec := azure.AgentPoolSpec{
+		Name:          s.InfraMachinePool.Name,
+		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
+		Cluster:       s.ControlPlane.Name,
+		SKU:           s.InfraMachinePool.Spec.SKU,
+		Replicas:      replicas,
+		Version:       normalizedVersion,
+		VnetSubnetID: azure.SubnetID(
+			s.ControlPlane.Spec.SubscriptionID,
+			s.ControlPlane.Spec.ResourceGroupName,
+			s.ControlPlane.Spec.VirtualNetwork.Name,
+			s.ControlPlane.Spec.VirtualNetwork.Subnet.Name,
+		),
+		Mode: s.InfraMachinePool.Spec.Mode,
+	}
+
+	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {
+		agentPoolSpec.OSDiskSizeGB = *s.InfraMachinePool.Spec.OSDiskSizeGB
+	}
+
+	return agentPoolSpec
+}
+
+// SetAgentPoolProviderIDList sets a list of agent pool's Azure VM IDs.
+func (s *ManagedControlPlaneScope) SetAgentPoolProviderIDList(providerIDs []string) {
+	s.InfraMachinePool.Spec.ProviderIDList = providerIDs
+}
+
+// SetAgentPoolReplicas sets the number of agent pool replicas.
+func (s *ManagedControlPlaneScope) SetAgentPoolReplicas(replicas int32) {
+	s.InfraMachinePool.Status.Replicas = replicas
+}
+
+// SetAgentPoolReady sets the flag that indicates if the agent pool is ready or not.
+func (s *ManagedControlPlaneScope) SetAgentPoolReady(ready bool) {
+	s.InfraMachinePool.Status.Ready = ready
 }
 
 // SetControlPlaneEndpoint sets a control plane endpoint.

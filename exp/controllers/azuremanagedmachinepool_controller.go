@@ -233,7 +233,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context,
 		return reconcile.Result{}, err
 	}
 
-	if err := r.createAzureManagedMachinePoolService(scope).Reconcile(ctx, scope); err != nil {
+	if err := r.createAzureManagedMachinePoolService(scope).Reconcile(ctx); err != nil {
 		if IsAgentPoolVMSSNotFoundError(err) {
 			// if the underlying VMSS is not yet created, requeue for 30s in the future
 			return reconcile.Result{
@@ -260,7 +260,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context,
 		// So, remove the finalizer.
 		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 	} else {
-		if err := r.createAzureManagedMachinePoolService(scope).Delete(ctx, scope); err != nil {
+		if err := r.createAzureManagedMachinePoolService(scope).Delete(ctx); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 		}
 		// Machine pool successfully deleted, remove the finalizer.
