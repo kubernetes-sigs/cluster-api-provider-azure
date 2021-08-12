@@ -49,6 +49,27 @@ data:
   password: PASSWORD
 ```
 
+## Manual Service Principal Identity
+
+Manual Service Principal Identity is similar to [Service Principal Identity](https://capz.sigs.k8s.io/topics/multitenancy.html#service-principal-identity) except that the service principal's `clientSecret` is directly fetched from the secret containing it.
+To use this type of identity, set the identity type as `ManualServicePrincipal` in `AzureClusterIdentity`. For example,
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureClusterIdentity
+metadata:
+  name: example-identity
+  namespace: default
+spec:
+  type: ManualServicePrincipal
+  tenantID: <azure-tenant-id>
+  clientID: <client-id-of-SP-identity>
+  clientSecret: {"name":"<secret-name-for-client-password>","namespace":"default"}
+  allowedNamespaces:
+    list:
+    - <cluster-namespace>
+```
+The rest of the configuration is the same as that of service principal identity. This useful in scenarios where you don't want to have a dependency on [aad-pod-identity](https://azure.github.io/aad-pod-identity).
+
 ## allowedNamespaces
 AllowedNamespaces is used to identify the namespaces the clusters are allowed to use the identity from. Namespaces can be selected either using an array of namespaces or with label selector.
 An empty allowedNamespaces object indicates that AzureClusters can use this identity from any namespace.

@@ -129,7 +129,7 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	}
 	c.Values[auth.ClientSecret] = strings.TrimSuffix(clientSecret, "\n")
 
-	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint)
+	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint, c.Environment.ActiveDirectoryEndpoint)
 	return err
 }
 
