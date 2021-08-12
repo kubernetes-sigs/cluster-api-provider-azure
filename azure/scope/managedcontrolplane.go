@@ -388,6 +388,14 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		}
 	}
 
+	if s.ControlPlane.Spec.AADProfile != nil {
+		managedClusterSpec.AADProfile = &azure.AADProfile{
+			Managed:             s.ControlPlane.Spec.AADProfile.Managed,
+			EnableAzureRBAC:     s.ControlPlane.Spec.AADProfile.Managed,
+			AdminGroupObjectIDs: s.ControlPlane.Spec.AADProfile.AdminGroupObjectIDs,
+		}
+	}
+
 	return managedClusterSpec, nil
 }
 
