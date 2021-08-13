@@ -112,6 +112,23 @@ Makefile targets and scripts are offered to work with go modules:
 Your environment must have the Azure credentials as outlined in the [getting
 started prerequisites](../topics/getting-started.md#Prerequisites) section.
 
+### Tilt Requirements
+
+Install [Tilt](https://docs.tilt.dev/install.html):
+ - `brew install tilt-dev/tap/tilt` on macOS or Linux
+ - `scoop bucket add tilt-dev https://github.com/tilt-dev/scoop-bucket` & `scoop install tilt` on Windows
+ - for alternatives you can follow the installation instruction for [macOS](https://docs.tilt.dev/install.html#macos),
+   [Linux](https://docs.tilt.dev/install.html#linux) or [Windows](https://docs.tilt.dev/install.html#windows)
+
+After the installation is done, verify that you have installed it correctly with: `tilt version`
+
+Install [Helm](https://helm.sh/docs/intro/install/):
+ - `brew install helm` on MacOS
+ - `choco install kubernetes-helm` on Windows
+ - [Install Instruction](https://helm.sh/docs/intro/install/#from-source-linux-macos) on Linux
+
+You would require installation of Helm for succesfully setting up Tilt.
+
 ### Using Tilt
 
 Both of the [Tilt](https://tilt.dev) setups below will get you started developing CAPZ in a local kind cluster.
