@@ -135,6 +135,69 @@ func TestAzureManagedClusterToAzureManagedMachinePoolsMapper(t *testing.T) {
 	}))
 }
 
+func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) {
+	g := NewWithT(t)
+	scheme := newScheme(g)
+	cluster := newCluster("my-cluster")
+	cluster.Spec.ControlPlaneRef = &corev1.ObjectReference{
+		APIVersion: infrav1exp.GroupVersion.String(),
+		Kind:       "AzureManagedControlPlane",
+		Name:       cpName,
+		Namespace:  cluster.Namespace,
+	}
+	initObjects := []runtime.Object{
+		cluster,
+		newAzureManagedControlPlane(cpName),
+		// Create two Machines with an infrastructure ref and one without.
+		newManagedMachinePoolInfraReference(clusterName, "my-mmp-0"),
+		newManagedMachinePoolInfraReference(clusterName, "my-mmp-1"),
+		newManagedMachinePoolInfraReference(clusterName, "my-mmp-2"),
+		newMachinePool(clusterName, "my-machine-2"),
+	}
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+	log := mock_log.NewMockLogger(gomock.NewController(t))
+	log.EXPECT().WithValues("AzureManagedControlPlane", cpName, "Namespace", cluster.Namespace).Return(log)
+	log.EXPECT().V(4).Return(log)
+	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
+	mapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	requests := mapper(&infrav1exp.AzureManagedControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cpName,
+			Namespace: cluster.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       cluster.Name,
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
+				},
+			},
+		},
+	})
+	g.Expect(requests).To(ConsistOf([]reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      "azuremy-mmp-0",
+				Namespace: "default",
+			},
+		},
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      "azuremy-mmp-1",
+				Namespace: "default",
+			},
+		},
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      "azuremy-mmp-2",
+				Namespace: "default",
+			},
+		},
+	}))
+}
+
 func TestMachinePoolToAzureManagedControlPlaneMapFuncSuccess(t *testing.T) {
 	g := NewWithT(t)
 	scheme := newScheme(g)
