@@ -153,9 +153,13 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 		return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	// Infrastructure must be ready before control plane. We should also enqueue
-	// requests from control plane to infra cluster to keep control plane endpoint accurate.
-	aksCluster.Status.Ready = true
+	// we use control plane endpoint to drive status.ready to align with capi expectations around state transitions.
+	// we use this here to enforce cluster only picks up the endpoint when AMCP is already finished reconciling.
+	// this ensures AMMP will always have control plane ready when infra transitions to ready,
+	// enabling us to use predicates.ClusterUnpausedAndInfrastructureReady to filter many unnecessary reconcile loops.
+	// if we hardcoded this to true, AMMP will either miss necessary reconciles when using predicates.ClusterUnpausedAndInfrastructureReady
+	// or will have many extraneous reconciles when using predicates.ResourceNotPaused
+	aksCluster.Status.Ready = controlPlane.Spec.ControlPlaneEndpoint.Host != ""
 	aksCluster.Spec.ControlPlaneEndpoint = controlPlane.Spec.ControlPlaneEndpoint
 
 	if err := patchhelper.Patch(ctx, aksCluster); err != nil {
