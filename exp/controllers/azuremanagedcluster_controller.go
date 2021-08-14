@@ -153,9 +153,8 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 		return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	// Infrastructure must be ready before control plane. We should also enqueue
-	// requests from control plane to infra cluster to keep control plane endpoint accurate.
-	aksCluster.Status.Ready = true
+	// enqueue requests from control plane to infra cluster to keep control plane endpoint accurate.
+	aksCluster.Status.Ready = controlPlane.Spec.ControlPlaneEndpoint.Host != ""
 	aksCluster.Spec.ControlPlaneEndpoint = controlPlane.Spec.ControlPlaneEndpoint
 
 	if err := patchhelper.Patch(ctx, aksCluster); err != nil {
