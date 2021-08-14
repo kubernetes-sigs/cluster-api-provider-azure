@@ -108,7 +108,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(clusterToMachinePoolMapper),
-		predicates.ClusterUnpausedAndInfrastructureReady(log),
+		predicates.ClusterUnpaused(log),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}

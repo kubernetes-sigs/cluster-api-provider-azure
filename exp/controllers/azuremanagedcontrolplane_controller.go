@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -81,14 +80,16 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 		return errors.Wrap(err, "error creating controller")
 	}
 
-	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
-	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(ClusterToControlPlaneMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
-		predicates.ResourceNotPaused(log),
-	); err != nil {
-		return errors.Wrap(err, "failed adding a watch for ready clusters")
-	}
+	_ = c
+
+	// // Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	// if err = c.Watch(
+	// 	&source.Kind{Type: &clusterv1.Cluster{}},
+	// 	handler.EnqueueRequestsFromMapFunc(ClusterToControlPlaneMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
+	// 	predicates.ClusterUnpausedAndInfrastructureReady(log),
+	// ); err != nil {
+	// 	return errors.Wrap(err, "failed adding a watch for ready clusters")
+	// }
 
 	return nil
 }
