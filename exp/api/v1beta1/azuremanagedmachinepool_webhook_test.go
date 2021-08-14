@@ -107,6 +107,84 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Cannot add AvailabilityZones after creating agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:              "System",
+					SKU:               "StandardD2S_V3",
+					OSDiskSizeGB:      to.Int32Ptr(512),
+					AvailabilityZones: []string{"1", "2", "3"},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot remove AvailabilityZones after creating agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:              "System",
+					SKU:               "StandardD2S_V3",
+					OSDiskSizeGB:      to.Int32Ptr(512),
+					AvailabilityZones: []string{"1", "2", "3"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change AvailabilityZones of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:              "System",
+					SKU:               "StandardD2S_V3",
+					OSDiskSizeGB:      to.Int32Ptr(512),
+					AvailabilityZones: []string{"1", "2"},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:              "System",
+					SKU:               "StandardD2S_V3",
+					OSDiskSizeGB:      to.Int32Ptr(512),
+					AvailabilityZones: []string{"1", "2", "3"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AvailabilityZones order can be different",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:              "System",
+					SKU:               "StandardD2S_V3",
+					OSDiskSizeGB:      to.Int32Ptr(512),
+					AvailabilityZones: []string{"1", "3", "2"},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:              "System",
+					SKU:               "StandardD2S_V3",
+					OSDiskSizeGB:      to.Int32Ptr(512),
+					AvailabilityZones: []string{"1", "2", "3"},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	var client client.Client
 	for _, tc := range tests {

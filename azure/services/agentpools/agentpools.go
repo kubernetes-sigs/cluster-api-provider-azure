@@ -79,6 +79,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			EnableAutoScaling:   agentPoolSpec.EnableAutoScaling,
 			MaxCount:            agentPoolSpec.MaxCount,
 			MinCount:            agentPoolSpec.MinCount,
+			AvailabilityZones:   &agentPoolSpec.AvailabilityZones,
 		},
 	}
 
@@ -131,7 +132,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 
 		// Diff and check if we require an update
-		diff := cmp.Diff(existingProfile, normalizedProfile)
+		diff := cmp.Diff(normalizedProfile, existingProfile)
 		if diff != "" {
 			log.V(2).Info(fmt.Sprintf("Update required (+new -old):\n%s", diff))
 			err = s.Client.CreateOrUpdate(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name, profile)

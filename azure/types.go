@@ -443,4 +443,7 @@ type AgentPoolSpec struct {
 
 	// EnableAutoScaling - Whether to enable auto-scaler
 	EnableAutoScaling *bool `json:"enableAutoScaling,omitempty"`
+
+	// AvailabilityZones represents the Availability zones for nodes in the AgentPool.
+	AvailabilityZones []string
 }
