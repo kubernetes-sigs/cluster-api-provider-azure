@@ -393,11 +393,14 @@ data:
     routes\n                    are sent to a BGP Peer. Setting \"true\" configures
     the selected BGP\n                    Peers node to use the \"next hop keep;\"
     instead of \"next hop self;\"(default)\n                    in the specific branch
-    of the Node on \"bird.cfg\".\n                  type: boolean\n                node:\n
-    \                 description: The node name identifying the Calico node instance
-    that\n                    is targeted by this peer. If this is not set, and no
-    nodeSelector\n                    is specified, then this BGP peer selects all
-    nodes in the cluster.\n                  type: string\n                nodeSelector:\n
+    of the Node on \"bird.cfg\".\n                  type: boolean\n                maxRestartTime:\n
+    \                 description: Time to allow for software restart.  When specified,
+    this\n                    is configured as the graceful restart timeout.  When
+    not specified,\n                    the BIRD default of 120s is used.\n                  type:
+    string\n                node:\n                  description: The node name identifying
+    the Calico node instance that\n                    is targeted by this peer. If
+    this is not set, and no nodeSelector\n                    is specified, then this
+    BGP peer selects all nodes in the cluster.\n                  type: string\n                nodeSelector:\n
     \                 description: Selector for the nodes that should have this peering.
     \ When\n                    this is set, the Node field must be empty.\n                  type:
     string\n                password:\n                  description: Optional BGP
@@ -983,9 +986,24 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                      http:\n                        description: HTTP
-    contains match criteria that apply to HTTP\n                          requests.\n
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                      http:\n                        description:
+    HTTP contains match criteria that apply to HTTP\n                          requests.\n
     \                       properties:\n                          methods:\n                            description:
     Methods is an optional field that restricts\n                              the
     rule to apply only to HTTP requests that use one of\n                              the
@@ -1131,30 +1149,45 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                    required:\n                      - action\n                    type:
-    object\n                  type: array\n                ingress:\n                  description:
-    The ordered set of ingress rules.  Each rule contains\n                    a set
-    of packet match criteria and a corresponding action to apply.\n                  items:\n
-    \                   description: \"A Rule encapsulates a set of match criteria
-    and an\n                    action.  Both selector-based security Policy and security
-    Profiles\n                    reference rules - separated out as a list of rules
-    for both ingress\n                    and egress packet matching. \\n Each positive
-    match criteria has\n                    a negated version, prefixed with ”Not”.
-    All the match criteria\n                    within a rule must be satisfied for
-    a packet to match. A single\n                    rule can contain the positive
-    and negative version of a match\n                    and both must be satisfied
-    for the rule to match.\"\n                    properties:\n                      action:\n
-    \                       type: string\n                      destination:\n                        description:
-    Destination contains the match criteria that apply\n                          to
-    destination entity.\n                        properties:\n                          namespaceSelector:\n
-    \                           description: \"NamespaceSelector is an optional field
-    that\n                            contains a selector expression. Only traffic
-    that originates\n                            from (or terminates at) endpoints
-    within the selected\n                            namespaces will be matched. When
-    both NamespaceSelector\n                            and Selector are defined on
-    the same rule, then only workload\n                            endpoints that
-    are matched by both selectors will be selected\n                            by
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                    required:\n
+    \                     - action\n                    type: object\n                  type:
+    array\n                ingress:\n                  description: The ordered set
+    of ingress rules.  Each rule contains\n                    a set of packet match
+    criteria and a corresponding action to apply.\n                  items:\n                    description:
+    \"A Rule encapsulates a set of match criteria and an\n                    action.
+    \ Both selector-based security Policy and security Profiles\n                    reference
+    rules - separated out as a list of rules for both ingress\n                    and
+    egress packet matching. \\n Each positive match criteria has\n                    a
+    negated version, prefixed with ”Not”. All the match criteria\n                    within
+    a rule must be satisfied for a packet to match. A single\n                    rule
+    can contain the positive and negative version of a match\n                    and
+    both must be satisfied for the rule to match.\"\n                    properties:\n
+    \                     action:\n                        type: string\n                      destination:\n
+    \                       description: Destination contains the match criteria that
+    apply\n                          to destination entity.\n                        properties:\n
+    \                         namespaceSelector:\n                            description:
+    \"NamespaceSelector is an optional field that\n                            contains
+    a selector expression. Only traffic that originates\n                            from
+    (or terminates at) endpoints within the selected\n                            namespaces
+    will be matched. When both NamespaceSelector\n                            and
+    Selector are defined on the same rule, then only workload\n                            endpoints
+    that are matched by both selectors will be selected\n                            by
     the rule. \\n For NetworkPolicy, an empty NamespaceSelector\n                            implies
     that the Selector is limited to selecting only\n                            workload
     endpoints in the same namespace as the NetworkPolicy.\n                            \\n
@@ -1226,9 +1259,24 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                      http:\n                        description: HTTP
-    contains match criteria that apply to HTTP\n                          requests.\n
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                      http:\n                        description:
+    HTTP contains match criteria that apply to HTTP\n                          requests.\n
     \                       properties:\n                          methods:\n                            description:
     Methods is an optional field that restricts\n                              the
     rule to apply only to HTTP requests that use one of\n                              the
@@ -1374,11 +1422,27 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                    required:\n                      - action\n                    type:
-    object\n                  type: array\n                namespaceSelector:\n                  description:
-    NamespaceSelector is an optional field for an expression\n                    used
-    to select a pod based on namespaces.\n                  type: string\n                order:\n
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                    required:\n
+    \                     - action\n                    type: object\n                  type:
+    array\n                namespaceSelector:\n                  description: NamespaceSelector
+    is an optional field for an expression\n                    used to select a pod
+    based on namespaces.\n                  type: string\n                order:\n
     \                 description: Order is an optional field that specifies the order
     in\n                    which the policy is applied. Policies with higher \"order\"
     are applied\n                    after those with lower order.  If the order is
@@ -1736,10 +1800,14 @@ data:
     \                               autoCreate:\n                                  description:
     'AutoCreate enables automatic creation\n                                  of host
     endpoints for every node. [Default: Disabled]'\n                                  type:
-    string\n                              type: object\n                            reconcilerPeriod:\n
-    \                             description: 'ReconcilerPeriod is the period to
-    perform\n                              reconciliation with the Calico datastore.
-    [Default:\n                              5m]'\n                              type:
+    string\n                              type: object\n                            leakGracePeriod:\n
+    \                             description: 'LeakGracePeriod is the period used
+    by the\n                                controller to determine if an IP address
+    has been leaked.\n                                Set to 0 to disable IP garbage
+    collection. [Default:\n                                15m]'\n                              type:
+    string\n                            reconcilerPeriod:\n                              description:
+    'ReconcilerPeriod is the period to perform\n                              reconciliation
+    with the Calico datastore. [Default:\n                              5m]'\n                              type:
     string\n                            syncLabels:\n                              description:
     'SyncLabels controls whether to copy Kubernetes\n                              node
     labels to Calico nodes. [Default: Enabled]'\n                              type:
@@ -1888,9 +1956,24 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                      http:\n                        description: HTTP
-    contains match criteria that apply to HTTP\n                          requests.\n
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                      http:\n                        description:
+    HTTP contains match criteria that apply to HTTP\n                          requests.\n
     \                       properties:\n                          methods:\n                            description:
     Methods is an optional field that restricts\n                              the
     rule to apply only to HTTP requests that use one of\n                              the
@@ -2036,30 +2119,45 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                    required:\n                      - action\n                    type:
-    object\n                  type: array\n                ingress:\n                  description:
-    The ordered set of ingress rules.  Each rule contains\n                    a set
-    of packet match criteria and a corresponding action to apply.\n                  items:\n
-    \                   description: \"A Rule encapsulates a set of match criteria
-    and an\n                    action.  Both selector-based security Policy and security
-    Profiles\n                    reference rules - separated out as a list of rules
-    for both ingress\n                    and egress packet matching. \\n Each positive
-    match criteria has\n                    a negated version, prefixed with ”Not”.
-    All the match criteria\n                    within a rule must be satisfied for
-    a packet to match. A single\n                    rule can contain the positive
-    and negative version of a match\n                    and both must be satisfied
-    for the rule to match.\"\n                    properties:\n                      action:\n
-    \                       type: string\n                      destination:\n                        description:
-    Destination contains the match criteria that apply\n                          to
-    destination entity.\n                        properties:\n                          namespaceSelector:\n
-    \                           description: \"NamespaceSelector is an optional field
-    that\n                            contains a selector expression. Only traffic
-    that originates\n                            from (or terminates at) endpoints
-    within the selected\n                            namespaces will be matched. When
-    both NamespaceSelector\n                            and Selector are defined on
-    the same rule, then only workload\n                            endpoints that
-    are matched by both selectors will be selected\n                            by
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                    required:\n
+    \                     - action\n                    type: object\n                  type:
+    array\n                ingress:\n                  description: The ordered set
+    of ingress rules.  Each rule contains\n                    a set of packet match
+    criteria and a corresponding action to apply.\n                  items:\n                    description:
+    \"A Rule encapsulates a set of match criteria and an\n                    action.
+    \ Both selector-based security Policy and security Profiles\n                    reference
+    rules - separated out as a list of rules for both ingress\n                    and
+    egress packet matching. \\n Each positive match criteria has\n                    a
+    negated version, prefixed with ”Not”. All the match criteria\n                    within
+    a rule must be satisfied for a packet to match. A single\n                    rule
+    can contain the positive and negative version of a match\n                    and
+    both must be satisfied for the rule to match.\"\n                    properties:\n
+    \                     action:\n                        type: string\n                      destination:\n
+    \                       description: Destination contains the match criteria that
+    apply\n                          to destination entity.\n                        properties:\n
+    \                         namespaceSelector:\n                            description:
+    \"NamespaceSelector is an optional field that\n                            contains
+    a selector expression. Only traffic that originates\n                            from
+    (or terminates at) endpoints within the selected\n                            namespaces
+    will be matched. When both NamespaceSelector\n                            and
+    Selector are defined on the same rule, then only workload\n                            endpoints
+    that are matched by both selectors will be selected\n                            by
     the rule. \\n For NetworkPolicy, an empty NamespaceSelector\n                            implies
     that the Selector is limited to selecting only\n                            workload
     endpoints in the same namespace as the NetworkPolicy.\n                            \\n
@@ -2131,9 +2229,24 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                      http:\n                        description: HTTP
-    contains match criteria that apply to HTTP\n                          requests.\n
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                      http:\n                        description:
+    HTTP contains match criteria that apply to HTTP\n                          requests.\n
     \                       properties:\n                          methods:\n                            description:
     Methods is an optional field that restricts\n                              the
     rule to apply only to HTTP requests that use one of\n                              the
@@ -2279,12 +2392,28 @@ data:
     running as a service\n                                  account that matches the
     given label selector. If\n                                  both Names and Selector
     are specified then they are\n                                  AND'ed.\n                                type:
-    string\n                            type: object\n                        type:
-    object\n                    required:\n                      - action\n                    type:
-    object\n                  type: array\n                order:\n                  description:
-    Order is an optional field that specifies the order in\n                    which
-    the policy is applied. Policies with higher \"order\" are applied\n                    after
-    those with lower order.  If the order is omitted, it may be\n                    considered
+    string\n                            type: object\n                          services:\n
+    \                           description: \"Services is an optional field that
+    contains\n                              options for matching Kubernetes Services.
+    If specified,\n                              only traffic that originates from
+    or terminates at endpoints\n                              within the selected
+    service(s) will be matched, and only\n                              to/from each
+    endpoint's port. \\n Services cannot be specified\n                              on
+    the same rule as Selector, NotSelector, NamespaceSelector,\n                              Ports,
+    NotPorts, Nets, NotNets or ServiceAccounts. \\n\n                              Only
+    valid on egress rules.\"\n                            properties:\n                              name:\n
+    \                               description: Name specifies the name of a Kubernetes\n
+    \                                 Service to match.\n                                type:
+    string\n                              namespace:\n                                description:
+    Namespace specifies the namespace of the\n                                  given
+    Service. If left empty, the rule will match\n                                  within
+    this policy's namespace.\n                                type: string\n                            type:
+    object\n                        type: object\n                    required:\n
+    \                     - action\n                    type: object\n                  type:
+    array\n                order:\n                  description: Order is an optional
+    field that specifies the order in\n                    which the policy is applied.
+    Policies with higher \"order\" are applied\n                    after those with
+    lower order.  If the order is omitted, it may be\n                    considered
     to be \"infinite\" - i.e. the policy will be applied last.  Policies\n                    with
     identical order will be applied in alphanumerical order based\n                    on
     the Policy \"Name\".\n                  type: number\n                selector:\n
@@ -2350,10 +2479,11 @@ data:
     calico-kube-controllers serviceaccount.\nkind: ClusterRole\napiVersion: rbac.authorization.k8s.io/v1\nmetadata:\n
     \ name: calico-kube-controllers\nrules:\n  # Nodes are watched to monitor for
     deletions.\n  - apiGroups: [\"\"]\n    resources:\n      - nodes\n    verbs:\n
-    \     - watch\n      - list\n      - get\n  # Pods are queried to check for existence.\n
-    \ - apiGroups: [\"\"]\n    resources:\n      - pods\n    verbs:\n      - get\n
-    \ # IPAM resources are manipulated when nodes are deleted.\n  - apiGroups: [\"crd.projectcalico.org\"]\n
-    \   resources:\n      - ippools\n    verbs:\n      - list\n  - apiGroups: [\"crd.projectcalico.org\"]\n
+    \     - watch\n      - list\n      - get\n  # Pods are watched to check for existence
+    as part of IPAM controller.\n  - apiGroups: [\"\"]\n    resources:\n      - pods\n
+    \   verbs:\n      - get\n      - list\n      - watch\n  # IPAM resources are manipulated
+    when nodes are deleted.\n  - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n
+    \     - ippools\n    verbs:\n      - list\n  - apiGroups: [\"crd.projectcalico.org\"]\n
     \   resources:\n      - blockaffinities\n      - ipamblocks\n      - ipamhandles\n
     \   verbs:\n      - get\n      - list\n      - create\n      - update\n      -
     delete\n      - watch\n  # kube-controllers manages hostendpoints.\n  - apiGroups:
@@ -2374,40 +2504,41 @@ data:
     rbac.authorization.k8s.io/v1\nmetadata:\n  name: calico-node\nrules:\n  # The
     CNI plugin needs to get pods, nodes, and namespaces.\n  - apiGroups: [\"\"]\n
     \   resources:\n      - pods\n      - nodes\n      - namespaces\n    verbs:\n
-    \     - get\n  - apiGroups: [\"\"]\n    resources:\n      - secrets\n    verbs:\n
-    \     # Needed when configuring bgp password in bgppeer\n      - watch\n      -
-    list\n      - get\n  - apiGroups: [\"\"]\n    resources:\n      - endpoints\n
-    \     - services\n    verbs:\n      # Used to discover service IPs for advertisement.\n
-    \     - watch\n      - list\n      # Used to discover Typhas.\n      - get\n  #
-    Pod CIDR auto-detection on kubeadm needs access to config maps.\n  - apiGroups:
-    [\"\"]\n    resources:\n      - configmaps\n    verbs:\n      - get\n  - apiGroups:
-    [\"\"]\n    resources:\n      - nodes/status\n    verbs:\n      # Needed for clearing
-    NodeNetworkUnavailable flag.\n      - patch\n      # Calico stores some configuration
-    information in node annotations.\n      - update\n  # Watch for changes to Kubernetes
-    NetworkPolicies.\n  - apiGroups: [\"networking.k8s.io\"]\n    resources:\n      -
-    networkpolicies\n    verbs:\n      - watch\n      - list\n  # Used by Calico for
-    policy information.\n  - apiGroups: [\"\"]\n    resources:\n      - pods\n      -
-    namespaces\n      - serviceaccounts\n    verbs:\n      - list\n      - watch\n
-    \ # The CNI plugin patches pods/status.\n  - apiGroups: [\"\"]\n    resources:\n
-    \     - pods/status\n    verbs:\n      - patch\n  # Calico monitors various CRDs
-    for config.\n  - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n      -
-    globalfelixconfigs\n      - felixconfigurations\n      - bgppeers\n      - globalbgpconfigs\n
-    \     - bgpconfigurations\n      - ippools\n      - ipamblocks\n      - globalnetworkpolicies\n
-    \     - globalnetworksets\n      - networkpolicies\n      - networksets\n      -
-    clusterinformations\n      - hostendpoints\n      - blockaffinities\n    verbs:\n
-    \     - get\n      - list\n      - watch\n  # Calico must create and update some
-    CRDs on startup.\n  - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n
-    \     - ippools\n      - felixconfigurations\n      - clusterinformations\n    verbs:\n
-    \     - create\n      - update\n  # Calico stores some configuration information
-    on the node.\n  - apiGroups: [\"\"]\n    resources:\n      - nodes\n    verbs:\n
-    \     - get\n      - list\n      - watch\n  # These permissions are only required
-    for upgrade from v2.6, and can\n  # be removed after upgrade or on fresh installations.\n
-    \ - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n      - bgpconfigurations\n
-    \     - bgppeers\n    verbs:\n      - create\n      - update\n  # These permissions
-    are required for Calico CNI to perform IPAM allocations.\n  - apiGroups: [\"crd.projectcalico.org\"]\n
-    \   resources:\n      - blockaffinities\n      - ipamblocks\n      - ipamhandles\n
-    \   verbs:\n      - get\n      - list\n      - create\n      - update\n      -
-    delete\n  - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n      - ipamconfigs\n
+    \     - get\n  # EndpointSlices are used for Service-based network policy rule\n
+    \ # enforcement.\n  - apiGroups: [\"discovery.k8s.io\"]\n    resources:\n      -
+    endpointslices\n    verbs:\n      - watch\n      - list\n  - apiGroups: [\"\"]\n
+    \   resources:\n      - endpoints\n      - services\n    verbs:\n      # Used
+    to discover service IPs for advertisement.\n      - watch\n      - list\n      #
+    Used to discover Typhas.\n      - get\n  # Pod CIDR auto-detection on kubeadm
+    needs access to config maps.\n  - apiGroups: [\"\"]\n    resources:\n      - configmaps\n
+    \   verbs:\n      - get\n  - apiGroups: [\"\"]\n    resources:\n      - nodes/status\n
+    \   verbs:\n      # Needed for clearing NodeNetworkUnavailable flag.\n      -
+    patch\n      # Calico stores some configuration information in node annotations.\n
+    \     - update\n  # Watch for changes to Kubernetes NetworkPolicies.\n  - apiGroups:
+    [\"networking.k8s.io\"]\n    resources:\n      - networkpolicies\n    verbs:\n
+    \     - watch\n      - list\n  # Used by Calico for policy information.\n  - apiGroups:
+    [\"\"]\n    resources:\n      - pods\n      - namespaces\n      - serviceaccounts\n
+    \   verbs:\n      - list\n      - watch\n  # The CNI plugin patches pods/status.\n
+    \ - apiGroups: [\"\"]\n    resources:\n      - pods/status\n    verbs:\n      -
+    patch\n  # Calico monitors various CRDs for config.\n  - apiGroups: [\"crd.projectcalico.org\"]\n
+    \   resources:\n      - globalfelixconfigs\n      - felixconfigurations\n      -
+    bgppeers\n      - globalbgpconfigs\n      - bgpconfigurations\n      - ippools\n
+    \     - ipamblocks\n      - globalnetworkpolicies\n      - globalnetworksets\n
+    \     - networkpolicies\n      - networksets\n      - clusterinformations\n      -
+    hostendpoints\n      - blockaffinities\n    verbs:\n      - get\n      - list\n
+    \     - watch\n  # Calico must create and update some CRDs on startup.\n  - apiGroups:
+    [\"crd.projectcalico.org\"]\n    resources:\n      - ippools\n      - felixconfigurations\n
+    \     - clusterinformations\n    verbs:\n      - create\n      - update\n  # Calico
+    stores some configuration information on the node.\n  - apiGroups: [\"\"]\n    resources:\n
+    \     - nodes\n    verbs:\n      - get\n      - list\n      - watch\n  # These
+    permissions are only required for upgrade from v2.6, and can\n  # be removed after
+    upgrade or on fresh installations.\n  - apiGroups: [\"crd.projectcalico.org\"]\n
+    \   resources:\n      - bgpconfigurations\n      - bgppeers\n    verbs:\n      -
+    create\n      - update\n  # These permissions are required for Calico CNI to perform
+    IPAM allocations.\n  - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n
+    \     - blockaffinities\n      - ipamblocks\n      - ipamhandles\n    verbs:\n
+    \     - get\n      - list\n      - create\n      - update\n      - delete\n  -
+    apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n      - ipamconfigs\n
     \   verbs:\n      - get\n  # Block affinities must also be watchable by confd
     for route aggregation.\n  - apiGroups: [\"crd.projectcalico.org\"]\n    resources:\n
     \     - blockaffinities\n    verbs:\n      - watch\n  # The Calico IPAM migration
@@ -2435,7 +2566,7 @@ data:
     \     initContainers:\n        # This container performs upgrade from host-local
     IPAM to calico-ipam.\n        # It can be deleted if this is a fresh installation,
     or if you have already\n        # upgraded to use calico-ipam.\n        - name:
-    upgrade-ipam\n          image: calico/cni:v3.19.2\n          command: [\"/opt/cni/bin/calico-ipam\",
+    upgrade-ipam\n          image: calico/cni:v3.20.0\n          command: [\"/opt/cni/bin/calico-ipam\",
     \"-upgrade\"]\n          envFrom:\n            - configMapRef:\n                #
     Allow KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT to be overridden for
     eBPF mode.\n                name: kubernetes-services-endpoint\n                optional:
@@ -2447,7 +2578,7 @@ data:
     host-local-net-dir\n            - mountPath: /host/opt/cni/bin\n              name:
     cni-bin-dir\n          securityContext:\n            privileged: true\n        #
     This container installs the CNI binaries\n        # and CNI network config file
-    on each node.\n        - name: install-cni\n          image: calico/cni:v3.19.2\n
+    on each node.\n        - name: install-cni\n          image: calico/cni:v3.20.0\n
     \         command: [\"/opt/cni/bin/install\"]\n          envFrom:\n            -
     configMapRef:\n                # Allow KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT
     to be overridden for eBPF mode.\n                name: kubernetes-services-endpoint\n
@@ -2467,12 +2598,12 @@ data:
     cni-net-dir\n          securityContext:\n            privileged: true\n        #
     Adds a Flex Volume Driver that creates a per-pod Unix Domain Socket to allow Dikastes\n
     \       # to communicate with Felix over the Policy Sync API.\n        - name:
-    flexvol-driver\n          image: calico/pod2daemon-flexvol:v3.19.2\n          volumeMounts:\n
+    flexvol-driver\n          image: calico/pod2daemon-flexvol:v3.20.0\n          volumeMounts:\n
     \           - name: flexvol-driver-host\n              mountPath: /host/driver\n
     \         securityContext:\n            privileged: true\n      containers:\n
     \       # Runs calico-node container on each Kubernetes node. This\n        #
     container programs network policy and routes on each\n        # host.\n        -
-    name: calico-node\n          image: calico/node:v3.19.2\n          envFrom:\n
+    name: calico-node\n          image: calico/node:v3.20.0\n          envFrom:\n
     \           - configMapRef:\n                # Allow KUBERNETES_SERVICE_HOST and
     KUBERNETES_SERVICE_PORT to be overridden for eBPF mode.\n                name:
     kubernetes-services-endpoint\n                optional: true\n          env:\n
@@ -2513,18 +2644,20 @@ data:
     10\n            failureThreshold: 6\n          readinessProbe:\n            exec:\n
     \             command:\n                - /bin/calico-node\n                -
     -felix-ready\n            periodSeconds: 10\n          volumeMounts:\n            -
-    mountPath: /lib/modules\n              name: lib-modules\n              readOnly:
-    true\n            - mountPath: /run/xtables.lock\n              name: xtables-lock\n
-    \             readOnly: false\n            - mountPath: /var/run/calico\n              name:
-    var-run-calico\n              readOnly: false\n            - mountPath: /var/lib/calico\n
-    \             name: var-lib-calico\n              readOnly: false\n            -
-    name: policysync\n              mountPath: /var/run/nodeagent\n            # For
-    eBPF mode, we need to be able to mount the BPF filesystem at /sys/fs/bpf so we
-    mount in the\n            # parent directory.\n            - name: sysfs\n              mountPath:
-    /sys/fs/\n              # Bidirectional means that, if we mount the BPF filesystem
-    at /sys/fs/bpf it will propagate to the host.\n              # If the host is
-    known to mount that filesystem already then Bidirectional can be omitted.\n              mountPropagation:
-    Bidirectional\n            - name: cni-log-dir\n              mountPath: /var/log/calico/cni\n
+    mountPath: /host/etc/cni/net.d\n              name: cni-net-dir\n              readOnly:
+    false\n            - mountPath: /lib/modules\n              name: lib-modules\n
+    \             readOnly: true\n            - mountPath: /run/xtables.lock\n              name:
+    xtables-lock\n              readOnly: false\n            - mountPath: /var/run/calico\n
+    \             name: var-run-calico\n              readOnly: false\n            -
+    mountPath: /var/lib/calico\n              name: var-lib-calico\n              readOnly:
+    false\n            - name: policysync\n              mountPath: /var/run/nodeagent\n
+    \           # For eBPF mode, we need to be able to mount the BPF filesystem at
+    /sys/fs/bpf so we mount in the\n            # parent directory.\n            -
+    name: sysfs\n              mountPath: /sys/fs/\n              # Bidirectional
+    means that, if we mount the BPF filesystem at /sys/fs/bpf it will propagate to
+    the host.\n              # If the host is known to mount that filesystem already
+    then Bidirectional can be omitted.\n              mountPropagation: Bidirectional\n
+    \           - name: cni-log-dir\n              mountPath: /var/log/calico/cni\n
     \             readOnly: true\n      volumes:\n        # Used by calico-node.\n
     \       - name: lib-modules\n          hostPath:\n            path: /lib/modules\n
     \       - name: var-run-calico\n          hostPath:\n            path: /var/run/calico\n
@@ -2555,22 +2688,22 @@ data:
     a critical add-on for rescheduling.\n        - key: CriticalAddonsOnly\n          operator:
     Exists\n        - key: node-role.kubernetes.io/master\n          effect: NoSchedule\n
     \     serviceAccountName: calico-kube-controllers\n      priorityClassName: system-cluster-critical\n
-    \     containers:\n        - name: calico-kube-controllers\n          image: calico/kube-controllers:v3.19.2\n
+    \     containers:\n        - name: calico-kube-controllers\n          image: calico/kube-controllers:v3.20.0\n
     \         env:\n            # Choose which controllers to run.\n            -
     name: ENABLED_CONTROLLERS\n              value: node\n            - name: DATASTORE_TYPE\n
     \             value: kubernetes\n          livenessProbe:\n            exec:\n
     \             command:\n              - /usr/bin/check-status\n              -
     -l\n            periodSeconds: 10\n            initialDelaySeconds: 10\n            failureThreshold:
-    6\n          readinessProbe:\n            exec:\n              command:\n                -
-    /usr/bin/check-status\n                - -r\n            periodSeconds: 10\n\n---\n\napiVersion:
-    v1\nkind: ServiceAccount\nmetadata:\n  name: calico-kube-controllers\n  namespace:
-    kube-system\n\n---\n\n# This manifest creates a Pod Disruption Budget for Controller
-    to allow K8s Cluster Autoscaler to evict\n\napiVersion: policy/v1beta1\nkind:
-    PodDisruptionBudget\nmetadata:\n  name: calico-kube-controllers\n  namespace:
-    kube-system\n  labels:\n    k8s-app: calico-kube-controllers\nspec:\n  maxUnavailable:
-    1\n  selector:\n    matchLabels:\n      k8s-app: calico-kube-controllers\n---\n#
-    Source: calico/templates/calico-etcd-secrets.yaml\n\n---\n# Source: calico/templates/calico-typha.yaml\n\n---\n#
-    Source: calico/templates/configure-canal.yaml\n"
+    6\n            timeoutSeconds: 10\n          readinessProbe:\n            exec:\n
+    \             command:\n                - /usr/bin/check-status\n                -
+    -r\n            periodSeconds: 10\n\n---\n\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n
+    \ name: calico-kube-controllers\n  namespace: kube-system\n\n---\n\n# This manifest
+    creates a Pod Disruption Budget for Controller to allow K8s Cluster Autoscaler
+    to evict\n\napiVersion: policy/v1beta1\nkind: PodDisruptionBudget\nmetadata:\n
+    \ name: calico-kube-controllers\n  namespace: kube-system\n  labels:\n    k8s-app:
+    calico-kube-controllers\nspec:\n  maxUnavailable: 1\n  selector:\n    matchLabels:\n
+    \     k8s-app: calico-kube-controllers\n---\n# Source: calico/templates/calico-etcd-secrets.yaml\n\n---\n#
+    Source: calico/templates/calico-typha.yaml\n\n---\n# Source: calico/templates/configure-canal.yaml\n"
 kind: ConfigMap
 metadata:
   annotations:
