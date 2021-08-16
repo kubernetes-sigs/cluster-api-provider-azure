@@ -1,7 +1,8 @@
 on:
   push:
     branches:
-    - master
+    - master # TODO: remove this after rename
+    - main
 
 jobs:
   coverage:
