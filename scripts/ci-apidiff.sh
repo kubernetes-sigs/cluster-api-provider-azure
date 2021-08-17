@@ -22,7 +22,7 @@ REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}"
 
 APIDIFF="${PWD}/hack/tools/bin/go-apidiff"
-PULL_BASE_SHA=${PULL_BASE_SHA:-$(git rev-parse origin/master)}
+PULL_BASE_SHA=${PULL_BASE_SHA:-$(git rev-parse origin/main)}
 
 make "${APIDIFF}"
 echo "*** Running go-apidiff ***"
