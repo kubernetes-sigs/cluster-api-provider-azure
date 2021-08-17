@@ -7,7 +7,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
     - run: "bash hack/install-go.sh"
     - run: "PATH=/usr/local/go/bin:$PATH make test-cover"
     - uses: codecov/codecov-action@v1
