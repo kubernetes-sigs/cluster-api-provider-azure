@@ -10,7 +10,7 @@ Before you begin, be aware that:
 - [NVIDIA GPUs](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes-gpu) are supported on Azure NC-series, NV-series, and NVv3-series VMs
 - [NVIDIA GPU Operator](https://github.com/NVIDIA/gpu-operator) allows administrators of Kubernetes clusters to manage GPU nodes just like CPU nodes in the cluster.
 
-To deploy a cluster with support for GPU nodes, use the [nvidia-gpu flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-nvidia-gpu.yaml).
+To deploy a cluster with support for GPU nodes, use the [nvidia-gpu flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-nvidia-gpu.yaml).
 
 ## An example GPU cluster
 

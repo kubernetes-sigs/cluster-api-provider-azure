@@ -7,7 +7,7 @@ CAPZ enables you to create IPv6 Kubernetes clusters on Microsoft Azure.
 - IPv6 support is available for Kubernetes version 1.18.0 and later on Azure.
 - IPv6 support is in beta as of Kubernetes version 1.18 in Kubernetes community.
 
-To deploy a cluster using IPv6, use the [ipv6 flavor template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-ipv6.yaml).
+To deploy a cluster using IPv6, use the [ipv6 flavor template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-ipv6.yaml).
 
 <aside class="note warning">
 
@@ -117,7 +117,7 @@ curl [2603:1030:805:2::b] -v
 
 ## Known Limitations
 
-The reference [ipv6 flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-ipv6.yaml) takes care of most of these for you, but it is important to be aware of these if you decide to write your own IPv6 cluster template, or use a different bootstrap provider.
+The reference [ipv6 flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-ipv6.yaml) takes care of most of these for you, but it is important to be aware of these if you decide to write your own IPv6 cluster template, or use a different bootstrap provider.
 
 - Kubernetes version needs to be 1.18+
 

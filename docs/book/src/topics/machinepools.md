@@ -93,7 +93,7 @@ clusterctl generate cluster my-cluster --kubernetes-version v1.21.2 --flavor mac
 ```
 
 The template used for this [flavor](https://cluster-api.sigs.k8s.io/clusterctl/commands/generate-cluster.html#flavors)
-is located [here](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-machinepool.yaml).
+is located [here](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-machinepool.yaml).
 
 ### Example MachinePool, AzureMachinePool and KubeadmConfig Resources
 Below is an example of the resources needed to create a pool of Virtual Machines orchestrated with

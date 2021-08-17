@@ -58,7 +58,7 @@ Each version of Cluster API for Azure will attempt to support at least two Kuber
 
 Please see our [Book](https://capz.sigs.k8s.io) for in-depth user documentation.
 
-Additional docs can be found in the `/docs` directory, and the [index is here](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/docs/README.md).
+Additional docs can be found in the `/docs` directory, and the [index is here](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/docs/README.md).
 
 
 ## Getting involved and contributing
@@ -137,4 +137,4 @@ We also use the issue tracker to track features. If you have an idea for a featu
 [slack_info]: https://github.com/kubernetes/community/tree/master/communication#slack
 [cluster_api]: https://github.com/kubernetes-sigs/cluster-api
 [quickstart]: https://cluster-api.sigs.k8s.io/user/quick-start.html
-[flavors_doc]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/templates/flavors/README.md
+[flavors_doc]: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/templates/flavors/README.md

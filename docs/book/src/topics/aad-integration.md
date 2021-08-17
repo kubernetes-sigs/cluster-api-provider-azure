@@ -58,7 +58,7 @@ az ad app permission grant --id ${AZURE_CLIENT_APP_ID} --api ${AZURE_SERVER_APP_
 
 ## Create the cluster
 
-To deploy a cluster with support for AAD, use the [aad flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-aad.yaml).
+To deploy a cluster with support for AAD, use the [aad flavor](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-aad.yaml).
 
 Make sure that `AZURE_SERVER_APP_ID` is set to the ID of the server AD application created above.
 
