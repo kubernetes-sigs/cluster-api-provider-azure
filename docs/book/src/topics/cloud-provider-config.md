@@ -69,7 +69,7 @@ All cloud provider config values can be customized by creating the `${RESOURCE}-
 
 # External Cloud Provider
 
-To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-external-cloud-provider.yaml).
+To deploy a cluster using [external cloud provider](https://github.com/kubernetes-sigs/cloud-provider-azure), create a cluster configuration with the [external cloud provider template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-external-cloud-provider.yaml).
 
 After deploying the cluster, you should eventually see a set of pods like the following in a `Running` state:
 

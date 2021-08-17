@@ -8,10 +8,10 @@
 
 ## Prepare branch, tag and release notes
  - Identify a known good commit on the main branch
- - Fast-forward the release branch to the selected commit. :warning: Always release from the release branch and not from master!
+ - Fast-forward the release branch to the selected commit. :warning: Always release from the release branch and not from main!
    - `git checkout release-0.x`
    - `git fetch upstream`
-   - `git merge --ff-only upstream/master`
+   - `git merge --ff-only upstream/main`
    - `git push`
  - Create tag with git
    - `export RELEASE_TAG=v0.4.6` (the tag of the release to be cut)

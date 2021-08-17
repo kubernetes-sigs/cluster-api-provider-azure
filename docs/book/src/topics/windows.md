@@ -4,7 +4,7 @@
 
 CAPZ enables you to create Windows Kubernetes clusters on Microsoft Azure.
 
-To deploy a cluster using Windows, use the [Windows flavor template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/master/templates/cluster-template-windows.yaml).
+To deploy a cluster using Windows, use the [Windows flavor template](https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-azure/main/templates/cluster-template-windows.yaml).
 
 ## Deploy a workload
 
@@ -97,7 +97,7 @@ To SSH:
 ssh -t -i .sshkey -o 'ProxyCommand ssh -i .sshkey -W %h:%p capi@<api-server-ip>' capi@<windows-ip> powershell.exe
 ```
 
-> There is also a [CAPZ kubectl plugin](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/master/hack/debugging/Readme.md) that automates the ssh connection using the Management cluster
+> There is also a [CAPZ kubectl plugin](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/main/hack/debugging/Readme.md) that automates the ssh connection using the Management cluster
 
 To RDP you can proxy through the api server:
 
