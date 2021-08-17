@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/utils/pointer"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	apiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	apiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -53,10 +54,26 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	dst.Spec.NetworkSpec.APIServerLB.FrontendIPsCount = restored.Spec.NetworkSpec.APIServerLB.FrontendIPsCount
 	dst.Spec.NetworkSpec.APIServerLB.IdleTimeoutInMinutes = restored.Spec.NetworkSpec.APIServerLB.IdleTimeoutInMinutes
-	dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
-	dst.Spec.NetworkSpec.ControlPlaneOutboundLB = restored.Spec.NetworkSpec.ControlPlaneOutboundLB
 	dst.Spec.CloudProviderConfigOverrides = restored.Spec.CloudProviderConfigOverrides
 	dst.Spec.BastionSpec = restored.Spec.BastionSpec
+
+	// set default control plane outbound lb for private v1alpha3 clusters
+	if src.Spec.NetworkSpec.APIServerLB.Type == Internal && restored.Spec.NetworkSpec.ControlPlaneOutboundLB == nil {
+		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = &infrav1alpha4.LoadBalancerSpec{
+			FrontendIPsCount: pointer.Int32Ptr(1),
+		}
+	} else {
+		dst.Spec.NetworkSpec.ControlPlaneOutboundLB = restored.Spec.NetworkSpec.ControlPlaneOutboundLB
+	}
+
+	// set default node plane outbound lb for all v1alpha3 clusters
+	if restored.Spec.NetworkSpec.NodeOutboundLB == nil {
+		dst.Spec.NetworkSpec.NodeOutboundLB = &infrav1alpha4.LoadBalancerSpec{
+			FrontendIPsCount: pointer.Int32Ptr(1),
+		}
+	} else {
+		dst.Spec.NetworkSpec.NodeOutboundLB = restored.Spec.NetworkSpec.NodeOutboundLB
+	}
 
 	// Here we manually restore outbound security rules. Since v1alpha3 only supports ingress ("Inbound") rules, all v1alpha4 outbound rules are dropped when an AzureCluster
 	// is converted to v1alpha3. We loop through all security group rules. For all previously existing outbound rules we restore the full rule.
