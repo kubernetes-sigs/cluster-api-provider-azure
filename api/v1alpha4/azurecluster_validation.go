@@ -238,7 +238,7 @@ func validateSubnetCIDR(subnetCidrBlocks []string, vnetCidrBlocks []string, fldP
 		}
 
 		if !found {
-			allErrs = append(allErrs, field.Invalid(fldPath, subnetCidr, "subnet CIDR not in vnet CIDR range"))
+			allErrs = append(allErrs, field.Invalid(fldPath, subnetCidr, fmt.Sprintf("subnet CIDR not in vnet address space: %s", vnetCidrBlocks)))
 		}
 	}
 
