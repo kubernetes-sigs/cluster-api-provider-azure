@@ -215,7 +215,11 @@ The cluster-api management components that are deployed are configured at the `/
 
 #### Deploying a workload cluster
 
-After your kind management cluster is up and running with Tilt, you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster with the following:
+⚠️ Note that when developing with `tilt` as described above, some `clusterctl` commands won't work. Specifically, `clusterctl config` and `clusterctl generate` may fail. These commands expect specific releases of CAPI and CAPZ to be installed, but the `tilt` environment dynamically updates and installs these components from your local code. `clusterctl get kubeconfig` will still work, however.
+
+After your kind management cluster is up and running with Tilt, you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster by opening the `tilt` web UI and clicking the clockwise arrow icon ⟳ on a resource listed, such as "aks-aad," "ipv6," or "windows."
+
+Or you can deploy a workload cluster with the following command:
 
 ```bash
 make create-workload-cluster
