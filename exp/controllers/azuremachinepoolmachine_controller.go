@@ -98,7 +98,7 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options.Options).
 		For(&infrav1exp.AzureMachinePoolMachine{}).
-		WithEventFilter(predicates.ResourceNotPaused(log)). // don't queue reconcile if resource is paused
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), ampmr.WatchFilterValue)).
 		Build(r)
 	if err != nil {
 		return errors.Wrapf(err, "error creating controller")
@@ -109,6 +109,7 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 		&source.Kind{Type: &infrav1exp.AzureMachinePool{}},
 		handler.EnqueueRequestsFromMapFunc(AzureMachinePoolToAzureMachinePoolMachines(ctx, mgr.GetClient(), log)),
 		MachinePoolModelHasChanged(log),
+		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), ampmr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrapf(err, "failed adding a watch for AzureMachinePool model changes")
 	}

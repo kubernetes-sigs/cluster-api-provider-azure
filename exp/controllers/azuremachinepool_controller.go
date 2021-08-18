@@ -126,6 +126,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		&source.Kind{Type: &infrav1exp.AzureMachinePoolMachine{}},
 		handler.EnqueueRequestsFromMapFunc(AzureMachinePoolMachineMapper(mgr.GetScheme(), log)),
 		MachinePoolMachineHasStateOrVersionChange(log),
+		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), ampr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for AzureMachinePoolMachine")
 	}
@@ -140,6 +141,7 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
+		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), ampr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}

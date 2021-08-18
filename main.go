@@ -342,6 +342,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONTemplate"),
 		Recorder:         mgr.GetEventRecorderFor("azurejsontemplate-reconciler"),
 		ReconcileTimeout: reconcileTimeout,
+		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AzureJSONTemplate")
 		os.Exit(1)
@@ -352,6 +353,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachine"),
 		Recorder:         mgr.GetEventRecorderFor("azurejsonmachine-reconciler"),
 		ReconcileTimeout: reconcileTimeout,
+		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
 		os.Exit(1)
@@ -408,6 +410,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			Log:              ctrl.Log.WithName("controllers").WithName("AzureJSONMachinePool"),
 			Recorder:         mgr.GetEventRecorderFor("azurejsonmachinepool-reconciler"),
 			ReconcileTimeout: reconcileTimeout,
+			WatchFilterValue: watchFilterValue,
 		}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: azureMachinePoolConcurrency}); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachinePool")
 			os.Exit(1)
