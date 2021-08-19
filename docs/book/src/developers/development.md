@@ -67,7 +67,7 @@
 8. Install [timeout][timeout]
    - `brew install coreutils` on macOS.
 
-For a Windows OS, it is suggested to set up the project on Windows + WSL2 and the file should be checked out on as wsl file system for better results.
+When developing on Windows, it is suggested to set up the project on Windows + WSL2 and the file should be checked out on as wsl file system for better results.
 
 ### Get the source
 
