@@ -405,8 +405,11 @@ set-manifest-pull-policy:
 ## Release
 ## --------------------------------------
 
-RELEASE_TAG := $(shell git describe --abbrev=0 2>/dev/null)
-RELEASE_DIR := out
+RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
+PREVIOUS_TAG ?= $(shell git describe --abbrev=0 $(RELEASE_TAG)^ 2>/dev/null)
+RELEASE_DIR ?= out
+GIT_REPO_NAME ?= cluster-api-provider-azure
+GIT_ORG_NAME ?= kubernetes-sigs
 
 $(RELEASE_DIR):
 	mkdir -p $(RELEASE_DIR)/
@@ -460,7 +463,7 @@ release-alias-tag: # Adds the tag to the last build tag.
 
 .PHONY: release-notes
 release-notes: $(RELEASE_NOTES)
-	$(RELEASE_NOTES)
+	$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output release-notes-$(RELEASE_TAG).md
 
 ## --------------------------------------
 ## Development
