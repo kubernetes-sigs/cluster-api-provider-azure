@@ -588,7 +588,7 @@ func TestValidateSubnetCIDR(t *testing.T) {
 				Type:     "FieldValueInvalid",
 				Field:    "subnets.cidrBlocks",
 				BadValue: "11.1.0.0/16",
-				Detail:   "subnet CIDR not in vnet CIDR range",
+				Detail:   "subnet CIDR not in vnet address space: [10.0.0.0/8]",
 			},
 		},
 		{
@@ -602,14 +602,8 @@ func TestValidateSubnetCIDR(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			err := validateSubnetCIDR(testCase.subnetCidrBlocks, testCase.vnetCidrBlocks, field.NewPath("subnets.cidrBlocks"))
 			if testCase.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == testCase.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				// Searches for expected error in list of thrown errors
+				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
