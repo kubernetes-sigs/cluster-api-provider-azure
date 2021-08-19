@@ -398,14 +398,7 @@ func TestValidateVnetCIDR(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			err := validateVnetCIDR(testCase.vnetCidrBlocks, field.NewPath("vnet.cidrBlocks"))
 			if testCase.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == testCase.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
@@ -849,14 +842,7 @@ func TestValidateAPIServerLB(t *testing.T) {
 			t.Parallel()
 			err := validateAPIServerLB(test.lb, test.old, test.cpCIDRS, field.NewPath("apiServerLB"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == test.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
@@ -927,14 +913,7 @@ func TestPrivateDNSZoneName(t *testing.T) {
 			t.Parallel()
 			err := validatePrivateDNSZoneName(test.network, field.NewPath("spec", "networkSpec", "privateDNSZoneName"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == test.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
@@ -1079,14 +1058,7 @@ func TestValidateNodeOutboundLB(t *testing.T) {
 			t.Parallel()
 			err := validateNodeOutboundLB(test.lb, test.old, test.apiServerLB, field.NewPath("nodeOutboundLB"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == test.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
@@ -1151,14 +1123,7 @@ func TestValidateControlPlaneNodeOutboundLB(t *testing.T) {
 			t.Parallel()
 			err := validateControlPlaneOutboundLB(test.lb, test.apiServerLB, field.NewPath("controlPlaneOutboundLB"))
 			if test.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == test.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				g.Expect(err).To(ContainElement(MatchError(test.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
@@ -1249,14 +1214,7 @@ func TestValidateCloudProviderConfigOverrides(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			err := validateCloudProviderConfigOverrides(testCase.oldConfig, testCase.newConfig, field.NewPath("spec.cloudProviderConfigOverrides"))
 			if testCase.wantErr {
-				g.Expect(err).NotTo(HaveLen(0))
-				found := false
-				for _, actual := range err {
-					if actual.Error() == testCase.expectedErr.Error() {
-						found = true
-					}
-				}
-				g.Expect(found).To(BeTrue())
+				g.Expect(err).To(ContainElement(MatchError(testCase.expectedErr.Error())))
 			} else {
 				g.Expect(err).To(HaveLen(0))
 			}
