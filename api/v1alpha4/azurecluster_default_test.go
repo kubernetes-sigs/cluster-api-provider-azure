@@ -24,7 +24,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestResourceGroupDefault(t *testing.T) {
@@ -140,7 +139,7 @@ func TestVnetDefaults(t *testing.T) {
 		{
 			name: "vnet not specified",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -148,7 +147,7 @@ func TestVnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -166,7 +165,7 @@ func TestVnetDefaults(t *testing.T) {
 		{
 			name: "custom CIDR",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -179,7 +178,7 @@ func TestVnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -197,7 +196,7 @@ func TestVnetDefaults(t *testing.T) {
 		{
 			name: "IPv6 enabled",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -210,7 +209,7 @@ func TestVnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -250,7 +249,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "no subnets",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -258,7 +257,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -286,7 +285,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "subnets with custom attributes",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -308,7 +307,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -342,7 +341,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "subnets specified",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -361,7 +360,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -389,7 +388,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "subnets route tables specified",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -411,7 +410,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -439,7 +438,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "only node subnet specified",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -454,7 +453,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -482,7 +481,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "subnets specified with IPv6 enabled",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -506,7 +505,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -537,7 +536,7 @@ func TestSubnetDefaults(t *testing.T) {
 		{
 			name: "subnets with custom security group",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -567,7 +566,7 @@ func TestSubnetDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -631,7 +630,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		{
 			name: "no lb",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -639,7 +638,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -666,7 +665,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 		{
 			name: "internal lb",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -678,7 +677,7 @@ func TestAPIServerLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -797,7 +796,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "default lb for public clusters",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -821,7 +820,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -863,7 +862,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "NAT Gateway enabled - no LB",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -890,7 +889,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -922,7 +921,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "NAT Gateway enabled on 1 of 2 node subnets",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -955,7 +954,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1006,7 +1005,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "multiple node subnets, NAT Gateway not enabled in any of them",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1042,7 +1041,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1096,7 +1095,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "multiple node subnets, NAT Gateway enabled on all of them",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1141,7 +1140,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1191,7 +1190,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "no lb for private clusters",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1201,7 +1200,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1216,7 +1215,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 		{
 			name: "NodeOutboundLB declared as input with non-default IdleTimeoutInMinutes and FrontendIPsCount values",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1230,7 +1229,7 @@ func TestNodeOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1288,7 +1287,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		{
 			name: "no cp lb for public clusters",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1298,7 +1297,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1313,7 +1312,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		{
 			name: "no cp lb for private clusters",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1323,7 +1322,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1338,7 +1337,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 		{
 			name: "frontendIPsCount > 1",
 			cluster: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
@@ -1352,7 +1351,7 @@ func TestControlPlaneOutboundLBDefaults(t *testing.T) {
 				},
 			},
 			output: &AzureCluster{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster-test",
 				},
 				Spec: AzureClusterSpec{
