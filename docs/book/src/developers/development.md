@@ -166,8 +166,6 @@ If you would like to enable these features, add `extra_args` as specified in [Th
 
 Once your kind management cluster is up and running, you can [deploy a workload cluster](#deploying-a-workload-cluster).
 
-You can also [deploy a flavor cluster as a local tilt resource](../../../../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource).
-
 To tear down the kind cluster built by the command above, just run:
 
 ```shell
@@ -217,9 +215,10 @@ The cluster-api management components that are deployed are configured at the `/
 
 ⚠️ Note that when developing with `tilt` as described above, some `clusterctl` commands won't work. Specifically, `clusterctl config` and `clusterctl generate` may fail. These commands expect specific releases of CAPI and CAPZ to be installed, but the `tilt` environment dynamically updates and installs these components from your local code. `clusterctl get kubeconfig` will still work, however.
 
-After your kind management cluster is up and running with Tilt, you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster by opening the `tilt` web UI and clicking the clockwise arrow icon ⟳ on a resource listed, such as "aks-aad," "ipv6," or "windows."
+After your kind management cluster is up and running with Tilt, you can deploy a workload cluster by opening the `tilt` web UI and clicking the clockwise arrow icon ⟳ on a resource listed, such as "aks-aad," "ipv6," or "windows."
+Deploying a workload cluster from Tilt UI is also termed as flavor cluster deployment. Please refer [here](../../../../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource) to learn more about this.
 
-Or you can deploy a workload cluster with the following command:
+Or you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster with the following command:
 
 ```bash
 make create-workload-cluster
