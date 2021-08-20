@@ -410,6 +410,9 @@ PREVIOUS_TAG ?= $(shell git describe --abbrev=0 $(RELEASE_TAG)^ 2>/dev/null)
 RELEASE_DIR ?= out
 GIT_REPO_NAME ?= cluster-api-provider-azure
 GIT_ORG_NAME ?= kubernetes-sigs
+FULL_VERSION := $(RELEASE_TAG:v%=%)
+MINOR_VERSION := $(shell v='$(FULL_VERSION)'; echo "$${v%.*}")
+RELEASE_BRANCH ?= release-$(MINOR_VERSION)
 
 $(RELEASE_DIR):
 	mkdir -p $(RELEASE_DIR)/
@@ -453,7 +456,7 @@ release-binary: $(RELEASE_DIR)
 
 .PHONY: release-notes
 release-notes: $(RELEASE_NOTES)
-	$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output release-notes-$(RELEASE_TAG).md
+	$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output release-notes-$(RELEASE_TAG).md
 
 ## --------------------------------------
 ## Development
