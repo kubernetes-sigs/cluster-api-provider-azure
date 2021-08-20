@@ -58,7 +58,7 @@ type AzurePrivateClusterSpecInput struct {
 	ClusterctlConfigPath  string
 	E2EConfig             *clusterctl.E2EConfig
 	ArtifactFolder        string
-	SkipCleanup:       	  bool
+	SkipCleanup           bool
 }
 
 // AzurePrivateClusterSpec implements a test that creates a workload cluster with a private API endpoint.
@@ -447,5 +447,5 @@ func getAPIVersion(resourceID string) (string, error) {
 
 func getAPIVersionFromUserAgent(userAgent string) string {
 	splits := strings.Split(userAgent, "/")
-	return splits[len(splits) - 1]
+	return splits[len(splits)-1]
 }
