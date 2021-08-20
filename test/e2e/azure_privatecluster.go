@@ -58,6 +58,7 @@ type AzurePrivateClusterSpecInput struct {
 	ClusterctlConfigPath  string
 	E2EConfig             *clusterctl.E2EConfig
 	ArtifactFolder        string
+	SkipCleanup:       	  bool
 }
 
 // AzurePrivateClusterSpec implements a test that creates a workload cluster with a private API endpoint.
@@ -155,24 +156,26 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 		// Delete the private cluster, so that all of the Azure resources will be cleaned up when the public
 		// cluster is deleted at the end of the test. If we don't delete this cluster, the Azure resource delete
 		// verification will fail.
-		Logf("deleting private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
-		Expect(publicClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
-		Eventually(func() error {
-			var c clusterv1.Cluster
-			err := publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}, &c)
-			if apierrors.IsNotFound(err) {
-				// 404 the cluster has been deleted
-				return nil
-			}
+		if !input.SkipCleanup {
+			Logf("deleting private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
+			Expect(publicClusterProxy.GetClient().Delete(ctx, cluster)).To(Succeed())
+			Eventually(func() error {
+				var c clusterv1.Cluster
+				err := publicClusterProxy.GetClient().Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}, &c)
+				if apierrors.IsNotFound(err) {
+					// 404 the cluster has been deleted
+					return nil
+				}
 
-			if err != nil {
-				// some unexpected error occurred; return it
-				return err
-			}
+				if err != nil {
+					// some unexpected error occurred; return it
+					return err
+				}
 
-			return fmt.Errorf("cluster %q as not yet been deleted", cluster.Name)
-		}, input.E2EConfig.GetIntervals(specName, "wait-delete-cluster")...).Should(BeNil())
-		Logf("deleted private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
+				return fmt.Errorf("cluster %q as not yet been deleted", cluster.Name)
+			}, input.E2EConfig.GetIntervals(specName, "wait-delete-cluster")...).Should(BeNil())
+			Logf("deleted private cluster %q in namespace %q", cluster.Name, cluster.Namespace)
+		}
 	}()
 
 	// Check that azure bastion is provisioned successfully.
