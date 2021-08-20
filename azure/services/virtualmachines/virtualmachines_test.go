@@ -2017,10 +2017,12 @@ func TestReconcileVM(t *testing.T) {
 									DiskSizeGB:   to.Int32Ptr(64),
 								},
 								{
-									Lun:          to.Int32Ptr(1),
-									Name:         to.StringPtr("my-ultra-ssd-vm_myDiskWithUltraDisk"),
-									CreateOption: "Empty",
-									DiskSizeGB:   to.Int32Ptr(128),
+									Lun:               to.Int32Ptr(1),
+									Name:              to.StringPtr("my-ultra-ssd-vm_myDiskWithUltraDisk"),
+									CreateOption:      "Empty",
+									DiskSizeGB:        to.Int32Ptr(128),
+									DiskIOPSReadWrite: to.Int64Ptr(38400),
+									DiskMBpsReadWrite: to.Int64Ptr(2000),
 									ManagedDisk: &compute.ManagedDiskParameters{
 										StorageAccountType: "UltraSSD_LRS",
 									},

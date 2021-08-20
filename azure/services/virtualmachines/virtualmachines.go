@@ -41,7 +41,11 @@ import (
 
 const (
 	// UltraSSDStorageAccountType identifies the Ultra disk storage account type.
-	UltraSSDStorageAccountType = "UltraSSD_LRS"
+	UltraSSDStorageAccountType           = "UltraSSD_LRS"
+	MaxUltraSSDIOPS                      = 160000
+	UltraSSDDiskSizeIOPSMultiplier       = 300
+	MaxUltraSSDThroughput                = 2000
+	UltraSSDDiskSizeThroughputMultiplier = 75
 )
 
 // VMScope defines the scope interface for a virtual machines service.
@@ -436,8 +440,24 @@ func (s *Service) generateStorageProfile(ctx context.Context, vmSpec azure.VMSpe
 
 			// check the support for ultra disks based on location and vm size
 			location := s.Scope.Location()
-			if disk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType && !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, vmSpec.Zone) {
-				return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", vmSpec.Size, location))
+			if disk.ManagedDisk.StorageAccountType == UltraSSDStorageAccountType {
+				if !sku.HasLocationCapability(resourceskus.UltraSSDAvailable, location, vmSpec.Zone) {
+					return nil, azure.WithTerminalError(fmt.Errorf("vm size %s does not support ultra disks in location %s. select a different vm size or disable ultra disks", vmSpec.Size, location))
+				}
+				// Configure max IOPS and throughput as per this reference:
+				// https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-size
+				iops := int(disk.DiskSizeGB) * UltraSSDDiskSizeIOPSMultiplier
+				if iops >= MaxUltraSSDIOPS {
+					dataDisks[i].DiskIOPSReadWrite = to.Int64Ptr(MaxUltraSSDIOPS)
+				} else {
+					dataDisks[i].DiskIOPSReadWrite = to.Int64Ptr(int64(iops))
+				}
+				mbps := int(disk.DiskSizeGB) * UltraSSDDiskSizeThroughputMultiplier
+				if mbps >= MaxUltraSSDThroughput {
+					dataDisks[i].DiskMBpsReadWrite = to.Int64Ptr(MaxUltraSSDThroughput)
+				} else {
+					dataDisks[i].DiskMBpsReadWrite = to.Int64Ptr(int64(mbps))
+				}
 			}
 		}
 	}
