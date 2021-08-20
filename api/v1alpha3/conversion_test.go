@@ -19,6 +19,7 @@ package v1alpha3
 import (
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
@@ -38,7 +39,7 @@ func TestFuzzyConversion(t *testing.T) {
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureCluster{},
 		Spoke:       &AzureCluster{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs, overrideOutboundLBFunc},
 	}))
 
 	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
@@ -67,6 +68,15 @@ func overrideDeprecatedFieldsFuncs(codecs runtimeserializer.CodecFactory) []inte
 		},
 		func(vnetSpec *VnetSpec, c fuzz.Continue) {
 			vnetSpec.CidrBlock = ""
+		},
+	}
+}
+
+func overrideOutboundLBFunc(codecs runtimeserializer.CodecFactory) []interface{} {
+	return []interface{}{
+		func(networkSpec *v1alpha4.NetworkSpec, c fuzz.Continue) {
+			networkSpec.ControlPlaneOutboundLB = &v1alpha4.LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(1)}
+			networkSpec.NodeOutboundLB = &v1alpha4.LoadBalancerSpec{FrontendIPsCount: pointer.Int32Ptr(1)}
 		},
 	}
 }
