@@ -70,7 +70,11 @@ func (s *AzureMachineSpec) SetDataDisksDefaults() {
 			}
 		}
 		if disk.CachingType == "" {
-			s.DataDisks[i].CachingType = "ReadWrite"
+			if s.DataDisks[i].ManagedDisk != nil && s.DataDisks[i].ManagedDisk.StorageAccountType == "UltraSSD_LRS" {
+				s.DataDisks[i].CachingType = "None"
+			} else {
+				s.DataDisks[i].CachingType = "ReadWrite"
+			}
 		}
 	}
 }
