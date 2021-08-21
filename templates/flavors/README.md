@@ -18,9 +18,6 @@ To generate all CAPZ flavors, run `make generate-flavors`.
 
 ## Running flavor clusters as a tilt resource
 
-#### From CLI
-run ```tilt up ${flavors}``` to spin up worker clusters in Azure represented by a Tilt local resource.  You can also modify flavors while Tilt is up by running ```tilt args ${flavors}```
-
 #### From Tilt Config
 Tilt will auto-detect all available flavors from the `templates` directory.
 
@@ -36,7 +33,13 @@ Please note your tilt-settings.json must contain at minimum the following fields
     }
 }
 ```
+After updating tilt-settings.json, follow these two steps to deploy a workload cluster:
 
+1. Run ``make tilt up`` in the root of cluster-api-provider-azure repo. Note that the tilt-settings.json also resides here in the 
+root of this repo. After tilt has initialized, press `space` to open the tilt web UI in a browser. See the following example:
+   ![plot](../../docs/book/theme/tilt-up.png)
+2. Once your browser is open, click the clockwise arrow icon ⟳ on a resource listed. For example, `default` to deploy a default flavor.
+   ![plot](../../docs/book/theme/flavour-deploy-from-ui.png)
 #### Defining Variable Overrides
 If you wish to override the default variables for flavor workers, you can specify them as part of your tilt-settings.json as seen in the example below.  Please note, the precedence of variables is as follows:
 
