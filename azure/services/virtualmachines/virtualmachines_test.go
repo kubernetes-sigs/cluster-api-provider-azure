@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -657,8 +657,8 @@ func TestReconcileVM(t *testing.T) {
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
 				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
-					g.Expect(vm.Priority).To(Equal(compute.Spot))
-					g.Expect(vm.EvictionPolicy).To(Equal(compute.Deallocate))
+					g.Expect(vm.Priority).To(Equal(compute.VirtualMachinePriorityTypesSpot))
+					g.Expect(vm.EvictionPolicy).To(Equal(compute.VirtualMachineEvictionPolicyTypesDeallocate))
 					g.Expect(vm.BillingProfile).To(BeNil())
 				})
 			},
@@ -743,7 +743,7 @@ func TestReconcileVM(t *testing.T) {
 				s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
 				s.AvailabilitySet().Return("", false)
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-vm", gomock.AssignableToTypeOf(compute.VirtualMachine{})).Do(func(_, _, _ interface{}, vm compute.VirtualMachine) {
-					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.OsType).To(Equal(compute.Windows))
+					g.Expect(vm.VirtualMachineProperties.StorageProfile.OsDisk.OsType).To(Equal(compute.OperatingSystemTypesWindows))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminPassword).Should(HaveLen(123))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.AdminUsername).Should(Equal("capi"))
 					g.Expect(*vm.VirtualMachineProperties.OsProfile.WindowsConfiguration.EnableAutomaticUpdates).Should(Equal(false))
@@ -1359,7 +1359,7 @@ func TestReconcileVM(t *testing.T) {
 							StorageAccountType: "Premium_LRS",
 						},
 						DiffDiskSettings: &infrav1.DiffDiskSettings{
-							Option: string(compute.Local),
+							Option: string(compute.DiffDiskOptionsLocal),
 						},
 					},
 					DataDisks: []infrav1.DataDisk{
@@ -1432,7 +1432,7 @@ func TestReconcileVM(t *testing.T) {
 							StorageAccountType: "Premium_LRS",
 						},
 						DiffDiskSettings: &infrav1.DiffDiskSettings{
-							Option: string(compute.Local),
+							Option: string(compute.DiffDiskOptionsLocal),
 						},
 					},
 					DataDisks: []infrav1.DataDisk{
@@ -1483,7 +1483,7 @@ func TestReconcileVM(t *testing.T) {
 									StorageAccountType: "Premium_LRS",
 								},
 								DiffDiskSettings: &compute.DiffDiskSettings{
-									Option: compute.Local,
+									Option: compute.DiffDiskOptionsLocal,
 								},
 							},
 							DataDisks: &[]compute.DataDisk{

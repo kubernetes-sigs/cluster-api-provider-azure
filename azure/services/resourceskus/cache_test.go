@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -190,7 +190,7 @@ func TestCacheGetZones(t *testing.T) {
 					},
 					Restrictions: &[]compute.ResourceSkuRestrictions{
 						{
-							Type:   compute.Location,
+							Type:   compute.ResourceSkuRestrictionsTypeLocation,
 							Values: &[]string{"baz"},
 						},
 					},
@@ -214,7 +214,7 @@ func TestCacheGetZones(t *testing.T) {
 					},
 					Restrictions: &[]compute.ResourceSkuRestrictions{
 						{
-							Type: compute.Zone,
+							Type: compute.ResourceSkuRestrictionsTypeZone,
 							RestrictionInfo: &compute.ResourceSkuRestrictionInfo{
 								Zones: &[]string{"1"},
 							},
@@ -339,7 +339,7 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 					},
 					Restrictions: &[]compute.ResourceSkuRestrictions{
 						{
-							Type:   compute.Location,
+							Type:   compute.ResourceSkuRestrictionsTypeLocation,
 							Values: &[]string{"baz"},
 						},
 					},
@@ -363,7 +363,7 @@ func TestCacheGetZonesWithVMSize(t *testing.T) {
 					},
 					Restrictions: &[]compute.ResourceSkuRestrictions{
 						{
-							Type: compute.Zone,
+							Type: compute.ResourceSkuRestrictionsTypeZone,
 							RestrictionInfo: &compute.ResourceSkuRestrictionInfo{
 								Zones: &[]string{"1"},
 							},

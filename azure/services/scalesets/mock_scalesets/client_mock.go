@@ -24,7 +24,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"

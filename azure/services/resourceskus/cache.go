@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
@@ -182,7 +182,7 @@ func (c *Cache) GetZones(ctx context.Context, location string) ([]string, error)
 					if sku.Restrictions != nil {
 						for _, restriction := range *sku.Restrictions {
 							// Can't deploy anything in this subscription in this location. Bail out.
-							if restriction.Type == compute.Location {
+							if restriction.Type == compute.ResourceSkuRestrictionsTypeLocation {
 								availableZones = nil
 								break
 							}
@@ -243,7 +243,7 @@ func (c *Cache) GetZonesWithVMSize(ctx context.Context, size, location string) (
 					if sku.Restrictions != nil {
 						for _, restriction := range *sku.Restrictions {
 							// Can't deploy anything in this subscription in this location. Bail out.
-							if restriction.Type == compute.Location {
+							if restriction.Type == compute.ResourceSkuRestrictionsTypeLocation {
 								availableZones = nil
 								break
 							}

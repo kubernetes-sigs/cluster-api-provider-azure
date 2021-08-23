@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/mock/gomock"
@@ -323,8 +323,8 @@ func TestReconcileVMSS(t *testing.T) {
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
 				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
-				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
-				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypesDeallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
@@ -350,12 +350,12 @@ func TestReconcileVMSS(t *testing.T) {
 				s.ScaleSetSpec().Return(spec).AnyTimes()
 				setupDefaultVMSSStartCreatingExpectations(s, m)
 				vmss := newDefaultVMSS("VM_SIZE")
-				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.Spot
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.Priority = compute.VirtualMachinePriorityTypesSpot
 				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.BillingProfile = &compute.BillingProfile{
 					MaxPrice: to.Float64Ptr(0.001),
 				}
 				vmss.VirtualMachineScaleSetProperties.AdditionalCapabilities = &compute.AdditionalCapabilities{UltraSSDEnabled: pointer.Bool(true)}
-				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.Deallocate
+				vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypesDeallocate
 				m.CreateOrUpdateAsync(gomockinternal.AContext(), defaultResourceGroup, defaultVMSSName, gomockinternal.DiffEq(vmss)).
 					Return(putFuture, nil)
 				setupCreatingSucceededExpectations(s, m, newDefaultExistingVMSS("VM_SIZE"), putFuture)
@@ -967,7 +967,7 @@ func newDefaultExistingVMSS(vmSize string) compute.VirtualMachineScaleSet {
 
 func newDefaultWindowsVMSS() compute.VirtualMachineScaleSet {
 	vmss := newDefaultVMSS("VM_SIZE")
-	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType = compute.Windows
+	vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.StorageProfile.OsDisk.OsType = compute.OperatingSystemTypesWindows
 	vmss.VirtualMachineProfile.OsProfile.LinuxConfiguration = nil
 	vmss.VirtualMachineProfile.OsProfile.WindowsConfiguration = &compute.WindowsConfiguration{
 		EnableAutomaticUpdates: to.BoolPtr(false),
@@ -1051,7 +1051,7 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 												ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"),
 											},
 											Primary:                         to.BoolPtr(true),
-											PrivateIPAddressVersion:         compute.IPv4,
+											PrivateIPAddressVersion:         compute.IPVersionIPv4,
 											LoadBalancerBackendAddressPools: &[]compute.SubResource{{ID: to.StringPtr("/subscriptions/123/resourceGroups/my-rg/providers/Microsoft.Network/loadBalancers/capz-lb/backendAddressPools/backendPool")}},
 										},
 									},

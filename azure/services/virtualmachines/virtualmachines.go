@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -484,7 +484,7 @@ func (s *Service) generateOSProfile(ctx context.Context, vmSpec azure.VMSpec) (*
 	}
 
 	switch vmSpec.OSDisk.OSType {
-	case string(compute.Windows):
+	case string(compute.OperatingSystemTypesWindows):
 		// Cloudbase-init is used to generate a password.
 		// https://cloudbase-init.readthedocs.io/en/latest/plugins.html#setting-password-main
 		//

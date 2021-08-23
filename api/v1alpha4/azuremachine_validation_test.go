@@ -25,7 +25,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	. "github.com/onsi/gomega"
@@ -107,7 +107,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
-					Option: string(compute.Local),
+					Option: string(compute.DiffDiskOptionsLocal),
 				},
 				ManagedDisk: &ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
@@ -122,7 +122,7 @@ func TestAzureMachine_ValidateOSDisk(t *testing.T) {
 				CachingType: "None",
 				OSType:      "blah",
 				DiffDiskSettings: &DiffDiskSettings{
-					Option: string(compute.Local),
+					Option: string(compute.DiffDiskOptionsLocal),
 				},
 				ManagedDisk: &ManagedDiskParameters{
 					StorageAccountType: "Standard_LRS",
@@ -195,7 +195,7 @@ func generateNegativeTestCases() []osDiskTestInput {
 				StorageAccountType: "Premium_LRS",
 			},
 			DiffDiskSettings: &DiffDiskSettings{
-				Option: string(compute.Local),
+				Option: string(compute.DiffDiskOptionsLocal),
 			},
 		},
 	}

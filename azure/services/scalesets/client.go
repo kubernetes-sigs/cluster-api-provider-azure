@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
@@ -169,7 +170,7 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, vmssName stri
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.Get")
 	defer span.End()
 
-	return ac.scalesets.Get(ctx, resourceGroupName, vmssName)
+	return ac.scalesets.Get(ctx, resourceGroupName, vmssName, "")
 }
 
 // CreateOrUpdate the operation to create or update a virtual machine scale set.
@@ -350,7 +351,7 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmssName s
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.Delete")
 	defer span.End()
 
-	future, err := ac.scalesets.Delete(ctx, resourceGroupName, vmssName)
+	future, err := ac.scalesets.Delete(ctx, resourceGroupName, vmssName, to.BoolPtr(false))
 	if err != nil {
 		return err
 	}
@@ -373,7 +374,7 @@ func (ac *AzureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssN
 	ctx, span := tele.Tracer().Start(ctx, "scalesets.AzureClient.DeleteAsync")
 	defer span.End()
 
-	future, err := ac.scalesets.Delete(ctx, resourceGroupName, vmssName)
+	future, err := ac.scalesets.Delete(ctx, resourceGroupName, vmssName, to.BoolPtr(false))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed deleting vmss named %q", vmssName)
 	}
