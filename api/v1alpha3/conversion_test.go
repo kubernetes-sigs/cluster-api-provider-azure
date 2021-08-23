@@ -17,16 +17,18 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"testing"
+
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
-	"testing"
 
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
+
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
 func TestFuzzyConversion(t *testing.T) {
@@ -39,26 +41,33 @@ func TestFuzzyConversion(t *testing.T) {
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureCluster{},
 		Spoke:       &AzureCluster{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs, overrideOutboundLBFunc},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs, overrideOutboundLBFunc},
 	}))
 
 	t.Run("for AzureMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureMachine{},
 		Spoke:       &AzureMachine{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs},
 	}))
 
 	t.Run("for AzureMachineTemplate", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
 		Hub:         &v1alpha4.AzureMachineTemplate{},
 		Spoke:       &AzureMachineTemplate{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedFieldsFuncs},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs},
+	}))
+
+	t.Run("for AzureClusterIdentity", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
+		Scheme:      scheme,
+		Hub:         &v1alpha4.AzureClusterIdentity{},
+		Spoke:       &AzureClusterIdentity{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{overrideDeprecatedAndRemovedFieldsFuncs},
 	}))
 
 }
 
-func overrideDeprecatedFieldsFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
+func overrideDeprecatedAndRemovedFieldsFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		func(azureMachineSpec *AzureMachineSpec, c fuzz.Continue) {
 			azureMachineSpec.Location = ""
@@ -68,6 +77,9 @@ func overrideDeprecatedFieldsFuncs(codecs runtimeserializer.CodecFactory) []inte
 		},
 		func(vnetSpec *VnetSpec, c fuzz.Continue) {
 			vnetSpec.CidrBlock = ""
+		},
+		func(azureClusterIdentity *AzureClusterIdentity, c fuzz.Continue) {
+			azureClusterIdentity.Spec.AllowedNamespaces = nil
 		},
 	}
 }
