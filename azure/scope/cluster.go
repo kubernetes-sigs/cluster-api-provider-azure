@@ -455,16 +455,25 @@ func (s *ClusterScope) NodeOutboundLBName() string {
 // OutboundLBName returns the name of the outbound LB.
 func (s *ClusterScope) OutboundLBName(role string) string {
 	if role == infrav1.Node {
-		return s.ClusterName()
+		if s.NodeOutboundLB() == nil {
+			return ""
+		}
+		return s.NodeOutboundLB().Name
 	}
 	if s.IsAPIServerPrivate() {
-		return azure.GenerateControlPlaneOutboundLBName(s.ClusterName())
+		if s.ControlPlaneOutboundLB() == nil {
+			return ""
+		}
+		return s.ControlPlaneOutboundLB().Name
 	}
 	return s.APIServerLBName()
 }
 
 // OutboundPoolName returns the outbound LB backend pool name.
 func (s *ClusterScope) OutboundPoolName(loadBalancerName string) string {
+	if loadBalancerName == "" {
+		return ""
+	}
 	return azure.GenerateOutboundBackendAddressPoolName(loadBalancerName)
 }
 

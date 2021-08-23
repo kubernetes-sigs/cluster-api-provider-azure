@@ -89,3 +89,128 @@ func TestGettingSecurityRules(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(len(subnet.SecurityGroup.SecurityRules)).To(Equal(2))
 }
+
+func TestOutboundLBName(t *testing.T) {
+	tests := []struct {
+		clusterName            string
+		name                   string
+		role                   string
+		apiServerLB            *infrav1.LoadBalancerSpec
+		controlPlaneOutboundLB *infrav1.LoadBalancerSpec
+		nodeOutboundLB         *infrav1.LoadBalancerSpec
+		expected               string
+	}{
+		{
+			clusterName: "my-cluster",
+			name:        "public cluster node outbound lb",
+			role:        "node",
+			expected:    "my-cluster",
+		},
+		{
+			clusterName: "my-cluster",
+			name:        "public cluster control plane outbound lb",
+			role:        "control-plane",
+			expected:    "my-cluster-public-lb",
+		},
+		{
+			clusterName:    "my-cluster",
+			name:           "private cluster with node outbound lb",
+			role:           "node",
+			nodeOutboundLB: &infrav1.LoadBalancerSpec{},
+			apiServerLB:    &infrav1.LoadBalancerSpec{Type: "Internal"},
+			expected:       "my-cluster",
+		},
+		{
+			clusterName: "my-cluster",
+			name:        "private cluster without node outbound lb",
+			role:        "node",
+			apiServerLB: &infrav1.LoadBalancerSpec{Type: "Internal"},
+			expected:    "",
+		},
+		{
+			clusterName:            "my-cluster",
+			name:                   "private cluster with control plane outbound lb",
+			role:                   "control-plane",
+			controlPlaneOutboundLB: &infrav1.LoadBalancerSpec{Name: "cp-outbound-lb"},
+			apiServerLB:            &infrav1.LoadBalancerSpec{Type: "Internal"},
+			expected:               "cp-outbound-lb",
+		},
+		{
+			clusterName: "my-cluster",
+			name:        "private cluster without control plane outbound lb",
+			role:        "control-plane",
+			apiServerLB: &infrav1.LoadBalancerSpec{Type: "Internal"},
+			expected:    "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			scheme := runtime.NewScheme()
+			_ = infrav1.AddToScheme(scheme)
+			_ = clusterv1.AddToScheme(scheme)
+
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tc.clusterName,
+					Namespace: "default",
+				},
+			}
+			cluster.Default()
+
+			azureCluster := &infrav1.AzureCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tc.clusterName,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "cluster.x-k8s.io/v1alpha4",
+							Kind:       "Cluster",
+							Name:       "my-cluster",
+						},
+					},
+				},
+				Spec: infrav1.AzureClusterSpec{
+					SubscriptionID: "123",
+					NetworkSpec: infrav1.NetworkSpec{
+						Subnets: infrav1.Subnets{
+							{
+								Name: "node",
+								Role: infrav1.SubnetNode,
+							},
+						},
+					},
+				},
+			}
+
+			if tc.apiServerLB != nil {
+				azureCluster.Spec.NetworkSpec.APIServerLB = *tc.apiServerLB
+			}
+
+			if tc.controlPlaneOutboundLB != nil {
+				azureCluster.Spec.NetworkSpec.ControlPlaneOutboundLB = tc.controlPlaneOutboundLB
+			}
+
+			if tc.nodeOutboundLB != nil {
+				azureCluster.Spec.NetworkSpec.NodeOutboundLB = tc.nodeOutboundLB
+			}
+
+			azureCluster.Default()
+
+			initObjects := []runtime.Object{cluster, azureCluster}
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(initObjects...).Build()
+
+			clusterScope, err := NewClusterScope(context.TODO(), ClusterScopeParams{
+				AzureClients: AzureClients{
+					Authorizer: autorest.NullAuthorizer{},
+				},
+				Cluster:      cluster,
+				AzureCluster: azureCluster,
+				Client:       fakeClient,
+			})
+			g.Expect(err).ToNot(HaveOccurred())
+			got := clusterScope.OutboundLBName(tc.role)
+			g.Expect(tc.expected).Should(Equal(got))
+		})
+	}
+}
