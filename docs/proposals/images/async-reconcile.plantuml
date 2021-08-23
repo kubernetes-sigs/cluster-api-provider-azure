@@ -1,0 +1,35 @@
+@startuml
+title Figure 1. Azure service async reconcile
+state longrunningopinprogress <<choice>>
+
+[*]     --> longrunningopinprogress : start Reconcile
+longrunningopinprogress --> GetResultIfDone   : long running operation\nalready in progress
+GetResultIfDone : fetch the future data from the scope
+GetResultIfDone : check if future is done
+
+GetResultIfDone --> [*] : requeue if not done
+GetResultIfDone --> UpdateStatus : done
+UpdateStatus : update the resource spec and status
+UpdateStatus : update the object conditions
+UpdateStatus --> [*]
+
+longrunningopinprogress --> GetExisting  : no long running operation\n in progress
+GetExisting : GET the resource from Azure if it exists
+GetExisting --> UpdateStatus : resource exists\n no update needed
+GetExisting --> CreateOrUpdate : resource does not exist,\n create it
+GetExisting --> CreateOrUpdate : resource exists\n but needs to be updated
+
+CreateOrUpdate : PUT the resource to Azure
+CreateOrUpdate : wait for the operation to complete
+CreateOrUpdate : timeout after x seconds
+
+CreateOrUpdate --> ResetLongRunningState : PUT operation completes \n before timeout
+ResetLongRunningState : set the long running operation state to nil
+ResetLongRunningState --> UpdateStatus
+
+CreateOrUpdate --> StoreLongRunningState : PUT operation does not\n complete before timeout
+StoreLongRunningState: store the future in long running operation state
+
+StoreLongRunningState --> UpdateStatus
+
+@enduml

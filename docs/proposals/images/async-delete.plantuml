@@ -1,0 +1,28 @@
+@startuml
+title Figure 2. Azure service async delete
+state longrunningopinprogress <<choice>>
+
+[*]     --> longrunningopinprogress : start Delete
+longrunningopinprogress --> GetResultIfDone   : long running operation\nalready in progress
+GetResultIfDone : fetch the future data from the scope
+GetResultIfDone : check if future is done
+
+GetResultIfDone --> [*] : requeue if not done
+GetResultIfDone --> UpdateStatus : done
+UpdateStatus : update the object conditions
+UpdateStatus --> [*]
+
+longrunningopinprogress --> Delete  : no long running operation\n in progress
+Delete : DELETE the resource from Azure
+Delete : wait for the operation to complete
+Delete : timeout after x seconds
+
+Delete --> ResetLongRunningState : DELETE operation completes \n before timeout
+ResetLongRunningState : set the long running operation state to nil
+ResetLongRunningState --> UpdateStatus
+
+Delete --> StoreLongRunningState : DELETE operation does not\n complete before timeout
+StoreLongRunningState: store the future in long running operation state
+StoreLongRunningState --> UpdateStatus
+
+@enduml
