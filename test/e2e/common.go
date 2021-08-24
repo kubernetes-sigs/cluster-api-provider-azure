@@ -62,7 +62,6 @@ const (
 	JobName                        = "JOB_NAME"
 	Timestamp                      = "TIMESTAMP"
 	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
-	WindowsKubernetesVersion       = "WINDOWS_KUBERNETES_VERSION"
 	ManagedClustersResourceType    = "managedClusters"
 )
 

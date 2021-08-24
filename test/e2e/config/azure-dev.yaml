@@ -97,10 +97,6 @@ providers:
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.1}"
-  # using a different version for windows because of an issue on azure cloud provider
-  # that only affects windows and external load balancer  
-  # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
-  WINDOWS_KUBERNETES_VERSION: "${WINDOWS_KUBERNETES_VERSION:-v1.22.1}"
   AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
   ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
   COREDNS_VERSION_UPGRADE_TO: "1.6.7"
