@@ -20,7 +20,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -65,7 +65,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
-	asSku, err := s.resourceSKUCache.Get(ctx, string(compute.Aligned), resourceskus.AvailabilitySets)
+	asSku, err := s.resourceSKUCache.Get(ctx, string(compute.AvailabilitySetSkuTypesAligned), resourceskus.AvailabilitySets)
 	if err != nil {
 		return errors.Wrap(err, "failed to get availability sets sku")
 	}
@@ -84,7 +84,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	asParams := compute.AvailabilitySet{
 		Sku: &compute.Sku{
-			Name: to.StringPtr(string(compute.Aligned)),
+			Name: to.StringPtr(string(compute.AvailabilitySetSkuTypesAligned)),
 		},
 		AvailabilitySetProperties: &compute.AvailabilitySetProperties{
 			PlatformFaultDomainCount: to.Int32Ptr(int32(faultDomainCount)),
