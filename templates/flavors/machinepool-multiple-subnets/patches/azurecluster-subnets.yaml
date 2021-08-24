@@ -10,5 +10,9 @@ spec:
         role: control-plane
       - name: "${CLUSTER_NAME}-mp-0"
         role: node
+        natGateway:
+          name: node-natgateway-0
       - name: "${CLUSTER_NAME}-mp-1"
         role: node
+        natGateway:
+          name: node-natgateway-1

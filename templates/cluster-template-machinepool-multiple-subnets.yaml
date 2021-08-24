@@ -35,8 +35,12 @@ spec:
     - name: control-plane-subnet
       role: control-plane
     - name: ${CLUSTER_NAME}-mp-0
+      natGateway:
+        name: node-natgateway-0
       role: node
     - name: ${CLUSTER_NAME}-mp-1
+      natGateway:
+        name: node-natgateway-1
       role: node
     vnet:
       name: ${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}
