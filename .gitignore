@@ -37,6 +37,7 @@ kubeconfig
 
 # vscode
 .vscode
+*.code-workspace
 
 # goland
 .idea

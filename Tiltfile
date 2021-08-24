@@ -250,6 +250,12 @@ def flavors():
     for template in worker_templates:
         deploy_worker_templates(template, substitutions)
 
+    local_resource(
+        name = 'delete-all-workload-clusters',
+        cmd = "kubectl delete clusters --all --wait=false",
+        auto_init = False,
+        trigger_mode = TRIGGER_MODE_MANUAL
+    )
 
 def deploy_worker_templates(template, substitutions):
     # validate template exists
@@ -285,10 +291,9 @@ def deploy_worker_templates(template, substitutions):
     # programmatically define any remaining vars
     # "windows" can not be for cluster name because it sets the dns to trademarked name during reconciliation
     substitutions = {
-        "CLUSTER_NAME": flavor.replace("windows", "win") + "-template",
         "AZURE_LOCATION": "eastus",
-        "AZURE_VNET_NAME": flavor + "-template-vnet",
-        "AZURE_RESOURCE_GROUP": flavor + "-template-rg",
+        "AZURE_VNET_NAME": "${CLUSTER_NAME}-vnet",
+        "AZURE_RESOURCE_GROUP": "${CLUSTER_NAME}-rg",
         "CONTROL_PLANE_MACHINE_COUNT": "1",
         "KUBERNETES_VERSION": settings.get("kubernetes_version"),
         "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_D2s_v3",
@@ -305,10 +310,9 @@ def deploy_worker_templates(template, substitutions):
         yaml = yaml.replace("${" + substitution + "}", value)
 
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
-
     local_resource(
-        os.path.basename(flavor),
-        cmd = "make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f -",
+        name = os.path.basename(flavor),
+        cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$(echo $RANDOM); make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL
     )
