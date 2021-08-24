@@ -91,8 +91,7 @@ dump_workload_cluster_logs() {
     kubectl apply -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml"
     kubectl wait pod -l app=log-dump-node --for=condition=Ready --timeout=5m
 
-    local -r log_dump_pods=()
-    IFS=" " read -r -a log_dump_pods <<< "$(kubectl get pod -l app=log-dump-node -ojsonpath='{.items[*].metadata.name}')"
+    IFS=" " read -ra log_dump_pods <<< "$(kubectl get pod -l app=log-dump-node -ojsonpath='{.items[*].metadata.name}')"
     local log_dump_commands=(
         "journalctl --output=short-precise -u kubelet > kubelet.log"
         "journalctl --output=short-precise -u containerd > containerd.log"
