@@ -18,8 +18,10 @@ package natgateways
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
+	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -78,6 +80,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				natGatewaySpec.Subnet.NatGateway = *existingNatGateway
 				s.Scope.SetSubnet(natGatewaySpec.Subnet)
 				continue
+			} else {
+				s.Scope.V(2).Info("updating NAT gateway IP name to match the spec", "old name", existingNatGateway.NatGatewayIP.Name, "desired name", natGatewaySpec.NatGatewayIP.Name)
 			}
 		default:
 			// nat gateway doesn't exist but its name was specified in the subnet, let's create it
@@ -118,12 +122,27 @@ func (s *Service) getExisting(ctx context.Context, spec azure.NatGatewaySpec) (*
 	if err != nil {
 		return nil, err
 	}
+	// We must have a non-nil, non-"empty" PublicIPAddresses
+	if !(existingNatGateway.PublicIPAddresses != nil && len(*existingNatGateway.PublicIPAddresses) > 0) {
+		return nil, errors.Wrap(err, "failed to parse PublicIPAddresses")
+	}
+	// TODO do we want to eventually handle NatGateway resources w/ more than one public IP address?
+	// For now we assume the first one is the significant one
+	publicIPAddressID := to.String((*existingNatGateway.PublicIPAddresses)[0].ID)
+	resource, err := autorest.ParseResourceID(publicIPAddressID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse Resource ID from PublicIPAddresses ID")
+	}
+	// We depend upon a non-empty ResourceName string
+	if resource.ResourceName == "" {
+		return nil, errors.Wrap(err, fmt.Sprintf("got unexpected ResourceName value from NatGateway PublicIpAddress, ResourceName=%s", resource.ResourceName))
+	}
 
 	return &infrav1.NatGateway{
 		ID:   to.String(existingNatGateway.ID),
 		Name: to.String(existingNatGateway.Name),
 		NatGatewayIP: infrav1.PublicIPSpec{
-			Name: to.String((*existingNatGateway.PublicIPAddresses)[0].ID),
+			Name: resource.ResourceName,
 		},
 	}, nil
 }
