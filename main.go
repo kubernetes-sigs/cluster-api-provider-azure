@@ -465,6 +465,11 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "AzureMachineTemplate")
 		os.Exit(1)
 	}
+
+	if err := (&infrav1alpha4.AzureClusterIdentity{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureClusterIdentity")
+		os.Exit(1)
+	}
 	// just use CAPI MachinePool feature flag rather than create a new one
 	if feature.Gates.Enabled(capifeature.MachinePool) {
 		if err := (&infrav1alpha4exp.AzureMachinePool{}).SetupWebhookWithManager(mgr); err != nil {
