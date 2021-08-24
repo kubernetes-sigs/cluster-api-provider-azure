@@ -70,6 +70,8 @@ spec:
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
+          extraArgs:
+            quota-backend-bytes: "8589934592"
     diskSetup:
       filesystems:
       - device: /dev/disk/azure/scsi1/lun0

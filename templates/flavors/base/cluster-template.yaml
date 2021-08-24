@@ -81,6 +81,8 @@ spec:
       etcd:
         local:
           dataDir: "/var/lib/etcddisk/etcd"
+          extraArgs:
+            quota-backend-bytes: "8589934592"
     files:
       - contentFrom:
           secret:
