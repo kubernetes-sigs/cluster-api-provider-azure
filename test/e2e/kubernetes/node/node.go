@@ -26,7 +26,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
@@ -34,7 +34,7 @@ import (
 )
 
 func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (windows.OSVersion, error) {
-	options := v1.ListOptions{
+	options := metav1.ListOptions{
 		LabelSelector: "kubernetes.io/os=windows",
 	}
 	result, err := clientset.CoreV1().Nodes().List(ctx, options)
@@ -60,7 +60,7 @@ func GetWindowsVersion(ctx context.Context, clientset *kubernetes.Clientset) (wi
 	}
 }
 
-func TaintNode(clientset *kubernetes.Clientset, options v1.ListOptions, taint *corev1.Taint) error {
+func TaintNode(clientset *kubernetes.Clientset, options metav1.ListOptions, taint *corev1.Taint) error {
 	result, err := clientset.CoreV1().Nodes().List(context.Background(), options)
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ func PatchNodeTaints(clientset *kubernetes.Clientset, nodeName string, oldNode *
 		return fmt.Errorf("failed to create patch for node %q: %v", nodeName, err)
 	}
 
-	_, err = clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, types.StrategicMergePatchType, patchBytes, v1.PatchOptions{})
+	_, err = clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
 	return err
 }
 

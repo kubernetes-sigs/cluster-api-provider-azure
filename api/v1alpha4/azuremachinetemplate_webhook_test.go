@@ -22,7 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestAzureMachineTemplate_ValidateCreate(t *testing.T) {
@@ -201,7 +201,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "OldTemplate",
 				},
 			},
@@ -220,7 +220,7 @@ func TestAzureMachineTemplate_ValidateUpdate(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "NewTemplate",
 				},
 			},
