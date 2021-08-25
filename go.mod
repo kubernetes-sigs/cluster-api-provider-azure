@@ -43,11 +43,11 @@ require (
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.21.3
 	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
-	sigs.k8s.io/cluster-api v0.4.1
-	sigs.k8s.io/cluster-api/test v0.4.1
+	sigs.k8s.io/cluster-api v0.4.2
+	sigs.k8s.io/cluster-api/test v0.4.2
 	sigs.k8s.io/controller-runtime v0.9.6
 	sigs.k8s.io/kind v0.11.1
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.2

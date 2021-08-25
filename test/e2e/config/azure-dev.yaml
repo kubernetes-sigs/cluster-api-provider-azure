@@ -8,8 +8,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v0.4.1
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.1/core-components.yaml
+    - name: v0.4.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.2/core-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -21,8 +21,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v0.4.1
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.1/bootstrap-components.yaml
+    - name: v0.4.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.2/bootstrap-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -34,8 +34,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v0.4.1
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.1/control-plane-components.yaml
+    - name: v0.4.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.2/control-plane-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -98,8 +98,8 @@ providers:
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.1}"
   AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
-  ETCD_VERSION_UPGRADE_TO: "3.4.3-0"
-  COREDNS_VERSION_UPGRADE_TO: "1.6.7"
+  ETCD_VERSION_UPGRADE_TO: "3.5.0-0"
+  COREDNS_VERSION_UPGRADE_TO: "v1.8.4"
   KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.22.1}"
   KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.21.4}"
   CNI: "${PWD}/templates/addons/calico.yaml"
