@@ -42,7 +42,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
@@ -299,12 +298,12 @@ func main() {
 	registerControllers(ctx, mgr)
 	// +kubebuilder:scaffold:builder
 
-	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create ready check")
 		os.Exit(1)
 	}
 
-	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create health check")
 		os.Exit(1)
 	}
@@ -500,12 +499,12 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		))
 	}
 
-	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create ready check")
 		os.Exit(1)
 	}
 
-	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
 		setupLog.Error(err, "unable to create health check")
 		os.Exit(1)
 	}
