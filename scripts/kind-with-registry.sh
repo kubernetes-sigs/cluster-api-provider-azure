@@ -93,7 +93,7 @@ if [ "${kind_network}" != "bridge" ]; then
 fi
 
 # add ingress
-$KUBECTL apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/kind/deploy.yaml
+$KUBECTL apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.0/deploy/static/provider/kind/deploy.yaml
 $KUBECTL wait node "${KIND_CLUSTER_NAME}-control-plane" --for=condition=ready --timeout=90s
 $KUBECTL wait --namespace ingress-nginx \
   --for=condition=ready pod \
