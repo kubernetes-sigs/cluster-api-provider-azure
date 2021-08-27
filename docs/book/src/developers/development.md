@@ -16,6 +16,7 @@
 - [Developing](#developing)
   - [Modules and dependencies](#modules-and-dependencies)
   - [Setting up the environment](#setting-up-the-environment)
+  - [Tilt Requirements](#tilt-requirements)
   - [Using Tilt](#using-tilt)
     - [Tilt for dev in CAPZ](#tilt-for-dev-in-capz)
     - [Tilt for dev in both CAPZ and CAPI](#tilt-for-dev-in-both-capz-and-capi)
@@ -222,7 +223,7 @@ The cluster-api management components that are deployed are configured at the `/
 
 After your kind management cluster is up and running with Tilt, you can deploy a workload cluster by opening the `tilt` web UI and clicking the clockwise arrow icon ⟳ on a resource listed, such as "aks-aad," "ipv6," or "windows."
 
-Deploying a workload cluster from Tilt UI is also termed as flavor cluster deployment. 
+Deploying a workload cluster from Tilt UI is also termed as flavor cluster deployment. Note that each time a flavor is deployed, it deploys a new workload cluster in addition to the existing ones. All the workload clusters must be manually deleted by the user.
 Please refer to [Running flavor clusters as a tilt resource](../../../../templates/flavors/README.md#Running-flavor-clusters-as-a-tilt-resource) to learn more about this.
 
 Or you can [configure workload cluster settings](#customizing-the-cluster-deployment) and deploy a workload cluster with the following command:
