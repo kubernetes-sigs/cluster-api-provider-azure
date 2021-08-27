@@ -17,11 +17,16 @@ limitations under the License.
 package azure
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 func TestGetDefaultImageSKUID(t *testing.T) {
@@ -234,4 +239,52 @@ func TestGetDefaultUbuntuImage(t *testing.T) {
 			g.Expect(image.Marketplace.SKU).To(Equal(test.expectedSKU))
 		})
 	}
+}
+
+func TestMSCorrelationIDSendDecorator(t *testing.T) {
+	g := NewWithT(t)
+	const corrID tele.CorrID = "TestMSCorrelationIDSendDecoratorCorrID"
+	ctx := context.WithValue(context.Background(), tele.CorrIDKeyVal, corrID)
+
+	// create a fake server so that the sender can send to
+	// somewhere
+	var wg sync.WaitGroup
+	receivedReqs := []*http.Request{}
+	wg.Add(1)
+	originHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedReqs = append(receivedReqs, r)
+		wg.Done()
+	})
+
+	testSrv := httptest.NewServer(originHandler)
+	defer testSrv.Close()
+
+	// create a sender that sends to the fake server, then
+	// decorate the sender with the msCorrelationIDSendDecorator
+	origSender := autorest.SenderFunc(func(r *http.Request) (*http.Response, error) {
+		// preserve the incoming headers to the fake server, so that
+		// we can test that the fake server received the right
+		// correlation ID header.
+		req, err := http.NewRequest("GET", testSrv.URL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header = r.Header
+		return testSrv.Client().Do(req)
+	})
+	newSender := autorest.DecorateSender(origSender, msCorrelationIDSendDecorator)
+
+	// create a new HTTP request and send it via the new decorated sender
+	req, err := http.NewRequest("GET", "/abc", nil)
+	g.Expect(err).NotTo(HaveOccurred())
+
+	req = req.WithContext(ctx)
+	_, err = newSender.Do(req)
+	g.Expect(err).NotTo(HaveOccurred())
+	wg.Wait()
+	g.Expect(len(receivedReqs)).To(Equal(1))
+	receivedReq := receivedReqs[0]
+	g.Expect(
+		receivedReq.Header.Get(string(tele.CorrIDKeyVal)),
+	).To(Equal(string(corrID)))
 }

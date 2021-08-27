@@ -18,6 +18,7 @@ package azure
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/cluster-api-provider-azure/version"
 )
 
@@ -322,10 +324,25 @@ func UserAgent() string {
 // SetAutoRestClientDefaults set authorizer and user agent for autorest client.
 func SetAutoRestClientDefaults(c *autorest.Client, auth autorest.Authorizer) {
 	c.Authorizer = auth
+	// Wrap the original Sender on the autorest.Client c.
+	// The wrapped Sender should set the x-ms-correlation-request-id on the given
+	// request, then pass the new request to the underlying Sender.
+	c.Sender = autorest.DecorateSender(c.Sender, msCorrelationIDSendDecorator)
 	AutoRestClientAppendUserAgent(c, UserAgent())
 }
 
 // AutoRestClientAppendUserAgent autorest client calls "AddToUserAgent" but ignores errors.
 func AutoRestClientAppendUserAgent(c *autorest.Client, extension string) {
 	_ = c.AddToUserAgent(extension) // intentionally ignore error as it doesn't matter
+}
+
+func msCorrelationIDSendDecorator(snd autorest.Sender) autorest.Sender {
+	return autorest.SenderFunc(func(r *http.Request) (*http.Response, error) {
+		// if the correlation ID was found in the request context, set
+		// it in the header
+		if corrID, ok := tele.CorrIDFromCtx(r.Context()); ok {
+			r.Header.Set(string(tele.CorrIDKeyVal), string(corrID))
+		}
+		return snd.Do(r)
+	})
 }
