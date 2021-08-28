@@ -34,8 +34,7 @@ func init() {
 	defaultRecorder = new(record.FakeRecorder)
 }
 
-// InitFromRecorder initializes the global default recorder. It can only be called once.
-// Subsequent calls are considered noops.
+
 func InitFromRecorder(recorder record.EventRecorder) {
 	initOnce.Do(func() {
 		defaultRecorder = recorder
