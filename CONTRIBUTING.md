@@ -52,6 +52,8 @@ If you're new to the project and want to help, but don't know where to start, we
 
 All changes must be code reviewed. Coding conventions and standards are explained in the official [developer docs](https://github.com/kubernetes/community/tree/master/contributors/devel). Expect reviewers to request that you avoid common [go style mistakes](https://github.com/golang/go/wiki/CodeReviewComments) in your PRs.
 
+In case you want to run our E2E tests locally, please refer to [Testing](https://capz.sigs.k8s.io/developers/development.html#submitting-prs-and-testing) guide. An overview of our e2e-test jobs (and also all our other jobs) can be found in [Jobs](https://capz.sigs.k8s.io/developers/jobs.html).
+
 ## Backporting a Patch
 
 Cluster API ships older versions through `release-X.X` branches, usually backports are reserved to critical bug-fixes.
