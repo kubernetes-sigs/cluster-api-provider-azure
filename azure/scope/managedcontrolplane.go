@@ -38,6 +38,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
@@ -194,6 +195,16 @@ func (s *ManagedControlPlaneScope) Vnet() *infrav1.VnetSpec {
 		ResourceGroup: s.ControlPlane.Spec.ResourceGroupName,
 		Name:          s.ControlPlane.Spec.VirtualNetwork.Name,
 		CIDRBlocks:    []string{s.ControlPlane.Spec.VirtualNetwork.CIDRBlock},
+	}
+}
+
+// GroupSpec returns the resource group spec.
+func (s *ManagedControlPlaneScope) GroupSpec() azure.ResourceSpecGetter {
+	return &groups.GroupSpec{
+		Name:           s.ResourceGroup(),
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
 	}
 }
 
