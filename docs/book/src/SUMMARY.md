@@ -30,3 +30,4 @@
 - [Development](./developers/development.md)
     - [Kubernetes Developers](./developers/kubernetes-developers.md)
     - [Releasing](./developers/releasing.md)
+    - [Jobs](./developers/jobs.md)
