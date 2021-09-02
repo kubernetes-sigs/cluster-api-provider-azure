@@ -139,9 +139,14 @@ def observability():
               "resources.limits.cpu=200m", "resources.limits.memory=256Mi"]))
     k8s_resource(workload="jaeger-all-in-one", new_name="traces: jaeger-all-in-one",
         port_forwards=[port_forward(16686, name="View traces", link_path='/search?service=capz')],
-        links=trace_links)
+        links=trace_links, labels=["observability"])
     k8s_resource(workload="prometheus-operator", new_name="metrics: prometheus-operator",
-        port_forwards=[port_forward(9090, name="View metrics")], extra_pod_selectors=[{"app": "prometheus"}])
+        port_forwards=[port_forward(9090, name="View metrics")], extra_pod_selectors=[{"app": "prometheus"}], labels=["observability"])
+    k8s_resource(workload="opentelemetry-collector", labels=["observability"])
+    k8s_resource(workload="opentelemetry-collector-agent", labels=["observability"])
+
+    k8s_resource(workload="capz-controller-manager", labels=["cluster-api"])
+    k8s_resource(workload="capz-nmi", labels=["cluster-api"])
 
 # Build CAPZ and add feature gates
 def capz():
@@ -161,7 +166,8 @@ def capz():
     local_resource(
         "manager",
         cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
-        deps = ["api", "azure", "config", "controllers", "exp", "feature", "pkg", "util", "go.mod", "go.sum", "main.go"]
+        deps = ["api", "azure", "config", "controllers", "exp", "feature", "pkg", "util", "go.mod", "go.sum", "main.go"],
+        labels = ["cluster-api"]
     )
 
     dockerfile_contents = "\n".join([
@@ -248,7 +254,8 @@ def flavors():
         name = 'delete-all-workload-clusters',
         cmd = "kubectl delete clusters --all --wait=false",
         auto_init = False,
-        trigger_mode = TRIGGER_MODE_MANUAL
+        trigger_mode = TRIGGER_MODE_MANUAL,
+        labels = [ "flavors" ]
     )
 
 def deploy_worker_templates(template, substitutions):
@@ -308,7 +315,8 @@ def deploy_worker_templates(template, substitutions):
         name = os.path.basename(flavor),
         cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$(echo $RANDOM); make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
         auto_init = False,
-        trigger_mode = TRIGGER_MODE_MANUAL
+        trigger_mode = TRIGGER_MODE_MANUAL,
+        labels = [ "flavors" ]
     )
 
 
