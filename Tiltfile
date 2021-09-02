@@ -220,34 +220,28 @@ def create_crs():
     local("kubectl apply -f templates/addons/calico-resource-set.yaml")
     local("kubectl apply -f templates/addons/flannel-resource-set.yaml")
 
-# run worker clusters specified from 'tilt up' or in 'tilt_config.json'
+# create flavor resources from cluster-template files in the templates directory 
 def flavors():
-    config.define_string_list("templates-to-run", args=True)
-    config.define_string_list("worker-flavors")
-    cfg = config.parse()
-    worker_templates = cfg.get('templates-to-run', [])
-   
     substitutions = settings.get("kustomize_substitutions", {})
     ssh_pub_key_B64 = "AZURE_SSH_PUBLIC_KEY_B64"
     ssh_pub_key_path = "$HOME/.ssh/id_rsa.pub"
     if substitutions.get(ssh_pub_key_B64):
         os.environ.update({ssh_pub_key_B64: substitutions.get(ssh_pub_key_B64)})
     else:
-        print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
+        print("{} was not specified in tilt-settings.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
         os.environ.update({ssh_pub_key_B64: base64_encode_file(ssh_pub_key_path)})
 
     ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
     if substitutions.get(ssh_pub_key):
         os.environ.update({ssh_pub_key: substitutions.get(ssh_pub_key)})
     else:
-        print("{} was not specified in tilt_config.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
+        print("{} was not specified in tilt-settings.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
         os.environ.update({ssh_pub_key: read_file_from_path(ssh_pub_key_path)})
 
-    templatelist = [ item for item in listdir("./templates") ]
-    for template in templatelist:
-        if template not in worker_templates and os.path.basename(template).startswith("cluster-template"):
-            worker_templates.append(template)
-    for template in worker_templates:
+    template_list = [ item for item in listdir("./templates") ]
+    template_list = [ template for template in template_list if os.path.basename(template).endswith("yaml") ]
+
+    for template in template_list:
         deploy_worker_templates(template, substitutions)
 
     local_resource(
