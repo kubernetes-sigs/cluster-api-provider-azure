@@ -242,8 +242,12 @@ $(ENVSUBST_BIN): $(ENVSUBST) ## Build envsubst from tools folder.
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
-$(KUSTOMIZE): ## Build kustomize from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
+$(KUSTOMIZE): ## Build kustomize
+	mkdir -p $(TOOLS_BIN_DIR)
+	rm -f "$(KUSTOMIZE)*"
+	curl --retry $(CURL_RETRIES) -fsl https://github.com/kubernetes-sigs/kustomize/releases/download/$(KUSTOMIZE_VER)/kustomize_$(KUSTOMIZE_VER)_$(GOOS)_$(GOARCH) -O $(KUSTOMIZE)
+	ln -sf "$(KUSTOMIZE)" "$(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)"
+	chmod +x "$(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)" "$(KUSTOMIZE)"
 
 $(MOCKGEN): ## Build mockgen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
