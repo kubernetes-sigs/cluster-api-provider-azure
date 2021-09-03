@@ -223,20 +223,18 @@ def create_crs():
 # create flavor resources from cluster-template files in the templates directory 
 def flavors():
     substitutions = settings.get("kustomize_substitutions", {})
-    ssh_pub_key_B64 = "AZURE_SSH_PUBLIC_KEY_B64"
-    ssh_pub_key_path = "$HOME/.ssh/id_rsa.pub"
-    if substitutions.get(ssh_pub_key_B64):
-        os.environ.update({ssh_pub_key_B64: substitutions.get(ssh_pub_key_B64)})
-    else:
-        print("{} was not specified in tilt-settings.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
-        os.environ.update({ssh_pub_key_B64: base64_encode_file(ssh_pub_key_path)})
 
-    ssh_pub_key = "AZURE_SSH_PUBLIC_KEY"
-    if substitutions.get(ssh_pub_key):
-        os.environ.update({ssh_pub_key: substitutions.get(ssh_pub_key)})
+    az_key_b64_name = "AZURE_SSH_PUBLIC_KEY_B64"
+    az_key_name = "AZURE_SSH_PUBLIC_KEY"
+    default_key_path = "$HOME/.ssh/id_rsa.pub"
+
+    if substitutions.get(az_key_b64_name):
+        os.environ.update({az_key_b64_name: substitutions.get(az_key_b64_name)})
+        os.environ.update({az_key_name: base64_decode( substitutions.get(az_key_b64_name) )})
     else:
-        print("{} was not specified in tilt-settings.json, attempting to load {}".format(ssh_pub_key_B64, ssh_pub_key_path))
-        os.environ.update({ssh_pub_key: read_file_from_path(ssh_pub_key_path)})
+        print("{} was not specified in tilt-settings.json, attempting to load {}".format(az_key_b64_name, default_key_path))
+        os.environ.update({az_key_b64_name: base64_encode_file(default_key_path)})
+        os.environ.update({az_key_name: read_file_from_path(default_key_path)})
 
     template_list = [ item for item in listdir("./templates") ]
     template_list = [ template for template in template_list if os.path.basename(template).endswith("yaml") ]
