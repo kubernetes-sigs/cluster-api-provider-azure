@@ -47,7 +47,7 @@ END
 )
 
 ## Install cert manager and wait for availability
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.yaml
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.0/cert-manager.yaml
 kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager
 kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-cainjector
 kubectl wait --for=condition=Available --timeout=5m -n cert-manager deployment/cert-manager-webhook
