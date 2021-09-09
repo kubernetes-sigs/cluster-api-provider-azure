@@ -311,7 +311,7 @@ def deploy_worker_templates(template, substitutions):
     yaml = yaml.replace('"', '\\"')     # add escape character to double quotes in yaml
     local_resource(
         name = os.path.basename(flavor),
-        cmd = "CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$(echo $RANDOM); make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
+        cmd = "RANDOM=$(bash -c 'echo $RANDOM'); CLUSTER_NAME=" + flavor.replace("windows", "win") + "-$RANDOM; make generate-flavors; echo \"" + yaml + "\" > ./.tiltbuild/" + flavor + "; cat ./.tiltbuild/" + flavor + " | " + envsubst_cmd + " | kubectl apply -f - && echo \"Cluster \'$CLUSTER_NAME\' created, don't forget to delete\"",
         auto_init = False,
         trigger_mode = TRIGGER_MODE_MANUAL,
         labels = [ "flavors" ]
