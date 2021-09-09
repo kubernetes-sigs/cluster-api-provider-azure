@@ -18,6 +18,7 @@ package virtualnetworks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -97,7 +98,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				},
 			},
 		}
+
 		err = s.Client.CreateOrUpdate(ctx, vnetSpec.ResourceGroup, vnetSpec.Name, vnetProperties)
+
 		if err != nil {
 			return errors.Wrapf(err, "failed to create virtual network %s", vnetSpec.Name)
 		}
@@ -147,6 +150,7 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 	vnet, err := s.Client.Get(ctx, spec.ResourceGroup, spec.Name)
 	if err != nil {
 		if azure.ResourceNotFound(err) {
+			s.Scope.V(2).Info(fmt.Sprintf("Resource not found for VNet %q from resource group %q", spec.Name, spec.ResourceGroup))
 			return nil, err
 		}
 		return nil, errors.Wrapf(err, "failed to get VNet %s", spec.Name)
@@ -155,11 +159,13 @@ func (s *Service) getExisting(ctx context.Context, spec azure.VNetSpec) (*infrav
 	if vnet.VirtualNetworkPropertiesFormat != nil && vnet.VirtualNetworkPropertiesFormat.AddressSpace != nil {
 		prefixes = to.StringSlice(vnet.VirtualNetworkPropertiesFormat.AddressSpace.AddressPrefixes)
 	}
+
 	return &infrav1.VnetSpec{
 		ResourceGroup: spec.ResourceGroup,
 		ID:            to.String(vnet.ID),
 		Name:          to.String(vnet.Name),
 		CIDRBlocks:    prefixes,
+		Peerings:      s.Scope.Vnet().Peerings,
 		Tags:          converters.MapToTags(vnet.Tags),
 	}, nil
 }

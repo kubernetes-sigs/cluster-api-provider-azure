@@ -8,7 +8,7 @@ patchesStrategicMerge:
   - ../patches/tags.yaml
   - ../patches/controller-manager.yaml
   - ../patches/cluster-cni.yaml
-  - patches/custom-vnet.yaml
+  - patches/vnet-peerings.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:

@@ -65,22 +65,24 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 		s.Scope.V(2).Info("successfully created private DNS zone", "private dns zone", zoneSpec.ZoneName)
 
-		// Link the virtual network.
-		s.Scope.V(2).Info("creating a virtual network link", "virtual network", zoneSpec.VNetName, "private dns zone", zoneSpec.ZoneName)
-		link := privatedns.VirtualNetworkLink{
-			VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
-				VirtualNetwork: &privatedns.SubResource{
-					ID: to.StringPtr(azure.VNetID(s.Scope.SubscriptionID(), zoneSpec.VNetResourceGroup, zoneSpec.VNetName)),
+		for _, linkSpec := range zoneSpec.Links {
+			// Link each virtual network.
+			s.Scope.V(2).Info("creating a virtual network link", "virtual network", linkSpec.VNetName, "private dns zone", zoneSpec.ZoneName)
+			link := privatedns.VirtualNetworkLink{
+				VirtualNetworkLinkProperties: &privatedns.VirtualNetworkLinkProperties{
+					VirtualNetwork: &privatedns.SubResource{
+						ID: to.StringPtr(azure.VNetID(s.Scope.SubscriptionID(), linkSpec.VNetResourceGroup, linkSpec.VNetName)),
+					},
+					RegistrationEnabled: to.BoolPtr(false),
 				},
-				RegistrationEnabled: to.BoolPtr(false),
-			},
-			Location: to.StringPtr(azure.Global),
+				Location: to.StringPtr(azure.Global),
+			}
+			err = s.client.CreateOrUpdateLink(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, linkSpec.LinkName, link)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create virtual network link %s", linkSpec.LinkName)
+			}
+			s.Scope.V(2).Info("successfully created virtual network link", "virtual network", linkSpec.VNetName, "private dns zone", zoneSpec.ZoneName)
 		}
-		err = s.client.CreateOrUpdateLink(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, zoneSpec.LinkName, link)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create virtual network link %s", zoneSpec.LinkName)
-		}
-		s.Scope.V(2).Info("successfully created virtual network link", "virtual network", zoneSpec.VNetName, "private dns zone", zoneSpec.ZoneName)
 
 		// Create the record(s).
 		for _, record := range zoneSpec.Records {
@@ -117,16 +119,18 @@ func (s *Service) Delete(ctx context.Context) error {
 
 	zoneSpec := s.Scope.PrivateDNSSpec()
 	if zoneSpec != nil {
-		// Remove the virtual network link.
-		s.Scope.V(2).Info("removing virtual network link", "virtual network", zoneSpec.VNetName, "private dns zone", zoneSpec.ZoneName)
-		err := s.client.DeleteLink(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, zoneSpec.LinkName)
-		if err != nil && !azure.ResourceNotFound(err) {
-			return errors.Wrapf(err, "failed to delete virtual network link %s with zone %s in resource group %s", zoneSpec.VNetName, zoneSpec.ZoneName, s.Scope.ResourceGroup())
+		for _, linkSpec := range zoneSpec.Links {
+			// Remove each virtual network link.
+			s.Scope.V(2).Info("removing virtual network link", "virtual network", linkSpec.VNetName, "private dns zone", zoneSpec.ZoneName)
+			err := s.client.DeleteLink(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName, linkSpec.LinkName)
+			if err != nil && !azure.ResourceNotFound(err) {
+				return errors.Wrapf(err, "failed to delete virtual network link %s with zone %s in resource group %s", linkSpec.VNetName, zoneSpec.ZoneName, s.Scope.ResourceGroup())
+			}
 		}
 
 		// Delete the private DNS zone, which also deletes all records.
 		s.Scope.V(2).Info("deleting private dns zone", "private dns zone", zoneSpec.ZoneName)
-		err = s.client.DeleteZone(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName)
+		err := s.client.DeleteZone(ctx, s.Scope.ResourceGroup(), zoneSpec.ZoneName)
 		if err != nil && azure.ResourceNotFound(err) {
 			// already deleted
 			return nil

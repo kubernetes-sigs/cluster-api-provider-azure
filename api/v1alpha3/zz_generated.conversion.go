@@ -1612,6 +1612,7 @@ func autoConvert_v1beta1_VnetSpec_To_v1alpha3_VnetSpec(in *v1beta1.VnetSpec, out
 	out.ID = in.ID
 	out.Name = in.Name
 	out.CIDRBlocks = *(*[]string)(unsafe.Pointer(&in.CIDRBlocks))
+	// WARNING: in.Peerings requires manual conversion: does not exist in peer-type
 	out.Tags = *(*Tags)(unsafe.Pointer(&in.Tags))
 	return nil
 }

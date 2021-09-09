@@ -95,6 +95,9 @@ func (src *AzureCluster) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 
+	// Restore list of virtual network peerings
+	dst.Spec.NetworkSpec.Vnet.Peerings = restored.Spec.NetworkSpec.Vnet.Peerings
+
 	return nil
 }
 

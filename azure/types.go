@@ -107,6 +107,16 @@ type VNetSpec struct {
 	ResourceGroup string
 	Name          string
 	CIDRs         []string
+	Peerings      []infrav1.VnetPeeringSpec
+}
+
+// VnetPeeringSpec defines the specification for a virtual network peering.
+type VnetPeeringSpec struct {
+	SourceResourceGroup string
+	SourceVnetName      string
+	RemoteResourceGroup string
+	RemoteVnetName      string
+	PeeringName         string
 }
 
 // RoleAssignmentSpec defines the specification for a Role Assignment.
@@ -195,11 +205,16 @@ type TagsSpec struct {
 
 // PrivateDNSSpec defines the specification for a private DNS zone.
 type PrivateDNSSpec struct {
-	ZoneName          string
+	ZoneName string
+	Links    []PrivateDNSLinkSpec
+	Records  []infrav1.AddressRecord
+}
+
+// PrivateDNSLinkSpec defines the specification for a virtual network link in a private DNS zone.
+type PrivateDNSLinkSpec struct {
 	VNetName          string
 	VNetResourceGroup string
 	LinkName          string
-	Records           []infrav1.AddressRecord
 }
 
 // AvailabilitySetSpec defines the specification for an availability set.

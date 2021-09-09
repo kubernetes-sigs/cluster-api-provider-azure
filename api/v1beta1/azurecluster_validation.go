@@ -120,6 +120,8 @@ func validateNetworkSpec(networkSpec NetworkSpec, old NetworkSpec, fldPath *fiel
 		allErrs = append(allErrs, validateVnetCIDR(networkSpec.Vnet.CIDRBlocks, fldPath.Child("cidrBlocks"))...)
 
 		allErrs = append(allErrs, validateSubnets(networkSpec.Subnets, networkSpec.Vnet, fldPath.Child("subnets"))...)
+
+		allErrs = append(allErrs, validateVnetPeerings(networkSpec.Vnet.Peerings, fldPath.Child("peerings"))...)
 	}
 
 	var cidrBlocks []string
@@ -252,6 +254,21 @@ func validateVnetCIDR(vnetCIDRBlocks []string, fldPath *field.Path) field.ErrorL
 		if _, _, err := net.ParseCIDR(vnetCidr); err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath, vnetCidr, "invalid CIDR format"))
 		}
+	}
+	return allErrs
+}
+
+// validateVnetPeerings validates a list of virtual network peerings.
+func validateVnetPeerings(peerings VnetPeerings, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	vnetIdentifiers := make(map[string]bool, len(peerings))
+
+	for _, peering := range peerings {
+		vnetIdentifier := peering.ResourceGroup + "/" + peering.RemoteVnetName
+		if _, ok := vnetIdentifiers[vnetIdentifier]; ok {
+			allErrs = append(allErrs, field.Duplicate(fldPath, vnetIdentifier))
+		}
+		vnetIdentifiers[vnetIdentifier] = true
 	}
 	return allErrs
 }
