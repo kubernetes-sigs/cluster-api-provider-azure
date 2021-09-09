@@ -489,6 +489,15 @@ func (s *Service) buildVMSSFromSpec(ctx context.Context, vmssSpec azure.ScaleSet
 		}
 	}
 
+	if vmssSpec.TerminateNotificationTimeout != nil {
+		vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.ScheduledEventsProfile = &compute.ScheduledEventsProfile{
+			TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+				NotBeforeTimeout: to.StringPtr(fmt.Sprintf("PT%dM", *vmssSpec.TerminateNotificationTimeout)),
+				Enable:           to.BoolPtr(true),
+			},
+		}
+	}
+
 	tags := infrav1.Build(infrav1.BuildParams{
 		ClusterName: s.Scope.ClusterName(),
 		Lifecycle:   infrav1.ResourceLifecycleOwned,

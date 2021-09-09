@@ -1013,6 +1013,12 @@ func newDefaultVMSS(vmSize string) compute.VirtualMachineScaleSet {
 						DisablePasswordAuthentication: to.BoolPtr(true),
 					},
 				},
+				ScheduledEventsProfile: &compute.ScheduledEventsProfile{
+					TerminateNotificationProfile: &compute.TerminateNotificationProfile{
+						NotBeforeTimeout: to.StringPtr("PT7M"),
+						Enable:           to.BoolPtr(true),
+					},
+				},
 				StorageProfile: &compute.VirtualMachineScaleSetStorageProfile{
 					ImageReference: &compute.ImageReference{
 						Publisher: to.StringPtr("fake-publisher"),
