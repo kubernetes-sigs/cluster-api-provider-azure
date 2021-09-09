@@ -104,6 +104,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		Tags:     *to.StringMapPtr(managedClusterSpec.Tags),
 		ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 			NodeResourceGroup: &managedClusterSpec.NodeResourceGroupName,
+			EnableRBAC:        to.BoolPtr(true),
 			DNSPrefix:         &managedClusterSpec.Name,
 			KubernetesVersion: &managedClusterSpec.Version,
 			LinuxProfile: &containerservice.LinuxProfile{
