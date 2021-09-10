@@ -169,26 +169,17 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 		}
 	}
 
-	// If Nat Gateway is not enabled, then the NIC needs to reference the LB to get outbound traffic.
-	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() {
+	// If Nat Gateway is not enabled and node has no public IP, then the NIC needs to reference the LB to get outbound traffic.
+	if m.Role() == infrav1.Node && !m.Subnet().IsNatGatewayEnabled() && !m.AzureMachine.Spec.AllocatePublicIP {
 		spec.PublicLBName = m.OutboundLBName(m.Role())
 		spec.PublicLBAddressPoolName = m.OutboundPoolName(m.OutboundLBName(m.Role()))
 	}
-	specs := []azure.NICSpec{spec}
-	if m.AzureMachine.Spec.AllocatePublicIP {
-		specs = append(specs, azure.NICSpec{
-			Name:                  azure.GeneratePublicNICName(m.Name()),
-			MachineName:           m.Name(),
-			VNetName:              m.Vnet().Name,
-			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			SubnetName:            m.AzureMachine.Spec.SubnetName,
-			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
-			VMSize:                m.AzureMachine.Spec.VMSize,
-			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-		})
+
+	if m.Role() == infrav1.Node && m.AzureMachine.Spec.AllocatePublicIP {
+		spec.PublicIPName = azure.GenerateNodePublicIPName(m.Name())
 	}
 
-	return specs
+	return []azure.NICSpec{spec}
 }
 
 // NICNames returns the NIC names.
