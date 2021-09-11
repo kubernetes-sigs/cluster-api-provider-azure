@@ -4141,3 +4141,37 @@ spec:
 
 ---
 # Source: calico/templates/configure-canal.yaml
+
+---
+# This network policy explicitly ensures that container-originating TCP traffic bound for the reserved Azure IP endpoint is blocked
+# to remediate https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2021-27075.
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+    name: deny-azure-internal
+spec:
+  order: 0
+  applyOnForward: true
+  types:
+    - Egress
+  egress: 
+  - action: Deny
+    protocol: TCP
+    destination:
+      nets:
+      - 168.63.129.16/32
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: default-allow
+spec:
+  order: 9999
+  applyOnForward: true
+  types:
+  - Egress
+  - Ingress
+  egress:
+  - action: Allow
+  ingress:
+  - action: Allow
