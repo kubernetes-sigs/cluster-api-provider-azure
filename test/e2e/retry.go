@@ -19,8 +19,9 @@ limitations under the License.
 package e2e
 
 import (
-	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (

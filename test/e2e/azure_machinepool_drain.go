@@ -93,14 +93,14 @@ func AzureMachinePoolDrainSpec(ctx context.Context, inputGetter func() AzureMach
 
 func testMachinePoolCordonAndDrain(ctx context.Context, mgmtClusterProxy, workloadClusterProxy framework.ClusterProxy, amp v1alpha4.AzureMachinePool) {
 	var (
-		isWindows           = amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
-		clientset           = workloadClusterProxy.GetClientSet()
-		owningMachinePool   = func() *clusterv1exp.MachinePool {
+		isWindows         = amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
+		clientset         = workloadClusterProxy.GetClientSet()
+		owningMachinePool = func() *clusterv1exp.MachinePool {
 			mp, err := getOwnerMachinePool(ctx, mgmtClusterProxy.GetClient(), amp.ObjectMeta)
 			Expect(err).ToNot(HaveOccurred())
 			return mp
 		}()
-		
+
 		machinePoolReplicas = func() int32 {
 			Expect(owningMachinePool.Spec.Replicas).ToNot(BeNil(), "owning machine pool replicas must not be nil")
 			Expect(*owningMachinePool.Spec.Replicas).To(BeNumerically(">=", 2), "owning machine pool replicas must be greater than or equal to 2")

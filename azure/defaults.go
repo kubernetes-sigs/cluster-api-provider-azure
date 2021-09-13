@@ -328,6 +328,13 @@ func SetAutoRestClientDefaults(c *autorest.Client, auth autorest.Authorizer) {
 	// The wrapped Sender should set the x-ms-correlation-request-id on the given
 	// request, then pass the new request to the underlying Sender.
 	c.Sender = autorest.DecorateSender(c.Sender, msCorrelationIDSendDecorator)
+	// The default number of retries is 3. This means the client will attempt to retry operation results like resource
+	// conflicts (HTTP 409). For a reconciling controller, this is undesirable behavior since if the controller runs
+	// into an error reconciling, the controller would be better off to end with an error and try again later.
+	//
+	// Unfortunately, the naming of this field is a bit misleading. This is not actually "retry attempts", it actually
+	// is attempts. Setting this to a value of 0 will cause a panic in Go AutoRest.
+	c.RetryAttempts = 1
 	AutoRestClientAppendUserAgent(c, UserAgent())
 }
 

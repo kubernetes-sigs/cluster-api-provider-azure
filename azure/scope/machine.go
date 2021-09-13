@@ -39,6 +39,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -560,4 +561,62 @@ func (m *MachineScope) SetSubnetName() error {
 	}
 
 	return nil
+}
+
+// SetLongRunningOperationState will set the future on the AzureMachine status to allow the resource to continue
+// in the next reconciliation.
+func (m *MachineScope) SetLongRunningOperationState(future *infrav1.Future) {
+	futures.Set(m.AzureMachine, future)
+}
+
+// GetLongRunningOperationState will get the future on the AzureMachine status.
+func (m *MachineScope) GetLongRunningOperationState(name, service string) *infrav1.Future {
+	return futures.Get(m.AzureMachine, name, service)
+}
+
+// DeleteLongRunningOperationState will delete the future from the AzureMachine status.
+func (m *MachineScope) DeleteLongRunningOperationState(name, service string) {
+	futures.Delete(m.AzureMachine, name, service)
+}
+
+// UpdateDeleteStatus updates a condition on the AzureMachine status after a DELETE operation.
+func (m *MachineScope) UpdateDeleteStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletedReason, clusterv1.ConditionSeverityInfo, "%s successfully deleted", service)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletingReason, clusterv1.ConditionSeverityInfo, "%s deleting", service)
+	default:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.DeletionFailedReason, clusterv1.ConditionSeverityError, "%s failed to delete. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePutStatus updates a condition on the AzureMachine status after a PUT operation.
+func (m *MachineScope) UpdatePutStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(m.AzureMachine, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.CreatingReason, clusterv1.ConditionSeverityInfo, "%s creating or updating", service)
+	default:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to create or update. err: %s", service, err.Error())
+	}
+}
+
+// UpdatePatchStatus updates a condition on the AzureMachine status after a PATCH operation.
+func (m *MachineScope) UpdatePatchStatus(condition clusterv1.ConditionType, service string, err error) {
+	switch {
+	case err == nil:
+		conditions.MarkTrue(m.AzureMachine, condition)
+	case errors.Is(err, azure.ErrNotOwned):
+		// do nothing
+	case azure.IsOperationNotDoneError(err):
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
+	default:
+		conditions.MarkFalse(m.AzureMachine, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
 }

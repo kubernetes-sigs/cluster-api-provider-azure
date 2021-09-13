@@ -29,6 +29,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -53,11 +54,6 @@ type (
 	deleteFutureAdapter struct {
 		compute.VirtualMachineScaleSetVMsDeleteFuture
 	}
-)
-
-const (
-	// DeleteFuture is a future that was derived from a DELETE request to VMSS.
-	DeleteFuture string = "DELETE"
 )
 
 var _ client = &azureClient{}
@@ -92,13 +88,13 @@ func (ac *azureClient) GetResultIfDone(ctx context.Context, future *infrav1.Futu
 	defer span.End()
 
 	var genericFuture genericScaleSetVMFuture
-	futureData, err := base64.URLEncoding.DecodeString(future.FutureData)
+	futureData, err := base64.URLEncoding.DecodeString(future.Data)
 	if err != nil {
 		return compute.VirtualMachineScaleSetVM{}, errors.Wrapf(err, "failed to base64 decode future data")
 	}
 
 	switch future.Type {
-	case DeleteFuture:
+	case infrav1.DeleteFuture:
 		var future compute.VirtualMachineScaleSetVMsDeleteFuture
 		if err := json.Unmarshal(futureData, &future); err != nil {
 			return compute.VirtualMachineScaleSetVM{}, errors.Wrap(err, "failed to unmarshal future data")
@@ -145,17 +141,7 @@ func (ac *azureClient) DeleteAsync(ctx context.Context, resourceGroupName, vmssN
 		return nil, errors.Wrapf(err, "failed deleting vmss named %q", vmssName)
 	}
 
-	jsonData, err := future.MarshalJSON()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal async future")
-	}
-
-	return &infrav1.Future{
-		Type:          DeleteFuture,
-		ResourceGroup: resourceGroupName,
-		Name:          vmssName,
-		FutureData:    base64.URLEncoding.EncodeToString(jsonData),
-	}, nil
+	return converters.SDKToFuture(&future, infrav1.DeleteFuture, serviceName, instanceID, resourceGroupName)
 }
 
 // Result wraps the delete result so that we can treat it generically. The only thing we care about is if the delete

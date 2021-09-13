@@ -152,29 +152,42 @@ spec:
                   model, it means the instance may not be running the version of Kubernetes
                   the Machine Pool has specified and needs to be updated.
                 type: boolean
-              longRunningOperationState:
-                description: LongRunningOperationState saves the state for an Azure
-                  long running operations so it can be continued on the next reconciliation
+              longRunningOperationStates:
+                description: LongRunningOperationStates saves the state for Azure
+                  long running operations so they can be continued on the next reconciliation
                   loop.
-                properties:
-                  futureData:
-                    description: FutureData is the base64 url encoded json Azure AutoRest
-                      Future
-                    type: string
-                  name:
-                    description: Name is the name of the Azure resource
-                    type: string
-                  resourceGroup:
-                    description: ResourceGroup is the Azure resource group for the
-                      resource
-                    type: string
-                  type:
-                    description: Type describes the type of future, update, create,
-                      delete, etc
-                    type: string
-                required:
-                - type
-                type: object
+                items:
+                  description: Future contains the data needed for an Azure long-running
+                    operation to continue across reconcile loops.
+                  properties:
+                    data:
+                      description: Data is the base64 url encoded json Azure AutoRest
+                        Future.
+                      type: string
+                    name:
+                      description: Name is the name of the Azure resource. Together
+                        with the service name, this forms the unique identifier for
+                        the future.
+                      type: string
+                    resourceGroup:
+                      description: ResourceGroup is the Azure resource group for the
+                        resource.
+                      type: string
+                    serviceName:
+                      description: ServiceName is the name of the Azure service. Together
+                        with the name of the resource, this forms the unique identifier
+                        for the future.
+                      type: string
+                    type:
+                      description: Type describes the type of future, such as update,
+                        create, delete, etc.
+                      type: string
+                  required:
+                  - name
+                  - serviceName
+                  - type
+                  type: object
+                type: array
               nodeRef:
                 description: NodeRef will point to the corresponding Node if it exists.
                 properties:

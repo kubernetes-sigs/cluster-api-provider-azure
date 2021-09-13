@@ -15,6 +15,6 @@ limitations under the License.
 */
 
 // Run go generate to regenerate this mock.
-//go:generate ../../hack/tools/bin/mockgen -destination service_mock.go -package mocks -source ../interfaces.go Service
-//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt service_mock.go > _service_mock.go && mv _service_mock.go service_mock.go"
-package mocks //nolint
+//go:generate ../../hack/tools/bin/mockgen -destination azure_mock.go -package mock_azure -source ../interfaces.go
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt azure_mock.go > _azure_mock.go && mv _azure_mock.go azure_mock.go"
+package mock_azure //nolint

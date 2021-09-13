@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	convert "k8s.io/apimachinery/pkg/conversion"
+	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	expv1alpha4 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
@@ -76,6 +77,12 @@ func (src *AzureMachinePool) ConvertTo(dstRaw conversion.Hub) error { // nolint
 		dst.Annotations = nil
 	}
 
+	for i, r := range restored.Status.LongRunningOperationStates {
+		if r.Name == dst.Status.LongRunningOperationStates[i].Name {
+			dst.Status.LongRunningOperationStates[i].ServiceName = r.ServiceName
+		}
+	}
+
 	return nil
 }
 
@@ -104,5 +111,24 @@ func Convert_v1alpha4_AzureMachinePoolSpec_To_v1alpha3_AzureMachinePoolSpec(in *
 }
 
 func Convert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in *expv1alpha4.AzureMachinePoolStatus, out *AzureMachinePoolStatus, s convert.Scope) error {
+	if len(in.LongRunningOperationStates) > 0 {
+		if out.LongRunningOperationState == nil {
+			out.LongRunningOperationState = &infrav1alpha3.Future{}
+		}
+		if err := infrav1alpha3.Convert_v1alpha4_Future_To_v1alpha3_Future(&in.LongRunningOperationStates[0], out.LongRunningOperationState, s); err != nil {
+			return err
+		}
+	}
 	return autoConvert_v1alpha4_AzureMachinePoolStatus_To_v1alpha3_AzureMachinePoolStatus(in, out, s)
+}
+
+func Convert_v1alpha3_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolStatus(in *AzureMachinePoolStatus, out *expv1alpha4.AzureMachinePoolStatus, s convert.Scope) error {
+	if in.LongRunningOperationState != nil {
+		f := infrav1alpha4.Future{}
+		if err := infrav1alpha3.Convert_v1alpha3_Future_To_v1alpha4_Future(in.LongRunningOperationState, &f, s); err != nil {
+			return err
+		}
+		out.LongRunningOperationStates = []infrav1alpha4.Future{f}
+	}
+	return autoConvert_v1alpha3_AzureMachinePoolStatus_To_v1alpha4_AzureMachinePoolStatus(in, out, s)
 }

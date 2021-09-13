@@ -20,8 +20,6 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 
 // AzureCluster Conditions and Reasons.
 const (
-	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure.
-	NetworkInfrastructureReadyCondition clusterv1.ConditionType = "NetworkInfrastructureReady"
 	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity.
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )
@@ -74,4 +72,47 @@ const (
 	ScaleSetModelUpdatedCondition clusterv1.ConditionType = "ScaleSetModelUpdated"
 	// ScaleSetModelOutOfDateReason describes the machine pool model being out of date.
 	ScaleSetModelOutOfDateReason = "ScaleSetModelOutOfDate"
+)
+
+// Azure Services Conditions and Reasons.
+const (
+	// ResourceGroupReadyCondition means the resource group exists and is ready to be used.
+	ResourceGroupReadyCondition clusterv1.ConditionType = "ResourceGroupReady"
+	// VNetReadyCondition means the virtual network exists and is ready to be used.
+	VNetReadyCondition clusterv1.ConditionType = "VNetReady"
+	// SecurityGroupsReadyCondition means the security groups exist and are ready to be used.
+	SecurityGroupsReadyCondition clusterv1.ConditionType = "SecurityGroupsReady"
+	// RouteTablesReadyCondition means the route tables exist and are ready to be used.
+	RouteTablesReadyCondition clusterv1.ConditionType = "RouteTablesReady"
+	// PublicIPsReadyCondition means the public IPs exist and are ready to be used.
+	PublicIPsReadyCondition clusterv1.ConditionType = "PublicIPsReady"
+	// NATGatewaysReadyCondition means the NAT gateways exist and are ready to be used.
+	NATGatewaysReadyCondition clusterv1.ConditionType = "NATGatewaysReady"
+	// SubnetsReadyCondition means the subnets exist and are ready to be used.
+	SubnetsReadyCondition clusterv1.ConditionType = "SubnetsReady"
+	// LoadBalancersReadyCondition means the load balancers exist and are ready to be used.
+	LoadBalancersReadyCondition clusterv1.ConditionType = "LoadBalancersReady"
+	// PrivateDNSReadyCondition means the private DNS exists and is ready to be used.
+	PrivateDNSReadyCondition clusterv1.ConditionType = "PrivateDNSReady"
+	// BastionHostReadyCondition means the bastion host exists and is ready to be used.
+	BastionHostReadyCondition clusterv1.ConditionType = "BastionHostReady"
+	// InboundNATRulesReadyCondition means the inbound NAT rules exist and are ready to be used.
+	InboundNATRulesReadyCondition clusterv1.ConditionType = "InboundNATRulesReady"
+	// AvailabilitySetReadyCondition means the availability set exists and is ready to be used.
+	AvailabilitySetReadyCondition clusterv1.ConditionType = "AvailabilitySetReady"
+	// RoleAssignmentReadyCondition means the role assignment exists and is ready to be used.
+	RoleAssignmentReadyCondition clusterv1.ConditionType = "RoleAssignmentReady"
+
+	// CreatingReason means the resource is being created.
+	CreatingReason = "Creating"
+	// FailedReason means the resource failed to be created.
+	FailedReason = "Failed"
+	// DeletingReason means the resource is being deleted.
+	DeletingReason = "Deleting"
+	// DeletedReason means the resource was deleted.
+	DeletedReason = "Deleted"
+	// DeletionFailedReason means the resource failed to be deleted.
+	DeletionFailedReason = "DeletionFailed"
+	// UpdatingReason means the resource is being updated.
+	UpdatingReason = "Updating"
 )
