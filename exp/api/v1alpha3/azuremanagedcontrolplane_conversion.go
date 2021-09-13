@@ -38,6 +38,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error { //
 	}
 
 	dst.Spec.IdentityRef = restored.Spec.IdentityRef
+	dst.Spec.SKU = restored.Spec.SKU
 
 	return nil
 }

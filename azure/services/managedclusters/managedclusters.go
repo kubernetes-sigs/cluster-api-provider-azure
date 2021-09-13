@@ -173,6 +173,14 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
+	if managedClusterSpec.SKU != nil {
+		tierName := containerservice.ManagedClusterSKUTier(managedClusterSpec.SKU.Tier)
+		managedCluster.Sku = &containerservice.ManagedClusterSKU{
+			Name: containerservice.ManagedClusterSKUNameBasic,
+			Tier: tierName,
+		}
+	}
+
 	if isCreate {
 		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
 		if err != nil {
@@ -215,7 +223,21 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			}
 		}
 
-		diff := cmp.Diff(propertiesNormalized, existingMCPropertiesNormalized)
+		clusterNormalized := &containerservice.ManagedCluster{
+			ManagedClusterProperties: propertiesNormalized,
+		}
+		existingMCClusterNormalized := &containerservice.ManagedCluster{
+			ManagedClusterProperties: existingMCPropertiesNormalized,
+		}
+
+		if managedCluster.Sku != nil {
+			clusterNormalized.Sku = managedCluster.Sku
+		}
+		if existingMC.Sku != nil {
+			existingMCClusterNormalized.Sku = existingMC.Sku
+		}
+
+		diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
 			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)

@@ -404,6 +404,12 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		}
 	}
 
+	if s.ControlPlane.Spec.SKU != nil {
+		managedClusterSpec.SKU = &azure.SKU{
+			Tier: s.ControlPlane.Spec.SKU.Tier,
+		}
+	}
+
 	return managedClusterSpec, nil
 }
 
