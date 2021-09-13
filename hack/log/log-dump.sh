@@ -23,8 +23,11 @@ cd "${REPO_ROOT}" || exit 1
 
 # shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=hack/ensure-kubectl.sh
-source "${REPO_ROOT}/hack/ensure-kubectl.sh"
+
+# installation of kubectl
+mkdir -p "${REPO_ROOT}/hack/tools/bin"
+KUBECTL=$(realpath hack/tools/bin/kubectl)
+make "${KUBECTL}" &>/dev/null
 
 export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/management-cluster" "${ARTIFACTS}/workload-cluster"
@@ -34,7 +37,7 @@ export KUBECONFIG="${KUBECONFIG:-${PWD}/kubeconfig}"
 get_node_name() {
     local -r pod_name="${1}"
     # shellcheck disable=SC1083
-    kubectl get pod "${pod_name}" -ojsonpath={.spec.nodeName}
+    "${KUBECTL}" get pod "${pod_name}" -ojsonpath={.spec.nodeName}
 }
 
 dump_mgmt_cluster_logs() {
@@ -88,8 +91,8 @@ dump_mgmt_cluster_logs() {
 
 dump_workload_cluster_logs() {
     echo "Deploying log-dump-daemonset"
-    kubectl apply -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml"
-    kubectl wait pod -l app=log-dump-node --for=condition=Ready --timeout=5m
+    "${KUBECTL}" apply -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml"
+    "${KUBECTL}" wait pod -l app=log-dump-node --for=condition=Ready --timeout=5m
 
     IFS=" " read -ra log_dump_pods <<< "$(kubectl get pod -l app=log-dump-node -ojsonpath='{.items[*].metadata.name}')"
     local log_dump_commands=(
@@ -128,7 +131,7 @@ dump_workload_cluster_logs() {
 }
 
 cleanup() {
-    kubectl delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml" || true
+    "${KUBECTL}" delete -f "${REPO_ROOT}/hack/log/log-dump-daemonset.yaml" || true
     # shellcheck source=hack/log/redact.sh
     source "${REPO_ROOT}/hack/log/redact.sh"
 }
