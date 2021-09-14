@@ -315,6 +315,18 @@ spec:
                 description: ResourceGroupName is the name of the Azure resource group
                   for this AKS Cluster.
                 type: string
+              sku:
+                description: SKU is the SKU of the AKS to be provisioned.
+                properties:
+                  tier:
+                    description: Tier - Tier of a managed cluster SKU.
+                    enum:
+                    - Free
+                    - Paid
+                    type: string
+                required:
+                - tier
+                type: object
               sshPublicKey:
                 description: SSHPublicKey is a string literal containing an ssh public
                   key base64 encoded.

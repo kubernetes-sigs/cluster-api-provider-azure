@@ -358,6 +358,9 @@ type ManagedClusterSpec struct {
 
 	// AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
 	AADProfile *AADProfile
+
+	// SKU is the SKU of the AKS to be provisioned.
+	SKU *SKU
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -370,6 +373,12 @@ type AADProfile struct {
 
 	// AdminGroupObjectIDs - AAD group object IDs that will have admin role of the cluster.
 	AdminGroupObjectIDs []string
+}
+
+// SKU - AKS SKU.
+type SKU struct {
+	// Tier - Tier of a managed cluster SKU.
+	Tier string
 }
 
 // AgentPoolSpec contains agent pool specification details.
