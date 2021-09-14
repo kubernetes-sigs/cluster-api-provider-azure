@@ -70,8 +70,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	// We go through the list of NatGatewaySpecs to reconcile each one, independently of the resultingErr of the previous one.
-	// If multiple errors occur, we return the most pressing one
-	// order of precedence is: error creating -> creating in progress -> created (no error)
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
 	var resultingErr error
 	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
 		result, err := s.CreateResource(ctx, natGatewaySpec, serviceName)
@@ -115,8 +115,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	var resultingErr error
 
 	// We go through the list of NatGatewaySpecs to delete each one, independently of the resultingErr of the previous one.
-	// If multiple errors occur, we return the most pressing one
-	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
 	for _, natGatewaySpec := range s.Scope.NatGatewaySpecs() {
 		if err := s.DeleteResource(ctx, natGatewaySpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || resultingErr == nil {

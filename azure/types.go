@@ -64,15 +64,6 @@ type LBSpec struct {
 	IdleTimeoutInMinutes *int32
 }
 
-// RouteTableRole defines the unique role of a route table.
-type RouteTableRole string
-
-// RouteTableSpec defines the specification for a Route Table.
-type RouteTableSpec struct {
-	Name   string
-	Subnet infrav1.SubnetSpec
-}
-
 // InboundNatSpec defines the specification for an inbound NAT rule.
 type InboundNatSpec struct {
 	Name             string

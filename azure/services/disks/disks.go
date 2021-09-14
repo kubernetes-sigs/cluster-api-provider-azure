@@ -70,8 +70,8 @@ func (s *Service) Delete(ctx context.Context) error {
 	var result error
 
 	// We go through the list of DiskSpecs to delete each one, independently of the result of the previous one.
-	// If multiple errors occur, we return the most pressing one
-	// order of precedence is: error deleting -> deleting in progress -> deleted (no error)
+	// If multiple errors occur, we return the most pressing one.
+	//  Order of precedence (highest -> lowest) is: error that is not an operationNotDoneError (ie. error creating) -> operationNotDoneError (ie. creating in progress) -> no error (ie. created)
 	for _, diskSpec := range s.Scope.DiskSpecs() {
 		if err := s.DeleteResource(ctx, diskSpec, serviceName); err != nil {
 			if !azure.IsOperationNotDoneError(err) || result == nil {

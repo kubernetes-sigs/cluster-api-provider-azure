@@ -27,6 +27,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockRouteTableScope is a mock of RouteTableScope interface.
@@ -52,48 +53,6 @@ func (m *MockRouteTableScope) EXPECT() *MockRouteTableScopeMockRecorder {
 	return m.recorder
 }
 
-// APIServerLBName mocks base method.
-func (m *MockRouteTableScope) APIServerLBName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// APIServerLBName indicates an expected call of APIServerLBName.
-func (mr *MockRouteTableScopeMockRecorder) APIServerLBName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBName", reflect.TypeOf((*MockRouteTableScope)(nil).APIServerLBName))
-}
-
-// APIServerLBPoolName mocks base method.
-func (m *MockRouteTableScope) APIServerLBPoolName(arg0 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServerLBPoolName", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// APIServerLBPoolName indicates an expected call of APIServerLBPoolName.
-func (mr *MockRouteTableScopeMockRecorder) APIServerLBPoolName(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerLBPoolName", reflect.TypeOf((*MockRouteTableScope)(nil).APIServerLBPoolName), arg0)
-}
-
-// AdditionalTags mocks base method.
-func (m *MockRouteTableScope) AdditionalTags() v1beta1.Tags {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1beta1.Tags)
-	return ret0
-}
-
-// AdditionalTags indicates an expected call of AdditionalTags.
-func (mr *MockRouteTableScopeMockRecorder) AdditionalTags() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdditionalTags", reflect.TypeOf((*MockRouteTableScope)(nil).AdditionalTags))
-}
-
 // Authorizer mocks base method.
 func (m *MockRouteTableScope) Authorizer() autorest.Authorizer {
 	m.ctrl.T.Helper()
@@ -106,20 +65,6 @@ func (m *MockRouteTableScope) Authorizer() autorest.Authorizer {
 func (mr *MockRouteTableScopeMockRecorder) Authorizer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorizer", reflect.TypeOf((*MockRouteTableScope)(nil).Authorizer))
-}
-
-// AvailabilitySetEnabled mocks base method.
-func (m *MockRouteTableScope) AvailabilitySetEnabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AvailabilitySetEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// AvailabilitySetEnabled indicates an expected call of AvailabilitySetEnabled.
-func (mr *MockRouteTableScopeMockRecorder) AvailabilitySetEnabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AvailabilitySetEnabled", reflect.TypeOf((*MockRouteTableScope)(nil).AvailabilitySetEnabled))
 }
 
 // BaseURI mocks base method.
@@ -178,88 +123,30 @@ func (mr *MockRouteTableScopeMockRecorder) CloudEnvironment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudEnvironment", reflect.TypeOf((*MockRouteTableScope)(nil).CloudEnvironment))
 }
 
-// CloudProviderConfigOverrides mocks base method.
-func (m *MockRouteTableScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
+// DeleteLongRunningOperationState mocks base method.
+func (m *MockRouteTableScope) DeleteLongRunningOperationState(arg0, arg1 string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
+	m.ctrl.Call(m, "DeleteLongRunningOperationState", arg0, arg1)
+}
+
+// DeleteLongRunningOperationState indicates an expected call of DeleteLongRunningOperationState.
+func (mr *MockRouteTableScopeMockRecorder) DeleteLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLongRunningOperationState", reflect.TypeOf((*MockRouteTableScope)(nil).DeleteLongRunningOperationState), arg0, arg1)
+}
+
+// GetLongRunningOperationState mocks base method.
+func (m *MockRouteTableScope) GetLongRunningOperationState(arg0, arg1 string) *v1beta1.Future {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLongRunningOperationState", arg0, arg1)
+	ret0, _ := ret[0].(*v1beta1.Future)
 	return ret0
 }
 
-// CloudProviderConfigOverrides indicates an expected call of CloudProviderConfigOverrides.
-func (mr *MockRouteTableScopeMockRecorder) CloudProviderConfigOverrides() *gomock.Call {
+// GetLongRunningOperationState indicates an expected call of GetLongRunningOperationState.
+func (mr *MockRouteTableScopeMockRecorder) GetLongRunningOperationState(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloudProviderConfigOverrides", reflect.TypeOf((*MockRouteTableScope)(nil).CloudProviderConfigOverrides))
-}
-
-// ClusterName mocks base method.
-func (m *MockRouteTableScope) ClusterName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ClusterName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ClusterName indicates an expected call of ClusterName.
-func (mr *MockRouteTableScopeMockRecorder) ClusterName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockRouteTableScope)(nil).ClusterName))
-}
-
-// ControlPlaneRouteTable mocks base method.
-func (m *MockRouteTableScope) ControlPlaneRouteTable() v1beta1.RouteTable {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneRouteTable")
-	ret0, _ := ret[0].(v1beta1.RouteTable)
-	return ret0
-}
-
-// ControlPlaneRouteTable indicates an expected call of ControlPlaneRouteTable.
-func (mr *MockRouteTableScopeMockRecorder) ControlPlaneRouteTable() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneRouteTable", reflect.TypeOf((*MockRouteTableScope)(nil).ControlPlaneRouteTable))
-}
-
-// ControlPlaneSubnet mocks base method.
-func (m *MockRouteTableScope) ControlPlaneSubnet() v1beta1.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ControlPlaneSubnet")
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
-	return ret0
-}
-
-// ControlPlaneSubnet indicates an expected call of ControlPlaneSubnet.
-func (mr *MockRouteTableScopeMockRecorder) ControlPlaneSubnet() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockRouteTableScope)(nil).ControlPlaneSubnet))
-}
-
-// FailureDomains mocks base method.
-func (m *MockRouteTableScope) FailureDomains() []string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FailureDomains")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// FailureDomains indicates an expected call of FailureDomains.
-func (mr *MockRouteTableScopeMockRecorder) FailureDomains() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockRouteTableScope)(nil).FailureDomains))
-}
-
-// GetPrivateDNSZoneName mocks base method.
-func (m *MockRouteTableScope) GetPrivateDNSZoneName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPrivateDNSZoneName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetPrivateDNSZoneName indicates an expected call of GetPrivateDNSZoneName.
-func (mr *MockRouteTableScopeMockRecorder) GetPrivateDNSZoneName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateDNSZoneName", reflect.TypeOf((*MockRouteTableScope)(nil).GetPrivateDNSZoneName))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLongRunningOperationState", reflect.TypeOf((*MockRouteTableScope)(nil).GetLongRunningOperationState), arg0, arg1)
 }
 
 // HashKey mocks base method.
@@ -276,34 +163,6 @@ func (mr *MockRouteTableScopeMockRecorder) HashKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HashKey", reflect.TypeOf((*MockRouteTableScope)(nil).HashKey))
 }
 
-// IsAPIServerPrivate mocks base method.
-func (m *MockRouteTableScope) IsAPIServerPrivate() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAPIServerPrivate")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsAPIServerPrivate indicates an expected call of IsAPIServerPrivate.
-func (mr *MockRouteTableScopeMockRecorder) IsAPIServerPrivate() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAPIServerPrivate", reflect.TypeOf((*MockRouteTableScope)(nil).IsAPIServerPrivate))
-}
-
-// IsIPv6Enabled mocks base method.
-func (m *MockRouteTableScope) IsIPv6Enabled() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsIPv6Enabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsIPv6Enabled indicates an expected call of IsIPv6Enabled.
-func (mr *MockRouteTableScopeMockRecorder) IsIPv6Enabled() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsIPv6Enabled", reflect.TypeOf((*MockRouteTableScope)(nil).IsIPv6Enabled))
-}
-
 // IsVnetManaged mocks base method.
 func (m *MockRouteTableScope) IsVnetManaged() bool {
 	m.ctrl.T.Helper()
@@ -318,81 +177,11 @@ func (mr *MockRouteTableScopeMockRecorder) IsVnetManaged() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsVnetManaged", reflect.TypeOf((*MockRouteTableScope)(nil).IsVnetManaged))
 }
 
-// Location mocks base method.
-func (m *MockRouteTableScope) Location() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Location")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Location indicates an expected call of Location.
-func (mr *MockRouteTableScopeMockRecorder) Location() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Location", reflect.TypeOf((*MockRouteTableScope)(nil).Location))
-}
-
-// NodeSubnets mocks base method.
-func (m *MockRouteTableScope) NodeSubnets() []v1beta1.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NodeSubnets")
-	ret0, _ := ret[0].([]v1beta1.SubnetSpec)
-	return ret0
-}
-
-// NodeSubnets indicates an expected call of NodeSubnets.
-func (mr *MockRouteTableScopeMockRecorder) NodeSubnets() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeSubnets", reflect.TypeOf((*MockRouteTableScope)(nil).NodeSubnets))
-}
-
-// OutboundLBName mocks base method.
-func (m *MockRouteTableScope) OutboundLBName(arg0 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OutboundLBName", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// OutboundLBName indicates an expected call of OutboundLBName.
-func (mr *MockRouteTableScopeMockRecorder) OutboundLBName(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundLBName", reflect.TypeOf((*MockRouteTableScope)(nil).OutboundLBName), arg0)
-}
-
-// OutboundPoolName mocks base method.
-func (m *MockRouteTableScope) OutboundPoolName(arg0 string) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OutboundPoolName", arg0)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// OutboundPoolName indicates an expected call of OutboundPoolName.
-func (mr *MockRouteTableScopeMockRecorder) OutboundPoolName(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OutboundPoolName", reflect.TypeOf((*MockRouteTableScope)(nil).OutboundPoolName), arg0)
-}
-
-// ResourceGroup mocks base method.
-func (m *MockRouteTableScope) ResourceGroup() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceGroup")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ResourceGroup indicates an expected call of ResourceGroup.
-func (mr *MockRouteTableScopeMockRecorder) ResourceGroup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceGroup", reflect.TypeOf((*MockRouteTableScope)(nil).ResourceGroup))
-}
-
 // RouteTableSpecs mocks base method.
-func (m *MockRouteTableScope) RouteTableSpecs() []azure.RouteTableSpec {
+func (m *MockRouteTableScope) RouteTableSpecs() []azure.ResourceSpecGetter {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RouteTableSpecs")
-	ret0, _ := ret[0].([]azure.RouteTableSpec)
+	ret0, _ := ret[0].([]azure.ResourceSpecGetter)
 	return ret0
 }
 
@@ -402,44 +191,16 @@ func (mr *MockRouteTableScopeMockRecorder) RouteTableSpecs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTableSpecs", reflect.TypeOf((*MockRouteTableScope)(nil).RouteTableSpecs))
 }
 
-// SetSubnet mocks base method.
-func (m *MockRouteTableScope) SetSubnet(arg0 v1beta1.SubnetSpec) {
+// SetLongRunningOperationState mocks base method.
+func (m *MockRouteTableScope) SetLongRunningOperationState(arg0 *v1beta1.Future) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetSubnet", arg0)
+	m.ctrl.Call(m, "SetLongRunningOperationState", arg0)
 }
 
-// SetSubnet indicates an expected call of SetSubnet.
-func (mr *MockRouteTableScopeMockRecorder) SetSubnet(arg0 interface{}) *gomock.Call {
+// SetLongRunningOperationState indicates an expected call of SetLongRunningOperationState.
+func (mr *MockRouteTableScopeMockRecorder) SetLongRunningOperationState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubnet", reflect.TypeOf((*MockRouteTableScope)(nil).SetSubnet), arg0)
-}
-
-// Subnet mocks base method.
-func (m *MockRouteTableScope) Subnet(arg0 string) v1beta1.SubnetSpec {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Subnet", arg0)
-	ret0, _ := ret[0].(v1beta1.SubnetSpec)
-	return ret0
-}
-
-// Subnet indicates an expected call of Subnet.
-func (mr *MockRouteTableScopeMockRecorder) Subnet(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnet", reflect.TypeOf((*MockRouteTableScope)(nil).Subnet), arg0)
-}
-
-// Subnets mocks base method.
-func (m *MockRouteTableScope) Subnets() v1beta1.Subnets {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Subnets")
-	ret0, _ := ret[0].(v1beta1.Subnets)
-	return ret0
-}
-
-// Subnets indicates an expected call of Subnets.
-func (mr *MockRouteTableScopeMockRecorder) Subnets() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subnets", reflect.TypeOf((*MockRouteTableScope)(nil).Subnets))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLongRunningOperationState", reflect.TypeOf((*MockRouteTableScope)(nil).SetLongRunningOperationState), arg0)
 }
 
 // SubscriptionID mocks base method.
@@ -470,16 +231,38 @@ func (mr *MockRouteTableScopeMockRecorder) TenantID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TenantID", reflect.TypeOf((*MockRouteTableScope)(nil).TenantID))
 }
 
-// Vnet mocks base method.
-func (m *MockRouteTableScope) Vnet() *v1beta1.VnetSpec {
+// UpdateDeleteStatus mocks base method.
+func (m *MockRouteTableScope) UpdateDeleteStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Vnet")
-	ret0, _ := ret[0].(*v1beta1.VnetSpec)
-	return ret0
+	m.ctrl.Call(m, "UpdateDeleteStatus", arg0, arg1, arg2)
 }
 
-// Vnet indicates an expected call of Vnet.
-func (mr *MockRouteTableScopeMockRecorder) Vnet() *gomock.Call {
+// UpdateDeleteStatus indicates an expected call of UpdateDeleteStatus.
+func (mr *MockRouteTableScopeMockRecorder) UpdateDeleteStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Vnet", reflect.TypeOf((*MockRouteTableScope)(nil).Vnet))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeleteStatus", reflect.TypeOf((*MockRouteTableScope)(nil).UpdateDeleteStatus), arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus mocks base method.
+func (m *MockRouteTableScope) UpdatePatchStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePatchStatus", arg0, arg1, arg2)
+}
+
+// UpdatePatchStatus indicates an expected call of UpdatePatchStatus.
+func (mr *MockRouteTableScopeMockRecorder) UpdatePatchStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePatchStatus", reflect.TypeOf((*MockRouteTableScope)(nil).UpdatePatchStatus), arg0, arg1, arg2)
+}
+
+// UpdatePutStatus mocks base method.
+func (m *MockRouteTableScope) UpdatePutStatus(arg0 v1beta10.ConditionType, arg1 string, arg2 error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdatePutStatus", arg0, arg1, arg2)
+}
+
+// UpdatePutStatus indicates an expected call of UpdatePutStatus.
+func (mr *MockRouteTableScopeMockRecorder) UpdatePutStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePutStatus", reflect.TypeOf((*MockRouteTableScope)(nil).UpdatePutStatus), arg0, arg1, arg2)
 }

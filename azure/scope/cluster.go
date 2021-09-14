@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/natgateways"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -209,16 +210,20 @@ func (s *ClusterScope) LBSpecs() []azure.LBSpec {
 	return specs
 }
 
-// RouteTableSpecs returns the node route table.
-func (s *ClusterScope) RouteTableSpecs() []azure.RouteTableSpec {
-	var routetables []azure.RouteTableSpec
+// RouteTableSpecs returns the subnet route tables.
+func (s *ClusterScope) RouteTableSpecs() []azure.ResourceSpecGetter {
+	var specs []azure.ResourceSpecGetter
 	for _, subnet := range s.AzureCluster.Spec.NetworkSpec.Subnets {
 		if subnet.RouteTable.Name != "" {
-			routetables = append(routetables, azure.RouteTableSpec{Name: subnet.RouteTable.Name, Subnet: subnet})
+			specs = append(specs, &routetables.RouteTableSpec{
+				Name:          subnet.RouteTable.Name,
+				Location:      s.Location(),
+				ResourceGroup: s.ResourceGroup(),
+			})
 		}
 	}
 
-	return routetables
+	return specs
 }
 
 // NatGatewaySpecs returns the node NAT gateway.
@@ -613,6 +618,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	conditions.SetSummary(s.AzureCluster,
 		conditions.WithConditions(
 			infrav1.ResourceGroupReadyCondition,
+			infrav1.RouteTablesReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
@@ -626,6 +632,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.ResourceGroupReadyCondition,
+			infrav1.RouteTablesReadyCondition,
 			infrav1.NetworkInfrastructureReadyCondition,
 			infrav1.VnetPeeringReadyCondition,
 			infrav1.DisksReadyCondition,
