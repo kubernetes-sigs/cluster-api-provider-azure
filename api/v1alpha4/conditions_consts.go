@@ -20,6 +20,8 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 
 // AzureCluster Conditions and Reasons.
 const (
+	// NetworkInfrastructureReadyCondition reports of current status of cluster infrastructure.
+	NetworkInfrastructureReadyCondition clusterv1.ConditionType = "NetworkInfrastructureReady"
 	// NamespaceNotAllowedByIdentity used to indicate cluster in a namespace not allowed by identity.
 	NamespaceNotAllowedByIdentity = "NamespaceNotAllowedByIdentity"
 )

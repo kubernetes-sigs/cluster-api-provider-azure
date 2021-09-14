@@ -553,6 +553,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 	conditions.SetSummary(s.AzureCluster,
 		conditions.WithConditions(
 			infrav1.ResourceGroupReadyCondition,
+			infrav1.NetworkInfrastructureReadyCondition,
 		),
 	)
 
@@ -562,6 +563,7 @@ func (s *ClusterScope) PatchObject(ctx context.Context) error {
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.ResourceGroupReadyCondition,
+			infrav1.NetworkInfrastructureReadyCondition,
 		}})
 }
 
