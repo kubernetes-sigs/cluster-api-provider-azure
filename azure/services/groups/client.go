@@ -32,9 +32,10 @@ import (
 // client wraps go-sdk.
 type client interface {
 	Get(context.Context, string) (resources.Group, error)
-	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error)
 	DeleteAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
+	Result(context.Context, azureautorest.FutureAPI, string) (interface{}, error)
 }
 
 // azureClient contains the Azure go-sdk Client.
@@ -69,20 +70,20 @@ func (ac *azureClient) Get(ctx context.Context, name string) (resources.Group, e
 
 // CreateOrUpdateAsync creates or updates a resource group.
 // Creating a resource group is not a long running operation, so we don't ever return a future.
-func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+func (ac *azureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (interface{}, azureautorest.FutureAPI, error) {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "groups.AzureClient.CreateOrUpdate")
 	defer done()
 
 	group, err := ac.resourceGroupParams(ctx, spec)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get desired parameters for group %s", spec.ResourceName())
+		return nil, nil, errors.Wrapf(err, "failed to get desired parameters for group %s", spec.ResourceName())
 	} else if group == nil {
 		// nothing to do here
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	_, err = ac.groups.CreateOrUpdate(ctx, spec.ResourceName(), *group)
-	return nil, err
+	result, err := ac.groups.CreateOrUpdate(ctx, spec.ResourceName(), *group)
+	return result, nil, err
 }
 
 // DeleteAsync deletes a resource group asynchronously. DeleteAsync sends a DELETE
@@ -124,6 +125,12 @@ func (ac *azureClient) IsDone(ctx context.Context, future azureautorest.FutureAP
 	}
 
 	return isDone, nil
+}
+
+// Result fetches the result of a long-running operation future.
+func (ac *azureClient) Result(ctx context.Context, futureData azureautorest.FutureAPI, futureType string) (interface{}, error) {
+	// Result is a no-op for resource groups as only Delete operations return a future.
+	return nil, nil
 }
 
 // resourceGroupParams returns the desired resource group parameters from the given spec.

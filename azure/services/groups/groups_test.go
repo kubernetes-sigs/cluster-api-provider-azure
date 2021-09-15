@@ -81,7 +81,7 @@ func TestReconcileGroups(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(nil, nil)
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(nil, nil, nil)
 				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, nil)
 			},
 		},
@@ -92,7 +92,7 @@ func TestReconcileGroups(t *testing.T) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.GroupSpec().Return(&fakeGroupSpec)
 				s.GetLongRunningOperationState("test-group", serviceName)
-				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(nil, internalError)
+				m.CreateOrUpdateAsync(gomockinternal.AContext(), &fakeGroupSpec).Return(nil, nil, internalError)
 				s.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, gomockinternal.ErrStrEq(fmt.Sprintf("failed to create resource test-group/test-group (service: group): %s", internalError.Error())))
 			},
 		},
@@ -143,6 +143,7 @@ func TestDeleteGroups(t *testing.T) {
 				s.ClusterName().Return("test-cluster")
 				s.GetLongRunningOperationState("test-group", serviceName).Times(2).Return(&fakeFuture)
 				m.IsDone(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{})).Return(true, nil)
+				m.Result(gomockinternal.AContext(), gomock.AssignableToTypeOf(&azureautorest.Future{}), infrav1.DeleteFuture).Return(nil, nil)
 				s.DeleteLongRunningOperationState("test-group", serviceName)
 				s.UpdateDeleteStatus(infrav1.ResourceGroupReadyCondition, serviceName, nil)
 			},

@@ -65,7 +65,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	groupSpec := s.Scope.GroupSpec()
 
-	err := async.CreateResource(ctx, s.Scope, s.client, groupSpec, serviceName)
+	_, err := async.CreateResource(ctx, s.Scope, s.client, groupSpec, serviceName)
 	s.Scope.UpdatePutStatus(infrav1.ResourceGroupReadyCondition, serviceName, err)
 	return err
 }

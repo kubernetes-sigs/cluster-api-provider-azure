@@ -186,7 +186,9 @@ type AzureMachineStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="AzureMachine ready status"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
+// +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].reason"
+// +kubebuilder:printcolumn:name="Message",type="string",priority=1,JSONPath=".status.conditions[?(@.type=='Ready')].message"
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.vmState",description="Azure VM provisioning state"
 // +kubebuilder:printcolumn:name="Cluster",type="string",priority=1,JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this AzureMachine belongs"
 // +kubebuilder:printcolumn:name="Machine",type="string",priority=1,JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object to which this AzureMachine belongs"

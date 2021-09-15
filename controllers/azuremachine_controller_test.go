@@ -173,11 +173,12 @@ func TestConditions(t *testing.T) {
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 
-			machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+			machineScope, err := scope.NewMachineScope(context.TODO(), scope.MachineScopeParams{
 				Client:       client,
 				ClusterScope: clusterScope,
 				Machine:      tc.machine,
 				AzureMachine: tc.azureMachine,
+				Cache:        &scope.MachineCache{},
 			})
 			g.Expect(err).NotTo(HaveOccurred())
 

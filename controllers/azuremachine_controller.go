@@ -214,7 +214,7 @@ func (amr *AzureMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Create the machine scope
-	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+	machineScope, err := scope.NewMachineScope(ctx, scope.MachineScopeParams{
 		Logger:       logger,
 		Client:       amr.Client,
 		Machine:      machine,
@@ -283,10 +283,10 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 		// In this case, we mark it as failed and leave it to MHC for remediation
 		if errors.As(err, &azure.VMDeletedError{}) {
 			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "VMDeleted", errors.Wrap(err, "failed to reconcile AzureMachine").Error())
-			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 			machineScope.SetFailureReason(capierrors.UpdateMachineError)
 			machineScope.SetFailureMessage(err)
 			machineScope.SetNotReady()
+			machineScope.SetVMState(infrav1.Deleted)
 			return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 		}
 
@@ -304,13 +304,11 @@ func (amr *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineS
 			}
 
 			if reconcileError.IsTransient() {
-				machineScope.Error(err, "transient failure to reconcile AzureMachine, retrying", "name", machineScope.Name())
-				machineScope.SetNotReady()
+				machineScope.V(2).Info("transient failure to reconcile AzureMachine, retrying", "name", machineScope.Name())
 				return reconcile.Result{RequeueAfter: reconcileError.RequeueAfter()}, nil
 			}
 		}
 		amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "ReconcileError", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
-		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, errors.Wrap(err, "failed to reconcile AzureMachine")
 	}
 
@@ -325,7 +323,6 @@ func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineS
 
 	machineScope.Info("Handling deleted AzureMachine")
 
-	conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
 	if err := machineScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -347,7 +344,6 @@ func (amr *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineS
 
 		if err := ams.Delete(ctx); err != nil {
 			amr.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureMachine", errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
-			conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 			reterr = errors.Wrapf(err, "error deleting AzureMachine %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 			return
 		}

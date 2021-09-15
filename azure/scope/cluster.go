@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -53,6 +54,9 @@ type ClusterScopeParams struct {
 // NewClusterScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
 func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterScope, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.clusterScope.NewClusterScope")
+	defer done()
+
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}

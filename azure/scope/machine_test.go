@@ -1726,3 +1726,158 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 		})
 	}
 }
+
+func TestDiskSpecs(t *testing.T) {
+	testcases := []struct {
+		name         string
+		machineScope MachineScope
+		want         []azure.DiskSpec
+	}{
+		{
+			name: "only os disk",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-azure-machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							DiskSizeGB: to.Int32Ptr(30),
+							OSType:     "Linux",
+						},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+				},
+			},
+			want: []azure.DiskSpec{
+				{
+					Name: "my-azure-machine_OSDisk",
+				},
+			},
+		},
+		{
+			name: "os and data disks",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-azure-machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							DiskSizeGB: to.Int32Ptr(30),
+							OSType:     "Linux",
+						},
+						DataDisks: []infrav1.DataDisk{
+							{
+								NameSuffix: "etcddisk",
+							},
+						},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+				},
+			},
+			want: []azure.DiskSpec{
+				{
+					Name: "my-azure-machine_OSDisk",
+				},
+				{
+					Name: "my-azure-machine_etcddisk",
+				},
+			},
+		}, {
+			name: "os and multiple data disks",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-azure-machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						OSDisk: infrav1.OSDisk{
+							DiskSizeGB: to.Int32Ptr(30),
+							OSType:     "Linux",
+						},
+						DataDisks: []infrav1.DataDisk{
+							{
+								NameSuffix: "etcddisk",
+							},
+							{
+								NameSuffix: "otherdisk",
+							},
+						},
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+				},
+			},
+			want: []azure.DiskSpec{
+				{
+					Name: "my-azure-machine_OSDisk",
+				},
+				{
+					Name: "my-azure-machine_etcddisk",
+				},
+				{
+					Name: "my-azure-machine_otherdisk",
+				},
+			},
+		},
+	}
+
+	for _, tt := range testcases {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := tt.machineScope.DiskSpecs()
+			if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("DiskSpecs(), DiskSpecs = %v, want %v", result, tt.want)
+			}
+		})
+	}
+}

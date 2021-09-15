@@ -39,7 +39,10 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
+	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -49,11 +52,15 @@ type MachineScopeParams struct {
 	ClusterScope azure.ClusterScoper
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
+	Cache        *MachineCache
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
-func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
+func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineScope, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.machineScope.NewMachineScope")
+	defer done()
+
 	if params.Client == nil {
 		return nil, errors.New("client is required when creating a MachineScope")
 	}
@@ -69,16 +76,25 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 	helper, err := patch.NewHelper(params.AzureMachine, params.Client)
 	if err != nil {
-		return nil, errors.Errorf("failed to init patch helper: %v ", err)
+		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
-	return &MachineScope{
+
+	m := &MachineScope{
 		client:        params.Client,
 		Machine:       params.Machine,
 		AzureMachine:  params.AzureMachine,
 		Logger:        params.Logger,
 		patchHelper:   helper,
 		ClusterScoper: params.ClusterScope,
-	}, nil
+		cache:         params.Cache,
+	}
+
+	err = m.initMachineCache(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init machine scope cache")
+	}
+
+	return m, nil
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -90,23 +106,72 @@ type MachineScope struct {
 	azure.ClusterScoper
 	Machine      *clusterv1.Machine
 	AzureMachine *infrav1.AzureMachine
+	cache        *MachineCache
+}
+
+// MachineCache stores common machine information so we don't have to hit the API multiple times within the same reconcile loop.
+type MachineCache struct {
+	BootstrapData string
+	VMImage       *infrav1.Image
+	VMSKU         resourceskus.SKU
+}
+
+// initMachineCache sets cached information about the machine to be used in the scope.
+func (m *MachineScope) initMachineCache(ctx context.Context) error {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "azure.machineScope.initMachineCache")
+	defer done()
+
+	if m.cache == nil {
+		var err error
+		m.cache = &MachineCache{}
+
+		m.cache.BootstrapData, err = m.GetBootstrapData(ctx)
+		if err != nil {
+			return err
+		}
+
+		m.cache.VMImage, err = m.GetVMImage()
+		if err != nil {
+			return err
+		}
+
+		skuCache, err := resourceskus.GetCache(m, m.Location())
+		if err != nil {
+			return err
+		}
+		m.cache.VMSKU, err = skuCache.Get(ctx, m.AzureMachine.Spec.VMSize, resourceskus.VirtualMachines)
+		if err != nil {
+			return azure.WithTerminalError(errors.Wrapf(err, "failed to get SKU %s in compute api", m.AzureMachine.Spec.VMSize))
+		}
+	}
+
+	return nil
 }
 
 // VMSpec returns the VM spec.
-func (m *MachineScope) VMSpec() azure.VMSpec {
-	return azure.VMSpec{
+func (m *MachineScope) VMSpec() azure.ResourceSpecGetter {
+	return &virtualmachines.VMSpec{
 		Name:                   m.Name(),
+		Location:               m.Location(),
+		ResourceGroup:          m.ResourceGroup(),
+		ClusterName:            m.ClusterName(),
 		Role:                   m.Role(),
-		NICNames:               m.NICNames(),
+		NICIDs:                 m.NICIDs(),
 		SSHKeyData:             m.AzureMachine.Spec.SSHPublicKey,
 		Size:                   m.AzureMachine.Spec.VMSize,
 		OSDisk:                 m.AzureMachine.Spec.OSDisk,
 		DataDisks:              m.AzureMachine.Spec.DataDisks,
+		AvailabilitySetID:      m.AvailabilitySetID(),
 		Zone:                   m.AvailabilityZone(),
 		Identity:               m.AzureMachine.Spec.Identity,
 		UserAssignedIdentities: m.AzureMachine.Spec.UserAssignedIdentities,
 		SpotVMOptions:          m.AzureMachine.Spec.SpotVMOptions,
 		SecurityProfile:        m.AzureMachine.Spec.SecurityProfile,
+		AdditionalTags:         m.AdditionalTags(),
+		SKU:                    m.cache.VMSKU,
+		Image:                  m.cache.VMImage,
+		BootstrapData:          m.cache.BootstrapData,
+		ProviderID:             m.ProviderID(),
 	}
 }
 
@@ -183,14 +248,14 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	return []azure.NICSpec{spec}
 }
 
-// NICNames returns the NIC names.
-func (m *MachineScope) NICNames() []string {
+// NICIDs returns the NIC resource IDs.
+func (m *MachineScope) NICIDs() []string {
 	nicspecs := m.NICSpecs()
-	nicNames := make([]string, len(nicspecs))
+	nicIDs := make([]string, len(nicspecs))
 	for i, nic := range nicspecs {
-		nicNames[i] = nic.Name
+		nicIDs[i] = azure.NetworkInterfaceID(m.SubscriptionID(), m.ResourceGroup(), nic.Name)
 	}
-	return nicNames
+	return nicIDs
 }
 
 // DiskSpecs returns the disk specs.
@@ -331,6 +396,15 @@ func (m *MachineScope) AvailabilitySet() (string, bool) {
 	return "", false
 }
 
+// AvailabilitySetID returns the availability set for this machine, or "" if there is no availability set.
+func (m *MachineScope) AvailabilitySetID() string {
+	var asID string
+	if asName, ok := m.AvailabilitySet(); ok {
+		asID = azure.AvailabilitySetID(m.SubscriptionID(), m.ResourceGroup(), asName)
+	}
+	return asID
+}
+
 // SetProviderID sets the AzureMachine providerID in spec.
 func (m *MachineScope) SetProviderID(v string) {
 	m.AzureMachine.Spec.ProviderID = to.StringPtr(v)
@@ -386,32 +460,6 @@ func (m *MachineScope) SetBootstrapConditions(provisioningState string, extensio
 		return azure.WithTerminalError(errors.New("extension state failed. This likely means the Kubernetes node bootstrapping process failed or timed out. Check VM boot diagnostics logs to learn more"))
 	default:
 		return nil
-	}
-}
-
-// UpdateStatus updates the AzureMachine status.
-func (m *MachineScope) UpdateStatus() {
-	switch m.VMState() {
-	case infrav1.Succeeded:
-		m.V(2).Info("VM is running", "id", m.GetVMID())
-		conditions.MarkTrue(m.AzureMachine, infrav1.VMRunningCondition)
-	case infrav1.Creating:
-		m.V(2).Info("VM is creating", "id", m.GetVMID())
-		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMCreatingReason, clusterv1.ConditionSeverityInfo, "")
-	case infrav1.Updating:
-		m.V(2).Info("VM is updating", "id", m.GetVMID())
-		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMUpdatingReason, clusterv1.ConditionSeverityInfo, "")
-	case infrav1.Deleting:
-		m.Info("Unexpected VM deletion", "id", m.GetVMID())
-		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMDeletingReason, clusterv1.ConditionSeverityWarning, "")
-	case infrav1.Failed:
-		m.Error(errors.New("Failed to create or update VM"), "VM is in failed state", "id", m.GetVMID())
-		m.SetFailureReason(capierrors.UpdateMachineError)
-		m.SetFailureMessage(errors.Errorf("Azure VM state is %s", m.VMState()))
-		conditions.MarkFalse(m.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, "")
-	default:
-		m.V(2).Info("VM state is undefined", "id", m.GetVMID())
-		conditions.MarkUnknown(m.AzureMachine, infrav1.VMRunningCondition, "", "")
 	}
 }
 
