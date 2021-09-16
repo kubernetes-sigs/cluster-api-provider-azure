@@ -103,6 +103,7 @@ var (
 	azureMachineConcurrency            int
 	azureMachinePoolConcurrency        int
 	azureMachinePoolMachineConcurrency int
+	debouncingTimer                    time.Duration
 	syncPeriod                         time.Duration
 	healthAddr                         string
 	webhookPort                        int
@@ -196,6 +197,12 @@ func InitFlags(fs *pflag.FlagSet) {
 		"azuremachinepoolmachine-concurrency",
 		10,
 		"Number of AzureMachinePoolMachines to process simultaneously")
+
+	fs.DurationVar(&debouncingTimer,
+		"debouncing-timer",
+		10*time.Second,
+		"The minimum interval the controller should wait after a successful reconciliation of a particular object before reconciling it again",
+	)
 
 	fs.DurationVar(&syncPeriod,
 		"sync-period",
@@ -308,7 +315,7 @@ func main() {
 }
 
 func registerControllers(ctx context.Context, mgr manager.Manager) {
-	machineCache, err := coalescing.NewRequestCache(5 * time.Second)
+	machineCache, err := coalescing.NewRequestCache(debouncingTimer)
 	if err != nil {
 		setupLog.Error(err, "failed to build machineCache ReconcileCache")
 	}
@@ -321,7 +328,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	clusterCache, err := coalescing.NewRequestCache(5 * time.Second)
+	clusterCache, err := coalescing.NewRequestCache(debouncingTimer)
 	if err != nil {
 		setupLog.Error(err, "failed to build clusterCache ReconcileCache")
 	}
@@ -372,7 +379,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 	// just use CAPI MachinePool feature flag rather than create a new one
 	setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 	if feature.Gates.Enabled(capifeature.MachinePool) {
-		mpCache, err := coalescing.NewRequestCache(20 * time.Second)
+		mpCache, err := coalescing.NewRequestCache(debouncingTimer)
 		if err != nil {
 			setupLog.Error(err, "failed to build mpCache ReconcileCache")
 		}
@@ -388,7 +395,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 			os.Exit(1)
 		}
 
-		mpmCache, err := coalescing.NewRequestCache(10 * time.Second)
+		mpmCache, err := coalescing.NewRequestCache(debouncingTimer)
 		if err != nil {
 			setupLog.Error(err, "failed to build mpmCache ReconcileCache")
 		}
@@ -416,7 +423,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 		}
 
 		if feature.Gates.Enabled(feature.AKS) {
-			mmpmCache, err := coalescing.NewRequestCache(5 * time.Second)
+			mmpmCache, err := coalescing.NewRequestCache(debouncingTimer)
 			if err != nil {
 				setupLog.Error(err, "failed to build mmpmCache ReconcileCache")
 			}
@@ -432,7 +439,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 				os.Exit(1)
 			}
 
-			mcCache, err := coalescing.NewRequestCache(5 * time.Second)
+			mcCache, err := coalescing.NewRequestCache(debouncingTimer)
 			if err != nil {
 				setupLog.Error(err, "failed to build mcCache ReconcileCache")
 			}
@@ -448,7 +455,7 @@ func registerControllers(ctx context.Context, mgr manager.Manager) {
 				os.Exit(1)
 			}
 
-			mcpCache, err := coalescing.NewRequestCache(5 * time.Second)
+			mcpCache, err := coalescing.NewRequestCache(debouncingTimer)
 			if err != nil {
 				setupLog.Error(err, "failed to build mcpCache ReconcileCache")
 			}
