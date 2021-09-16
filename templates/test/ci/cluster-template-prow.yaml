@@ -2698,8 +2698,8 @@ data:
     \ order: 0\n  applyOnForward: true\n  types:\n    - Egress\n  egress: \n  - action:
     Deny\n    protocol: TCP\n    destination:\n      nets:\n      - 168.63.129.16/32\n---\napiVersion:
     crd.projectcalico.org/v1\nkind: GlobalNetworkPolicy\nmetadata:\n  name: default-allow\nspec:\n
-    \ order: 9999\n  applyOnForward: true\n  types:\n  - Egress\n  - Ingress\n  egress:\n
-    \ - action: Allow\n  ingress:\n  - action: Allow\n"
+    \ applyOnForward: true\n  types:\n  - Egress\n  - Ingress\n  egress:\n  - action:
+    Allow\n  ingress:\n  - action: Allow\n"
 kind: ConfigMap
 metadata:
   annotations:

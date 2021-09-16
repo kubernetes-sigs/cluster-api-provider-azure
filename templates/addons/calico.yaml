@@ -4166,7 +4166,6 @@ kind: GlobalNetworkPolicy
 metadata:
   name: default-allow
 spec:
-  order: 9999
   applyOnForward: true
   types:
   - Egress
