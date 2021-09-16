@@ -259,6 +259,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for i := range managedClusterSpec.AgentPools {
 		pool := managedClusterSpec.AgentPools[i]
 		profile := converters.AgentPoolToManagedClusterAgentPoolProfile(pool)
+
+		if pool.KubeletConfig != nil {
+			profile.KubeletConfig = (*containerservice.KubeletConfig)(pool.KubeletConfig)
+		}
+
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 

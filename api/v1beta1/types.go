@@ -691,6 +691,31 @@ type AzureBastion struct {
 	PublicIP PublicIPSpec `json:"publicIP,omitempty"`
 }
 
+type KubeletConfig struct {
+	// CPUManagerPolicy - CPU Manager policy to use.
+	CPUManagerPolicy *string `json:"cpuManagerPolicy,omitempty"`
+	// CPUCfsQuota - Enable CPU CFS quota enforcement for containers that specify CPU limits.
+	CPUCfsQuota *bool `json:"cpuCfsQuota,omitempty"`
+	// CPUCfsQuotaPeriod - Sets CPU CFS quota period value.
+	CPUCfsQuotaPeriod *string `json:"cpuCfsQuotaPeriod,omitempty"`
+	// ImageGcHighThreshold - The percent of disk usage after which image garbage collection is always run.
+	ImageGcHighThreshold *int32 `json:"imageGcHighThreshold,omitempty"`
+	// ImageGcLowThreshold - The percent of disk usage before which image garbage collection is never run.
+	ImageGcLowThreshold *int32 `json:"imageGcLowThreshold,omitempty"`
+	// TopologyManagerPolicy - Topology Manager policy to use.
+	TopologyManagerPolicy *string `json:"topologyManagerPolicy,omitempty"`
+	// AllowedUnsafeSysctls - Allowlist of unsafe sysctls or unsafe sysctl patterns (ending in `*`).
+	AllowedUnsafeSysctls *[]string `json:"allowedUnsafeSysctls,omitempty"`
+	// FailSwapOn - If set to true it will make the Kubelet fail to start if swap is enabled on the node.
+	FailSwapOn *bool `json:"failSwapOn,omitempty"`
+	// ContainerLogMaxSizeMB - The maximum size (e.g. 10Mi) of container log file before it is rotated.
+	ContainerLogMaxSizeMB *int32 `json:"containerLogMaxSizeMB,omitempty"`
+	// ContainerLogMaxFiles - The maximum number of container log files that can be present for a container. The number must be ≥ 2.
+	ContainerLogMaxFiles *int32 `json:"containerLogMaxFiles,omitempty"`
+	// PodMaxPids - The maximum number of processes per pod.
+	PodMaxPids *int32 `json:"podMaxPids,omitempty"`
+}
+
 // IsTerminalProvisioningState returns true if the ProvisioningState is a terminal state for an Azure resource.
 func IsTerminalProvisioningState(state ProvisioningState) bool {
 	return state == Failed || state == Succeeded

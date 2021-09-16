@@ -411,6 +411,10 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		sshPublicKey = to.StringPtr(string(decodedSSHPublicKey))
 	}
 
+	subnetName := ""
+	if len(s.ControlPlane.Spec.VirtualNetwork.Subnets) > 0 {
+		subnetName = s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name
+	}
 	managedClusterSpec := azure.ManagedClusterSpec{
 		Name:                  s.ControlPlane.Name,
 		ResourceGroupName:     s.ControlPlane.Spec.ResourceGroupName,
@@ -424,7 +428,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 			s.ControlPlane.Spec.SubscriptionID,
 			GetVNetResourceGroup(&s.ControlPlane.Spec),
 			s.ControlPlane.Spec.VirtualNetwork.Name,
-			s.ControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
+			subnetName,
 		),
 		DisableLocalAccounts: s.ControlPlane.Spec.DisableLocalAccounts,
 	}
@@ -605,23 +609,20 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 	}
 
 	agentPoolSpec := azure.AgentPoolSpec{
-		Name:          to.String(managedMachinePool.Spec.Name),
-		ResourceGroup: managedControlPlane.Spec.ResourceGroupName,
-		Cluster:       managedControlPlane.Name,
-		SKU:           managedMachinePool.Spec.SKU,
-		Replicas:      replicas,
-		Version:       normalizedVersion,
-		VnetSubnetID: azure.SubnetID(
-			managedControlPlane.Spec.SubscriptionID,
-			GetVNetResourceGroup(&managedControlPlane.Spec),
-			managedControlPlane.Spec.VirtualNetwork.Name,
-			managedControlPlane.Spec.VirtualNetwork.Subnets[0].Name,
-		),
-		Mode:              managedMachinePool.Spec.Mode,
-		MaxPods:           managedMachinePool.Spec.MaxPods,
-		AvailabilityZones: managedMachinePool.Spec.AvailabilityZones,
-		OsDiskType:        managedMachinePool.Spec.OsDiskType,
-		EnableUltraSSD:    managedMachinePool.Spec.EnableUltraSSD,
+		Name:               to.String(managedMachinePool.Spec.Name),
+		ResourceGroup:      managedControlPlane.Spec.ResourceGroupName,
+		Cluster:            managedControlPlane.Name,
+		SKU:                managedMachinePool.Spec.SKU,
+		Replicas:           replicas,
+		Version:            normalizedVersion,
+		Mode:               managedMachinePool.Spec.Mode,
+		MaxPods:            managedMachinePool.Spec.MaxPods,
+		AvailabilityZones:  managedMachinePool.Spec.AvailabilityZones,
+		OsDiskType:         managedMachinePool.Spec.OsDiskType,
+		EnableUltraSSD:     managedMachinePool.Spec.EnableUltraSSD,
+		EnableFIPS:         managedMachinePool.Spec.EnableFIPS,
+		EnableNodePublicIP: managedMachinePool.Spec.EnableNodePublicIP,
+		ScaleSetPriority:   managedMachinePool.Spec.ScaleSetPriority,
 	}
 
 	if managedMachinePool.Spec.OSDiskSizeGB != nil {
@@ -647,6 +648,25 @@ func buildAgentPoolSpec(managedControlPlane *infrav1exp.AzureManagedControlPlane
 		for k, v := range managedMachinePool.Spec.NodeLabels {
 			agentPoolSpec.NodeLabels[k] = to.StringPtr(v)
 		}
+	}
+
+	if managedMachinePool.Spec.VnetSubnetID != nil {
+		agentPoolSpec.VnetSubnetID = *managedMachinePool.Spec.VnetSubnetID
+	} else {
+		subnetName := ""
+		if len(managedControlPlane.Spec.VirtualNetwork.Subnets) > 0 {
+			subnetName = managedControlPlane.Spec.VirtualNetwork.Subnets[0].Name
+		}
+		agentPoolSpec.VnetSubnetID = azure.SubnetID(
+			managedControlPlane.Spec.SubscriptionID,
+			GetVNetResourceGroup(&managedControlPlane.Spec),
+			managedControlPlane.Spec.VirtualNetwork.Name,
+			subnetName,
+		)
+	}
+
+	if managedMachinePool.Spec.KubeletConfig != nil {
+		agentPoolSpec.KubeletConfig = (*infrav1.KubeletConfig)(managedMachinePool.Spec.KubeletConfig)
 	}
 
 	return agentPoolSpec

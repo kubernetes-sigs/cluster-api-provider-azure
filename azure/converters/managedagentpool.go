@@ -24,7 +24,7 @@ import (
 
 // AgentPoolToManagedClusterAgentPoolProfile converts a AgentPoolSpec to an Azure SDK ManagedClusterAgentPoolProfile used in managedcluster reconcile.
 func AgentPoolToManagedClusterAgentPoolProfile(pool azure.AgentPoolSpec) containerservice.ManagedClusterAgentPoolProfile {
-	return containerservice.ManagedClusterAgentPoolProfile{
+	profile := containerservice.ManagedClusterAgentPoolProfile{
 		Name:                &pool.Name,
 		VMSize:              &pool.SKU,
 		OsType:              containerservice.OSTypeLinux,
@@ -43,12 +43,18 @@ func AgentPoolToManagedClusterAgentPoolProfile(pool azure.AgentPoolSpec) contain
 		OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
 		NodeLabels:          pool.NodeLabels,
 		EnableUltraSSD:      pool.EnableUltraSSD,
+		EnableFIPS:          pool.EnableFIPS,
+		EnableNodePublicIP:  pool.EnableNodePublicIP,
 	}
+	if pool.ScaleSetPriority != nil {
+		profile.ScaleSetPriority = containerservice.ScaleSetPriority(*pool.ScaleSetPriority)
+	}
+	return profile
 }
 
 // AgentPoolToContainerServiceAgentPool converts a AgentPoolSpec to an Azure SDK AgentPool used in agentpool reconcile.
 func AgentPoolToContainerServiceAgentPool(pool azure.AgentPoolSpec) containerservice.AgentPool {
-	return containerservice.AgentPool{
+	containerSvcAgentPool := containerservice.AgentPool{
 		ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 			VMSize:              &pool.SKU,
 			OsType:              containerservice.OSTypeLinux,
@@ -67,6 +73,12 @@ func AgentPoolToContainerServiceAgentPool(pool azure.AgentPoolSpec) containerser
 			OsDiskType:          containerservice.OSDiskType(to.String(pool.OsDiskType)),
 			NodeLabels:          pool.NodeLabels,
 			EnableUltraSSD:      pool.EnableUltraSSD,
+			EnableFIPS:          pool.EnableFIPS,
+			EnableNodePublicIP:  pool.EnableNodePublicIP,
 		},
 	}
+	if pool.ScaleSetPriority != nil {
+		containerSvcAgentPool.ScaleSetPriority = containerservice.ScaleSetPriority(*pool.ScaleSetPriority)
+	}
+	return containerSvcAgentPool
 }

@@ -321,11 +321,25 @@ type AgentPoolSpec struct {
 	// Replicas is the number of desired machines.
 	Replicas int32
 
+	// Enable FIPS node image
+	EnableFIPS *bool `json:"EnableFIPS,omitempty"`
+
+	// Enable node public IP
+	EnableNodePublicIP *bool `json:"EnableNodePublicIP,omitempty"`
+
 	// OSDiskSizeGB is the OS disk size in GB for every machine in this agent pool.
 	OSDiskSizeGB int32
 
 	// VnetSubnetID is the Azure Resource ID for the subnet which should contain nodes.
 	VnetSubnetID string
+
+	// ScaleSetPriority - ScaleSetPriority to be used to specify virtual machine scale set priority. Default to regular. Possible values include: 'Spot', 'Regular'
+	// +optional
+	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// KubeletConfig - KubeletConfig specifies the configuration of kubelet on agent nodes.
+	// +optional
+	KubeletConfig *infrav1.KubeletConfig `json:"kubeletConfig,omitempty"`
 
 	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
 	Mode string

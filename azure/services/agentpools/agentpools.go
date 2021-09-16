@@ -75,6 +75,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	agentPoolSpec := s.scope.AgentPoolSpec()
 	profile := converters.AgentPoolToContainerServiceAgentPool(agentPoolSpec)
 
+	if agentPoolSpec.KubeletConfig != nil {
+		profile.KubeletConfig = (*containerservice.KubeletConfig)(agentPoolSpec.KubeletConfig)
+	}
+
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing agent pool")
@@ -111,6 +115,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				EnableAutoScaling:   existingPool.EnableAutoScaling,
 				MinCount:            existingPool.MinCount,
 				MaxCount:            existingPool.MaxCount,
+				NodeLabels:          existingPool.NodeLabels,
 			},
 		}
 
@@ -122,11 +127,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				EnableAutoScaling:   profile.EnableAutoScaling,
 				MinCount:            profile.MinCount,
 				MaxCount:            profile.MaxCount,
+				NodeLabels:          profile.NodeLabels,
 			},
 		}
 
 		// Auto scaler enabled, no need to reconcile on node pool count
-		if profile.MinCount != nil && profile.MaxCount != nil{
+		if profile.MinCount != nil && profile.MaxCount != nil {
 			normalizedProfile.Count = existingPool.Count
 		}
 
