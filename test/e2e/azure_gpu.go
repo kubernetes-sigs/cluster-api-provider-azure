@@ -61,6 +61,20 @@ func AzureGPUSpec(ctx context.Context, inputGetter func() AzureGPUSpecInput) {
 	clientset := clusterProxy.GetClientSet()
 	Expect(clientset).NotTo(BeNil())
 
+	By("Waiting for a node to have an \"nvidia.com/gpu\" allocatable resource")
+	Eventually(func() bool {
+		nodeList, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		for _, node := range nodeList.Items {
+			for k, v := range node.Status.Allocatable {
+				if k == "nvidia.com/gpu" && v.Value() > 0 {
+					return true
+				}
+			}
+		}
+		return false
+	}, e2eConfig.GetIntervals(specName, "wait-worker-nodes")...).Should(BeTrue())
+
 	By("running a CUDA vector calculation job")
 	jobsClient := clientset.BatchV1().Jobs(corev1.NamespaceDefault)
 	jobName := "cuda-vector-add"
