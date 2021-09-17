@@ -159,7 +159,7 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			return reconcile.Result{}, err
 		}
 		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureCluster.Namespace) {
-			conditions.MarkFalse(azureCluster, clusterv1.ReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
+			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 		}
 	} else {
@@ -229,6 +229,7 @@ func (r *AzureClusterReconciler) reconcileNormal(ctx context.Context, clusterSco
 
 	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it
 	azureCluster.Status.Ready = true
+	conditions.MarkTrue(azureCluster, infrav1.NetworkInfrastructureReadyCondition)
 
 	return reconcile.Result{}, nil
 }
@@ -240,7 +241,7 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 	clusterScope.Info("Reconciling AzureCluster delete")
 
 	azureCluster := clusterScope.AzureCluster
-	conditions.MarkFalse(azureCluster, clusterv1.ReadyCondition, clusterv1.DeletedReason, clusterv1.ConditionSeverityInfo, "")
+	conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletedReason, clusterv1.ConditionSeverityInfo, "")
 	if err := clusterScope.PatchObject(ctx); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -253,7 +254,7 @@ func (r *AzureClusterReconciler) reconcileDelete(ctx context.Context, clusterSco
 	if err := acr.Delete(ctx); err != nil {
 		wrappedErr := errors.Wrapf(err, "error deleting AzureCluster %s/%s", azureCluster.Namespace, azureCluster.Name)
 		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "ClusterReconcilerDeleteFailed", wrappedErr.Error())
-		conditions.MarkFalse(azureCluster, clusterv1.ReadyCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
+		conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, clusterv1.DeletionFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 		return reconcile.Result{}, wrappedErr
 	}
 

@@ -36,6 +36,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 )
 
@@ -284,6 +285,16 @@ func (s *ClusterScope) SubnetSpecs() []azure.SubnetSpec {
 	}
 
 	return subnetSpecs
+}
+
+// GroupSpec returns the resource group spec.
+func (s *ClusterScope) GroupSpec() azure.ResourceSpecGetter {
+	return &groups.GroupSpec{
+		Name:           s.ResourceGroup(),
+		Location:       s.Location(),
+		ClusterName:    s.ClusterName(),
+		AdditionalTags: s.AdditionalTags(),
+	}
 }
 
 // VNetSpec returns the virtual network spec.
@@ -539,13 +550,20 @@ func (s *ClusterScope) ListOptionsLabelSelector() client.ListOption {
 
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject(ctx context.Context) error {
-	conditions.SetSummary(s.AzureCluster)
+	conditions.SetSummary(s.AzureCluster,
+		conditions.WithConditions(
+			infrav1.ResourceGroupReadyCondition,
+			infrav1.NetworkInfrastructureReadyCondition,
+		),
+	)
 
 	return s.patchHelper.Patch(
 		ctx,
 		s.AzureCluster,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
+			infrav1.ResourceGroupReadyCondition,
+			infrav1.NetworkInfrastructureReadyCondition,
 		}})
 }
 
