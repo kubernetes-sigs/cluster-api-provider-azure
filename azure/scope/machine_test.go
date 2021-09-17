@@ -1042,3 +1042,426 @@ func TestMachineScope_GetVMImage(t *testing.T) {
 		})
 	}
 }
+
+func TestMachineScope_NICSpecs(t *testing.T) {
+	tests := []struct {
+		name         string
+		machineScope MachineScope
+		want         []azure.NICSpec
+	}{
+		{
+			name: "Node Machine with no nat gateway and no public IP address",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										Role: infrav1.SubnetNode,
+										Name: "subnet1",
+									},
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName: "subnet1",
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "machine",
+						Labels: map[string]string{
+							//clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+			},
+			want: []azure.NICSpec{
+				{
+					Name:                      "machine-name-nic",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "outbound-lb",
+					PublicLBAddressPoolName:   "outbound-lb-outboundBackendPool",
+					PublicLBNATRuleName:       "",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "",
+					VMSize:                    "",
+					AcceleratedNetworking:     nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+				},
+			},
+		},
+		{
+			name: "Node Machine with nat gateway",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										Role: infrav1.SubnetNode,
+										Name: "subnet1",
+										NatGateway: infrav1.NatGateway{
+											Name: "natgw",
+										},
+									},
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName: "subnet1",
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "machine",
+						Labels: map[string]string{
+							//clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+			},
+			want: []azure.NICSpec{
+				{
+					Name:                      "machine-name-nic",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "",
+					PublicLBAddressPoolName:   "",
+					PublicLBNATRuleName:       "",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "",
+					VMSize:                    "",
+					AcceleratedNetworking:     nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+				},
+			},
+		},
+		{
+			name: "Node Machine with public IP address",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										Role: infrav1.SubnetNode,
+										Name: "subnet1",
+									},
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID:       to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName:       "subnet1",
+						AllocatePublicIP: true,
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "machine",
+						Labels: map[string]string{
+							//clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+			},
+			want: []azure.NICSpec{
+				{
+					Name:                      "machine-name-nic",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "",
+					PublicLBAddressPoolName:   "",
+					PublicLBNATRuleName:       "",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "pip-machine-name",
+					VMSize:                    "",
+					AcceleratedNetworking:     nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+				},
+			},
+		},
+		{
+			name: "Control Plane Machine with private LB",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										Role: infrav1.SubnetNode,
+										Name: "subnet1",
+									},
+								},
+								APIServerLB: infrav1.LoadBalancerSpec{
+									Name: "api-lb",
+									Type: infrav1.Internal,
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName: "subnet1",
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+						Labels: map[string]string{
+							clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+			},
+			want: []azure.NICSpec{
+				{
+					Name:                      "machine-name-nic",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "",
+					PublicLBAddressPoolName:   "",
+					PublicLBNATRuleName:       "",
+					InternalLBName:            "api-lb",
+					InternalLBAddressPoolName: "api-lb-backendPool",
+					PublicIPName:              "",
+					VMSize:                    "",
+					AcceleratedNetworking:     nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+				},
+			},
+		},
+		{
+			name: "Control Plane Machine with public LB",
+			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					Cluster: &clusterv1.Cluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+						},
+					},
+					AzureCluster: &infrav1.AzureCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster",
+							Namespace: "default",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									Kind:       "Cluster",
+									Name:       "cluster",
+								},
+							},
+						},
+						Spec: infrav1.AzureClusterSpec{
+							NetworkSpec: infrav1.NetworkSpec{
+								Vnet: infrav1.VnetSpec{
+									Name:          "vnet1",
+									ResourceGroup: "rg1",
+								},
+								Subnets: []infrav1.SubnetSpec{
+									{
+										Role: infrav1.SubnetNode,
+										Name: "subnet1",
+									},
+								},
+								APIServerLB: infrav1.LoadBalancerSpec{
+									Name: "api-lb",
+								},
+								NodeOutboundLB: &infrav1.LoadBalancerSpec{
+									Name: "outbound-lb",
+								},
+							},
+						},
+					},
+				},
+				AzureMachine: &infrav1.AzureMachine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+					},
+					Spec: infrav1.AzureMachineSpec{
+						ProviderID: to.StringPtr("azure://compute/virtual-machines/machine-name"),
+						SubnetName: "subnet1",
+					},
+				},
+				Machine: &clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "machine",
+						Labels: map[string]string{
+							clusterv1.MachineControlPlaneLabelName: "true",
+						},
+					},
+				},
+			},
+			want: []azure.NICSpec{
+				{
+					Name:                      "machine-name-nic",
+					MachineName:               "machine-name",
+					SubnetName:                "subnet1",
+					VNetName:                  "vnet1",
+					VNetResourceGroup:         "rg1",
+					PublicLBName:              "api-lb",
+					PublicLBAddressPoolName:   "api-lb-backendPool",
+					PublicLBNATRuleName:       "machine-name",
+					InternalLBName:            "",
+					InternalLBAddressPoolName: "",
+					PublicIPName:              "",
+					VMSize:                    "",
+					AcceleratedNetworking:     nil,
+					IPv6Enabled:               false,
+					EnableIPForwarding:        false,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotNicSpecs := tt.machineScope.NICSpecs()
+			if !reflect.DeepEqual(gotNicSpecs, tt.want) {
+				t.Errorf("NICSpecs(), gotNicSpecs = %v, want %v", gotNicSpecs, tt.want)
+			}
+		})
+	}
+}
