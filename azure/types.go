@@ -361,6 +361,9 @@ type ManagedClusterSpec struct {
 
 	// SKU is the SKU of the AKS to be provisioned.
 	SKU *SKU
+
+	// LoadBalancerProfile is the profile of the cluster load balancer.
+	LoadBalancerProfile *LoadBalancerProfile
 }
 
 // AADProfile is Azure Active Directory configuration to integrate with AKS, for aad authentication.
@@ -379,6 +382,29 @@ type AADProfile struct {
 type SKU struct {
 	// Tier - Tier of a managed cluster SKU.
 	Tier string
+}
+
+// LoadBalancerProfile - Profile of the cluster load balancer.
+type LoadBalancerProfile struct {
+	// Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs.
+	// By default the AKS cluster automatically creates a public IP in the AKS-managed infrastructure resource group and assigns it to the load balancer outbound pool.
+	// Alternatively, you can assign your own custom public IP or public IP prefix at cluster creation time.
+	// See https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
+
+	// ManagedOutboundIPs - Desired managed outbound IPs for the cluster load balancer.
+	ManagedOutboundIPs *int32
+
+	// OutboundIPPrefixes - Desired outbound IP Prefix resources for the cluster load balancer.
+	OutboundIPPrefixes []string
+
+	// OutboundIPs - Desired outbound IP resources for the cluster load balancer.
+	OutboundIPs []string
+
+	// AllocatedOutboundPorts - Desired number of allocated SNAT ports per VM. Allowed values must be in the range of 0 to 64000 (inclusive). The default value is 0 which results in Azure dynamically allocating ports.
+	AllocatedOutboundPorts *int32
+
+	// IdleTimeoutInMinutes - Desired outbound flow idle timeout in minutes. Allowed values must be in the range of 4 to 120 (inclusive). The default value is 30 minutes.
+	IdleTimeoutInMinutes *int32
 }
 
 // AgentPoolSpec contains agent pool specification details.

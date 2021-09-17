@@ -58,6 +58,73 @@ type Service struct {
 	Client
 }
 
+func convertToResourceReferences(resources []string) *[]containerservice.ResourceReference {
+	resourceReferences := make([]containerservice.ResourceReference, len(resources))
+	for i := range resources {
+		resourceReferences[i] = containerservice.ResourceReference{ID: &resources[i]}
+	}
+	return &resourceReferences
+}
+
+func computeDiffOfNormalizedClusters(managedCluster containerservice.ManagedCluster, existingMC containerservice.ManagedCluster) string {
+	// Normalize properties for the desired (CR spec) and existing managed
+	// cluster, so that we check only those fields that were specified in
+	// the initial CreateOrUpdate request and that can be modified.
+	// Without comparing to normalized properties, we would always get a
+	// difference in desired and existing, which would result in sending
+	// unnecessary Azure API requests.
+	propertiesNormalized := &containerservice.ManagedClusterProperties{
+		KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
+		NetworkProfile:    &containerservice.NetworkProfile{},
+	}
+
+	existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
+		KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
+		NetworkProfile:    &containerservice.NetworkProfile{},
+	}
+
+	if managedCluster.AadProfile != nil {
+		propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+			Managed:             managedCluster.AadProfile.Managed,
+			EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
+			AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
+		}
+	}
+
+	if existingMC.AadProfile != nil {
+		existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
+			Managed:             existingMC.AadProfile.Managed,
+			EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
+			AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
+		}
+	}
+
+	if managedCluster.NetworkProfile != nil {
+		propertiesNormalized.NetworkProfile.LoadBalancerProfile = managedCluster.NetworkProfile.LoadBalancerProfile
+	}
+
+	if existingMC.NetworkProfile != nil {
+		existingMCPropertiesNormalized.NetworkProfile.LoadBalancerProfile = existingMC.NetworkProfile.LoadBalancerProfile
+	}
+
+	clusterNormalized := &containerservice.ManagedCluster{
+		ManagedClusterProperties: propertiesNormalized,
+	}
+	existingMCClusterNormalized := &containerservice.ManagedCluster{
+		ManagedClusterProperties: existingMCPropertiesNormalized,
+	}
+
+	if managedCluster.Sku != nil {
+		clusterNormalized.Sku = managedCluster.Sku
+	}
+	if existingMC.Sku != nil {
+		existingMCClusterNormalized.Sku = existingMC.Sku
+	}
+
+	diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
+	return diff
+}
+
 // New creates a new service.
 func New(scope ManagedClusterScope) *Service {
 	return &Service{
@@ -182,6 +249,26 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		}
 	}
 
+	if managedClusterSpec.LoadBalancerProfile != nil {
+		managedCluster.NetworkProfile.LoadBalancerProfile = &containerservice.ManagedClusterLoadBalancerProfile{
+			AllocatedOutboundPorts: managedClusterSpec.LoadBalancerProfile.AllocatedOutboundPorts,
+			IdleTimeoutInMinutes:   managedClusterSpec.LoadBalancerProfile.IdleTimeoutInMinutes,
+		}
+		if managedClusterSpec.LoadBalancerProfile.ManagedOutboundIPs != nil {
+			managedCluster.NetworkProfile.LoadBalancerProfile.ManagedOutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileManagedOutboundIPs{Count: managedClusterSpec.LoadBalancerProfile.ManagedOutboundIPs}
+		}
+		if len(managedClusterSpec.LoadBalancerProfile.OutboundIPPrefixes) > 0 {
+			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPPrefixes = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPPrefixes{
+				PublicIPPrefixes: convertToResourceReferences(managedClusterSpec.LoadBalancerProfile.OutboundIPPrefixes),
+			}
+		}
+		if len(managedClusterSpec.LoadBalancerProfile.OutboundIPs) > 0 {
+			managedCluster.NetworkProfile.LoadBalancerProfile.OutboundIPs = &containerservice.ManagedClusterLoadBalancerProfileOutboundIPs{
+				PublicIPs: convertToResourceReferences(managedClusterSpec.LoadBalancerProfile.OutboundIPs),
+			}
+		}
+	}
+
 	if isCreate {
 		managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)
 		if err != nil {
@@ -195,50 +282,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			return errors.New(msg)
 		}
 
-		// Normalize properties for the desired (CR spec) and existing managed
-		// cluster, so that we check only those fields that were specified in
-		// the initial CreateOrUpdate request and that can be modified.
-		// Without comparing to normalized properties, we would always get a
-		// difference in desired and existing, which would result in sending
-		// unnecessary Azure API requests.
-		propertiesNormalized := &containerservice.ManagedClusterProperties{
-			KubernetesVersion: managedCluster.ManagedClusterProperties.KubernetesVersion,
-		}
-		existingMCPropertiesNormalized := &containerservice.ManagedClusterProperties{
-			KubernetesVersion: existingMC.ManagedClusterProperties.KubernetesVersion,
-		}
-
-		if managedCluster.AadProfile != nil {
-			propertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
-				Managed:             managedCluster.AadProfile.Managed,
-				EnableAzureRBAC:     managedCluster.AadProfile.EnableAzureRBAC,
-				AdminGroupObjectIDs: managedCluster.AadProfile.AdminGroupObjectIDs,
-			}
-		}
-
-		if existingMC.AadProfile != nil {
-			existingMCPropertiesNormalized.AadProfile = &containerservice.ManagedClusterAADProfile{
-				Managed:             existingMC.AadProfile.Managed,
-				EnableAzureRBAC:     existingMC.AadProfile.EnableAzureRBAC,
-				AdminGroupObjectIDs: existingMC.AadProfile.AdminGroupObjectIDs,
-			}
-		}
-
-		clusterNormalized := &containerservice.ManagedCluster{
-			ManagedClusterProperties: propertiesNormalized,
-		}
-		existingMCClusterNormalized := &containerservice.ManagedCluster{
-			ManagedClusterProperties: existingMCPropertiesNormalized,
-		}
-
-		if managedCluster.Sku != nil {
-			clusterNormalized.Sku = managedCluster.Sku
-		}
-		if existingMC.Sku != nil {
-			existingMCClusterNormalized.Sku = existingMC.Sku
-		}
-
-		diff := cmp.Diff(clusterNormalized, existingMCClusterNormalized)
+		diff := computeDiffOfNormalizedClusters(managedCluster, existingMC)
 		if diff != "" {
 			klog.V(2).Infof("Update required (+new -old):\n%s", diff)
 			managedCluster, err = s.Client.CreateOrUpdate(ctx, managedClusterSpec.ResourceGroupName, managedClusterSpec.Name, managedCluster)

@@ -262,6 +262,7 @@ func (r *AzureManagedControlPlane) Validate() error {
 		r.validateVersion,
 		r.validateDNSServiceIP,
 		r.validateSSHKey,
+		r.validateLoadBalancerProfile,
 	}
 
 	var errs []error
@@ -302,6 +303,56 @@ func (r *AzureManagedControlPlane) validateSSHKey() error {
 			azuremachinepoollog.Info("Invalid sshKey: %s", agg.Error())
 			return agg
 		}
+	}
+
+	return nil
+}
+
+// ValidateLoadBalancerProfile validates a LoadBalancerProfile.
+func (r *AzureManagedControlPlane) validateLoadBalancerProfile() error {
+	if r.Spec.LoadBalancerProfile != nil {
+		var errs []error
+		var allErrs field.ErrorList
+		numOutboundIPTypes := 0
+
+		if r.Spec.LoadBalancerProfile.ManagedOutboundIPs != nil {
+			if *r.Spec.LoadBalancerProfile.ManagedOutboundIPs < 1 || *r.Spec.LoadBalancerProfile.ManagedOutboundIPs > 100 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "LoadBalancerProfile", "ManagedOutboundIPs"), *r.Spec.LoadBalancerProfile.ManagedOutboundIPs, "value should be in between 1 and 100"))
+			}
+		}
+
+		if r.Spec.LoadBalancerProfile.AllocatedOutboundPorts != nil {
+			if *r.Spec.LoadBalancerProfile.AllocatedOutboundPorts < 0 || *r.Spec.LoadBalancerProfile.AllocatedOutboundPorts > 64000 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "LoadBalancerProfile", "AllocatedOutboundPorts"), *r.Spec.LoadBalancerProfile.AllocatedOutboundPorts, "value should be in between 0 and 64000"))
+			}
+		}
+
+		if r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes != nil {
+			if *r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes < 4 || *r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes > 120 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("Spec", "LoadBalancerProfile", "IdleTimeoutInMinutes"), *r.Spec.LoadBalancerProfile.IdleTimeoutInMinutes, "value should be in between 4 and 120"))
+			}
+		}
+
+		if r.Spec.LoadBalancerProfile.ManagedOutboundIPs != nil {
+			numOutboundIPTypes++
+		}
+		if len(r.Spec.LoadBalancerProfile.OutboundIPPrefixes) > 0 {
+			numOutboundIPTypes++
+		}
+		if len(r.Spec.LoadBalancerProfile.OutboundIPs) > 0 {
+			numOutboundIPTypes++
+		}
+		if numOutboundIPTypes > 1 {
+			errs = append(errs, errors.New("Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs"))
+		}
+
+		if len(allErrs) > 0 {
+			agg := kerrors.NewAggregate(allErrs.ToAggregate().Errors())
+			azuremanagedcontrolplanelog.Info("Invalid loadBalancerProfile: %s", agg.Error())
+			errs = append(errs, agg)
+		}
+
+		return kerrors.NewAggregate(errs)
 	}
 
 	return nil

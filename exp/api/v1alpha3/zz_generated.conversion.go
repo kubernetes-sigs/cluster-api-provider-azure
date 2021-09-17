@@ -763,6 +763,7 @@ func autoConvert_v1alpha4_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedC
 	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
 	out.AADProfile = (*AADProfile)(unsafe.Pointer(in.AADProfile))
 	// WARNING: in.SKU requires manual conversion: does not exist in peer-type
+	// WARNING: in.LoadBalancerProfile requires manual conversion: does not exist in peer-type
 	return nil
 }
 

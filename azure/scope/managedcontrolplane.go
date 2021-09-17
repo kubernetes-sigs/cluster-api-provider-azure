@@ -411,6 +411,16 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		}
 	}
 
+	if s.ControlPlane.Spec.LoadBalancerProfile != nil {
+		managedClusterSpec.LoadBalancerProfile = &azure.LoadBalancerProfile{
+			ManagedOutboundIPs:     s.ControlPlane.Spec.LoadBalancerProfile.ManagedOutboundIPs,
+			OutboundIPPrefixes:     s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPPrefixes,
+			OutboundIPs:            s.ControlPlane.Spec.LoadBalancerProfile.OutboundIPs,
+			AllocatedOutboundPorts: s.ControlPlane.Spec.LoadBalancerProfile.AllocatedOutboundPorts,
+			IdleTimeoutInMinutes:   s.ControlPlane.Spec.LoadBalancerProfile.IdleTimeoutInMinutes,
+		}
+	}
+
 	return managedClusterSpec, nil
 }
 
