@@ -80,6 +80,28 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		},
 	}
 
+	if agentPoolSpec.EnableAutoScaling != nil {
+		profile.EnableAutoScaling = agentPoolSpec.EnableAutoScaling
+		profile.MaxCount = agentPoolSpec.MaxCount
+		profile.MinCount = agentPoolSpec.MinCount
+	}
+
+	profile.EnableFIPS = agentPoolSpec.EnableFIPS
+	profile.EnableNodePublicIP = agentPoolSpec.EnableNodePublicIP
+	profile.NodeLabels = agentPoolSpec.NodeLabels
+	profile.NodeTaints = &agentPoolSpec.NodeTaints
+	profile.AvailabilityZones = &agentPoolSpec.AvailabilityZones
+	profile.MaxPods = agentPoolSpec.MaxPods
+	if agentPoolSpec.OsDiskType != nil {
+		profile.OsDiskType = containerservice.OSDiskType(*agentPoolSpec.OsDiskType)
+	}
+	if agentPoolSpec.ScaleSetPriority != nil {
+		profile.ScaleSetPriority = containerservice.ScaleSetPriority(*agentPoolSpec.ScaleSetPriority)
+	}
+	if agentPoolSpec.KubeletConfig != nil {
+		profile.KubeletConfig = (*containerservice.KubeletConfig)(agentPoolSpec.KubeletConfig)
+	}
+
 	existingPool, err := s.Client.Get(ctx, agentPoolSpec.ResourceGroup, agentPoolSpec.Cluster, agentPoolSpec.Name)
 	if err != nil && !azure.ResourceNotFound(err) {
 		return errors.Wrap(err, "failed to get existing agent pool")
@@ -109,6 +131,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Count:               existingPool.Count,
 				OrchestratorVersion: existingPool.OrchestratorVersion,
 				Mode:                existingPool.Mode,
+				MaxCount:            existingPool.MaxCount,
+				MinCount:            existingPool.MinCount,
+				EnableAutoScaling:   existingPool.EnableAutoScaling,
+				NodeLabels:          existingPool.NodeLabels,
 			},
 		}
 
@@ -117,6 +143,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				Count:               profile.Count,
 				OrchestratorVersion: profile.OrchestratorVersion,
 				Mode:                profile.Mode,
+				MaxCount:            profile.MaxCount,
+				MinCount:            profile.MinCount,
+				EnableAutoScaling:   profile.EnableAutoScaling,
+				NodeLabels:          profile.NodeLabels,
 			},
 		}
 

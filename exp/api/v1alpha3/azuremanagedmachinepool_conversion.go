@@ -36,8 +36,100 @@ func (src *AzureManagedMachinePool) ConvertTo(dstRaw conversion.Hub) error { // 
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+	
+	//if restored.ObjectMeta.Annotations != nil {
+	//	if dst.ObjectMeta.Annotations == nil {
+	//		dst.ObjectMeta.Annotations = expv1beta1.AzureManagedMachinePool{}.ObjectMeta.Annotations
+	//	}
+	//} else {
+	//	dst.ObjectMeta.Annotations = restored.ObjectMeta.Annotations
+	//}
 
 	dst.Spec.Name = restored.Spec.Name
+	dst.Spec.AutoScaling = restored.Spec.AutoScaling
+	dst.Spec.EnableFIPS = restored.Spec.EnableFIPS
+	dst.Spec.EnableNodePublicIP = restored.Spec.EnableNodePublicIP
+	dst.Spec.OsDiskType = restored.Spec.OsDiskType
+	dst.Spec.MaxPods = restored.Spec.MaxPods
+	dst.Spec.ScaleSetPriority = restored.Spec.ScaleSetPriority
+	dst.Spec.VnetSubnetID = restored.Spec.VnetSubnetID
+	dst.Spec.KubeletConfig = restored.Spec.KubeletConfig
+	//dst.Spec.KubeletConfig.AllowedUnsafeSysctls = &[]string{}
+	//dst.Spec.NodeTaints = []string{}
+	//dst.Spec.AvailabilityZones = []string{}
+
+	if restored.Spec.NodeLabels != nil {
+		if len(restored.Spec.NodeLabels) == 0 {
+			dst.Spec.NodeLabels = map[string]*string{}
+		} else {
+			dst.Spec.NodeLabels = restored.Spec.NodeLabels
+		}
+		//for key, value := range restored.Spec.NodeLabels {
+		//	dst.Spec.NodeLabels[key] = value
+		//}
+	} else {
+		dst.Spec.NodeLabels = nil
+	}
+
+	//
+	//	if len(dst.Spec.AvailabilityZones) == 0 {
+	//		restore nil value if nothing has changed since conversion
+	//		dst.Spec.AvailabilityZones = nil
+		//}
+	//} else {
+	//
+	//}
+
+	//if restored.Spec.AvailabilityZones == nil {
+	//	dst.Spec.AvailabilityZones = nil
+	//} else {
+	//	if len(restored.Spec.AvailabilityZones) == 0 {
+	//		dst.Spec.AvailabilityZones = []string{}
+	//	} else {
+	//		dst.Spec.AvailabilityZones = restored.Spec.AvailabilityZones
+	//	}
+	//}
+
+	dst.Spec.AvailabilityZones = restored.Spec.AvailabilityZones
+	if len(dst.Spec.AvailabilityZones) == 0 {
+		dst.Spec.AvailabilityZones = nil
+	}
+
+	dst.Spec.NodeTaints = restored.Spec.NodeTaints
+	if len(dst.Spec.NodeTaints) == 0 {
+		dst.Spec.NodeTaints = nil
+	}
+
+	//if restored.Spec.NodeTaints == nil {
+	//	dst.Spec.NodeTaints = nil
+	//} else {
+	//	if len(restored.Spec.NodeTaints) == 0 {
+	//		dst.Spec.NodeTaints = []string{}
+	//	} else {
+	//		dst.Spec.NodeTaints = restored.Spec.NodeTaints
+	//	}
+	//}
+
+	dst.Spec.KubeletConfig = restored.Spec.KubeletConfig
+	//if restored.Spec.KubeletConfig.AllowedUnsafeSysctls == nil {
+	//	dst.Spec.KubeletConfig.AllowedUnsafeSysctls = nil
+	//}
+
+	//if restored.Spec.KubeletConfig != nil {
+	//	dst.Spec.KubeletConfig = restored.Spec.KubeletConfig
+	//} else {
+	//	dst.Spec.KubeletConfig = nil
+	//}
+
+	//if restored.Spec.KubeletConfig.AllowedUnsafeSysctls != nil {
+	//	dst.Spec.KubeletConfig.AllowedUnsafeSysctls = restored.Spec.KubeletConfig.AllowedUnsafeSysctls
+	//} else {
+	//	dst.Spec.KubeletConfig.AllowedUnsafeSysctls = nil
+	//}
+
+	if len(dst.Annotations) == 0 {
+		dst.Annotations = nil
+	}
 
 	return nil
 }

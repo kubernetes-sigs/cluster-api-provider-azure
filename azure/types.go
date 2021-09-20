@@ -434,4 +434,40 @@ type AgentPoolSpec struct {
 
 	// Mode represents mode of an agent pool. Possible values include: 'System', 'User'.
 	Mode string
+
+	// Max count for auto scaling
+	MaxCount *int32 `json:"maxCount,omitempty"`
+
+	// Min count for auto scaling
+	MinCount *int32 `json:"minCount,omitempty"`
+
+	// Enable auto scaling
+	EnableAutoScaling *bool `json:"EnableAutoScaling,omitempty"`
+
+	// Enable FIPS node image
+	EnableFIPS *bool `json:"EnableFIPS,omitempty"`
+
+	// Enable node public IP
+	EnableNodePublicIP *bool `json:"EnableNodePublicIP,omitempty"`
+
+	// Node labels
+	NodeLabels map[string]*string `json:"NodeLabels,omitempty"`
+
+	// Node taints
+	NodeTaints []string `json:"NodeTaints,omitempty"`
+
+	// Node OS disk type
+	OsDiskType *string `json:"OsDiskType,omitempty"`
+
+	// AvailabilityZones - Availability zones for nodes. Must use VirtualMachineScaleSets AgentPoolType.
+	AvailabilityZones []string `json:"availabilityZones,omitempty"`
+
+	// ScaleSetPriority - ScaleSetPriority to be used to specify virtual machine scale set priority. Default to regular. Possible values include: 'Spot', 'Regular'
+	ScaleSetPriority *string `json:"scaleSetPriority,omitempty"`
+
+	// MaxPods - Maximum number of pods that can run on a node.
+	MaxPods *int32 `json:"maxPods,omitempty"`
+
+	// KubeletConfig - KubeletConfig specifies the configuration of kubelet on agent nodes.
+	KubeletConfig *infrav1.KubeletConfig `json:"kubeletConfig,omitempty"`
 }

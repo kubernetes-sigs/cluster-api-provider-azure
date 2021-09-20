@@ -879,6 +879,17 @@ func autoConvert_v1beta1_AzureManagedMachinePoolSpec_To_v1alpha3_AzureManagedMac
 	out.SKU = in.SKU
 	out.OSDiskSizeGB = (*int32)(unsafe.Pointer(in.OSDiskSizeGB))
 	out.ProviderIDList = *(*[]string)(unsafe.Pointer(&in.ProviderIDList))
+	// WARNING: in.AutoScaling requires manual conversion: does not exist in peer-type
+	// WARNING: in.EnableNodePublicIP requires manual conversion: does not exist in peer-type
+	// WARNING: in.EnableFIPS requires manual conversion: does not exist in peer-type
+	// WARNING: in.OsDiskType requires manual conversion: does not exist in peer-type
+	// WARNING: in.NodeLabels requires manual conversion: does not exist in peer-type
+	// WARNING: in.NodeTaints requires manual conversion: does not exist in peer-type
+	// WARNING: in.VnetSubnetID requires manual conversion: does not exist in peer-type
+	// WARNING: in.AvailabilityZones requires manual conversion: does not exist in peer-type
+	// WARNING: in.ScaleSetPriority requires manual conversion: does not exist in peer-type
+	// WARNING: in.MaxPods requires manual conversion: does not exist in peer-type
+	// WARNING: in.KubeletConfig requires manual conversion: does not exist in peer-type
 	return nil
 }
 

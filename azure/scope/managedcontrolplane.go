@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -504,6 +505,28 @@ func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azu
 			ammp.Replicas = *ownerPool.Spec.Replicas
 		}
 
+		if pool.Spec.VnetSubnetID != nil {
+			ammp.VnetSubnetID = *pool.Spec.VnetSubnetID
+		}
+
+		if pool.Spec.KubeletConfig != nil {
+			ammp.KubeletConfig = (*infrav1.KubeletConfig)(pool.Spec.KubeletConfig)
+		}
+
+		if pool.Spec.AutoScaling != nil {
+			ammp.EnableAutoScaling = to.BoolPtr(true)
+			ammp.MaxCount = pool.Spec.AutoScaling.MaxCount
+			ammp.MinCount = pool.Spec.AutoScaling.MinCount
+		}
+		ammp.EnableFIPS = pool.Spec.EnableFIPS
+		ammp.EnableNodePublicIP = pool.Spec.EnableNodePublicIP
+		ammp.AvailabilityZones = pool.Spec.AvailabilityZones
+		ammp.NodeLabels = pool.Spec.NodeLabels
+		ammp.NodeTaints = pool.Spec.NodeTaints
+		ammp.OsDiskType = pool.Spec.OsDiskType
+		ammp.ScaleSetPriority = pool.Spec.ScaleSetPriority
+		ammp.MaxPods = pool.Spec.MaxPods
+
 		ammps = append(ammps, ammp)
 	}
 
@@ -546,6 +569,28 @@ func (s *ManagedControlPlaneScope) AgentPoolSpec() azure.AgentPoolSpec {
 	if s.InfraMachinePool.Spec.OSDiskSizeGB != nil {
 		agentPoolSpec.OSDiskSizeGB = *s.InfraMachinePool.Spec.OSDiskSizeGB
 	}
+
+	if s.InfraMachinePool.Spec.VnetSubnetID != nil {
+		agentPoolSpec.VnetSubnetID = *s.InfraMachinePool.Spec.VnetSubnetID
+	}
+
+	if s.InfraMachinePool.Spec.KubeletConfig != nil {
+		agentPoolSpec.KubeletConfig = (*infrav1.KubeletConfig)(s.InfraMachinePool.Spec.KubeletConfig)
+	}
+
+	if s.InfraMachinePool.Spec.AutoScaling != nil {
+		agentPoolSpec.EnableAutoScaling = to.BoolPtr(true)
+		agentPoolSpec.MaxCount = s.InfraMachinePool.Spec.AutoScaling.MaxCount
+		agentPoolSpec.MinCount = s.InfraMachinePool.Spec.AutoScaling.MinCount
+	}
+	agentPoolSpec.EnableFIPS = s.InfraMachinePool.Spec.EnableFIPS
+	agentPoolSpec.EnableNodePublicIP = s.InfraMachinePool.Spec.EnableNodePublicIP
+	agentPoolSpec.NodeLabels = s.InfraMachinePool.Spec.NodeLabels
+	agentPoolSpec.NodeTaints = s.InfraMachinePool.Spec.NodeTaints
+	agentPoolSpec.OsDiskType = s.InfraMachinePool.Spec.OsDiskType
+	agentPoolSpec.AvailabilityZones = s.InfraMachinePool.Spec.AvailabilityZones
+	agentPoolSpec.ScaleSetPriority = s.InfraMachinePool.Spec.ScaleSetPriority
+	agentPoolSpec.MaxPods = s.InfraMachinePool.Spec.MaxPods
 
 	return agentPoolSpec
 }

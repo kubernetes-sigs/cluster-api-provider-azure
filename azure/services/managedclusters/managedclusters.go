@@ -145,6 +145,31 @@ func New(scope ManagedClusterScope) *Service {
 	}
 }
 
+// SetAgentPool set the ManagedClusterAgentPoolProfile values.
+func SetAgentPool(profile *containerservice.ManagedClusterAgentPoolProfile, pool *azure.AgentPoolSpec) {
+	if pool.OsDiskType != nil {
+		profile.OsDiskType = containerservice.OSDiskType(*pool.OsDiskType)
+	}
+
+	if pool.ScaleSetPriority != nil {
+		profile.ScaleSetPriority = containerservice.ScaleSetPriority(*pool.ScaleSetPriority)
+	}
+
+	if pool.KubeletConfig != nil {
+		profile.KubeletConfig = (*containerservice.KubeletConfig)(pool.KubeletConfig)
+	}
+
+	profile.MaxCount = pool.MaxCount
+	profile.MinCount = pool.MinCount
+	profile.EnableAutoScaling = pool.EnableAutoScaling
+	profile.EnableFIPS = pool.EnableFIPS
+	profile.EnableNodePublicIP = pool.EnableNodePublicIP
+	profile.NodeLabels = pool.NodeLabels
+	profile.NodeTaints = &pool.NodeTaints
+	profile.AvailabilityZones = &pool.AvailabilityZones
+	profile.MaxPods = pool.MaxPods
+}
+
 // Reconcile idempotently creates or updates a managed cluster, if possible.
 func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "managedclusters.Service.Reconcile")
@@ -239,9 +264,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			OsDiskSizeGB: &pool.OSDiskSizeGB,
 			Count:        &pool.Replicas,
 			Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
-			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
 			Mode:         containerservice.AgentPoolMode(pool.Mode),
 		}
+		if pool.VnetSubnetID != "" {
+			profile.VnetSubnetID = &pool.VnetSubnetID
+		} else {
+			profile.VnetSubnetID = &managedClusterSpec.VnetSubnetID
+		}
+
+		SetAgentPool(&profile, &pool)
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}
 

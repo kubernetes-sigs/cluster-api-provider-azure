@@ -60,6 +60,94 @@ func TestAzureManagedMachinePoolDefaultingWebhook(t *testing.T) {
 	g.Expect(*ammp.Spec.Name).To(Equal("barName"))
 }
 
+func TestAzureManagedMachinePoolValidateCreateWebhook(t *testing.T) {
+	g := NewWithT(t)
+
+	t.Logf("Testing ValidateCreate webhook")
+
+	tests := []struct {
+		name    string
+		pool    *AzureManagedMachinePool
+		wantErr bool
+	}{
+		{
+			name: "AutoScaling enabled, expect both MinCount and MaxCount to be set",
+			pool: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					AutoScaling: &AutoScaling{
+						MinCount: to.Int32Ptr(2),
+						MaxCount: to.Int32Ptr(5),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Node taint should follow patten key=value:NoSchedule",
+			pool: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "User",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					NodeTaints:   []string{"key1=value1:NoSchedule"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Node taint should follow patten key=value:NoSchedule",
+			pool: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "User",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					NodeTaints:   []string{"key1=value1NoSchedule"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AllowedUnsafeSysctls should be one of \"kernel.shm*\", \"kernel.msg*\", \"kernel.sem\", \"fs.mqueue.*\", \"net.*\"",
+			pool: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:          "User",
+					SKU:           "StandardD2S_V3",
+					OSDiskSizeGB:  to.Int32Ptr(512),
+					KubeletConfig: &KubeletConfig{AllowedUnsafeSysctls: &[]string{"net.*"}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "AllowedUnsafeSysctls should be one of \"kernel.shm*\", \"kernel.msg*\", \"kernel.sem\", \"fs.mqueue.*\", \"net.*\"",
+			pool: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:          "User",
+					SKU:           "StandardD2S_V3",
+					OSDiskSizeGB:  to.Int32Ptr(512),
+					KubeletConfig: &KubeletConfig{AllowedUnsafeSysctls: &[]string{"net4.*"}},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	var client client.Client
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.pool.ValidateCreate(client)
+			if tc.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+		})
+	}
+}
+
 func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 	g := NewWithT(t)
 
@@ -103,6 +191,126 @@ func TestAzureManagedMachinePoolUpdatingWebhook(t *testing.T) {
 					Mode:         "System",
 					SKU:          "StandardD2S_V3",
 					OSDiskSizeGB: to.Int32Ptr(1024),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change EnableFIPS of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					EnableFIPS:   to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					EnableFIPS:   to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change EnableNodePublicIP of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:               "System",
+					SKU:                "StandardD2S_V3",
+					OSDiskSizeGB:       to.Int32Ptr(512),
+					EnableNodePublicIP: to.BoolPtr(true),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:               "System",
+					SKU:                "StandardD2S_V3",
+					OSDiskSizeGB:       to.Int32Ptr(512),
+					EnableNodePublicIP: to.BoolPtr(false),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change OsDiskType of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					OsDiskType:   to.StringPtr("Managed"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					OsDiskType:   to.StringPtr("Ephemeral"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change ScaleSetPriority of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:             "System",
+					SKU:              "StandardD2S_V3",
+					OSDiskSizeGB:     to.Int32Ptr(512),
+					ScaleSetPriority: to.StringPtr("Regular"),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:             "System",
+					SKU:              "StandardD2S_V3",
+					OSDiskSizeGB:     to.Int32Ptr(512),
+					ScaleSetPriority: to.StringPtr("Spot"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change MaxPods of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					MaxPods:      to.Int32Ptr(50),
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					MaxPods:      to.Int32Ptr(40),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Cannot change NodeTaints of the agentpool",
+			new: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					NodeTaints:   []string{"key1=value1:NoSchedule"},
+				},
+			},
+			old: &AzureManagedMachinePool{
+				Spec: AzureManagedMachinePoolSpec{
+					Mode:         "System",
+					SKU:          "StandardD2S_V3",
+					OSDiskSizeGB: to.Int32Ptr(512),
+					NodeTaints:   []string{"key2=value2:NoSchedule"},
 				},
 			},
 			wantErr: true,
