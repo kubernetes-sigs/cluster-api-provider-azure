@@ -29,6 +29,13 @@ spec:
   networkSpec:
     vnet:
       name: "${AZURE_VNET_NAME:=${CLUSTER_NAME}-vnet}"
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+    - name: node-subnet
+      natGateway:
+        name: node-natgateway
+      role: node
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
