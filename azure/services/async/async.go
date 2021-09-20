@@ -28,9 +28,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 )
 
-// ProcessOngoingOperation is a helper function that will process an ongoing operation to check if it is done.
+// processOngoingOperation is a helper function that will process an ongoing operation to check if it is done.
 // If it is not done, it will return a transient error.
-func ProcessOngoingOperation(ctx context.Context, scope FutureScope, client FutureHandler, resourceName string, serviceName string) error {
+func processOngoingOperation(ctx context.Context, scope FutureScope, client FutureHandler, resourceName string, serviceName string) error {
 	future := scope.GetLongRunningOperationState(resourceName, serviceName)
 	if future == nil {
 		scope.V(2).Info("no long running operation found", "service", serviceName, "resource", resourceName)
@@ -69,7 +69,7 @@ func CreateResource(ctx context.Context, scope FutureScope, client Creator, spec
 	// Check if there is an ongoing long running operation.
 	future := scope.GetLongRunningOperationState(resourceName, serviceName)
 	if future != nil {
-		return ProcessOngoingOperation(ctx, scope, client, resourceName, serviceName)
+		return processOngoingOperation(ctx, scope, client, resourceName, serviceName)
 	}
 
 	// No long running operation is active, so create the resource.
@@ -100,7 +100,7 @@ func DeleteResource(ctx context.Context, scope FutureScope, client Deleter, spec
 	// Check if there is an ongoing long running operation.
 	future := scope.GetLongRunningOperationState(resourceName, serviceName)
 	if future != nil {
-		return ProcessOngoingOperation(ctx, scope, client, resourceName, serviceName)
+		return processOngoingOperation(ctx, scope, client, resourceName, serviceName)
 	}
 
 	// No long running operation is active, so delete the resource.

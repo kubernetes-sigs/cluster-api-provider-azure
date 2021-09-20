@@ -60,7 +60,7 @@ var (
 	errCtxExceeded = errors.New("ctx exceeded")
 )
 
-// TestProcessOngoingOperation tests the ProcessOngoingOperation function.
+// TestProcessOngoingOperation tests the processOngoingOperation function.
 func TestProcessOngoingOperation(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -139,7 +139,7 @@ func TestProcessOngoingOperation(t *testing.T) {
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
-			err := ProcessOngoingOperation(context.TODO(), scopeMock, clientMock, tc.resourceName, tc.serviceName)
+			err := processOngoingOperation(context.TODO(), scopeMock, clientMock, tc.resourceName, tc.serviceName)
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedError))
