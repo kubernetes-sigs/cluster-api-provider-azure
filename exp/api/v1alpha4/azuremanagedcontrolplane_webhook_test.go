@@ -154,6 +154,71 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		{
+			name: "Valid LoadBalancerProfile",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					LoadBalancerProfile: &LoadBalancerProfile{
+						ManagedOutboundIPs:     to.Int32Ptr(10),
+						AllocatedOutboundPorts: to.Int32Ptr(1000),
+						IdleTimeoutInMinutes:   to.Int32Ptr(60),
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Invalid LoadBalancerProfile.ManagedOutboundIPs",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					LoadBalancerProfile: &LoadBalancerProfile{
+						ManagedOutboundIPs: to.Int32Ptr(200),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Invalid LoadBalancerProfile.AllocatedOutboundPorts",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					LoadBalancerProfile: &LoadBalancerProfile{
+						AllocatedOutboundPorts: to.Int32Ptr(80000),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Invalid LoadBalancerProfile.IdleTimeoutInMinutes",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					LoadBalancerProfile: &LoadBalancerProfile{
+						IdleTimeoutInMinutes: to.Int32Ptr(600),
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "LoadBalancerProfile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					LoadBalancerProfile: &LoadBalancerProfile{
+						ManagedOutboundIPs: to.Int32Ptr(1),
+						OutboundIPs: []string{
+							"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/foo-bar/providers/Microsoft.Network/publicIPAddresses/my-public-ip",
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {

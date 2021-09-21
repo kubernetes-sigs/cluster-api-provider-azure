@@ -91,6 +91,10 @@ type AzureManagedControlPlaneSpec struct {
 	// SKU is the SKU of the AKS to be provisioned.
 	// +optional
 	SKU *SKU `json:"sku,omitempty"`
+
+	// LoadBalancerProfile is the profile of the cluster load balancer.
+	// +optional
+	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -109,6 +113,34 @@ type SKU struct {
 	// Tier - Tier of a managed cluster SKU.
 	// +kubebuilder:validation:Enum=Free;Paid
 	Tier string `json:"tier"`
+}
+
+// LoadBalancerProfile - Profile of the cluster load balancer.
+type LoadBalancerProfile struct {
+	// Load balancer profile must specify at most one of ManagedOutboundIPs, OutboundIPPrefixes and OutboundIPs.
+	// By default the AKS cluster automatically creates a public IP in the AKS-managed infrastructure resource group and assigns it to the load balancer outbound pool.
+	// Alternatively, you can assign your own custom public IP or public IP prefix at cluster creation time.
+	// See https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#provide-your-own-outbound-public-ips-or-prefixes
+
+	// ManagedOutboundIPs - Desired managed outbound IPs for the cluster load balancer.
+	// +optional
+	ManagedOutboundIPs *int32 `json:"managedOutboundIPs,omitempty"`
+
+	// OutboundIPPrefixes - Desired outbound IP Prefix resources for the cluster load balancer.
+	// +optional
+	OutboundIPPrefixes []string `json:"outboundIPPrefixes,omitempty"`
+
+	// OutboundIPs - Desired outbound IP resources for the cluster load balancer.
+	// +optional
+	OutboundIPs []string `json:"outboundIPs,omitempty"`
+
+	// AllocatedOutboundPorts - Desired number of allocated SNAT ports per VM. Allowed values must be in the range of 0 to 64000 (inclusive). The default value is 0 which results in Azure dynamically allocating ports.
+	// +optional
+	AllocatedOutboundPorts *int32 `json:"allocatedOutboundPorts,omitempty"`
+
+	// IdleTimeoutInMinutes - Desired outbound flow idle timeout in minutes. Allowed values must be in the range of 4 to 120 (inclusive). The default value is 30 minutes.
+	// +optional
+	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.

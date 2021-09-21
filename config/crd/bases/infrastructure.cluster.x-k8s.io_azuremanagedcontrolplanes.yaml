@@ -283,6 +283,41 @@ spec:
                     description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                     type: string
                 type: object
+              loadBalancerProfile:
+                description: LoadBalancerProfile is the profile of the cluster load
+                  balancer.
+                properties:
+                  allocatedOutboundPorts:
+                    description: AllocatedOutboundPorts - Desired number of allocated
+                      SNAT ports per VM. Allowed values must be in the range of 0
+                      to 64000 (inclusive). The default value is 0 which results in
+                      Azure dynamically allocating ports.
+                    format: int32
+                    type: integer
+                  idleTimeoutInMinutes:
+                    description: IdleTimeoutInMinutes - Desired outbound flow idle
+                      timeout in minutes. Allowed values must be in the range of 4
+                      to 120 (inclusive). The default value is 30 minutes.
+                    format: int32
+                    type: integer
+                  managedOutboundIPs:
+                    description: ManagedOutboundIPs - Desired managed outbound IPs
+                      for the cluster load balancer.
+                    format: int32
+                    type: integer
+                  outboundIPPrefixes:
+                    description: OutboundIPPrefixes - Desired outbound IP Prefix resources
+                      for the cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                  outboundIPs:
+                    description: OutboundIPs - Desired outbound IP resources for the
+                      cluster load balancer.
+                    items:
+                      type: string
+                    type: array
+                type: object
               loadBalancerSKU:
                 description: LoadBalancerSKU is the SKU of the loadBalancer to be
                   provisioned.

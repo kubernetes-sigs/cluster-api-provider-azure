@@ -39,6 +39,7 @@ func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error { //
 
 	dst.Spec.IdentityRef = restored.Spec.IdentityRef
 	dst.Spec.SKU = restored.Spec.SKU
+	dst.Spec.LoadBalancerProfile = restored.Spec.LoadBalancerProfile
 
 	dst.Status.LongRunningOperationStates = restored.Status.LongRunningOperationStates
 
