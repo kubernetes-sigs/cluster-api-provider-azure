@@ -274,6 +274,31 @@ spec:
     idleTimeoutInMinutes: 10 # 4-120
 ```
 
+### Secure access to the API server using authorized IP address ranges
+
+In Kubernetes, the API server receives requests to perform actions in the cluster such as to create resources or scale the number of nodes. The API server is the central way to interact with and manage a cluster. To improve cluster security and minimize attacks, the API server should only be accessible from a limited set of IP address ranges.
+
+For more documentation about authorized IP address ranges refer [AKS Doc](https://docs.microsoft.com/en-us/azure/aks/api-server-authorized-ip-ranges) and [AKS REST API Doc](https://docs.microsoft.com/en-us/rest/api/aks/managed-clusters/create-or-update)
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: AzureManagedControlPlane
+metadata:
+  name: my-cluster-control-plane
+spec:
+  location: southcentralus
+  resourceGroupName: foo-bar
+  sshPublicKey: ${AZURE_SSH_PUBLIC_KEY_B64:=""}
+  subscriptionID: 00000000-0000-0000-0000-000000000000 # fake uuid
+  version: v1.21.2
+  apiServerAccessProfile:
+    authorizedIPRanges:
+    - 12.34.56.78/32
+    enablePrivateCluster: false
+    privateDNSZone: None # System, None. Allowed only when enablePrivateCluster is true
+    enablePrivateClusterPublicFQDN: false # Allowed only when enablePrivateCluster is true
+```
+
 ## Features
 
 AKS clusters deployed from CAPZ currently only support a limited,

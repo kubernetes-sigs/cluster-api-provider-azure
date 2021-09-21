@@ -219,6 +219,18 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 			expectErr: true,
 		},
+		{
+			name: "Invalid CIDR for AuthorizedIPRanges",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					APIServerAccessProfile: &APIServerAccessProfile{
+						AuthorizedIPRanges: []string{"1.2.3.400/32"},
+					},
+				},
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -670,6 +682,44 @@ func TestAzureManagedControlPlane_ValidateUpdate(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane EnablePrivateCluster is immutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					APIServerAccessProfile: &APIServerAccessProfile{
+						EnablePrivateCluster: to.BoolPtr(true),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "AzureManagedControlPlane AuthorizedIPRanges is mutable",
+			oldAMCP: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+				},
+			},
+			amcp: &AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					DNSServiceIP: to.StringPtr("192.168.0.0"),
+					Version:      "v1.18.0",
+					APIServerAccessProfile: &APIServerAccessProfile{
+						AuthorizedIPRanges: []string{"192.168.0.1/32"},
+					},
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {

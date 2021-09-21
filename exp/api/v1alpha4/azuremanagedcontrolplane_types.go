@@ -24,6 +24,14 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
 
+const (
+	// PrivateDNSZoneModeSystem represents mode System for azuremanagedcontrolplane.
+	PrivateDNSZoneModeSystem string = "System"
+
+	// PrivateDNSZoneModeNone represents mode None for azuremanagedcontrolplane.
+	PrivateDNSZoneModeNone string = "None"
+)
+
 // AzureManagedControlPlaneSpec defines the desired state of AzureManagedControlPlane.
 type AzureManagedControlPlaneSpec struct {
 	// Version defines the desired Kubernetes version.
@@ -95,6 +103,10 @@ type AzureManagedControlPlaneSpec struct {
 	// LoadBalancerProfile is the profile of the cluster load balancer.
 	// +optional
 	LoadBalancerProfile *LoadBalancerProfile `json:"loadBalancerProfile,omitempty"`
+
+	// APIServerAccessProfile is the access profile for AKS API server.
+	// +optional
+	APIServerAccessProfile *APIServerAccessProfile `json:"apiServerAccessProfile,omitempty"`
 }
 
 // AADProfile - AAD integration managed by AKS.
@@ -141,6 +153,23 @@ type LoadBalancerProfile struct {
 	// IdleTimeoutInMinutes - Desired outbound flow idle timeout in minutes. Allowed values must be in the range of 4 to 120 (inclusive). The default value is 30 minutes.
 	// +optional
 	IdleTimeoutInMinutes *int32 `json:"idleTimeoutInMinutes,omitempty"`
+}
+
+// APIServerAccessProfile - access profile for AKS API server.
+type APIServerAccessProfile struct {
+	// AuthorizedIPRanges - Authorized IP Ranges to kubernetes API server.
+	// +optional
+	AuthorizedIPRanges []string `json:"authorizedIPRanges,omitempty"`
+	// EnablePrivateCluster - Whether to create the cluster as a private cluster or not.
+	// +optional
+	EnablePrivateCluster *bool `json:"enablePrivateCluster,omitempty"`
+	// PrivateDNSZone - Private dns zone mode for private cluster.
+	// +kubebuilder:validation:Enum=System;None
+	// +optional
+	PrivateDNSZone *string `json:"privateDNSZone,omitempty"`
+	// EnablePrivateClusterPublicFQDN - Whether to create additional public FQDN for private cluster or not.
+	// +optional
+	EnablePrivateClusterPublicFQDN *bool `json:"enablePrivateClusterPublicFQDN,omitempty"`
 }
 
 // ManagedControlPlaneVirtualNetwork describes a virtual network required to provision AKS clusters.
