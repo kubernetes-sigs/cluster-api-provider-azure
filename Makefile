@@ -81,7 +81,7 @@ MOCKGEN_VER := v1.6.0
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 
-RELEASE_NOTES_VER := v0.9.0
+RELEASE_NOTES_VER := v0.10.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
@@ -406,8 +406,10 @@ set-manifest-pull-policy:
 ## --------------------------------------
 
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
-PREVIOUS_TAG ?= $(shell git describe --abbrev=0 $(RELEASE_TAG)^ 2>/dev/null)
+# the previous release tag, e.g., v0.3.9, excluding pre-release tags
+PREVIOUS_TAG ?= $(shell git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | grep -B1 $(RELEASE_TAG) | head -n 1 2>/dev/null)
 RELEASE_DIR ?= out
+RELEASE_NOTES_DIR := _releasenotes
 GIT_REPO_NAME ?= cluster-api-provider-azure
 GIT_ORG_NAME ?= kubernetes-sigs
 FULL_VERSION := $(RELEASE_TAG:v%=%)
@@ -416,6 +418,9 @@ RELEASE_BRANCH ?= release-$(MINOR_VERSION)
 
 $(RELEASE_DIR):
 	mkdir -p $(RELEASE_DIR)/
+
+$(RELEASE_NOTES_DIR):
+	mkdir -p $(RELEASE_NOTES_DIR)/
 
 .PHONY: release
 release: clean-release  ## Builds and push container images using the latest git tag for the commit.
@@ -465,8 +470,10 @@ release-alias-tag: # Adds the tag to the last build tag.
 	gcloud container images add-tag $(CONTROLLER_IMG):$(TAG) $(CONTROLLER_IMG):$(RELEASE_ALIAS_TAG)
 
 .PHONY: release-notes
-release-notes: $(RELEASE_NOTES)
-	$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output release-notes-$(RELEASE_TAG).md
+release-notes: $(RELEASE_NOTES) $(RELEASE_NOTES_DIR)
+	$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH)  --start-rev $(PREVIOUS_TAG) --end-rev $(RELEASE_TAG) --output $(RELEASE_NOTES_DIR)/tmp-release-notes.md
+	sed 's/\[SIG Cluster Lifecycle\]//g' $(RELEASE_NOTES_DIR)/tmp-release-notes.md > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md
+	rm -f $(RELEASE_NOTES_DIR)/tmp-release-notes.md
 
 ## --------------------------------------
 ## Development
