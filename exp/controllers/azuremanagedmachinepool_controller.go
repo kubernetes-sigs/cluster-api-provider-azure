@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -43,6 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -75,19 +75,27 @@ func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger,
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
+func (ammpr *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.SetupWithManager")
+	defer span.End()
+
+	log := ammpr.Log.WithValues("controller", "AzureManagedMachinePool")
+	var r reconcile.Reconciler = ammpr
+	if options.Cache != nil {
+		r = coalescing.NewReconciler(ammpr, options.Cache, log)
+	}
+
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
 	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedMachinePool requests
-	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
+	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, ammpr.Client, mgr.GetScheme(), log)
 	if err != nil {
 		return errors.Wrap(err, "failed to create AzureManagedControlPlane to AzureManagedMachinePools mapper")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
+		WithOptions(options.Options).
 		For(azManagedMachinePool).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), ammpr.WatchFilterValue)).
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
@@ -108,7 +116,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"))),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), ammpr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -122,10 +130,10 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
-func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+func (ammpr *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ammpr.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedMachinePool", req.Name)
+	log := ammpr.Log.WithValues("namespace", req.Namespace, "azureManagedMachinePool", req.Name)
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
@@ -137,7 +145,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 
 	// Fetch the AzureManagedMachinePool instance
 	infraPool := &infrav1exp.AzureManagedMachinePool{}
-	err := r.Get(ctx, req.NamespacedName, infraPool)
+	err := ammpr.Get(ctx, req.NamespacedName, infraPool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -146,7 +154,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	// Fetch the owning MachinePool.
-	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.Client, infraPool.ObjectMeta)
+	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, ammpr.Client, infraPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -156,7 +164,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	// Fetch the Cluster.
-	ownerCluster, err := util.GetOwnerCluster(ctx, r.Client, ownerPool.ObjectMeta)
+	ownerCluster, err := util.GetOwnerCluster(ctx, ammpr.Client, ownerPool.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -179,7 +187,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 		Namespace: ownerCluster.Spec.ControlPlaneRef.Namespace,
 		Name:      ownerCluster.Spec.ControlPlaneRef.Name,
 	}
-	if err := r.Client.Get(ctx, controlPlaneName, controlPlane); err != nil {
+	if err := ammpr.Client.Get(ctx, controlPlaneName, controlPlane); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -193,7 +201,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 
 	// Create the scope.
 	mcpScope, err := scope.NewManagedControlPlaneScope(ctx, scope.ManagedControlPlaneScopeParams{
-		Client:           r.Client,
+		Client:           ammpr.Client,
 		Logger:           log,
 		ControlPlane:     controlPlane,
 		Cluster:          ownerCluster,
@@ -214,14 +222,14 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 
 	// Handle deleted clusters
 	if !infraPool.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, mcpScope)
+		return ammpr.reconcileDelete(ctx, mcpScope)
 	}
 
 	// Handle non-deleted clusters
-	return r.reconcileNormal(ctx, mcpScope)
+	return ammpr.reconcileNormal(ctx, mcpScope)
 }
 
-func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+func (ammpr *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileNormal")
 	defer span.End()
 
@@ -234,7 +242,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context,
 		return reconcile.Result{}, err
 	}
 
-	if err := r.createAzureManagedMachinePoolService(scope).Reconcile(ctx); err != nil {
+	if err := ammpr.createAzureManagedMachinePoolService(scope).Reconcile(ctx); err != nil {
 		if IsAgentPoolVMSSNotFoundError(err) {
 			// if the underlying VMSS is not yet created, requeue for 30s in the future
 			return reconcile.Result{
@@ -250,7 +258,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileNormal(ctx context.Context,
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
+func (ammpr *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, scope *scope.ManagedControlPlaneScope) (reconcile.Result, error) {
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.reconcileDelete")
 	defer span.End()
 
@@ -261,7 +269,7 @@ func (r *AzureManagedMachinePoolReconciler) reconcileDelete(ctx context.Context,
 		// So, remove the finalizer.
 		controllerutil.RemoveFinalizer(scope.InfraMachinePool, infrav1.ClusterFinalizer)
 	} else {
-		if err := r.createAzureManagedMachinePoolService(scope).Delete(ctx); err != nil {
+		if err := ammpr.createAzureManagedMachinePoolService(scope).Delete(ctx); err != nil {
 			return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureManagedMachinePool %s/%s", scope.InfraMachinePool.Namespace, scope.InfraMachinePool.Name)
 		}
 		// Machine pool successfully deleted, remove the finalizer.

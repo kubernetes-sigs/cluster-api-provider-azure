@@ -34,12 +34,13 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -54,20 +55,27 @@ type AzureManagedClusterReconciler struct {
 }
 
 // SetupWithManager initializes this controller with a manager.
-func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	log := r.Log.WithValues("controller", "AzureManagedCluster")
-	azManagedCluster := &infrav1exp.AzureManagedCluster{}
+func (amcr *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options infracontroller.Options) error {
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.SetupWithManager")
+	defer span.End()
 
+	log := amcr.Log.WithValues("controller", "AzureManagedCluster")
+	var r reconcile.Reconciler = amcr
+	if options.Cache != nil {
+		r = coalescing.NewReconciler(amcr, options.Cache, log)
+	}
+
+	azManagedCluster := &infrav1exp.AzureManagedCluster{}
 	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedCluster requests
-	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(ctx, r.Client, log)
+	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedClusterMapper(ctx, amcr.Client, log)
 	if err != nil {
 		return errors.Wrap(err, "failed to create AzureManagedControlPlane to AzureManagedClusters mapper")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		WithOptions(options).
+		WithOptions(options.Options).
 		For(azManagedCluster).
-		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), amcr.WatchFilterValue)).
 		// watch AzureManagedControlPlane resources
 		Watches(
 			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
@@ -83,7 +91,7 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mg
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedCluster"))),
 		predicates.ClusterUnpaused(log),
-		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+		predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), amcr.WatchFilterValue),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
@@ -96,10 +104,10 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mg
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile idempotently gets, creates, and updates a managed cluster.
-func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
+func (amcr *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(amcr.ReconcileTimeout))
 	defer cancel()
-	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
+	log := amcr.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
 
 	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.Reconcile",
 		trace.WithAttributes(
@@ -111,7 +119,7 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	// Fetch the AzureManagedCluster instance
 	aksCluster := &infrav1exp.AzureManagedCluster{}
-	err := r.Get(ctx, req.NamespacedName, aksCluster)
+	err := amcr.Get(ctx, req.NamespacedName, aksCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -120,7 +128,7 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	// Fetch the Cluster.
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, aksCluster.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, amcr.Client, aksCluster.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -143,13 +151,13 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, nil
 	}
 
-	if err := r.Get(ctx, controlPlaneRef, controlPlane); err != nil {
+	if err := amcr.Get(ctx, controlPlaneRef, controlPlane); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to get control plane ref")
 	}
 
 	log = log.WithValues("controlPlane", controlPlaneRef.Name)
 
-	patchhelper, err := patch.NewHelper(aksCluster, r.Client)
+	patchhelper, err := patch.NewHelper(aksCluster, amcr.Client)
 	if err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
 	}
