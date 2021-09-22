@@ -403,24 +403,30 @@ spec:
                 description: VirtualNetwork describes the vnet for the AKS cluster.
                   Will be created if it does not exist.
                 properties:
-                  cidrBlock:
-                    type: string
+                  cidrBlocks:
+                    items:
+                      type: string
+                    type: array
                   name:
                     type: string
-                  subnet:
-                    description: ManagedControlPlaneSubnet describes a subnet for
-                      an AKS cluster.
-                    properties:
-                      cidrBlock:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - cidrBlock
-                    - name
-                    type: object
+                  subnets:
+                    items:
+                      description: ManagedControlPlaneSubnet describes a subnet for
+                        an AKS cluster.
+                      properties:
+                        cidrBlocks:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                      required:
+                      - cidrBlocks
+                      - name
+                      type: object
+                    type: array
                 required:
-                - cidrBlock
+                - cidrBlocks
                 - name
                 type: object
             required:
@@ -732,24 +738,30 @@ spec:
                 description: VirtualNetwork describes the vnet for the AKS cluster.
                   Will be created if it does not exist.
                 properties:
-                  cidrBlock:
-                    type: string
+                  cidrBlocks:
+                    items:
+                      type: string
+                    type: array
                   name:
                     type: string
-                  subnet:
-                    description: ManagedControlPlaneSubnet describes a subnet for
-                      an AKS cluster.
-                    properties:
-                      cidrBlock:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - cidrBlock
-                    - name
-                    type: object
+                  subnets:
+                    items:
+                      description: ManagedControlPlaneSubnet describes a subnet for
+                        an AKS cluster.
+                      properties:
+                        cidrBlocks:
+                          items:
+                            type: string
+                          type: array
+                        name:
+                          type: string
+                      required:
+                      - cidrBlocks
+                      - name
+                      type: object
+                    type: array
                 required:
-                - cidrBlock
+                - cidrBlocks
                 - name
                 type: object
             required:

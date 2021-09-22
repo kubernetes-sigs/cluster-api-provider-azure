@@ -46,7 +46,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.Version).To(Equal("v1.17.5"))
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("MC_fooRg_fooName_fooLocation"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooName"))
-	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnets[0].Name).To(Equal("fooName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(FreeManagedControlPlaneTier))
 
 	t.Logf("Testing amcp defaulting webhook with baseline")
@@ -59,7 +59,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	amcp.Spec.Version = "9.99.99"
 	amcp.Spec.NodeResourceGroupName = "fooNodeRg"
 	amcp.Spec.VirtualNetwork.Name = "fooVnetName"
-	amcp.Spec.VirtualNetwork.Subnet.Name = "fooSubnetName"
+	amcp.Spec.VirtualNetwork.Subnets[0].Name = "fooSubnetName"
 	amcp.Spec.SKU.Tier = PaidManagedControlPlaneTier
 	amcp.Default()
 	g.Expect(*amcp.Spec.NetworkPlugin).To(Equal(netPlug))
@@ -68,7 +68,7 @@ func TestDefaultingWebhook(t *testing.T) {
 	g.Expect(amcp.Spec.Version).To(Equal("v9.99.99"))
 	g.Expect(amcp.Spec.NodeResourceGroupName).To(Equal("fooNodeRg"))
 	g.Expect(amcp.Spec.VirtualNetwork.Name).To(Equal("fooVnetName"))
-	g.Expect(amcp.Spec.VirtualNetwork.Subnet.Name).To(Equal("fooSubnetName"))
+	g.Expect(amcp.Spec.VirtualNetwork.Subnets[0].Name).To(Equal("fooSubnetName"))
 	g.Expect(amcp.Spec.SKU.Tier).To(Equal(PaidManagedControlPlaneTier))
 }
 
@@ -225,6 +225,42 @@ func TestValidatingWebhook(t *testing.T) {
 					Version: "v1.21.2",
 					APIServerAccessProfile: &APIServerAccessProfile{
 						AuthorizedIPRanges: []string{"1.2.3.400/32"},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Valid CIDR for virtual network / subnets",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						CIDRBlocks: []string{"1.2.3.4/16", "ace:cab:decb::/48"},
+						Subnets: []ManagedControlPlaneSubnet{
+							{
+								Name:       "my-subnet",
+								CIDRBlocks: []string{"1.2.3.4/32"},
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Invalid CIDR for virtual network / subnets",
+			amcp: AzureManagedControlPlane{
+				Spec: AzureManagedControlPlaneSpec{
+					Version: "v1.21.2",
+					VirtualNetwork: ManagedControlPlaneVirtualNetwork{
+						CIDRBlocks: []string{"1.2.3.400/16", "xyz:000:abcd::/48"},
+						Subnets: []ManagedControlPlaneSubnet{
+							{
+								Name:       "my-subnet",
+								CIDRBlocks: []string{"1.2.3.4/64"},
+							},
+						},
 					},
 				},
 			},
