@@ -1,0 +1,62 @@
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  kubeadmConfigSpec:
+    diskSetup:
+      filesystems:
+      - device: /dev/disk/azure/scsi1/lun0
+        extraOpts:
+        - -E
+        - lazy_itable_init=1,lazy_journal_init=1
+        filesystem: ext4
+        label: etcd_disk
+        overwrite: false
+      partitions:
+      - device: /dev/disk/azure/scsi1/lun0
+        layout: true
+        overwrite: false
+    format: ignition
+    ignition:
+      containerLinuxConfig:
+        additionalConfig: |
+          systemd:
+            units:
+            - name: kubeadm.service
+              dropins:
+              - name: 10-flatcar.conf
+                contents: |
+                  [Unit]
+                  After=oem-cloudinit.service
+    initConfiguration:
+      nodeRegistration:
+        name: '@@HOSTNAME@@'
+    joinConfiguration:
+      nodeRegistration:
+        name: '@@HOSTNAME@@'
+    mounts:
+    - - etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands: []
+    preKubeadmCommands:
+    - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01'
+      | jq -r .compute.name)/g" /etc/kubeadm.yml
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: capiMatTestWE2-3282f15c-906a-4c4b-b206-eb3c51adb5be
+          name: flatcar-stable-capi-${KUBERNETES_VERSION}-gen2
+          version: 3033.2.4
+          plan:
+            publisher: kinvolk
+            offer: flatcar-container-linux-free
+            sku: stable-gen2

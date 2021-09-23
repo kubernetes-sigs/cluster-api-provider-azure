@@ -1,0 +1,9 @@
+namespace: default
+resources:
+  - ../base
+  - machine-deployment.yaml
+  - ../../azure-cluster-identity
+
+patchesStrategicMerge:
+  - patches/kubeadm-controlplane.yaml
+  - ../../azure-cluster-identity/azurecluster-identity-ref.yaml
