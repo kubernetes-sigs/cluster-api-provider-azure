@@ -21,7 +21,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.14.0
+	github.com/onsi/gomega v1.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/pflag v1.0.5
@@ -36,18 +36,18 @@ require (
 	go.opentelemetry.io/otel/trace v1.0.0-RC2
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/mod v0.4.2
-	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.21.3
-	k8s.io/client-go v0.21.3
-	k8s.io/component-base v0.21.3
+	k8s.io/api v0.21.4
+	k8s.io/apimachinery v0.21.4
+	k8s.io/client-go v0.21.4
+	k8s.io/component-base v0.21.4
 	k8s.io/klog/v2 v2.9.0
-	k8s.io/kubectl v0.21.3
-	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
-	sigs.k8s.io/cluster-api v0.4.1
-	sigs.k8s.io/cluster-api/test v0.4.1
-	sigs.k8s.io/controller-runtime v0.9.6
+	k8s.io/kubectl v0.21.4
+	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
+	sigs.k8s.io/cluster-api v0.4.3
+	sigs.k8s.io/cluster-api/test v0.4.3
+	sigs.k8s.io/controller-runtime v0.9.7
 	sigs.k8s.io/kind v0.11.1
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.4.3
