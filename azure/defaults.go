@@ -48,7 +48,9 @@ const (
 )
 
 const (
-	// WindowsOS is Windows OS value for OSDisk.
+	// LinuxOS is Linux OS value for OSDisk.OSType.
+	LinuxOS = "Linux"
+	// WindowsOS is Windows OS value for OSDisk.OSType.
 	WindowsOS = "Windows"
 )
 
@@ -82,6 +84,14 @@ const (
 	// ProviderIDPrefix will be appended to the beginning of Azure resource IDs to form the Kubernetes Provider ID.
 	// NOTE: this format matches the 2 slashes format used in cloud-provider and cluster-autoscaler.
 	ProviderIDPrefix = "azure://"
+)
+
+var (
+	// LinuxBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Linux nodes bootstrap completes successfully.
+	LinuxBootstrapExtensionCommand = fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then return 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
+	// WindowsBootstrapExtensionCommand is the command the VM bootstrap extension will execute to verify Windows nodes bootstrap completes successfully.
+	WindowsBootstrapExtensionCommand = fmt.Sprintf("powershell.exe -Command \"for ($i = 0; $i -lt %d; $i++) {if (Test-Path '%s') {exit 0} else {Start-Sleep -Seconds %d}} exit -2\"",
+		bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionSleep)
 )
 
 // GenerateBackendAddressPoolName generates a load balancer backend address pool name.
@@ -299,21 +309,38 @@ func GetDefaultWindowsImage(k8sVersion string) (*infrav1.Image, error) {
 }
 
 // GetBootstrappingVMExtension returns the CAPZ Bootstrapping VM extension.
-// The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux which allows running arbitrary scripts on the VM.
+// The CAPZ Bootstrapping extension is a simple clone of https://github.com/Azure/custom-script-extension-linux for Linux or
+// https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows for Windows.
+// This extension allows running arbitrary scripts on the VM.
 // Its role is to detect and report Kubernetes bootstrap failure or success.
-func GetBootstrappingVMExtension(osType string, cloud string) (name, publisher, version string) {
-	// currently, the bootstrap extension is only available for Linux and in AzurePublicCloud.
-	if osType == "Linux" && cloud == azure.PublicCloud.Name {
-		return "CAPZ.Linux.Bootstrapping", "Microsoft.Azure.ContainerUpstream", "1.0"
+func GetBootstrappingVMExtension(osType string, cloud string, vmName string) *ExtensionSpec {
+	// currently, the bootstrap extension is only available in AzurePublicCloud.
+	if osType == LinuxOS && cloud == azure.PublicCloud.Name {
+		// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
+		return &ExtensionSpec{
+			Name:      "CAPZ.Linux.Bootstrapping",
+			VMName:    vmName,
+			Publisher: "Microsoft.Azure.ContainerUpstream",
+			Version:   "1.0",
+			ProtectedSettings: map[string]string{
+				"commandToExecute": LinuxBootstrapExtensionCommand,
+			},
+		}
+	} else if osType == WindowsOS && cloud == azure.PublicCloud.Name {
+		// This command for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between reties.
+		// If the file is not present after the retries are exhausted the extension fails with return code '-2' - ERROR_FILE_NOT_FOUND.
+		return &ExtensionSpec{
+			Name:      "CAPZ.Windows.Bootstrapping",
+			VMName:    vmName,
+			Publisher: "Microsoft.Azure.ContainerUpstream",
+			Version:   "1.0",
+			ProtectedSettings: map[string]string{
+				"commandToExecute": WindowsBootstrapExtensionCommand,
+			},
+		}
 	}
 
-	return "", "", ""
-}
-
-// BootstrapExtensionCommand is the command that runs on the Boostrap VM extension to check for bootstrap success.
-// The command checks for the existence of the bootstrapSentinelFile on the machine, with retries and sleep between retries.
-func BootstrapExtensionCommand() string {
-	return fmt.Sprintf("for i in $(seq 1 %d); do test -f %s && break; if [ $i -eq %d ]; then return 1; else sleep %d; fi; done", bootstrapExtensionRetries, bootstrapSentinelFile, bootstrapExtensionRetries, bootstrapExtensionSleep)
+	return nil
 }
 
 // UserAgent specifies a string to append to the agent identifier.

@@ -586,22 +586,15 @@ func (m *MachinePoolScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 }
 
 // VMSSExtensionSpecs returns the vmss extension specs.
-func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
-	name, publisher, version := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment())
-	if name != "" {
-		return []azure.VMSSExtensionSpec{
-			{
-				Name:         name,
-				ScaleSetName: m.Name(),
-				Publisher:    publisher,
-				Version:      version,
-				ProtectedSettings: map[string]string{
-					"commandToExecute": azure.BootstrapExtensionCommand(),
-				},
-			},
-		}
+func (m *MachinePoolScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
+	var extensionSpecs = []azure.ExtensionSpec{}
+	extensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachinePool.Spec.Template.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+
+	if extensionSpec != nil {
+		extensionSpecs = append(extensionSpecs, *extensionSpec)
 	}
-	return []azure.VMSSExtensionSpec{}
+
+	return extensionSpecs
 }
 
 func (m *MachinePoolScope) getDeploymentStrategy() machinepool.TypedDeleteSelector {

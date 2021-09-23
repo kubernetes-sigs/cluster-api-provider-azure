@@ -221,22 +221,15 @@ func (m *MachineScope) RoleAssignmentSpecs() []azure.RoleAssignmentSpec {
 }
 
 // VMExtensionSpecs returns the vm extension specs.
-func (m *MachineScope) VMExtensionSpecs() []azure.VMExtensionSpec {
-	name, publisher, version := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment())
-	if name != "" {
-		return []azure.VMExtensionSpec{
-			{
-				Name:      name,
-				VMName:    m.Name(),
-				Publisher: publisher,
-				Version:   version,
-				ProtectedSettings: map[string]string{
-					"commandToExecute": azure.BootstrapExtensionCommand(),
-				},
-			},
-		}
+func (m *MachineScope) VMExtensionSpecs() []azure.ExtensionSpec {
+	var extensionSpecs = []azure.ExtensionSpec{}
+	extensionSpec := azure.GetBootstrappingVMExtension(m.AzureMachine.Spec.OSDisk.OSType, m.CloudEnvironment(), m.Name())
+
+	if extensionSpec != nil {
+		extensionSpecs = append(extensionSpecs, *extensionSpec)
 	}
-	return []azure.VMExtensionSpec{}
+
+	return extensionSpecs
 }
 
 // Subnet returns the machine's subnet.
