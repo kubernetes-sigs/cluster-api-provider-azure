@@ -1,0 +1,63 @@
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  kubeadmConfigSpec:
+    # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
+    diskSetup:
+      filesystems: []
+      partitions: []
+    format: ignition
+    ignition:
+      containerLinuxConfig:
+        additionalConfig: |
+          systemd:
+            units:
+            - name: kubeadm.service
+              dropins:
+              - name: 10-flatcar.conf
+                contents: |
+                  [Unit]
+                  After=oem-cloudinit.service
+          # Workaround for https://github.com/kubernetes-sigs/cluster-api/issues/7679.
+          storage:
+            disks:
+            - device: /dev/disk/azure/scsi1/lun0
+              partitions:
+              - number: 1
+            filesystems:
+            - name: etcd_disk
+              mount:
+                device: /dev/disk/azure/scsi1/lun0
+                format: ext4
+                label: etcd_disk
+                options:
+                - -E
+                - lazy_itable_init=1,lazy_journal_init=1
+    initConfiguration:
+      nodeRegistration:
+        name: '@@HOSTNAME@@'
+    joinConfiguration:
+      nodeRegistration:
+        name: '@@HOSTNAME@@'
+    mounts:
+    - - etcd_disk
+      - /var/lib/etcddisk
+    postKubeadmCommands: []
+    preKubeadmCommands:
+    - sed -i "s/@@HOSTNAME@@/$(curl -s -H Metadata:true --noproxy '*' 'http://169.254.169.254/metadata/instance?api-version=2020-09-01' | jq -r .compute.name)/g" /etc/kubeadm.yml
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      image:
+        computeGallery:
+          gallery: flatcar4capi-742ef0cb-dcaa-4ecb-9cb0-bfd2e43dccc0
+          name: flatcar-stable-amd64-capi-${KUBERNETES_VERSION}
+          version: ${FLATCAR_VERSION}

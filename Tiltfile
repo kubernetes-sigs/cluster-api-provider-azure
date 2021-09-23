@@ -23,6 +23,7 @@ settings = {
     "cert_manager_version": "v1.10.0",
     "kubernetes_version": "v1.24.6",
     "aks_kubernetes_version": "v1.24.6",
+    "flatcar_version": "3374.2.1",
 }
 
 keys = ["AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_SECRET", "AZURE_CLIENT_ID"]
@@ -337,6 +338,7 @@ def deploy_worker_templates(template, substitutions):
         "AZURE_CONTROL_PLANE_MACHINE_TYPE": "Standard_B2s",
         "WORKER_MACHINE_COUNT": "2",
         "AZURE_NODE_MACHINE_TYPE": "Standard_B2s",
+        "FLATCAR_VERSION": settings.get("flatcar_version"),
     }
 
     if flavor == "aks":
