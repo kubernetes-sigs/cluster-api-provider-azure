@@ -4,6 +4,7 @@ namespace: default
 resources:
   - ../../../flavors/base
   - ../../../flavors/default/machine-deployment.yaml
+  - ../../../flavors/windows-containerd/machine-deployment-windows.yaml
   - mhc.yaml
   - cni-resource-set.yaml
   - ../../../azure-cluster-identity
@@ -13,10 +14,21 @@ patchesStrategicMerge:
   - ../patches/cluster-cni.yaml
   - ../patches/controller-manager.yaml
   - ../../../azure-cluster-identity/azurecluster-identity-ref.yaml
+  - ../../../flavors/base-windows-containerd/kubeadm-control-plane.yaml
+patches:
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: ../patches/windows-tmp-folder.yaml
 configMapGenerator:
   - name: cni-${CLUSTER_NAME}-calico
     files:
       - resources=../../../addons/calico.yaml
+      - windows-cni=../../../addons/windows/calico/calico.yaml
+      - proxy=../../../addons/windows/calico/kube-proxy-windows.yaml
 generatorOptions:
   disableNameSuffixHash: true
   labels:

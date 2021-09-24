@@ -21,3 +21,10 @@ patches:
     kind: KubeadmControlPlane
     name: .*-control-plane
   path: ../patches/control-plane-kubeadm-boostrap-ci-version.yaml
+- target:
+    group: bootstrap.cluster.x-k8s.io
+    version: v1alpha4
+    kind: KubeadmConfigTemplate
+    name: .*-md-win
+    namespace: default
+  path: patches/machine-deployment-ci-version.yaml

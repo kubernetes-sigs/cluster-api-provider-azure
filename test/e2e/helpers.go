@@ -48,7 +48,9 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
@@ -320,9 +322,10 @@ func getClusterName(prefix, specName string) string {
 
 // nodeSSHInfo provides information to establish an SSH connection to a VM or VMSS instance.
 type nodeSSHInfo struct {
-	Endpoint string // Endpoint is the control plane hostname or IP address for initial connection.
-	Hostname string // Hostname is the name or IP address of the destination VM or VMSS instance.
-	Port     string // Port is the TCP port used for the SSH connection.
+	Endpoint  string // Endpoint is the control plane hostname or IP address for initial connection.
+	Hostname  string // Hostname is the name or IP address of the destination VM or VMSS instance.
+	Port      string // Port is the TCP port used for the SSH connection.
+	IsWindows bool   // IsWindows give information so we can use the correct commands on the VM
 }
 
 // getClusterSSHInfo returns the information needed to establish a SSH connection through a
@@ -344,10 +347,17 @@ func getClusterSSHInfo(ctx context.Context, mgmtClusterProxy framework.ClusterPr
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get cluster from metadata")
 		}
+
+		am, err := getAzureMachine(ctx, mgmtClusterClient, m)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get azuremachine from machine info")
+		}
+
 		sshInfo = append(sshInfo, nodeSSHInfo{
-			Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
-			Hostname: m.Spec.InfrastructureRef.Name,
-			Port:     sshPort,
+			Endpoint:  cluster.Spec.ControlPlaneEndpoint.Host,
+			Hostname:  m.Spec.InfrastructureRef.Name,
+			Port:      sshPort,
+			IsWindows: isAzureMachineWindows(am),
 		})
 	}
 
@@ -376,10 +386,16 @@ func getClusterSSHInfo(ctx context.Context, mgmtClusterProxy framework.ClusterPr
 		}
 
 		for _, node := range nodes {
+			s := node.Labels["kubernetes.io/os"]
+			isWindows := false
+			if s == "windows" {
+				isWindows = true
+			}
 			sshInfo = append(sshInfo, nodeSSHInfo{
-				Endpoint: cluster.Spec.ControlPlaneEndpoint.Host,
-				Hostname: node.Name,
-				Port:     sshPort,
+				Endpoint:  cluster.Spec.ControlPlaneEndpoint.Host,
+				Hostname:  node.Name,
+				Port:      sshPort,
+				IsWindows: isWindows,
 			})
 		}
 	}
@@ -445,6 +461,14 @@ func getMachinePoolsInCluster(ctx context.Context, c framework.Lister, namespace
 	}
 
 	return machinePoolList, nil
+}
+
+func isAzureMachineWindows(am *v1beta1.AzureMachine) bool {
+	return am.Spec.OSDisk.OSType == azure.WindowsOS
+}
+
+func isAzureMachinePoolWindows(amp *expv1beta1.AzureMachinePool) bool {
+	return amp.Spec.Template.OSDisk.OSType == azure.WindowsOS
 }
 
 // execOnHost runs the specified command directly on a node's host, using an SSH connection
