@@ -23,6 +23,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# HACK: try to work around networking issues, see https://github.com/kubernetes/test-infra/issues/23741
+iptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
 
