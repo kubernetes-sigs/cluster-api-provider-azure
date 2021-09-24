@@ -48,7 +48,7 @@ func GenerateCreateNotPausedLogEntries(ec EntryCriteria) []gomega.LogMatcher {
 			ec.ClusterName,
 			"msg",
 			"Cluster is not paused, allowing further processing",
-		).WithLevel(4).WithLogFunc("Info")
+		).WithLevel(6).WithLogFunc("Info")
 	}
 
 	clusterEntries := make([]gomega.LogMatcher, len(ec.ClusterControllers))
@@ -69,7 +69,7 @@ func GenerateCreateNotPausedLogEntries(ec EntryCriteria) []gomega.LogMatcher {
 			ec.ClusterName,
 			"msg",
 			"Cluster is not paused, allowing further processing",
-		).WithLevel(4).WithLogFunc("Info")
+		).WithLevel(6).WithLogFunc("Info")
 	}
 	return append(clusterEntries, infraEntries...)
 }
@@ -93,7 +93,7 @@ func GenerateUpdatePausedClusterLogEntries(ec EntryCriteria) []gomega.LogMatcher
 			ec.ClusterName,
 			"msg",
 			"Cluster was not unpaused, blocking further processing",
-		).WithLevel(4).WithLogFunc("Info")
+		).WithLevel(6).WithLogFunc("Info")
 	}
 
 	clusterEntries := make([]gomega.LogMatcher, len(ec.ClusterControllers))
@@ -114,7 +114,7 @@ func GenerateUpdatePausedClusterLogEntries(ec EntryCriteria) []gomega.LogMatcher
 			ec.ClusterName,
 			"msg",
 			"Cluster was not unpaused, blocking further processing",
-		).WithLevel(4).WithLogFunc("Info")
+		).WithLevel(6).WithLogFunc("Info")
 	}
 	return append(clusterEntries, infraEntries...)
 }
