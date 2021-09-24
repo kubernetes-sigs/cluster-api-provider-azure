@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"sigs.k8s.io/cluster-api/util"
 
 	. "github.com/onsi/ginkgo"
@@ -61,7 +63,15 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
 
-		clusterNamePrefix = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
+		// CLUSTER_NAME and CLUSTER_NAMESPACE allows for testing existing clusters
+		// if CLUSTER_NAMESPACE is set don't generate a new prefix otherwise
+		// the correct namespace won't be found and a new cluster will be created
+		clusterNameSpace := os.Getenv("CLUSTER_NAMESPACE")
+		if clusterNameSpace == "" {
+			clusterNamePrefix = fmt.Sprintf("capz-e2e-%s", util.RandomString(6))
+		} else {
+			clusterNamePrefix = clusterNameSpace
+		}
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error
@@ -82,8 +92,17 @@ var _ = Describe("Workload cluster creation", func() {
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{"clientSecret": []byte(spClientSecret)},
 		}
-		err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
-		Expect(err).ToNot(HaveOccurred())
+		_, err = bootstrapClusterProxy.GetClientSet().CoreV1().Secrets(namespace.Name).Get(ctx, secret.Name, metav1.GetOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			Expect(err).ShouldNot(HaveOccurred())
+		}
+		if err != nil {
+			Logf("Creating cluster identity secret", secret.Name)
+			err = bootstrapClusterProxy.GetClient().Create(ctx, secret)
+			Expect(err).ToNot(HaveOccurred())
+		} else {
+			Logf("Using existing cluster identity secret")
+		}
 
 		identityName := e2eConfig.GetVariable(ClusterIdentityName)
 		Expect(os.Setenv(ClusterIdentityName, identityName)).NotTo(HaveOccurred())
