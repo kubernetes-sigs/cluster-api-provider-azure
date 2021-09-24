@@ -123,7 +123,7 @@ func TestLogContainsEntries(t *testing.T) {
 				"Cluster is not paused, allowing further processing",
 			},
 			LogFunc: "Error",
-			Level:   4,
+			Level:   6,
 		},
 	}
 
