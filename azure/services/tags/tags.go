@@ -25,13 +25,15 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
 // TagScope defines the scope interface for a tags service.
 type TagScope interface {
 	logr.Logger
-	azure.ClusterDescriber
+	azure.Authorizer
+	ClusterName() string
 	TagsSpecs() []azure.TagsSpec
 	AnnotationJSON(string) (map[string]interface{}, error)
 	UpdateAnnotationJSON(string, map[string]interface{}) error
@@ -57,31 +59,47 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	defer done()
 
 	for _, tagsSpec := range s.Scope.TagsSpecs() {
-		annotation, err := s.Scope.AnnotationJSON(tagsSpec.Annotation)
+		existingTags, err := s.client.GetAtScope(ctx, tagsSpec.Scope)
+		if err != nil {
+			return errors.Wrap(err, "failed to get existing tags")
+		}
+		tags := make(map[string]*string)
+		if existingTags.Properties != nil && existingTags.Properties.Tags != nil {
+			tags = existingTags.Properties.Tags
+		}
+
+		if !s.isResourceManaged(tags) {
+			s.Scope.V(4).Info("Skipping tags reconcile for not managed resource")
+			continue
+		}
+
+		lastAppliedTags, err := s.Scope.AnnotationJSON(tagsSpec.Annotation)
 		if err != nil {
 			return err
 		}
-		changed, created, deleted, newAnnotation := tagsChanged(annotation, tagsSpec.Tags)
+		changed, createdOrUpdated, deleted, newAnnotation := tagsChanged(lastAppliedTags, tagsSpec.Tags, tags)
 		if changed {
 			s.Scope.V(2).Info("Updating tags")
-			result, err := s.client.GetAtScope(ctx, tagsSpec.Scope)
-			if err != nil {
-				return errors.Wrap(err, "failed to get existing tags")
-			}
-			tags := make(map[string]*string)
-			if result.Properties != nil && result.Properties.Tags != nil {
-				tags = result.Properties.Tags
-			}
-			for k, v := range created {
-				tags[k] = to.StringPtr(v)
+			if len(createdOrUpdated) > 0 {
+				createdOrUpdatedTags := make(map[string]*string)
+				for k, v := range createdOrUpdated {
+					createdOrUpdatedTags[k] = to.StringPtr(v)
+				}
+
+				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, resources.TagsPatchResource{Operation: "Merge", Properties: &resources.Tags{Tags: createdOrUpdatedTags}}); err != nil {
+					return errors.Wrap(err, "cannot update tags")
+				}
 			}
 
-			for k := range deleted {
-				delete(tags, k)
-			}
+			if len(deleted) > 0 {
+				deletedTags := make(map[string]*string)
+				for k, v := range deleted {
+					deletedTags[k] = to.StringPtr(v)
+				}
 
-			if _, err := s.client.CreateOrUpdateAtScope(ctx, tagsSpec.Scope, resources.TagsResource{Properties: &resources.Tags{Tags: tags}}); err != nil {
-				return errors.Wrap(err, "cannot update tags")
+				if _, err := s.client.UpdateAtScope(ctx, tagsSpec.Scope, resources.TagsPatchResource{Operation: "Delete", Properties: &resources.Tags{Tags: deletedTags}}); err != nil {
+					return errors.Wrap(err, "cannot update tags")
+				}
 			}
 
 			// We also need to update the annotation if anything changed.
@@ -94,6 +112,10 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+func (s *Service) isResourceManaged(tags map[string]*string) bool {
+	return converters.MapToTags(tags).HasOwned(s.Scope.ClusterName())
+}
+
 // Delete is a no-op as the tags get deleted as part of VM deletion.
 func (s *Service) Delete(ctx context.Context) error {
 	_, _, done := tele.StartSpanWithLogger(ctx, "tags.Service.Delete")
@@ -103,12 +125,12 @@ func (s *Service) Delete(ctx context.Context) error {
 }
 
 // tagsChanged determines which tags to delete and which to add.
-func tagsChanged(annotation map[string]interface{}, src map[string]string) (bool, map[string]string, map[string]string, map[string]interface{}) {
+func tagsChanged(lastAppliedTags map[string]interface{}, desiredTags map[string]string, currentTags map[string]*string) (bool, map[string]string, map[string]string, map[string]interface{}) {
 	// Bool tracking if we found any changed state.
 	changed := false
 
 	// Tracking for created/updated
-	created := map[string]string{}
+	createdOrUpdated := map[string]string{}
 
 	// Tracking for tags that were deleted.
 	deleted := map[string]string{}
@@ -116,13 +138,13 @@ func tagsChanged(annotation map[string]interface{}, src map[string]string) (bool
 	// The new annotation that we need to set if anything is created/updated.
 	newAnnotation := map[string]interface{}{}
 
-	// Loop over annotation, checking if entries are in src.
-	// If an entry is present in annotation but not src, it has been deleted
+	// Loop over lastAppliedTags, checking if entries are in desiredTags.
+	// If an entry is present in lastAppliedTags but not in desiredTags, it has been deleted
 	// since last time. We flag this in the deleted map.
-	for t, v := range annotation {
-		_, ok := src[t]
+	for t, v := range lastAppliedTags {
+		_, ok := desiredTags[t]
 
-		// Entry isn't in src, it has been deleted.
+		// Entry isn't in desiredTags, it has been deleted.
 		if !ok {
 			// Cast v to a string here. This should be fine, tags are always
 			// strings.
@@ -131,40 +153,40 @@ func tagsChanged(annotation map[string]interface{}, src map[string]string) (bool
 		}
 	}
 
-	// Loop over src, checking for entries in annotation.
+	// Loop over desiredTags, checking for entries in currentTags.
 	//
-	// If an entry is in src, but not annotation, it has been created since
-	// last time.
+	// If an entry is in desiredTags, but not currentTags, it has been created since
+	// last time, or some external entity deleted it.
 	//
-	// If an entry is in both src and annotation, we compare their values, if
-	// the value in src differs from that in annotation, the tag has been
-	// updated since last time.
-	for t, v := range src {
-		av, ok := annotation[t]
+	// If an entry is in both desiredTags and currentTags, we compare their values, if
+	// the value in desiredTags differs from that in currentTags, the tag has been
+	// updated since last time or some external entity modified it.
+	for t, v := range desiredTags {
+		av, ok := currentTags[t]
 
-		// Entries in the src always need to be noted in the newAnnotation. We
+		// Entries in the desiredTags always need to be noted in the newAnnotation. We
 		// know they're going to be created or updated.
 		newAnnotation[t] = v
 
-		// Entry isn't in annotation, it's new.
+		// Entry isn't in desiredTags, it's new.
 		if !ok {
-			created[t] = v
+			createdOrUpdated[t] = v
 			newAnnotation[t] = v
 			changed = true
 			continue
 		}
 
-		// Entry is in annotation, has the value changed?
-		if v != av {
-			created[t] = v
+		// Entry is in desiredTags, has the value changed?
+		if v != *av {
+			createdOrUpdated[t] = v
 			changed = true
 		}
 
-		// Entry existed in both src and annotation, and their values were
+		// Entry existed in both desiredTags and desiredTags, and their values were
 		// equal. Nothing to do.
 	}
 
-	// We made it through the loop, and everything that was in src, was also
+	// We made it through the loop, and everything that was in desiredTags, was also
 	// in dst. Nothing changed.
-	return changed, created, deleted, newAnnotation
+	return changed, createdOrUpdated, deleted, newAnnotation
 }

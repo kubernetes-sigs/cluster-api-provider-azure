@@ -51,16 +51,18 @@ func (s *GroupSpec) OwnerResourceName() string {
 func (s *GroupSpec) Parameters(existing interface{}) (interface{}, error) {
 	if existing != nil {
 		// rg already exists, nothing to update.
+		// Note that rg tags are updated separately using tags service.
 		return nil, nil
 	}
 	return resources.Group{
 		Location: to.StringPtr(s.Location),
+		// We create only CAPZ default tags. User defined additional tags
+		// are created and updated using tags service.
 		Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
 			ClusterName: s.ClusterName,
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Name:        to.StringPtr(s.Name),
 			Role:        to.StringPtr(infrav1.CommonRole),
-			Additional:  s.AdditionalTags,
 		})),
 	}, nil
 }

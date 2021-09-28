@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/routetables"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vnetpeerings"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -54,6 +55,7 @@ type azureClusterService struct {
 	skuCache         *resourceskus.Cache
 	natGatewaySvc    azure.Reconciler
 	peeringsSvc      azure.Reconciler
+	tagsSvc          azure.Reconciler
 }
 
 // newAzureClusterService populates all the services based on input scope.
@@ -77,6 +79,7 @@ func newAzureClusterService(scope *scope.ClusterScope) (*azureClusterService, er
 		bastionSvc:       bastionhosts.New(scope),
 		skuCache:         skuCache,
 		peeringsSvc:      vnetpeerings.New(scope),
+		tagsSvc:          tags.New(scope),
 	}, nil
 }
 
@@ -136,6 +139,10 @@ func (s *azureClusterService) Reconcile(ctx context.Context) error {
 
 	if err := s.bastionSvc.Reconcile(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile bastion")
+	}
+
+	if err := s.tagsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "unable to update tags")
 	}
 
 	return nil

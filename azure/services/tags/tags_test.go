@@ -40,9 +40,70 @@ func TestReconcileTags(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name:          "create tags",
+			name:          "create tags for managed resources",
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				s.ClusterName().AnyTimes().Return("test-cluster")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				gomock.InOrder(
+					s.TagsSpecs().Return([]azure.TagsSpec{
+						{
+							Scope: "/sub/123/fake/scope",
+							Tags: map[string]string{
+								"foo":   "bar",
+								"thing": "stuff",
+							},
+							Annotation: "my-annotation",
+						},
+						{
+							Scope: "/sub/123/other/scope",
+							Tags: map[string]string{
+								"tag1": "value1",
+							},
+							Annotation: "my-annotation-2",
+						},
+					}),
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+							"externalSystemTag": to.StringPtr("randomValue"),
+						},
+					}}, nil),
+					s.AnnotationJSON("my-annotation"),
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
+						Operation: "Merge",
+						Properties: &resources.Tags{
+							Tags: map[string]*string{
+								"foo":   to.StringPtr("bar"),
+								"thing": to.StringPtr("stuff"),
+							},
+						},
+					}),
+					s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"foo": "bar", "thing": "stuff"}),
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/other/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+							"externalSystem2Tag": to.StringPtr("randomValue2"),
+						},
+					}}, nil),
+					s.AnnotationJSON("my-annotation-2"),
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/other/scope", resources.TagsPatchResource{
+						Operation: "Merge",
+						Properties: &resources.Tags{
+							Tags: map[string]*string{
+								"tag1": to.StringPtr("value1"),
+							},
+						},
+					}),
+					s.UpdateAnnotationJSON("my-annotation-2", map[string]interface{}{"tag1": "value1"}),
+				)
+			},
+		},
+		{
+			name:          "do not create tags for unmanaged resources",
+			expectedError: "",
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				s.ClusterName().AnyTimes().Return("test-cluster")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -53,41 +114,51 @@ func TestReconcileTags(t *testing.T) {
 						},
 						Annotation: "my-annotation",
 					},
-					{
-						Scope: "/sub/123/other/scope",
-						Tags: map[string]string{
-							"tag1": "value1",
-						},
-						Annotation: "my-annotation-2",
-					},
 				})
 				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
-				s.AnnotationJSON("my-annotation")
-				m.CreateOrUpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsResource{
-					Properties: &resources.Tags{
+			},
+		},
+		{
+			name:          "delete removed tags",
+			expectedError: "",
+			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				s.ClusterName().AnyTimes().Return("test-cluster")
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				gomock.InOrder(
+					s.TagsSpecs().Return([]azure.TagsSpec{
+						{
+							Scope: "/sub/123/fake/scope",
+							Tags: map[string]string{
+								"foo": "bar",
+							},
+							Annotation: "my-annotation",
+						},
+					}),
+					m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
 						Tags: map[string]*string{
+							"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
 							"foo":   to.StringPtr("bar"),
 							"thing": to.StringPtr("stuff"),
 						},
-					},
-				})
-				s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"foo": "bar", "thing": "stuff"})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/other/scope").Return(resources.TagsResource{}, nil)
-				s.AnnotationJSON("my-annotation-2")
-				m.CreateOrUpdateAtScope(gomockinternal.AContext(), "/sub/123/other/scope", resources.TagsResource{
-					Properties: &resources.Tags{
-						Tags: map[string]*string{
-							"tag1": to.StringPtr("value1"),
+					}}, nil),
+					s.AnnotationJSON("my-annotation").Return(map[string]interface{}{"foo": "bar", "thing": "stuff"}, nil),
+					m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
+						Operation: "Delete",
+						Properties: &resources.Tags{
+							Tags: map[string]*string{
+								"thing": to.StringPtr("stuff"),
+							},
 						},
-					},
-				})
-				s.UpdateAnnotationJSON("my-annotation-2", map[string]interface{}{"tag1": "value1"})
+					}),
+					s.UpdateAnnotationJSON("my-annotation", map[string]interface{}{"foo": "bar"}),
+				)
 			},
 		},
 		{
 			name:          "error getting existing tags",
 			expectedError: "failed to get existing tags: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				s.ClusterName().AnyTimes().Return("test-cluster")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -99,7 +170,6 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				s.AnnotationJSON("my-annotation")
 				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
 			},
 		},
@@ -107,6 +177,7 @@ func TestReconcileTags(t *testing.T) {
 			name:          "error updating tags",
 			expectedError: "cannot update tags: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				s.ClusterName().AnyTimes().Return("test-cluster")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -117,9 +188,14 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
-				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{}, nil)
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+					},
+				}}, nil)
 				s.AnnotationJSON("my-annotation")
-				m.CreateOrUpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsResource{
+				m.UpdateAtScope(gomockinternal.AContext(), "/sub/123/fake/scope", resources.TagsPatchResource{
+					Operation: "Merge",
 					Properties: &resources.Tags{
 						Tags: map[string]*string{
 							"key": to.StringPtr("value"),
@@ -132,6 +208,7 @@ func TestReconcileTags(t *testing.T) {
 			name:          "tags unchanged",
 			expectedError: "",
 			expect: func(s *mock_tags.MockTagScopeMockRecorder, m *mock_tags.MockclientMockRecorder) {
+				s.ClusterName().AnyTimes().Return("test-cluster")
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
 				s.TagsSpecs().Return([]azure.TagsSpec{
 					{
@@ -142,6 +219,12 @@ func TestReconcileTags(t *testing.T) {
 						Annotation: "my-annotation",
 					},
 				})
+				m.GetAtScope(gomockinternal.AContext(), "/sub/123/fake/scope").Return(resources.TagsResource{Properties: &resources.Tags{
+					Tags: map[string]*string{
+						"sigs.k8s.io_cluster-api-provider-azure_cluster_test-cluster": to.StringPtr("owned"),
+						"key": to.StringPtr("value"),
+					},
+				}}, nil)
 				s.AnnotationJSON("my-annotation").Return(map[string]interface{}{"key": "value"}, nil)
 			},
 		},
@@ -179,35 +262,42 @@ func TestTagsChanged(t *testing.T) {
 	g := NewWithT(t)
 
 	var tests = map[string]struct {
-		annotation             map[string]interface{}
-		src                    map[string]string
-		expectedResult         bool
-		expectedCreated        map[string]string
-		expectedDeleted        map[string]string
-		expectedNewAnnotations map[string]interface{}
+		lastAppliedTags          map[string]interface{}
+		desiredTags              map[string]string
+		currentTags              map[string]*string
+		expectedResult           bool
+		expectedCreatedOrUpdated map[string]string
+		expectedDeleted          map[string]string
+		expectedNewAnnotations   map[string]interface{}
 	}{
 		"tags are the same": {
-			annotation: map[string]interface{}{
+			lastAppliedTags: map[string]interface{}{
 				"foo": "hello",
 			},
-			src: map[string]string{
+			desiredTags: map[string]string{
 				"foo": "hello",
 			},
-			expectedResult:  false,
-			expectedCreated: map[string]string{},
-			expectedDeleted: map[string]string{},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+			},
+			expectedResult:           false,
+			expectedCreatedOrUpdated: map[string]string{},
+			expectedDeleted:          map[string]string{},
 			expectedNewAnnotations: map[string]interface{}{
 				"foo": "hello",
 			},
 		}, "tag value changed": {
-			annotation: map[string]interface{}{
+			lastAppliedTags: map[string]interface{}{
 				"foo": "hello",
 			},
-			src: map[string]string{
+			desiredTags: map[string]string{
 				"foo": "goodbye",
 			},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+			},
 			expectedResult: true,
-			expectedCreated: map[string]string{
+			expectedCreatedOrUpdated: map[string]string{
 				"foo": "goodbye",
 			},
 			expectedDeleted: map[string]string{},
@@ -215,26 +305,32 @@ func TestTagsChanged(t *testing.T) {
 				"foo": "goodbye",
 			},
 		}, "tag deleted": {
-			annotation: map[string]interface{}{
+			lastAppliedTags: map[string]interface{}{
 				"foo": "hello",
 			},
-			src:             map[string]string{},
-			expectedResult:  true,
-			expectedCreated: map[string]string{},
+			desiredTags: map[string]string{},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+			},
+			expectedResult:           true,
+			expectedCreatedOrUpdated: map[string]string{},
 			expectedDeleted: map[string]string{
 				"foo": "hello",
 			},
 			expectedNewAnnotations: map[string]interface{}{},
 		}, "tag created": {
-			annotation: map[string]interface{}{
+			lastAppliedTags: map[string]interface{}{
 				"foo": "hello",
 			},
-			src: map[string]string{
+			desiredTags: map[string]string{
 				"foo": "hello",
 				"bar": "welcome",
 			},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+			},
 			expectedResult: true,
-			expectedCreated: map[string]string{
+			expectedCreatedOrUpdated: map[string]string{
 				"bar": "welcome",
 			},
 			expectedDeleted: map[string]string{},
@@ -243,14 +339,17 @@ func TestTagsChanged(t *testing.T) {
 				"bar": "welcome",
 			},
 		}, "tag deleted and another created": {
-			annotation: map[string]interface{}{
+			lastAppliedTags: map[string]interface{}{
 				"foo": "hello",
 			},
-			src: map[string]string{
+			desiredTags: map[string]string{
 				"bar": "welcome",
 			},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+			},
 			expectedResult: true,
-			expectedCreated: map[string]string{
+			expectedCreatedOrUpdated: map[string]string{
 				"bar": "welcome",
 			},
 			expectedDeleted: map[string]string{
@@ -259,13 +358,60 @@ func TestTagsChanged(t *testing.T) {
 			expectedNewAnnotations: map[string]interface{}{
 				"bar": "welcome",
 			},
+		},
+		"current tags removed by external entity": {
+			lastAppliedTags: map[string]interface{}{
+				"foo": "hello",
+				"bar": "welcome",
+			},
+			desiredTags: map[string]string{
+				"foo": "hello",
+				"bar": "welcome",
+			},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+			},
+			expectedResult: true,
+			expectedCreatedOrUpdated: map[string]string{
+				"bar": "welcome",
+			},
+			expectedDeleted: map[string]string{},
+			expectedNewAnnotations: map[string]interface{}{
+				"foo": "hello",
+				"bar": "welcome",
+			},
+		},
+		"current tags modified by external entity": {
+			lastAppliedTags: map[string]interface{}{
+				"foo": "hello",
+				"bar": "welcome",
+			},
+			desiredTags: map[string]string{
+				"foo": "hello",
+				"bar": "welcome",
+			},
+			currentTags: map[string]*string{
+				"foo": to.StringPtr("hello"),
+				"bar": to.StringPtr("random"),
+			},
+			expectedResult: true,
+			expectedCreatedOrUpdated: map[string]string{
+				"bar": "welcome",
+			},
+			expectedDeleted: map[string]string{},
+			expectedNewAnnotations: map[string]interface{}{
+				"foo": "hello",
+				"bar": "welcome",
+			},
 		}}
 
 	for name, test := range tests {
+		test := test
 		t.Run(name, func(t *testing.T) {
-			changed, created, deleted, newAnnotation := tagsChanged(test.annotation, test.src)
+			t.Parallel()
+			changed, createdOrUpdated, deleted, newAnnotation := tagsChanged(test.lastAppliedTags, test.desiredTags, test.currentTags)
 			g.Expect(changed).To(Equal(test.expectedResult))
-			g.Expect(created).To(Equal(test.expectedCreated))
+			g.Expect(createdOrUpdated).To(Equal(test.expectedCreatedOrUpdated))
 			g.Expect(deleted).To(Equal(test.expectedDeleted))
 			g.Expect(newAnnotation).To(Equal(test.expectedNewAnnotations))
 		})

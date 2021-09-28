@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"strconv"
@@ -794,5 +795,51 @@ func (s *ClusterScope) UpdatePatchStatus(condition clusterv1.ConditionType, serv
 		conditions.MarkFalse(s.AzureCluster, condition, infrav1.UpdatingReason, clusterv1.ConditionSeverityInfo, "%s updating", service)
 	default:
 		conditions.MarkFalse(s.AzureCluster, condition, infrav1.FailedReason, clusterv1.ConditionSeverityError, "%s failed to update. err: %s", service, err.Error())
+	}
+}
+
+// AnnotationJSON returns a map[string]interface from a JSON annotation.
+func (s *ClusterScope) AnnotationJSON(annotation string) (map[string]interface{}, error) {
+	out := map[string]interface{}{}
+	jsonAnnotation := s.AzureCluster.GetAnnotations()[annotation]
+	if len(jsonAnnotation) == 0 {
+		return out, nil
+	}
+	err := json.Unmarshal([]byte(jsonAnnotation), &out)
+	if err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// UpdateAnnotationJSON updates the `annotation` with
+// `content`. `content` in this case should be a `map[string]interface{}`
+// suitable for turning into JSON. This `content` map will be marshalled into a
+// JSON string before being set as the given `annotation`.
+func (s *ClusterScope) UpdateAnnotationJSON(annotation string, content map[string]interface{}) error {
+	b, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+	s.SetAnnotation(annotation, string(b))
+	return nil
+}
+
+// SetAnnotation sets a key value annotation on the AzureCluster.
+func (s *ClusterScope) SetAnnotation(key, value string) {
+	if s.AzureCluster.Annotations == nil {
+		s.AzureCluster.Annotations = map[string]string{}
+	}
+	s.AzureCluster.Annotations[key] = value
+}
+
+// TagsSpecs returns the tag specs for the AzureCluster.
+func (s *ClusterScope) TagsSpecs() []azure.TagsSpec {
+	return []azure.TagsSpec{
+		{
+			Scope:      azure.ResourceGroupID(s.SubscriptionID(), s.ResourceGroup()),
+			Tags:       s.AdditionalTags(),
+			Annotation: infrav1.RGTagsLastAppliedAnnotation,
+		},
 	}
 }

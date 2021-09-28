@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/groups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/managedclusters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -41,6 +42,7 @@ type azureManagedControlPlaneService struct {
 	groupsSvc          azure.Reconciler
 	vnetSvc            azure.Reconciler
 	subnetsSvc         azure.Reconciler
+	tagsSvc            azure.Reconciler
 }
 
 // newAzureManagedControlPlaneReconciler populates all the services based on input scope.
@@ -52,6 +54,7 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 		groupsSvc:          groups.New(scope),
 		vnetSvc:            virtualnetworks.New(scope),
 		subnetsSvc:         subnets.New(scope),
+		tagsSvc:            tags.New(scope),
 	}
 }
 
@@ -79,6 +82,10 @@ func (r *azureManagedControlPlaneService) Reconcile(ctx context.Context) error {
 
 	if err := r.reconcileKubeconfig(ctx); err != nil {
 		return errors.Wrap(err, "failed to reconcile kubeconfig secret")
+	}
+
+	if err := r.tagsSvc.Reconcile(ctx); err != nil {
+		return errors.Wrap(err, "unable to update tags")
 	}
 
 	return nil

@@ -29,7 +29,7 @@ import (
 // client wraps go-sdk.
 type client interface {
 	GetAtScope(context.Context, string) (resources.TagsResource, error)
-	CreateOrUpdateAtScope(context.Context, string, resources.TagsResource) (resources.TagsResource, error)
+	UpdateAtScope(context.Context, string, resources.TagsPatchResource) (resources.TagsResource, error)
 }
 
 // azureClient contains the Azure go-sdk Client.
@@ -60,10 +60,11 @@ func (ac *azureClient) GetAtScope(ctx context.Context, scope string) (resources.
 	return ac.tags.GetAtScope(ctx, scope)
 }
 
-// CreateOrUpdateAtScope allows adding or replacing the entire set of tags on the specified resource or subscription.
-func (ac *azureClient) CreateOrUpdateAtScope(ctx context.Context, scope string, parameters resources.TagsResource) (resources.TagsResource, error) {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.CreateOrUpdateAtScope")
+// UpdateAtScope this operation allows replacing, merging or selectively deleting tags on the specified resource or
+// subscription.
+func (ac *azureClient) UpdateAtScope(ctx context.Context, scope string, parameters resources.TagsPatchResource) (resources.TagsResource, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "tags.AzureClient.UpdateAtScope")
 	defer done()
 
-	return ac.tags.CreateOrUpdateAtScope(ctx, scope, parameters)
+	return ac.tags.UpdateAtScope(ctx, scope, parameters)
 }
