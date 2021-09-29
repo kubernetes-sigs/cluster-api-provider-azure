@@ -44,19 +44,6 @@ subjects:
     name: prometheus
 
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: capz-prometheus-metrics-reader
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: capz-metrics-reader
-subjects:
-  - kind: ServiceAccount
-    name: prometheus
-
----
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
@@ -100,9 +87,6 @@ spec:
     - path: /metrics
       port: metrics
       scheme: http
-      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-      tlsConfig:
-        insecureSkipVerify: true
   selector:
     matchLabels:
       control-plane: capz-controller-manager
