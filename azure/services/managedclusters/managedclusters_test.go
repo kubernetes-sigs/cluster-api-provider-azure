@@ -129,7 +129,7 @@ func TestReconcile(t *testing.T) {
 					Name:              "my-managedcluster",
 					ResourceGroupName: "my-rg",
 				}, nil)
-				s.GetSystemAgentPoolSpecs(gomockinternal.AContext()).AnyTimes().Return([]azure.AgentPoolSpec{
+				s.GetAgentPoolSpecs(gomockinternal.AContext()).AnyTimes().Return([]azure.AgentPoolSpec{
 					{
 						Name:         "my-agentpool",
 						SKU:          "Standard_D4s_v3",
