@@ -103,9 +103,7 @@ var _ = Describe("Conformance Tests", func() {
 		kubernetesVersion := e2eConfig.GetVariable(capi_e2e.KubernetesVersion)
 		flavor := clusterctl.DefaultFlavor
 		if isWindows(kubetestConfigFilePath) {
-			flavor = "windows"
-			// conformance for windows doesn't require any linux worker machines.
-			Expect(os.Setenv("LINUX_WORKER_MACHINE_COUNT", "0")).To(Succeed())
+			flavor = getWindowsFlavor()
 		}
 
 		// clusters with CI artifacts or PR artifacts are based on a known CI version
@@ -122,12 +120,26 @@ var _ = Describe("Conformance Tests", func() {
 			}
 
 			if isWindows(kubetestConfigFilePath) {
-				flavor = flavor + "-windows"
+				flavor = flavor + "-" + getWindowsFlavor()
 			}
 		}
 
-		workerMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_WORKER_MACHINE_COUNT"), 10, 64)
+		// Set the worker counts for conformance tests.
+		// This is a work around until we can update cluster-api test framework to be aware of windows node counts.
+		machineCount := e2eConfig.GetVariable("CONFORMANCE_WORKER_MACHINE_COUNT")
+		if isWindows(kubetestConfigFilePath) {
+			// conformance for windows doesn't require any linux worker machines.
+			Expect(os.Setenv("LINUX_WORKER_MACHINE_COUNT", "0")).To(Succeed())
+			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", machineCount)).To(Succeed())
+		} else {
+			// conformance for Linux doesn't require any Windows worker machines.
+			Expect(os.Setenv("LINUX_WORKER_MACHINE_COUNT", machineCount)).To(Succeed())
+			Expect(os.Setenv("WINDOWS_WORKER_MACHINE_COUNT", "0")).To(Succeed())
+		}
+
+		workerMachineCount, err := strconv.ParseInt(machineCount, 10, 64)
 		Expect(err).NotTo(HaveOccurred())
+
 		controlPlaneMachineCount, err := strconv.ParseInt(e2eConfig.GetVariable("CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT"), 10, 64)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -219,6 +231,17 @@ var _ = Describe("Conformance Tests", func() {
 	})
 
 })
+
+// getWindowsFlavor helps choose the correct deployment files. Windows has multiple OS and runtime options that need
+// to be run for conformance.  Current valid options are blank (dockershim) and containerd.  In future will have options
+// for OS version
+func getWindowsFlavor() string {
+	additionalWindowsFlavor := os.Getenv("WINDOWS_FLAVOR")
+	if additionalWindowsFlavor != "" {
+		return "windows" + "-" + additionalWindowsFlavor
+	}
+	return "windows"
+}
 
 func isWindows(kubetestConfigFilePath string) bool {
 	return strings.Contains(kubetestConfigFilePath, "windows")

@@ -235,7 +235,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
+  replicas: ${LINUX_WORKER_MACHINE_COUNT}
   template:
     spec:
       bootstrap:
@@ -390,7 +390,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT}
   template:
     spec:
       bootstrap:
@@ -408,6 +408,8 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
+  annotations:
+    runtime: containerd
   name: ${CLUSTER_NAME}-mp-win
   namespace: default
 spec:
@@ -418,7 +420,7 @@ spec:
         offer: capi-windows
         publisher: cncf-upstream
         sku: k8s-1dot22dot1-windows-2019-containerd
-        version: 2021.09.03
+        version: 2021.10.15
     osDisk:
       diskSizeGB: 30
       managedDisk:
@@ -441,12 +443,33 @@ spec:
     owner: root:root
     path: c:/k/azure.json
     permissions: "0644"
-  - content: |-
-      # bug in containerd vhd generation doesn't fill in pause image
-      (Get-Content -raw -Path "C:/Program Files/containerd/config.toml").Replace("sandbox_image = """"", "sandbox_image = ""mcr.microsoft.com/oss/kubernetes/pause:3.4.1""") | Set-Content "C:/Program Files/containerd/config.toml"
-      Restart-Service containerd -Force
-      Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
-    path: C:/temp-fix-containerd-vhd.ps1
+  - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+    path: C:/defender-exclude-calico.ps1
+    permissions: "0744"
+  - content: |
+      Stop-Service kubelet -Force
+
+      $$CI_VERSION="${CI_VERSION}"
+      if($$CI_VERSION -ne "")
+      {
+        $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+        $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
+        foreach ( $$binary in $$binaries )
+        {
+          echo "downloading binary: $$ci_url/$$binary.exe"
+          curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+        }
+      }
+
+      # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
+      # that is applied at at this stage (windows-kubeproxy-ci.yaml)
+      ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.22.1-calico-hostprocess
+      ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.22.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
+
+      kubeadm.exe version -o=short
+      kubectl.exe version --client=true --short=true
+      kubelet.exe --version
+    path: C:/replace-k8s-binaries.ps1
     permissions: "0744"
   joinConfiguration:
     nodeRegistration:
@@ -460,9 +483,10 @@ spec:
       name: '{{ ds.meta_data["local_hostname"] }}'
   postKubeadmCommands:
   - nssm set kubelet start SERVICE_AUTO_START
-  - powershell C:/temp-fix-containerd-vhd.ps1
+  - powershell C:/defender-exclude-calico.ps1
   preKubeadmCommands:
   - powershell c:/create-external-network.ps1
+  - powershell C:/replace-k8s-binaries.ps1
   users:
   - groups: Administrators
     name: capi
@@ -485,6 +509,14 @@ spec:
 ---
 apiVersion: v1
 data:
+  kube-proxy-patch: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: windows-kubeproxy-ci
+      namespace: kube-system
+    data:
+      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
   proxy: "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  labels:\n    k8s-app:
     kube-proxy\n  name: kube-proxy-windows\n  namespace: kube-system\nspec:\n  selector:\n
     \   matchLabels:\n      k8s-app: kube-proxy-windows\n  template:\n    metadata:\n

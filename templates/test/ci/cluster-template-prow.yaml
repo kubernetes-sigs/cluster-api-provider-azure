@@ -361,13 +361,15 @@ data:
     true\n      containers:\n      - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess\n
     \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1\"]\n
     \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/\"\n        name:
-    kube-proxy\n        imagePullPolicy: Always\n        env:\n        - name: NODE_NAME\n
-    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
-    spec.nodeName\n        - name: POD_IP\n          valueFrom:\n            fieldRef:\n
-    \             fieldPath: status.podIP\n        volumeMounts:\n        - mountPath:
-    /var/lib/kube-proxy\n          name: kube-proxy\n      nodeSelector:\n        kubernetes.io/os:
-    windows\n      tolerations:\n      - key: CriticalAddonsOnly\n        operator:
-    Exists\n      - operator: Exists\n      volumes:\n      - configMap:\n          name:
+    kube-proxy\n        env:\n        - name: NODE_NAME\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: spec.nodeName\n        -
+    name: POD_IP\n          valueFrom:\n            fieldRef:\n              fieldPath:
+    status.podIP\n        - name: KUBEPROXY_PATH\n          valueFrom:\n            configMapKeyRef:\n
+    \             name: windows-kubeproxy-ci\n              key: KUBEPROXY_PATH\n
+    \             optional: true\n        volumeMounts:\n        - mountPath: /var/lib/kube-proxy\n
+    \         name: kube-proxy\n      nodeSelector:\n        kubernetes.io/os: windows\n
+    \     tolerations:\n      - key: CriticalAddonsOnly\n        operator: Exists\n
+    \     - operator: Exists\n      volumes:\n      - configMap:\n          name:
     kube-proxy\n          item:     \n        name: kube-proxy\n  updateStrategy:\n
     \   type: RollingUpdate\n"
   resources: "---\n# Source: calico/templates/calico-config.yaml\n# This ConfigMap

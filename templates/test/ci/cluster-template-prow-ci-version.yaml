@@ -234,7 +234,7 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
+  replicas: ${LINUX_WORKER_MACHINE_COUNT}
   selector: {}
   template:
     metadata:
@@ -371,9 +371,8 @@ metadata:
   namespace: default
 spec:
   clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels: null
+  replicas: ${WINDOWS_WORKER_MACHINE_COUNT}
+  selector: {}
   template:
     spec:
       bootstrap:
@@ -391,6 +390,8 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
+  annotations:
+    runtime: containerd
   name: ${CLUSTER_NAME}-md-win
   namespace: default
 spec:
@@ -401,7 +402,7 @@ spec:
           offer: capi-windows
           publisher: cncf-upstream
           sku: k8s-1dot22dot1-windows-2019-containerd
-          version: 2021.09.03
+          version: 2021.10.15
       osDisk:
         diskSizeGB: 128
         managedDisk:
@@ -426,23 +427,39 @@ spec:
         owner: root:root
         path: c:/k/azure.json
         permissions: "0644"
-      - content: |
-          # bug in containerd vhd generation doesn't fill in pause image
-          (Get-Content -raw -Path "C:/Program Files/containerd/config.toml").Replace("sandbox_image = """"", "sandbox_image = ""mcr.microsoft.com/oss/kubernetes/pause:3.4.1""") | Set-Content "C:/Program Files/containerd/config.toml"
-          Restart-Service containerd -Force
-        path: C:/temp-fix-containerd-vhd.ps1
+      - content: Add-MpPreference -ExclusionProcess C:/opt/cni/bin/calico.exe
+        path: C:/defender-exclude-calico.ps1
         permissions: "0744"
       - content: |
           # /tmp is assumed created and required for upstream e2e tests to pass
           New-Item -ItemType Directory -Force -Path C:\tmp\
         path: C:/create-temp-folder.ps1
         permissions: "0744"
-      image:
-        marketplace:
-          offer: capi
-          publisher: cncf-upstream
-          sku: k8s-1dot18dot8-ubuntu-1804
-          version: 2020.08.17
+      - content: |
+          Stop-Service kubelet -Force
+
+          $$CI_VERSION="${CI_VERSION}"
+          if($$CI_VERSION -ne "")
+          {
+            $$binaries=@("kubeadm", "kubectl", "kubelet", "kube-proxy")
+            $$ci_url="https://storage.googleapis.com/k8s-release-dev/ci/$$CI_VERSION/bin/windows/amd64"
+            foreach ( $$binary in $$binaries )
+            {
+              echo "downloading binary: $$ci_url/$$binary.exe"
+              curl.exe --retry 10 --retry-delay 5 "$$ci_url/$$binary.exe" --output "c:/k/$$binary.exe"
+            }
+          }
+
+          # Tag it to the ci version.  The image knows how to use the copy locally with the configmap
+          # that is applied at at this stage (windows-kubeproxy-ci.yaml)
+          ctr.exe -n k8s.io images pull docker.io/sigwindowstools/kube-proxy:v1.22.1-calico-hostprocess
+          ctr.exe -n k8s.io images tag docker.io/sigwindowstools/kube-proxy:v1.22.1-calico-hostprocess "docker.io/sigwindowstools/kube-proxy:${CI_VERSION/+/_}-calico-hostprocess"
+
+          kubeadm.exe version -o=short
+          kubectl.exe version --client=true --short=true
+          kubelet.exe --version
+        path: C:/replace-k8s-binaries.ps1
+        permissions: "0744"
       joinConfiguration:
         nodeRegistration:
           criSocket: npipe:////./pipe/containerd-containerd
@@ -451,13 +468,13 @@ spec:
             cloud-config: c:/k/azure.json
             cloud-provider: azure
             feature-gates: WindowsHostProcessContainers=true
-            pod-infra-container-image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1
           name: '{{ ds.meta_data["local_hostname"] }}'
       postKubeadmCommands:
       - nssm set kubelet start SERVICE_AUTO_START
-      - powershell C:/temp-fix-containerd-vhd.ps1
+      - powershell C:/defender-exclude-calico.ps1
       preKubeadmCommands:
       - powershell C:/create-temp-folder.ps1
+      - powershell C:/replace-k8s-binaries.ps1
       users:
       - groups: Administrators
         name: capi
@@ -512,6 +529,14 @@ spec:
 ---
 apiVersion: v1
 data:
+  kube-proxy-patch: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: windows-kubeproxy-ci
+      namespace: kube-system
+    data:
+      KUBEPROXY_PATH: "c:/k/kube-proxy.exe"
   proxy: "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  labels:\n    k8s-app:
     kube-proxy\n  name: kube-proxy-windows\n  namespace: kube-system\nspec:\n  selector:\n
     \   matchLabels:\n      k8s-app: kube-proxy-windows\n  template:\n    metadata:\n
@@ -521,13 +546,15 @@ data:
     true\n      containers:\n      - image: sigwindowstools/kube-proxy:${KUBERNETES_VERSION/+/_}-calico-hostprocess\n
     \       args: [\"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/start.ps1\"]\n
     \       workingDir: \"$env:CONTAINER_SANDBOX_MOUNT_POINT/kube-proxy/\"\n        name:
-    kube-proxy\n        imagePullPolicy: Always\n        env:\n        - name: NODE_NAME\n
-    \         valueFrom:\n            fieldRef:\n              apiVersion: v1\n              fieldPath:
-    spec.nodeName\n        - name: POD_IP\n          valueFrom:\n            fieldRef:\n
-    \             fieldPath: status.podIP\n        volumeMounts:\n        - mountPath:
-    /var/lib/kube-proxy\n          name: kube-proxy\n      nodeSelector:\n        kubernetes.io/os:
-    windows\n      tolerations:\n      - key: CriticalAddonsOnly\n        operator:
-    Exists\n      - operator: Exists\n      volumes:\n      - configMap:\n          name:
+    kube-proxy\n        env:\n        - name: NODE_NAME\n          valueFrom:\n            fieldRef:\n
+    \             apiVersion: v1\n              fieldPath: spec.nodeName\n        -
+    name: POD_IP\n          valueFrom:\n            fieldRef:\n              fieldPath:
+    status.podIP\n        - name: KUBEPROXY_PATH\n          valueFrom:\n            configMapKeyRef:\n
+    \             name: windows-kubeproxy-ci\n              key: KUBEPROXY_PATH\n
+    \             optional: true\n        volumeMounts:\n        - mountPath: /var/lib/kube-proxy\n
+    \         name: kube-proxy\n      nodeSelector:\n        kubernetes.io/os: windows\n
+    \     tolerations:\n      - key: CriticalAddonsOnly\n        operator: Exists\n
+    \     - operator: Exists\n      volumes:\n      - configMap:\n          name:
     kube-proxy\n          item:     \n        name: kube-proxy\n  updateStrategy:\n
     \   type: RollingUpdate\n"
   resources: "---\n# Source: calico/templates/calico-config.yaml\n# This ConfigMap

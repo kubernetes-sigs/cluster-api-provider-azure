@@ -35,6 +35,12 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: KUBEPROXY_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: windows-kubeproxy-ci
+              key: KUBEPROXY_PATH
+              optional: true
         volumeMounts:
         - mountPath: /var/lib/kube-proxy
           name: kube-proxy
