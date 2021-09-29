@@ -1275,12 +1275,12 @@ func setupVMSSExpectationsWithoutVMImage(s *mock_scalesets.MockScaleSetScopeMock
 	s.Location().AnyTimes().Return("test-location")
 	s.ClusterName().Return("my-cluster")
 	s.GetBootstrapData(gomockinternal.AContext()).Return("fake-bootstrap-data", nil)
-	s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+	s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 		{
-			Name:         "someExtension",
-			ScaleSetName: "my-vmss",
-			Publisher:    "somePublisher",
-			Version:      "someVersion",
+			Name:      "someExtension",
+			VMName:    "my-vmss",
+			Publisher: "somePublisher",
+			Version:   "someVersion",
 			ProtectedSettings: map[string]string{
 				"commandToExecute": "echo hello",
 			},

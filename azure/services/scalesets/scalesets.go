@@ -49,7 +49,7 @@ type (
 		SaveVMImageToStatus(*infrav1.Image)
 		MaxSurge() (int, error)
 		ScaleSetSpec() azure.ScaleSetSpec
-		VMSSExtensionSpecs() []azure.VMSSExtensionSpec
+		VMSSExtensionSpecs() []azure.ExtensionSpec
 		SetAnnotation(string, string)
 		SetProviderID(string)
 		SetVMSSState(*azure.VMSS)

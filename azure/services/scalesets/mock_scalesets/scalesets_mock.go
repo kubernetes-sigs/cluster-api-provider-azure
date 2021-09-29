@@ -495,10 +495,10 @@ func (mr *MockScaleSetScopeMockRecorder) V(level interface{}) *gomock.Call {
 }
 
 // VMSSExtensionSpecs mocks base method.
-func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.VMSSExtensionSpec {
+func (m *MockScaleSetScope) VMSSExtensionSpecs() []azure.ExtensionSpec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VMSSExtensionSpecs")
-	ret0, _ := ret[0].([]azure.VMSSExtensionSpec)
+	ret0, _ := ret[0].([]azure.ExtensionSpec)
 	return ret0
 }
 

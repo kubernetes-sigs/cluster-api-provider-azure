@@ -31,7 +31,7 @@ import (
 type VMExtensionScope interface {
 	logr.Logger
 	azure.ClusterDescriber
-	VMExtensionSpecs() []azure.VMExtensionSpec
+	VMExtensionSpecs() []azure.ExtensionSpec
 	SetBootstrapConditions(string, string) error
 }
 

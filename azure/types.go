@@ -207,19 +207,10 @@ type AvailabilitySetSpec struct {
 	Name string
 }
 
-// VMExtensionSpec defines the specification for a VM extension.
-type VMExtensionSpec struct {
+// ExtensionSpec defines the specification for a VM or VMScaleSet extension.
+type ExtensionSpec struct {
 	Name              string
 	VMName            string
-	Publisher         string
-	Version           string
-	ProtectedSettings map[string]string
-}
-
-// VMSSExtensionSpec defines the specification for a VMSS extension.
-type VMSSExtensionSpec struct {
-	Name              string
-	ScaleSetName      string
 	Publisher         string
 	Version           string
 	ProtectedSettings map[string]string

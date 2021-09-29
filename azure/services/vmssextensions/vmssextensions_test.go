@@ -45,12 +45,12 @@ func TestReconcileVMSSExtension(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+				s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
-						Name:         "my-extension-1",
-						ScaleSetName: "my-vmss",
-						Publisher:    "some-publisher",
-						Version:      "1.0",
+						Name:      "my-extension-1",
+						VMName:    "my-vmss",
+						Publisher: "some-publisher",
+						Version:   "1.0",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -72,18 +72,18 @@ func TestReconcileVMSSExtension(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+				s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
-						Name:         "my-extension-1",
-						ScaleSetName: "my-vmss",
-						Publisher:    "some-publisher",
-						Version:      "1.0",
+						Name:      "my-extension-1",
+						VMName:    "my-vmss",
+						Publisher: "some-publisher",
+						Version:   "1.0",
 					},
 					{
-						Name:         "other-extension",
-						ScaleSetName: "my-vmss",
-						Publisher:    "other-publisher",
-						Version:      "2.0",
+						Name:      "other-extension",
+						VMName:    "my-vmss",
+						Publisher: "other-publisher",
+						Version:   "2.0",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
@@ -99,18 +99,18 @@ func TestReconcileVMSSExtension(t *testing.T) {
 			expectedError: "failed to get vm extension my-extension-1 on scale set my-vmss: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_vmssextensions.MockVMSSExtensionScopeMockRecorder, m *mock_vmssextensions.MockclientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.VMSSExtensionSpecs().Return([]azure.VMSSExtensionSpec{
+				s.VMSSExtensionSpecs().Return([]azure.ExtensionSpec{
 					{
-						Name:         "my-extension-1",
-						ScaleSetName: "my-vmss",
-						Publisher:    "some-publisher",
-						Version:      "1.0",
+						Name:      "my-extension-1",
+						VMName:    "my-vmss",
+						Publisher: "some-publisher",
+						Version:   "1.0",
 					},
 					{
-						Name:         "other-extension",
-						ScaleSetName: "my-vmss",
-						Publisher:    "other-publisher",
-						Version:      "2.0",
+						Name:      "other-extension",
+						VMName:    "my-vmss",
+						Publisher: "other-publisher",
+						Version:   "2.0",
 					},
 				})
 				s.ResourceGroup().AnyTimes().Return("my-rg")
