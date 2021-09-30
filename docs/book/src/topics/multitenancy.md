@@ -9,7 +9,7 @@ This is achieved using the [aad-pod-identity](https://azure.github.io/aad-pod-id
 Once a new SP Identity is created in Azure, the corresponding values should be used to create an `AzureClusterIdentity` resource:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
 metadata:
   name: example-identity
@@ -54,7 +54,7 @@ data:
 Manual Service Principal Identity is similar to [Service Principal Identity](https://capz.sigs.k8s.io/topics/multitenancy.html#service-principal-identity) except that the service principal's `clientSecret` is directly fetched from the secret containing it.
 To use this type of identity, set the identity type as `ManualServicePrincipal` in `AzureClusterIdentity`. For example,
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
 metadata:
   name: example-identity
@@ -82,7 +82,7 @@ Please note NamespaceList will take precedence over Selector if both are set.
 The Identity can be added to an `AzureCluster` by using `IdentityRef` field:
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: example-cluster
@@ -95,7 +95,7 @@ spec:
   resourceGroup: example-cluster
   subscriptionID: <AZURE_SUBSCRIPTION_ID>
   identityRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: <name-of-identity>
     namespace: <namespace-of-identity>

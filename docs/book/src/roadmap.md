@@ -11,7 +11,7 @@ This roadmap is a constant work in progress, subject to frequent revision. Dates
 |UX|Bootstrap failure detection|[#603](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/603)|
 |UX|Add tracing and metrics|[#311](https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/311)|
 
-## v1beta1/v1 ~ TBD
+## v1.0 v1beta1/v1 ~ Q2 2021
 
 |Area|Description|Issue/Proposal|
 |--|--|--|

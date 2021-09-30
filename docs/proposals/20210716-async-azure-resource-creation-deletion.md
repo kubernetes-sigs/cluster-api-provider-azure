@@ -228,7 +228,7 @@ And below is a diagram to illustrate what an end-to-end flow of the proposed Azu
 
 * Set conditions at the end of each controller loop that describe the current state of the object and its associated Azure resources.
 
-The existing conditions before this proposal can be seen [here](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v0.5.0/api/v1alpha4/conditions_consts.go). Note that these existing conditions will be left unchanged, and are purposeffully left out below.
+The existing conditions before this proposal can be seen [here](https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/v0.5.0/api/v1alpha4/conditions_consts.go). Note that these existing conditions will be left unchanged, and are purposefully left out below.
 
 Part of the proposed changes is to add new conditions for Azure CRDs. More granular conditions, paired with more responsive controllers, will allow for better visibility into the state of each resource. Initially, the following conditions will be added:
 

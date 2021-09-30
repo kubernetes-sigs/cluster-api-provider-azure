@@ -19,7 +19,7 @@ But, this is deprecated and will be removed in capz `v0.6.x`. It is recommended 
 
 While many of the cloud provider config values are inferred from the capz infrastructure spec, there are other configuration parameters that cannot be inferred, and hence default to the values set by the azure cloud provider. In order to provider custom values to such configuration options through capz, you must use the `spec.cloudProviderConfigOverrides` in `AzureCluster`. The following example overrides the load balancer rate limit configuration:
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}

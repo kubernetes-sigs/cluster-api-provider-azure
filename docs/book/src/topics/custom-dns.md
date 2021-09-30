@@ -5,7 +5,7 @@ It is possible to set the DNS zone name to a custom value by setting `PrivateDNS
 *This feature is enabled only if the `apiServerLB.type` is `Internal`*
 
 ```yaml
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: cluster-example
