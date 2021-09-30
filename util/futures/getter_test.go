@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 func TestGet(t *testing.T) {

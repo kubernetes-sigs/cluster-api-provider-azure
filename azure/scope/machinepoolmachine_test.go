@@ -28,13 +28,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2/klogr"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	mock_scope "sigs.k8s.io/cluster-api-provider-azure/azure/scope/mocks"
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
 	gomock2 "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -246,9 +246,9 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 			Setup: func(mockNodeGetter *mock_scope.MocknodeGetter, ampm *infrav1.AzureMachinePoolMachine) (*azure.VMSSVM, *infrav1.AzureMachinePoolMachine) {
 				mockNodeGetter.EXPECT().GetNodeByProviderID(gomock2.AContext(), FakeProviderID).Return(nil, nil)
 				return &azure.VMSSVM{
-					State: v1alpha4.Succeeded,
-					Image: v1alpha4.Image{
-						Marketplace: &v1alpha4.AzureMarketplaceImage{
+					State: v1beta1.Succeeded,
+					Image: v1beta1.Image{
+						Marketplace: &v1beta1.AzureMarketplaceImage{
 							Publisher: "cncf-upstream",
 							Offer:     "capi",
 							SKU:       "k8s-1dot19dot11-ubuntu-1804",
@@ -258,7 +258,7 @@ func TestMachineScope_UpdateStatus(t *testing.T) {
 				}, ampm
 			},
 			Verify: func(g *WithT, scope *MachinePoolMachineScope) {
-				succeeded := v1alpha4.Succeeded
+				succeeded := v1beta1.Succeeded
 				g.Expect(scope.AzureMachinePoolMachine.Status).To(Equal(infrav1.AzureMachinePoolMachineStatus{
 					ProvisioningState:  &succeeded,
 					LatestModelApplied: true,

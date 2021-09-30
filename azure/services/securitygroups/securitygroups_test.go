@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/klog/v2/klogr"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups/mock_securitygroups"
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"

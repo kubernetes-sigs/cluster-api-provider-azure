@@ -17,7 +17,7 @@ limitations under the License.
 package futures
 
 import (
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 )
 
 // Setter interface defines methods that an object should implement in order to

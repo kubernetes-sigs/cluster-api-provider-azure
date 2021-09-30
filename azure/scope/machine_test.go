@@ -29,8 +29,8 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func TestMachineScope_Name(t *testing.T) {
@@ -1153,7 +1153,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							Namespace: "default",
 							OwnerReferences: []metav1.OwnerReference{
 								{
-									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									APIVersion: "cluster.x-k8s.io/v1beta1",
 									Kind:       "Cluster",
 									Name:       "cluster",
 								},
@@ -1232,7 +1232,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							Namespace: "default",
 							OwnerReferences: []metav1.OwnerReference{
 								{
-									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									APIVersion: "cluster.x-k8s.io/v1beta1",
 									Kind:       "Cluster",
 									Name:       "cluster",
 								},
@@ -1314,7 +1314,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							Namespace: "default",
 							OwnerReferences: []metav1.OwnerReference{
 								{
-									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									APIVersion: "cluster.x-k8s.io/v1beta1",
 									Kind:       "Cluster",
 									Name:       "cluster",
 								},
@@ -1394,7 +1394,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							Namespace: "default",
 							OwnerReferences: []metav1.OwnerReference{
 								{
-									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									APIVersion: "cluster.x-k8s.io/v1beta1",
 									Kind:       "Cluster",
 									Name:       "cluster",
 								},
@@ -1477,7 +1477,7 @@ func TestMachineScope_NICSpecs(t *testing.T) {
 							Namespace: "default",
 							OwnerReferences: []metav1.OwnerReference{
 								{
-									APIVersion: "cluster.x-k8s.io/v1alpha4",
+									APIVersion: "cluster.x-k8s.io/v1beta1",
 									Kind:       "Cluster",
 									Name:       "cluster",
 								},

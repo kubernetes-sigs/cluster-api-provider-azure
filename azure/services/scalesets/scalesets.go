@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"

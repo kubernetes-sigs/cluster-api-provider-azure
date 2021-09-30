@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -50,7 +50,7 @@ func TestGettingSecurityRules(t *testing.T) {
 			Name: "my-azure-cluster",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: "cluster.x-k8s.io/v1alpha4",
+					APIVersion: "cluster.x-k8s.io/v1beta1",
 					Kind:       "Cluster",
 					Name:       "my-cluster",
 				},
@@ -164,7 +164,7 @@ func TestOutboundLBName(t *testing.T) {
 					Name: tc.clusterName,
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: "cluster.x-k8s.io/v1alpha4",
+							APIVersion: "cluster.x-k8s.io/v1beta1",
 							Kind:       "Cluster",
 							Name:       "my-cluster",
 						},
