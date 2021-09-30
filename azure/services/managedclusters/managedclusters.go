@@ -45,7 +45,7 @@ type ManagedClusterScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	ManagedClusterSpec() (azure.ManagedClusterSpec, error)
-	GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
+	GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error)
 	SetControlPlaneEndpoint(clusterv1.APIEndpoint)
 	MakeEmptyKubeConfigSecret() corev1.Secret
 	GetKubeConfigData() []byte
@@ -151,13 +151,13 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	}
 
 	// We are creating this cluster for the first time.
-	// Configure the system pool, rest will be handled by machinepool controller
+	// Configure the agent pool, rest will be handled by machinepool controller
 	// We do this here because AKS will only let us mutate agent pools via managed
 	// clusters API at create time, not update.
 	if azure.ResourceNotFound(err) {
 		isCreate = true
 		// Add system agent pool to cluster spec that will be submitted to the API
-		managedClusterSpec.AgentPools, err = s.Scope.GetSystemAgentPoolSpecs(ctx)
+		managedClusterSpec.AgentPools, err = s.Scope.GetAgentPoolSpecs(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get system agent pool specs for managed cluster %s", s.Scope.ClusterName())
 		}
@@ -228,7 +228,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			Count:        &pool.Replicas,
 			Type:         containerservice.AgentPoolTypeVirtualMachineScaleSets,
 			VnetSubnetID: &managedClusterSpec.VnetSubnetID,
-			Mode:         containerservice.AgentPoolModeSystem,
+			Mode:         containerservice.AgentPoolMode(pool.Mode),
 		}
 		*managedCluster.AgentPoolProfiles = append(*managedCluster.AgentPoolProfiles, profile)
 	}

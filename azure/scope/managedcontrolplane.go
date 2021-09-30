@@ -118,7 +118,7 @@ type ManagedControlPlaneScope struct {
 	InfraMachinePool *infrav1exp.AzureManagedMachinePool
 	PatchTarget      client.Object
 
-	SystemNodePools []infrav1exp.AzureManagedMachinePool
+	AllNodePools []infrav1exp.AzureManagedMachinePool
 }
 
 // ResourceGroup returns the managed control plane's resource group.
@@ -435,13 +435,12 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 	return managedClusterSpec, nil
 }
 
-// GetSystemAgentPoolSpecs gets a slice of azure.AgentPoolSpec for system agent pools.
-func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
-	if len(s.SystemNodePools) == 0 {
+// GetAgentPoolSpecs gets a slice of azure.AgentPoolSpec for the list of agent pools.
+func (s *ManagedControlPlaneScope) GetAgentPoolSpecs(ctx context.Context) ([]azure.AgentPoolSpec, error) {
+	if len(s.AllNodePools) == 0 {
 		opt1 := client.InNamespace(s.ControlPlane.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			infrav1exp.LabelAgentPoolMode: string(infrav1exp.NodePoolModeSystem),
-			clusterv1.ClusterLabelName:    s.Cluster.Name,
+			clusterv1.ClusterLabelName: s.Cluster.Name,
 		})
 
 		ammpList := &infrav1exp.AzureManagedMachinePoolList{}
@@ -450,16 +449,13 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			return nil, err
 		}
 
-		if ammpList == nil || len(ammpList.Items) == 0 {
-			return nil, errors.New("failed to fetch azuremanagedMachine pool with mode:System, require at least 1 system node pool")
-		}
-
-		s.SystemNodePools = ammpList.Items
+		s.AllNodePools = ammpList.Items
 	}
 
 	ammps := []azure.AgentPoolSpec{}
 
-	for _, pool := range s.SystemNodePools {
+	foundSystemPool := false
+	for _, pool := range s.AllNodePools {
 		// Fetch the owning MachinePool.
 
 		ownerPool, err := capiexputil.GetOwnerMachinePool(ctx, s.Client, pool.ObjectMeta)
@@ -472,11 +468,16 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 			continue
 		}
 
+		if pool.Spec.Mode == string(infrav1exp.NodePoolModeSystem) {
+			foundSystemPool = true
+		}
+
 		ammp := azure.AgentPoolSpec{
 			Name:         pool.Name,
 			SKU:          pool.Spec.SKU,
 			Replicas:     1,
 			OSDiskSizeGB: 0,
+			Mode:         pool.Spec.Mode,
 		}
 
 		// Set optional values
@@ -489,6 +490,10 @@ func (s *ManagedControlPlaneScope) GetSystemAgentPoolSpecs(ctx context.Context) 
 		}
 
 		ammps = append(ammps, ammp)
+	}
+
+	if !foundSystemPool {
+		return nil, errors.New("failed to fetch azuremanagedMachine pool with mode:System, require at least 1 system node pool")
 	}
 
 	return ammps, nil
