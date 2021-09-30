@@ -209,6 +209,20 @@ func (mr *MockGroupScopeMockRecorder) Error(err, msg interface{}, keysAndValues 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockGroupScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockGroupScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockGroupScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockGroupScope)(nil).FailureDomains))
+}
+
 // HashKey mocks base method.
 func (m *MockGroupScope) HashKey() string {
 	m.ctrl.T.Helper()

@@ -210,6 +210,20 @@ func (mr *MockVMSSExtensionScopeMockRecorder) Error(err, msg interface{}, keysAn
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMSSExtensionScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockVMSSExtensionScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockVMSSExtensionScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockVMSSExtensionScope)(nil).FailureDomains))
+}
+
 // HashKey mocks base method.
 func (m *MockVMSSExtensionScope) HashKey() string {
 	m.ctrl.T.Helper()

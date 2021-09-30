@@ -661,6 +661,20 @@ func (mr *MockClusterDescriberMockRecorder) ClusterName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterName", reflect.TypeOf((*MockClusterDescriber)(nil).ClusterName))
 }
 
+// FailureDomains mocks base method.
+func (m *MockClusterDescriber) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockClusterDescriberMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockClusterDescriber)(nil).FailureDomains))
+}
+
 // HashKey mocks base method.
 func (m *MockClusterDescriber) HashKey() string {
 	m.ctrl.T.Helper()
@@ -934,6 +948,20 @@ func (m *MockClusterScoper) ControlPlaneSubnet() v1alpha4.SubnetSpec {
 func (mr *MockClusterScoperMockRecorder) ControlPlaneSubnet() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ControlPlaneSubnet", reflect.TypeOf((*MockClusterScoper)(nil).ControlPlaneSubnet))
+}
+
+// FailureDomains mocks base method.
+func (m *MockClusterScoper) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockClusterScoperMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockClusterScoper)(nil).FailureDomains))
 }
 
 // GetPrivateDNSZoneName mocks base method.

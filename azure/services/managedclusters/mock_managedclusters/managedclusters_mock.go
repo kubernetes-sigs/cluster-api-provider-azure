@@ -213,6 +213,20 @@ func (mr *MockManagedClusterScopeMockRecorder) Error(err, msg interface{}, keysA
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockManagedClusterScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockManagedClusterScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockManagedClusterScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockManagedClusterScope)(nil).FailureDomains))
+}
+
 // GetKubeConfigData mocks base method.
 func (m *MockManagedClusterScope) GetKubeConfigData() []byte {
 	m.ctrl.T.Helper()

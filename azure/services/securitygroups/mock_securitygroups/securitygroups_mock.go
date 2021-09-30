@@ -266,6 +266,20 @@ func (mr *MockNSGScopeMockRecorder) Error(err, msg interface{}, keysAndValues ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockNSGScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockNSGScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockNSGScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockNSGScope)(nil).FailureDomains))
+}
+
 // GetPrivateDNSZoneName mocks base method.
 func (m *MockNSGScope) GetPrivateDNSZoneName() string {
 	m.ctrl.T.Helper()

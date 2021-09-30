@@ -266,6 +266,20 @@ func (mr *MockLBScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockLBScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockLBScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockLBScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockLBScope)(nil).FailureDomains))
+}
+
 // GetPrivateDNSZoneName mocks base method.
 func (m *MockLBScope) GetPrivateDNSZoneName() string {
 	m.ctrl.T.Helper()

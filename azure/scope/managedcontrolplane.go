@@ -325,6 +325,11 @@ func (s *ManagedControlPlaneScope) CloudProviderConfigOverrides() *infrav1.Cloud
 	return nil
 }
 
+// FailureDomains returns the failure domains for the cluster.
+func (s *ManagedControlPlaneScope) FailureDomains() []string {
+	return []string{}
+}
+
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpec, error) {
 	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(s.ControlPlane.Spec.SSHPublicKey)
