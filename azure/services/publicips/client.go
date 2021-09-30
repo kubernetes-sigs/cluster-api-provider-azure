@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -29,8 +30,9 @@ import (
 // Client wraps go-sdk.
 type Client interface {
 	Get(context.Context, string, string) (network.PublicIPAddress, error)
-	CreateOrUpdate(context.Context, string, string, network.PublicIPAddress) error
+	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	Delete(context.Context, string, string) error
+	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)	
 }
 
 // AzureClient contains the Azure go-sdk Client.
@@ -78,6 +80,13 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName str
 	return err
 }
 
+// CreateOrUpdateAsync creates or updates a public IP in the specified resource group asynchronously.
+// It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
+// progress of the operation.
+func (ac *AzureClient) CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+	return nil, nil
+}
+
 // Delete deletes the specified public IP address.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName string) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.Delete")
@@ -93,4 +102,9 @@ func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, ipName str
 	}
 	_, err = future.Result(ac.publicips)
 	return err
+}
+
+// IsDone returns true if the long-running operation has completed.
+func (ac *AzureClient) IsDone(ctx context.Context, future azureautorest.FutureAPI) (bool, error) {
+	return false, nil
 }

@@ -186,6 +186,7 @@ func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
 	if m.AzureMachine.Spec.AllocatePublicIP {
 		spec = append(spec, azure.PublicIPSpec{
 			Name: azure.GenerateNodePublicIPName(m.Name()),
+			ResourceGroup: m.ResourceGroup(),
 		})
 	}
 	return spec

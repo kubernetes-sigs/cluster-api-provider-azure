@@ -255,6 +255,13 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 		{
 			name: "appends to PublicIPSpec for node if AllocatePublicIP is true",
 			machineScope: MachineScope{
+				ClusterScoper: &ClusterScope{
+					AzureCluster: &infrav1.AzureCluster{
+						Spec: infrav1.AzureClusterSpec{
+							ResourceGroup: "resource-group",
+						},
+					},
+				},
 				AzureMachine: &infrav1.AzureMachine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine-name",
@@ -266,7 +273,8 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 			},
 			want: []azure.PublicIPSpec{
 				{
-					Name: "pip-machine-name",
+					Name:          "pip-machine-name",
+					ResourceGroup: "resource-group",
 				},
 			},
 		},

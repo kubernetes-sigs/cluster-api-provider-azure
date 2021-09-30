@@ -25,7 +25,9 @@ import (
 	reflect "reflect"
 
 	network "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	azure "github.com/Azure/go-autorest/autorest/azure"
 	gomock "github.com/golang/mock/gomock"
+	azure0 "sigs.k8s.io/cluster-api-provider-azure/azure"
 )
 
 // MockClient is a mock of Client interface.
@@ -51,18 +53,19 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// CreateOrUpdate mocks base method.
-func (m *MockClient) CreateOrUpdate(arg0 context.Context, arg1, arg2 string, arg3 network.PublicIPAddress) error {
+// CreateOrUpdateAsync mocks base method.
+func (m *MockClient) CreateOrUpdateAsync(arg0 context.Context, arg1 azure0.ResourceSpecGetter) (azure.FutureAPI, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdate", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "CreateOrUpdateAsync", arg0, arg1)
+	ret0, _ := ret[0].(azure.FutureAPI)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockClientMockRecorder) CreateOrUpdate(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// CreateOrUpdateAsync indicates an expected call of CreateOrUpdateAsync.
+func (mr *MockClientMockRecorder) CreateOrUpdateAsync(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockClient)(nil).CreateOrUpdate), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateAsync", reflect.TypeOf((*MockClient)(nil).CreateOrUpdateAsync), arg0, arg1)
 }
 
 // Delete mocks base method.
@@ -92,4 +95,19 @@ func (m *MockClient) Get(arg0 context.Context, arg1, arg2 string) (network.Publi
 func (mr *MockClientMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0, arg1, arg2)
+}
+
+// IsDone mocks base method.
+func (m *MockClient) IsDone(arg0 context.Context, arg1 azure.FutureAPI) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsDone", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsDone indicates an expected call of IsDone.
+func (mr *MockClientMockRecorder) IsDone(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDone", reflect.TypeOf((*MockClient)(nil).IsDone), arg0, arg1)
 }

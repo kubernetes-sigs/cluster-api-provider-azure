@@ -18,23 +18,24 @@ package publicips
 
 import (
 	"context"
-	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/async"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
+
+const serviceName = "publicips"
 
 // PublicIPScope defines the scope interface for a public IP service.
 type PublicIPScope interface {
 	logr.Logger
 	azure.ClusterDescriber
+	azure.AsyncStatusUpdater
 	PublicIPSpecs() []azure.PublicIPSpec
 }
 
@@ -57,55 +58,21 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.Service.Reconcile")
 	defer done()
 
-	for _, ip := range s.Scope.PublicIPSpecs() {
-		s.Scope.V(2).Info("creating public IP", "public ip", ip.Name)
+	// We go through the list of public ip specs to reconcile each one, independently of the result of the previous one.
+	// If multiple errors occur, we return the most pressing one
+	// order of precedence is: error creating -> creating in progress -> created (no error)
+	var result error
 
-		// only set DNS properties if there is a DNS name specified
-		addressVersion := network.IPVersionIPv4
-		if ip.IsIPv6 {
-			addressVersion = network.IPVersionIPv6
-		}
-
-		// only set DNS properties if there is a DNS name specified
-		var dnsSettings *network.PublicIPAddressDNSSettings
-		if ip.DNSName != "" {
-			dnsSettings = &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: to.StringPtr(strings.Split(ip.DNSName, ".")[0]),
-				Fqdn:            to.StringPtr(ip.DNSName),
+	for _, ipSpec := range s.Scope.PublicIPSpecs() {
+		if err := async.CreateResource(ctx, s.Scope, s.Client, ipSpec, serviceName); err != nil {
+			if !azure.IsOperationNotDoneError(err) || result == nil {
+				result = err
 			}
 		}
-
-		err := s.Client.CreateOrUpdate(
-			ctx,
-			s.Scope.ResourceGroup(),
-			ip.Name,
-			network.PublicIPAddress{
-				Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
-					ClusterName: s.Scope.ClusterName(),
-					Lifecycle:   infrav1.ResourceLifecycleOwned,
-					Name:        to.StringPtr(ip.Name),
-					Additional:  s.Scope.AdditionalTags(),
-				})),
-				Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-				Name:     to.StringPtr(ip.Name),
-				Location: to.StringPtr(s.Scope.Location()),
-				PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-					PublicIPAddressVersion:   addressVersion,
-					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-					DNSSettings:              dnsSettings,
-				},
-				Zones: to.StringSlicePtr(s.Scope.FailureDomains()),
-			},
-		)
-
-		if err != nil {
-			return errors.Wrap(err, "cannot create public IP")
-		}
-
-		s.Scope.V(2).Info("successfully created public IP", "public ip", ip.Name)
 	}
 
-	return nil
+	s.Scope.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, result)
+	return result
 }
 
 // Delete deletes the public IP with the provided scope.

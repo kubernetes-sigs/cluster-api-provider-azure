@@ -18,9 +18,12 @@ package publicips
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"testing"
 
+	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
@@ -44,6 +47,35 @@ func init() {
 	_ = clusterv1.AddToScheme(scheme.Scheme)
 }
 
+var (
+	ipSpec1 = azure.PublicIPSpec{
+		Name:          "my-publicip",
+		DNSName:       "fakedns.mydomain.io",
+		ResourceGroup: "test-group",
+	}
+	ipSpec2 = azure.PublicIPSpec{
+		Name:          "my-publicip-ipv6",
+		IsIPv6:        true,
+		DNSName:       "fakename.mydomain.io",
+		ResourceGroup: "test-group",
+	}
+	fakePublicIPSpecs = []azure.PublicIPSpec{
+		ipSpec1,
+		ipSpec2,
+	}
+	errCreate           = errors.New("error creating public IP")
+	errCreate2          = errors.New("different error creating public IP")
+	errTimeout          = errors.New("timed out while waiting for operation to complete")
+	fakeCreateFuture, _ = azureautorest.NewFutureFromResponse(&http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Request: &http.Request{
+			URL:    &url.URL{},
+			Method: http.MethodPut,
+		},
+	})
+)
+
 func TestReconcilePublicIP(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -51,122 +83,80 @@ func TestReconcilePublicIP(t *testing.T) {
 		expect        func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder)
 	}{
 		{
-			name:          "can create public IPs",
+			name:          "creation of multiple public IPs succeeds",
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.PublicIPSpecs().Return([]azure.PublicIPSpec{
-					{
-						Name:    "my-publicip",
-						DNSName: "fakedns.mydomain.io",
-					},
-					{
-						Name:    "my-publicip-2",
-						DNSName: "fakedns2-52959.uksouth.cloudapp.azure.com",
-					},
-					{
-						Name: "my-publicip-3",
-					},
-					{
-						Name:    "my-publicip-ipv6",
-						IsIPv6:  true,
-						DNSName: "fakename.mydomain.io",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ClusterName().AnyTimes().Return("my-cluster")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Location().AnyTimes().Return("testlocation")
-				s.FailureDomains().AnyTimes().Return([]string{"1,2,3"})
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
 				gomock.InOrder(
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomockinternal.DiffEq(network.PublicIPAddress{
-						Name:     to.StringPtr("my-publicip"),
-						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-						Location: to.StringPtr("testlocation"),
-						Tags: map[string]*string{
-							"Name": to.StringPtr("my-publicip"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-						},
-						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPVersionIPv4,
-							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-							DNSSettings: &network.PublicIPAddressDNSSettings{
-								DomainNameLabel: to.StringPtr("fakedns"),
-								Fqdn:            to.StringPtr("fakedns.mydomain.io"),
-							},
-						},
-						Zones: to.StringSlicePtr([]string{"1,2,3"}),
-					})).Times(1),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-2", gomockinternal.DiffEq(network.PublicIPAddress{
-						Name:     to.StringPtr("my-publicip-2"),
-						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-						Location: to.StringPtr("testlocation"),
-						Tags: map[string]*string{
-							"Name": to.StringPtr("my-publicip-2"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-						},
-						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPVersionIPv4,
-							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-							DNSSettings: &network.PublicIPAddressDNSSettings{
-								DomainNameLabel: to.StringPtr("fakedns2-52959"),
-								Fqdn:            to.StringPtr("fakedns2-52959.uksouth.cloudapp.azure.com"),
-							},
-						},
-						Zones: to.StringSlicePtr([]string{"1,2,3"}),
-					})).Times(1),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-3", gomockinternal.DiffEq(network.PublicIPAddress{
-						Name:     to.StringPtr("my-publicip-3"),
-						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-						Location: to.StringPtr("testlocation"),
-						Tags: map[string]*string{
-							"Name": to.StringPtr("my-publicip-3"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-						},
-						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPVersionIPv4,
-							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-						},
-						Zones: to.StringSlicePtr([]string{"1,2,3"}),
-					})).Times(1),
-					m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip-ipv6", gomockinternal.DiffEq(network.PublicIPAddress{
-						Name:     to.StringPtr("my-publicip-ipv6"),
-						Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
-						Location: to.StringPtr("testlocation"),
-						Tags: map[string]*string{
-							"Name": to.StringPtr("my-publicip-ipv6"),
-							"sigs.k8s.io_cluster-api-provider-azure_cluster_my-cluster": to.StringPtr("owned"),
-						},
-						PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-							PublicIPAddressVersion:   network.IPVersionIPv6,
-							PublicIPAllocationMethod: network.IPAllocationMethodStatic,
-							DNSSettings: &network.PublicIPAddressDNSSettings{
-								DomainNameLabel: to.StringPtr("fakename"),
-								Fqdn:            to.StringPtr("fakename.mydomain.io"),
-							},
-						},
-						Zones: to.StringSlicePtr([]string{"1,2,3"}),
-					})).Times(1),
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, nil),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, nil),
 				)
 			},
 		},
 		{
-			name:          "fail to create a public IP",
-			expectedError: "cannot create public IP: #: Internal Server Error: StatusCode=500",
+			name:          "first public IP creation fails",
+			expectedError: "failed to create resource test-group/my-publicip (service: publicips): error creating public IP",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.PublicIPSpecs().Return([]azure.PublicIPSpec{
-					{
-						Name:    "my-publicip",
-						DNSName: "fakedns.mydomain.io",
-					},
-				})
-				s.ResourceGroup().AnyTimes().Return("my-rg")
-				s.ClusterName().AnyTimes().Return("my-cluster")
-				s.AdditionalTags().AnyTimes().Return(infrav1.Tags{})
-				s.Location().AnyTimes().Return("testlocation")
-				s.FailureDomains().Times(1)
-				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-publicip", gomock.AssignableToTypeOf(network.PublicIPAddress{})).Return(autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 500}, "Internal Server Error"))
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errCreate),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(nil, nil),
+					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip (service: publicips): error creating public IP")),
+				)
+			},
+		},
+		{
+			name:          "second public IP creation is in progress and not done",
+			expectedError: "transient reconcile error occurred: operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, nil),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(&fakeCreateFuture, errTimeout),
+					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("transient reconcile error occurred: operation type PUT on Azure resource test-group/my-publicip-ipv6 is not done. Object will be requeued after 15s")),
+				)
+			},
+		},
+		{
+			name:          "return the most pressing error when first public IP creation fails and second public IP creation is in progress and not done",
+			expectedError: "failed to create resource test-group/my-publicip (service: publicips): error creating public IP",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errCreate),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(&fakeCreateFuture, errTimeout),
+					s.SetLongRunningOperationState(gomock.AssignableToTypeOf(&infrav1.Future{})),
+					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip (service: publicips): error creating public IP")),
+				)
+			},
+		},
+		{
+			name:          "return the last most pressing error when both public IP creation fails",
+			expectedError: "failed to create resource test-group/my-publicip-ipv6 (service: publicips): different error creating public IP",
+			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
+				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
+				s.PublicIPSpecs().Return(fakePublicIPSpecs)
+				gomock.InOrder(
+					s.GetLongRunningOperationState("my-publicip", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec1).Return(nil, errCreate),
+					s.GetLongRunningOperationState("my-publicip-ipv6", serviceName),
+					m.CreateOrUpdateAsync(gomockinternal.AContext(), ipSpec2).Return(nil, errCreate2),
+					s.UpdatePutStatus(infrav1.PublicIPsReadyCondition, serviceName, gomockinternal.ErrStrEq("failed to create resource test-group/my-publicip-ipv6 (service: publicips): different error creating public IP")),
+				)
 			},
 		},
 	}
