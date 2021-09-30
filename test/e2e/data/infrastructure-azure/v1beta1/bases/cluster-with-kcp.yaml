@@ -1,6 +1,6 @@
 ---
 # AzureCluster object referenced by the Cluster object
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: '${CLUSTER_NAME}'
@@ -18,7 +18,7 @@ spec:
 # Cluster object with
 # - Reference to the KubeadmControlPlane object
 # - the label cni=${CLUSTER_NAME}-crs-0, so the cluster can be selected by the ClusterResourceSet.
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
@@ -31,16 +31,16 @@ spec:
       cidrBlocks:
         - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
 # AzureMachineTemplate object referenced by the KubeadmControlPlane object
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -60,7 +60,7 @@ spec:
 ---
 # KubeadmControlPlane referenced by the Cluster object with
 # - the label kcp-adoption.step2, because it should be created in the second step of the kcp-adoption test.
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -70,7 +70,7 @@ metadata:
 spec:
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
   kubeadmConfigSpec:

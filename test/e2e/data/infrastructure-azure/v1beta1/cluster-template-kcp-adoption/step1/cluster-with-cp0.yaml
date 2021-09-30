@@ -1,6 +1,6 @@
 ---
 # DockerCluster object referenced by the Cluster object
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -18,7 +18,7 @@ spec:
 # Cluster object with
 # - No reference to the KubeadmControlPlane object
 # - the label cni=${CLUSTER_NAME}-crs-0, so the cluster can be selected by the ClusterResourceSet.
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -30,12 +30,12 @@ spec:
       cidrBlocks:
         - 192.168.0.0/16
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureCluster
     name: ${CLUSTER_NAME}
 ---
 # DockerMachine referenced by the Machine cp0
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachine
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
@@ -53,7 +53,7 @@ spec:
   vmSize: Standard_D2s_v3
 ---
 # KubeadmConfig referenced by the Machine cp0
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
@@ -124,7 +124,7 @@ spec:
       permissions: "0644"
 ---
 # cp0 Machine
-apiVersion: cluster.x-k8s.io/v1alpha4
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
 metadata:
   name: ${CLUSTER_NAME}-control-plane-0
@@ -135,10 +135,10 @@ spec:
   clusterName: ${CLUSTER_NAME}
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
       kind: KubeadmConfig
       name: ${CLUSTER_NAME}-control-plane-0
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureMachine
     name: ${CLUSTER_NAME}-control-plane-0

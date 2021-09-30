@@ -8,11 +8,11 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v0.4.3
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.3/core-components.yaml
+    - name: v1.0.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.0/core-components.yaml
       type: url
       files:
-      - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -21,11 +21,11 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v0.4.3
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.3/bootstrap-components.yaml
+    - name: v1.0.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.0/bootstrap-components.yaml
       type: url
       files:
-      - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -34,11 +34,11 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v0.4.3
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.3/control-plane-components.yaml
+    - name: v1.0.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.0/control-plane-components.yaml
       type: url
       files:
-      - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
       replacements:
       - old: "imagePullPolicy: Always"
         new: "imagePullPolicy: IfNotPresent"
@@ -47,28 +47,28 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-    - name: v0.5.0
+    - name: v1.0.0
       value: "${PWD}/config/default"
       files:
-      - sourcePath: "../data/shared/v1alpha4_provider/metadata.yaml"
+      - sourcePath: "../data/shared/v1beta1_provider/metadata.yaml"
       replacements:
       - old: "--v=0"
         new: "--v=2"
     files:
-    - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
+    - sourcePath: "../data/shared/v1beta1/metadata.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow.yaml"
       targetName: "cluster-template.yaml"
-    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-kcp-adoption.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-adoption.yaml"
       targetName: "cluster-template-kcp-adoption.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-ipv6.yaml"
       targetName: "cluster-template-ipv6.yaml"
-    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-md-remediation.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-md-remediation.yaml"
       targetName: "cluster-template-md-remediation.yaml"
-    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-kcp-remediation.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-remediation.yaml"
       targetName: "cluster-template-kcp-remediation.yaml"
-    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-kcp-scale-in.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-kcp-scale-in.yaml"
       targetName: "cluster-template-kcp-scale-in.yaml"
-    - sourcePath: "../data/infrastructure-azure/v1alpha4/cluster-template-node-drain.yaml"
+    - sourcePath: "../data/infrastructure-azure/v1beta1/cluster-template-node-drain.yaml"
       targetName: "cluster-template-node-drain.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool.yaml"
       targetName: "cluster-template-machine-pool.yaml"
@@ -93,7 +93,7 @@ providers:
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-multi-tenancy.yaml"
       targetName: "cluster-template-aks-multi-tenancy.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
-      targetName: "cluster-template-custom-vnet.yaml"  
+      targetName: "cluster-template-custom-vnet.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.1}"

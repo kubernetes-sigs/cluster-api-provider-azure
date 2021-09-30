@@ -1,4 +1,4 @@
-apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfig
 metadata:
   name: ${CLUSTER_NAME}-mp-0
@@ -79,7 +79,7 @@ spec:
           key: worker-node-azure.json
           name: ${CLUSTER_NAME}-mp-0-azure-json
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachinePool
 metadata:
   name: ${CLUSTER_NAME}-mp-0

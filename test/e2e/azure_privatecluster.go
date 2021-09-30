@@ -40,9 +40,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -344,9 +344,9 @@ func SetupExistingVNet(ctx context.Context, vnetCidr string, cpSubnetCidrs, node
 	// Create the AzureBastion subnet.
 	subnets = append(subnets, network.Subnet{
 		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix: pointer.StringPtr(v1alpha4.DefaultAzureBastionSubnetCIDR),
+			AddressPrefix: pointer.StringPtr(v1beta1.DefaultAzureBastionSubnetCIDR),
 		},
-		Name: pointer.StringPtr(v1alpha4.DefaultAzureBastionSubnetName),
+		Name: pointer.StringPtr(v1beta1.DefaultAzureBastionSubnetName),
 	})
 
 	vnetFuture, err := vnetClient.CreateOrUpdate(ctx, groupName, os.Getenv(AzureVNetName), network.VirtualNetwork{

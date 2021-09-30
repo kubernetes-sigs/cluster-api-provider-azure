@@ -344,16 +344,16 @@ generate-flavors: $(KUSTOMIZE)
 
 .PHONY: generate-e2e-templates ## Generate Azure infrastructure templates for the v1alpha4 CAPI test suite.
 generate-e2e-templates: $(KUSTOMIZE)
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-md-remediation.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-remediation --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-remediation.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption/step1 --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption.yaml
-	echo "---" >> $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption/step2 --load-restrictor LoadRestrictionsNone >> $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-adoption.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-machine-pool --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-machine-pool.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-node-drain --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-node-drain.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-upgrades --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-upgrades.yaml
-	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1alpha4/cluster-template-kcp-scale-in.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-md-remediation.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-remediation --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-remediation.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-adoption/step1 --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-adoption.yaml
+	echo "---" >> $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-adoption.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-adoption/step2 --load-restrictor LoadRestrictionsNone >> $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-adoption.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-machine-pool --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-machine-pool.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-node-drain --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-node-drain.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-upgrades --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-upgrades.yaml
+	$(KUSTOMIZE) build $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in --load-restrictor LoadRestrictionsNone > $(AZURE_TEMPLATES)/v1beta1/cluster-template-kcp-scale-in.yaml
 
 ## --------------------------------------
 ## Docker
