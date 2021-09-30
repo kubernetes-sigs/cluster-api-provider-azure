@@ -227,6 +227,20 @@ func (mr *MockVMScopeMockRecorder) Error(err, msg interface{}, keysAndValues ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockVMScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockVMScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockVMScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockVMScope)(nil).FailureDomains))
+}
+
 // GetBootstrapData mocks base method.
 func (m *MockVMScope) GetBootstrapData(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()

@@ -94,6 +94,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 					PublicIPAllocationMethod: network.IPAllocationMethodStatic,
 					DNSSettings:              dnsSettings,
 				},
+				Zones: to.StringSlicePtr(s.Scope.FailureDomains()),
 			},
 		)
 

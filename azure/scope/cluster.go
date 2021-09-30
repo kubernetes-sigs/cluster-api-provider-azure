@@ -605,6 +605,17 @@ func (s *ClusterScope) SetFailureDomain(id string, spec clusterv1.FailureDomainS
 	s.AzureCluster.Status.FailureDomains[id] = spec
 }
 
+// FailureDomains returns the failure domains for the cluster.
+func (s *ClusterScope) FailureDomains() []string {
+	fds := make([]string, len(s.AzureCluster.Status.FailureDomains))
+	i := 0
+	for id := range s.AzureCluster.Status.FailureDomains {
+		fds[i] = id
+		i++
+	}
+	return fds
+}
+
 // SetControlPlaneSecurityRules sets the default security rules of the control plane subnet.
 // Note that this is not done in a webhook as it requires a valid Cluster object to exist to get the API Server port.
 func (s *ClusterScope) SetControlPlaneSecurityRules() {
