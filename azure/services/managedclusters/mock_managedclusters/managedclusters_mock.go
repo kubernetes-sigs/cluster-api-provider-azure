@@ -28,9 +28,9 @@ import (
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
-	v1alpha4 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	azure "sigs.k8s.io/cluster-api-provider-azure/azure"
-	v1alpha40 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	v1beta10 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // MockManagedClusterScope is a mock of ManagedClusterScope interface.
@@ -57,10 +57,10 @@ func (m *MockManagedClusterScope) EXPECT() *MockManagedClusterScopeMockRecorder 
 }
 
 // AdditionalTags mocks base method.
-func (m *MockManagedClusterScope) AdditionalTags() v1alpha4.Tags {
+func (m *MockManagedClusterScope) AdditionalTags() v1beta1.Tags {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdditionalTags")
-	ret0, _ := ret[0].(v1alpha4.Tags)
+	ret0, _ := ret[0].(v1beta1.Tags)
 	return ret0
 }
 
@@ -155,10 +155,10 @@ func (mr *MockManagedClusterScopeMockRecorder) CloudEnvironment() *gomock.Call {
 }
 
 // CloudProviderConfigOverrides mocks base method.
-func (m *MockManagedClusterScope) CloudProviderConfigOverrides() *v1alpha4.CloudProviderConfigOverrides {
+func (m *MockManagedClusterScope) CloudProviderConfigOverrides() *v1beta1.CloudProviderConfigOverrides {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloudProviderConfigOverrides")
-	ret0, _ := ret[0].(*v1alpha4.CloudProviderConfigOverrides)
+	ret0, _ := ret[0].(*v1beta1.CloudProviderConfigOverrides)
 	return ret0
 }
 
@@ -345,7 +345,7 @@ func (mr *MockManagedClusterScopeMockRecorder) ResourceGroup() *gomock.Call {
 }
 
 // SetControlPlaneEndpoint mocks base method.
-func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1alpha40.APIEndpoint) {
+func (m *MockManagedClusterScope) SetControlPlaneEndpoint(arg0 v1beta10.APIEndpoint) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetControlPlaneEndpoint", arg0)
 }
