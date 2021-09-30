@@ -75,7 +75,6 @@ type AzureClusterIdentityStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azureclusteridentities,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureClusterIdentity is the Schema for the azureclustersidentities API.

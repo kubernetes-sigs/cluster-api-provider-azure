@@ -16,8 +16,21 @@ limitations under the License.
 
 package v1alpha4
 
-// Hub marks AzureManagedControlPlane as a conversion hub.
-func (*AzureManagedControlPlane) Hub() {}
+import (
+	expv1beta1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
 
-// Hub marks AzureManagedControlPlaneList as a conversion hub.
-func (*AzureManagedControlPlaneList) Hub() {}
+// ConvertTo converts this AzureManagedControlPlane to the Hub version (v1beta1).
+func (src *AzureManagedControlPlane) ConvertTo(dstRaw conversion.Hub) error { // nolint
+	dst := dstRaw.(*expv1beta1.AzureManagedControlPlane)
+
+	return Convert_v1alpha4_AzureManagedControlPlane_To_v1beta1_AzureManagedControlPlane(src, dst, nil)
+}
+
+// ConvertFrom converts from the Hub version (v1beta1) to this version.
+func (dst *AzureManagedControlPlane) ConvertFrom(srcRaw conversion.Hub) error { // nolint
+	src := srcRaw.(*expv1beta1.AzureManagedControlPlane)
+
+	return Convert_v1beta1_AzureManagedControlPlane_To_v1alpha4_AzureManagedControlPlane(src, dst, nil)
+}

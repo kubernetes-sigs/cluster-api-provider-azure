@@ -205,7 +205,6 @@ type AzureManagedControlPlaneStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=azuremanagedcontrolplanes,scope=Namespaced,categories=cluster-api,shortName=amcp
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // AzureManagedControlPlane is the Schema for the azuremanagedcontrolplanes API.
