@@ -17,11 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"encoding/base64"
 	"fmt"
-
-	"golang.org/x/crypto/ssh"
-	utilSSH "sigs.k8s.io/cluster-api-provider-azure/util/ssh"
 )
 
 const (
@@ -30,20 +26,6 @@ const (
 	// defaultAKSNodeSubnetCIDR is the default Node Subnet CIDR.
 	defaultAKSNodeSubnetCIDR = "10.240.0.0/16"
 )
-
-// setDefaultSSHPublicKey sets the default SSHPublicKey for an AzureManagedControlPlane.
-func (m *AzureManagedControlPlane) setDefaultSSHPublicKey() error {
-	if sshKeyData := m.Spec.SSHPublicKey; sshKeyData == "" {
-		_, publicRsaKey, err := utilSSH.GenerateSSHKey()
-		if err != nil {
-			return err
-		}
-
-		m.Spec.SSHPublicKey = base64.StdEncoding.EncodeToString(ssh.MarshalAuthorizedKey(publicRsaKey))
-	}
-
-	return nil
-}
 
 // setDefaultNodeResourceGroupName sets the default NodeResourceGroup for an AzureManagedControlPlane.
 func (m *AzureManagedControlPlane) setDefaultNodeResourceGroupName() {

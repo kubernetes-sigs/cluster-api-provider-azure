@@ -426,7 +426,6 @@ spec:
             required:
             - location
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:
@@ -751,7 +750,6 @@ spec:
             required:
             - location
             - resourceGroupName
-            - sshPublicKey
             - version
             type: object
           status:

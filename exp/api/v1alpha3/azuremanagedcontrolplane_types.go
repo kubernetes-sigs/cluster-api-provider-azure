@@ -65,7 +65,8 @@ type AzureManagedControlPlaneSpec struct {
 	NetworkPolicy *string `json:"networkPolicy,omitempty"`
 
 	// SSHPublicKey is a string literal containing an ssh public key base64 encoded.
-	SSHPublicKey string `json:"sshPublicKey"`
+	// +optional
+	SSHPublicKey *string `json:"sshPublicKey,omitempty"`
 
 	// DNSServiceIP is an IP address assigned to the Kubernetes DNS service.
 	// It must be within the Kubernetes service address range specified in serviceCidr.

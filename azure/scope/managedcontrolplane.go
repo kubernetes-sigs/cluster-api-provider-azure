@@ -397,9 +397,13 @@ func (s *ManagedControlPlaneScope) ManagedClusterAnnotations() map[string]string
 
 // ManagedClusterSpec returns the managed cluster spec.
 func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpec, error) {
-	decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(s.ControlPlane.Spec.SSHPublicKey)
-	if err != nil {
-		return azure.ManagedClusterSpec{}, errors.Wrap(err, "failed to decode SSHPublicKey")
+	var sshPublicKey *string
+	if s.ControlPlane.Spec.SSHPublicKey != nil {
+		decodedSSHPublicKey, err := base64.StdEncoding.DecodeString(*s.ControlPlane.Spec.SSHPublicKey)
+		if err != nil {
+			return azure.ManagedClusterSpec{}, errors.Wrap(err, "failed to decode SSHPublicKey")
+		}
+		sshPublicKey = to.StringPtr(string(decodedSSHPublicKey))
 	}
 
 	managedClusterSpec := azure.ManagedClusterSpec{
@@ -409,7 +413,7 @@ func (s *ManagedControlPlaneScope) ManagedClusterSpec() (azure.ManagedClusterSpe
 		Location:              s.ControlPlane.Spec.Location,
 		Tags:                  s.ControlPlane.Spec.AdditionalTags,
 		Version:               strings.TrimPrefix(s.ControlPlane.Spec.Version, "v"),
-		SSHPublicKey:          string(decodedSSHPublicKey),
+		SSHPublicKey:          sshPublicKey,
 		DNSServiceIP:          s.ControlPlane.Spec.DNSServiceIP,
 		VnetSubnetID: azure.SubnetID(
 			s.ControlPlane.Spec.SubscriptionID,

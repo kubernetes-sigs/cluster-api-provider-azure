@@ -432,6 +432,11 @@ func (in *AzureManagedControlPlaneSpec) DeepCopyInto(out *AzureManagedControlPla
 		*out = new(string)
 		**out = **in
 	}
+	if in.SSHPublicKey != nil {
+		in, out := &in.SSHPublicKey, &out.SSHPublicKey
+		*out = new(string)
+		**out = **in
+	}
 	if in.DNSServiceIP != nil {
 		in, out := &in.DNSServiceIP, &out.DNSServiceIP
 		*out = new(string)

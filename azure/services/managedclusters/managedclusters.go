@@ -218,16 +218,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			EnableRBAC:        to.BoolPtr(true),
 			DNSPrefix:         &managedClusterSpec.Name,
 			KubernetesVersion: &managedClusterSpec.Version,
-			LinuxProfile: &containerservice.LinuxProfile{
-				AdminUsername: &defaultUser,
-				SSH: &containerservice.SSHConfiguration{
-					PublicKeys: &[]containerservice.SSHPublicKey{
-						{
-							KeyData: &managedClusterSpec.SSHPublicKey,
-						},
-					},
-				},
-			},
 			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{
 				ClientID: &managedIdentity,
 			},
@@ -284,6 +274,19 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		managedCluster.Sku = &containerservice.ManagedClusterSKU{
 			Name: containerservice.ManagedClusterSKUNameBasic,
 			Tier: tierName,
+		}
+	}
+
+	if managedClusterSpec.SSHPublicKey != nil {
+		managedCluster.LinuxProfile = &containerservice.LinuxProfile{
+			AdminUsername: &defaultUser,
+			SSH: &containerservice.SSHConfiguration{
+				PublicKeys: &[]containerservice.SSHPublicKey{
+					{
+						KeyData: managedClusterSpec.SSHPublicKey,
+					},
+				},
+			},
 		}
 	}
 

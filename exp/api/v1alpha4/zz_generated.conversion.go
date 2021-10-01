@@ -1030,7 +1030,7 @@ func autoConvert_v1alpha4_AzureManagedControlPlaneSpec_To_v1beta1_AzureManagedCo
 	out.AdditionalTags = *(*clusterapiproviderazureapiv1beta1.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
-	out.SSHPublicKey = in.SSHPublicKey
+	out.SSHPublicKey = (*string)(unsafe.Pointer(in.SSHPublicKey))
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	out.IdentityRef = (*v1.ObjectReference)(unsafe.Pointer(in.IdentityRef))
@@ -1061,7 +1061,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha4_AzureManagedCo
 	out.AdditionalTags = *(*clusterapiproviderazureapiv1alpha4.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
-	out.SSHPublicKey = in.SSHPublicKey
+	out.SSHPublicKey = (*string)(unsafe.Pointer(in.SSHPublicKey))
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	out.IdentityRef = (*v1.ObjectReference)(unsafe.Pointer(in.IdentityRef))

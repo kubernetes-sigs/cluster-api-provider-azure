@@ -208,7 +208,7 @@ type ManagedClusterSpec struct {
 	NetworkPolicy string
 
 	// SSHPublicKey is a string literal containing an ssh public key. Will autogenerate and discard if not provided.
-	SSHPublicKey string
+	SSHPublicKey *string
 
 	// AgentPools is the list of agent pool specifications in this cluster.
 	AgentPools []AgentPoolSpec

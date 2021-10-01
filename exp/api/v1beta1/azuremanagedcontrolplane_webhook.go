@@ -65,10 +65,6 @@ func (m *AzureManagedControlPlane) Default() {
 		m.Spec.Version = normalizedVersion
 	}
 
-	if err := m.setDefaultSSHPublicKey(); err != nil {
-		ctrl.Log.WithName("AzureManagedControlPlaneWebHookLogger").Error(err, "SetDefaultSshPublicKey failed")
-	}
-
 	m.setDefaultNodeResourceGroupName()
 	m.setDefaultVirtualNetwork()
 	m.setDefaultSubnet()
@@ -121,15 +117,11 @@ func (m *AzureManagedControlPlane) ValidateUpdate(oldRaw runtime.Object) error {
 				"field is immutable"))
 	}
 
-	if old.Spec.SSHPublicKey != "" {
-		// Prevent SSH key modification if it was already set to some value
-		if m.Spec.SSHPublicKey != old.Spec.SSHPublicKey {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("Spec", "SSHPublicKey"),
-					m.Spec.SSHPublicKey,
-					"field is immutable"))
-		}
+	if !reflect.DeepEqual(m.Spec.SSHPublicKey, old.Spec.SSHPublicKey) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("Spec", "SSHPublicKey"),
+				m.Spec.SSHPublicKey, "field is immutable"),
+		)
 	}
 
 	if old.Spec.DNSServiceIP != nil {
@@ -290,8 +282,8 @@ func (m *AzureManagedControlPlane) validateVersion() error {
 
 // ValidateSSHKey validates an SSHKey.
 func (m *AzureManagedControlPlane) validateSSHKey() error {
-	if m.Spec.SSHPublicKey != "" {
-		sshKey := m.Spec.SSHPublicKey
+	if m.Spec.SSHPublicKey != nil {
+		sshKey := *m.Spec.SSHPublicKey
 		if errs := infrav1.ValidateSSHKey(sshKey, field.NewPath("sshKey")); len(errs) > 0 {
 			return kerrors.NewAggregate(errs.ToAggregate().Errors())
 		}

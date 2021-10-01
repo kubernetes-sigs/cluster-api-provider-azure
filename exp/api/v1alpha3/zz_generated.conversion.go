@@ -731,7 +731,7 @@ func autoConvert_v1alpha3_AzureManagedControlPlaneSpec_To_v1beta1_AzureManagedCo
 	out.AdditionalTags = *(*clusterapiproviderazureapiv1beta1.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
-	out.SSHPublicKey = in.SSHPublicKey
+	out.SSHPublicKey = (*string)(unsafe.Pointer(in.SSHPublicKey))
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	out.AADProfile = (*v1beta1.AADProfile)(unsafe.Pointer(in.AADProfile))
@@ -758,7 +758,7 @@ func autoConvert_v1beta1_AzureManagedControlPlaneSpec_To_v1alpha3_AzureManagedCo
 	out.AdditionalTags = *(*clusterapiproviderazureapiv1alpha3.Tags)(unsafe.Pointer(&in.AdditionalTags))
 	out.NetworkPlugin = (*string)(unsafe.Pointer(in.NetworkPlugin))
 	out.NetworkPolicy = (*string)(unsafe.Pointer(in.NetworkPolicy))
-	out.SSHPublicKey = in.SSHPublicKey
+	out.SSHPublicKey = (*string)(unsafe.Pointer(in.SSHPublicKey))
 	out.DNSServiceIP = (*string)(unsafe.Pointer(in.DNSServiceIP))
 	out.LoadBalancerSKU = (*string)(unsafe.Pointer(in.LoadBalancerSKU))
 	// WARNING: in.IdentityRef requires manual conversion: does not exist in peer-type
