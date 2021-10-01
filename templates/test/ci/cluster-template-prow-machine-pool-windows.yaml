@@ -1152,7 +1152,6 @@ data:
         yq w -i /host/var/lib/kube-proxy/config.conf winkernel.sourceVip $sourceVip
         yq w -i /host/var/lib/kube-proxy/config.conf winkernel.networkName $networkName
         yq w -i /host/var/lib/kube-proxy/config.conf featureGates.WinOverlay true
-        yq w -i /host/var/lib/kube-proxy/config.conf featureGates.IPv6DualStack false
         yq w -i /host/var/lib/kube-proxy/config.conf mode "kernelspace"
         wins cli process run --path /k/kube-proxy/kube-proxy.exe --args "--v=6 --config=/var/lib/kube-proxy/config.conf --hostname-override=$env:NODE_NAME --feature-gates=WinOverlay=true"
     kind: ConfigMap
