@@ -223,6 +223,20 @@ func (mr *MockScaleSetVMScopeMockRecorder) Error(err, msg interface{}, keysAndVa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockScaleSetVMScope)(nil).Error), varargs...)
 }
 
+// FailureDomains mocks base method.
+func (m *MockScaleSetVMScope) FailureDomains() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailureDomains")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FailureDomains indicates an expected call of FailureDomains.
+func (mr *MockScaleSetVMScopeMockRecorder) FailureDomains() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailureDomains", reflect.TypeOf((*MockScaleSetVMScope)(nil).FailureDomains))
+}
+
 // GetLongRunningOperationState mocks base method.
 func (m *MockScaleSetVMScope) GetLongRunningOperationState(arg0, arg1 string) *v1alpha4.Future {
 	m.ctrl.T.Helper()
