@@ -3,16 +3,16 @@ kind: Service
 metadata:
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/port: "8443"
-    prometheus.io/scheme: https
+    prometheus.io/port: "8080"
+    prometheus.io/scheme: http
   labels:
     control-plane: capz-controller-manager
   name: controller-manager-metrics-service
   namespace: system
 spec:
   ports:
-  - name: https
-    port: 8443
-    targetPort: https
+  - name: metrics
+    port: 8080
+    targetPort: 8080
   selector:
     control-plane: capz-controller-manager

@@ -1,3 +1,4 @@
 resources:
   - bundle.yaml
   - prometheus.yaml
+  - capz_metrics_service.yaml
