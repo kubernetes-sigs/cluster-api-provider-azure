@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
@@ -236,7 +237,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 	tests := []struct {
 		name         string
 		machineScope MachineScope
-		want         []azure.PublicIPSpec
+		want         []publicips.PublicIPSpec
 	}{
 		{
 			name: "returns nil if AllocatePublicIP is false",
@@ -271,7 +272,7 @@ func TestMachineScope_PublicIPSpecs(t *testing.T) {
 					},
 				},
 			},
-			want: []azure.PublicIPSpec{
+			want: []publicips.PublicIPSpec{
 				{
 					Name:          "pip-machine-name",
 					ResourceGroup: "resource-group",

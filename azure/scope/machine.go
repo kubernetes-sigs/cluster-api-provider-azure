@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/disks"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/util/futures"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -181,10 +182,10 @@ func (m *MachineScope) TagsSpecs() []azure.TagsSpec {
 }
 
 // PublicIPSpecs returns the public IP specs.
-func (m *MachineScope) PublicIPSpecs() []azure.PublicIPSpec {
-	var spec []azure.PublicIPSpec
+func (m *MachineScope) PublicIPSpecs() []publicips.PublicIPSpec {
+	var spec []publicips.PublicIPSpec
 	if m.AzureMachine.Spec.AllocatePublicIP {
-		spec = append(spec, azure.PublicIPSpec{
+		spec = append(spec, publicips.PublicIPSpec{
 			Name: azure.GenerateNodePublicIPName(m.Name()),
 			ResourceGroup: m.ResourceGroup(),
 		})

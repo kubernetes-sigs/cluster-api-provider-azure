@@ -14,13 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package azure
+package publicips
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	// "sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	// infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 )
+
+// PublicIPSpec defines the specification for a Public IP.
+type PublicIPSpec struct {
+	Name          string
+	DNSName       string
+	IsIPv6        bool
+	ResourceGroup string
+}
 
 // ResourceName returns the name of the public IP.
 func (s PublicIPSpec) ResourceName() string {

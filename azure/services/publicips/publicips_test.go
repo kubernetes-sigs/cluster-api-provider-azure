@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package publicips
+package publicips_test
 
 import (
 	"context"
@@ -28,9 +28,8 @@ import (
 
 	gomockinternal "sigs.k8s.io/cluster-api-provider-azure/internal/test/matchers/gomock"
 
-	"sigs.k8s.io/cluster-api-provider-azure/azure"
-
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips/mock_publicips"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -48,18 +47,19 @@ func init() {
 }
 
 var (
-	ipSpec1 = azure.PublicIPSpec{
+	serviceName = "publicips"
+	ipSpec1     = publicips.PublicIPSpec{
 		Name:          "my-publicip",
 		DNSName:       "fakedns.mydomain.io",
 		ResourceGroup: "test-group",
 	}
-	ipSpec2 = azure.PublicIPSpec{
+	ipSpec2 = publicips.PublicIPSpec{
 		Name:          "my-publicip-ipv6",
 		IsIPv6:        true,
 		DNSName:       "fakename.mydomain.io",
 		ResourceGroup: "test-group",
 	}
-	fakePublicIPSpecs = []azure.PublicIPSpec{
+	fakePublicIPSpecs = []publicips.PublicIPSpec{
 		ipSpec1,
 		ipSpec2,
 	}
@@ -174,7 +174,7 @@ func TestReconcilePublicIP(t *testing.T) {
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
-			s := &Service{
+			s := &publicips.Service{
 				Scope:  scopeMock,
 				Client: clientMock,
 			}
@@ -201,7 +201,7 @@ func TestDeletePublicIP(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.PublicIPSpecs().Return([]azure.PublicIPSpec{
+				s.PublicIPSpecs().Return([]publicips.PublicIPSpec{
 					{
 						Name: "my-publicip",
 					},
@@ -234,7 +234,7 @@ func TestDeletePublicIP(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.PublicIPSpecs().Return([]azure.PublicIPSpec{
+				s.PublicIPSpecs().Return([]publicips.PublicIPSpec{
 					{
 						Name: "my-publicip",
 					},
@@ -260,7 +260,7 @@ func TestDeletePublicIP(t *testing.T) {
 			expectedError: "failed to delete public IP my-publicip in resource group my-rg: #: Internal Server Error: StatusCode=500",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.PublicIPSpecs().Return([]azure.PublicIPSpec{
+				s.PublicIPSpecs().Return([]publicips.PublicIPSpec{
 					{
 						Name: "my-publicip",
 					},
@@ -283,7 +283,7 @@ func TestDeletePublicIP(t *testing.T) {
 			expectedError: "",
 			expect: func(s *mock_publicips.MockPublicIPScopeMockRecorder, m *mock_publicips.MockClientMockRecorder) {
 				s.V(gomock.AssignableToTypeOf(2)).AnyTimes().Return(klogr.New())
-				s.PublicIPSpecs().Return([]azure.PublicIPSpec{
+				s.PublicIPSpecs().Return([]publicips.PublicIPSpec{
 					{
 						Name: "my-publicip",
 					},
@@ -324,7 +324,7 @@ func TestDeletePublicIP(t *testing.T) {
 
 			tc.expect(scopeMock.EXPECT(), clientMock.EXPECT())
 
-			s := &Service{
+			s := &publicips.Service{
 				Scope:  scopeMock,
 				Client: clientMock,
 			}

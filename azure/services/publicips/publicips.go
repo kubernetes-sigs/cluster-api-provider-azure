@@ -36,7 +36,7 @@ type PublicIPScope interface {
 	logr.Logger
 	azure.ClusterDescriber
 	azure.AsyncStatusUpdater
-	PublicIPSpecs() []azure.PublicIPSpec
+	PublicIPSpecs() []PublicIPSpec
 }
 
 // Service provides operations on Azure resources.
