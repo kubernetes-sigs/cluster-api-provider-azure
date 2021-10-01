@@ -21,9 +21,11 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/pkg/errors"
 
 	azureautorest "github.com/Azure/go-autorest/autorest/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -32,7 +34,7 @@ type Client interface {
 	Get(context.Context, string, string) (network.PublicIPAddress, error)
 	CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error)
 	Delete(context.Context, string, string) error
-	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)	
+	IsDone(context.Context, azureautorest.FutureAPI) (bool, error)
 }
 
 // AzureClient contains the Azure go-sdk Client.
@@ -63,28 +65,67 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, ipName string
 	return ac.publicips.Get(ctx, resourceGroupName, ipName, "")
 }
 
-// CreateOrUpdate creates or updates a static or dynamic public IP address.
-func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, ipName string, ip network.PublicIPAddress) error {
-	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdate")
-	defer done()
-
-	future, err := ac.publicips.CreateOrUpdate(ctx, resourceGroupName, ipName, ip)
-	if err != nil {
-		return err
-	}
-	err = future.WaitForCompletionRef(ctx, ac.publicips.Client)
-	if err != nil {
-		return err
-	}
-	_, err = future.Result(ac.publicips)
-	return err
-}
-
-// CreateOrUpdateAsync creates or updates a public IP in the specified resource group asynchronously.
+// CreateOrUpdateAsync creates or updates a static public IP in the specified resource group asynchronously.
 // It sends a PUT request to Azure and if accepted without error, the func will return a Future which can be used to track the ongoing
 // progress of the operation.
-func (ac *AzureClient) CreateOrUpdateAsync(context.Context, azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
-	return nil, nil
+func (ac *AzureClient) CreateOrUpdateAsync(ctx context.Context, spec azure.ResourceSpecGetter) (azureautorest.FutureAPI, error) {
+	ctx, _, done := tele.StartSpanWithLogger(ctx, "publicips.AzureClient.CreateOrUpdateAsync")
+	defer done()
+
+	ip, err := ac.publicIPParams(ctx, spec)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get desired parameters for group %s", spec.ResourceName())
+	} else if ip == nil {
+		// nothing to do here
+		return nil, nil
+	}
+
+	future, err := ac.publicips.CreateOrUpdate(ctx, spec.ResourceGroupName(), spec.ResourceName(), *ip)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultAzureCallTimeout)
+	defer cancel()
+
+	err = future.WaitForCompletionRef(ctx, ac.publicips.Client)
+	if err != nil {
+		// if an error occurs, return the future.
+		// this means the long-running operation didn't finish in the specified timeout.
+		return &future, err
+	}
+
+	_, err = future.Result(ac.publicips)
+	return nil, err
+}
+
+func (ac *AzureClient) publicIPParams(ctx context.Context, spec azure.ResourceSpecGetter) (*network.PublicIPAddress, error) {
+	var params interface{}
+	var existing interface{}
+
+	if existingPublicIP, err := ac.Get(ctx, spec.ResourceGroupName(), spec.ResourceName()); err != nil && !azure.ResourceNotFound(err) {
+		return nil, errors.Wrapf(err, "failed to get public IP %s in %s", spec.ResourceName(), spec.ResourceGroupName())
+	} else if err == nil {
+		// public IP already exists
+		existing = existingPublicIP
+	}
+
+	params, err := spec.Parameters(existing)
+	if err != nil {
+		return nil, err
+	}
+
+	if params == nil {
+		// nothing to do here.
+		return nil, nil
+	}
+
+	ip, ok := params.(network.PublicIPAddress)
+	if !ok {
+		return nil, errors.Errorf("%T is not a network.PublicIPAddress", params)
+	}
+
+	return &ip, nil
 }
 
 // Delete deletes the specified public IP address.

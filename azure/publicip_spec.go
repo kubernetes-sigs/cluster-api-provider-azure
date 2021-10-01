@@ -16,6 +16,12 @@ limitations under the License.
 
 package azure
 
+import (
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	// "sigs.k8s.io/cluster-api-provider-azure/azure/converters"
+	// infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+)
+
 // ResourceName returns the name of the public IP.
 func (s PublicIPSpec) ResourceName() string {
 	return s.Name
@@ -33,5 +39,26 @@ func (s PublicIPSpec) ResourceGroupName() string {
 
 // Parameters returns the parameters for the route table.
 func (s PublicIPSpec) Parameters(existing interface{}) (interface{}, error) {
-	return nil, nil
+	if existing != nil {
+		// public IP already exists
+		// TODO: handle update later
+		return nil, nil
+	}
+
+	return network.PublicIPAddress{
+		// Tags: converters.TagsToMap(infrav1.Build(infrav1.BuildParams{
+		// ClusterName: s.Scope.ClusterName(),
+		// Lifecycle:   infrav1.ResourceLifecycleOwned,
+		// Name:        to.StringPtr(ip.Name),
+		// Additional:  s.Scope.AdditionalTags(),
+		// })),
+		Sku: &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+		// Name:     to.StringPtr(ip.Name),
+		// Location: to.StringPtr(s.Scope.Location()),
+		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+			// PublicIPAddressVersion:   addressVersion,
+			PublicIPAllocationMethod: network.IPAllocationMethodStatic,
+			// DNSSettings:              dnsSettings,
+		},
+	}, nil
 }
